@@ -6,6 +6,10 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Fixed tray reference baseline
+
+- Restore the 16px tray canvas, chevron and bell while retaining original optical-normalized assets, normal hit targets and the separate wider battery cell. Avoid the previous double enlargement of imported glyphs. Guard standard sizes at 100–200% output scales.
+
 ### Original battery assets only
 
 - Remove the project-drawn colored battery. Render the imported Microsoft Segoe Fluent Icons battery, charge and energy-saver glyphs without inventing geometry. The newer SysBatt artwork is still missing from the verified inputs.

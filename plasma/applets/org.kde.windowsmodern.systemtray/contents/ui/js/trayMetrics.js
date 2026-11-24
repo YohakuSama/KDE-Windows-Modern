@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
-// Windows Modern at 100%: 48px taskbar, 30px task icons, 20px tray icon canvas.
-// DPI is applied by Qt, never by multiplying the logical size by screen DPR.
-// Explicit panel-size scaling remains an opt-in; 48px always gives 20px.
+// Microsoft Windows 11 app-icon construction specifies 16px tray and
+// 24px taskbar app icon resources at 100%, 24px/36px at 150%.
+// Imported symbolic status glyphs already have normalized optical bounds
+// (23/24 of the source em). Do NOT compensate for their old transparent
+// margins a second time. Qt alone applies display DPI.
+// The standard 48px panel stays at 16px in both sizing modes.
+const defaultTraySize = 16;
 function iconSize(thickness, scaleToFit) {
     const limit = Math.max(1, Math.floor(thickness));
-    const requested = scaleToFit ? Math.max(20, Math.min(32, Math.round(limit * 5 / 12))) : 20;
+    const requested = scaleToFit ? Math.max(defaultTraySize, Math.min(32, Math.round(limit / 3))) : defaultTraySize;
     return Math.min(limit, requested);
 }
 
@@ -37,7 +41,7 @@ function cellLength(size, compact, spacing) {
     // Normal Windows notification items/chevron: 32; core group: 24.
     // Keep the existing KDE spacing choices without tying them to font size.
     const extra = spacing === 1 ? 8 : spacing === 6 ? 24 : 16;
-    // Keep 32/24px normal cells while increasing the actual ink area.
+    // Preserve 32/24px normal hit cells independently of the glyph canvas.
     // Above the default size, the minimum four-pixel cell inset still applies.
     const opticalInset = Math.max(0, Math.min(4, size - 16));
     return Math.max(size + 4, size + extra - opticalInset - (compact ? 8 : 0));

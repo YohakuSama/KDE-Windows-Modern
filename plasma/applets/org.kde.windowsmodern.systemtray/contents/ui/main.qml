@@ -315,7 +315,7 @@ ContainmentItem {
                 Layout.fillWidth: vertical
                 Layout.fillHeight: !vertical
                 Layout.alignment: vertical ? Qt.AlignVCenter : Qt.AlignHCenter
-                iconSize: Math.min(18, root.itemSize)
+                iconSize: Math.min(16, root.itemSize)
                 cellLength: root.trayCellLength
                 visible: root.hiddenLayout.itemCount > 0
                 onVisibleChanged: {

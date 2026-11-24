@@ -24,6 +24,11 @@ Item {
             verify(!icon.roundToIconSize);
             verify(findChild(glyph, "wmBatteryOutline") === null);
             verify(findChild(glyph, "wmBatteryLevelFill") === null);
+            glyph.glyphSize = 16;
+            compare(glyph.implicitWidth, 20);
+            compare(glyph.implicitHeight, 16);
+            compare(icon.width, 20);
+            compare(icon.height, 20);
             glyph.glyphSize = 20;
             compare(glyph.implicitWidth, 25);
             compare(glyph.implicitHeight, 20);

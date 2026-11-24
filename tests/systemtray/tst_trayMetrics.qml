@@ -7,12 +7,12 @@ TestCase {
     name: "WindowsTrayMetrics"
     function test_defaultGlyphAndCell() {
         for (const thickness of [24, 30, 32, 48, 64, 96]) {
-            compare(Metrics.iconSize(thickness, false), 20);
-            compare(Metrics.cellLength(20, false, 2), 32);
-            compare(Metrics.cellLength(20, true, 2), 24);
+            compare(Metrics.iconSize(thickness, false), 16);
+            compare(Metrics.cellLength(16, false, 2), 32);
+            compare(Metrics.cellLength(16, true, 2), 24);
         }
         compare(Metrics.iconSize(12, false), 12);
-        compare(Metrics.iconSize(48, true), 20);
+        compare(Metrics.iconSize(48, true), 16);
         compare(Metrics.iconSize(96, true), 32);
         compare(Metrics.cellLength(16, false, 1), 24);
         compare(Metrics.cellLength(16, true, 1), 20);
@@ -21,14 +21,14 @@ TestCase {
     }
     function test_nativeCoreContainer() {
         for (const thickness of [24, 30, 32, 48, 64, 96]) {
-            compare(Metrics.coreIconSize(thickness, false), 20);
-            compare(Metrics.coreCellLength(20, 20, 2), 24);
+            compare(Metrics.coreIconSize(thickness, false), 16);
+            compare(Metrics.coreCellLength(16, 16, 2), 24);
             compare(Metrics.coreRenderSize(16), 32);
         }
         compare(Metrics.coreIconSize(12, false), 12);
-        compare(Metrics.coreIconSize(18, false), 18);
-        compare(Metrics.coreIconSize(48, true), 20);
-        compare(Metrics.coreIconSize(64, true), 27);
+        compare(Metrics.coreIconSize(18, false), 16);
+        compare(Metrics.coreIconSize(48, true), 16);
+        compare(Metrics.coreIconSize(64, true), 21);
         compare(Metrics.coreIconSize(96, true), 32);
         compare(Metrics.coreCellLength(16, 16, 1), 20);
         compare(Metrics.coreCellLength(16, 16, 6), 32);
@@ -41,6 +41,20 @@ TestCase {
         compare(Metrics.coreRenderSize(16), 32);
         compare(Metrics.coreRenderSize(24), 32);
         compare(Metrics.coreRenderSize(32), 32);
+    }
+    function test_referenceScaleBudget() {
+        // Resource size baseline, not a guarantee of the exact live ink.
+        // At 150% a standard glyph cannot have a 30px canvas, even when
+        // a normalized original asset nearly fills the source em.
+        const logical = Metrics.iconSize(48, false);
+        const physical = logical * 1.5;
+        compare(physical, 24);
+        compare(Math.ceil(logical * 1.25) * 1.5, 30);
+        verify(physical < 24 * 1.5);
+        for (const scale of [1, 1.25, 1.5, 1.75, 2]) {
+            compare(logical * scale, 16 * scale);
+            compare(Metrics.coreCellLength(logical, logical, 2) * scale, 24 * scale);
+        }
     }
     function test_systemGroup() {
         verify(Metrics.isQuickSettings("org.kde.plasma.networkmanagement"));
