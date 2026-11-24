@@ -20,6 +20,7 @@ Item {
     property string iconSource
     property string label
     property bool optionEnabled: true
+    property bool monochrome: true
     readonly property int glyphSize: Theme.menuGlyphSize
 
     signal activated
@@ -38,7 +39,12 @@ Item {
     Keys.onBacktabPressed: navigationRequested(-1)
     Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
-    implicitWidth: optionLabel.implicitWidth + 2 * Theme.menuTextInset + glyphSize + Theme.menuIconGap
+    implicitWidth: labelMetrics.advanceWidth + 2 * Theme.menuTextInset + glyphSize + Theme.menuIconGap
+    TextMetrics {
+        id: labelMetrics
+        font: optionLabel.font
+        text: option.label
+    }
     implicitHeight: Theme.menuRowHeight
     width: parent ? parent.width : implicitWidth
     height: implicitHeight
@@ -46,9 +52,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1
-        radius: 4
+        radius: Theme.menuRowRadius
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-            Kirigami.Theme.textColor.b, Theme.menuHoverOpacity)
+            Kirigami.Theme.textColor.b, hoverArea.containsPress ? 0.12 : Theme.menuHoverOpacity)
         opacity: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus) ? Theme.opacityFull : Theme.opacityHidden
         Behavior on opacity { NumberAnimation { duration: 80 } }
     }
@@ -73,14 +79,16 @@ Item {
             roundToIconSize: false
             source: option.iconSource
             fallback: option.iconSource.replace(/-symbolic$/, "")
-            isMask: true
-            color: Kirigami.Theme.textColor
+            isMask: option.monochrome
+            color: option.monochrome ? Kirigami.Theme.textColor : "transparent"
             opacity: option.optionEnabled ? Theme.opacityFull : Theme.disabledIconOpacity
         }
 
         PlasmaComponents3.Label {
             id: optionLabel
+            objectName: "wmStartMenuActionLabel"
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             text: option.label
             textFormat: Text.PlainText
             elide: Text.ElideRight

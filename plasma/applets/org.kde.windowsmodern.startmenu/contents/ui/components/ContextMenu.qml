@@ -1,31 +1,41 @@
-/***************************************************************************
- *   License: GPL-3.0-or-later
- *   Author: Jeysef
- *
- *   Shared in-dialog context menu popup for list delegates.  A single
- *   instance lives at the rootItem level; delegates call open() with
- *   their action list and position.  Avoids stacking multiple popups.
- ***************************************************************************/
-
+// SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-import QtQuick.Layouts
-
-import org.kde.plasma.components as PlasmaComponents3
+import QtQuick.Window
 import org.kde.kirigami as Kirigami
-
 import "../code/theme.js" as Theme
+import "../code/footerNavigation.js" as FooterNavigation
 
 Item {
     id: contextMenu
-
     signal actionTriggered(string actionId, var argument, var context)
     signal closed
-
-    // Caller-supplied context (e.g. { model, index }) forwarded back with
-    // actionTriggered so the shell can dispatch to the right model.
     property var context: ({})
+    property var actions: []
+    property Item previousFocus: null
+    readonly property bool opened: popup.visible
+    readonly property rect popupGeometry: Qt.rect(popup.x, popup.y, popup.width, popup.height)
 
-    // ── Click catcher ──────────────────────────────────────────────────
+    FontMetrics {
+        id: metrics
+        font.family: Kirigami.Theme.defaultFont.family
+        font.pixelSize: Theme.menuFontSize
+    }
+
+    readonly property int popupWidth: Theme.actionMenuWidth(
+        actions.reduce((largest, action) => action.type === "separator" ? largest
+            : Math.max(largest, metrics.advanceWidth(action.text || "")
+                + 2 * Theme.menuTextInset + Theme.menuGlyphSize + Theme.menuIconGap), 0),
+        width)
+
+    function moveFocus(direction) {
+        const available = actions.map((action, index) => action.type !== "separator"
+            && action.enabled !== false && entries.itemAt(index)?.item?.optionEnabled === true);
+        const current = actions.findIndex((action, index) => entries.itemAt(index)?.item?.activeFocus === true);
+        const next = FooterNavigation.nextEnabledIndex(available, current, direction);
+        if (next >= 0)
+            entries.itemAt(next).item.forceActiveFocus(Qt.TabFocusReason);
+    }
+
     MouseArea {
         anchors.fill: parent
         visible: popup.visible
@@ -33,19 +43,13 @@ Item {
         onClicked: contextMenu.close()
     }
 
-    // ── The floating panel ─────────────────────────────────────────────
-    Rectangle {
+    StartMenuSurface {
         id: popup
+        objectName: "wmStartContextMenuSurface"
         visible: false
         z: 100
-        width: Kirigami.Units.gridUnit * 15
+        width: contextMenu.popupWidth
         height: menuColumn.implicitHeight + 2 * Theme.menuOuterInset
-        radius: Theme.menuRadius
-        color: Kirigami.Theme.backgroundColor
-        border.width: 1
-        border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                               Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, 0.12)
 
         Column {
             id: menuColumn
@@ -54,141 +58,78 @@ Item {
             anchors.top: parent.top
             anchors.topMargin: Theme.menuOuterInset
             spacing: 0
-
             Repeater {
+                id: entries
                 model: contextMenu.actions
-
-                delegate: Item {
+                delegate: Loader {
+                    id: entry
+                    required property var modelData
                     width: menuColumn.width
                     height: modelData.type === "separator" ? 1 : Theme.menuRowHeight
+                    sourceComponent: modelData.type === "separator" ? divider : commandRow
 
-                    Rectangle {
-                        anchors.fill: parent
-                        visible: modelData.type !== "separator"
-                        radius: 4
-                        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                            Kirigami.Theme.textColor.b, Theme.menuHoverOpacity)
-                        opacity: rowHover.containsMouse ? Theme.opacityFull : Theme.opacityHidden
-                        Behavior on opacity { NumberAnimation { duration: 80 } }
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        visible: modelData.type === "separator"
-                        color: Qt.rgba(Kirigami.Theme.textColor.r,
-                                       Kirigami.Theme.textColor.g,
-                                       Kirigami.Theme.textColor.b, Theme.separatorOpacity)
-                    }
-
-                    RowLayout {
-                        visible: modelData.type !== "separator"
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: Theme.menuTextInset
-                        anchors.rightMargin: Theme.menuTextInset
-                        spacing: Theme.menuIconGap
-
-                        Kirigami.Icon {
-                            Layout.preferredWidth: Theme.menuGlyphSize
-                            Layout.preferredHeight: Theme.menuGlyphSize
-                            Layout.maximumWidth: Theme.menuGlyphSize
-                            Layout.maximumHeight: Theme.menuGlyphSize
-                            roundToIconSize: false
-                            source: modelData.icon || ""
-                        }
-
-                        PlasmaComponents3.Label {
-                            Layout.fillWidth: true
-                            text: modelData.text || ""
-                            color: Kirigami.Theme.textColor
-                            font.family: Kirigami.Theme.defaultFont.family
-                            font.pixelSize: Theme.menuFontSize
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
+                    Component {
+                        id: divider
+                        Rectangle {
+                            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                Kirigami.Theme.textColor.b, Theme.separatorOpacity)
                         }
                     }
-
-                    MouseArea {
-                        id: rowHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        visible: modelData.type !== "separator"
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: mouse => {
-                            // File-level ids are not accessible inside
-                            // Repeater delegates in Qt 6, so walk the
-                            // parent chain: MouseArea -> delegate Item ->
-                            // Column -> popup Rectangle -> contextMenu Item
-                            var menu = parent.parent.parent.parent
-                            menu.actionTriggered(modelData.actionId, modelData.actionArgument || null, menu.context)
-                            menu.close()
+                    Component {
+                        id: commandRow
+                        PowerOption {
+                            iconSource: entry.modelData.icon || ""
+                            label: entry.modelData.text || ""
+                            monochrome: iconSource.endsWith("-symbolic")
+                            optionEnabled: entry.modelData.enabled !== false
+                            onNavigationRequested: direction => contextMenu.moveFocus(direction)
+                            onActivated: {
+                                const id = entry.modelData.actionId;
+                                const argument = entry.modelData.actionArgument ?? null;
+                                const savedContext = contextMenu.context;
+                                contextMenu.close();
+                                contextMenu.actionTriggered(id, argument, savedContext);
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    property var actions: []
-
-    // Measure the widest action text to size the popup.
-    TextMetrics {
-        id: widestText
-        font.family: Kirigami.Theme.defaultFont.family
-        font.pixelSize: Theme.menuFontSize
-        text: {
-            var maxText = ""
-            for (var i = 0; i < contextMenu.actions.length; i++) {
-                var a = contextMenu.actions[i]
-                if (a.type === "separator") continue
-                var t = a.text || ""
-                if (t.length > maxText.length) maxText = t
-            }
-            return maxText
+        Keys.onPressed: event => {
+            event.accepted = true;
+            if (event.key === Qt.Key_Escape) contextMenu.close();
+            else if (event.key === Qt.Key_Up || event.key === Qt.Key_Backtab) contextMenu.moveFocus(-1);
+            else if (event.key === Qt.Key_Down || event.key === Qt.Key_Tab)
+                contextMenu.moveFocus(event.modifiers & Qt.ShiftModifier ? -1 : 1);
         }
     }
-
-    readonly property int popupWidth: Math.min(
-        Math.max(widestText.width + Theme.menuGlyphSize + Theme.menuIconGap + 2 * Theme.menuTextInset + 2 * Theme.menuOuterInset, Kirigami.Units.gridUnit * 8),
-        Kirigami.Units.gridUnit * 20
-    )
 
     function open(actionList, globalX, globalY, context) {
-        contextMenu.actions = actionList
-        contextMenu.context = context || ({})
-        if (actionList.length === 0) return
-
-        var popupW = contextMenu.popupWidth
-        var gap = Kirigami.Units.smallSpacing
-
-        // Compute the expected height from the action list itself rather
-        // than measuring popup.height after make-visible — the latter is
-        // stale on the first open because QML layout hasn't run yet.
-        var itemH = Theme.menuRowHeight
-        var popupH = Theme.menuOuterInset // top margin
-        for (var i = 0; i < actionList.length; i++) {
-            popupH += (actionList[i].type === "separator") ? 1 : itemH
-        }
-        popupH += Theme.menuOuterInset // bottom padding
-
-        var px = Math.max(gap, Math.min(globalX, contextMenu.width - popupW - gap))
-        var py = globalY + gap
-        if (py + popupH > contextMenu.height - gap) {
-            py = globalY - popupH - gap
-            if (py < gap) py = gap
-        }
-
-        popup.x = px
-        popup.y = py
-        popup.width = popupW
-        popup.visible = true
+        if (!actionList || actionList.length === 0) return;
+        if (opened) close();
+        previousFocus = Window.window ? Window.window.activeFocusItem : null;
+        actions = actionList;
+        contextMenu.context = context || ({});
+        const gap = Theme.menuAnchorGap;
+        const h = 2 * Theme.menuOuterInset + actions.reduce((sum, action) =>
+            sum + (action.type === "separator" ? 1 : Theme.menuRowHeight), 0);
+        popup.x = Math.round(Math.max(gap, Math.min(globalX, width - popupWidth - gap)));
+        let py = globalY + gap;
+        if (py + h > height - gap) py = globalY - h - gap;
+        popup.y = Math.round(Math.max(gap, Math.min(py, height - h - gap)));
+        popup.visible = true;
+        menuColumn.forceLayout();
+        popup.forceActiveFocus(Qt.PopupFocusReason);
     }
 
     function close() {
-        popup.visible = false
-        contextMenu.actions = []
-        contextMenu.context = ({})
-        contextMenu.closed()
+        if (!opened) return;
+        popup.visible = false;
+        actions = [];
+        context = ({});
+        if (previousFocus && previousFocus.visible) previousFocus.forceActiveFocus(Qt.PopupFocusReason);
+        previousFocus = null;
+        closed();
     }
 }

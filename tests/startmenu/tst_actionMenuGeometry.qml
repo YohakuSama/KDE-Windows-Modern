@@ -23,6 +23,11 @@ Item {
             tryCompare(glyph, "height", 16);
             verify(!glyph.roundToIconSize);
             verify(row.implicitWidth > glyph.width + 20);
+            const label = findChild(row, "wmStartMenuActionLabel");
+            verify(label !== null);
+            compare(glyph.mapToItem(row, 0, 0).x, 10);
+            compare(label.mapToItem(row, 0, 0).x, 36);
+            compare(glyph.mapToItem(row, 0, 0).y, 8);
             row.width = 240;
             tryCompare(glyph, "width", 16);
             row.label = "账户设置";

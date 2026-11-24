@@ -483,8 +483,16 @@ Item {
                         id: accountButton
                         text: Plasmoid.configuration.hideAccountIdentity ? "" : (kuser.fullName || kuser.loginName)
                         Layout.maximumWidth: rootItem.width * 0.32
-                        Layout.preferredHeight: 40
+                        Layout.preferredHeight: Theme.menuFooterButtonSize
                         Layout.alignment: Qt.AlignVCenter
+                        padding: 8
+                        background: Rectangle {
+                            radius: Theme.menuRowRadius
+                            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                Kirigami.Theme.textColor.b, accountButton.down ? 0.12
+                                    : accountButton.hovered || accountButton.activeFocus
+                                        || (powerMenu.opened && powerMenu.accountMode) ? Theme.menuHoverOpacity : 0)
+                        }
                         Accessible.name: i18n("Account")
                         Accessible.description: accountButton.text || i18n("Account")
                         onClicked: {
@@ -526,6 +534,7 @@ Item {
                                 Layout.fillWidth: true
                                 visible: !Plasmoid.configuration.hideAccountIdentity
                                 text: accountButton.text
+                                font.pixelSize: Theme.menuFontSize
                                 textFormat: Text.PlainText
                                 elide: Text.ElideRight
                             }
@@ -552,9 +561,17 @@ Item {
                         icon.width: Theme.menuGlyphSize
                         icon.height: Theme.menuGlyphSize
                         display: PlasmaComponents3.AbstractButton.IconOnly
-                        Layout.preferredWidth: 40
-                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: Theme.menuFooterButtonSize
+                        Layout.preferredHeight: Theme.menuFooterButtonSize
                         Layout.alignment: Qt.AlignVCenter
+                        padding: 0
+                        background: Rectangle {
+                            radius: Theme.menuRowRadius
+                            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                Kirigami.Theme.textColor.b, powerButton.down ? 0.12
+                                    : powerButton.hovered || powerButton.activeFocus
+                                        || (powerMenu.opened && !powerMenu.accountMode) ? Theme.menuHoverOpacity : 0)
+                        }
                         contentItem: Item {
                             Kirigami.Icon {
                                 anchors.centerIn: parent

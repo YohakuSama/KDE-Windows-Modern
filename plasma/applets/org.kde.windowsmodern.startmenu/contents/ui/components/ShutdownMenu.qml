@@ -24,6 +24,8 @@ Item {
     property Item visualParent
     property bool accountMode: false
     readonly property bool opened: popup.visible
+    readonly property rect popupGeometry: Qt.rect(popup.x, popup.y, popup.width, popup.height)
+    readonly property int visibleOptionCount: options.filter(o => o.visible).length
     readonly property var options: [settingsOption, lockOption, switchOption, logoutOption,
                                     sleepOption, hibernateOption, shutdownOption, rebootOption]
 
@@ -65,25 +67,18 @@ Item {
     }
 
     // ── The floating panel ─────────────────────────────────────────────
-    Rectangle {
+    StartMenuSurface {
         id: popup
+        objectName: "wmStartFooterMenuSurface"
         visible: false
         z: 100
 
-        readonly property real contentWidth: Math.max(0, ...root.options.filter(o => o.visible).map(o => o.implicitWidth))
-        readonly property real panelWidth: Math.max(1, Math.min(Math.max(176, contentWidth + 2 * Theme.menuOuterInset),
-            root.width - 2 * Theme.menuOuterInset))
+        // Measure ALL account and power labels, not just the currently
+        // visible subset. Switching modes cannot change the shared width.
+        readonly property real contentWidth: Math.max(0, ...root.options.map(o => o.implicitWidth))
+        readonly property real panelWidth: Theme.actionMenuWidth(contentWidth, root.width)
         width: panelWidth
         height: powerColumn.implicitHeight + 2 * Theme.menuOuterInset
-        radius: Theme.menuRadius
-        color: Kirigami.Theme.backgroundColor
-        border.width: 1
-        border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                               Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, 0.12)
-
-        // The parent's native window already supplies its own shadow.
-        // Do not add a second frame or a pointless offscreen layer.
 
         Column {
             id: powerColumn
@@ -217,30 +212,19 @@ Item {
 
     // ── Positioning logic ──────────────────────────────────────────────
     function open() {
-        if (!root.visualParent) return
+        if (!root.visualParent) return;
+        if (popup.visible) { root.close(); return; }
 
         // Lay out only the active menu's visible rows before measuring.
         popup.visible = true;
         powerColumn.forceLayout();
-        var popupW = popup.width
-        var popupH = popup.height
-        var gap = 6
-
-        // Account opens at the leading edge; Power stays at the trailing edge.
-        const alignLeft = root.accountMode !== root.visualParent.LayoutMirroring.enabled;
-        var pos = root.visualParent.mapToItem(root, alignLeft ? 0 : root.visualParent.width - popupW, -popupH - gap)
-
-        // If the popup would go above the top of the dialog, open below
-        // the button instead.
-        if (pos.y < gap) {
-            pos.y = root.visualParent.mapToItem(root, 0, root.visualParent.height + gap).y
-        }
-
-        // Clamp horizontally — keep the popup within the dialog bounds.
-        pos.x = Math.max(gap, Math.min(pos.x, root.width - popupW - gap))
-
-        popup.x = pos.x
-        popup.y = Math.max(gap, Math.min(pos.y, root.height - popupH - gap))
+        const anchor = root.visualParent.mapToItem(root, 0, 0);
+        const leading = root.accountMode !== root.visualParent.LayoutMirroring.enabled;
+        const position = Theme.actionMenuPosition(anchor.x, anchor.y,
+            root.visualParent.width, root.visualParent.height,
+            popup.width, popup.height, root.width, root.height, leading);
+        popup.x = position.x;
+        popup.y = position.y;
         popup.opacity = 1
         // Opening with the pointer must not pre-highlight the first row.
         // Up/Down/Tab select the first enabled action from this focus scope.

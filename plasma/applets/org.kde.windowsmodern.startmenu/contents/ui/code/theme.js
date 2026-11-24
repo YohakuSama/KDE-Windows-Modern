@@ -52,3 +52,28 @@ var menuIconGap = 10;
 var menuRadius = 8;
 var menuFontSize = 13;
 var menuHoverOpacity = 0.07;
+
+// A single geometry contract for Start's transient action menus.
+var menuMinWidth = 184;
+var menuMaxWidth = 320;
+var menuAnchorGap = 6;
+var menuRowRadius = 4;
+var menuFrameOpacity = 0.10;
+var menuFooterButtonSize = 40;
+
+function actionMenuWidth(contentWidth, availableWidth) {
+    const maximum = Math.max(1, Math.min(menuMaxWidth, availableWidth - 2 * menuAnchorGap));
+    return Math.floor(Math.min(maximum, Math.max(menuMinWidth, Math.ceil(contentWidth + 2 * menuOuterInset))));
+}
+
+function actionMenuPosition(anchorX, anchorY, anchorWidth, anchorHeight,
+                            menuWidth, menuHeight, areaWidth, areaHeight, alignLeading) {
+    const gap = menuAnchorGap;
+    let x = alignLeading ? anchorX : anchorX + anchorWidth - menuWidth;
+    let y = anchorY - menuHeight - gap;
+    if (y < gap && anchorY + anchorHeight + gap + menuHeight <= areaHeight - gap)
+        y = anchorY + anchorHeight + gap;
+    x = Math.max(gap, Math.min(x, areaWidth - menuWidth - gap));
+    y = Math.max(gap, Math.min(y, areaHeight - menuHeight - gap));
+    return { x: Math.round(x), y: Math.round(y) };
+}

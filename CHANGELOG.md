@@ -6,6 +6,10 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Shared Start menu surface
+
+- Use a common transient menu surface, row component, measured footer width, anchor gap and footer button hover style for account, power and application context menus; test label/icon alignment and shared geometry without invoking session actions.
+
 ### Owner 26H2 reference layout pass
 
 - Implement separate native notification and calendar flyout windows with shared dismissal and fixed combined height; retain a combined fallback for small/vertical layouts. Refine light notification card and button surfaces.
