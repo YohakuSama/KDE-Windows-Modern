@@ -38,7 +38,7 @@ function windowsShortDate() { return "yyyy/M/d"; }
 
 function clockFormats(mode, regionalFormat) {
     if (mode === 0) return {time: "h:mm AP", seconds: "h:mm:ss AP"};
-    if (mode === 1) return {time: "H:mm", seconds: "H:mm:ss"};
+    if (mode === 1) return {time: "h:mm AP", seconds: "h:mm:ss AP"};
     if (mode === 2) return {time: "HH:mm", seconds: "HH:mm:ss"};
     const fmt = String(regionalFormat || "H:mm");
     const match = /m{1,2}/.exec(fmt);
@@ -52,14 +52,20 @@ function calendarLocaleName(translated, fallback) {
         ? translated.replace(/-/g, "_") : fallback;
 }
 
-function calendarMonthTitle(locale, year, month) {
-    if (/^zh(?:[_-]|$)/i.test(locale.name))
-        return year + "年" + (month + 1) + "月";
-    return locale.standaloneMonthName(month, Locale.LongFormat) + " " + year;
+// Pass the Qt enum from QML. Shared .pragma library scripts do not have
+// the importing component's Locale enum in their JavaScript namespace.
+function clockLocaleName(mode, fallback) {
+    return mode === 1 ? "en_US" : fallback;
 }
 
-function calendarLongDate(locale, date) {
+function calendarMonthTitle(locale, year, month, longFormat) {
+    if (/^zh(?:[_-]|$)/i.test(locale.name))
+        return year + "年" + (month + 1) + "月";
+    return locale.standaloneMonthName(month, longFormat) + " " + year;
+}
+
+function calendarLongDate(locale, date, longFormat) {
     if (/^zh(?:[_-]|$)/i.test(locale.name))
         return locale.toString(date, "M月d日 dddd");
-    return locale.toString(date, longDateWithoutYear(locale.dateFormat(Locale.LongFormat)));
+    return locale.toString(date, longDateWithoutYear(locale.dateFormat(longFormat)));
 }

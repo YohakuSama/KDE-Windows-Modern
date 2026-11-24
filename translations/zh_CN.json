@@ -420,10 +420,11 @@
   "Wired": "有线",
   "@action:inmenu\u0004Quit %1": "退出 %1",
   "@action:button\u0004Go Back": "返回",
-  "Windows 24-hour": "Windows 24 小时制",
-  "@item:inlistbox time display option\u0004Windows 24-hour": "Windows 24 小时制",
   "Regional short date": "地区短日期",
   "@item:inlistbox date display option\u0004Regional short date": "地区短日期",
   "Keyboard Backlight": "键盘背光",
-  "@info calendar display locale (translate to a Qt locale name)\u0004system": "zh_CN"
+  "@info calendar display locale (translate to a Qt locale name)\u0004system": "zh_CN",
+  "Windows 12-hour (AM/PM)": "Windows 12 小时制（AM/PM）",
+  "@item:inlistbox time display option\u0004Windows 12-hour (AM/PM)": "Windows 12 小时制（AM/PM）",
+  "Show battery percentage": "显示电池百分比"
 }

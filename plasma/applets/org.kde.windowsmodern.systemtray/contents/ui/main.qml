@@ -206,7 +206,7 @@ ContainmentItem {
                     const item = tasksGrid.itemAtIndex(i);
                     if (!item) continue;
                     cells.push({
-                        systemGroup: item.systemGroup,
+                        systemGroup: item.item ? !!item.item.groupedQuickSettings : item.systemGroup,
                         x: mainLayout.x + tasksGrid.x + item.x,
                         y: mainLayout.y + tasksGrid.y + item.y,
                         width: item.width, height: item.height
@@ -271,8 +271,9 @@ ContainmentItem {
                     delegate: ItemLoader {
                         id: delegate
 
-                        readonly property bool systemGroup: TrayMetrics.isQuickSettings(model.itemId)
-                        readonly property bool batteryCell: model.itemId === "org.kde.plasma.battery"
+                        readonly property string loadedItemId: item?.itemId || model.itemId || ""
+                        readonly property bool systemGroup: TrayMetrics.isQuickSettings(loadedItemId)
+                        readonly property bool batteryCell: loadedItemId === "org.kde.plasma.battery"
                         readonly property int cellLength: systemGroup
                             ? (batteryCell && !root.vertical
                                 ? Math.max(root.systemCellLength, root.batteryContentWidth + 8)

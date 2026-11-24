@@ -186,7 +186,8 @@ MouseArea {
                 verticalAlignment: Text.AlignVCenter
                 textFormat: Text.PlainText
 
-                text: Qt.locale().toString(clock.dateTime, Plasmoid.configuration.showSeconds === 2 ? main.plasmoidItem.timeFormatWithSeconds : main.plasmoidItem.timeFormat)
+                text: main.plasmoidItem.clockTimeLocale.toString(clock.dateTime,
+                    Plasmoid.configuration.showSeconds === 2 ? main.plasmoidItem.timeFormatWithSeconds : main.plasmoidItem.timeFormat)
 
                 font {
                     family: main.baseFont.family

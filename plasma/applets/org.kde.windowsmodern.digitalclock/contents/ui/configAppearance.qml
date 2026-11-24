@@ -167,7 +167,7 @@ KCMUtils.SimpleKCM {
                 Layout.preferredWidth: appearancePage.comboBoxWidth
                 model: [
                     i18nc("@item:inlistbox time display option", "12-Hour"),
-                    i18nc("@item:inlistbox time display option", "Windows 24-hour"),
+                    i18nc("@item:inlistbox time display option", "Windows 12-hour (AM/PM)"),
                     i18nc("@item:inlistbox time display option", "24-Hour"),
                     i18nc("@item:inlistbox time display option", "Use region defaults")
                 ]

@@ -23,6 +23,8 @@ FocusScope {
     required property var clockApplet
     property bool calendarExpanded: true
 
+    readonly property var clockTimeLocale: Qt.locale(DateFormat.clockLocaleName(
+        Plasmoid.configuration.use24hFormat, Qt.locale().name))
     // Match the translated UI language without changing LC_TIME.
     readonly property var calendarLocale: Qt.locale(DateFormat.calendarLocaleName(
         i18nc("@info calendar display locale (translate to a Qt locale name)", "system"),
@@ -133,9 +135,9 @@ FocusScope {
                         const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
                         // Render the AM/PM suffix separately so it can be smaller.
                         if (fmt.toLowerCase().includes("ap")) {
-                            return Qt.locale().toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
+                            return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
                         }
-                        return Qt.locale().toString(expandedRoot.clockApplet.currentTime, fmt);
+                        return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt);
                     }
                     color: palette.text
                     font {
@@ -152,7 +154,7 @@ FocusScope {
                     horizontalAlignment: Text.AlignLeft
                     verticalAlignment: Text.AlignTop
                     textFormat: Text.PlainText
-                    text: Qt.locale().toString(expandedRoot.clockApplet.currentTime, "AP")
+                    text: expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, "AP")
                     color: palette.text
                     font {
                         family: Kirigami.Theme.defaultFont.family
@@ -175,7 +177,7 @@ FocusScope {
                     elide: Text.ElideRight
                     // Windows 11 shows the locale's long date without the year.
                     objectName: "wmCalendarDateHeading"
-                    text: DateFormat.calendarLongDate(expandedRoot.calendarLocale, expandedRoot.clockApplet.currentTime)
+                    text: DateFormat.calendarLongDate(expandedRoot.calendarLocale, expandedRoot.clockApplet.currentTime, Locale.LongFormat)
                     color: palette.textSecondary
                     font {
                         family: Kirigami.Theme.defaultFont.family

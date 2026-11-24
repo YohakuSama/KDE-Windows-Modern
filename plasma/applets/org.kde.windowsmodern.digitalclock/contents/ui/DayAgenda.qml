@@ -38,7 +38,7 @@ ColumnLayout {
         Layout.fillWidth: true
         textFormat: Text.PlainText
         elide: Text.ElideRight
-        text: DateFormat.calendarLongDate(agenda.calendarLocale, agenda.date)
+        text: DateFormat.calendarLongDate(agenda.calendarLocale, agenda.date, Locale.LongFormat)
         color: palette.text
         font.weight: Font.DemiBold
     }
