@@ -25,7 +25,7 @@ Item {
     property bool accountMode: false
     readonly property bool opened: popup.visible
     readonly property var options: [settingsOption, lockOption, switchOption, logoutOption,
-                                    sleepOption, shutdownOption, rebootOption]
+                                    sleepOption, hibernateOption, shutdownOption, rebootOption]
 
     signal closed
     signal accountSettingsRequested
@@ -94,7 +94,7 @@ Item {
             PowerOption {
                 id: settingsOption
                 visible: root.accountMode
-                iconSource: "configure"
+                iconSource: "configure-symbolic"
                 label: i18n("Account settings")
                 onActivated: {
                     root.close();
@@ -106,7 +106,7 @@ Item {
             PowerOption {
                 id: lockOption
                 visible: root.accountMode
-                iconSource: "system-lock-screen"
+                iconSource: "system-lock-screen-symbolic"
                 label: i18n("Lock")
                 optionEnabled: sessionManager.canLock
                 onActivated: {
@@ -119,7 +119,7 @@ Item {
             PowerOption {
                 id: switchOption
                 visible: root.accountMode
-                iconSource: "system-switch-user"
+                iconSource: "system-switch-user-symbolic"
                 label: i18n("Switch user")
                 optionEnabled: sessionManager.canSwitchUser && sessionManager.canLock
                 onActivated: {
@@ -132,7 +132,7 @@ Item {
             PowerOption {
                 id: logoutOption
                 visible: root.accountMode
-                iconSource: "system-log-out"
+                iconSource: "system-log-out-symbolic"
                 label: i18n("Sign out")
                 optionEnabled: sessionManager.canLogout
                 onActivated: {
@@ -144,8 +144,8 @@ Item {
 
             PowerOption {
                 id: sleepOption
-                visible: !root.accountMode
-                iconSource: "system-suspend"
+                visible: !root.accountMode && sessionManager.canSuspend
+                iconSource: "system-suspend-symbolic"
                 label: i18n("Sleep")
                 optionEnabled: sessionManager.canSuspend
                 onActivated: {
@@ -155,10 +155,25 @@ Item {
                 onNavigationRequested: direction => root.moveFocus(direction)
             }
 
+            // Preserve the distinct native hibernate icon until the
+            // exact Windows shell glyph is verified.
+            PowerOption {
+                id: hibernateOption
+                visible: !root.accountMode && sessionManager.canHibernate
+                iconSource: "system-suspend-hibernate"
+                label: i18n("Hibernate")
+                optionEnabled: sessionManager.canHibernate
+                onActivated: {
+                    sessionManager.hibernate();
+                    root.finishAction();
+                }
+                onNavigationRequested: direction => root.moveFocus(direction)
+            }
+
             PowerOption {
                 id: shutdownOption
                 visible: !root.accountMode
-                iconSource: "system-shutdown"
+                iconSource: "system-shutdown-symbolic"
                 label: i18n("Shut down")
                 optionEnabled: sessionManager.canShutdown
                 onActivated: {
@@ -171,7 +186,7 @@ Item {
             PowerOption {
                 id: rebootOption
                 visible: !root.accountMode
-                iconSource: "system-reboot"
+                iconSource: "system-reboot-symbolic"
                 label: i18n("Restart")
                 optionEnabled: sessionManager.canReboot
                 onActivated: {

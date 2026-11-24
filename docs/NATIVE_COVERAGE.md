@@ -34,3 +34,9 @@ names rather than inline drawings. Native palette and hotspot state must
 reflect the actual KDE service; missing hardware does not get a dummy tile.
 Default account-picture and Store artwork still require visual verification
 of the actual original, not a guessed MUN ID. NixOS live tests remain open.
+
+## System action review
+
+Use Microsoft's [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font) to distinguish semantic roles. PowerButton E7E8, Restart3 F305, Lock E72E, SwitchUser E748, SignOut F3B1 and the moon-shaped QuietHours E708 used for Sleep are existing mapped roles. The original SignOut mapping was present; same-name status aliases were not. Synchronize power aliases in the status and actions directories so a stale status icon cannot win. Hibernate uses KDE's existing distinct `system-suspend-hibernate` artwork and native `canHibernate`/`hibernate()` API until the exact Windows shell icon is confirmed; never reuse an unrelated glyph or draw one. Keep third-party application logos; the missing Store app artwork is not a test blocker.
+
+Public visual references: [Windows Icon Archive](https://github.com/limehawk/windows-icon-archive) (Windows artwork remains Microsoft's; reference only), [Fluent System Icons](https://github.com/microsoft/fluentui-system-icons) (MIT-licensed separate design system), [Win11 Icon Theme](https://github.com/yeyushengfan258/Win11-icon-theme) (GPL-3.0, already credited). None establishes exact 26H2 equivalence or grants a new license to Microsoft proprietary artwork.

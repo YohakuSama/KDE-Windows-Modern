@@ -23,9 +23,34 @@ source "$SCRIPT_DIR/scripts/config-backup.sh"
 # Components that failed, reported at the end instead of a plain "Done.".
 FAILED_COMPONENTS=()
 
+is_nixos() {
+    [ -r /etc/os-release ] && grep -Eq '^ID="?nixos"?$' /etc/os-release
+}
+
+# The mutable /usr plugin installer is incompatible with NixOS.
+nixos_full_install_unavailable() {
+    err "Full plugin/layout installation is not yet supported on NixOS."
+    err "Use bash ./install.sh preview --dark (or --light) for user-space testing."
+    err "Preview preserves the existing task manager and system tray."
+}
+
 install_component() {
     local name="$1"
     local script="$SCRIPT_DIR/scripts/install-${name}.sh"
+    if is_nixos; then
+        case "$name" in
+            systray|icontasks|greeter)
+                nixos_full_install_unavailable
+                return 1
+                ;;
+            lookfeel)
+                if ! is_batch; then
+                    nixos_full_install_unavailable
+                    return 1
+                fi
+                ;;
+        esac
+    fi
     if [ -x "$script" ]; then
         bash "$script" || {
             FAILED_COMPONENTS+=("$name")
@@ -45,6 +70,10 @@ install_component() {
 # Phase C: apply once (KWin tweaks, theme+layout reset, Kvantum engine, restart)
 install_everything() {
     local variant="${1:-}"
+    if is_nixos; then
+        nixos_full_install_unavailable
+        return 1
+    fi
 
     # Resolve variant: flag > interactive prompt > dark default
     if [ -z "$variant" ]; then
@@ -79,6 +108,14 @@ install_everything() {
 
     unset WM_BATCH
 
+    # Never reset a working panel to a layout with missing components.
+    if [ "${#FAILED_COMPONENTS[@]}" -ne 0 ]; then
+        err "Not applying the new layout: failed components: ${FAILED_COMPONENTS[*]}"
+        warn "Files already staged remain installed; restore saved settings with bash ./uninstall.sh --restore."
+        restart_plasmashell || true
+        return 1
+    fi
+
     # ── Phase C: apply once ──
     info "[3/3] Applying theme (${variant})..."
     post_kwin_borders
@@ -111,6 +148,10 @@ install_everything() {
 
 # ── Install all applets as a batch (menu 6) ─────────────────────────
 install_all_applets() {
+    if is_nixos; then
+        nixos_full_install_unavailable
+        return 1
+    fi
     export WM_BATCH=1
     info "Installing all applets..."
     install_component showdesk
@@ -124,6 +165,36 @@ install_all_applets() {
 }
 
 # ── Interactive menu (grouped + sequential) ───────────────────────
+# User-space preview: no system plugin, package-manager, shell override,
+# shortcut replacement, greeter or layout reset.
+install_preview() {
+    if [ "$UID" -eq 0 ]; then
+        err "Run preview as your desktop user, without sudo."
+        return 1
+    fi
+    local variant="${1:-}"
+    [ -n "$variant" ] || variant="$(ask_theme_variant)"
+    export WM_BATCH=1
+    local name
+    for name in themes icons showdesk startmenu digitalclock taskbarbuttons alttab lookfeel; do
+        install_component "$name"
+    done
+    if [ -f "$NATIVE_ASSETS_DIR/manifest.json" ]; then
+        install_component sounds
+    fi
+    unset WM_BATCH
+    if [ "${#FAILED_COMPONENTS[@]}" -ne 0 ]; then
+        err "Preview staging failed: ${FAILED_COMPONENTS[*]}; global theme not applied."
+        return 1
+    fi
+    # Deliberately omit --resetLayout; keep the user's existing panel.
+    apply_lookandfeel "$(lookfeel_id "$variant")"
+    apply_kvantum_engine "$variant"
+    restart_plasmashell
+    info "Preview installed. Add Windows Modern Start, Search, Task View and Digital Clock through Add Widgets."
+    warn "Existing tray and task manager remain in place; custom C++ plugins and login/lock overlay are outside preview."
+}
+
 menu() {
     echo ""
     echo -e "${BOLD}${BLUE}╔══════════════════════════════════════════╗${RESET}"
@@ -225,6 +296,7 @@ case "${1:-menu}" in
         echo "  all              Install everything (asks Light/Dark if interactive)"
         echo "  all --dark       Install everything non-interactively (Dark)"
         echo "  all --light      Install everything non-interactively (Light)"
+        echo "  preview          User-space visual preview; preserve the existing panel"
         echo ""
         echo "  Components (install + apply immediately):"
         echo "    themes         Aurorae, colors, Kvantum, Plasma themes, wallpapers"
@@ -255,6 +327,9 @@ case "${1:-menu}" in
         ;;
     menu|"")
         menu
+        ;;
+    preview)
+        install_preview "$variant_from_flag"
         ;;
     applets)
         install_all_applets
