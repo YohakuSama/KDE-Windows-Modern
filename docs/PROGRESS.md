@@ -27,4 +27,10 @@ Overall development estimate: **67.5% (rounded to 68%)** as of this batch. Live 
 - Full Plasma/QML compilation, CI, installed desktop comparison and runtime checks were not available in this environment. Main integration is not a stable release.
 - Acrylic tint opacity is an approximation; the generated frames do not implement Windows DWM Mica or its noise shader.
 
+## Resource input follow-up (draft integration)
+
+- Added ZIP/TAR/extracted-directory input validation and original resource SHA-256/size provenance in the local manifest. All 12 synthetic source-reader regression tests passed locally; CI now runs them independently of proprietary assets.
+- The newly mentioned upload was not found in the main tree or Releases. No new reference resources were inspected or imported in this follow-up. Full repository health, C++/QML compilation and live desktop acceptance remain unverified.
+- The 67.5% development estimate is unchanged: this batch improves reproducibility and input handling, not visual acceptance stages.
+
 Update these categories after each substantive batch using the same rubric. Avoid claiming 1:1 visual parity until actual reference and runtime checks establish it.

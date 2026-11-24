@@ -9,7 +9,6 @@ import json
 import os
 from pathlib import Path
 import struct
-import tarfile
 import tempfile
 import wave
 
@@ -17,31 +16,7 @@ from PIL import Image
 from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
 
-
-def read_assets(source, wanted):
-    data = {}
-    if source.is_dir():
-        root = source / 'Windows' if (source / 'Windows').is_dir() else source
-        for name in wanted:
-            path = root / name
-            if path.is_file():
-                data[name] = path.read_bytes()
-    else:
-        with tarfile.open(source, 'r|*') as archive:
-            for member in archive:
-                parts = member.name.split('/')
-                if not member.isfile() or 'Windows' not in parts:
-                    continue
-                name = '/'.join(parts[parts.index('Windows') + 1:])
-                if name not in wanted:
-                    continue
-                if name in data or member.size > 64 * 1024 * 1024:
-                    raise ValueError('Duplicate or oversized member: ' + name)
-                data[name] = archive.extractfile(member).read()
-    missing = wanted - data.keys()
-    if missing:
-        raise ValueError('Missing resources: ' + ', '.join(sorted(missing)))
-    return data
+from native_assets_input import read_assets, source_manifest
 
 
 def pe_resources(data):
@@ -183,7 +158,7 @@ def build(stage, data, mapping):
                 raise ValueError('Empty audio: '+name)
         for event in names.split():
             write(sounddir+'/stereo/'+event+'.wav',data[name],name)
-    report = {'font': 'Segoe Fluent Icons', 'outputs': outputs, 'icon_names': sum(x.startswith('icons/') for x in outputs),
+    report = {'font': 'Segoe Fluent Icons', 'sources': source_manifest(data), 'outputs': outputs, 'icon_names': sum(x.startswith('icons/') for x in outputs),
               'wallpaper_images':len(seen_wallpapers),'sound_events':sum(x.endswith('.wav') for x in outputs)}
     (stage/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
@@ -191,7 +166,7 @@ def build(stage, data, mapping):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('source', type=Path, help='Windows-resources.tar.gz or extracted Windows directory')
+    parser.add_argument('source', type=Path, help='Windows resource ZIP/TAR archive or extracted Windows directory')
     parser.add_argument('--output', type=Path, default=Path(os.environ.get('XDG_DATA_HOME',Path.home()/'.local/share'))/'windows-modern/native-assets')
     args = parser.parse_args()
     mapping = json.loads(Path(__file__).with_name('native-assets-map.json').read_text())

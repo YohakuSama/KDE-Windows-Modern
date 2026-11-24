@@ -18,11 +18,28 @@ python3 scripts/import-windows-assets.py ~/Downloads/Windows-resources.tar.gz
 ./install.sh sounds
 ```
 
-An extracted directory containing Windows/ works too. Do not run as root.
+A ZIP archive, a TAR archive (including tar.gz), or an extracted directory
+containing Windows/ also works. An archive may contain the resource directories
+at its root or under a Windows/ directory. Do not run as root.
+For example, use `python3 scripts/import-windows-assets.py ~/Downloads/Windows-resources.zip`.
 The importer reads only the selected members, never executes Windows binaries
 and never installs or sets the Segoe text fonts. Output lives in
 $XDG_DATA_HOME/windows-modern/native-assets (default ~/.local/share).
 Future icons/themes/all installations pick it up automatically.
+The local manifest records the SHA-256 and byte size of each selected original
+resource, as well as the generated output hashes. Duplicate selected paths,
+non-regular archive entries, out-of-root selected paths and resources larger
+than 64 MiB are rejected before the previous import is changed. The import
+never extracts an archive member to its original path.
+
+Run the source-reader regression tests without any Windows resources:
+
+```bash
+python3 -m unittest discover -s tests/native-assets -v
+```
+
+The test fixtures are synthetic; keep the archive, generated files and local
+manifest out of public source control.
 
 ## Verified reference inventory
 

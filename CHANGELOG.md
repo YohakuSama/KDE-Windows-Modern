@@ -25,6 +25,10 @@ the `Version` field shared by every component's metadata.
 
 ### Native Windows resources
 
+- Accept ZIP and TAR archives or extracted resource directories; reject duplicate,
+  oversized and unsafe selected members consistently. Record SHA-256 and size
+  for each original input in the local manifest. Add synthetic regression tests.
+
 - Add a local, repeatable importer for the supplied Windows resource libraries,
   Segoe Fluent Icons glyphs, original wallpapers and selected system sounds.
 - Initial mapping covers 358 icon paths, 22 unique wallpaper images and 20
