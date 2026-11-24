@@ -176,6 +176,23 @@ Item {
             compare(windowModel.closed, 2);
         }
 
+        function test_narrowScreenFitsCard() {
+            const previous = view.screenGeometry;
+            try {
+                view.screenGeometry = Qt.rect(-300, 0, 300, 1600);
+                fill(3);
+                tryVerify(() => card(0).width <= view.maxContentWidth);
+                verify(view.width <= view.screenGeometry.width);
+                for (const row of view.rows) {
+                    for (const index of row) {
+                        verify(card(index).x + card(index).width <= view.contentWidth);
+                    }
+                }
+            } finally {
+                view.screenGeometry = previous;
+            }
+        }
+
         function test_emptyModel() {
             fill(0);
             compare(view.rows.length, 0);
