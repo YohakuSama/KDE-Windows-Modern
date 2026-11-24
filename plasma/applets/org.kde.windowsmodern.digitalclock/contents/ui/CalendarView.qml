@@ -398,6 +398,7 @@ ColumnLayout {
 
                     CalendarGrid {
                         id: calendarGrid
+                        calendarController: calendarView
                         Layout.fillWidth: true
                         Layout.preferredHeight: calendarGrid.cellHeight * 6 + calendarGrid.spacing * 5
                     }

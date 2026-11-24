@@ -8,6 +8,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtCore
 
 import org.kde.kirigami as Kirigami
 
@@ -160,6 +161,12 @@ AbstractItem {
         }
     }
 
+    function panelGlyph(name) {
+        const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
+            "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
+        return String(file).length > 0 ? file : name;
+    }
+
     Component {
         id: networkGlyph
         Item {
@@ -170,8 +177,8 @@ AbstractItem {
                 isMask: true
                 source: {
                     const icon = liveConnection.connectionIcon;
-                    if (!icon) return "network-unavailable-symbolic";
-                    return icon.endsWith("-symbolic") ? icon : icon + "-symbolic";
+                    if (!icon) return plasmoidContainer.panelGlyph("network-unavailable-symbolic");
+                    return plasmoidContainer.panelGlyph(icon.endsWith("-symbolic") ? icon : icon + "-symbolic");
                 }
                 color: Kirigami.Theme.textColor
             }
@@ -185,7 +192,7 @@ AbstractItem {
             readonly property bool available: !!sink && sink.name !== "auto_null"
             roundToIconSize: false
             isMask: true
-            source: Funcs.volIconName(available ? sink.volume : 0, !available || sink.muted)
+            source: plasmoidContainer.panelGlyph(Funcs.volIconName(available ? sink.volume : 0, !available || sink.muted))
             color: Kirigami.Theme.textColor
         }
     }
@@ -198,8 +205,8 @@ AbstractItem {
                 anchors.fill: parent
                 roundToIconSize: false
                 isMask: true
-                source: Funcs.batteryIconName(liveBattery.hasCumulative ? liveBattery.percent : -1,
-                    liveBattery.pluggedIn)
+                source: plasmoidContainer.panelGlyph(Funcs.batteryIconName(liveBattery.hasCumulative ? liveBattery.percent : -1,
+                    liveBattery.pluggedIn))
                 color: Kirigami.Theme.textColor
             }
         }

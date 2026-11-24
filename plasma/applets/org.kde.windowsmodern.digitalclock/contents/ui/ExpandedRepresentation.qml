@@ -17,40 +17,43 @@ import org.kde.kirigami as Kirigami
 
 import "code/dateformat.js" as DateFormat
 
-Item {
+FocusScope {
     id: expandedRoot
     required property var clockApplet
     property bool calendarExpanded: true
 
     Win11Palette { id: palette }
 
-    // A single flyout with notification history above the existing calendar.
-    // Plasma supplies its frame, blur and shadow; the children use one palette.
+    // Plasma owns the popup window and transfers these layout hints.
+    // Derive hints from the panel's screen, not this hidden view's geometry.
     readonly property int margin: Kirigami.Units.largeSpacing
-    readonly property bool horizontalPanel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
-    readonly property int availableScreenHeight: Plasmoid.screenGeometry.height >= 100
-        ? Math.max(1, Math.floor(Math.min(Plasmoid.screenGeometry.height * 0.92,
-            Plasmoid.screenGeometry.height - (horizontalPanel
-                ? Math.min(96, clockApplet.compactRepresentationItem?.height || 48) : 0) - 4 * margin)))
-        : 720
-    readonly property int configuredWidth: Math.max(240, Plasmoid.configuration.expandedWidth || 320)
-    implicitWidth: Math.max(1, Math.min(configuredWidth, Plasmoid.screenGeometry.width >= 100
-        ? Math.floor(Plasmoid.screenGeometry.width - 4 * margin) : configuredWidth))
-    Layout.minimumWidth: implicitWidth
-    Layout.preferredWidth: implicitWidth
-    Layout.maximumWidth: implicitWidth
+    readonly property var panelScreen: clockApplet.popupScreenGeometry
+    readonly property real screenWidth: Number(panelScreen?.width || 0)
+    readonly property real screenHeight: Number(panelScreen?.height || 0)
+    readonly property real panelExtent: Math.min(96, Math.max(0, Number(clockApplet.popupPanelExtent) || 48))
+    readonly property int availableScreenHeight: screenHeight >= 100
+        ? Math.max(1, Math.floor(screenHeight - panelExtent - 4 * margin)) : 720
+    readonly property int configuredWidth: Math.max(240, Number(Plasmoid.configuration.expandedWidth) || 320)
+    readonly property int popupWidth: Math.min(configuredWidth, screenWidth >= 100
+        ? Math.max(1, Math.floor(screenWidth - 4 * margin)) : configuredWidth)
+    readonly property int popupHeight: Math.min(availableScreenHeight,
+        calendarExpanded ? Math.max(560, Kirigami.Units.gridUnit * 28)
+                         : Math.max(220, Kirigami.Units.gridUnit * 11))
 
-    // The native popup reads its size hints before mapping the window.
-    // Hidden child layouts can have zero implicit height at that point.
-    // Use a stable nonzero viewport; content taller than it scrolls.
-    readonly property int desiredHeight: calendarExpanded
-        ? Math.max(560, Kirigami.Units.gridUnit * 28)
-        : Math.max(220, Kirigami.Units.gridUnit * 11)
-    implicitHeight: Math.min(availableScreenHeight, desiredHeight)
-    Layout.minimumHeight: implicitHeight
-    Layout.preferredHeight: implicitHeight
-    Layout.maximumHeight: implicitHeight
+    implicitWidth: popupWidth
+    implicitHeight: popupHeight
+    Layout.minimumWidth: popupWidth
+    Layout.preferredWidth: popupWidth
+    Layout.maximumWidth: popupWidth
+    Layout.minimumHeight: popupHeight
+    Layout.preferredHeight: popupHeight
+    Layout.maximumHeight: popupHeight
     clip: true
+    focus: true
+    Keys.onEscapePressed: event => {
+        clockApplet.expanded = false;
+        event.accepted = true;
+    }
 
     Flickable {
         id: viewport
@@ -59,7 +62,15 @@ Item {
         contentHeight: mainColumn.height + 2 * expandedRoot.margin
         boundsBehavior: Flickable.StopAtBounds
         clip: true
-        QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
+        QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+            policy: QQC2.ScrollBar.AsNeeded
+        }
+        Kirigami.WheelHandler {
+            target: viewport
+            filterMouseEvents: true
+            keyNavigationEnabled: false
+            verticalStepSize: 120
+        }
 
         ColumnLayout {
             id: mainColumn

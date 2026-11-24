@@ -14,12 +14,13 @@ Item {
 
     // CalendarView reads these from the applet's root, as in main.qml.
     property date currentTime: new Date(2026, 10, 16, 12, 0)   // Monday 16 November 2026
-    property bool expanded: true
+    property bool flyoutOpen: true
     function i18n(text) { return text; }
     function i18nc(context, text) { return text; }
 
     CalendarView {
         id: view
+        applet: root
         width: 320
         focus: true
     }
@@ -225,9 +226,9 @@ Item {
             clickHeader();
             wheel(1);
             compare(headerTitle().text, "2030 – 2039");
-            root.expanded = false;
+            root.flyoutOpen = false;
             compare(view.zoom, CalendarView.Zoom.Decade);
-            root.expanded = true;
+            root.flyoutOpen = true;
             settle();
             compare(view.zoom, CalendarView.Zoom.Month);
             compare(view.displayedYear, 2026);

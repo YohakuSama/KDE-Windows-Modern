@@ -10,6 +10,7 @@
 
 #include <QObject>
 #include <QRect>
+#include <QVariant>
 
 #include <netwm.h>
 #include <qqmlregistration.h>
@@ -70,6 +71,7 @@ public:
     Q_INVOKABLE void setActionGroup(QAction *action) const;
 
     Q_INVOKABLE QRect globalRect(QQuickItem *item) const;
+    Q_INVOKABLE QVariant normalizedPanelIcon(const QVariant &decoration) const;
 
     Q_INVOKABLE bool isApplication(const QUrl &url) const;
 

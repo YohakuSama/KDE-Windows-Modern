@@ -9,6 +9,7 @@ PlasmaComponents3.ScrollBar {
     width: 16
     padding: 4
     hoverEnabled: true
+    stepSize: Math.max(0.01, size * 0.9)
     minimumSize: height > 0 ? Math.min(1, 32 / height) : 0
     contentItem: Rectangle {
         implicitWidth: 8

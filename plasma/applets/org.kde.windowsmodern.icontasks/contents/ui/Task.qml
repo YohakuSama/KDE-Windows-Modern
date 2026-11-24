@@ -590,7 +590,9 @@ FloatingToolTipArea {
             active: false
             enabled: true
 
-            source: task.model.decoration
+            source: iconBox.panelIconOnly
+                ? task.tasksRoot.backend.normalizedPanelIcon(task.model.decoration)
+                : task.model.decoration
         }
 
         states: [

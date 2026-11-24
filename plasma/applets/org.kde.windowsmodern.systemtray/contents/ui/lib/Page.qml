@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import org.kde.kirigami as Kirigami
 
 ColumnLayout {
     id: page
@@ -38,6 +39,12 @@ ColumnLayout {
         topPadding: 0
         bottomPadding: 0
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        Kirigami.WheelHandler {
+            target: scrollView
+            filterMouseEvents: true
+            keyNavigationEnabled: false
+            verticalStepSize: 120
+        }
 
         ColumnLayout {
             id: contentLayout

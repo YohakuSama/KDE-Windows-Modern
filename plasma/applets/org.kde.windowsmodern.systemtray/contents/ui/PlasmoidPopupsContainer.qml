@@ -47,15 +47,18 @@ QQC2.StackView {
         return Math.max(0, mainStack.height - mainStack.themedFooterHeight)
     }
 
-    onActiveAppletChanged: {
+    onActiveAppletChanged: Qt.callLater(mainStack.showActiveApplet)
+
+    function showActiveApplet() {
         mainStack.appletHasHeading = false
         mainStack.appletHasFooter = false
 
-        if (themedActive) {
-            const name = flyoutRouter.flyoutNameForApplet(activeApplet)
-            const comp = themedPages[name]
-            if (comp) {
-                (mainStack.empty ? mainStack.push : mainStack.replace)(comp, {
+        // Read the current route directly after the applet has settled.
+        // Derived themedActive may still describe the previous page.
+        const name = flyoutRouter.flyoutNameForApplet(activeApplet);
+        const comp = themedPages[name];
+        if (comp) {
+            const properties = {
                     "width": Qt.binding(() => mainStack.width),
                     "height": Qt.binding(() => mainStack._themedContentHeight()),
                     "x": 0,
@@ -63,8 +66,11 @@ QQC2.StackView {
                     "opacity": 1,
                     "KeyNavigation.up": mainStack.KeyNavigation.up,
                     "KeyNavigation.backtab": mainStack.KeyNavigation.backtab
-                }, QQC2.StackView.Immediate)
-            }
+            };
+            if (mainStack.empty)
+                mainStack.push(comp, properties, QQC2.StackView.Immediate);
+            else
+                mainStack.replace(comp, properties, QQC2.StackView.Immediate);
             return
         }
 

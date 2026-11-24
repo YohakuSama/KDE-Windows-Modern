@@ -24,7 +24,7 @@
       <default>true</default>
     </entry>
     <entry name="dateFormat" type="string">
-      <label>The date format to display. Options are: shortDate, longDate, isoDate or custom.</label>
+      <label>The date format to display. Options are: shortDate (Windows year/month/day), regionalDate, longDate, isoDate or custom.</label>
       <default>shortDate</default>
     </entry>
     <entry name="customDateFormat" type="string">
@@ -88,7 +88,7 @@
       <default>false</default>
     </entry>
     <entry name="use24hFormat" type="UInt">
-      <label>Force the clock to use 12/24 hour time, instead of following the user locale.</label>
+      <label>Clock time style: 0 = 12 hour, 1 = Windows 24-hour default, 2 = 24 hour with leading zero, 3 = regional default.</label>
       <default>1</default>
     </entry>
     <entry name="firstDayOfWeek" type="Int">
