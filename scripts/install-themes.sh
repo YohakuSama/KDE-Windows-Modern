@@ -58,12 +58,31 @@ install_cursor_theme
 
 step "Wallpapers"
 ensure_dir "$WALLPAPER_DIR"
-rm -rf "$WALLPAPER_DIR/Windows-modern"*
 if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ] && [ -d "$NATIVE_ASSETS_DIR/wallpapers/Windows-modern" ]; then
     step "Installing original Windows wallpaper packages"
-    cp -a "$NATIVE_ASSETS_DIR/wallpapers/." "$WALLPAPER_DIR/"
+    # Replace each owned package, not every similarly named wallpaper.
+    for package in "$NATIVE_ASSETS_DIR/wallpapers/"*; do
+        [ -d "$package" ] && [ -f "$package/metadata.json" ] || continue
+        name="$(basename "$package")"
+        case "$name" in Windows-modern*) ;; *) continue ;; esac
+        stage="$(mktemp -d "$WALLPAPER_DIR/.windows-modern-wallpaper.XXXXXX")"
+        cp -a "$package" "$stage/new" || { rm -rf "$stage"; exit 1; }
+        if [ -e "$WALLPAPER_DIR/$name" ] || [ -L "$WALLPAPER_DIR/$name" ]; then
+            mv "$WALLPAPER_DIR/$name" "$stage/previous" || { rm -rf "$stage"; exit 1; }
+        fi
+        if ! mv "$stage/new" "$WALLPAPER_DIR/$name"; then
+            [ ! -e "$stage/previous" ] || mv "$stage/previous" "$WALLPAPER_DIR/$name"
+            rm -rf "$stage"
+            exit 1
+        fi
+        rm -rf "$stage"
+    done
+elif [ -f "$WALLPAPER_DIR/Windows-modern/metadata.json" ] &&
+     grep -q '"Local Windows reference image"' "$WALLPAPER_DIR/Windows-modern/metadata.json"; then
+    step "Preserving the previously imported original Bloom wallpaper"
 else
     cp -r "$SRC_DIR/wallpaper/"* "$WALLPAPER_DIR/"
+    warn "Bundled compatibility wallpaper installed; original Windows Bloom requires your local resources."
 fi
 
 if [ "$UID" -ne 0 ]; then
@@ -84,5 +103,5 @@ if ! is_batch && [ "$UID" -ne 0 ]; then
     step "Applying Kvantum engine & desktop theme"
     apply_kvantum_engine dark
     if command -v plasma-apply-desktoptheme &>/dev/null; then plasma-apply-desktoptheme Windows-modern-dark 2>/dev/null || true; fi
-    bash "$SRC_DIR/scripts/set-wallpaper.sh" || true
+    bash "$SRC_DIR/scripts/set-wallpaper.sh" || exit 1
 fi

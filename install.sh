@@ -137,6 +137,9 @@ install_everything() {
     # Let the layout script finish writing panels before restarting Plasma.
     sleep 1
     restart_plasmashell
+    if [ "$UID" -ne 0 ]; then
+        bash "$SRC_DIR/scripts/set-wallpaper.sh" || FAILED_COMPONENTS+=(wallpaper)
+    fi
 
     # ── Phase D: behaviour (needs the new panel and a running shell) ──
     info "Windows shortcuts and apps..."
@@ -201,6 +204,7 @@ install_preview() {
     apply_lookandfeel "$(lookfeel_id "$variant")"
     apply_kvantum_engine "$variant"
     restart_plasmashell
+    bash "$SRC_DIR/scripts/set-wallpaper.sh" || FAILED_COMPONENTS+=(wallpaper)
     info "Preview installed. Add Windows Modern Start, Search, Task View and Digital Clock through Add Widgets."
     warn "Existing tray and task manager remain in place; custom C++ plugins and login/lock overlay are outside preview."
 }
@@ -310,6 +314,9 @@ case "${1:-menu}" in
         echo ""
         echo "  Components (install + apply immediately):"
         echo "    themes         Aurorae, colors, Kvantum, Plasma themes, wallpapers"
+        echo "    wallpaper      Restore the imported original Windows 11 Bloom to all desktops"
+        echo "    wallpaper --allow-fallback   Explicitly select the public substitute"
+        echo "    translations   Install the Simplified Chinese applet catalogs"
         echo "    icons          Windows Modern icon pack"
         echo "    lookfeel       Global themes (asks Light/Dark)"
         echo "    layout         Panel layout template"
@@ -352,6 +359,12 @@ case "${1:-menu}" in
         ;;
     transparency)
         bash "$SCRIPT_DIR/scripts/install-transparency.sh" "${2:-}" || FAILED_COMPONENTS+=("transparency")
+        ;;
+    wallpaper)
+        bash "$SCRIPT_DIR/scripts/set-wallpaper.sh" "${2:-}" || FAILED_COMPONENTS+=(wallpaper)
+        ;;
+    translations)
+        python3 -I "$SRC_DIR/scripts/install-translations.py" || FAILED_COMPONENTS+=(translations)
         ;;
     *)
         install_component "$1"
