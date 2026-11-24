@@ -459,9 +459,9 @@ Item {
                                         }
                                     }
                                 }
-                                Kirigami.Icon {
+                                Image {
                                     anchors.fill: parent
-                                    source: "avatar-default"
+                                    source: Qt.resolvedUrl("default-avatar.svg")
                                     visible: userAvatar.status !== Image.Ready
                                 }
                             }

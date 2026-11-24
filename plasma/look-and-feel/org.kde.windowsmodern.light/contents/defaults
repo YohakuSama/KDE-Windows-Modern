@@ -21,7 +21,7 @@ theme=__aurorae__svg__windows-modern-light-aurorae
 cursorTheme=Bibata-Modern-Ice
 
 [ksplashrc][KSplash]
-Theme=None
+Theme=org.kde.windowsmodern.light
 
 [kwinrc][WindowSwitcher]
 LayoutName=org.kde.windowsmodern.alttab
