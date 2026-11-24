@@ -2,7 +2,7 @@
 
 Target: Windows 11 26H2 GA, with KDE/Qt-native implementations where Windows APIs are unavailable. Use the system text font and a single icon theme. Keep original user-supplied Windows resources local.
 
-This is a development-stage estimate, not a pixel-match score or test-pass rate. Ten categories have equal weight. Each is scored 0 (not started), 25 (reviewed/scoped), 50 (partly implemented), 75 (substantial implementation, awaiting full reference/runtime acceptance), or 100 (reference comparison and live acceptance completed). Do not award 100 solely for a static check.
+The historical estimate below combined implementation and reference/runtime acceptance. It is retained as a historical record, not a current development-only percentage. Owner clarification: development completion is code and design implementation; the owner performs live acceptance separately. Do not decrease development completion because of pending live acceptance, or label known unfinished code complete. Keep an explicit list of remaining implementation work and a separate acceptance status.
 
 | Area | Stage | Remaining acceptance work |
 |---|---:|---|
@@ -17,7 +17,7 @@ This is a development-stage estimate, not a pixel-match score or test-pass rate.
 | Wallpapers / lock / login | 50% | Greeter integration and actual lock/login display |
 | Window chrome / Alt-Tab / OSD / motion | 50% | Reference-based appearance and compositor-safe rounding/animation |
 
-Overall development estimate: **67.5% (rounded to 68%)** as of this batch. Live acceptance remains pending.
+Historical combined estimate: **67.5% (rounded to 68%)** as of this batch. It is not a current code-only percentage or a pixel-match claim.
 
 ## Batch validation
 
@@ -101,3 +101,11 @@ Update these categories after each substantive batch using the same rubric. Avoi
 - Battery level boundaries, unknown state, charging/plugged-in distinction, accessible label, and lock-screen symbolic names have been aligned. Added 32 battery-state regression assertions (passed locally in Node; Qt/live verification remains pending).
 - Five additional symbolic device paths (434 total) reuse source glyphs from the supplied font. All five glyphs were verified and rendered locally. Do not rebuild the legacy SVG sheets solely to duplicate current Kirigami icon-theme consumers; retain compatibility fallback assets until live validation identifies an actual missing role.
 - The project remains at the recorded 67.5% development-stage estimate pending substantive acceptance. No 1:1 claim, new dependency, or merge.
+
+## Owner-defined development gate
+
+The owner requires minimal changes, use of existing KDE mechanisms and compatible upstream work, no new mandatory runtime dependencies, and maximum Windows 11 fidelity. Complete code/design work before the integration merge; live visual and desktop acceptance belongs to the subsequent owner test phase. Run only relevant source checks and the existing CI; do not make live acceptance a development-completion criterion.
+
+Latest implementation: OSD work-area positioning and recursion guard, narrow-display Alt+Tab width limits and theme-duration highlight animation (commit c8e7af8), plus 115 additional icon target paths. This expands the single local Windows-resource overlay, not a second icon theme. The source archive is not mounted in the current session, so exact new glyph rendering was not repeated.
+
+Known remaining implementation gaps: wallpaper-following Mica beyond the static package tint; final Acrylic role/alpha calibration; safe native client corner rounding with the current Aurorae design; toast and OSD details; Start/taskbar reference layout details; remaining icon names/FrameSVG states and typography across the shell. These are code/design gaps, not owner test tasks. No current claim of 100% development or pixel parity.

@@ -55,7 +55,7 @@ remain outside Git. The chosen target is Windows 11 26H2 General Availability (O
 | Icons | Freedesktop name and alias resolution, symbolic/color states, DPI, dark/light |
 | Installer | Upgrade without layout reset, reversible changes, system fonts unchanged |
 
-Test at 100%, 125%, 150%, 200%; light/dark, zh-CN and en-US, different wallpaper and system fonts, transparency on/off, at least two monitor arrangements. Run repository health checks, Qt tests, C++ builds and live screenshot/e2e checks. The owner may choose to merge an integration build to main for desktop testing before runtime validation. Label it as unverified, keep the changes reversible, and do not label it a stable release or pixel-identical.
+Development and live acceptance are separate gates. Finish the scoped code/design changes, perform relevant source checks and use the existing CI before the combined integration merge. The owner then tests at 100%, 125%, 150%, 200%; light/dark, zh-CN and en-US, different wallpaper and system fonts, transparency on/off, and multiple monitors. Pending owner tests alone do not reduce code completion. Keep changes reversible, and do not label the integration a verified stable release or pixel-identical before live acceptance.
 
 The [native resource importer](NATIVE_ASSETS.md) takes an explicit owner-provided archive. It generates the local canonical assets and a SHA-256 source manifest; the installer overlays only the mapped roles on the existing theme. Do not commit generated files or substitute unrelated Windows glyphs for KDE-only actions.
 

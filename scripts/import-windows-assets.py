@@ -126,11 +126,20 @@ def build(stage, data, mapping):
         outputs[relative] = {'source': source, 'sha256': digest}
     libs = {name: pe_resources(data['SystemResources/'+name]) for name in mapping['libraries'].values()}
     font = TTFont(io.BytesIO(data['Fonts/SegoeIcons.ttf']))
+    # The owner archive is version 1.56; allow newly mapped symbols to
+    # fall back to bundled art if an older archive lacks them. Required
+    # previously verified resources still fail atomically if missing.
+    optional_glyphs = set(mapping.get('optional_glyphs', []))
+    missing_optional_glyphs = []
     for source, names in mapping['icons'].items():
         if ':' in source:
             lib, group = source.split(':')
             content = icon_svg(libs[mapping['libraries'][lib]], int(group))
         else:
+            if source in optional_glyphs and int(source, 16) not in font.getBestCmap():
+                missing_optional_glyphs.append(source)
+                print('Optional glyph unavailable: ' + source)
+                continue
             content = glyph_svg(font, source)
         for name in names.split():
             write('icons/'+name+'.svg',content,source)
@@ -160,6 +169,7 @@ def build(stage, data, mapping):
             write(sounddir+'/stereo/'+event+'.wav',data[name],name)
     report = {'font': 'Segoe Fluent Icons', 'sources': source_manifest(data), 'outputs': outputs, 'icon_names': sum(x.startswith('icons/') for x in outputs),
               'wallpaper_images':len(seen_wallpapers),'sound_events':sum(x.endswith('.wav') for x in outputs)}
+    report['missing_optional_glyphs'] = missing_optional_glyphs
     (stage/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 
