@@ -118,6 +118,10 @@
       <label>Show the notification center bell beside the clock on horizontal panels.</label>
       <default>true</default>
     </entry>
+    <entry name="showTimeInNotificationCenter" type="Bool">
+      <label>Show the larger clock with seconds above the calendar.</label>
+      <default>true</default>
+    </entry>
     <entry name="expandedWidth" type="Int">
       <label>Width of the expanded clock popup in pixels.</label>
       <default>320</default>

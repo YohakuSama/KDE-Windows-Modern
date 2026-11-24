@@ -20,11 +20,7 @@ Page {
         spacing: 0
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        PlasmaComponents3.ScrollBar.vertical: PlasmaComponents3.ScrollBar {
-            policy: PlasmaComponents3.ScrollBar.AsNeeded
-            width: 16
-            hoverEnabled: true
-        }
+        PlasmaComponents3.ScrollBar.vertical: FluentScrollBar {}
         Kirigami.WheelHandler {
             target: list
             filterMouseEvents: true

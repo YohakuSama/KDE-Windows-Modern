@@ -58,7 +58,8 @@ Lib.DetailPage {
 
     listView.delegate: Item {
         id: delegate
-        width: listView.width
+        // Reserve the WinUI scrollbar's 16px overlay region.
+        width: Math.max(1, listView.width - 16)
         height: container.height + 2
 
         readonly property bool predictableWirelessPassword: !Uuid && Type === PlasmaNM.Enums.Wireless &&

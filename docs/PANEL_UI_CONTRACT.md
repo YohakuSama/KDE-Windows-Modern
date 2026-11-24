@@ -23,3 +23,29 @@ Revision after owner comparison screenshots:
 - Native symbolic status families use the union of actual font outline bounds and one isotropic transform per family. A 16 logical-pixel box has a maximum painted extent of 23 physical pixels at 150%. Signal levels do not resize independently. Battery remains wider than tall, as in the original artwork. Locate installed Windows Modern glyphs directly, falling back to the icon name when absent.
 - The Windows clock default is a 12 logical-pixel font, H:mm and yyyy/M/d. Existing mode 1 becomes the theme default; regional format remains available separately. Explicit 12/24-hour and custom date settings are retained.
 - Start footer uses 56 logical-pixel height, 28px side insets, 24px avatar and 20px power glyph. The neutral SVG fallback is project artwork, not a recovered Windows account bitmap.
+
+## Microsoft UI Kit baseline (controls, not measured shell geometry)
+
+- Windows 11 26H2 GA, build 26300; record the actual reference build and
+  settings before comparing shell surfaces. Compare physical screenshot
+  measurements after dividing by output scale (1.5 for the owner's setup).
+- Windows UI Kit and WinUI 3 Gallery:
+  https://learn.microsoft.com/windows/apps/design/downloads/
+- Geometry: 4 epx control corner radius, 8 epx overlay radius:
+  https://learn.microsoft.com/windows/apps/design/signature-experiences/geometry
+- Type ramp: caption 12/16, body 14/20, body strong 14/20 semibold,
+  body large 18/24, title large 40/52. Use the user's system font:
+  https://learn.microsoft.com/windows/apps/design/signature-experiences/typography
+- Scroll viewer: 16 epx interaction region, 2 epx panning indicator, 6 epx
+  expanded thumb. No fixed 8px thumb or always-painted rail. Keep native
+  attached scrollbar dragging and wheel handling. Reserve the gutter:
+  https://learn.microsoft.com/windows/apps/develop/ui/controls/scroll-controls
+- Notification center: the large clock is an optional feature. Preserve
+  existing enabled behavior; expose a switch in clock appearance settings.
+  Use the official type ramp (40 title large, 14 body, 18 strong month
+  heading) as a provisional baseline, not a measurement of the shell:
+  https://blogs.windows.com/windowsexperience/2025/10/16/new-experiences-currently-rolling-out-for-windows-11/
+- Do not claim 1:1 fidelity from app control resources. Taskbar icon
+  painted bounds, shell flyout width/height, exact grid, alignment, material
+  and interaction require captures of the matching native shell. The 28px
+  task canvas is still provisional pending that comparison.

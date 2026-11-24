@@ -250,8 +250,8 @@ ColumnLayout {
             // The decade is the last level: greyed like the dimmed years.
             color: headerButton.enabled ? palette.text : palette.textDisabled
             font {
-                weight: Font.Bold
-                pixelSize: Kirigami.Units.gridUnit
+                weight: Font.DemiBold
+                pixelSize: 18
             }
 
             Accessible.role: headerButton.enabled ? Accessible.Button : Accessible.StaticText

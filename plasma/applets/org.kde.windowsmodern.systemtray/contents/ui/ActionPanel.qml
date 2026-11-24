@@ -13,6 +13,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 
 import "components" as Components
+import "lib" as Lib
 import "js/quickSettingsOrder.js" as Order
 
 ColumnLayout {
@@ -58,7 +59,7 @@ ColumnLayout {
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
         Layout.maximumHeight: implicitHeight
-        readonly property int railWidth: Math.max(24, Math.round(24 * actionPanel.scale))
+        readonly property int railWidth: 16
         readonly property int railGap: Math.round(4 * actionPanel.scale)
 
         // Measure the caption independently of visibility. QQuickLayout
@@ -359,31 +360,11 @@ ColumnLayout {
             // A real attached Qt Quick Controls scrollbar: its position,
             // size and thumb drag are driven by the Flickable itself.
             // Reparent only the visual rail, as supported by Qt.
-            QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+            QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
                 id: tileScrollBar
                 parent: scrollTrack
                 anchors.fill: parent
                 policy: QQC2.ScrollBar.AlwaysOn
-                hoverEnabled: true
-                leftPadding: Math.max(0, (width - 8) / 2)
-                rightPadding: leftPadding
-                topPadding: 0
-                bottomPadding: 0
-                minimumSize: Math.min(1, 24 / Math.max(1, height))
-                stepSize: Math.max(0.01, size * 0.9)
-                contentItem: Rectangle {
-                    implicitWidth: 8
-                    radius: width / 2
-                    color: Kirigami.Theme.textColor
-                    opacity: tileScrollBar.pressed ? 0.8 : tileScrollBar.hovered ? 0.65 : 0.45
-                }
-                background: Rectangle {
-                    width: 2
-                    x: (parent.width - width) / 2
-                    radius: 1
-                    color: Kirigami.Theme.textColor
-                    opacity: 0.16
-                }
             }
 
         }

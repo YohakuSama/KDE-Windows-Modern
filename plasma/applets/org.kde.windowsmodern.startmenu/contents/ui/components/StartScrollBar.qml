@@ -1,20 +1,36 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// WinUI: 16px input region, 2px panning indicator, 6px expanded thumb.
+// Keep Qt's attached scrollbar geometry and drag behavior.
+// https://learn.microsoft.com/windows/apps/develop/ui/controls/scroll-controls
 import QtQuick
-import org.kde.plasma.components as PlasmaComponents3
+import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 
-PlasmaComponents3.ScrollBar {
+QQC2.ScrollBar {
     id: bar
-    policy: PlasmaComponents3.ScrollBar.AsNeeded
+    policy: QQC2.ScrollBar.AsNeeded
     width: 16
-    padding: 4
+    padding: 0
     hoverEnabled: true
     stepSize: Math.max(0.01, size * 0.9)
     minimumSize: height > 0 ? Math.min(1, 32 / height) : 0
-    contentItem: Rectangle {
-        implicitWidth: 8
-        radius: width / 2
-        color: Kirigami.Theme.textColor
-        opacity: bar.pressed ? 0.72 : bar.hovered ? 0.55 : 0.34
+    readonly property int thumbWidth: hovered || pressed ? 6 : 2
+
+    background: Item {}
+    contentItem: Item {
+        implicitWidth: 16
+        implicitHeight: 32
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: bar.thumbWidth
+            radius: width / 2
+            color: Kirigami.Theme.textColor
+            opacity: bar.size < 1 ? (bar.pressed ? 0.72 : 0.55) : 0
+            Behavior on width {
+                NumberAnimation { duration: Kirigami.Units.shortDuration }
+            }
+        }
     }
 }
