@@ -113,3 +113,5 @@ power-saving icon instead of the low-battery icon. Leave unconfirmed off/blocked
 states on the existing fallback artwork. This is not live Plasma verification.
 
 The status mapping follow-up adds 22 paths (429 total) for account switching, limited Wi-Fi levels, wired limited/VPN, and unknown charging. Two existing no-route aliases use Ethernet warning. All nine changed glyphs rendered nonempty from the supplied font. Rerun the existing importer before reinstalling icons. See Microsoft's [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font).
+
+The device compatibility follow-up adds five paths (434 total): headphones, headset, webcam, phone and mouse. All five source glyphs were checked in the owner's local font. Plasma 6.7/6.8 native applet icon-name consumers should use the existing icon theme rather than duplicating those glyphs into legacy sheets unnecessarily. Reimport resources before installing icons; keep the unconfirmed legacy roles unchanged.

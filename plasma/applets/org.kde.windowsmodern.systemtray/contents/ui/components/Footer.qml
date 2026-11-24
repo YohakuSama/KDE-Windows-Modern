@@ -39,7 +39,7 @@ Rectangle {
         opacity: batteryMouse.containsMouse ? 1 : 0.85
 
         Accessible.role: Accessible.Button
-        Accessible.name: qsTr("Battery %1%").arg(battery.percent)
+        Accessible.name: battery.percentKnown ? qsTr("Battery %1%").arg(battery.percent) : qsTr("Battery level unknown")
         Accessible.onPressAction: footer.batteryClicked()
         activeFocusOnTab: visible
         Keys.onReturnPressed: footer.batteryClicked()

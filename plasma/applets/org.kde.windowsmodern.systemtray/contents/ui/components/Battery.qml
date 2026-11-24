@@ -7,9 +7,10 @@ import "../js/funcs.js" as Funcs
 Item {
     id: root
 
-    property alias hasBattery: batteryControl.hasBatteries
+    property alias hasBattery: batteryControl.hasCumulative
     property alias percent: batteryControl.percent
     property alias pluggedIn: batteryControl.pluggedIn
+    readonly property bool percentKnown: Number.isFinite(percent) && percent >= 0
 
     implicitWidth: row.implicitWidth
     implicitHeight: 16
@@ -27,14 +28,14 @@ Item {
             width: 20
             height: 20
             anchors.verticalCenter: parent.verticalCenter
-            source: Funcs.batteryIconName(batteryControl.percent, batteryControl.state === BatteryControlModel.Charging)
+            source: Funcs.batteryIconName(batteryControl.percent, batteryControl.pluggedIn)
             color: Kirigami.Theme.textColor
             isMask: true
         }
 
         PlasmaComponents3.Label {
-            visible: root.hasBattery
-            text: batteryControl.percent + "%"
+            visible: root.hasBattery && root.percentKnown
+            text: qsTr("%1%").arg(batteryControl.percent)
             color: Kirigami.Theme.textColor
             opacity: 0.9
             font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1

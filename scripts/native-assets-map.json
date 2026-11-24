@@ -118,7 +118,7 @@
     "e776": "actions/preferences-desktop-accessibility-symbolic",
     "e7ba": "actions/dialog-warning-symbolic",
     "e783": "actions/dialog-error-symbolic",
-    "e7f6": "actions/audio-headphones-symbolic",
+    "e7f6": "actions/audio-headphones-symbolic devices/audio-headphones-symbolic",
     "e708": "actions/weather-clear-night-symbolic actions/system-suspend actions/system-suspend-symbolic",
     "e701": "status/network-wireless status/network-wireless-100 status/network-wireless-80 status/network-wireless-connected-100 status/network-wireless-connected-80 status/network-wireless-symbolic status/network-wireless-100-symbolic status/network-wireless-80-symbolic status/network-wireless-connected-100-symbolic status/network-wireless-connected-80-symbolic devices/network-wireless-symbolic",
     "e872": "status/network-wireless-0 status/network-wireless-20 status/network-wireless-connected-00 status/network-wireless-connected-20 status/network-wireless-0-symbolic status/network-wireless-20-symbolic status/network-wireless-connected-00-symbolic status/network-wireless-connected-20-symbolic",
@@ -212,7 +212,11 @@
     "eb63": "status/network-wireless-80-limited status/network-wireless-80-limited-symbolic status/network-wireless-100-limited status/network-wireless-100-limited-symbolic",
     "eb56": "status/network-wired-activated-limited status/network-wired-activated-limited-symbolic status/network-wired-no-route status/network-wired-no-route-symbolic",
     "f8cc": "status/network-wired-activated-locked status/network-wired-activated-locked-symbolic",
-    "eb1a": "status/battery-unknown-charging status/battery-unknown-charging-symbolic"
+    "eb1a": "status/battery-unknown-charging status/battery-unknown-charging-symbolic",
+    "e95b": "devices/audio-headset-symbolic",
+    "e960": "devices/camera-web-symbolic",
+    "e717": "devices/phone-symbolic",
+    "e962": "devices/input-mouse-symbolic"
   },
   "wallpapers": [
     [

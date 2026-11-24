@@ -7,6 +7,9 @@ StatusIconButton {
     PlasmaNM.ConnectionIcon {
         id: connection
     }
-    icon.name: connection.connectionIcon || "network-disconnect"
+    icon.name: {
+        const name = connection.connectionIcon || "network-unavailable";
+        return name.endsWith("-symbolic") ? name : name + "-symbolic";
+    }
     text: i18nd("plasma_shell_org.kde.plasma.desktop", "Network")
 }

@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Native status and power controls
+
+- Reuse PowerDevil's manual inhibition state in both existing controls; remove shell polling and process-name termination.
+- Align battery levels, unknown-state and lock-screen symbolic icons, and add five native device aliases.
+
 ### Materials and status glyphs
 
 - Keep application bases opaque; reuse the existing wallpaper/frame generator for a bounded local active tint and KWin for popup blur/noise.
