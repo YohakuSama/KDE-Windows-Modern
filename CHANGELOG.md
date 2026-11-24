@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Original battery assets only
+
+- Remove the project-drawn colored battery. Render the imported Microsoft Segoe Fluent Icons battery, charge and energy-saver glyphs without inventing geometry. The newer SysBatt artwork is still missing from the verified inputs.
+- Keep the taskbar percentage independently configurable, off by default for new installs; expose the same preference in battery details and preserve the Quick Settings battery percentage.
+
 ### Tray optical correction and notification build fix
 
 - Increase normal tray glyph canvases to 20px without enlarging the default cell pitch; normalize the native removable-device status glyph, use its direct renderer and widen the centered battery artwork.

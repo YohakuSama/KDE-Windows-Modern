@@ -30,7 +30,7 @@ and acceptance process.
    window snapping, notifications and flyouts count as much as colours and
    icons. A Windows user should rarely hit "that's not where it is" or "that
    key does something else".
-2. **Windows 11 is the sole visual baseline.** Replace inherited Windows 10
+2. **Windows 11 is the sole visual baseline.** Do not hand-draw replacement Windows system glyphs or misrepresent compatibility artwork as an original asset. Use verified locally imported originals; record unavailable assets as fidelity blockers. Replace inherited Windows 10
    layouts when they differ from the chosen Windows 11 build. Keep existing
    KDE services, minimize changes, and share visual rules only where semantics
    match. System fonts remain the default.

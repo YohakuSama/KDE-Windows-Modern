@@ -13,60 +13,48 @@ Item {
         width: implicitWidth
         height: implicitHeight
         foreground: "white"
-        backgroundColor: "#202020"
     }
+
     TestCase {
-        name: "ModernBatteryGlyph"
+        name: "NativeBatteryGlyph"
         when: windowShown
-        function test_liveStateAndSize() {
-            compare(glyph.implicitWidth, 23);
-            compare(glyph.implicitHeight, 18);
-            const outline = findChild(glyph, "wmBatteryOutline");
-            const terminal = findChild(glyph, "wmBatteryTerminal");
-            verify(outline !== null && terminal !== null);
-            compare(outline.y + outline.height / 2, 8);
-            compare(terminal.y + terminal.height / 2, 8);
-            glyph.percent = 95;
-            glyph.charging = true;
-            compare(glyph.visualState, "charging");
-            fuzzyCompare(glyph.fillFraction, 0.95, 0.0001);
-            compare(glyph.levelColor, Qt.rgba(115/255, 216/255, 139/255, 1));
-            const fill = findChild(glyph, "wmBatteryLevelFill");
-            verify(fill !== null);
-            fuzzyCompare(fill.width, 13.5 * 0.95, 0.001);
+        function test_nativeSourceAndStableGeometry() {
+            const icon = findChild(glyph, "wmBatterySourceIcon");
+            verify(icon !== null);
+            verify(!icon.roundToIconSize);
+            verify(findChild(glyph, "wmBatteryOutline") === null);
+            verify(findChild(glyph, "wmBatteryLevelFill") === null);
             glyph.glyphSize = 20;
             compare(glyph.implicitWidth, 25);
             compare(glyph.implicitHeight, 20);
-            glyph.glyphSize = 18;
+            compare(icon.width, 25);
+            compare(icon.height, 25);
+            glyph.percent = 95;
+            glyph.charging = true;
+            compare(glyph.iconName, "battery-100-charging-symbolic");
             glyph.charging = false;
             glyph.saver = true;
             glyph.percent = 20;
-            compare(glyph.visualState, "saver");
-            glyph.percent = 5;
-            compare(glyph.visualState, "critical");
-            glyph.percent = 75;
-            glyph.saver = false;
-            compare(glyph.visualState, "normal");
-            glyph.percent = -1;
-            compare(glyph.visualState, "unknown");
-            compare(fill.visible, false);
-        }
-        function test_fillRange() {
-            compare(Funcs.batteryFillFraction(-1), 0);
-            compare(Funcs.batteryFillFraction(100), 1);
-            compare(Funcs.batteryFillFraction(120), 1);
-            compare(Funcs.batteryFillFraction(NaN), 0);
-            compare(Funcs.batteryVisualState(95, true, false), "charging");
-            compare(Funcs.batteryVisualState(20, false, false), "normal");
-            compare(Funcs.batteryVisualState(20, false, true), "saver");
-        }
-        function test_lightPalette() {
-            glyph.backgroundColor = "white";
-            glyph.percent = 95;
+            compare(glyph.iconName, "battery-020-profile-powersave-symbolic");
             glyph.charging = true;
-            compare(glyph.dark, false);
-            compare(glyph.levelColor, Qt.rgba(33/255, 135/255, 57/255, 1));
-            glyph.backgroundColor = "#202020";
+            compare(glyph.iconName, "battery-020-charging-symbolic");
+            glyph.charging = false;
+            glyph.saver = false;
+            glyph.percent = 5;
+            compare(glyph.iconName, "battery-000-symbolic");
+            glyph.percent = -1;
+            compare(glyph.iconName, "battery-unknown-symbolic");
+            glyph.charging = true;
+            compare(glyph.iconName, "battery-unknown-charging-symbolic");
+            compare(icon.width, 25);
+        }
+
+        function test_originalSaverLevels() {
+            for (let n = 0; n <= 100; n += 10) {
+                compare(Funcs.batteryIconName(n, false, true),
+                    "battery-" + String(n).padStart(3, "0") + "-profile-powersave-symbolic");
+            }
+            compare(Funcs.batteryIconName(NaN, false, true), "battery-unknown-symbolic");
         }
     }
 }

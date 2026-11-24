@@ -6,6 +6,7 @@ import org.kde.plasma.private.battery
 import org.kde.plasma.private.batterymonitor
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils
+import org.kde.plasma.plasmoid
 import "../lib" as Lib
 import "../js/funcs.js" as Funcs
 
@@ -173,6 +174,24 @@ Lib.Page {
             Layout.bottomMargin: 2
             height: 1
             color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            visible: page.hasBattery
+
+            PlasmaComponents3.Label {
+                Layout.fillWidth: true
+                text: i18n("Show battery percentage")
+                wrapMode: Text.WordWrap
+            }
+
+            PlasmaComponents3.Switch {
+                text: ""
+                Accessible.name: i18n("Show battery percentage")
+                checked: Plasmoid.configuration.showBatteryPercentage
+                onClicked: Plasmoid.configuration.showBatteryPercentage = checked
+            }
         }
 
         Lib.SectionHeader {

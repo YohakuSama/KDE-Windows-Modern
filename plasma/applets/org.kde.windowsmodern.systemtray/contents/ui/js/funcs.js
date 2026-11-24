@@ -33,13 +33,13 @@ function volIconName(volume, muted) {
     return "audio-volume-high-symbolic";
 }
 
-function batteryIconName(percent, pluggedIn) {
+function batteryIconName(percent, pluggedIn, saver = false) {
     if (!Number.isFinite(percent) || percent < 0)
         return pluggedIn ? "battery-unknown-charging-symbolic" : "battery-unknown-symbolic";
     // Match the native KDE BatteryIcon level boundaries, including 5%.
     const level = percent <= 5 ? 0 : Math.min(100, Math.round(percent / 10) * 10);
     return "battery-" + String(level).padStart(3, "0")
-        + (pluggedIn ? "-charging" : "") + "-symbolic";
+        + (pluggedIn ? "-charging" : saver ? "-profile-powersave" : "") + "-symbolic";
 }
 
  // Visual state is derived from the power backend, never a fake level.

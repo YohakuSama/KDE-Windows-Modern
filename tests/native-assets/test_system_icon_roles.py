@@ -41,6 +41,10 @@ class SystemIconRolesTests(unittest.TestCase):
         self.assertTrue(set(glyphs).issubset(MAPPING['icons']))
         self.assertNotIn('eb1a', groups['battery'])
         self.assertEqual(groups['batteryUnknownCharging'], ['eb1a'])
+        self.assertEqual(groups['batterySaver'],
+                         ['e863', 'e864', 'e865', 'e866', 'e867', 'e868',
+                          'e869', 'e86a', 'e86b', 'ea94', 'ea95'])
+        self.assertIn('batterySaver', MAPPING['panel_glyph_center_groups'])
         for level in ('e83f', 'ea93', 'e850', 'e85a'):
             self.assertIn(level, groups['battery'])
         self.assertEqual(groups['volume'], ['e992', 'e993', 'e994'])

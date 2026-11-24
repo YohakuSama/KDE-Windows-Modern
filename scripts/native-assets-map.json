@@ -486,6 +486,19 @@
       "e83e",
       "ea93"
     ],
+    "batterySaver": [
+      "e863",
+      "e864",
+      "e865",
+      "e866",
+      "e867",
+      "e868",
+      "e869",
+      "e86a",
+      "e86b",
+      "ea94",
+      "ea95"
+    ],
     "notification": [
       "f2a3",
       "f2a5",
@@ -521,6 +534,7 @@
     "volumeHigh",
     "volumeMuted",
     "battery",
+    "batterySaver",
     "batteryUnknownCharging",
     "notification",
     "bluetooth",

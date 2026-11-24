@@ -1,4 +1,6 @@
 {
+  "Windows default (20 px)": "Windows 默认大小（20 px）",
+  "@item:inlistbox Icon size\u0004Windows default (20 px)": "Windows 默认大小（20 px）",
   "Focus": "专注",
   "Stop focus": "结束专注",
   "%1 mins": "%1 分钟",
