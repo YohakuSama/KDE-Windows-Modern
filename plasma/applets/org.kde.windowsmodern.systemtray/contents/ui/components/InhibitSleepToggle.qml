@@ -14,7 +14,7 @@ Lib.Tile {
 
     readonly property bool blockSleep: inhibitionControl.isManuallyInhibited
 
-    label: blockSleep ? qsTr("Sleep Blocked") : qsTr("No Sleep")
+    label: blockSleep ? i18n("Sleep Blocked") : i18n("No Sleep")
     iconSource: blockSleep ? "system-suspend-inhibited" : "system-suspend-uninhibited"
     active: blockSleep
 
@@ -22,8 +22,8 @@ Lib.Tile {
         if (inhibitionControl.isManuallyInhibited)
             inhibitionControl.uninhibit();
         else
-            inhibitionControl.inhibit(qsTr("Automatic sleep and screen locking disabled by user"));
+            inhibitionControl.inhibit(i18n("Automatic sleep and screen locking disabled by user"));
     }
 
-    tooltipText: blockSleep ? qsTr("Sleep Inhibited") : qsTr("Sleep Allowed")
+    tooltipText: blockSleep ? i18n("Sleep Inhibited") : i18n("Sleep Allowed")
 }

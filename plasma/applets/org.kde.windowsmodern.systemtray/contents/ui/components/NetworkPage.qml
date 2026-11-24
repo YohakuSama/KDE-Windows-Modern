@@ -10,15 +10,15 @@ import "../lib" as Lib
 Lib.DetailPage {
     id: page
 
-    title: wifiAvailable ? qsTr("Wi-Fi") : qsTr("Network")
+    title: wifiAvailable ? i18n("Wi-Fi") : i18n("Network")
     showSwitch: wifiAvailable
     switchEnabled: wifiAdministrativelyEnabled
     switchChecked: page.wifiOn
-    emptyText: !page.wifiAvailable ? qsTr("No Wi-Fi adapter available")
-        : page.wifiOn ? qsTr("No available networks") : qsTr("Wi-Fi is off")
+    emptyText: !page.wifiAvailable ? i18n("No Wi-Fi adapter available")
+        : page.wifiOn ? i18n("No available networks") : i18n("Wi-Fi is off")
 
     footer: Lib.MoreSettingsLink {
-        text: page.wifiAvailable ? qsTr("More Wi-Fi settings") : qsTr("Network settings")
+        text: page.wifiAvailable ? i18n("More Wi-Fi settings") : i18n("Network settings")
         onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
     }
 
@@ -80,13 +80,13 @@ Lib.DetailPage {
 
         function statusText() {
             if (connectionState === PlasmaNM.Enums.Activated) {
-                return SecurityType === PlasmaNM.Enums.NoneSecurity ? qsTr("Connected, open") : qsTr("Connected, secured");
+                return SecurityType === PlasmaNM.Enums.NoneSecurity ? i18n("Connected, open") : i18n("Connected, secured");
             }
             if (connectionState === PlasmaNM.Enums.Activating) {
-                return qsTr("Verifying and connecting");
+                return i18n("Verifying and connecting");
             }
             if (phase === "password") {
-                return qsTr("Enter the network security key");
+                return i18n("Enter the network security key");
             }
             return "";
         }
@@ -263,7 +263,7 @@ Lib.DetailPage {
 
                                     PlasmaComponents3.Label {
                                         anchors.centerIn: parent
-                                        text: qsTr("Connect")
+                                        text: i18n("Connect")
                                         color: Kirigami.Theme.textColor
                                         font: Kirigami.Theme.defaultFont
                                     }
@@ -286,7 +286,7 @@ Lib.DetailPage {
                             visible: delegate.expanded && delegate.phase === "password"
 
                             PlasmaComponents3.Label {
-                                text: qsTr("Enter the network security key")
+                                text: i18n("Enter the network security key")
                                 color: Kirigami.Theme.textColor
                                 opacity: 0.7
                                 font: Kirigami.Theme.smallFont
@@ -299,7 +299,7 @@ Lib.DetailPage {
                                 text: delegate.password
                                 onTextEdited: delegate.password = text
                                 font: Kirigami.Theme.defaultFont
-                                placeholderText: qsTr("Password")
+                                placeholderText: i18n("Password")
                                 validator: RegularExpressionValidator {
                                     regularExpression: SecurityType === PlasmaNM.Enums.StaticWep
                                         ? /^(?:.{5}|[0-9a-fA-F]{10}|.{13}|[0-9a-fA-F]{26}){1}$/
@@ -354,7 +354,7 @@ Lib.DetailPage {
 
                                         PlasmaComponents3.Label {
                                             anchors.centerIn: parent
-                                            text: qsTr("Cancel")
+                                            text: i18n("Cancel")
                                             color: Kirigami.Theme.textColor
                                             font: Kirigami.Theme.defaultFont
                                         }
@@ -384,7 +384,7 @@ Lib.DetailPage {
 
                                         PlasmaComponents3.Label {
                                             anchors.centerIn: parent
-                                            text: qsTr("Next")
+                                            text: i18n("Next")
                                             color: Kirigami.Theme.highlightedTextColor
                                             font: Kirigami.Theme.defaultFont
                                         }
@@ -408,7 +408,7 @@ Lib.DetailPage {
                             visible: delegate.expanded && connectionState === PlasmaNM.Enums.Activating
 
                             PlasmaComponents3.Label {
-                                text: qsTr("Verifying and connecting")
+                                text: i18n("Verifying and connecting")
                                 color: Kirigami.Theme.textColor
                                 opacity: 0.7
                                 font: Kirigami.Theme.smallFont
@@ -443,7 +443,7 @@ Lib.DetailPage {
 
                                     PlasmaComponents3.Label {
                                         anchors.centerIn: parent
-                                        text: qsTr("Disconnect")
+                                        text: i18n("Disconnect")
                                         color: Kirigami.Theme.textColor
                                         font: Kirigami.Theme.defaultFont
                                     }
