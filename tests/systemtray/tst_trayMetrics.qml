@@ -46,6 +46,28 @@ TestCase {
         verify(!Metrics.isQuickSettings("org.kde.plasma.keyboardlayout"));
         verify(!Metrics.isQuickSettings("third.party"));
     }
+    function test_contiguousGroupUsesActualCellGeometry() {
+        const cell = (x, y, w, h, core) => ({x: x, y: y, width: w, height: h, systemGroup: core});
+        const horizontal = [cell(0,0,32,48,false), cell(32,0,24,48,true),
+            cell(56,0,24,48,true), cell(80,0,56,48,true)];
+        const normal = Metrics.groupRects(horizontal, false);
+        compare(normal.length, 1);
+        compare(normal[0].x, 32);
+        compare(normal[0].width, 104);
+        compare(normal[0].height, 48);
+        compare(Metrics.groupRects(horizontal.slice().reverse(), false), normal);
+        horizontal[2].systemGroup = false;
+        const split = Metrics.groupRects(horizontal, false);
+        compare(split.length, 2);
+        compare(split[0].width, 24);
+        compare(split[1].x, 80);
+        const vertical = Metrics.groupRects([cell(0,24,48,24,true),
+            cell(0,0,48,24,true), cell(0,48,48,24,false)], true);
+        compare(vertical.length, 1);
+        compare(vertical[0].y, 0);
+        compare(vertical[0].height, 48);
+        compare(Metrics.groupRects([], false).length, 0);
+    }
     function test_order() {
         compare(Metrics.visualIndex(0, 4, false, false), 0);
         compare(Metrics.visualIndex(0, 4, false, true), 0);

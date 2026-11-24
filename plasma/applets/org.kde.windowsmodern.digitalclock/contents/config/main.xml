@@ -88,7 +88,7 @@
       <default>false</default>
     </entry>
     <entry name="use24hFormat" type="UInt">
-      <label>Clock time style: 0 = 12 hour, 1 = Windows 24-hour default, 2 = 24 hour with leading zero, 3 = regional default.</label>
+      <label>Clock time style: 0 = 12 hour, 1 = Windows 12-hour default with English AM/PM, 2 = 24 hour with leading zero, 3 = regional default.</label>
       <default>1</default>
     </entry>
     <entry name="firstDayOfWeek" type="Int">

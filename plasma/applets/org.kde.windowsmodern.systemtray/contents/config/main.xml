@@ -41,6 +41,10 @@
       <label>Tray cell spacing: small (1), Windows default (2), or large (6).</label>
       <default>2</default>
     </entry>
+    <entry name="showBatteryPercentage" type="Bool">
+      <label>Show battery percentage next to the battery icon in the panel.</label>
+      <default>true</default>
+    </entry>
     <entry name="pin" type="Bool">
       <label>Whether the popup should remain open when another window is activated</label>
       <default>false</default>

@@ -92,6 +92,8 @@ PlasmoidItem {
     // Time format strings, updated by timeFormatCorrection().
     property string timeFormat
     property string timeFormatWithSeconds
+    readonly property var clockTimeLocale: Qt.locale(DateFormat.clockLocaleName(
+        Plasmoid.configuration.use24hFormat, Qt.locale().name))
 
     // We need Local to be *always* present, even if not displayed, as it's
     // used for formatting and offset calculations.
@@ -121,9 +123,9 @@ PlasmoidItem {
     function formatTime(dateTime: date, showSeconds: bool): string {
         let formattedTime;
         if (showSeconds) {
-            formattedTime = Qt.locale().toString(dateTime, root.timeFormatWithSeconds);
+            formattedTime = root.clockTimeLocale.toString(dateTime, root.timeFormatWithSeconds);
         } else {
-            formattedTime = Qt.locale().toString(dateTime, root.timeFormat);
+            formattedTime = root.clockTimeLocale.toString(dateTime, root.timeFormat);
         }
 
         // If the date differs from the current clock's date, append the day name.

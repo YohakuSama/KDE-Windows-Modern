@@ -15,6 +15,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kitemmodels as KItemModels
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+import org.kde.plasma.private.battery as BatteryBackend
 import "js/trayMetrics.js" as TrayMetrics
 
 ContainmentItem {
@@ -36,6 +37,24 @@ ContainmentItem {
     readonly property int coreItemSize: TrayMetrics.coreIconSize(vertical ? width : height, Plasmoid.configuration.scaleIconsToFit)
     readonly property int coreNativeRenderSize: TrayMetrics.coreRenderSize(coreItemSize)
     readonly property int systemCellLength: TrayMetrics.coreCellLength(itemSize, coreItemSize, Plasmoid.configuration.iconSpacing)
+    BatteryBackend.BatteryControlModel { id: panelBattery }
+    TextMetrics {
+        id: batteryPercentMetrics
+        text: i18n("%1%", 100)
+        font.family: Kirigami.Theme.defaultFont.family
+        font.pixelSize: 12
+    }
+    readonly property bool panelHasBattery: panelBattery.hasCumulative
+    readonly property bool showPanelBatteryPercentage: !vertical
+        && Plasmoid.configuration.showBatteryPercentage && panelHasBattery
+        && Number.isFinite(panelBattery.percent) && panelBattery.percent >= 0
+    readonly property int batteryGlyphSize: vertical
+        ? Math.max(1, Math.min(coreItemSize, Math.floor(width / 1.25))) : coreItemSize
+    readonly property int batteryPercentageWidth: Math.ceil(batteryPercentMetrics.advanceWidth)
+    readonly property int batteryContentWidth: panelHasBattery
+        ? Math.ceil(batteryGlyphSize * 1.25) + (showPanelBatteryPercentage ? 3 + batteryPercentageWidth : 0)
+        : coreItemSize
+
     readonly property alias visibleLayout: tasksGrid
     readonly property alias hiddenLayout: expandedRepresentation.hiddenLayout
     readonly property bool oneRowOrColumn: true
@@ -171,6 +190,46 @@ ContainmentItem {
         }
 
 
+        // Draw one rounded background per contiguous run of real system
+        // cells, behind the delegates. No independently rounded hover tiles.
+        // Use actual layout geometry, not model indices or guessed margins.
+        Item {
+            id: quickSettingsHighlight
+            objectName: "wmQuickSettingsHighlight"
+            anchors.fill: parent
+            z: -1
+            visible: root.hoveredQuickSetting !== null || systemTrayState.quickSettingsOpen
+            readonly property var runs: {
+                const revision = tasksGrid.delegateRevision;
+                const cells = [];
+                for (let i = 0; i < tasksGrid.count; ++i) {
+                    const item = tasksGrid.itemAtIndex(i);
+                    if (!item) continue;
+                    cells.push({
+                        systemGroup: item.item ? !!item.item.groupedQuickSettings : item.systemGroup,
+                        x: mainLayout.x + tasksGrid.x + item.x,
+                        y: mainLayout.y + tasksGrid.y + item.y,
+                        width: item.width, height: item.height
+                    });
+                }
+                return TrayMetrics.groupRects(cells, root.vertical);
+            }
+            Repeater {
+                model: quickSettingsHighlight.runs
+                delegate: Rectangle {
+                    required property var modelData
+                    objectName: "wmQuickSettingsGroupBackground"
+                    x: modelData.x + 2
+                    y: modelData.y + 3
+                    width: Math.max(0, modelData.width - 4)
+                    height: Math.max(0, modelData.height - 6)
+                    radius: 4
+                    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                   Kirigami.Theme.textColor.b, 0.08)
+                }
+            }
+        }
+
         //Main Layout
         GridLayout {
             id: mainLayout
@@ -212,8 +271,14 @@ ContainmentItem {
                     delegate: ItemLoader {
                         id: delegate
 
-                        readonly property bool systemGroup: TrayMetrics.isQuickSettings(model.itemId)
-                        readonly property int cellLength: systemGroup ? root.systemCellLength : root.trayCellLength
+                        readonly property string loadedItemId: item?.itemId || model.itemId || ""
+                        readonly property bool systemGroup: TrayMetrics.isQuickSettings(loadedItemId)
+                        readonly property bool batteryCell: loadedItemId === "org.kde.plasma.battery"
+                        readonly property int cellLength: systemGroup
+                            ? (batteryCell && !root.vertical
+                                ? Math.max(root.systemCellLength, root.batteryContentWidth + 8)
+                                : root.systemCellLength)
+                            : root.trayCellLength
                         readonly property int positionIndex: TrayMetrics.visualIndex(index, trayItems.count,
                             root.vertical, root.reverseLayout)
 

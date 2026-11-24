@@ -253,7 +253,7 @@ ColumnLayout {
                     return calendarView.decadeStart + " – " + (calendarView.decadeStart + 9);
                 }
                 return DateFormat.calendarMonthTitle(calendarView.calendarLocale,
-                    calendarView.displayedYear, calendarView.displayedMonth);
+                    calendarView.displayedYear, calendarView.displayedMonth, Locale.LongFormat);
             }
             // The decade is the last level: greyed like the dimmed years.
             color: headerButton.enabled ? palette.text : palette.textDisabled

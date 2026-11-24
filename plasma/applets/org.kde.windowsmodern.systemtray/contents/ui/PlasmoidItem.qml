@@ -17,7 +17,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.networkmanagement as PlasmaNM
 import org.kde.bluezqt as BluezQt
 import org.kde.plasma.private.volume as Vol
-import org.kde.plasma.private.battery as BatteryBackend
+import "components" as Components
 import "js/funcs.js" as Funcs
 
 AbstractItem {
@@ -151,7 +151,8 @@ AbstractItem {
         anchors.centerIn: parent
         width: parent.width
         height: parent.height
-        active: plasmoidContainer.groupedQuickSettings
+        active: (plasmoidContainer.groupedQuickSettings
+                && (plasmoidContainer.itemId !== "org.kde.plasma.battery" || root.panelHasBattery))
             || (plasmoidContainer.inVisibleLayout
                 && plasmoidContainer.itemId === "org.kde.plasma.bluetooth"
                 && BluezQt.Manager.bluetoothOperational)
@@ -221,25 +222,11 @@ AbstractItem {
 
     Component {
         id: batteryGlyph
-        Item {
-            BatteryBackend.BatteryControlModel { id: liveBattery }
-            Kirigami.Icon {
-                readonly property string glyphName: Funcs.batteryIconName(
-                    liveBattery.hasCumulative ? liveBattery.percent : -1, liveBattery.pluggedIn)
-                readonly property var exactFile: plasmoidContainer.panelGlyphFile(glyphName)
-                readonly property var fallbackFile: plasmoidContainer.panelGlyphFile(glyphName.replace(/-symbolic$/, ""))
-                // The shipped legacy battery SVGs have larger transparent
-                // margins than the optically normalized imported glyphs.
-                // Compensate only for those fallback files, not native art.
-                readonly property bool legacy: String(exactFile).length === 0 && String(fallbackFile).length > 0
-                anchors.centerIn: parent
-                width: legacy ? Math.min(parent.width * 1.25, parent.width + 4) : parent.width
-                height: width
-                roundToIconSize: false
-                isMask: true
-                source: plasmoidContainer.panelGlyph(glyphName)
-                color: Kirigami.Theme.textColor
-            }
+        Components.Battery {
+            glyphSize: root.batteryGlyphSize
+            showPercentage: root.showPanelBatteryPercentage
+            percentageWidth: root.batteryPercentageWidth
+            labelPixelSize: 12
         }
     }
 
@@ -252,7 +239,7 @@ AbstractItem {
             ? plasmoidContainer.coreNativeRenderSize : parent.width
         height: plasmoidContainer.groupedQuickSettings ? width : parent.height
         scale: plasmoidContainer.groupedQuickSettings && width > 0
-            ? parent.width / width : 1
+            ? Math.min(parent.width, parent.height) / width : 1
         transformOrigin: Item.Center
     }
 

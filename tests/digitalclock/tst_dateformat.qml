@@ -58,19 +58,25 @@ TestCase {
     function test_calendarLanguageFollowsInterface() {
         const loc = Qt.locale(DateFormat.calendarLocaleName("zh_CN", "en_US"));
         compare(loc.name, "zh_CN");
-        compare(DateFormat.calendarMonthTitle(loc, 2026, 10), "2026年11月");
-        compare(DateFormat.calendarLongDate(loc, new Date(2026, 10, 25)), "11月25日 星期三");
+        compare(DateFormat.calendarMonthTitle(loc, 2026, 10, Locale.LongFormat), "2026年11月");
+        compare(DateFormat.calendarLongDate(loc, new Date(2026, 10, 25), Locale.LongFormat), "11月25日 星期三");
         compare(DateFormat.calendarLocaleName("system", "en_US"), "en_US");
         compare(DateFormat.calendarLocaleName("invalid name", "en_US"), "en_US");
-        compare(DateFormat.calendarMonthTitle(Qt.locale("en_US"), 2026, 10), "November 2026");
+        compare(DateFormat.calendarMonthTitle(Qt.locale("en_US"), 2026, 10, Locale.LongFormat), "November 2026");
     }
 
     function test_windowsTaskbarClock() {
         const sample = new Date(2026, 8, 30, 5, 6, 7);
         compare(Qt.formatDate(sample, DateFormat.windowsShortDate()), "2026/9/30");
         const fmt = DateFormat.clockFormats(1, "h:mm AP");
-        compare(Qt.formatTime(sample, fmt.time), "5:06");
-        compare(Qt.formatTime(sample, fmt.seconds), "5:06:07");
+        const loc = Qt.locale(DateFormat.clockLocaleName(1, "zh_CN"));
+        compare(loc.toString(sample, fmt.time), "5:06 AM");
+        compare(loc.toString(sample, fmt.seconds), "5:06:07 AM");
+        compare(loc.toString(new Date(2026, 8, 30, 17, 6), fmt.time), "5:06 PM");
+        compare(loc.toString(new Date(2026, 8, 30, 0, 6), fmt.time), "12:06 AM");
+        compare(loc.toString(new Date(2026, 8, 30, 12, 6), fmt.time), "12:06 PM");
+        compare(DateFormat.clockLocaleName(0, "zh_CN"), "zh_CN");
+        compare(DateFormat.clockLocaleName(2, "zh_CN"), "zh_CN");
         compare(DateFormat.clockFormats(0, "HH:mm").time, "h:mm AP");
         compare(DateFormat.clockFormats(2, "h:mm AP").time, "HH:mm");
         compare(DateFormat.clockFormats(3, "h:mm AP").time, "h:mm AP");
