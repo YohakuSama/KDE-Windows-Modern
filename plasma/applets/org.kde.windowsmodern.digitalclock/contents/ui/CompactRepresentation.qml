@@ -272,7 +272,10 @@ MouseArea {
             property bool wasExpanded: false
             onPressed: wasExpanded = main.plasmoidItem.expanded
             onClicked: main.toggleFlyout(wasExpanded)
-            PlasmaComponents.ToolTip { text: main.plasmoidItem.notificationStatusText }
+            PlasmaComponents.ToolTip {
+                text: main.plasmoidItem.notificationStatusText
+                visible: notificationButton.hovered && !main.plasmoidItem.expanded
+            }
         }
     }
 }
