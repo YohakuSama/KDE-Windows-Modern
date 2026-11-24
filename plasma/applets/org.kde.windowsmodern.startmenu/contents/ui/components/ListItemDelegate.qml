@@ -144,17 +144,18 @@ Item {
         Kirigami.Icon {
             id: icon
             x: item.gridMode ? (parent.width - width) / 2 : Kirigami.Units.largeSpacing
-            y: item.gridMode ? Kirigami.Units.largeSpacing : (parent.height - height) / 2
+            y: item.gridMode ? 9 : (parent.height - height) / 2
             width: item.iconSize
             height: width
             animated: false
+            roundToIconSize: false
             source: model.decoration !== undefined ? model.decoration : ""
         }
 
         Column {
             id: textBlock
             x: item.gridMode ? Kirigami.Units.smallSpacing : icon.x + icon.width + Kirigami.Units.largeSpacing
-            y: item.gridMode ? icon.y + icon.height + Kirigami.Units.smallSpacing : (parent.height - height) / 2
+            y: item.gridMode ? icon.y + icon.height + 6 : (parent.height - height) / 2
             width: Math.max(0, parent.width - x - Kirigami.Units.smallSpacing)
             spacing: Kirigami.Units.smallSpacing / 2
 
@@ -165,7 +166,7 @@ Item {
                 wrapMode: item.gridMode ? Text.Wrap : Text.NoWrap
                 elide: Text.ElideRight
                 color: Kirigami.Theme.textColor
-                font: Kirigami.Theme.defaultFont
+                font.pixelSize: item.gridMode ? Math.max(12, Kirigami.Theme.smallFont.pixelSize) : Math.max(12, Kirigami.Theme.defaultFont.pixelSize)
                 text: ("name" in model ? model.name : (model.display !== undefined ? model.display : ""))
                 textFormat: Text.PlainText
             }

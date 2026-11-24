@@ -1,4 +1,12 @@
 {
+  "Recent": "最近",
+  "Start menu size": "开始菜单大小",
+  "Show pinned section": "显示已固定区域",
+  "Show recent section": "显示最近区域",
+  "Show all apps section": "显示全部应用区域",
+  "All apps view": "全部应用视图",
+  "Hide your name and profile picture on Start": "在开始菜单隐藏姓名与头像",
+  "Sound output": "声音输出",
   "Show all": "显示全部",
   "Grid": "网格",
   "View: %1": "视图：%1",

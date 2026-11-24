@@ -13,6 +13,8 @@ Lib.Slider {
 
     iconSource: Funcs.volIconName(sinkAvailable ? sink.volume : 0, sinkAvailable ? sink.muted : true)
     showArrow: true
+    detailsIconSource: "multimedia-volume-control"
+    detailsAccessibleName: i18n("Sound output")
     iconClickable: sinkAvailable
 
     readonly property int maxVol: sinkAvailable && sink.canRaiseVolume ? 98304 : 65536

@@ -26,6 +26,12 @@ KCM.SimpleKCM {
     property alias cfg_showRightColumn: showRightColumn.checked
     property alias cfg_allAppsSortMode: allAppsSortMode.currentIndex
     property alias cfg_menuTranslucency: menuTranslucency.currentIndex
+    property alias cfg_startMenuSize: startMenuSize.currentIndex
+    property alias cfg_showPinnedSection: pinnedSection.checked
+    property alias cfg_showRecentSection: recentSection.checked
+    property alias cfg_showAllSection: allSection.checked
+    property alias cfg_hideAccountIdentity: hideAccountIdentity.checked
+    property alias cfg_allAppsViewMode: allAppsViewMode.currentIndex
     property alias cfg_showRecentApps: recentApps.checked
     property alias cfg_showRecentDocs: recentDocs.checked
 
@@ -114,6 +120,35 @@ KCM.SimpleKCM {
             }
         }
 
+        ComboBox {
+            id: startMenuSize
+            Kirigami.FormData.label: i18n("Start menu size")
+            model: [i18n("Automatic"), i18n("Small"), i18n("Large")]
+        }
+
+        CheckBox {
+            id: pinnedSection
+            Kirigami.FormData.label: i18n("Show pinned section")
+        }
+        CheckBox {
+            id: recentSection
+            Kirigami.FormData.label: i18n("Show recent section")
+        }
+        CheckBox {
+            id: allSection
+            Kirigami.FormData.label: i18n("Show all apps section")
+        }
+        ComboBox {
+            id: allAppsViewMode
+            Kirigami.FormData.label: i18n("All apps view")
+            model: [i18n("List"), i18n("Grid"), i18n("Category")]
+            enabled: allSection.checked
+        }
+        CheckBox {
+            id: hideAccountIdentity
+            Kirigami.FormData.label: i18n("Hide your name and profile picture on Start")
+        }
+
         // ── Show places column ─────────────────────────────────────────
         CheckBox {
             id: showRightColumn
@@ -122,10 +157,12 @@ KCM.SimpleKCM {
 
         CheckBox {
             id: recentApps
+            enabled: recentSection.checked
             Kirigami.FormData.label: i18n("Show recent applications")
         }
         CheckBox {
             id: recentDocs
+            enabled: recentSection.checked
             Kirigami.FormData.label: i18n("Show recent files")
         }
 

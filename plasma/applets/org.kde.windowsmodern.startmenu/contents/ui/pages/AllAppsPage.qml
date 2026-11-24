@@ -23,6 +23,7 @@ ColumnLayout {
     property Component homeHeader: null
     property var flatModel: null
     property var categoryModel: null
+    property bool showAllSection: true
     property bool categoryMode: false
     property bool gridMode: false
     readonly property bool showCategoryCards: categoryMode && !inCategory
@@ -38,6 +39,7 @@ ColumnLayout {
     }
 
     onCategoryModeChanged: resetCategory()
+    onShowAllSectionChanged: if (!showAllSection) resetCategory()
 
     function focusFirstApp() {
         scrollToAll();
@@ -74,6 +76,8 @@ ColumnLayout {
     function scrollToAll() {
         if (allAppsListView.count > 0)
             allAppsListView.positionViewAtIndex(0, GridView.Beginning);
+        else
+            allAppsListView.positionViewAtBeginning();
     }
 
     signal backRequested
@@ -118,9 +122,10 @@ ColumnLayout {
             : Math.max(34, Math.floor(Kirigami.Units.gridUnit * 1.8) + 2)
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
-        model: allAppsPage.categoryMode
-            ? (allAppsPage.categoryChild || allAppsPage.categoryModel)
-            : allAppsPage.flatModel
+        model: !allAppsPage.showAllSection ? null
+            : allAppsPage.categoryMode
+                ? (allAppsPage.categoryChild || allAppsPage.categoryModel)
+                : allAppsPage.flatModel
         function activateRow(row) { allAppsPage.activateRow(row); }
         header: allAppsPage.homeHeader
 
@@ -149,7 +154,7 @@ ColumnLayout {
                 readonly property string categoryName: model.display ?? ""
                 readonly property var childModel: allAppsListView.model
                     ? allAppsListView.model.modelForRow(categoryIndex) : null
-                readonly property int appCount: childModel ? childModel.count : 0
+                readonly property int appCount: childModel ? Math.max(0, childModel.count || 0) : 0
 
                 function appIcon(row) {
                     // Qt::DecorationRole, preserving the Kicker application's actual icon.
@@ -158,6 +163,7 @@ ColumnLayout {
                 }
 
                 function openCategory() {
+                    allAppsListView.forceActiveFocus();
                     allAppsListView.currentIndex = categoryIndex;
                     allAppsPage.activateRow(categoryIndex);
                 }

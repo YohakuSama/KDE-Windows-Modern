@@ -41,6 +41,25 @@
       <default>logout,reboot,shutdown</default>
     </entry>
 
+    <entry name="startMenuSize" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="showPinnedSection" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showAllPinned" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="showRecentSection" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showAllSection" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="hideAccountIdentity" type="Bool">
+      <default>false</default>
+    </entry>
+
     <entry name="showRecentApps" type="Bool">
       <default>true</default>
     </entry>

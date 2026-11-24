@@ -15,6 +15,8 @@ Item {
     property int iconSize: 20
     property bool pressed: false
     property bool showArrow: false
+    property string detailsIconSource: ""
+    property string detailsAccessibleName: ""
     property bool iconClickable: false
 
     signal moved(int value)
@@ -123,24 +125,54 @@ Item {
         }
 
         Item {
-            Layout.preferredWidth: 16
-            Layout.preferredHeight: 16
+            id: detailsButton
+            visible: root.showArrow
+            Layout.preferredWidth: root.detailsIconSource.length > 0 ? 36 : 24
+            Layout.preferredHeight: 32
             Layout.alignment: Qt.AlignVCenter
+            activeFocusOnTab: visible
+            Accessible.role: Accessible.Button
+            Accessible.name: root.detailsAccessibleName || i18n("More")
+            Accessible.onPressAction: root.arrowClicked()
+            Keys.onReturnPressed: root.arrowClicked()
+            Keys.onEnterPressed: root.arrowClicked()
+            Keys.onSpacePressed: root.arrowClicked()
 
-            Kirigami.Icon {
-                width: Kirigami.Units.iconSizes.small
-                height: Kirigami.Units.iconSizes.small
+            Rectangle {
+                anchors.fill: parent
+                radius: 4
+                color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                    Kirigami.Theme.textColor.b, detailsMouse.containsPress ? 0.10
+                        : detailsMouse.containsMouse || detailsButton.activeFocus ? 0.06 : 0)
+            }
+
+            Row {
                 anchors.centerIn: parent
-                visible: root.showArrow
-                source: "go-next"
-                isMask: true
-                color: Kirigami.Theme.textColor
+                spacing: 2
+                Kirigami.Icon {
+                    visible: root.detailsIconSource.length > 0
+                    width: 18
+                    height: 18
+                    source: root.detailsIconSource
+                    roundToIconSize: false
+                    isMask: true
+                    color: Kirigami.Theme.textColor
+                }
+                Kirigami.Icon {
+                    width: 12
+                    height: 18
+                    source: "go-next"
+                    roundToIconSize: false
+                    isMask: true
+                    color: Kirigami.Theme.textColor
+                }
             }
 
             MouseArea {
+                id: detailsMouse
                 anchors.fill: parent
-                cursorShape: root.showArrow ? Qt.PointingHandCursor : Qt.ArrowCursor
-                enabled: root.showArrow
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
                 onClicked: root.arrowClicked()
             }
         }

@@ -145,7 +145,6 @@ Item {
             // as on Windows (a ListView makes its first item current as soon
             // as it has items, so the first pinned app always looked selected).
             if (root.pinnedPage) {
-                root.pinnedPage.showAllPinned = false;
                 root.pinnedPage.favoritesList.currentIndex = -1;
                 root.pinnedPage.favoritesList.positionViewAtBeginning();
             }
@@ -167,7 +166,10 @@ Item {
 
             readonly property int margin: 28
             readonly property rect screen: Plasmoid.screenGeometry
-            readonly property bool largeLayout: screen.width >= 1440
+            readonly property bool largeLayout: Plasmoid.configuration.startMenuSize === 2
+                || (Plasmoid.configuration.startMenuSize === 0 && screen.width >= 1440)
+            readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
+                && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
             readonly property int wantedWidth: largeLayout ? 768 : 560
             readonly property int wantedHeight: largeLayout ? 720 : 640
             width: Math.max(1, Math.min(wantedWidth, screen.width > 0 ? screen.width - 2 * margin : wantedWidth))
@@ -256,6 +258,7 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.margins: rootItem.margin
+                anchors.topMargin: 16
 
                 onSearchTextChanged: {
                     // Explicitly push the query to Milou ResultsView.
@@ -299,11 +302,14 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.margins: rootItem.margin
+                anchors.topMargin: 22
+                anchors.bottomMargin: 0
 
                 AllAppsPage {
                     id: allAppsPage
                     anchors.fill: parent
                     visible: root.leftColumnState !== 2
+                    showAllSection: Plasmoid.configuration.showAllSection
                     flatModel: sortedAppsModel
                     categoryModel: nativeCategoryModel
                     categoryMode: Plasmoid.configuration.allAppsViewMode === 2
@@ -318,12 +324,13 @@ Item {
                         ColumnLayout {
                             width: allAppsPage.allAppsList.contentColumnWidth
                             height: implicitHeight
-                            spacing: Kirigami.Units.largeSpacing
+                            spacing: 20
                             property alias pinnedSectionItem: pinnedSection
 
                             PinnedPage {
                                 id: pinnedSection
                                 Layout.fillWidth: true
+                                visible: Plasmoid.configuration.showPinnedSection && favoritesList.count > 0
                                 favoritesList.model: globalFavorites
                                 onShowAllAppsRequested: {
                                     root.leftColumnState = 1;
@@ -335,10 +342,10 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                visible: Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs
+                                visible: rootItem.showRecentSection && recentGrid.count > 0
                                 PlasmaComponents3.Label {
                                     Layout.fillWidth: true
-                                    text: i18n("Recommended")
+                                    text: i18n("Recent")
                                     Accessible.description: i18n("Recently used applications and documents")
                                     font.weight: Font.DemiBold
                                 }
@@ -360,9 +367,8 @@ Item {
                                     ? Math.ceil(count / recentColumns) : Math.min(2, Math.ceil(count / recentColumns))) * cellHeight
                                 cellWidth: Math.max(1, Math.floor(width / recentColumns))
                                 cellHeight: 40
-                                visible: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) && count > 0
-                                model: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
-                                    ? recentUsage : null
+                                visible: rootItem.showRecentSection && count > 0
+                                model: rootItem.showRecentSection ? recentUsage : null
                                 clip: true
                                 // The outer list is the only vertical scroller.
                                 interactive: false
@@ -371,15 +377,9 @@ Item {
                                 delegate: ListItemDelegate { iconSize: Kirigami.Units.iconSizes.smallMedium }
                             }
 
-                            PlasmaComponents3.Label {
-                                Layout.fillWidth: true
-                                text: i18n("No recent items")
-                                color: Kirigami.Theme.disabledTextColor
-                                visible: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) && recentGrid.count === 0
-                            }
-
                             RowLayout {
                                 Layout.fillWidth: true
+                                visible: Plasmoid.configuration.showAllSection
                                 Layout.bottomMargin: Kirigami.Units.smallSpacing
                                 spacing: Kirigami.Units.smallSpacing
 
@@ -464,12 +464,12 @@ Item {
 
                     PlasmaComponents3.ToolButton {
                         id: accountButton
-                        text: kuser.fullName || kuser.loginName
+                        text: Plasmoid.configuration.hideAccountIdentity ? "" : (kuser.fullName || kuser.loginName)
                         Layout.maximumWidth: rootItem.width * 0.32
                         Layout.preferredHeight: 40
                         Layout.alignment: Qt.AlignVCenter
                         Accessible.name: i18n("Account")
-                        Accessible.description: accountButton.text
+                        Accessible.description: accountButton.text || i18n("Account")
                         onClicked: {
                             powerMenu.accountMode = true;
                             powerMenu.visualParent = accountButton;
@@ -485,7 +485,7 @@ Item {
                                 Image {
                                     id: userAvatar
                                     anchors.fill: parent
-                                    source: kuser.faceIconUrl
+                                    source: Plasmoid.configuration.hideAccountIdentity ? "" : kuser.faceIconUrl
                                     cache: false
                                     fillMode: Image.PreserveAspectCrop
                                     visible: status === Image.Ready
@@ -507,6 +507,7 @@ Item {
                             }
                             PlasmaComponents3.Label {
                                 Layout.fillWidth: true
+                                visible: !Plasmoid.configuration.hideAccountIdentity
                                 text: accountButton.text
                                 textFormat: Text.PlainText
                                 elide: Text.ElideRight
@@ -612,7 +613,8 @@ Item {
             }
 
             function hasPinnedApps() {
-                return root.pinnedPage && root.pinnedPage.favoritesList.count > 0;
+                return Plasmoid.configuration.showPinnedSection
+                    && root.pinnedPage && root.pinnedPage.favoritesList.count > 0;
             }
 
             function navigateFromSearch(direction) {

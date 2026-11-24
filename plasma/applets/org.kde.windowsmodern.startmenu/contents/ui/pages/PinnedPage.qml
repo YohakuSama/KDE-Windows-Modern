@@ -18,11 +18,11 @@ import "../components"
 ColumnLayout {
     id: pinnedPage
 
-    spacing: Kirigami.Units.largeSpacing
+    spacing: 8
 
     property alias favoritesList: favoritesListView
     property int columns: width >= 690 ? 8 : (width >= 430 ? 6 : 4)
-    property bool showAllPinned: false
+    readonly property bool showAllPinned: Plasmoid.configuration.showAllPinned
     readonly property int previewRows: Math.max(1, Plasmoid.configuration.numberRows)
 
     signal showAllAppsRequested
@@ -78,7 +78,7 @@ ColumnLayout {
             iconName: pinnedPage.showAllPinned ? "go-up" : "go-down"
             text: pinnedPage.showAllPinned ? i18n("Show less") : i18n("Show all")
             onClicked: {
-                pinnedPage.showAllPinned = !pinnedPage.showAllPinned;
+                Plasmoid.configuration.showAllPinned = !pinnedPage.showAllPinned;
                 if (!pinnedPage.showAllPinned) {
                     favoritesListView.currentIndex = -1;
                     favoritesListView.positionViewAtBeginning();
@@ -123,7 +123,7 @@ ColumnLayout {
 
         onCurrentIndexChanged: {
             if (currentIndex >= pinnedPage.columns * pinnedPage.previewRows)
-                pinnedPage.showAllPinned = true;
+                Plasmoid.configuration.showAllPinned = true;
         }
 
         Keys.onUpPressed: event => {
@@ -132,12 +132,6 @@ ColumnLayout {
                 pinnedPage.keyNavUpFromList();
             }
         }
-    }
-    PlasmaComponents3.Label {
-        Layout.fillWidth: true
-        text: i18n("No pinned apps")
-        color: Kirigami.Theme.disabledTextColor
-        visible: favoritesListView.count === 0
     }
 
 }

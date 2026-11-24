@@ -23,6 +23,10 @@ TestCase {
         tryCompare(page.allAppsList, "columns", 1);
         page.gridMode = true;
         tryCompare(page.allAppsList, "columns", 4);
+        page.flatModel = 12;
+        tryCompare(page.allAppsList, "count", 12);
+        page.showAllSection = false;
+        tryCompare(page.allAppsList, "count", 0);
         page.destroy();
     }
 }

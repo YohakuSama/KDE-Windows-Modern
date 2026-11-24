@@ -6,6 +6,12 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### 26H2 shell polish and integration fixes
+
+- Synchronize the login date formatter with the shared clock/lock-screen version to fix the repository health gate.
+- Add Start size and independent section settings, persistent pin expansion, identity privacy, and collapse empty home sections. Use the current Recent terminology, compact pin spacing and the existing scroll surface.
+- Refine the sound-output affordance and keyboard-accessible detail controls; retain the native audio backend.
+
 ### Windows 11 26H2 Start and Quick Settings
 
 - Use responsive category preview cards and list/grid/category selection in the inline Start home, compact the search field and pinned preview, and remove the redundant All apps shortcut.
