@@ -214,6 +214,7 @@ if [ "$action" = uninstall ]; then
     PYTHON="$PROFILE/bin/python3"
     export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
     [ -x "$PYTHON" ] || { echo "测试运行时缺失，保留备份以免丢失原配置。" >&2; exit 1; }
+    remember_env
     stop_shell
     if ! "$PYTHON" "$ROOT/scripts/nixos-test-state.py" snapshot-current --root "$ROOT" --state "$STATE" --profile "$PROFILE"; then
         start_shell || true
@@ -339,7 +340,8 @@ if [ "$upgrading" -eq 1 ]; then
     printf '%s\n' "$old_profile" > "$BUILD_DIR/previous-runtime"
     capture_env "$BUILD_DIR/previous-env"
     upgrade_args=(--upgrade-backup "$BUILD_DIR/previous")
-    printf '%s\n' "$(basename "$BUILD_DIR")" > "$STATE/pending-build"
+    printf '%s\n' "$(basename "$BUILD_DIR")" > "$BUILD_DIR/pending-marker"
+    mv -T -- "$BUILD_DIR/pending-marker" "$STATE/pending-build"
 fi
 rollback() {
     local rc="${1:-$?}"
@@ -454,6 +456,15 @@ for old_build in "$STATE"/builds/run.*; do
     remove_build_dir "$old_build" || echo "保留无法安全清理的旧构建：$old_build" >&2
 done
 if [ -L "$STATE/runtime-next" ]; then rm -f -- "$STATE/runtime-next"; fi
+# The previous snapshot is safely archived; leave only the active build root.
+if [ -d "$BUILD_DIR/previous" ] && [ ! -L "$BUILD_DIR/previous" ]; then
+    if find -P "$BUILD_DIR/previous" -type d -exec chmod u+rwx -- {} + &&
+       rm -rf -- "$BUILD_DIR/previous"; then
+        rm -f -- "$BUILD_DIR/previous-env" "$BUILD_DIR/previous-runtime"
+    else
+        echo "已保留重复升级备份：$BUILD_DIR/previous" >&2
+    fi
+fi
 printf '安装完成，当前运行时：%s\n构建编号：%s\n' "$PROFILE" "$BUILD_TOKEN"
 echo "原版壁纸、锁屏、开始菜单、任务栏及快捷设置已更新。"
 echo "运行同一脚本并选择 2，即可恢复原桌面并清理本次安装。"
