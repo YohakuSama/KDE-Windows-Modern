@@ -33,8 +33,12 @@ Item {
             mouseMove(testList, 80, 100);
             tryCompare(bar, "thumbWidth", 2);
             compare(bar.width, 16);
+            tryCompare(bar, "indicatorVisible", false);
             mouseMove(bar, bar.width / 2, bar.height / 2);
             tryCompare(bar, "thumbWidth", 6);
+            tryCompare(bar, "indicatorVisible", true);
+            mouseMove(testList, 80, 100);
+            tryCompare(bar, "indicatorVisible", false);
         }
         function test_threeRowsPerNotch() {
             mouseWheel(testList, 80, 100, 0, -120);

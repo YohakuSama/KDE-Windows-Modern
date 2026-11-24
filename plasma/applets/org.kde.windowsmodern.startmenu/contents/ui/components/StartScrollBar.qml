@@ -15,6 +15,8 @@ QQC2.ScrollBar {
     stepSize: Math.max(0.01, size * 0.9)
     minimumSize: height > 0 ? Math.min(1, 32 / height) : 0
     readonly property int thumbWidth: pointer.hovered || pressed ? 6 : 2
+    // Keep the input gutter available without painting an idle thumb.
+    readonly property bool indicatorVisible: size < 1 && (active || pointer.hovered || pressed)
 
     HoverHandler { id: pointer }
 
@@ -29,7 +31,10 @@ QQC2.ScrollBar {
             width: bar.thumbWidth
             radius: width / 2
             color: Kirigami.Theme.textColor
-            opacity: bar.size < 1 ? (bar.pressed ? 0.72 : 0.55) : 0
+            opacity: bar.indicatorVisible ? (bar.pressed ? 0.72 : 0.55) : 0
+            Behavior on opacity {
+                NumberAnimation { duration: 100 }
+            }
             Behavior on width {
                 NumberAnimation { duration: Kirigami.Units.shortDuration }
             }

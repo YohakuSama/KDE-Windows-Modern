@@ -27,6 +27,10 @@ ColumnLayout {
     // The applet root (main.qml): the clock and the popup's expanded state.
     required property var applet
     readonly property date today: applet.currentTime
+    // Use the same row pitch in the month and zoomed-out views.
+    property real dayHeightLimit: 40
+    readonly property real chromeHeight: Math.ceil(monthNavigation.implicitHeight
+        + weekdayMetrics.height + 2 * spacing + 5 * calendarGrid.spacing)
 
     // Year/month currently displayed by the calendar (0-based month).
     property int displayedYear: today.getFullYear()
@@ -228,6 +232,7 @@ ColumnLayout {
 
     // Month/year navigation header. The title zooms out when clicked.
     RowLayout {
+        id: monthNavigation
         Layout.fillWidth: true
         spacing: Kirigami.Units.smallSpacing
 
@@ -316,7 +321,8 @@ ColumnLayout {
             ? Kirigami.Units.gridUnit * 1.5 : 0
         readonly property real dayCellSize: Math.max(28,
             (width - weekColumnWidth - 6 * calendarGrid.spacing) / 7)
-        Layout.preferredHeight: Math.ceil(dayCellSize * 6 + 5 * calendarGrid.spacing
+        readonly property real dayCellHeight: Math.max(1, Math.min(dayCellSize, calendarView.dayHeightLimit))
+        Layout.preferredHeight: Math.ceil(dayCellHeight * 6 + 5 * calendarGrid.spacing
             + weekdayMetrics.height + calendarView.spacing)
         Layout.minimumHeight: Layout.preferredHeight
         clip: true
@@ -399,6 +405,7 @@ ColumnLayout {
                     CalendarGrid {
                         id: calendarGrid
                         calendarController: calendarView
+                        rowHeight: zoomHost.dayCellHeight
                         Layout.fillWidth: true
                         Layout.preferredHeight: calendarGrid.cellHeight * 6 + calendarGrid.spacing * 5
                     }

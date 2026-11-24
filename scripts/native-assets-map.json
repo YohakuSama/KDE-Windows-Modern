@@ -464,9 +464,7 @@
     "volume": [
       "e992",
       "e993",
-      "e994",
-      "e995",
-      "e74f"
+      "e994"
     ],
     "battery": [
       "e996",
@@ -491,13 +489,24 @@
       "e861",
       "e862",
       "e83e",
-      "ea93",
-      "eb1a"
+      "ea93"
     ],
     "notification": [
       "f2a3",
       "f2a5",
       "f2a8"
+    ],
+    "batteryUnknownCharging": [
+      "eb1a"
+    ],
+    "volumeHigh": [
+      "e995"
+    ],
+    "volumeMuted": [
+      "e74f"
+    ],
+    "bluetooth": [
+      "e702"
     ]
   }
 }

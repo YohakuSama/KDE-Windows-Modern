@@ -44,8 +44,12 @@ Item {
             mouseMove(view, 100, 100);
             tryCompare(bar, "thumbWidth", 2);
             compare(bar.width, 16);
+            tryCompare(bar, "indicatorVisible", false);
             mouseMove(bar, bar.width / 2, bar.height / 2);
             tryCompare(bar, "thumbWidth", 6);
+            tryCompare(bar, "indicatorVisible", true);
+            mouseMove(view, 80, 100);
+            tryCompare(bar, "indicatorVisible", false);
         }
         function test_wheelMovesImmediatelyToNextRow() {
             mouseWheel(view, 100, 100, 0, -120);

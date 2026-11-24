@@ -49,3 +49,10 @@ Revision after owner comparison screenshots:
   painted bounds, shell flyout width/height, exact grid, alignment, material
   and interaction require captures of the matching native shell. The 28px
   task canvas is still provisional pending that comparison.
+
+## Notification and tray follow-up from 150% owner captures
+
+- Do not wrap the complete notification/calendar flyout in a Flickable. Give notifications the available space and keep calendar navigation and all six rows within the screen budget. Hide the empty agenda; keep real events and optional time zones.
+- All Fluent scrollbars retain the 16 epx input region and native thumb drag. Paint the 2 epx indicator only during interaction; expand to 6 epx on hover/press. Quick Settings retains the 24H2 paging arrows and wheel access to extra rows. Brightness and volume sliders are functional controls, not redundant scrollbars.
+- The imported font's battery-unknown-charging glyph is 2560 font units wide, while normal battery outlines are approximately 1664 and charging outlines 1836. It must not determine normal battery scaling. Keep the normal battery levels and charging states together, separate the exceptional glyph. Treat the loudest speaker and mute glyph separately from the ordinary speaker family, preserving the relative speaker body geometry. Bluetooth uses its own original outline. No change to the 16 logical-pixel tray box, 28px task box, or installer.
+- These changes use the actual source font geometry; verify the rendered desktop at 150% before claiming a matching shell appearance.

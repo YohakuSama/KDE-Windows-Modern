@@ -17,16 +17,17 @@ Item {
     id: calendarGrid
     required property var calendarController
 
-    // Square cells: height derived from width, clamped to avoid negative/zero sizes.
-    readonly property real cellWidth: Math.max(28, (width - (columns - 1) * spacing) / columns)
-    readonly property real cellHeight: cellWidth
+    // Keep seven columns and six rows visible even on a shorter screen.
+    readonly property real cellWidth: Math.max(1, (width - (columns - 1) * spacing) / columns)
+    property real rowHeight: cellWidth
+    readonly property real cellHeight: Math.max(1, Math.min(cellWidth, rowHeight))
 
     readonly property int columns: 7
     readonly property int rows: 6
     property real spacing: Kirigami.Units.smallSpacing / 2
 
     Layout.preferredHeight: cellHeight * rows + spacing * (rows - 1)
-    Layout.minimumHeight: 240
+    Layout.minimumHeight: Layout.preferredHeight
 
     function crossfade() {
         grid.opacity = 0;

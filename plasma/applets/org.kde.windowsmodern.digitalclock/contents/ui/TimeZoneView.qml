@@ -8,6 +8,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls as QQC2
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents
@@ -36,8 +37,19 @@ ColumnLayout {
     ListView {
         id: clocksList
         Layout.fillWidth: true
+        Layout.fillHeight: true
+        Layout.minimumHeight: 0
         Layout.preferredHeight: contentHeight
-        interactive: false
+        clip: true
+        interactive: contentHeight > height
+        boundsBehavior: Flickable.StopAtBounds
+        QQC2.ScrollBar.vertical: FluentScrollBar {}
+        Kirigami.WheelHandler {
+            target: clocksList
+            filterMouseEvents: true
+            keyNavigationEnabled: false
+            verticalStepSize: 120
+        }
 
         model: timeZoneView.applet.selectedTimeZonesDeduplicatingExplicitLocalTimeZone()
 
