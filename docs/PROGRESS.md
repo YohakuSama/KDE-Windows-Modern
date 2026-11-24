@@ -180,3 +180,7 @@ added to main. Source changes need CI and desktop reference validation.
 ## System action review
 
 Use real SessionManagement hibernate capability, add its row only when available, preserve existing power actions, and use explicit symbolic icon names for the power/account menu. Align original mapped status/action aliases; test the source roles and keyboard navigation with and without hibernate. The exact Windows hibernate icon remains unverified; use the existing semantic KDE fallback. Existing mapped source IDs occur in the owner index, but visual review remains separate. No blind artwork replacements or new Windows binary assets. Full NixOS plugin builds and live acceptance remain pending.
+
+## Installer safety for owner testing
+
+Reject the full mutable-system plugin/layout installation on NixOS. Add a user-space preview that stages theme/icon/QML components, applies the global theme without resetting the panel, and preserves the existing native task manager/tray. Exclude system plugin install, dependency manager, shell override, shortcuts and greeter. Full installation on other distros aborts layout reset if component installation failed. This is a limited preview, not full NixOS packaging; live tests are pending.

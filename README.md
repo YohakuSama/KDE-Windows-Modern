@@ -78,6 +78,11 @@ Windows Modern includes matching window decorations, widget styles, color scheme
 
 ## Installation
 
+### NixOS: limited user-space preview
+
+The full mutable-system installer and Fedora prebuilt C++ plugins do not support NixOS yet. For a limited theme test, use `./install.sh preview --dark` (or `--light`) as your desktop user, not root. Ensure KDE/Qt, Kvantum, Bash, Python and the resource import dependencies are present through your own system configuration. To use original Windows icons, import your local indexed resources before preview (see [Native assets](docs/NATIVE_ASSETS.md)). The preview stages and applies the theme without resetting your panel; add Windows Modern Start, Search, Task View and Digital Clock manually through Add Widgets. The native task manager and tray remain in place. Custom C++ tray/taskbar, session-lock overlay and greeter require a separate NixOS package/integration test. Restore saved settings with `./uninstall.sh --list-backups` and `./uninstall.sh --restore`. The preview itself still requires live NixOS validation.
+
+
 ### Quick start (also: setting up a new machine)
 
 ```bash
