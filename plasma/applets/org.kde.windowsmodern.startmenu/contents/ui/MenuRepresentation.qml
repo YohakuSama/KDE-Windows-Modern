@@ -171,7 +171,7 @@ Item {
             // Initial search focus is handled by reset().
 
             Plasma5Support.DataSource {
-                id: executable
+                id: commandSource
                 engine: "executable"
                 connectedSources: []
 
@@ -256,7 +256,9 @@ Item {
                     rootItem.activateCurrentItem();
                 }
                 onSearchEscapePressed: {
-                    if (startSearch.searchText !== "") {
+                    if (powerMenu.opened) {
+                        powerMenu.close();
+                    } else if (startSearch.searchText !== "") {
                         startSearch.searchText = "";
                     } else {
                         root.closeMenu();
@@ -316,7 +318,7 @@ Item {
                                 cellWidth: Math.max(1, Math.floor(width / 2))
                                 cellHeight: Math.max(48, Kirigami.Units.iconSizes.smallMedium + Kirigami.Units.gridUnit)
                                 visible: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) && count > 0
-                                model: visible || Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs
+                                model: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
                                     ? recentUsage : null
                                 clip: true
                                 interactive: contentHeight > height
@@ -385,7 +387,7 @@ Item {
                         Layout.maximumWidth: rootItem.width * 0.32
                         Layout.preferredHeight: Kirigami.Units.gridUnit * 2
                         onClicked: {
-                            executable.exec("systemsettings kcm_users");
+                            commandSource.exec("systemsettings kcm_users");
                             root.closeMenu();
                         }
                         contentItem: RowLayout {
@@ -434,7 +436,7 @@ Item {
                         Layout.fillWidth: visible
                         Layout.maximumWidth: implicitWidth
                         Layout.minimumWidth: 0
-                        executable: executable
+                        executable: commandSource
                     }
 
                     PlasmaComponents3.ToolButton {
@@ -601,8 +603,10 @@ Item {
 
                 if (event.key === Qt.Key_Escape) {
                     event.accepted = true;
-                    if (root.searching) {
-                        reset();
+                    if (powerMenu.opened) {
+                        powerMenu.close();
+                    } else if (root.searching) {
+                        root.reset();
                     } else if (root.leftColumnState === 1) {
                         root.leftColumnState = 0;
                         startSearch.focusSearch();

@@ -186,6 +186,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        preventStealing: item.dragEnabled && (pressedButtons & Qt.LeftButton) !== 0
         cursorShape: item._dragging ? Qt.DragMoveCursor : Qt.PointingHandCursor
         // Keep drag above sibling delegates so the lifted content paints
         // on top while being dragged.
@@ -272,6 +273,7 @@ Item {
             item._dragStartY = localY;
             item._dragOffsetY = 0;
             view.draggingIndex = item.itemIndex;
+            view.dropTargetIndex = item.itemIndex;
         }
 
         function updateDrag(localX, localY) {

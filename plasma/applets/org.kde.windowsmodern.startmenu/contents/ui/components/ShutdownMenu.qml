@@ -71,6 +71,7 @@ Item {
             spacing: 0
 
             PowerOption {
+                id: lockOption
                 iconSource: "system-lock-screen"
                 label: i18n("Lock")
                 optionEnabled: sessionManager.canLock
@@ -157,9 +158,11 @@ Item {
         popup.y = Math.max(gap, Math.min(pos.y, root.height - popupH - gap))
         popup.visible = true
         popup.opacity = 1
+        if (lockOption.optionEnabled) lockOption.forceActiveFocus();
     }
 
     function close() {
+        if (!popup.visible) return;
         popup.visible = false
         popup.opacity = 0
         root.closed()

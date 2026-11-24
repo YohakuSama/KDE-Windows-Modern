@@ -6,6 +6,16 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Quick Settings and taskbar refinements
+
+- Give Quick Settings a two-row scrolling tile viewport and keep the sliders
+  and footer stationary. Respect hardware availability and existing visibility
+  settings; use the system UI font for tile labels.
+- Correct the thumbnail popup height limit on short displays, avoid audio/count
+  badge overlap in the fork and cap badge labels at 99+.
+- Follow up on Start footer command scoping, grid drag cancellation and
+  keyboard focus in the power menu.
+
 ### Start menu
 
 - Replace the inherited two-column layout with top search, a responsive pinned

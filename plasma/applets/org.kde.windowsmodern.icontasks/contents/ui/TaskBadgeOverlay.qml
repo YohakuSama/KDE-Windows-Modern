@@ -15,7 +15,7 @@ Item {
     readonly property bool verySmallIcon:
         icon.width < Kirigami.Units.iconSizes.smallMedium ||
         icon.height < Kirigami.Units.iconSizes.smallMedium
-    readonly property bool shiftBadgeDown: (Plasmoid.pluginName === "org.kde.plasma.icontasks") && task.audioStreamIcon !== null
+    readonly property bool shiftBadgeDown: task.audioStreamIcon !== null
     readonly property int badgeMaskY: shiftBadgeDown ? root.height - badgeRect.height : 0
     readonly property int offset: Math.round(Math.max(Kirigami.Units.smallSpacing / 2, badgeMask.width / 32))
     readonly property int extraHorizontalOffset: verySmallIcon && badgeRect.text.length > 2 ? -2 : 0
@@ -93,18 +93,12 @@ Item {
 
         padding: Math.floor(root.badgeScaleFactor * 2)
 
-        font.pointSize: Math.floor((Kirigami.Theme.smallFont.pointSize * root.badgeScaleFactor))
+        font.pointSize: Math.max(1, Math.floor(Kirigami.Theme.smallFont.pointSize * root.badgeScaleFactor))
+        font.weight: Font.DemiBold
 
         text: {
             let unreadCount = task.smartLauncherItem.count;
-            if (unreadCount > 9999) {
-                return i18nc("'k' is a suffix for 'thousand'; keep to one character or else the badge could overflow!", "9k+");
-            } else if (unreadCount > 999) {
-                let rounded = Math.floor(unreadCount / 1000);
-                return i18nc("'k' is a suffix for 'thousand'; keep to one character or else the badge could overflow!", "%1k", rounded);
-            } else {
-               return unreadCount.toLocaleString(Qt.locale(), 'f', 0);
-            }
+            return unreadCount > 99 ? "99+" : unreadCount.toLocaleString(Qt.locale(), 'f', 0);
         }
     }
 }

@@ -17,7 +17,7 @@ RowLayout {
     id: searchBox
 
     spacing: Kirigami.Units.largeSpacing
-    width: parent.width
+    height: implicitHeight
 
     property alias searchText: searchFieldInput.text
 

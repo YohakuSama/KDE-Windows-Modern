@@ -328,8 +328,11 @@ Quick Settings action and hover treatment, and stay next to each other.
 Win+A opens Quick Settings. Right-clicks and wheel actions retain their KDE
 behavior. Unpinned, renderable applets remain reachable from overflow rather
 than being hidden entirely. Both home views fit their content; overflow shows
-up to three rows before scrolling. The clock uses logical Qt font metrics to
-avoid double scaling and right-aligns its time/date text.
+up to three rows before scrolling. Quick Settings has two visible rows of
+scrollable tiles; sliders and footer remain outside the scroll area. Keep
+hardware availability and user visibility conditions together, and use system
+fonts for tile labels. The clock uses logical Qt font metrics to avoid double
+scaling and right-aligns its time/date text.
 
 #### Icon Tasks applet (`plasma/applets/org.kde.windowsmodern.icontasks/`)
 
