@@ -6,6 +6,24 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Quick Settings and taskbar refinements
+
+- Give Quick Settings a two-row scrolling tile viewport and keep the sliders
+  and footer stationary. Respect hardware availability and existing visibility
+  settings; use the system UI font for tile labels.
+- Correct the thumbnail popup height limit on short displays, avoid audio/count
+  badge overlap in the fork and cap badge labels at 99+.
+- Follow up on Start footer command scoping, grid drag cancellation and
+  keyboard focus in the power menu.
+
+### Start menu
+
+- Replace the inherited two-column layout with top search, a responsive pinned
+  grid, local Recent items and a scrollable All list. Keep Kicker favorites,
+  search, sorting, drag and context actions.
+- Move account, configured system shortcuts and a menu-only power button to
+  the footer. Preserve system typography and existing user preferences.
+
 ### Notification center
 
 - Combine shared KDE notification history and calendar in the clock flyout.

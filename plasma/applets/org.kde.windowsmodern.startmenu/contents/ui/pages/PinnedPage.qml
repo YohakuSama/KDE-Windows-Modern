@@ -2,13 +2,13 @@
  *   License: GPL-3.0-or-later
  *   Author: Jeysef
  *
- *   StartAllBack-style pinned page: a vertical list of favorite apps using
- *   ListItemDelegate.  The "All apps >" header toggle asks the shell to
- *   swap the left column to the full alphabetical list.
+ *   Pinned application grid using the same Kicker favorites model and
+ *   shared delegate as All. The header shortcut scrolls to installed apps.
  ***************************************************************************/
 
 import QtQuick
 import QtQuick.Layouts
+import org.kde.plasma.plasmoid
 
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
@@ -21,6 +21,7 @@ ColumnLayout {
     spacing: Kirigami.Units.largeSpacing
 
     property alias favoritesList: favoritesListView
+    property int columns: width >= 690 ? 8 : (width >= 430 ? 6 : 4)
 
     signal showAllAppsRequested
     signal keyNavUpFromList
@@ -28,18 +29,20 @@ ColumnLayout {
     function tryActivate(row) {
         if (favoritesListView.count > 0) {
             favoritesListView.currentIndex = Math.min(row, favoritesListView.count - 1);
+            favoritesListView.forceActiveFocus();
         }
     }
 
     function navigateUp() {
         if (favoritesListView.count > 0) {
-            favoritesListView.currentIndex = Math.max(0, favoritesListView.currentIndex - 1);
+            favoritesListView.currentIndex = Math.max(0, favoritesListView.currentIndex - pinnedPage.columns);
         }
     }
 
     function navigateDown() {
         if (favoritesListView.count > 0) {
-            favoritesListView.currentIndex = Math.min(favoritesListView.count - 1, favoritesListView.currentIndex + 1);
+            favoritesListView.currentIndex = Math.min(favoritesListView.count - 1,
+                favoritesListView.currentIndex < 0 ? 0 : favoritesListView.currentIndex + pinnedPage.columns);
         }
     }
 
@@ -76,14 +79,18 @@ ColumnLayout {
         }
     }
 
-    // ── Pinned favorites vertical list ──────────────────────────────────
-    ListView {
+    // Responsive pinned grid, limited to a few visible rows. Extra pins
+    // remain scrollable and reorderable without affecting the All list.
+    GridView {
         id: favoritesListView
         Layout.fillWidth: true
-        Layout.fillHeight: true
+        Layout.preferredHeight: Math.min(Math.max(1, Plasmoid.configuration.numberRows),
+            Math.ceil(count / pinnedPage.columns)) * cellHeight
+        visible: count > 0
         clip: true
-        interactive: true
-        spacing: Kirigami.Units.smallSpacing / 2
+        interactive: contentHeight > height
+        cellWidth: Math.max(1, Math.floor(width / pinnedPage.columns))
+        cellHeight: Math.max(80, Kirigami.Units.iconSizes.medium + 2 * Kirigami.Units.gridUnit + 12)
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
 
@@ -99,17 +106,26 @@ ColumnLayout {
         }
 
         delegate: ListItemDelegate {
-            iconSize: Kirigami.Units.iconSizes.smallMedium
+            gridMode: true
+            iconSize: Kirigami.Units.iconSizes.medium
             dragEnabled: true
         }
 
         highlightMoveDuration: 0
+        keyNavigationEnabled: true
 
         Keys.onUpPressed: event => {
-            if (currentIndex <= 0) {
+            if (currentIndex < pinnedPage.columns) {
                 event.accepted = true;
                 pinnedPage.keyNavUpFromList();
             }
         }
     }
+    PlasmaComponents3.Label {
+        Layout.fillWidth: true
+        text: i18n("No pinned apps")
+        color: Kirigami.Theme.disabledTextColor
+        visible: favoritesListView.count === 0
+    }
+
 }

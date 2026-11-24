@@ -101,7 +101,7 @@ Loader {
         PlasmaComponents3.ScrollView {
             // 2 * Kirigami.Units.smallSpacing is for the margin of tooltipDialog
             readonly property real maximumWidth: Screen.desktopAvailableWidth - 2 * Kirigami.Units.smallSpacing
-            readonly property real maximumHeight: Screen.desktopAvailableWidth - 2 * Kirigami.Units.smallSpacing
+            readonly property real maximumHeight: Screen.desktopAvailableHeight - 2 * Kirigami.Units.smallSpacing
 
             implicitWidth: {
                 // when vertical, all delegates have the same fixed width, but with an extra

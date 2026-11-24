@@ -25,7 +25,7 @@ Item {
     // keep the existing 360px surface and their KDE backends.
     readonly property bool overflowHome: systemTrayState.overflowMode && !systemTrayState.activeApplet
     readonly property int popupWidth: overflowHome
-        ? Math.round(216 * actionPanel.scale) : 360
+        ? Math.round(216 * actionPanel.scale) : Math.round(360 * actionPanel.scale)
     Layout.minimumWidth: popupWidth
     Layout.maximumWidth: popupWidth
 

@@ -117,7 +117,8 @@ Lib.Slider {
     onPanelScreenGeometryChanged: root.refreshDisplays()
     onPanelScreenIndexChanged: root.refreshDisplays()
 
-    visible: sbControl.isBrightnessAvailable && mainScreen !== null
+    readonly property bool brightnessAvailable: sbControl.isBrightnessAvailable && mainScreen !== null
+    visible: brightnessAvailable
     from: mainScreen ? (mainScreen.maxBrightness > 100 ? 1 : 0) : 0
     to: mainScreen ? mainScreen.maxBrightness : 100
     value: mainScreen ? mainScreen.brightness : 0

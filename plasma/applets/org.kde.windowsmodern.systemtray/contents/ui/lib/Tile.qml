@@ -92,7 +92,8 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         text: tile.label
         color: Kirigami.Theme.textColor
-        font.pixelSize: 10
+        font: Kirigami.Theme.defaultFont
+        maximumLineCount: 1
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter
     }

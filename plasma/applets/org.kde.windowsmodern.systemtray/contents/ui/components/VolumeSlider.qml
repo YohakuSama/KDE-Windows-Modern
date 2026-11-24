@@ -22,6 +22,7 @@ Lib.Slider {
     stepSize: Math.round(maxVol / 100)
 
     onMoved: function (v) {
+        if (!sinkAvailable) return;
         sink.volume = v;
         sink.muted = v === 0;
         if (!pressed && sinkAvailable)

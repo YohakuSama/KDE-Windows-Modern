@@ -233,27 +233,16 @@ A Win11-style start menu ported from the reference plasmoid
 plus independent pages (`PinnedPage.qml`, `AllAppsPage.qml`, `SearchPage.qml`)
 and shared grid components (see file tree below).
 
-**Phase 1 (complete):**
-- `PlasmaCore.Dialog` with `Floating` location, positioned relative to the
-  actual compact button via `main.parent.mapToGlobal`, with the default mode
-  following that button and a shared, tested screen-bound geometry helper.
-- Search field with rounded corners (`radius: smallSpacing*3`) and subtle
-  border (12% text color alpha), Segoe UI font.
-- Left column switches between three states (not a `SwipeView`): Pinned
-  (favorites vertical list), All Apps (alphabetical vertical list),
-  Search (filter pills + runner results).
-- Right column with user avatar and a vertical list of system locations
-  (Home, Documents, Pictures, Music, etc.).
-- Compound bottom bar with a search field on the left and a split
-  "Shut down" button on the right that opens a power-options popup.
-- `AToolButton` with rounded corners (`radius: smallSpacing`), gray border,
-  subtle hover (rgba 0.3).
-- Config UI: icon picker, icon sizes, display position, right-column
-  visibility, all-apps sort mode.
-
-**Phase 2 (pending):** pinned folders, all-apps folders, launch-frequency
- tracking, smart context labels, and a `/`-prefix command palette.
- See `docs/STARTMENU_PLAN.md` for the full plan.
+**Native Windows 11 layout (integration, runtime validation pending):**
+- Search at the top, an inline Pinned/Recent header in the virtualized All
+  list, and a separate account/folder/power footer.
+- Pinned apps use a responsive 6/8-column grid (4 on very narrow screens);
+  keep Kicker favorites, context actions and drag-reorder.
+- Recent uses Kicker's local history model and the existing independent
+  app/file preferences. All uses the existing sorted list.
+- Power opens the options menu; no direct shutdown on the footer click.
+- Keep system fonts and the Plasma popup frame. Exact dimensions, category
+  and grid variants of All, and account submenu need reference validation.
 
 **Imports:** Modern Qt6 style (no version numbers except
 `org.kde.plasma.private.kicker 0.1` and `org.kde.kitemmodels 1.0`).
@@ -339,8 +328,11 @@ Quick Settings action and hover treatment, and stay next to each other.
 Win+A opens Quick Settings. Right-clicks and wheel actions retain their KDE
 behavior. Unpinned, renderable applets remain reachable from overflow rather
 than being hidden entirely. Both home views fit their content; overflow shows
-up to three rows before scrolling. The clock uses logical Qt font metrics to
-avoid double scaling and right-aligns its time/date text.
+up to three rows before scrolling. Quick Settings has two visible rows of
+scrollable tiles; sliders and footer remain outside the scroll area. Keep
+hardware availability and user visibility conditions together, and use system
+fonts for tile labels. The clock uses logical Qt font metrics to avoid double
+scaling and right-aligns its time/date text.
 
 #### Icon Tasks applet (`plasma/applets/org.kde.windowsmodern.icontasks/`)
 

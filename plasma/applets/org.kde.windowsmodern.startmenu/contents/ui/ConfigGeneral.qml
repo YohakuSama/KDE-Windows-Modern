@@ -25,6 +25,8 @@ KCM.SimpleKCM {
     property alias cfg_showRightColumn: showRightColumn.checked
     property alias cfg_allAppsSortMode: allAppsSortMode.currentIndex
     property alias cfg_menuTranslucency: menuTranslucency.currentIndex
+    property alias cfg_showRecentApps: recentApps.checked
+    property alias cfg_showRecentDocs: recentDocs.checked
 
     Kirigami.FormLayout {
         anchors.left: parent.left
@@ -109,7 +111,16 @@ KCM.SimpleKCM {
         // ── Show places column ─────────────────────────────────────────
         CheckBox {
             id: showRightColumn
-            Kirigami.FormData.label: i18n("Show places column")
+            Kirigami.FormData.label: i18n("Show folder shortcuts in footer")
+        }
+
+        CheckBox {
+            id: recentApps
+            Kirigami.FormData.label: i18n("Show recent applications")
+        }
+        CheckBox {
+            id: recentDocs
+            Kirigami.FormData.label: i18n("Show recent files")
         }
 
         // ── All apps sort ──────────────────────────────────────────────

@@ -2,7 +2,7 @@
  *   License: GPL-3.0-or-later
  *   Author: Jeysef
  *
- *   Power options popup for the "Shut down" split button.  Rendered as
+ *   Power options popup for the Start footer power button.  Rendered as
  *   an in-dialog floating panel (NOT a separate PlasmaComponents3.Menu
  *   window) so the parent dialog's hideOnWindowDeactivate does not fire
  *   and close the whole start menu.
@@ -71,6 +71,7 @@ Item {
             spacing: 0
 
             PowerOption {
+                id: lockOption
                 iconSource: "system-lock-screen"
                 label: i18n("Lock")
                 optionEnabled: sessionManager.canLock
@@ -154,12 +155,14 @@ Item {
         pos.x = Math.max(gap, Math.min(pos.x, root.width - popupW - gap))
 
         popup.x = pos.x
-        popup.y = pos.y
+        popup.y = Math.max(gap, Math.min(pos.y, root.height - popupH - gap))
         popup.visible = true
         popup.opacity = 1
+        if (lockOption.optionEnabled) lockOption.forceActiveFocus();
     }
 
     function close() {
+        if (!popup.visible) return;
         popup.visible = false
         popup.opacity = 0
         root.closed()

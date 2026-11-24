@@ -15,6 +15,7 @@ Rectangle {
     id: footer
 
     property real uiScale: 1
+    property bool showBattery: true
 
     signal batteryClicked
 
@@ -34,7 +35,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: Math.round(20 * footer.uiScale)
         anchors.verticalCenter: parent.verticalCenter
-        visible: battery.hasBattery
+        visible: footer.showBattery && battery.hasBattery
         opacity: batteryMouse.containsMouse ? 1 : 0.85
 
         Accessible.role: Accessible.Button

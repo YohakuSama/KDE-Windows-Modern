@@ -2,16 +2,8 @@
  *   License: GPL-3.0-or-later
  *   Author: Jeysef
  *
- *   StartAllBack-style two-column start menu shell:
- *     ┌──────────────────────────────┬─────────────────┐
- *     │  Pinned / All apps (left)    │  User avatar    │
- *     │                              ├─────────────────┤
- *     │  vertical list of apps       │  System         │
- *     │                              │  locations      │
- *     ├──────────────────────────────┴─────────────────┤
- *     │  [Search programs and files...]  [Shut down >] │
- *     └────────────────────────────────────────────────┘
- *
+ *   Windows 11 Start shell: search, scrollable Pinned / Recent / All,
+ *   and independent account / folder / power footer.
  *   Pages live in pages/, shared components in components/.
  *   Keyboard input is handled by a single top-level handler on rootItem
  *   so any printable character appends to the search field regardless
@@ -31,6 +23,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.kitemmodels 1.0 as KItemModels
 import org.kde.coreaddons as KCoreAddons
+import org.kde.plasma.private.kicker 0.1 as Kicker
 
 import "components"
 import "pages"
@@ -81,9 +74,11 @@ Item {
                 : PlasmaCore.Dialog.StandardBackground;
         }
 
-        property bool searching: bottomBarContent.searchText !== ""
+        property bool searching: startSearch.searchText !== ""
 
-        // Left-column state: 0 = pinned, 1 = all apps, 2 = search results
+        // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results.
+        // Pinned and All now share the same scrollable home.
+        readonly property var pinnedPage: allAppsPage.allAppsList.headerItem?.pinnedSectionItem ?? null
         property int leftColumnState: 0
 
         onSearchingChanged: {
@@ -121,17 +116,21 @@ Item {
         }
 
         function reset() {
-            bottomBarContent.searchText = "";
+            startSearch.searchText = "";
             leftColumnState = 0;
             // Nothing highlighted until hovered or picked with the arrow keys,
             // as on Windows (a ListView makes its first item current as soon
             // as it has items, so the first pinned app always looked selected).
-            pinnedPage.favoritesList.currentIndex = -1;
+            if (root.pinnedPage) {
+                root.pinnedPage.favoritesList.currentIndex = -1;
+                root.pinnedPage.favoritesList.positionViewAtBeginning();
+            }
             allAppsPage.allAppsList.currentIndex = -1;
+            allAppsPage.allAppsList.positionViewAtBeginning();
             // Reset the search filter pills to "All".
             searchPage.resultsView.singleRunner = "";
             // Defer focus until the dialog has finished laying out.
-            Qt.callLater(bottomBarContent.focusSearch);
+            Qt.callLater(startSearch.focusSearch);
         }
 
         function closeMenu() {
@@ -159,15 +158,11 @@ Item {
         FocusScope {
             id: rootItem
 
-            readonly property int leftColumnWidth: Kirigami.Units.gridUnit * 14
-            readonly property int rightColumnWidth: Kirigami.Units.gridUnit * 10
-            // Height derived from ~10 list rows + header + padding rather
-            // than a fixed grid-unit count.
-            readonly property int rowHeight: Kirigami.Units.gridUnit * 2
-            readonly property int mainContentHeight: rowHeight * 12 + Kirigami.Units.gridUnit * 2
-
-            width: leftColumnWidth + rightColumnWidth + Kirigami.Units.gridUnit * 3
-            height: mainContentHeight + bottomBar.height + Kirigami.Units.gridUnit * 3
+            readonly property int margin: Kirigami.Units.gridUnit
+            readonly property rect screen: Plasmoid.screenGeometry
+            readonly property int wantedWidth: screen.width >= 1440 ? 768 : 600
+            width: Math.max(1, Math.min(wantedWidth, screen.width > 0 ? screen.width - 2 * margin : wantedWidth))
+            height: Math.max(1, Math.min(720, screen.height > 0 ? screen.height - 4 * margin : 720))
             focus: true
 
             // Note: do NOT auto-redirect to the search field here.
@@ -176,7 +171,7 @@ Item {
             // Initial search focus is handled by reset().
 
             Plasma5Support.DataSource {
-                id: executable
+                id: commandSource
                 engine: "executable"
                 connectedSources: []
 
@@ -219,166 +214,155 @@ Item {
                 property var favoritesModel: sourceModel ? sourceModel.favoritesModel : null
             }
 
-            // ── Two-column main content area ──────────────────────────────
-            RowLayout {
-                id: mainColumns
+            Kicker.RecentUsageModel {
+                id: recentUsage
+                shownItems: Plasmoid.configuration.showRecentApps && Plasmoid.configuration.showRecentDocs
+                    ? Kicker.RecentUsageModel.AppsAndDocs
+                    : Plasmoid.configuration.showRecentApps
+                        ? Kicker.RecentUsageModel.OnlyApps : Kicker.RecentUsageModel.OnlyDocs
+                ordering: Kicker.RecentUsageModel.Recent
+            }
+
+            StartSearchField {
+                id: startSearch
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.bottom: bottomBar.top
-                anchors.topMargin: Kirigami.Units.gridUnit
-                anchors.bottomMargin: Kirigami.Units.gridUnit
-                anchors.leftMargin: Kirigami.Units.gridUnit
-                anchors.rightMargin: Kirigami.Units.gridUnit
-                spacing: 0
+                anchors.margins: rootItem.margin
 
-                // ── Left column: pinned / all-apps / search ─────────────────
-                ColumnLayout {
-                    id: leftColumn
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.preferredWidth: rootItem.leftColumnWidth
-                    Layout.rightMargin: Kirigami.Units.mediumSpacing
-                    spacing: Kirigami.Units.smallSpacing
-
-                    PinnedPage {
-                        id: pinnedPage
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        visible: root.leftColumnState === 0
-                        onShowAllAppsRequested: {
-                            allAppsPage.allAppsList.currentIndex = -1;
-                            root.leftColumnState = 1;
-                        }
-                        onKeyNavUpFromList: bottomBarContent.focusSearch()
-                    }
-
-                    AllAppsPage {
-                        id: allAppsPage
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        visible: root.leftColumnState === 1
-                        onBackRequested: {
-                            root.leftColumnState = 0;
-                        }
-                        onKeyNavUpFromList: bottomBarContent.focusSearch()
-                    }
-
-                    SearchPage {
-                        id: searchPage
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        visible: root.leftColumnState === 2
-                        onContextMenuRequested: function(actions, x, y, context) {
-                            var pos = searchPage.mapToItem(sharedContextMenu, x, y)
-                            sharedContextMenu.open(actions, pos.x, pos.y, context)
-                        }
+                onSearchTextChanged: {
+                    // Explicitly push the query to Milou ResultsView.
+                    searchPage.resultsView.queryString = startSearch.searchText;
+                    // Reset scroll to top on new query — only when
+                    // the search page is active to avoid warnings
+                    // from setting properties on a non-visible view.
+                    if (root.leftColumnState === 2) {
+                        searchPage.resultsView.contentY = 0;
+                        searchPage.resultsView.currentIndex = 0;
                     }
                 }
-
-                // ── Vertical separator ───────────────────────────────────────
-                Rectangle {
-                    id: columnSeparator
-                    Layout.preferredWidth: 1
-                    Layout.fillHeight: true
-                    color: Kirigami.Theme.textColor
-                    opacity: Theme.separatorOpacity
+                onSearchFocusResults: rootItem.focusActivePageResults()
+                onSearchNavUp: {
+                    if (root.leftColumnState === 0) root.pinnedPage?.navigateUp();
+                    else if (root.leftColumnState === 1) allAppsPage.navigateUp();
+                    else if (root.leftColumnState === 2) searchPage.navigateUp();
                 }
+                onSearchNavDown: {
+                    if (root.leftColumnState === 0) root.pinnedPage?.navigateDown();
+                    else if (root.leftColumnState === 1) allAppsPage.navigateDown();
+                    else if (root.leftColumnState === 2) searchPage.navigateDown();
+                }
+                onSearchActivateFirstResult: {
+                    rootItem.activateCurrentItem();
+                }
+                onSearchEscapePressed: {
+                    if (powerMenu.opened) {
+                        powerMenu.close();
+                    } else if (startSearch.searchText !== "") {
+                        startSearch.searchText = "";
+                    } else {
+                        root.closeMenu();
+                    }
+                }
+                onTabOut: rootItem.focusActivePageResults()
+            }
 
-                // ── Right column: avatar + system locations ────────────────
-                ColumnLayout {
-                    id: rightColumn
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.preferredWidth: rootItem.rightColumnWidth
-                    Layout.rightMargin: Kirigami.Units.mediumSpacing
-                    spacing: Kirigami.Units.smallSpacing
-                    visible: Plasmoid.configuration.showRightColumn
+            Item {
+                id: pageArea
+                anchors.top: startSearch.bottom
+                anchors.bottom: footer.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: rootItem.margin
 
-                    // ── User avatar (circular) ──────────────────────────────
-                    Item {
-                        id: avatarArea
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.topMargin: Kirigami.Units.smallSpacing
-                        Layout.bottomMargin: Kirigami.Units.smallSpacing
-                        width: Kirigami.Units.iconSizes.medium
-                        height: width
+                AllAppsPage {
+                    id: allAppsPage
+                    anchors.fill: parent
+                    visible: root.leftColumnState !== 2
+                    onKeyNavUpFromList: {
+                        root.leftColumnState = 0;
+                        allAppsPage.allAppsList.positionViewAtBeginning();
+                        startSearch.focusSearch();
+                    }
 
-                        Image {
-                            id: userAvatar
-                            anchors.fill: parent
-                            source: {
-                                var faceUrl = kuser.faceIconUrl.toString()
-                                return faceUrl
-                            }
-                            cache: false
-                            fillMode: Image.PreserveAspectCrop
-                            visible: source !== ""
-                            layer.enabled: true
-                            layer.effect: OpacityMask {
-                                maskSource: Rectangle {
-                                    width: avatarArea.width
-                                    height: avatarArea.height
-                                    radius: avatarArea.width / 2
+                    homeHeader: Component {
+                        ColumnLayout {
+                            width: allAppsPage.allAppsList.width
+                            height: implicitHeight
+                            spacing: Kirigami.Units.largeSpacing
+                            property alias pinnedSectionItem: pinnedSection
+
+                            PinnedPage {
+                                id: pinnedSection
+                                Layout.fillWidth: true
+                                favoritesList.model: globalFavorites
+                                onShowAllAppsRequested: {
+                                    root.leftColumnState = 1;
+                                    allAppsPage.scrollToAll();
+                                    allAppsPage.tryActivate(0);
                                 }
+                                onKeyNavUpFromList: startSearch.focusSearch()
+                            }
+
+                            PlasmaComponents3.Label {
+                                Layout.fillWidth: true
+                                text: i18n("Recent")
+                                font.weight: Font.DemiBold
+                                visible: Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs
+                            }
+
+                            GridView {
+                                id: recentGrid
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Math.min(2, Math.ceil(count / 2)) * cellHeight
+                                cellWidth: Math.max(1, Math.floor(width / 2))
+                                cellHeight: Math.max(48, Kirigami.Units.iconSizes.smallMedium + Kirigami.Units.gridUnit)
+                                visible: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) && count > 0
+                                model: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
+                                    ? recentUsage : null
+                                clip: true
+                                interactive: contentHeight > height
+                                boundsBehavior: Flickable.StopAtBounds
+                                currentIndex: -1
+                                delegate: ListItemDelegate { iconSize: Kirigami.Units.iconSizes.smallMedium }
+                            }
+
+                            PlasmaComponents3.Label {
+                                Layout.fillWidth: true
+                                text: i18n("No recent items")
+                                color: Kirigami.Theme.disabledTextColor
+                                visible: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) && recentGrid.count === 0
+                            }
+
+                            PlasmaComponents3.Label {
+                                Layout.fillWidth: true
+                                Layout.bottomMargin: Kirigami.Units.smallSpacing
+                                text: i18n("All")
+                                font.weight: Font.DemiBold
                             }
                         }
-
-                        Kirigami.Icon {
-                            anchors.fill: parent
-                            source: "avatar-default"
-                            visible: userAvatar.status !== Image.Ready
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: width / 2
-                            color: "transparent"
-                            border.width: 1
-                            border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                                                   Kirigami.Theme.textColor.g,
-                                                   Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: executable.exec("systemsettings kcm_users")
-                        }
                     }
+                }
 
-                    PlasmaComponents3.Label {
-                        text: i18n("Places")
-                        color: Kirigami.Theme.textColor
-                        font.pointSize: Kirigami.Theme.defaultFont.pointSize
-                        font.weight: Font.DemiBold
-                        Layout.leftMargin: Kirigami.Units.largeSpacing
-                    }
-
-                    SystemLocationsColumn {
-                        id: systemLocations
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        executable: executable
+                SearchPage {
+                    id: searchPage
+                    anchors.fill: parent
+                    visible: root.leftColumnState === 2
+                    onContextMenuRequested: function(actions, x, y, context) {
+                        var pos = searchPage.mapToItem(sharedContextMenu, x, y);
+                        sharedContextMenu.open(actions, pos.x, pos.y, context);
                     }
                 }
             }
 
-            // ── Compound bottom bar: [Search field] + [Shut down >] ────────
             Rectangle {
-                id: bottomBar
-                width: parent.width
-                height: bottomBarContent.implicitHeight + Kirigami.Units.gridUnit
+                id: footer
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: Kirigami.Units.gridUnit
                 anchors.left: parent.left
-                anchors.leftMargin: Kirigami.Units.gridUnit
                 anchors.right: parent.right
-                anchors.rightMargin: Kirigami.Units.gridUnit
-                Kirigami.Theme.colorSet: Kirigami.Theme.Header
-                Kirigami.Theme.inherit: false
-                color: "transparent"
+                height: footerRow.implicitHeight + rootItem.margin
+                color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                               Kirigami.Theme.textColor.b, 0.035)
 
                 Rectangle {
                     anchors.top: parent.top
@@ -388,50 +372,86 @@ Item {
                     opacity: Theme.separatorOpacity
                 }
 
-                BottomBar {
-                    id: bottomBarContent
+                RowLayout {
+                    id: footerRow
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: rootItem.margin
+                    anchors.rightMargin: rootItem.margin
+                    spacing: Kirigami.Units.smallSpacing
 
-                    onSearchTextChanged: {
-                        // Explicitly push the query to Milou ResultsView.
-                        searchPage.resultsView.queryString = bottomBarContent.searchText;
-                        // Reset scroll to top on new query — only when
-                        // the search page is active to avoid warnings
-                        // from setting properties on a non-visible view.
-                        if (root.leftColumnState === 2) {
-                            searchPage.resultsView.contentY = 0;
-                            searchPage.resultsView.currentIndex = 0;
-                        }
-                    }
-                    onSearchFocusResults: rootItem.focusActivePageResults()
-                    onSearchNavUp: {
-                        if (root.leftColumnState === 0) pinnedPage.navigateUp();
-                        else if (root.leftColumnState === 1) allAppsPage.navigateUp();
-                        else if (root.leftColumnState === 2) searchPage.navigateUp();
-                    }
-                    onSearchNavDown: {
-                        if (root.leftColumnState === 0) pinnedPage.navigateDown();
-                        else if (root.leftColumnState === 1) allAppsPage.navigateDown();
-                        else if (root.leftColumnState === 2) searchPage.navigateDown();
-                    }
-                    onSearchActivateFirstResult: {
-                        rootItem.activateCurrentItem();
-                    }
-                    onSearchEscapePressed: {
-                        if (bottomBarContent.searchText !== "") {
-                            bottomBarContent.searchText = "";
-                        } else {
+                    PlasmaComponents3.ToolButton {
+                        id: accountButton
+                        text: kuser.fullName || kuser.loginName
+                        Layout.maximumWidth: rootItem.width * 0.32
+                        Layout.preferredHeight: Kirigami.Units.gridUnit * 2
+                        onClicked: {
+                            commandSource.exec("systemsettings kcm_users");
                             root.closeMenu();
                         }
+                        contentItem: RowLayout {
+                            spacing: Kirigami.Units.smallSpacing
+                            Item {
+                                id: avatarArea
+                                Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                                Layout.preferredHeight: Layout.preferredWidth
+                                Image {
+                                    id: userAvatar
+                                    anchors.fill: parent
+                                    source: kuser.faceIconUrl
+                                    cache: false
+                                    fillMode: Image.PreserveAspectCrop
+                                    visible: status === Image.Ready
+                                    layer.enabled: true
+                                    layer.effect: OpacityMask {
+                                        maskSource: Rectangle {
+                                            width: avatarArea.width
+                                            height: avatarArea.height
+                                            radius: width / 2
+                                        }
+                                    }
+                                }
+                                Kirigami.Icon {
+                                    anchors.fill: parent
+                                    source: "avatar-default"
+                                    visible: userAvatar.status !== Image.Ready
+                                }
+                            }
+                            PlasmaComponents3.Label {
+                                Layout.fillWidth: true
+                                text: accountButton.text
+                                textFormat: Text.PlainText
+                                elide: Text.ElideRight
+                            }
+                        }
+                        PlasmaComponents3.ToolTip { text: i18n("Account settings") }
                     }
-                    onTabOut: rootItem.focusActivePageResults()
-                    onPowerMenuRequested: {
-                        powerMenu.visualParent = bottomBarContent.splitButton;
-                        powerMenu.open();
+
+                    Item { Layout.fillWidth: true }
+
+                    SystemLocationsRow {
+                        id: systemLocations
+                        visible: Plasmoid.configuration.showRightColumn
+                        Layout.fillWidth: visible
+                        Layout.maximumWidth: implicitWidth
+                        Layout.minimumWidth: 0
+                        executable: commandSource
                     }
-                    onPowerShutdownRequested: powerMenu.triggerShutdown()
+
+                    PlasmaComponents3.ToolButton {
+                        id: powerButton
+                        text: i18n("Power")
+                        icon.name: "system-shutdown"
+                        display: PlasmaComponents3.AbstractButton.IconOnly
+                        Layout.preferredWidth: Kirigami.Units.gridUnit * 2
+                        Layout.preferredHeight: Layout.preferredWidth
+                        onClicked: {
+                            powerMenu.visualParent = powerButton;
+                            powerMenu.open();
+                        }
+                        PlasmaComponents3.ToolTip { text: parent.text }
+                    }
                 }
             }
 
@@ -440,7 +460,7 @@ Item {
                 id: powerMenu
                 anchors.fill: parent
                 onClosed: {
-                    bottomBarContent.focusSearch();
+                    startSearch.focusSearch();
                 }
             }
 
@@ -484,7 +504,7 @@ Item {
 
             function focusActivePageResults() {
                 if (root.leftColumnState === 0) {
-                    pinnedPage.tryActivate(0);
+                    root.pinnedPage?.tryActivate(0);
                 } else if (root.leftColumnState === 1) {
                     allAppsPage.tryActivate(0);
                 } else {
@@ -494,7 +514,7 @@ Item {
 
             function activateCurrentItem() {
                 if (root.leftColumnState === 0) {
-                    pinnedPage.activateCurrent();
+                    root.pinnedPage?.activateCurrent();
                 } else if (root.leftColumnState === 1) {
                     allAppsPage.activateCurrent();
                 } else if (root.leftColumnState === 2) {
@@ -583,11 +603,13 @@ Item {
 
                 if (event.key === Qt.Key_Escape) {
                     event.accepted = true;
-                    if (root.searching) {
-                        reset();
+                    if (powerMenu.opened) {
+                        powerMenu.close();
+                    } else if (root.searching) {
+                        root.reset();
                     } else if (root.leftColumnState === 1) {
                         root.leftColumnState = 0;
-                        bottomBarContent.focusSearch();
+                        startSearch.focusSearch();
                     } else {
                         root.closeMenu();
                     }
@@ -597,7 +619,7 @@ Item {
                 // Backspace from a list: delete last search char.
                 if (event.key === Qt.Key_Backspace) {
                     event.accepted = true;
-                    bottomBarContent.searchText = bottomBarContent.searchText.slice(0, -1);
+                    startSearch.searchText = startSearch.searchText.slice(0, -1);
                     return;
                 }
 
@@ -621,13 +643,12 @@ Item {
                 if (event.text !== "" && event.text !== "\t"
                         && !(event.modifiers & Qt.ControlModifier)) {
                     event.accepted = true;
-                    bottomBarContent.searchText = bottomBarContent.searchText + event.text;
+                    startSearch.searchText = startSearch.searchText + event.text;
                 }
             }
         }
 
         function setModels() {
-            pinnedPage.favoritesList.model = globalFavorites;
             sortedAppsModel.sourceModel = findRowModel(rootModel, "KICKER_ALL_MODEL");
             allAppsPage.allAppsList.model = sortedAppsModel;
         }
