@@ -1,40 +1,34 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Pure logical-pixel geometry; no dependency on a live Plasma session.
+// Logical-pixel horizontal anchor selection. Plasma owns popup geometry.
 
-function position(mode, edge, screen, button, popup, gap) {
-    const minX = screen.x + gap;
-    const minY = screen.y + gap;
-    const maxX = Math.max(minX, screen.x + screen.width - popup.width - gap);
-    const maxY = Math.max(minY, screen.y + screen.height - popup.height - gap);
-    const centeredX = screen.x + (screen.width - popup.width) / 2;
-    const centeredY = screen.y + (screen.height - popup.height) / 2;
-    const buttonX = button.x + (button.width - popup.width) / 2;
-    const buttonY = button.y + (button.height - popup.height) / 2;
-    const bottomY = edge === "bottom" ? button.y - popup.height - gap : maxY;
-    let x = buttonX;
-    let y = bottomY;
+function horizontalAnchorOffset(mode, screen, button) {
+    // Global coordinates are used only to select the horizontal anchor.
+    // The native Dialog owns the actual popup position and screen bounds.
+    if (!screen || !button || !Number.isFinite(screen.x)
+            || !Number.isFinite(screen.width) || screen.width <= 0
+            || !Number.isFinite(button.x) || !Number.isFinite(button.width)
+            || button.width <= 0 || button.width > screen.width
+            || button.x < screen.x - 1
+            || button.x + button.width > screen.x + screen.width + 1)
+        return 0;
 
-    if (mode === 1) {
-        x = centeredX;
-        y = centeredY;
-    } else if (mode === 2) {
-        x = centeredX;
-    } else if (mode === 3) {
-        x = minX;
-    } else if (edge === "top") {
-        y = button.y + button.height + gap;
-    } else if (edge === "left") {
-        x = button.x + button.width + gap;
-        y = buttonY;
-    } else if (edge === "right") {
-        x = button.x - popup.width - gap;
-        y = buttonY;
-    } else if (edge === "floating") {
-        y = button.y - popup.height - gap;
-    }
+    const left = button.x - screen.x;
+    const right = screen.x + screen.width - button.x - button.width;
+    const buttonCenter = button.x + button.width / 2;
 
-    return {
-        x: Math.round(Math.max(minX, Math.min(x, maxX))),
-        y: Math.round(Math.max(minY, Math.min(y, maxY)))
-    };
+    // Preserve the stored explicit alignment values. The legacy free-
+    // floating Center (1) now means centered at the panel, like mode 2.
+    if (mode === 3)
+        return Math.round(screen.x + button.width / 2 - buttonCenter);
+    if (mode === 1 || mode === 2)
+        return Math.round(screen.x + screen.width / 2 - buttonCenter);
+
+    // A left/right-aligned Start sits near that edge. Keep the real
+    // anchor there so Plasma clamps the popup into the work area.
+    // Otherwise the task group is inset: anchor at the output's center
+    // even when many task icons move the Start button away from it.
+    const edgeBand = 2 * button.width;
+    if (left <= edgeBand || right <= edgeBand)
+        return 0;
+    return Math.round(screen.x + screen.width / 2 - buttonCenter);
 }

@@ -21,7 +21,8 @@ KCM.SimpleKCM {
     property string cfg_icon: Plasmoid.configuration.icon
     property bool cfg_useCustomButtonImage: Plasmoid.configuration.useCustomButtonImage
     property string cfg_customButtonImage: Plasmoid.configuration.customButtonImage
-    property alias cfg_displayPosition: displayPosition.currentIndex
+    // Keep the persisted 0/2/3 values; legacy 1 maps to centered at panel.
+    property int cfg_displayPosition: Plasmoid.configuration.displayPosition
     property alias cfg_showRightColumn: showRightColumn.checked
     property alias cfg_allAppsSortMode: allAppsSortMode.currentIndex
     property alias cfg_menuTranslucency: menuTranslucency.currentIndex
@@ -102,10 +103,15 @@ KCM.SimpleKCM {
             id: displayPosition
             model: [
                 i18n("Follow Start button"),
-                i18n("Center"),
-                i18n("Center bottom"),
-                i18n("Left bottom"),
+                i18n("Center at panel"),
+                i18n("Left at panel"),
             ]
+            currentIndex: configGeneral.cfg_displayPosition === 3 ? 2
+                        : configGeneral.cfg_displayPosition === 1
+                          || configGeneral.cfg_displayPosition === 2 ? 1 : 0
+            onActivated: function(index) {
+                configGeneral.cfg_displayPosition = index === 2 ? 3 : index === 1 ? 2 : 0;
+            }
         }
 
         // ── Show places column ─────────────────────────────────────────

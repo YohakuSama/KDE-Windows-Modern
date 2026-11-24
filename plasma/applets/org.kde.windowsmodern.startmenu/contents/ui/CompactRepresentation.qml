@@ -33,7 +33,7 @@ Item {
     Accessible.role: Accessible.Button
     Accessible.name: i18nc("@action:button the Start menu button", "Start")
     Accessible.description: i18nc("@info:tooltip", "Open the Start menu")
-    Accessible.onPressAction: if (dashWindow) dashWindow.visible = !dashWindow.visible
+    Accessible.onPressAction: if (dashWindow) dashWindow.toggleMenu()
 
     // The Start logo follows the task icons' size instead of snapping on its
     // own: Icon Tasks draws icons at the standard size that fits the cell
@@ -89,14 +89,14 @@ Item {
         hoverEnabled: true
 
         onClicked: {
-            if (dashWindow) dashWindow.visible = !dashWindow.visible;
+            if (dashWindow) dashWindow.toggleMenu();
         }
     }
 
     Component.onCompleted: {
         dashWindow = menuRepComponent.createObject(root);
         Plasmoid.activated.connect(function() {
-            if (dashWindow) dashWindow.visible = !dashWindow.visible;
+            if (dashWindow) dashWindow.toggleMenu();
         });
     }
 
