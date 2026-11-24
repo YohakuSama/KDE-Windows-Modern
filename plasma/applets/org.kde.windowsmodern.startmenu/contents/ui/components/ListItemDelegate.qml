@@ -26,7 +26,9 @@ Item {
     readonly property bool inGrid: !!item.GridView.view
     readonly property var hostView: inGrid ? item.GridView.view : item.ListView.view
     property bool gridMode: false
-    width: hostView ? (inGrid ? hostView.cellWidth : hostView.width) : (parent ? parent.width : 0)
+    width: hostView ? (inGrid ? hostView.cellWidth
+        : (hostView.contentColumnWidth !== undefined ? hostView.contentColumnWidth : hostView.width))
+        : (parent ? parent.width : 0)
     height: inGrid && hostView ? hostView.cellHeight
         : (showDescription ? Kirigami.Units.gridUnit * 2 : Math.floor(Kirigami.Units.gridUnit * 1.8))
 
@@ -66,7 +68,8 @@ Item {
         opacity: {
             if (item._dragging) return Theme.opacityHidden;
             if (mouseArea.containsMouse) return Theme.opacityFull;
-            if (item.inGrid ? item.GridView.isCurrentItem : item.ListView.isCurrentItem)
+            if (item.hostView && item.hostView.activeFocus
+                && (item.inGrid ? item.GridView.isCurrentItem : item.ListView.isCurrentItem))
                 return Theme.listItemCurrentOpacity;
             return Theme.opacityHidden;
         }

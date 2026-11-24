@@ -108,6 +108,8 @@ ColumnLayout {
         clip: true
         interactive: true
         spacing: Kirigami.Units.smallSpacing / 2
+        readonly property int scrollGutter: 14
+        readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
         model: allAppsPage.categoryMode
@@ -117,8 +119,10 @@ ColumnLayout {
         header: allAppsPage.homeHeader
         headerPositioning: ListView.InlineHeader
 
-        PlasmaComponents3.ScrollBar.vertical: PlasmaComponents3.ScrollBar {
-            policy: PlasmaComponents3.ScrollBar.AsNeeded
+        PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
+        StartWheelHandler {
+            view: allAppsListView
+            rowHeight: Math.floor(Kirigami.Units.gridUnit * 1.8) + allAppsListView.spacing
         }
 
         delegate: ListItemDelegate {
@@ -129,6 +133,18 @@ ColumnLayout {
 
         Keys.onReturnPressed: allAppsPage.activateCurrent()
         Keys.onEnterPressed: allAppsPage.activateCurrent()
+        Keys.onHomePressed: if (count > 0) { currentIndex = 0; positionViewAtIndex(0, ListView.Beginning); }
+        Keys.onEndPressed: if (count > 0) { currentIndex = count - 1; positionViewAtIndex(currentIndex, ListView.End); }
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown) {
+                if (count <= 0) return;
+                const step = Math.max(1, Math.floor(height / (Math.floor(Kirigami.Units.gridUnit * 1.8) + spacing)));
+                currentIndex = Math.max(0, Math.min(count - 1,
+                    Math.max(0, currentIndex) + (event.key === Qt.Key_PageUp ? -step : step)));
+                positionViewAtIndex(currentIndex, ListView.Contain);
+                event.accepted = true;
+            }
+        }
 
         Keys.onLeftPressed: event => {
             if (allAppsPage.inCategory) {
