@@ -161,10 +161,17 @@ AbstractItem {
         }
     }
 
-    function panelGlyph(name) {
-        const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
+    function panelGlyphFile(name) {
+        return StandardPaths.locate(StandardPaths.GenericDataLocation,
             "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
-        return String(file).length > 0 ? file : name;
+    }
+
+    function panelGlyph(name) {
+        const file = panelGlyphFile(name);
+        if (String(file).length > 0)
+            return file;
+        const fallback = panelGlyphFile(name.replace(/-symbolic$/, ""));
+        return String(fallback).length > 0 ? fallback : name;
     }
 
     Component {
@@ -202,11 +209,20 @@ AbstractItem {
         Item {
             BatteryBackend.BatteryControlModel { id: liveBattery }
             Kirigami.Icon {
-                anchors.fill: parent
+                readonly property string glyphName: Funcs.batteryIconName(
+                    liveBattery.hasCumulative ? liveBattery.percent : -1, liveBattery.pluggedIn)
+                readonly property var exactFile: plasmoidContainer.panelGlyphFile(glyphName)
+                readonly property var fallbackFile: plasmoidContainer.panelGlyphFile(glyphName.replace(/-symbolic$/, ""))
+                // The shipped legacy battery SVGs have larger transparent
+                // margins than the optically normalized imported glyphs.
+                // Compensate only for those fallback files, not native art.
+                readonly property bool legacy: String(exactFile).length === 0 && String(fallbackFile).length > 0
+                anchors.centerIn: parent
+                width: legacy ? Math.min(parent.width * 1.25, parent.width + 4) : parent.width
+                height: width
                 roundToIconSize: false
                 isMask: true
-                source: plasmoidContainer.panelGlyph(Funcs.batteryIconName(liveBattery.hasCumulative ? liveBattery.percent : -1,
-                    liveBattery.pluggedIn))
+                source: plasmoidContainer.panelGlyph(glyphName)
                 color: Kirigami.Theme.textColor
             }
         }

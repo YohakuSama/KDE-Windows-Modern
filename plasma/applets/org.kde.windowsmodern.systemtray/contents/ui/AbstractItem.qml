@@ -53,7 +53,27 @@ PlasmaCore.ToolTipArea {
     }
 
     Rectangle {
+        // Adjacent Quick Settings cells form one inset, rounded tile. Keep
+        // square internal edges and round only the group's outside corners.
+        readonly property bool backwards: root.vertical ? root.reverseLayout
+            : ((Application.layoutDirection === Qt.RightToLeft) !== root.reverseLayout)
+        function adjacentCore(offset) {
+            const count = root.visibleLayout.count;
+            const neighborIndex = abstractItem.index + offset * (backwards ? -1 : 1);
+            return neighborIndex >= 0 && neighborIndex < count
+                && !!root.visibleLayout.itemAtIndex(neighborIndex)?.systemGroup;
+        }
+        readonly property bool beforeCore: abstractItem.groupedQuickSettings && adjacentCore(-1)
+        readonly property bool afterCore: abstractItem.groupedQuickSettings && adjacentCore(1)
         anchors.fill: parent
+        anchors.leftMargin: !root.vertical && beforeCore ? 0 : 2
+        anchors.rightMargin: !root.vertical && afterCore ? 0 : 2
+        anchors.topMargin: root.vertical && beforeCore ? 0 : 3
+        anchors.bottomMargin: root.vertical && afterCore ? 0 : 3
+        topLeftRadius: beforeCore ? 0 : 4
+        topRightRadius: (root.vertical ? beforeCore : afterCore) ? 0 : 4
+        bottomLeftRadius: (root.vertical ? afterCore : beforeCore) ? 0 : 4
+        bottomRightRadius: afterCore ? 0 : 4
         z: -1
         visible: abstractItem.groupedQuickSettings &&
             (root.hoveredQuickSetting !== null || systemTrayState.quickSettingsOpen)

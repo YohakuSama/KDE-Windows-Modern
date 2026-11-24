@@ -35,14 +35,14 @@ Item {
     Accessible.description: i18nc("@info:tooltip", "Open the Start menu")
     Accessible.onPressAction: if (dashWindow) dashWindow.toggleMenu()
 
-    // Use the same 24px icon canvas as task icons. The default logo keeps
+    // Use the same 28px icon canvas as task icons. The default logo keeps
     // its original 4px optical inset on the 64px artwork canvas.
     readonly property bool useDefaultLogo: !useCustomButtonImage && Plasmoid.configuration.icon === "start-here"
     readonly property int cellThickness: vertical ? width : height
-    // Microsoft Windows 11 taskbar icon reference: 24 logical pixels.
-    // Retain the original optical inset; no extra scale transform.
+    // Match the task icon canvas at 28 logical pixels, including the
+    // original optical inset. Qt applies fractional output scaling.
     readonly property int startIconSize: inPanel
-        ? Math.max(1, Math.min(24, cellThickness - 4, width, height))
+        ? Math.max(1, Math.min(28, cellThickness - 4, width, height))
         : Math.max(1, Math.min(width, height))
 
     // Hover (and open menu) tile: the taskbar's own tile without a bar

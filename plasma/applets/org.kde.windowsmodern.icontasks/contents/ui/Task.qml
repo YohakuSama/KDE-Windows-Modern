@@ -543,7 +543,7 @@ FloatingToolTipArea {
         id: iconBox
 
         readonly property bool panelIconOnly: !task.inPopup && task.tasksRoot.iconsOnly
-        readonly property real panelIconSize: Math.max(1, Math.min(24, task.width, task.height))
+        readonly property real panelIconSize: Math.max(1, Math.min(28, task.width, task.height))
 
         anchors {
             left: parent.left

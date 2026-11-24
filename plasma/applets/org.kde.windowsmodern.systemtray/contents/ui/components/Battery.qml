@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import org.kde.plasma.private.battery
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
@@ -28,7 +29,17 @@ Item {
             width: 20
             height: 20
             anchors.verticalCenter: parent.verticalCenter
-            source: Funcs.batteryIconName(batteryControl.percent, batteryControl.pluggedIn)
+            roundToIconSize: false
+            source: {
+                const name = Funcs.batteryIconName(batteryControl.percent, batteryControl.pluggedIn);
+                const exact = StandardPaths.locate(StandardPaths.GenericDataLocation,
+                    "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
+                if (String(exact).length > 0)
+                    return exact;
+                const fallback = StandardPaths.locate(StandardPaths.GenericDataLocation,
+                    "icons/windows-modern/status/" + name.replace(/-symbolic$/, "") + ".svg", StandardPaths.LocateFile);
+                return String(fallback).length > 0 ? fallback : name;
+            }
             color: Kirigami.Theme.textColor
             isMask: true
         }
