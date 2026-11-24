@@ -90,6 +90,13 @@ if [ -f "$NATIVE_DIR/manifest.json" ] && is_native_bloom "$NATIVE_DIR/wallpapers
     restore_native_bloom || { echo "Could not restore the imported Bloom package." >&2; exit 1; }
 fi
 wallpaper_dir="$(find_wallpaper "$WALLPAPER_ID" || true)"
+if { [ -z "$wallpaper_dir" ] || ! is_native_bloom "$wallpaper_dir"; } && [ "${1:-}" != "--allow-fallback" ]; then
+    # A fresh owner bundle or checkout contains (or can fetch) the exact
+    # original resource revision. No manual import command is necessary.
+    if bash "$(dirname "$0")/prepare-native-assets.sh" && restore_native_bloom; then
+        wallpaper_dir="$USER_WALLPAPERS/$WALLPAPER_ID"
+    fi
+fi
 if [ -z "$wallpaper_dir" ] || ! is_native_bloom "$wallpaper_dir"; then
     # Recover from the remembered owner archive if the generated package
     # is missing, without requiring another upload.

@@ -1,40 +1,39 @@
-/*
- * SPDX-FileCopyrightText: 2026 Jeysef
- *
- * SPDX-License-Identifier: LGPL-2.0-or-later
- */
-
+// SPDX-License-Identifier: LGPL-2.0-or-later
 import QtQuick
 import Qt5Compat.GraphicalEffects
 
 Item {
-    id: root
-
-    property int size: WinStyle.avatarSize
+    id: avatar
     property url source
-
+    property int size: WinStyle.avatarSize
     implicitWidth: size
     implicitHeight: size
 
     Image {
-        id: image
+        id: personal
         anchors.fill: parent
-        source: root.source
-        fillMode: Image.PreserveAspectCrop
-        sourceSize: Qt.size(root.size, root.size)
+        source: avatar.source
         asynchronous: true
-        layer.enabled: true
+        fillMode: Image.PreserveAspectCrop
+        visible: status === Image.Ready
+        layer.enabled: visible
         layer.effect: OpacityMask {
-            maskSource: maskRect
+            maskSource: Rectangle {
+                width: personal.width
+                height: personal.height
+                radius: Math.min(width, height) / 2
+            }
         }
     }
-
-    Rectangle {
-        id: maskRect
-        width: root.size
-        height: root.size
-        radius: root.size / 2
-        visible: false
+    // The original mapped Windows default icon is copied into the lock
+    // package by the installer. Never leave a blank circle on load failure.
+    Image {
+        anchors.fill: parent
+        visible: !personal.visible
+        source: Qt.resolvedUrl("default-avatar.svg")
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        sourceSize.width: avatar.width
+        sourceSize.height: avatar.height
     }
-
 }

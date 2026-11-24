@@ -15,6 +15,11 @@ if [ ! -d "$SRC_DIR" ]; then
     exit 1
 fi
 
+# Owner bundles include the original indexed resources, even on a clean machine.
+if [ "$UID" -ne 0 ] && [ -f "$PROJECT_DIR/native-resources/resource-manifest.json" ]; then
+    bash "$PROJECT_DIR/scripts/prepare-native-assets.sh" || exit 1
+fi
+
 # Never silently overlay an older import on a newer theme. Reuse the
 # original local source if the mapping changed; leave the installed theme
 # untouched if the source was removed or verification fails.

@@ -18,6 +18,17 @@ USER_SHELLS="$HOME/.local/share/plasma/shells"
 OVERLAY_SHELL="$USER_SHELLS/org.kde.plasma.desktop"
 # WM_SYSTEM_SHELL overrides the system shell path for sandboxed tests only.
 SYSTEM_SHELL="${WM_SYSTEM_SHELL:-/usr/share/plasma/shells/org.kde.plasma.desktop}"
+if [ ! -d "$SYSTEM_SHELL" ] && [ -z "${WM_SYSTEM_SHELL:-}" ]; then
+    # NixOS publishes system data under the active profile, not /usr.
+    IFS=: read -r -a data_dirs <<< "/run/current-system/sw/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+    for dir in "${data_dirs[@]}"; do
+        candidate="$dir/plasma/shells/org.kde.plasma.desktop"
+        if [ -f "$candidate/metadata.json" ] && [ -d "$candidate/contents/lockscreen" ]; then
+            SYSTEM_SHELL="$(realpath "$candidate")"
+            break
+        fi
+    done
+fi
 SYSTEM_LOCKSCREEN="$SYSTEM_SHELL/contents/lockscreen"
 
 info "Installing Windows Modern session lock screen (Meta+L)..."
@@ -68,6 +79,12 @@ done
 # ── 3. Copy our custom lockscreen files into the overlay ──
 step "Copying custom lockscreen files..."
 cp -r "${SHELL_SRC}/contents/lockscreen" "$STAGING_SHELL/contents/"
+# The real lockscreen is the shell overlay, not the look-and-feel login
+# page. Embed the mapped native avatar so it is available even before
+# the greeter has loaded the session icon theme.
+avatar="$NATIVE_ASSETS_DIR/icons/status/avatar-default.svg"
+[ -s "$avatar" ] || avatar="$SRC_DIR/icons/windows-modern/status/avatar-default.svg"
+cp "$avatar" "$STAGING_SHELL/contents/lockscreen/default-avatar.svg"
 
 # Also grab any missing standard lockscreen files from the system shell (qmldir, config.xml)
 for standard_file in qmldir config.xml; do

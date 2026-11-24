@@ -5,12 +5,14 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 import QtQuick
+import QtQuick.Layouts
 
 import org.kde.plasma.components as PlasmaComponents3
 
 import org.kde.breeze.components
 
 SessionManagementScreen {
+    id: screen
     focus: true
     showUserList: true
 
@@ -21,6 +23,14 @@ SessionManagementScreen {
             userList.height = 0;
         }
         forceActiveFocus();
+    }
+
+    AccountAvatar {
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredWidth: 140
+        Layout.preferredHeight: 140
+        source: screen.userListModel && screen.userListModel.count > 0
+            ? screen.userListModel.get(0).icon : ""
     }
 
     PlasmaComponents3.Button {
