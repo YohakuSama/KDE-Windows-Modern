@@ -6,6 +6,17 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Fixed
+
+- Start menu: follow the Start button by default; use its actual screen position
+  and clamp the flyout to the selected display, including floating and vertical
+  panels. Existing explicit menu positions are preserved.
+- New panels default to translucent opacity for consistent acrylic-style
+  Start, Quick Settings and calendar flyouts. Start follows panel opacity in
+  its default mode; explicit Start opacity overrides and solid mode remain.
+- Align Start section headings and power button text with the normal UI font;
+  reduce the calendar clock header from bold to semibold.
+
 ## [1.2.1] - 2026-11-23
 
 ### Fixed

@@ -36,6 +36,7 @@ import "components"
 import "pages"
 import "code/tools.js" as Tools
 import "code/theme.js" as Theme
+import "code/popupPosition.js" as PopupPosition
 
 Item {
     id: main
@@ -68,11 +69,17 @@ Item {
         location: PlasmaCore.Types.Floating
         hideOnWindowDeactivate: true
 
-        // Opaque mode forces the solid dialog background variant; otherwise
-        // let the desktop theme choose between default/translucent.
-        backgroundHints: Plasmoid.configuration.menuTranslucency === Theme.menuTranslucencyOpaque
-                         ? PlasmaCore.Dialog.SolidBackground
-                         : PlasmaCore.Dialog.StandardBackground
+        // Match the panel's popup preference by default, like Quick Settings
+        // and the clock. Explicit translucency/opacity choices still override it.
+        backgroundHints: {
+            const mode = Plasmoid.configuration.menuTranslucency;
+            const panelOpaque = (Plasmoid.containmentDisplayHints
+                & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) !== 0;
+            return (mode === Theme.menuTranslucencyOpaque
+                    || (mode === Theme.menuTranslucencyFollowTheme && panelOpaque))
+                ? PlasmaCore.Dialog.SolidBackground
+                : PlasmaCore.Dialog.StandardBackground;
+        }
 
         property bool searching: bottomBarContent.searchText !== ""
 
@@ -132,50 +139,21 @@ Item {
         }
 
         function popupPosition(width, height) {
-            var screen = kicker.screenGeometry;
-            var appletTopLeft = parent.mapToGlobal(0, 0);
-            var horizMidPoint = screen.x + (screen.width / 2);
-            var vertMidPoint = screen.y + (screen.height / 2);
-            var offset = Kirigami.Units.smallSpacing;
-
-            var menuPos = Plasmoid.configuration.displayPosition;
-
-            if (menuPos === 1) {
-                // Center of screen
-                return Qt.point(horizMidPoint - width / 2, vertMidPoint - height / 2);
-            } else if (menuPos === 2) {
-                // Center-bottom (above panel)
-                return Qt.point(horizMidPoint - width / 2,
-                                screen.y + screen.height - height - kicker.height - offset);
-            } else if (menuPos === 3) {
-                // Left-bottom (above panel, left-aligned)
-                return Qt.point(screen.x + offset,
-                                screen.y + screen.height - height - kicker.height - offset);
-            } else {
-                // menuPos 0 — follow panel: center horizontally over the
-                // start button, sit flush against the panel's top edge.
-                var centerX = appletTopLeft.x + (kicker.width / 2) - (width / 2);
-                centerX = Math.max(screen.x + offset,
-                                   Math.min(centerX, screen.x + screen.width - width - offset));
-                switch (Plasmoid.location) {
-                case PlasmaCore.Types.BottomEdge:
-                    return Qt.point(centerX, screen.y + screen.height - height - kicker.height - offset);
-                case PlasmaCore.Types.TopEdge:
-                    return Qt.point(centerX, screen.y + kicker.height + offset);
-                case PlasmaCore.Types.LeftEdge:
-                    return Qt.point(appletTopLeft.x + kicker.width + offset,
-                                    Math.max(screen.y + offset,
-                                             Math.min(appletTopLeft.y + (kicker.height / 2) - (height / 2),
-                                                      screen.y + screen.height - height - offset)));
-                case PlasmaCore.Types.RightEdge:
-                    return Qt.point(appletTopLeft.x - width - offset,
-                                    Math.max(screen.y + offset,
-                                             Math.min(appletTopLeft.y + (kicker.height / 2) - (height / 2),
-                                                      screen.y + screen.height - height - offset)));
-                default:
-                    return Qt.point(centerX, screen.y + screen.height - height - kicker.height - offset);
-                }
-            }
+            // The compact representation creates this item as its child.
+            // Use its actual screen geometry, including floating panel offsets.
+            const button = main.parent;
+            const topLeft = button.mapToGlobal(0, 0);
+            const location = Plasmoid.location;
+            const edge = location === PlasmaCore.Types.BottomEdge ? "bottom"
+                       : location === PlasmaCore.Types.TopEdge ? "top"
+                       : location === PlasmaCore.Types.LeftEdge ? "left"
+                       : location === PlasmaCore.Types.RightEdge ? "right"
+                       : "floating";
+            const pos = PopupPosition.position(
+                Plasmoid.configuration.displayPosition, edge, button.screenGeometry,
+                { x: topLeft.x, y: topLeft.y, width: button.width, height: button.height },
+                { width: width, height: height }, Kirigami.Units.smallSpacing);
+            return Qt.point(pos.x, pos.y);
         }
 
         FocusScope {
@@ -368,7 +346,7 @@ Item {
                     PlasmaComponents3.Label {
                         text: i18n("Places")
                         color: Kirigami.Theme.textColor
-                        font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.95
+                        font.pointSize: Kirigami.Theme.defaultFont.pointSize
                         font.weight: Font.DemiBold
                         Layout.leftMargin: Kirigami.Units.largeSpacing
                     }

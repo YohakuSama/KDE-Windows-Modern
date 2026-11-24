@@ -102,8 +102,9 @@ The `contents/layout.js` creates:
   the Plasma scripting API, and writing it via `ConfigFile` doesn't
   work because plasmashell holds config in memory. Users must toggle
   "Floating → Applets Only" manually in Panel Settings after adding.
-- Opaque background (`panel.opacity="opaque"`) — no adaptive
-  translucency toggling when windows touch the panel.
+- Translucent background (`panel.opacity="translucent"`) — stable blur and
+  acrylic-style flyouts, independent of windows touching the panel. Existing
+  panels keep their saved opacity; change it in Panel Settings to opt in.
 - Widgets left→right:
   1. **Left expanding spacer** — `org.kde.plasma.panelspacer`. Pushes
      the Start + tasks group to the horizontal center of the panel,
@@ -235,7 +236,8 @@ and shared grid components (see file tree below).
 
 **Phase 1 (complete):**
 - `PlasmaCore.Dialog` with `Floating` location, positioned relative to the
-  panel button via `parent.mapToGlobal`.
+  actual compact button via `main.parent.mapToGlobal`, with the default mode
+  following that button and a shared, tested screen-bound geometry helper.
 - Search field with rounded corners (`radius: smallSpacing*3`) and subtle
   border (12% text color alpha), Segoe UI font.
 - Left column switches between three states (not a `SwipeView`): Pinned

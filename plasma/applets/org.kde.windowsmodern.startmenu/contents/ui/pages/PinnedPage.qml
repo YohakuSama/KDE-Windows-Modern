@@ -59,7 +59,7 @@ ColumnLayout {
         PlasmaComponents3.Label {
             text: i18n("Pinned")
             color: Kirigami.Theme.textColor
-            font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.95
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize
             font.weight: Font.DemiBold
             Layout.alignment: Qt.AlignVCenter
         }

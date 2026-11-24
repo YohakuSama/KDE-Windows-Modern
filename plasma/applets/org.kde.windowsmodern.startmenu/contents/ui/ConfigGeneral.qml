@@ -99,7 +99,7 @@ KCM.SimpleKCM {
             Kirigami.FormData.label: i18n("Menu position")
             id: displayPosition
             model: [
-                i18n("Default"),
+                i18n("Follow Start button"),
                 i18n("Center"),
                 i18n("Center bottom"),
                 i18n("Left bottom"),
