@@ -19,6 +19,19 @@ TestCase {
         compare(Metrics.cellLength(16, false, 6), 40);
         compare(Metrics.cellLength(16, true, 6), 32);
     }
+    function test_nativeCoreContainer() {
+        for (const thickness of [24, 30, 32, 48, 64, 96]) {
+            compare(Metrics.coreIconSize(thickness, false), 22);
+            compare(Metrics.coreCellLength(16, 22, 2), 24);
+        }
+        compare(Metrics.coreIconSize(12, false), 12);
+        compare(Metrics.coreIconSize(18, false), 18);
+        compare(Metrics.coreIconSize(48, true), 32);
+        compare(Metrics.coreIconSize(96, true), 48);
+        compare(Metrics.coreCellLength(16, 22, 1), 24);
+        compare(Metrics.coreCellLength(16, 22, 6), 32);
+        compare(Metrics.coreCellLength(32, 32, 2), 40);
+    }
     function test_systemGroup() {
         verify(Metrics.isQuickSettings("org.kde.plasma.networkmanagement"));
         verify(Metrics.isQuickSettings("org.kde.plasma.volume"));
