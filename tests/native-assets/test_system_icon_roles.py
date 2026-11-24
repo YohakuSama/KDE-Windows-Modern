@@ -47,6 +47,9 @@ class SystemIconRolesTests(unittest.TestCase):
         self.assertEqual(groups['volumeHigh'], ['e995'])
         self.assertEqual(groups['volumeMuted'], ['e74f'])
         self.assertEqual(groups['bluetooth'], ['e702'])
+        self.assertEqual(groups['removable'], ['e88e'])
+        self.assertIn('status/device-notifier-symbolic', MAPPING['icons']['e88e'].split())
+        self.assertIn('removable', MAPPING['panel_glyph_center_groups'])
 
     def test_panel_independent_state_optical_centers(self):
         groups = MAPPING['panel_glyph_groups']

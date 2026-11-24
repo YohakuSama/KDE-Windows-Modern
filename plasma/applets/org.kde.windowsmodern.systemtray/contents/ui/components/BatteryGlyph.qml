@@ -39,18 +39,18 @@ Item {
         Rectangle {
             objectName: "wmBatteryTerminal"
             x: 18
-            y: 5.5
-            width: 1.5
-            height: 5
-            radius: 0.75
+            y: 5
+            width: 1.75
+            height: 6
+            radius: 0.875
             color: root.foreground
         }
         Rectangle {
             objectName: "wmBatteryOutline"
-            x: 1
-            y: 2.5
-            width: 17
-            height: 11
+            x: 0.5
+            y: 2
+            width: 17.5
+            height: 12
             radius: 2
             color: "transparent"
             border.color: root.foreground
@@ -59,10 +59,10 @@ Item {
         Rectangle {
             objectName: "wmBatteryLevelFill"
             visible: root.visualState !== "unknown" && width > 0
-            x: 3
-            y: 4.5
-            width: 13 * root.fillFraction
-            height: 7
+            x: 2.5
+            y: 4
+            width: 13.5 * root.fillFraction
+            height: 8
             radius: Math.min(1, width / 2)
             color: root.levelColor
         }

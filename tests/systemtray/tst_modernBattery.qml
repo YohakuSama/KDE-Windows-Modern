@@ -33,7 +33,11 @@ Item {
             compare(glyph.levelColor, Qt.rgba(115/255, 216/255, 139/255, 1));
             const fill = findChild(glyph, "wmBatteryLevelFill");
             verify(fill !== null);
-            fuzzyCompare(fill.width, 13 * 0.95, 0.001);
+            fuzzyCompare(fill.width, 13.5 * 0.95, 0.001);
+            glyph.glyphSize = 20;
+            compare(glyph.implicitWidth, 25);
+            compare(glyph.implicitHeight, 20);
+            glyph.glyphSize = 18;
             glyph.charging = false;
             glyph.saver = true;
             glyph.percent = 20;

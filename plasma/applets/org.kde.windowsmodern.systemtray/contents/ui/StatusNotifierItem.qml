@@ -26,6 +26,7 @@ AbstractItem {
         id: iconItem
         parent: taskIcon.iconContainer
         anchors.fill: iconItem.parent
+        roundToIconSize: false
 
         source: {
             if (taskIcon.model?.status === PlasmaCore.Types.NeedsAttentionStatus) {

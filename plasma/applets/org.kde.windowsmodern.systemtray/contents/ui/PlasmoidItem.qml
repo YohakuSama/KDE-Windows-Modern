@@ -141,10 +141,9 @@ AbstractItem {
         }
     }
 
-    // Use the same direct 16px symbolic glyph box for all three live
-    // status icons. Native applets remain responsible for activation,
-    // tooltips and context menus, but their internal icon rounding and
-    // transparent padding no longer decide the displayed size.
+    // Direct optical status glyphs use the tray's logical canvas. Native
+    // applets still own presence, state, activation, tooltips and menus.
+    // Device notifier must not be shrunk by the embedded applet again.
     Loader {
         id: statusGlyphLoader
         parent: plasmoidContainer.iconContainer
@@ -154,14 +153,16 @@ AbstractItem {
         active: (plasmoidContainer.groupedQuickSettings
                 && (plasmoidContainer.itemId !== "org.kde.plasma.battery" || root.panelHasBattery))
             || (plasmoidContainer.inVisibleLayout
-                && plasmoidContainer.itemId === "org.kde.plasma.bluetooth"
-                && BluezQt.Manager.bluetoothOperational)
+                && (plasmoidContainer.itemId === "org.kde.plasma.devicenotifier"
+                    || (plasmoidContainer.itemId === "org.kde.plasma.bluetooth"
+                        && BluezQt.Manager.bluetoothOperational)))
         sourceComponent: {
             switch (plasmoidContainer.itemId) {
             case "org.kde.plasma.networkmanagement": return networkGlyph;
             case "org.kde.plasma.volume": return volumeGlyph;
             case "org.kde.plasma.battery": return batteryGlyph;
             case "org.kde.plasma.bluetooth": return bluetoothGlyph;
+            case "org.kde.plasma.devicenotifier": return removableGlyph;
             default: return null;
             }
         }
@@ -204,6 +205,16 @@ AbstractItem {
             roundToIconSize: false
             isMask: true
             source: plasmoidContainer.panelGlyph("network-bluetooth-symbolic")
+            color: Kirigami.Theme.textColor
+        }
+    }
+
+    Component {
+        id: removableGlyph
+        Kirigami.Icon {
+            roundToIconSize: false
+            isMask: true
+            source: plasmoidContainer.panelGlyph("device-notifier-symbolic")
             color: Kirigami.Theme.textColor
         }
     }

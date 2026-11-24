@@ -276,7 +276,7 @@ ContainmentItem {
                         readonly property bool batteryCell: loadedItemId === "org.kde.plasma.battery"
                         readonly property int cellLength: systemGroup
                             ? (batteryCell && !root.vertical
-                                ? Math.max(root.systemCellLength, root.batteryContentWidth + 8)
+                                ? Math.max(root.systemCellLength, root.batteryContentWidth + 6)
                                 : root.systemCellLength)
                             : root.trayCellLength
                         readonly property int positionIndex: TrayMetrics.visualIndex(index, trayItems.count,
@@ -315,7 +315,7 @@ ContainmentItem {
                 Layout.fillWidth: vertical
                 Layout.fillHeight: !vertical
                 Layout.alignment: vertical ? Qt.AlignVCenter : Qt.AlignHCenter
-                iconSize: Math.min(16, root.itemSize)
+                iconSize: Math.min(18, root.itemSize)
                 cellLength: root.trayCellLength
                 visible: root.hiddenLayout.itemCount > 0
                 onVisibleChanged: {

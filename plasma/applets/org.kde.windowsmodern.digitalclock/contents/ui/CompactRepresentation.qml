@@ -44,7 +44,7 @@ MouseArea {
     readonly property int leadingInset: 4
     readonly property int trailingInset: showBell ? 0 : Kirigami.Units.smallSpacing
     readonly property int bellCellWidth: 24
-    readonly property int bellIconSize: Math.max(1, Math.min(18, Math.floor(panelHeight)))
+    readonly property int bellIconSize: Math.max(1, Math.min(20, Math.floor(panelHeight)))
     implicitWidth: panelContent.implicitWidth + leadingInset + trailingInset
     implicitHeight: panelHeight
     Layout.minimumWidth: implicitWidth
@@ -275,7 +275,11 @@ MouseArea {
                         const name = main.plasmoidItem.notificationIcon;
                         const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
                             "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
-                        return String(file).length > 0 ? file : name;
+                        if (String(file).length > 0) return file;
+                        const fallback = StandardPaths.locate(StandardPaths.GenericDataLocation,
+                            "icons/windows-modern/status/" + name.replace(/-symbolic$/, "") + ".svg",
+                            StandardPaths.LocateFile);
+                        return String(fallback).length > 0 ? fallback : name;
                     }
                 }
             }

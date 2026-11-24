@@ -503,6 +503,9 @@
     "bluetooth": [
       "e702"
     ],
+    "removable": [
+      "e88e"
+    ],
     "wifiLimited": [
       "eb5f",
       "eb60",
@@ -520,6 +523,7 @@
     "battery",
     "batteryUnknownCharging",
     "notification",
-    "bluetooth"
+    "bluetooth",
+    "removable"
   ]
 }

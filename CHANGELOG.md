@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Tray optical correction and notification build fix
+
+- Increase normal tray glyph canvases to 20px without enlarging the default cell pitch; normalize the native removable-device status glyph, use its direct renderer and widen the centered battery artwork.
+- Disable SNI icon rounding, enlarge the bell and chevron, and avoid overriding the final Qt Button highlighted property in the notification center.
+
 ### Notification center and calendar polish
 
 - Frame history and calendar separately, reduce typography and spacing, default the optional large clock off, and distinguish app headings from message cards and timestamps.

@@ -86,7 +86,7 @@ ColumnLayout {
                 ? i18n("Do not disturb is active due to a rule or application")
                 : i18n("Manual do not disturb")
             icon.name: "notification-disabled-symbolic"
-            highlighted: history.effectiveDnd
+            attentionActive: history.effectiveDnd
             enabled: history.notificationsAvailable
             display: PlasmaComponents.AbstractButton.IconOnly
             checkable: true

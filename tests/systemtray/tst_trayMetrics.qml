@@ -7,12 +7,12 @@ TestCase {
     name: "WindowsTrayMetrics"
     function test_defaultGlyphAndCell() {
         for (const thickness of [24, 30, 32, 48, 64, 96]) {
-            compare(Metrics.iconSize(thickness, false), 18);
-            compare(Metrics.cellLength(18, false, 2), 32);
-            compare(Metrics.cellLength(18, true, 2), 24);
+            compare(Metrics.iconSize(thickness, false), 20);
+            compare(Metrics.cellLength(20, false, 2), 32);
+            compare(Metrics.cellLength(20, true, 2), 24);
         }
         compare(Metrics.iconSize(12, false), 12);
-        compare(Metrics.iconSize(48, true), 18);
+        compare(Metrics.iconSize(48, true), 20);
         compare(Metrics.iconSize(96, true), 32);
         compare(Metrics.cellLength(16, false, 1), 24);
         compare(Metrics.cellLength(16, true, 1), 20);
@@ -21,20 +21,22 @@ TestCase {
     }
     function test_nativeCoreContainer() {
         for (const thickness of [24, 30, 32, 48, 64, 96]) {
-            compare(Metrics.coreIconSize(thickness, false), 18);
-            compare(Metrics.coreCellLength(18, 18, 2), 24);
+            compare(Metrics.coreIconSize(thickness, false), 20);
+            compare(Metrics.coreCellLength(20, 20, 2), 24);
             compare(Metrics.coreRenderSize(16), 32);
         }
         compare(Metrics.coreIconSize(12, false), 12);
         compare(Metrics.coreIconSize(18, false), 18);
-        compare(Metrics.coreIconSize(48, true), 18);
-        compare(Metrics.coreIconSize(64, true), 24);
+        compare(Metrics.coreIconSize(48, true), 20);
+        compare(Metrics.coreIconSize(64, true), 27);
         compare(Metrics.coreIconSize(96, true), 32);
         compare(Metrics.coreCellLength(16, 16, 1), 20);
         compare(Metrics.coreCellLength(16, 16, 6), 32);
-        compare(Metrics.coreCellLength(32, 32, 2), 38);
+        compare(Metrics.coreCellLength(32, 32, 2), 36);
         compare(Metrics.coreCellLength(18, 18, 1), 22);
         compare(Metrics.coreCellLength(18, 18, 6), 32);
+        compare(Metrics.coreCellLength(20, 20, 1), 24);
+        compare(Metrics.coreCellLength(20, 20, 6), 32);
         compare(Metrics.coreRenderSize(12), 16);
         compare(Metrics.coreRenderSize(16), 32);
         compare(Metrics.coreRenderSize(24), 32);
