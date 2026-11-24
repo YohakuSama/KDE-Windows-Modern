@@ -39,7 +39,8 @@ Item {
         readonly property var sizes: ["1920x1080", "1280x800", "900x600", "1600x1000", "360x560", "1100x780",
                                       "1400x900", "1000x1000", "1920x1200", "1300x760", "800x1100", "1280x720"]
 
-        function fill(n) {
+        function fill(n, geometry = Qt.rect(0, 0, 1920, 1080)) {
+            view.screenGeometry = geometry;
             windowModel.clear();
             for (let i = 0; i < n; ++i) {
                 windowModel.append({ caption: "Window " + i, icon: "", windowId: sizes[i % sizes.length] + ":#336699",
@@ -177,10 +178,8 @@ Item {
         }
 
         function test_narrowScreenFitsCard() {
-            const previous = view.screenGeometry;
             try {
-                view.screenGeometry = Qt.rect(-300, 0, 300, 1600);
-                fill(3);
+                fill(3, Qt.rect(-300, 0, 300, 1600));
                 tryVerify(() => card(0).width <= view.maxContentWidth);
                 verify(view.width <= view.screenGeometry.width);
                 for (const row of view.rows) {
@@ -189,7 +188,9 @@ Item {
                     }
                 }
             } finally {
-                view.screenGeometry = previous;
+                // QML value-type references can follow the underlying
+                // property; restore a fresh rect, not a captured wrapper.
+                view.screenGeometry = Qt.rect(0, 0, 1920, 1080);
             }
         }
 
