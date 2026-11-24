@@ -102,8 +102,9 @@ The `contents/layout.js` creates:
   the Plasma scripting API, and writing it via `ConfigFile` doesn't
   work because plasmashell holds config in memory. Users must toggle
   "Floating → Applets Only" manually in Panel Settings after adding.
-- Opaque background (`panel.opacity="opaque"`) — no adaptive
-  translucency toggling when windows touch the panel.
+- Translucent background (`panel.opacity="translucent"`) — stable blur and
+  acrylic-style flyouts, independent of windows touching the panel. Existing
+  panels keep their saved opacity; change it in Panel Settings to opt in.
 - Widgets left→right:
   1. **Left expanding spacer** — `org.kde.plasma.panelspacer`. Pushes
      the Start + tasks group to the horizontal center of the panel,
@@ -120,8 +121,7 @@ The `contents/layout.js` creates:
      the centered Start + tasks group from the system tray on the far
      right.
   5. **System tray** — `org.kde.windowsmodern.systemtray`. The overflow
-     chevron (`^`) sits *right* of the tray icons, next to the clock (a
-     deliberate choice; Windows 11 puts it on the left).
+     chevron (`^`) sits *left* of the tray icons, as on Windows 11.
      The tray always ends with input language, network, volume, battery,
      in that order, as on Windows 11 (`s_windowsTail` in
      `windowstray.h`; checked by `tests/panel/e2e.py tray-order`). Only
@@ -235,7 +235,8 @@ and shared grid components (see file tree below).
 
 **Phase 1 (complete):**
 - `PlasmaCore.Dialog` with `Floating` location, positioned relative to the
-  panel button via `parent.mapToGlobal`.
+  actual compact button via `main.parent.mapToGlobal`, with the default mode
+  following that button and a shared, tested screen-bound geometry helper.
 - Search field with rounded corners (`radius: smallSpacing*3`) and subtle
   border (12% text color alpha), Segoe UI font.
 - Left column switches between three states (not a `SwipeView`): Pinned
@@ -326,13 +327,14 @@ KPackage must not be installed (it causes the dark-rectangle popup bug).
 See `docs/SYSTEMTRAY_ARCHITECTURE.md` and
 `plasma/applets/org.kde.windowsmodern.systemtray/BUILD.md`.
 
-Tray icons stay separate, Windows 10 style: each opens its own page
-(network, volume, battery…). The chevron opens the Quick Settings flyout
-(a Windows 11/10 hybrid):
-hidden tray icons as a 3-column tile grid, then the toggles and sliders.
-The flyout fits its content (no fixed height). The tile grid shows up to
-three rows, then scrolls; its edges and 6 px gaps match the toggle grid
-exactly (14 px margins at 100% scale).
+The overflow chevron opens a separate five-column, icon-only grid.
+Network, volume and battery retain their live KDE status icons, share the
+Quick Settings action and hover treatment, and stay next to each other.
+Win+A opens Quick Settings. Right-clicks and wheel actions retain their KDE
+behavior. Unpinned, renderable applets remain reachable from overflow rather
+than being hidden entirely. Both home views fit their content; overflow shows
+up to three rows before scrolling. The clock uses logical Qt font metrics to
+avoid double scaling and right-aligns its time/date text.
 
 #### Icon Tasks applet (`plasma/applets/org.kde.windowsmodern.icontasks/`)
 

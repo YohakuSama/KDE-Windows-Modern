@@ -18,6 +18,7 @@ AbstractItem {
     id: plasmoidContainer
 
     property Item applet: model?.applet ?? null
+    property bool groupWasOpen: false
     text: applet?.Plasmoid.title ?? ""
 
     itemId: applet?.Plasmoid.pluginName ?? ""
@@ -32,6 +33,10 @@ AbstractItem {
     // Plasmoid. Not all plasmoids are supposed to expand and not all plasmoids
     // do anything with onActivated.
     onActivated: pos => {
+        if (groupedQuickSettings) {
+            systemTrayState.toggleHome(false);
+            return;
+        }
         if (applet) {
             applet.Plasmoid.activated()
         }
@@ -40,6 +45,10 @@ AbstractItem {
     onClicked: mouse => {
         if (!applet) {
             return
+        }
+        if (groupedQuickSettings && mouse.button === Qt.LeftButton) {
+            systemTrayState.toggleHome(false, groupWasOpen);
+            return;
         }
         //forward click event to the applet
         const appletItem = applet.compactRepresentationItem ?? applet.fullRepresentationItem
@@ -52,6 +61,11 @@ AbstractItem {
         }
     }
     onPressed: mouse => {
+        if (!applet) return;
+        if (groupedQuickSettings && mouse.button === Qt.LeftButton) {
+            groupWasOpen = systemTrayState.quickSettingsOpen;
+            return;
+        }
         // Only Plasmoids can show context menu on the mouse pressed event.
         // SNI has few problems, for example legacy applications that still use XEmbed require mouse to be released.
         if (mouse.button === Qt.RightButton) {

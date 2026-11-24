@@ -146,7 +146,7 @@ RowLayout {
                 anchors.verticalCenter: parent.verticalCenter
                 text: i18n("Shut down")
                 color: Kirigami.Theme.textColor
-                font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize
             }
 
             // Subtle divider between the two zones.

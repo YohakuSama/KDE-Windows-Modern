@@ -6,6 +6,40 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Icons
+
+- Fill 11 missing application/arrow icon names with existing canonical SVGs in
+  the single Windows Modern theme; remove the Start avatar's hard-coded Breeze
+  file path in favor of the active icon theme.
+
+### Tray and taskbar
+
+- Move the overflow chevron before the tray icons; separate the compact
+  icon-only overflow from Quick Settings. Network, audio and battery cells
+  share the Quick Settings action while retaining live KDE status glyphs.
+- Keep eligible unpinned applets reachable in overflow. Honor user-pinned
+  and disabled states. Preserve right-click and wheel interactions.
+- Use logical Qt font metrics for the panel clock and right-align its labels.
+
+### Changed
+
+- Preserve the user's existing KDE fonts when installing the full theme.
+  Windows-style fonts remain an explicit optional installation. Lock/login
+  text uses the session font rather than a hard-coded Segoe UI family.
+- Document the fork's native Windows 11 visual fidelity target and acceptance
+  criteria.
+
+### Fixed
+
+- Start menu: follow the Start button by default; use its actual screen position
+  and clamp the flyout to the selected display, including floating and vertical
+  panels. Existing explicit menu positions are preserved.
+- New panels default to translucent opacity for consistent acrylic-style
+  Start, Quick Settings and calendar flyouts. Start follows panel opacity in
+  its default mode; explicit Start opacity overrides and solid mode remain.
+- Align Start section headings and power button text with the normal UI font;
+  reduce the calendar clock header from bold to semibold.
+
 ## [1.2.1] - 2026-11-23
 
 ### Fixed

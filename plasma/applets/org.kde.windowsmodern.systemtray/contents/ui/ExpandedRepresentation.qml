@@ -21,16 +21,20 @@ import "components" as Components
 Item {
     id: popup
 
-    // Width: pinned to 360px
-    Layout.minimumWidth: 360
-    Layout.maximumWidth: 360
+    // The overflow is a compact icon-only grid; Quick Settings and details
+    // keep the existing 360px surface and their KDE backends.
+    readonly property bool overflowHome: systemTrayState.overflowMode && !systemTrayState.activeApplet
+    readonly property int popupWidth: overflowHome
+        ? Math.round(216 * actionPanel.scale) : 360
+    Layout.minimumWidth: popupWidth
+    Layout.maximumWidth: popupWidth
 
     // Height: applet pages are gridUnit*24. The Quick Settings view (no
     // active applet) fits its content exactly, like Windows 11, so a few
     // hidden icons don't leave an empty band above the toggles.
     // updateMinSize() grows to the minimum, updateMaxSize() shrinks to the
     // maximum — both bypass the saved-size flag.
-    readonly property int quickSettingsHeight: Math.ceil(actionPanelMode.implicitHeight)
+    readonly property int quickSettingsHeight: Math.max(1, Math.ceil(actionPanelMode.implicitHeight))
     Layout.minimumHeight: systemTrayState.activeApplet
         ? Kirigami.Units.gridUnit * 24
         : quickSettingsHeight
@@ -90,7 +94,7 @@ Item {
 
             PlasmaComponents.ToolButton {
                 id: backButton
-                visible: systemTrayState.activeApplet && systemTrayState.activeApplet.expanded && (popup.hiddenLayout.itemCount > 0)
+                visible: systemTrayState.activeApplet && systemTrayState.activeApplet.expanded
                 icon.name: mirrored ? "go-previous-symbolic-rtl" : "go-previous-symbolic"
                 display: PlasmaComponents.AbstractButton.IconOnly
                 text: i18nc("@action:button", "Go Back")
@@ -215,7 +219,7 @@ Item {
             }
         }
 
-        // Action Panel mode (no active applet): hidden grid + tiles + sliders
+        // The same popup hosts two separate homes: overflow OR Quick Settings.
         ColumnLayout {
             id: actionPanelMode
             Layout.fillWidth: true
@@ -227,15 +231,11 @@ Item {
                 id: hiddenItemsView
                 Layout.fillWidth: true
                 Layout.preferredHeight: hiddenItemsView.contentRowsHeight
-                // Line tiles up with the toggles' 14px margins. Each tile fills its
-                // cell minus cellSpacing on the right/bottom (GridView places
-                // delegates at the cell origin), so the view extends one gap past
-                // the right margin to end the last tile on the toggles' edge.
-                Layout.leftMargin: Math.round(14 * actionPanel.scale)
-                Layout.rightMargin: Math.round(14 * actionPanel.scale) - hiddenItemsView.layout.cellSpacing
-                Layout.topMargin: Math.round(14 * actionPanel.scale)
-                Layout.bottomMargin: Math.round(10 * actionPanel.scale)
-                visible: root.hiddenLayout.itemCount > 0
+                Layout.leftMargin: Math.round(8 * actionPanel.scale)
+                Layout.rightMargin: Math.round(8 * actionPanel.scale)
+                Layout.topMargin: Math.round(8 * actionPanel.scale)
+                Layout.bottomMargin: Math.round(8 * actionPanel.scale)
+                visible: popup.overflowHome && root.hiddenLayout.itemCount > 0
                 KeyNavigation.up: pinButton
                 onVisibleChanged: {
                     if (visible) {
@@ -248,6 +248,7 @@ Item {
             ActionPanel {
                 id: actionPanel
                 Layout.fillWidth: true
+                visible: !systemTrayState.overflowMode
                 onRequestPage: name => popup.activateFlyout(name)
             }
         }

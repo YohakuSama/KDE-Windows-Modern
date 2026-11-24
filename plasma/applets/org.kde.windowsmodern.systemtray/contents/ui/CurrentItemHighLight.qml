@@ -98,16 +98,16 @@ KSvg.FrameSvgItem {
     }
 
     function updateHighlightedItem() {
-        if (systemTrayState.expanded) {
-            if (systemTrayState.activeApplet && systemTrayState.activeApplet.parent && systemTrayState.activeApplet.parent.inVisibleLayout) {
-                changeHighlightedItem(systemTrayState.activeApplet.parent.container, /*forceEdgeHighlight*/false);
-            } else { // 'Show hidden items' popup
-                changeHighlightedItem(parent, /*forceEdgeHighlight*/true);
-            }
+        const applet = systemTrayState.activeApplet;
+        // Home surfaces have their own button highlights; never highlight
+        // the entire tray when Quick Settings or overflow is open.
+        if (systemTrayState.expanded && applet && applet.parent && applet.parent.inVisibleLayout) {
+            changeHighlightedItem(applet.parent.container, /*forceEdgeHighlight*/false);
+            currentItemHighLight.opacity = 1;
         } else {
             highlightedItem = null;
+            currentItemHighLight.opacity = 0;
         }
-        currentItemHighLight.opacity = systemTrayState.expanded ? 1 : 0
     }
 
     function changeHighlightedItem(nextItem, forceEdgeHighlight) {

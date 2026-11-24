@@ -30,11 +30,10 @@ panel.lengthMode = "fill";
 // Applets Only" manually in Panel Settings after adding this panel.
 panel.floating = false;
 
-// Opaque panel background: Plasma's default "adaptive" opacity toggles
-// translucency when windows touch the panel, which looks inconsistent.
-// Win11 keeps a stable background, so force opaque (our theme is fully
-// opaque anyway). Use "translucent" instead if blur is desired later.
-panel.opacity = "opaque";
+// Stable translucent taskbar and acrylic-style flyouts, independent
+// of whether an open window touches the panel. Solid mode remains
+// available through Plasma settings and the transparency switch.
+panel.opacity = "translucent";
 
 // --- Widgets -------------------------------------------------------------
 // Order of addWidget calls determines left-to-right order in the panel.

@@ -95,7 +95,7 @@ for you, in this order:
    Alt+Tab, Application Style, wallpaper, panel layout reset.
 3. **Behaviour:** Windows keyboard shortcuts, Snap Layouts, the everyday
    apps (Haruna, KWrite, Mission Center) with Snipping Tool–style
-   screenshots, and Windows fonts (Segoe UI or Selawik, Cascadia Mono).
+   screenshots. System font settings are preserved; Windows-style fonts are opt-in.
 
 On a fresh Plasma install this one run is all you need. Run it from
 your normal account (it asks for the password itself when needed) and
@@ -232,7 +232,13 @@ Apps that are already open change after you restart them.
 
 ## Fonts
 
-`./install.sh fonts` uses Windows 11's fonts where it can:
+The normal theme installation preserves KDE's existing UI and monospace fonts.
+The shell follows the active system font family; sizes and weights express the
+Windows 11 hierarchy, and Qt/fontconfig handle language fallback. The login
+screen follows its own greeter session's Qt font.
+
+For users who explicitly want Windows-style fonts, `./install.sh fonts`
+uses Windows 11's fonts where it can:
 
 - **UI:** Segoe UI if you have it (it can't be shipped). Otherwise
   Microsoft's open **Selawik** (same metrics) is downloaded and used

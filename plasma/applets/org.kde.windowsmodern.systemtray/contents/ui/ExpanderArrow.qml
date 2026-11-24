@@ -24,7 +24,7 @@ PlasmaCore.ToolTipArea {
     Accessible.name: subText
     Accessible.description: i18n("Show all the items in the system tray in a popup")
     Accessible.role: Accessible.Button
-    Accessible.onPressAction: systemTrayState.expanded = !systemTrayState.expanded
+    Accessible.onPressAction: systemTrayState.toggleHome(true)
 
     Keys.onPressed: event => {
         switch (event.key) {
@@ -32,36 +32,49 @@ PlasmaCore.ToolTipArea {
         case Qt.Key_Enter:
         case Qt.Key_Return:
         case Qt.Key_Select:
-            systemTrayState.expanded = !systemTrayState.expanded;
+            systemTrayState.toggleHome(true);
+            event.accepted = true;
         }
     }
 
-    subText: systemTrayState.expanded ? i18n("Close popup") : i18n("Show hidden icons")
+    subText: systemTrayState.overflowOpen ? i18n("Close popup") : i18n("Show hidden icons")
 
     property bool wasExpanded
 
     TapHandler {
         onPressedChanged: {
             if (pressed) {
-                tooltip.wasExpanded = systemTrayState.expanded;
+                tooltip.wasExpanded = systemTrayState.overflowOpen;
             }
         }
         onTapped: (eventPoint, button) => {
-            systemTrayState.expanded = !tooltip.wasExpanded;
+            systemTrayState.toggleHome(true, tooltip.wasExpanded);
             expandedRepresentation.hiddenLayout.currentIndex = -1;
         }
     }
 
-    Kirigami.Icon {
+    Rectangle {
         anchors.fill: parent
+        radius: 4
+        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                       Kirigami.Theme.textColor.b, 0.08)
+        visible: arrowHover.hovered || systemTrayState.overflowOpen
+    }
 
-        rotation: systemTrayState.expanded ? 180 : 0
+    HoverHandler { id: arrowHover }
+
+    Kirigami.Icon {
+        anchors.centerIn: parent
+        width: tooltip.iconSize
+        height: width
+
+        rotation: systemTrayState.overflowOpen ? 180 : 0
         Behavior on rotation {
             RotationAnimation {
                 duration: tooltip.arrowAnimationDuration
             }
         }
-        opacity: systemTrayState.expanded ? 0 : 1
+        opacity: systemTrayState.overflowOpen ? 0 : 1
         Behavior on opacity {
             NumberAnimation {
                 duration: tooltip.arrowAnimationDuration
@@ -82,15 +95,17 @@ PlasmaCore.ToolTipArea {
     }
 
     Kirigami.Icon {
-        anchors.fill: parent
+        anchors.centerIn: parent
+        width: tooltip.iconSize
+        height: width
 
-        rotation: systemTrayState.expanded ? 0 : -180
+        rotation: systemTrayState.overflowOpen ? 0 : -180
         Behavior on rotation {
             RotationAnimation {
                 duration: tooltip.arrowAnimationDuration
             }
         }
-        opacity: systemTrayState.expanded ? 1 : 0
+        opacity: systemTrayState.overflowOpen ? 1 : 0
         Behavior on opacity {
             NumberAnimation {
                 duration: tooltip.arrowAnimationDuration

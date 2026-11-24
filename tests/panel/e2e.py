@@ -212,9 +212,11 @@ def tray_pages(p, c):
             print(f"        ({name} is not in the panel row right now — skipped)")
             continue
         p.click(name)
-        page = wait_for(lambda: visible(name, exclude_window=panel_window))
+        grouped = name in ("Networks", "Audio Volume", "Power & Battery")
+        target = "Wi-Fi" if grouped else name
+        page = wait_for(lambda: visible(target, exclude_window=panel_window))
         p.shot(f"tray-{name.lower().replace(' & ', '-').replace(' ', '-')}")
-        c.check(page is not None, f"tray icon {name!r} opens the {name!r} page")
+        c.check(page is not None, f"tray icon {name!r} opens {target!r}")
         p.close_popups()
 
 
@@ -254,9 +256,11 @@ def tray_order(p, c):
     pinned = pinned_tray_items()
     stray = [n for n, i in OVERFLOW_BY_DEFAULT.items() if n in xs and i not in pinned]
     c.check(not stray, f"non-Windows icons wait behind the chevron unless pinned (in the row: {stray})")
+    if tail and "Show hidden icons" in xs:
+        c.check(xs["Show hidden icons"] < xs[tail[0]], "overflow chevron precedes system status icons")
     if tail and "Clock" in xs:
-        between = [n for n, x in xs.items() if xs[tail[-1]] < x < xs["Clock"] and n != "Show hidden icons"]
-        c.check(not between, f"only the chevron between {tail[-1]!r} and the clock (found {between})")
+        between = [n for n, x in xs.items() if xs[tail[-1]] < x < xs["Clock"]]
+        c.check(not between, f"no extra item between {tail[-1]!r} and the clock (found {between})")
 
 
 def clock(p, c):
@@ -275,10 +279,11 @@ def clock(p, c):
 
 def quick_settings(p, c):
     panel_window = p.item("Show desktop").window
-    p.click("Show hidden icons")
+    p.click("Networks")
     tile = wait_for(lambda: visible("Wi-Fi", exclude_window=panel_window))
     p.shot("quick-settings")
-    c.check(tile is not None, "chevron opens Quick Settings (Wi-Fi tile visible)")
+    c.check(tile is not None, "network icon opens grouped Quick Settings (Wi-Fi tile visible)")
+    c.check(not _cards(panel_window), "overflow items are absent from Quick Settings")
     gear = visible("All settings", exclude_window=panel_window)
     c.check(gear is not None, "Quick Settings has the Settings gear in its footer")
     if pathlib.Path("/sys/class/power_supply/BAT0").exists() or pathlib.Path("/sys/class/power_supply/BAT1").exists():
@@ -289,10 +294,11 @@ def quick_settings(p, c):
 
 
 def _cards(panel_window):
-    """The hidden-icon cards in the flyout (above the Quick Settings tiles)."""
-    wifi = visible("Wi-Fi", exclude_window=panel_window)
+    """Icon-only overflow cells, in the separate overflow flyout."""
+    if visible("Wi-Fi", exclude_window=panel_window):
+        return []
     return sorted((n for n in a11y.nodes(APP) if n.showing and n.role == "list item" and n.visible
-                   and n.window != panel_window and wifi and n.rect[1] < wifi.rect[1]),
+                   and n.window != panel_window),
                   key=lambda n: (n.rect[1], n.rect[0]))
 
 
@@ -313,7 +319,8 @@ def flyout_hover(p, c):
     from PIL import Image
     panel_window = p.item("Show desktop").window
     p.click("Show hidden icons")
-    c.check(wait_for(lambda: visible("Wi-Fi", exclude_window=panel_window)) is not None, "Quick Settings opens")
+    c.check(wait_for(lambda: len(_cards(panel_window)) > 0), "overflow grid opens")
+    c.check(visible("Wi-Fi", exclude_window=panel_window) is None, "overflow has no Quick Settings tiles")
     time.sleep(0.8)
     cards = _cards(panel_window)
     if len(cards) < 2:
@@ -395,8 +402,8 @@ def flyout_scroll(p, c):
     p.click("Show hidden icons")
     card = wait_for(lambda: visible("Brightness & Color", exclude_window=panel_window), timeout=6)
     if card is None:
-        # Hidden by default (Quick Settings has the slider); the check runs
-        # when the user brings the card back ("Always hidden" in the tray).
+        # Some devices do not provide a brightness applet or the user may
+        # have pinned/disabled it; only check when it is in overflow.
         print("        (no Brightness & Color card in the flyout — skipped)")
         p.close_popups()
         return

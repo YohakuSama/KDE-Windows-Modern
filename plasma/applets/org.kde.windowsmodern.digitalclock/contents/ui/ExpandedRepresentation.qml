@@ -74,7 +74,7 @@ Item {
                     color: palette.text
                     font {
                         family: Kirigami.Theme.defaultFont.family
-                        weight: Font.Bold
+                        weight: Font.DemiBold
                         pixelSize: Kirigami.Units.gridUnit * 3
                         features: { "tnum": 1 }
                     }
@@ -90,7 +90,7 @@ Item {
                     color: palette.text
                     font {
                         family: Kirigami.Theme.defaultFont.family
-                        weight: Font.Bold
+                        weight: Font.DemiBold
                         pixelSize: Math.round(timeHeader.font.pixelSize * 0.45)
                     }
                     Layout.alignment: Qt.AlignTop

@@ -34,7 +34,7 @@ MouseArea {
 
     // The panel sizes applets from their Layout hints; without them the
     // clock got a square cell and a full-year date overflowed it.
-    implicitWidth: contentLayout.implicitWidth + 2 * Kirigami.Units.largeSpacing
+    implicitWidth: contentLayout.implicitWidth + 2 * Kirigami.Units.smallSpacing
     implicitHeight: panelHeight
     Layout.minimumWidth: implicitWidth
     Layout.preferredWidth: implicitWidth
@@ -83,9 +83,10 @@ MouseArea {
     // size (the time is not bigger than the date). The text only shrinks
     // when the panel is too thin to stack the lines at that size.
     readonly property int linePixelSize: {
-        const wanted = Plasmoid.configuration.autoFontAndSize
-            ? (baseFont.pixelSize > 0 ? baseFont.pixelSize : pointToPixel(baseFont.pointSize))
-            : pointToPixel(Plasmoid.configuration.fontSize);
+        // QML uses logical pixels; physical screen DPI would apply fractional
+        // scaling twice. Measure the actual configured Qt font instead.
+        const wanted = baseFont.pixelSize > 0
+            ? baseFont.pixelSize : Math.round(baseMetrics.height / lineHeightFactor);
         const minMargin = 2;
         const fits = Math.floor((panelHeight - 2 * minMargin) / lineCount / lineHeightFactor);
         return Math.max(6, Math.min(wanted, fits));
@@ -101,9 +102,9 @@ MouseArea {
         }
     }
 
-    function pointToPixel(pointSize: int): int {
-        const pixelsPerInch = Screen.pixelDensity * 25.4;
-        return Math.round(pointSize / 72 * pixelsPerInch);
+    FontMetrics {
+        id: baseMetrics
+        font: main.baseFont
     }
 
     function dateFormatter(d: date): string {
@@ -139,7 +140,7 @@ MouseArea {
     ColumnLayout {
         id: contentLayout
         anchors.centerIn: parent
-        width: parent.width
+        width: Math.max(0, parent.width - 2 * Kirigami.Units.smallSpacing)
         spacing: 0
 
         PlasmaComponents.Label {
@@ -147,7 +148,7 @@ MouseArea {
 
             Layout.fillWidth: true
 
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: Text.AlignRight
             verticalAlignment: Text.AlignVCenter
             textFormat: Text.PlainText
 
@@ -169,7 +170,7 @@ MouseArea {
             visible: main.showDate
             Layout.fillWidth: true
 
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: Text.AlignRight
             verticalAlignment: Text.AlignVCenter
             textFormat: Text.PlainText
 
@@ -191,7 +192,7 @@ MouseArea {
             visible: main.showTimezone
             Layout.fillWidth: true
 
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: Text.AlignRight
             verticalAlignment: Text.AlignVCenter
             textFormat: Text.PlainText
 

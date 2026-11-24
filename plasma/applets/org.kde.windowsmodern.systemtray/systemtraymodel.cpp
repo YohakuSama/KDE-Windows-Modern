@@ -74,8 +74,8 @@ Plasma::Types::ItemStatus BaseModel::calculateEffectiveStatus(bool canRender, Pl
         || WindowsTray::alwaysShown(itemId); // Hidden (e.g. no battery) returned above
     if (forcedShown || (!forcedHidden && wantsTray))
         return Plasma::Types::ItemStatus::ActiveStatus;
-    if (!forcedHidden && !needsUser && WindowsTray::hiddenByDefault(itemId))
-        return Plasma::Types::ItemStatus::HiddenStatus;
+    // Eligible unpinned items stay reachable through the overflow. Only
+    // disabled or non-renderable items are completely hidden (handled above).
     return Plasma::Types::ItemStatus::PassiveStatus;
 }
 

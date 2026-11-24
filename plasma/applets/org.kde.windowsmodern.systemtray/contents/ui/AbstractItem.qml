@@ -36,7 +36,29 @@ PlasmaCore.ToolTipArea {
     readonly property bool inHiddenLayout: effectiveStatus === PlasmaCore.Types.PassiveStatus
     readonly property bool inVisibleLayout: effectiveStatus === PlasmaCore.Types.ActiveStatus
 
+    // Real status icons remain owned by the underlying Plasma applets.
+    // These three visible cells share the Quick Settings action and hover.
+    readonly property bool groupedQuickSettings: inVisibleLayout &&
+        (itemId === "org.kde.plasma.networkmanagement" ||
+         itemId === "org.kde.plasma.volume" || itemId === "org.kde.plasma.battery")
     property bool effectivePressed: false
+
+    HoverHandler {
+        enabled: abstractItem.groupedQuickSettings
+        onHoveredChanged: {
+            if (hovered) root.hoveredQuickSetting = abstractItem;
+            else if (root.hoveredQuickSetting === abstractItem) root.hoveredQuickSetting = null;
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        z: -1
+        visible: abstractItem.groupedQuickSettings &&
+            (root.hoveredQuickSetting !== null || systemTrayState.quickSettingsOpen)
+        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                       Kirigami.Theme.textColor.b, 0.08)
+    }
 
     // Keep these in sync with HiddenItems.qml
     readonly property int margins: Kirigami.Units.smallSpacing
@@ -64,7 +86,7 @@ PlasmaCore.ToolTipArea {
         // This needs to be above applets when it's in the grid hidden area
         // so that it can receive hover events while the mouse is over an applet,
         // but below them on regular systray, so collapsing works
-        z: abstractItem.inHiddenLayout ? 1 : 0
+        z: abstractItem.inHiddenLayout || abstractItem.groupedQuickSettings ? 1 : 0
         anchors.fill: abstractItem
         hoverEnabled: true
         drag.filterChildren: true
@@ -136,12 +158,11 @@ PlasmaCore.ToolTipArea {
 
     ColumnLayout {
         anchors.fill: abstractItem
-        // A flyout cell is ~75 px tall: 6 + 28 (icon) + 4 + 2 lines of name
-        // (26) + 6 fits; larger margins or icon push two-line names out.
-        anchors.leftMargin: abstractItem.inHiddenLayout ? 8 : 0
-        anchors.rightMargin: abstractItem.inHiddenLayout ? 8 : 0
-        anchors.topMargin: abstractItem.inHiddenLayout ? 6 : 0
-        anchors.bottomMargin: abstractItem.inHiddenLayout ? 6 : 0
+        // Overflow is icon-only; names remain in tooltips and accessibility.
+        anchors.leftMargin: abstractItem.inHiddenLayout ? 4 : 0
+        anchors.rightMargin: abstractItem.inHiddenLayout ? 4 : 0
+        anchors.topMargin: abstractItem.inHiddenLayout ? 4 : 0
+        anchors.bottomMargin: abstractItem.inHiddenLayout ? 4 : 0
         spacing: 0
 
         Item { // centers icon and name in a flyout cell
@@ -184,7 +205,7 @@ PlasmaCore.ToolTipArea {
 
             property alias container: abstractItem
             property alias inVisibleLayout: abstractItem.inVisibleLayout
-            readonly property int size: abstractItem.inVisibleLayout ? root.itemSize : 28
+            readonly property int size: abstractItem.inVisibleLayout ? root.itemSize : 24
 
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
             implicitWidth: root.vertical && abstractItem.inVisibleLayout ? abstractItem.width : size
@@ -192,8 +213,8 @@ PlasmaCore.ToolTipArea {
         }
 
         Item {
-            Layout.preferredHeight: 4
-            visible: abstractItem.inHiddenLayout
+            Layout.preferredHeight: 0
+            visible: false
         }
 
         PlasmaComponents3.Label {
@@ -202,7 +223,7 @@ PlasmaCore.ToolTipArea {
             Layout.fillWidth: true
             maximumLineCount: abstractItem.maxTextLines
 
-            visible: abstractItem.inHiddenLayout
+            visible: false // The icon's accessible name still uses this text alias.
 
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignTop
