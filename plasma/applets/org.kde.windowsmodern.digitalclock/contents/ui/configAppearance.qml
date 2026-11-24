@@ -44,6 +44,7 @@ KCMUtils.SimpleKCM {
     property alias cfg_dateDisplayFormat: dateDisplayFormat.currentIndex
 
     property alias cfg_expandedWidth: expandedWidthSpinBox.value
+    property alias cfg_showNotificationButton: notificationButtonCheck.checked
 
     property real comboBoxWidth: Math.max(dateDisplayFormat.implicitWidth,
                                           showSecondsComboBox.implicitWidth,
@@ -74,6 +75,11 @@ KCMUtils.SimpleKCM {
                 ]
                 onActivated: appearancePage.cfg_dateDisplayFormat = currentIndex
             }
+        }
+
+        QQC2.CheckBox {
+            id: notificationButtonCheck
+            text: i18n("Show notification center button beside the clock")
         }
 
         Item {

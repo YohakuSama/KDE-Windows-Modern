@@ -58,6 +58,8 @@ Item {
                 Layout.fillWidth: true
                 opened: root.expanded
                 currentTime: root.currentTime
+                notificationModel: root.notificationModel
+                settings: root.notificationSettings
             }
 
             Rectangle {

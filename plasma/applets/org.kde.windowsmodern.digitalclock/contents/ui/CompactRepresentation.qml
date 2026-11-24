@@ -31,10 +31,16 @@ MouseArea {
     required property var plasmoidItem
 
     readonly property real panelHeight: parent ? parent.height : height
+    readonly property bool showBell: Plasmoid.configuration.showNotificationButton
+        && Plasmoid.formFactor !== PlasmaCore.Types.Vertical
+    property bool wasExpanded: false
+    function toggleFlyout(previous = plasmoidItem.expanded) {
+        plasmoidItem.expanded = !previous;
+    }
 
     // The panel sizes applets from their Layout hints; without them the
     // clock got a square cell and a full-year date overflowed it.
-    implicitWidth: contentLayout.implicitWidth + 2 * Kirigami.Units.smallSpacing
+    implicitWidth: panelContent.implicitWidth + 2 * Kirigami.Units.smallSpacing
     implicitHeight: panelHeight
     Layout.minimumWidth: implicitWidth
     Layout.preferredWidth: implicitWidth
@@ -122,13 +128,17 @@ MouseArea {
 
     Accessible.role: Accessible.Button
     Accessible.name: timeLabel.text + (dateLabel.visible ? ", " + dateLabel.text : "")
+    Accessible.description: i18n("Open notification center and calendar")
+    Accessible.onPressAction: toggleFlyout()
+    Keys.onReturnPressed: toggleFlyout()
+    Keys.onEnterPressed: toggleFlyout()
+    Keys.onSpacePressed: toggleFlyout()
 
     acceptedButtons: Qt.LeftButton
-
+    onPressed: wasExpanded = plasmoidItem.expanded
     onClicked: mouse => {
-        if (mouse.button === Qt.LeftButton) {
-            plasmoidItem.expanded = !plasmoidItem.expanded;
-        }
+        if (mouse.button === Qt.LeftButton)
+            toggleFlyout(wasExpanded);
     }
 
     PlasmaClock.Clock {
@@ -137,75 +147,112 @@ MouseArea {
         trackSeconds: Plasmoid.configuration.showSeconds === 2 // Always
     }
 
-    ColumnLayout {
-        id: contentLayout
-        anchors.centerIn: parent
-        width: Math.max(0, parent.width - 2 * Kirigami.Units.smallSpacing)
-        spacing: 0
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: 2
+        radius: 4
+        visible: main.containsMouse || main.activeFocus || main.plasmoidItem.expanded
+        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                       Kirigami.Theme.textColor.b, main.containsPress ? 0.12 : 0.06)
+    }
 
-        PlasmaComponents.Label {
-            id: timeLabel
+    RowLayout {
+        id: panelContent
+        anchors.fill: parent
+        anchors.leftMargin: Kirigami.Units.smallSpacing
+        anchors.rightMargin: Kirigami.Units.smallSpacing
+        spacing: Kirigami.Units.smallSpacing
 
+        ColumnLayout {
+            id: contentLayout
             Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
+            spacing: 0
 
-            horizontalAlignment: Text.AlignRight
-            verticalAlignment: Text.AlignVCenter
-            textFormat: Text.PlainText
+            PlasmaComponents.Label {
+                id: timeLabel
 
-            text: Qt.locale().toString(clock.dateTime, Plasmoid.configuration.showSeconds === 2 ? root.timeFormatWithSeconds : root.timeFormat)
+                Layout.fillWidth: true
 
-            font {
-                family: main.baseFont.family
-                weight: main.baseFont.weight
-                italic: main.baseFont.italic
-                styleName: main.baseFont.styleName
-                pixelSize: main.linePixelSize
-                features: { "tnum": 1 }
+                horizontalAlignment: Text.AlignRight
+                verticalAlignment: Text.AlignVCenter
+                textFormat: Text.PlainText
+
+                text: Qt.locale().toString(clock.dateTime, Plasmoid.configuration.showSeconds === 2 ? root.timeFormatWithSeconds : root.timeFormat)
+
+                font {
+                    family: main.baseFont.family
+                    weight: main.baseFont.weight
+                    italic: main.baseFont.italic
+                    styleName: main.baseFont.styleName
+                    pixelSize: main.linePixelSize
+                    features: { "tnum": 1 }
+                }
+            }
+
+            PlasmaComponents.Label {
+                id: dateLabel
+
+                visible: main.showDate
+                Layout.fillWidth: true
+
+                horizontalAlignment: Text.AlignRight
+                verticalAlignment: Text.AlignVCenter
+                textFormat: Text.PlainText
+
+                text: main.dateFormatter(clock.dateTime)
+
+                font {
+                    family: main.baseFont.family
+                    weight: main.baseFont.weight
+                    italic: main.baseFont.italic
+                    styleName: main.baseFont.styleName
+                    pixelSize: main.linePixelSize
+                    features: { "tnum": 1 }
+                }
+            }
+
+            PlasmaComponents.Label {
+                id: timeZoneLabel
+
+                visible: main.showTimezone
+                Layout.fillWidth: true
+
+                horizontalAlignment: Text.AlignRight
+                verticalAlignment: Text.AlignVCenter
+                textFormat: Text.PlainText
+
+                text: main.timezoneString
+
+                font {
+                    family: main.baseFont.family
+                    weight: main.baseFont.weight
+                    italic: main.baseFont.italic
+                    styleName: main.baseFont.styleName
+                    pixelSize: main.linePixelSize
+                    features: { "tnum": 1 }
+                }
             }
         }
 
-        PlasmaComponents.Label {
-            id: dateLabel
-
-            visible: main.showDate
-            Layout.fillWidth: true
-
-            horizontalAlignment: Text.AlignRight
-            verticalAlignment: Text.AlignVCenter
-            textFormat: Text.PlainText
-
-            text: main.dateFormatter(clock.dateTime)
-
-            font {
-                family: main.baseFont.family
-                weight: main.baseFont.weight
-                italic: main.baseFont.italic
-                styleName: main.baseFont.styleName
-                pixelSize: main.linePixelSize
-                features: { "tnum": 1 }
-            }
-        }
-
-        PlasmaComponents.Label {
-            id: timeZoneLabel
-
-            visible: main.showTimezone
-            Layout.fillWidth: true
-
-            horizontalAlignment: Text.AlignRight
-            verticalAlignment: Text.AlignVCenter
-            textFormat: Text.PlainText
-
-            text: main.timezoneString
-
-            font {
-                family: main.baseFont.family
-                weight: main.baseFont.weight
-                italic: main.baseFont.italic
-                styleName: main.baseFont.styleName
-                pixelSize: main.linePixelSize
-                features: { "tnum": 1 }
-            }
+        PlasmaComponents.ToolButton {
+            id: notificationButton
+            visible: main.showBell
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredWidth: Math.max(Kirigami.Units.iconSizes.small + 2 * Kirigami.Units.smallSpacing,
+                                            implicitWidth)
+            Layout.preferredHeight: Math.min(main.panelHeight, implicitHeight)
+            text: i18n("Notification center")
+            display: PlasmaComponents.AbstractButton.IconOnly
+            icon.name: main.plasmoidItem.notificationIcon
+            icon.width: Kirigami.Units.iconSizes.small
+            icon.height: Kirigami.Units.iconSizes.small
+            Accessible.name: text
+            Accessible.description: main.plasmoidItem.notificationStatusText
+            property bool wasExpanded: false
+            onPressed: wasExpanded = main.plasmoidItem.expanded
+            onClicked: main.toggleFlyout(wasExpanded)
+            PlasmaComponents.ToolTip { text: main.plasmoidItem.notificationStatusText }
         }
     }
 }

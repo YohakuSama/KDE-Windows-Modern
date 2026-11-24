@@ -52,10 +52,11 @@ RowLayout {
             color: Kirigami.Theme.backgroundColor
             radius: Kirigami.Units.smallSpacing * 3
             border.width: 1
-            border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                                   Kirigami.Theme.textColor.g,
-                                   Kirigami.Theme.textColor.b, Theme.fieldBorderOpacity)
-            Behavior on border.color { ColorAnimation { duration: 100 } }
+            border.color: searchFieldInput.activeFocus ? Kirigami.Theme.highlightColor
+                : Qt.rgba(Kirigami.Theme.textColor.r,
+                          Kirigami.Theme.textColor.g,
+                          Kirigami.Theme.textColor.b, Theme.fieldBorderOpacity)
+            Behavior on border.color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
         }
 
         // No onTextChanged here: searchText aliases this text, so QML already

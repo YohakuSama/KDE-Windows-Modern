@@ -320,7 +320,8 @@ Item {
 
                             PlasmaComponents3.Label {
                                 Layout.fillWidth: true
-                                text: i18n("Recent")
+                                text: i18n("Recommended")
+                                Accessible.description: i18n("Recently used applications and documents")
                                 font.weight: Font.DemiBold
                                 visible: Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs
                             }

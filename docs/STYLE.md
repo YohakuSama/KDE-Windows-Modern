@@ -125,14 +125,15 @@ The `contents/layout.js` creates:
      The tray always ends with input language, network, volume, battery,
      in that order, as on Windows 11 (`s_windowsTail` in
      `windowstray.h`; checked by `tests/panel/e2e.py tray-order`). Only
-     those four, notifications and the camera-in-use indicator show without
+     those four and the camera-in-use indicator show without
      being pinned; every other icon waits behind the chevron until it needs
      attention or is set to "Always shown" (`calculateEffectiveStatus` in
      `systemtraymodel.cpp`).
-  6. **Digital clock** — `org.kde.windowsmodern.digitalclock` (with a
+  6. **Digital clock and notification center** — `org.kde.windowsmodern.digitalclock` (with a
       fallback to `org.kde.plasma.digitalclock`). Stacked date below the
       time, no seconds by default, `use24hFormat=1` so it follows the
-      user's locale. Time and date use the same, normal UI font size, as on
+      user's locale. The notification bell is on the clock's right, before Show Desktop.
+      Both open the same native history/calendar flyout. Time and date use the same, normal UI font size, as on
       Windows; the text shrinks only if the panel is too thin for it. The expanded popup is a dark rounded
       Windows 11 calendar with month navigation, current-day blue circle,
       hover highlights, and optional KDE calendar event dots.
@@ -261,7 +262,7 @@ numbers, and calendar plugins.
 
 Win11 refinements over upstream:
 
-- **Notification center** — clock click and Win+N (after applying shortcuts)
+- **Notification center** — clock or bell click and Win+N (after applying shortcuts)
   show the shared KDE notification history above the existing calendar.
   Cards use the system font, app icon, dismiss, clear all and supported actions.
   Manual DND writes the existing notification settings; the native tray

@@ -22,28 +22,8 @@ ColumnLayout {
 
     Win11Palette { id: palette }
 
-    NotificationManager.Settings { id: settings }
-
-    NotificationManager.Notifications {
-        id: notificationModel
-        showExpired: true
-        showDismissed: true
-        // Keep file-copy/transfer jobs available through the native KDE applet.
-        showJobs: false
-        showNotifications: true
-        sortMode: NotificationManager.Notifications.SortByDate
-        groupMode: NotificationManager.Notifications.GroupApplicationsFlat
-        groupLimit: 1
-        expandUnread: false
-        ignoreBlacklistDuringInhibition: true
-        blacklistedDesktopEntries: settings.historyBlacklistedApplications
-        blacklistedNotifyRcNames: settings.historyBlacklistedServices
-        popupBlacklistedDesktopEntries: settings.popupBlacklistedApplications
-        popupBlacklistedNotifyRcNames: settings.popupBlacklistedServices
-        urgencies: NotificationManager.Notifications.CriticalUrgency
-                 | NotificationManager.Notifications.NormalUrgency
-                 | (settings.lowPriorityHistory ? NotificationManager.Notifications.LowUrgency : 0)
-    }
+    required property var notificationModel
+    required property var settings
 
     function markRead() {
         if (opened) notificationModel.lastRead = undefined;

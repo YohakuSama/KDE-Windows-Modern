@@ -63,8 +63,9 @@ inline bool alwaysShown(const QString &itemId)
 // the chevron until it needs attention or the user pins it ("Always shown").
 inline bool shownByDefault(const QString &itemId)
 {
+    // The clock owns the visible notification bell. Keep the native
+    // notification applet enabled in overflow for transfer jobs and settings.
     return tail().contains(itemId)
-        || itemId == QLatin1String("org.kde.plasma.notifications")
         || itemId == QLatin1String("org.kde.plasma.cameraindicator"); // privacy: camera in use
 }
 }
