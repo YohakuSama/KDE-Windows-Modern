@@ -247,7 +247,9 @@ MouseArea {
             Layout.minimumWidth: main.bellCellWidth
             Layout.preferredWidth: main.bellCellWidth
             Layout.maximumWidth: main.bellCellWidth
-            Layout.preferredHeight: Math.min(main.panelHeight, implicitHeight)
+            Layout.minimumHeight: Math.min(main.panelHeight, 24)
+            Layout.preferredHeight: Math.min(main.panelHeight, 32)
+            Layout.maximumHeight: Layout.preferredHeight
             text: i18n("Notification center")
             display: PlasmaComponents.AbstractButton.IconOnly
             icon.name: main.plasmoidItem.notificationIcon
