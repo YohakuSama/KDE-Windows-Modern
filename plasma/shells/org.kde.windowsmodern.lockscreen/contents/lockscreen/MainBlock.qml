@@ -61,12 +61,6 @@ SessionManagementScreen {
         Layout.bottomMargin: 16
 
         Image {
-            anchors.fill: parent
-            source: Qt.resolvedUrl("default-avatar.svg")
-            visible: avatarImg.status !== Image.Ready
-        }
-
-        Image {
             id: avatarImg
             anchors.fill: parent
             source: {
@@ -79,7 +73,6 @@ SessionManagementScreen {
             fillMode: Image.PreserveAspectCrop
             sourceSize: Qt.size(140, 140)
             asynchronous: true
-            visible: status === Image.Ready
 
             layer.enabled: true
             layer.effect: OpacityMask {

@@ -17,19 +17,12 @@ Item {
     implicitHeight: size
 
     Image {
-        anchors.fill: parent
-        source: Qt.resolvedUrl("default-avatar.svg")
-        visible: image.status !== Image.Ready
-    }
-
-    Image {
         id: image
         anchors.fill: parent
         source: root.source
         fillMode: Image.PreserveAspectCrop
         sourceSize: Qt.size(root.size, root.size)
         asynchronous: true
-        visible: status === Image.Ready
         layer.enabled: true
         layer.effect: OpacityMask {
             maskSource: maskRect

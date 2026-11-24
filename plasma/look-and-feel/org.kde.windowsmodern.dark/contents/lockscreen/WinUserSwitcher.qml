@@ -28,9 +28,19 @@ ListView {
             anchors.fill: parent
             spacing: Kirigami.Units.smallSpacing
 
-            WinAvatar {
-                size: WinStyle.userSwitcherAvatarSize
-                source: model.icon || ""
+            Rectangle {
+                width: WinStyle.userSwitcherAvatarSize
+                height: WinStyle.userSwitcherAvatarSize
+                radius: WinStyle.userSwitcherAvatarSize / 2
+                color: WinStyle.hoverBackground
+                visible: model.icon !== ""
+
+                Image {
+                    anchors.fill: parent
+                    source: model.icon || ""
+                    fillMode: Image.PreserveAspectCrop
+                    clip: true
+                }
             }
 
             Text {

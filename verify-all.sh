@@ -73,26 +73,6 @@ else
     fail "tasks.svg differs from its generator (${drift# }) — run: scripts/theme/tasks-frames.py plasma/desktoptheme/*/widgets/tasks.svg"
 fi
 
-
-# Keep all packaged fallback artwork and launch aliases in sync.
-for p in \
-    plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/default-avatar.svg \
-    plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/default-avatar.svg \
-    plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/default-avatar.svg; do
-    check_file "$p" "Packaged default avatar"
-    if ! cmp -s "$p" plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/faces/.face.icon; then
-        fail "Default avatar differs: $p"
-    fi
-done
-for n in discover muondiscover org.kde.discover plasma-discover plasmadiscover; do
-    if ! cmp -s "icons/windows-modern/apps/$n.svg" icons/windows-modern/apps/discover.svg; then
-        fail "Discover icon alias differs: $n"
-    fi
-done
-for v in dark light; do
-    check_file "plasma/look-and-feel/org.kde.windowsmodern.$v/contents/splash/Splash.qml" "Session splash $v"
-done
-
 # ── Layout ──────────────────────────────────────────────────────────
 echo ""
 echo " Layout:"

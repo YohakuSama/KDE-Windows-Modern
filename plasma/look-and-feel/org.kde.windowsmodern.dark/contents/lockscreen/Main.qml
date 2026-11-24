@@ -197,7 +197,7 @@ Item {
                     ListElement { realName: ""; icon: "" }
                     Component.onCompleted: {
                         setProperty(0, "realName", i18nd("plasma_login", "Type in Username and Password"));
-                        setProperty(0, "icon", Qt.resolvedUrl("default-avatar.svg").toString());
+                        setProperty(0, "icon", Qt.resolvedUrl("faces/.face.icon").toString());
                     }
                 }
 

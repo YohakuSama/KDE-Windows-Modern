@@ -103,7 +103,7 @@ SessionManagementScreen {
             if (!root.showUsernamePrompt && userList.currentItem && userList.currentItem.icon) {
                 return userList.currentItem.icon;
             }
-            return Qt.resolvedUrl("default-avatar.svg");
+            return Qt.resolvedUrl("faces/.face.icon");
         }
     }
 
