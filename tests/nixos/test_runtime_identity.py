@@ -22,9 +22,11 @@ class BuildIdentity(unittest.TestCase):
             path.write_bytes(token.encode())
     def tearDown(self):
         self.tmp.cleanup()
-    def mapping(self, path, deleted=False, inode=None):
+    def mapping(self, path, deleted=False, inode=None, device=None):
         st = path.stat()
-        return (f"0000-1000 r-xp 00000000 {os.major(st.st_dev):x}:{os.minor(st.st_dev):x} "
+        if device is None:
+            device = f"{os.major(st.st_dev):x}:{os.minor(st.st_dev):x}"
+        return (f"0000-1000 r-xp 00000000 {device} "
                 f"{st.st_ino if inode is None else inode} {path}" + (" (deleted)" if deleted else ""))
     def test_new(self):
         self.assertEqual(v.verify_plugin(self.new, "run.new", self.mapping(self.new)), self.new)
@@ -43,9 +45,15 @@ class BuildIdentity(unittest.TestCase):
     def test_deleted_mapping(self):
         with self.assertRaises(RuntimeError):
             v.verify_plugin(self.new, "run.new", self.mapping(self.new, deleted=True))
-    def test_inode_mismatch(self):
+    def test_inode_mismatch_same_path(self):
+        self.assertEqual(v.verify_plugin(self.new, "run.new", self.mapping(self.new, inode=self.new.stat().st_ino + 1)), self.new)
+    def test_device_mismatch_same_path(self):
+        self.assertEqual(v.verify_plugin(self.new, "run.new", self.mapping(self.new, device="ff:ff")), self.new)
+    def test_both_mismatch_same_path(self):
+        self.assertEqual(v.verify_plugin(self.new, "run.new", self.mapping(self.new, inode=1, device="ff:ff")), self.new)
+    def test_metadata_mismatch_does_not_allow_old_path(self):
         with self.assertRaises(RuntimeError):
-            v.verify_plugin(self.new, "run.new", self.mapping(self.new, inode=0))
+            v.verify_plugin(self.new, "run.new", self.mapping(self.old, inode=self.new.stat().st_ino, device="ff:ff"))
 
 if __name__ == "__main__":
     unittest.main()

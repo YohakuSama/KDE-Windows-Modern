@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Reject stale or mixed Plasma plugin mappings, even with identical filenames."""
 import argparse
-import os
 from pathlib import Path
 import sys
 
@@ -13,24 +12,24 @@ def verify_plugin(path, token, maps=None):
         raise RuntimeError(f"ELF is missing this build's token: {expected}")
     if maps is None:
         return expected
-    st = expected.stat()
     matched = False
     seen = []
     for line in maps.splitlines():
         fields = line.split(maxsplit=5)
         if len(fields) != 6:
             continue
-        address, perms, offset, device, inode, mapped = fields
+        _, _, _, _, _, mapped = fields
         clean = mapped.removesuffix(" (deleted)")
         if Path(clean).name != expected.name:
             continue
         seen.append(mapped)
         if mapped != clean or not clean.startswith("/"):
             raise RuntimeError(f"Deleted or invalid loaded plugin: {mapped}")
-        resolved = Path(clean).resolve()
-        major, minor = (int(x, 16) for x in device.split(":"))
-        if (resolved != expected or int(inode) != st.st_ino
-                or (major, minor) != (os.major(st.st_dev), os.minor(st.st_dev))):
+        # The expected path is an immutable, versioned Nix store object.
+        # Linux maps and stat may expose different filesystem device/inode
+        # identifiers. Never reject an exact non-deleted store path on that
+        # basis. Still reject every other mapping, including mixed versions.
+        if clean != str(expected):
             raise RuntimeError(f"Wrong plugin loaded: {mapped}; expected {expected}")
         matched = True
     if not matched:
