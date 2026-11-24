@@ -85,6 +85,10 @@ Item {
             const footer = findChild(popup, "wmFocusFooter");
             verify(content !== null && calendar !== null && bar !== null && grid !== null
                 && notificationPanel !== null && calendarPanel !== null && footer !== null);
+            // The native AppletPopup already provides an outer frame.
+            // Do not introduce a second pair of nested outlines.
+            compare(notificationPanel.border.width, 0);
+            compare(calendarPanel.border.width, 0);
             for (const h of [600, 720, 900]) {
                 clock.popupScreenGeometry = Qt.rect(0, 0, 1280, h);
                 tryVerify(() => {

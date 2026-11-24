@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Start action menu and flyout regression cleanup
+
+- Use consistent compact 16px action glyphs, 32px rows and explicit spacing in the Start footer and context menus. Keep existing actions and avoid preselecting a power action on open.
+- Remove duplicate internal notification/calendar outlines while retaining the native popup frame. Independent acrylic windows and the Plasma expanded indicator remain live-acceptance work.
+
 ### Fixed tray reference baseline
 
 - Restore the 16px tray canvas, chevron and bell while retaining original optical-normalized assets, normal hit targets and the separate wider battery cell. Avoid the previous double enlargement of imported glyphs. Guard standard sizes at 100–200% output scales.

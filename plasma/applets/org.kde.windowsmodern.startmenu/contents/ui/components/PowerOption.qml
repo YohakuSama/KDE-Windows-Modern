@@ -20,6 +20,7 @@ Item {
     property string iconSource
     property string label
     property bool optionEnabled: true
+    readonly property int glyphSize: Theme.menuGlyphSize
 
     signal activated
     signal navigationRequested(int direction)
@@ -37,16 +38,17 @@ Item {
     Keys.onBacktabPressed: navigationRequested(-1)
     Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
-    width: parent ? parent.width : Kirigami.Units.gridUnit * 10
-    height: Math.floor(Kirigami.Units.gridUnit * 1.6)
+    implicitWidth: optionLabel.implicitWidth + 2 * Theme.menuTextInset + glyphSize + Theme.menuIconGap
+    implicitHeight: Theme.menuRowHeight
+    width: parent ? parent.width : implicitWidth
+    height: implicitHeight
 
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1
-        radius: Kirigami.Units.smallSpacing / 2
-        color: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus)
-               ? Kirigami.Theme.hoverColor
-               : "transparent"
+        radius: 4
+        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+            Kirigami.Theme.textColor.b, Theme.menuHoverOpacity)
         opacity: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus) ? Theme.opacityFull : Theme.opacityHidden
         Behavior on opacity { NumberAnimation { duration: 80 } }
     }
@@ -55,12 +57,20 @@ Item {
         id: powerRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.leftMargin: Kirigami.Units.smallSpacing
-        spacing: Kirigami.Units.smallSpacing
+        anchors.right: parent.right
+        anchors.leftMargin: Theme.menuTextInset
+        anchors.rightMargin: Theme.menuTextInset
+        spacing: Theme.menuIconGap
 
         Kirigami.Icon {
-            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-            Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+            objectName: "wmStartMenuActionGlyph"
+            Layout.minimumWidth: option.glyphSize
+            Layout.preferredWidth: option.glyphSize
+            Layout.maximumWidth: option.glyphSize
+            Layout.minimumHeight: option.glyphSize
+            Layout.preferredHeight: option.glyphSize
+            Layout.maximumHeight: option.glyphSize
+            roundToIconSize: false
             source: option.iconSource
             fallback: option.iconSource.replace(/-symbolic$/, "")
             isMask: true
@@ -69,9 +79,15 @@ Item {
         }
 
         PlasmaComponents3.Label {
+            id: optionLabel
+            Layout.fillWidth: true
             text: option.label
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
+            maximumLineCount: 1
             color: option.optionEnabled ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
-            font: Kirigami.Theme.defaultFont
+            font.family: Kirigami.Theme.defaultFont.family
+            font.pixelSize: Theme.menuFontSize
         }
     }
 

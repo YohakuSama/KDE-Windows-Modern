@@ -70,25 +70,27 @@ Item {
         visible: false
         z: 100
 
-        readonly property real panelWidth: Kirigami.Units.gridUnit * 10
+        readonly property real contentWidth: Math.max(0, ...root.options.filter(o => o.visible).map(o => o.implicitWidth))
+        readonly property real panelWidth: Math.max(1, Math.min(Math.max(176, contentWidth + 2 * Theme.menuOuterInset),
+            root.width - 2 * Theme.menuOuterInset))
         width: panelWidth
-        height: powerColumn.implicitHeight + Kirigami.Units.smallSpacing
-        radius: Kirigami.Units.smallSpacing
+        height: powerColumn.implicitHeight + 2 * Theme.menuOuterInset
+        radius: Theme.menuRadius
         color: Kirigami.Theme.backgroundColor
         border.width: 1
         border.color: Qt.rgba(Kirigami.Theme.textColor.r,
                                Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, Theme.popupBorderOpacity)
+                               Kirigami.Theme.textColor.b, 0.12)
 
-        // Soft shadow effect
-        layer.enabled: true
+        // The parent's native window already supplies its own shadow.
+        // Do not add a second frame or a pointless offscreen layer.
 
         Column {
             id: powerColumn
-            width: popup.panelWidth - Kirigami.Units.smallSpacing
+            width: Math.max(1, popup.panelWidth - 2 * Theme.menuOuterInset)
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.topMargin: Kirigami.Units.smallSpacing / 2
+            anchors.topMargin: Theme.menuOuterInset
             spacing: 0
 
             PowerOption {
@@ -222,7 +224,7 @@ Item {
         powerColumn.forceLayout();
         var popupW = popup.width
         var popupH = popup.height
-        var gap = Kirigami.Units.smallSpacing
+        var gap = 6
 
         // Account opens at the leading edge; Power stays at the trailing edge.
         const alignLeft = root.accountMode !== root.visualParent.LayoutMirroring.enabled;
@@ -240,8 +242,9 @@ Item {
         popup.x = pos.x
         popup.y = Math.max(gap, Math.min(pos.y, root.height - popupH - gap))
         popup.opacity = 1
+        // Opening with the pointer must not pre-highlight the first row.
+        // Up/Down/Tab select the first enabled action from this focus scope.
         popup.forceActiveFocus();
-        root.moveFocus(1);
     }
 
     function close() {

@@ -41,3 +41,14 @@ var menuTranslucencyOpaque      = 2;
 // Convenience constants for fully visible / fully hidden states
 var opacityFull   = 1.0;
 var opacityHidden = 0.0;
+
+// Shared logical sizes for compact Start action menus. Native symbolic
+// assets already contain their intended geometry; no DPI multiplier.
+var menuGlyphSize = 16;
+var menuRowHeight = 32;
+var menuOuterInset = 4;
+var menuTextInset = 10;
+var menuIconGap = 10;
+var menuRadius = 8;
+var menuFontSize = 13;
+var menuHoverOpacity = 0.07;

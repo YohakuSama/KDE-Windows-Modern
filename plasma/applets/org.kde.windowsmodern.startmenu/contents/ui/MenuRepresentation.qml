@@ -532,8 +532,8 @@ Item {
                         id: powerButton
                         text: i18n("Power")
                         icon.name: "system-shutdown-symbolic"
-                        icon.width: 20
-                        icon.height: 20
+                        icon.width: Theme.menuGlyphSize
+                        icon.height: Theme.menuGlyphSize
                         display: PlasmaComponents3.AbstractButton.IconOnly
                         Layout.preferredWidth: 40
                         Layout.preferredHeight: 40
@@ -541,8 +541,8 @@ Item {
                         contentItem: Item {
                             Kirigami.Icon {
                                 anchors.centerIn: parent
-                                width: 20
-                                height: 20
+                                width: Theme.menuGlyphSize
+                                height: Theme.menuGlyphSize
                                 roundToIconSize: false
                                 isMask: true
                                 color: Kirigami.Theme.textColor

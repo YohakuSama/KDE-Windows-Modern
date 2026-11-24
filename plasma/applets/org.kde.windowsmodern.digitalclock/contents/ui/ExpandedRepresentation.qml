@@ -89,9 +89,10 @@ FocusScope {
         event.accepted = true;
     }
 
-    // Two independently framed sections in the native popup. The native
-    // window retains its compositor-managed blur and placement. Do not
-    // create a second focus-grabbing window to simulate the separation.
+    // A native AppletPopup owns one outer background and border. It has
+    // no public NoBackground mode. Avoid nested outlined cards: retain
+    // the two content areas and their gap without extra inner borders.
+    // True independent acrylic surfaces require live window integration.
     readonly property real calendarBodyBudget: Math.max(0, popupHeight
         - 2 * margin - sectionGap - history.minimumSectionHeight - 2 * sectionInset
         - calendarHeaderHeight - focusFooterHeight - 2 * bodyInset - 2)
@@ -112,8 +113,7 @@ FocusScope {
             Layout.preferredHeight: 224
             radius: 8
             color: palette.panelTint
-            border.width: 1
-            border.color: palette.panelBorder
+            border.width: 0
 
             NotificationHistory {
                 id: history
@@ -138,8 +138,7 @@ FocusScope {
             Layout.maximumHeight: Layout.preferredHeight
             radius: 8
             color: palette.panelTint
-            border.width: 1
-            border.color: palette.panelBorder
+            border.width: 0
 
             ColumnLayout {
                 id: calendarContent

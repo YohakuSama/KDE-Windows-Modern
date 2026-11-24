@@ -39,20 +39,20 @@ Item {
         visible: false
         z: 100
         width: Kirigami.Units.gridUnit * 15
-        height: menuColumn.implicitHeight + Kirigami.Units.smallSpacing
-        radius: Kirigami.Units.smallSpacing
+        height: menuColumn.implicitHeight + 2 * Theme.menuOuterInset
+        radius: Theme.menuRadius
         color: Kirigami.Theme.backgroundColor
         border.width: 1
         border.color: Qt.rgba(Kirigami.Theme.textColor.r,
                                Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, Theme.popupBorderOpacity)
+                               Kirigami.Theme.textColor.b, 0.12)
 
         Column {
             id: menuColumn
-            width: popup.width - Kirigami.Units.smallSpacing
+            width: Math.max(1, popup.width - 2 * Theme.menuOuterInset)
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.topMargin: Kirigami.Units.smallSpacing / 2
+            anchors.topMargin: Theme.menuOuterInset
             spacing: 0
 
             Repeater {
@@ -60,13 +60,14 @@ Item {
 
                 delegate: Item {
                     width: menuColumn.width
-                    height: modelData.type === "separator" ? 1 : Math.floor(Kirigami.Units.gridUnit * 1.6)
+                    height: modelData.type === "separator" ? 1 : Theme.menuRowHeight
 
                     Rectangle {
                         anchors.fill: parent
                         visible: modelData.type !== "separator"
-                        radius: Kirigami.Units.smallSpacing / 2
-                        color: rowHover.containsMouse ? Kirigami.Theme.hoverColor : "transparent"
+                        radius: 4
+                        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                            Kirigami.Theme.textColor.b, Theme.menuHoverOpacity)
                         opacity: rowHover.containsMouse ? Theme.opacityFull : Theme.opacityHidden
                         Behavior on opacity { NumberAnimation { duration: 80 } }
                     }
@@ -84,13 +85,16 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.leftMargin: Kirigami.Units.smallSpacing
-                        anchors.rightMargin: Kirigami.Units.smallSpacing
-                        spacing: Kirigami.Units.smallSpacing
+                        anchors.leftMargin: Theme.menuTextInset
+                        anchors.rightMargin: Theme.menuTextInset
+                        spacing: Theme.menuIconGap
 
                         Kirigami.Icon {
-                            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-                            Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+                            Layout.preferredWidth: Theme.menuGlyphSize
+                            Layout.preferredHeight: Theme.menuGlyphSize
+                            Layout.maximumWidth: Theme.menuGlyphSize
+                            Layout.maximumHeight: Theme.menuGlyphSize
+                            roundToIconSize: false
                             source: modelData.icon || ""
                         }
 
@@ -98,7 +102,8 @@ Item {
                             Layout.fillWidth: true
                             text: modelData.text || ""
                             color: Kirigami.Theme.textColor
-                            font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1
+                            font.family: Kirigami.Theme.defaultFont.family
+                            font.pixelSize: Theme.menuFontSize
                             elide: Text.ElideRight
                             maximumLineCount: 1
                         }
@@ -130,7 +135,8 @@ Item {
     // Measure the widest action text to size the popup.
     TextMetrics {
         id: widestText
-        font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1
+        font.family: Kirigami.Theme.defaultFont.family
+        font.pixelSize: Theme.menuFontSize
         text: {
             var maxText = ""
             for (var i = 0; i < contextMenu.actions.length; i++) {
@@ -144,7 +150,7 @@ Item {
     }
 
     readonly property int popupWidth: Math.min(
-        Math.max(widestText.width + Kirigami.Units.iconSizes.smallMedium + Kirigami.Units.smallSpacing * 4, Kirigami.Units.gridUnit * 8),
+        Math.max(widestText.width + Theme.menuGlyphSize + Theme.menuIconGap + 2 * Theme.menuTextInset + 2 * Theme.menuOuterInset, Kirigami.Units.gridUnit * 8),
         Kirigami.Units.gridUnit * 20
     )
 
@@ -159,12 +165,12 @@ Item {
         // Compute the expected height from the action list itself rather
         // than measuring popup.height after make-visible — the latter is
         // stale on the first open because QML layout hasn't run yet.
-        var itemH = Math.floor(Kirigami.Units.gridUnit * 1.6)
-        var popupH = Kirigami.Units.smallSpacing // top margin
+        var itemH = Theme.menuRowHeight
+        var popupH = Theme.menuOuterInset // top margin
         for (var i = 0; i < actionList.length; i++) {
             popupH += (actionList[i].type === "separator") ? 1 : itemH
         }
-        popupH += Kirigami.Units.smallSpacing // bottom padding
+        popupH += Theme.menuOuterInset // bottom padding
 
         var px = Math.max(gap, Math.min(globalX, contextMenu.width - popupW - gap))
         var py = globalY + gap

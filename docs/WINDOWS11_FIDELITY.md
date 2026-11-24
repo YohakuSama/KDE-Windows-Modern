@@ -98,3 +98,7 @@ Implementation references: [KDE Bluedevil](https://github.com/KDE/bluedevil/tree
 ### Modern battery and grouped hover follow-up
 
 Compare the project-drawn colored battery and optional percentage against KB5067036 and the owner's screenshot at 150%. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The visual asset is recreated, not extracted from Windows.
+
+### Owner visual regression gate
+
+The user has repeatedly reported inaccurate visual geometry despite passing code checks. Do not publish another owner test ZIP merely because a Git tree exists. Before merging a combined fix, check CI on the candidate, compare actual screenshots of the same build and settings, and identify the installed source revision. Keep the 16px tray baseline and separate menu glyph sizes stable; do not globally compensate for transparent margins once asset import has normalized them. Missing authentic system artwork, true dual notification surfaces, and the native clock expanded indicator are open blockers. Record them rather than claiming 1:1.
