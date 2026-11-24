@@ -44,11 +44,15 @@ fi
 # Locking → Appearance); without this a new install locks to the
 # distribution's default picture.
 if command -v kwriteconfig6 &>/dev/null; then
+    LOCK_WALLPAPER_DIR="$WALLPAPER_DIR"
+    if [ -d "$(dirname "$WALLPAPER_DIR")/Windows-modern-lock" ]; then
+        LOCK_WALLPAPER_DIR="$(dirname "$WALLPAPER_DIR")/Windows-modern-lock"
+    fi
     for key in Image PreviewImage; do
         kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper \
-            --group org.kde.image --group General --key "$key" "file://$WALLPAPER_DIR/"
+            --group org.kde.image --group General --key "$key" "file://$LOCK_WALLPAPER_DIR/"
     done
     kwriteconfig6 --file kscreenlockerrc --group Greeter --key WallpaperPlugin org.kde.image
 fi
 
-echo "Wallpaper set to $WALLPAPER_ID on the desktop and the lock screen (auto-switches light/dark with color scheme)."
+echo "Wallpaper set to $WALLPAPER_ID on the desktop; using the native lock-screen package when imported."

@@ -6,6 +6,18 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Native Windows resources
+
+- Add a local, repeatable importer for the supplied Windows resource libraries,
+  Segoe Fluent Icons glyphs, original wallpapers and selected system sounds.
+- Initial mapping covers 256 icon paths, 22 unique wallpaper images and 20
+  sound events (verified on the reference archive). Preserve source IDs and
+  hashes; identical content is hard-linked and output collisions are rejected.
+- Install imported icons over the existing windows-modern theme, replace the
+  installed wallpaper package with the original Bloom light/dark pair, use
+  the original lock-screen image separately, and provide the sound theme.
+  Preserve the current system text fonts and retain open fallback assets.
+
 ### Quick Settings and taskbar refinements
 
 - Give Quick Settings a two-row scrolling tile viewport and keep the sliders

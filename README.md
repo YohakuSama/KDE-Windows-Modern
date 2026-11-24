@@ -698,3 +698,7 @@ systemctl --user restart plasma-plasmashell.service
 ## License
 
 GNU GPL v3 — see [`LICENSE`](LICENSE).
+
+## Native Windows resources (local import)
+
+See [the import guide](docs/NATIVE_ASSETS.md). Import your own Windows archive once; normal theme/icon reinstalls reuse the generated assets. The repository contains only the importer and mappings, not Microsoft resource binaries or font files.

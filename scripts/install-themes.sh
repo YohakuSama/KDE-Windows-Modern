@@ -59,7 +59,12 @@ install_cursor_theme
 step "Wallpapers"
 ensure_dir "$WALLPAPER_DIR"
 rm -rf "$WALLPAPER_DIR/Windows-modern"*
-cp -r "$SRC_DIR/wallpaper/"* "$WALLPAPER_DIR/"
+if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ] && [ -d "$NATIVE_ASSETS_DIR/wallpapers/Windows-modern" ]; then
+    step "Installing original Windows wallpaper packages"
+    cp -a "$NATIVE_ASSETS_DIR/wallpapers/." "$WALLPAPER_DIR/"
+else
+    cp -r "$SRC_DIR/wallpaper/"* "$WALLPAPER_DIR/"
+fi
 
 info "Themes installed."
 

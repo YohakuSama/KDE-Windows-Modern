@@ -96,6 +96,9 @@ install_everything() {
     install_component shortcuts
     install_component apps
     # Keep the user's KDE fonts; the optional fonts component is explicit opt-in.
+    if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ]; then
+        install_component sounds
+    fi
 
     echo ""
     info "Done! For the authentic Win11 look, enable floating:"
@@ -241,6 +244,7 @@ case "${1:-menu}" in
         echo "    apps           Haruna, KWrite, Mission Center; video default; Snipping Tool behaviour"
         echo "    deps           Kvantum, Flatpak and the C++ applets' build dependencies"
         echo "    fonts          Segoe UI (or open Selawik if missing) and Cascadia Mono"
+        echo "    sounds         Local Windows sound theme (requires resource import)"
         echo "    transparency   on|off — Windows' Transparency effects switch (off: solid windows and popups)"
         echo "    greeter        Boot greeter / login screen (PLM build, user test)"
         echo ""

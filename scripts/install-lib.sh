@@ -12,6 +12,10 @@
 # ───────────────────────────────────────────────────────────────────
 set -euo pipefail
 
+# Only import the owner's local resources in their own session, never from
+# an arbitrary user's directory during a system-wide root install.
+NATIVE_ASSETS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/native-assets"
+
 # Always resolve to this file's own location so SRC_DIR is correct no
 # matter which script sources us (install.sh, uninstall.sh, or a
 # component script invoked directly).
