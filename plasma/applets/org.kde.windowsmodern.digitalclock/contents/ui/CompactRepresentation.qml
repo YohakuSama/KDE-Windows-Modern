@@ -40,7 +40,10 @@ MouseArea {
 
     // The panel sizes applets from their Layout hints; without them the
     // clock got a square cell and a full-year date overflowed it.
-    implicitWidth: panelContent.implicitWidth + 2 * Kirigami.Units.smallSpacing
+    readonly property int leadingInset: Kirigami.Units.smallSpacing
+    readonly property int trailingInset: showBell ? 0 : Kirigami.Units.smallSpacing
+    readonly property int bellCellWidth: 32
+    implicitWidth: panelContent.implicitWidth + leadingInset + trailingInset
     implicitHeight: panelHeight
     Layout.minimumWidth: implicitWidth
     Layout.preferredWidth: implicitWidth
@@ -159,8 +162,8 @@ MouseArea {
     RowLayout {
         id: panelContent
         anchors.fill: parent
-        anchors.leftMargin: Kirigami.Units.smallSpacing
-        anchors.rightMargin: Kirigami.Units.smallSpacing
+        anchors.leftMargin: main.leadingInset
+        anchors.rightMargin: main.trailingInset
         spacing: Kirigami.Units.smallSpacing
 
         ColumnLayout {
@@ -239,8 +242,11 @@ MouseArea {
             id: notificationButton
             visible: main.showBell
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: Math.max(Kirigami.Units.iconSizes.small + 2 * Kirigami.Units.smallSpacing,
-                                            implicitWidth)
+            // Keep the final cell fixed. The six-pixel Show Desktop
+            // sliver supplies the trailing gap; don't add another inset.
+            Layout.minimumWidth: main.bellCellWidth
+            Layout.preferredWidth: main.bellCellWidth
+            Layout.maximumWidth: main.bellCellWidth
             Layout.preferredHeight: Math.min(main.panelHeight, implicitHeight)
             text: i18n("Notification center")
             display: PlasmaComponents.AbstractButton.IconOnly
