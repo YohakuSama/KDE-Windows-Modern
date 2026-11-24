@@ -62,6 +62,7 @@ Item {
             Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
             Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
             source: option.iconSource
+            fallback: option.iconSource.replace(/-symbolic$/, "")
             isMask: true
             color: Kirigami.Theme.textColor
             opacity: option.optionEnabled ? Theme.opacityFull : Theme.disabledIconOpacity
