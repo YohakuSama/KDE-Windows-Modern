@@ -6,6 +6,15 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Tray and taskbar
+
+- Move the overflow chevron before the tray icons; separate the compact
+  icon-only overflow from Quick Settings. Network, audio and battery cells
+  share the Quick Settings action while retaining live KDE status glyphs.
+- Keep eligible unpinned applets reachable in overflow. Honor user-pinned
+  and disabled states. Preserve right-click and wheel interactions.
+- Use logical Qt font metrics for the panel clock and right-align its labels.
+
 ### Changed
 
 - Preserve the user's existing KDE fonts when installing the full theme.

@@ -39,10 +39,10 @@ PlasmaComponents3.ScrollView {
     GridView {
         id: hiddenTasks
 
-        readonly property int columns: 3
+        readonly property int columns: 5
 
-        // Same gap as the Quick Settings toggles below (ActionPanel.qml).
-        readonly property int cellSpacing: Math.round(6 * Plasmoid.configuration.scale / 100)
+        // Compact Windows 11 overflow grid, independent of Quick Settings.
+        readonly property int cellSpacing: Math.round(4 * Plasmoid.configuration.scale / 100)
 
         // From the full width (not availableWidth, which changes with the
         // scrollbar) so cell size cannot feed back into the view's height.
@@ -50,7 +50,7 @@ PlasmaComponents3.ScrollView {
         // right edge short of the toggles below (pixelAligned rounds anyway).
         cellWidth: (hiddenTasksView.width
                     - (hiddenTasksView.scrolls ? hiddenTasksView.QQC2.ScrollBar.vertical.width : 0)) / columns
-        cellHeight: Math.round(cellWidth / 1.4)
+        cellHeight: Math.round(cellWidth)
 
         currentIndex: -1
         highlight: PlasmaExtras.Highlight {}

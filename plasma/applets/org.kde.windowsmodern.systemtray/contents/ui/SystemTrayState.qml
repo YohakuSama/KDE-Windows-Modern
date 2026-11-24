@@ -16,6 +16,23 @@ QtObject {
     // - there is an active applet or
     // - 'Status and Notification' with hidden items is shown
     property bool expanded: false
+    // Overflow and Quick Settings are distinct homes of the same native popup.
+    // Keep the originating home when navigating to a child applet page.
+    property bool overflowMode: false
+    readonly property bool overflowOpen: expanded && overflowMode && !activeApplet
+    readonly property bool quickSettingsOpen: expanded && !overflowMode && !activeApplet
+
+    function toggleHome(overflow, wasOpen) {
+        const close = wasOpen === undefined
+            ? (overflow ? overflowOpen : quickSettingsOpen) : wasOpen;
+        if (close) {
+            expanded = false;
+            return;
+        }
+        overflowMode = overflow;
+        setActiveApplet(null);
+        expanded = true;
+    }
     //set when there is an applet selected
     property Item activeApplet
 

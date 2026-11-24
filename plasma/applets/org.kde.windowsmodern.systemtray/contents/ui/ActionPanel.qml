@@ -1,8 +1,6 @@
 /*
-    Action Panel — quick-toggle tiles + sliders shown in the expander popup.
-
-    A Windows 11 / 10 hybrid. The hidden SNI icons grid and footer are
-    composed by ExpandedRepresentation around this component.
+    Action Panel — Windows 11 Quick Settings, separate from tray overflow.
+    Existing KDE toggle/slider backends are preserved.
 */
 pragma ComponentBehavior: Bound
 

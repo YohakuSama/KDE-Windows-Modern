@@ -22,6 +22,7 @@ ContainmentItem {
 
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool reverseLayout: Plasmoid.configuration.reverseIconOrder
+    property Item hoveredQuickSetting: null
 
     Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.small : mainLayout.implicitWidth + Kirigami.Units.smallSpacing
     Layout.minimumHeight: vertical ? mainLayout.implicitHeight + Kirigami.Units.smallSpacing : Kirigami.Units.iconSizes.small
@@ -49,7 +50,7 @@ ContainmentItem {
     Connections {
         target: Plasmoid
         function onActivated() {
-            systemTrayState.expanded = !systemTrayState.expanded;
+            systemTrayState.toggleHome(false);
         }
     }
 
@@ -178,12 +179,10 @@ ContainmentItem {
             GridView {
                 id: tasksGrid
 
-                // Explicitly define grid coordinates to prevent overlapping.
-                // The expander ("^") stays right of the icons, next to the
-                // clock — a deliberate choice over Windows 11's left position
-                // (see PRODUCT.md, "Settled").
-                Layout.row: root.vertical && root.reverseLayout ? 1 : 0
-                Layout.column: 0
+                // Windows 11: overflow first, then visible icons and the
+                // network/volume/battery group (ordered by WindowsTray::tail).
+                Layout.row: root.vertical && !root.reverseLayout ? 1 : 0
+                Layout.column: root.vertical ? 0 : 1
 
                 Layout.alignment: Qt.AlignCenter
 
@@ -194,7 +193,7 @@ ContainmentItem {
                 verticalLayoutDirection: (root.vertical && root.reverseLayout) ? GridView.BottomToTop : GridView.TopToBottom
 
                 // The icon size to display when not using the auto-scaling setting
-                readonly property int smallIconSize: Kirigami.Units.iconSizes.smallMedium
+                readonly property int smallIconSize: Kirigami.Units.iconSizes.small
 
                 readonly property bool autoSize: Plasmoid.configuration.scaleIconsToFit
 
@@ -261,13 +260,13 @@ ContainmentItem {
             ExpanderArrow {
                 id: expander
 
-                Layout.row: root.vertical && !root.reverseLayout ? 1 : 0
-                Layout.column: root.vertical ? 0 : 1
+                Layout.row: root.vertical && root.reverseLayout ? 1 : 0
+                Layout.column: 0
 
                 Layout.fillWidth: vertical
                 Layout.fillHeight: !vertical
                 Layout.alignment: vertical ? Qt.AlignVCenter : Qt.AlignHCenter
-                iconSize: tasksGrid.itemSize
+                iconSize: Kirigami.Units.iconSizes.small
                 visible: root.hiddenLayout.itemCount > 0
             }
         }
@@ -282,7 +281,7 @@ ContainmentItem {
         PlasmaCore.AppletPopup {
             id: dialog
             objectName: "popupWindow"
-            visualParent: root
+            visualParent: systemTrayState.overflowMode && expander.visible ? expander : root
             popupDirection: switch (Plasmoid.location) {
                 case PlasmaCore.Types.TopEdge:
                     return Qt.BottomEdge
