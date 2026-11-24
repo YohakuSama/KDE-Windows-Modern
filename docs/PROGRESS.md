@@ -2,7 +2,7 @@
 
 Target: Windows 11 26H2 GA, with KDE/Qt-native implementations where Windows APIs are unavailable. Use the system text font and a single icon theme. Keep original user-supplied Windows resources local.
 
-This is a development-stage estimate, not a pixel-match score or test-pass rate. Ten categories have equal weight. Each is scored 0 (not started), 25 (reviewed/scoped), 50 (partly implemented), 75 (substantial implementation, awaiting full reference/runtime acceptance), or 100 (reference comparison and live acceptance completed). Do not award 100 solely for a static check.
+The historical estimate below combined implementation and reference/runtime acceptance. It is retained as a historical record, not a current development-only percentage. Owner clarification: development completion is code and design implementation; the owner performs live acceptance separately. Do not decrease development completion because of pending live acceptance, or label known unfinished code complete. Keep an explicit list of remaining implementation work and a separate acceptance status.
 
 | Area | Stage | Remaining acceptance work |
 |---|---:|---|
@@ -17,7 +17,7 @@ This is a development-stage estimate, not a pixel-match score or test-pass rate.
 | Wallpapers / lock / login | 50% | Greeter integration and actual lock/login display |
 | Window chrome / Alt-Tab / OSD / motion | 50% | Reference-based appearance and compositor-safe rounding/animation |
 
-Overall development estimate: **67.5% (rounded to 68%)** as of this batch. Live acceptance remains pending.
+Historical combined estimate: **67.5% (rounded to 68%)** as of this batch. It is not a current code-only percentage or a pixel-match claim.
 
 ## Batch validation
 
@@ -48,4 +48,110 @@ Overall development estimate: **67.5% (rounded to 68%)** as of this batch. Live 
 - The exact footer-navigation JavaScript helper passed ten targeted Node assertions and exhaustive enabled-row invariant checks for up to eight options. Added the same ten cases to the existing Qt test suite. The Qt tests, repository health checks, QML build and live Start interaction/visual acceptance could not be run here (Qt tools absent and GitHub DNS unavailable in the local environment).
 - The 67.5% development-stage estimate remains unchanged until the existing categories pass their acceptance gates; no new feature scope or release claim.
 
+## Pre-release scope freeze and phase completion branch
+
+Owner decision: finish the three development phases (core desktop interactions,
+visual fidelity, shared details) before merging the next integration into main.
+Then do live acceptance and narrowly scoped fixes before tagging a stable
+release. Do not add unrelated features or dependencies.
+
+This batch starts that combined integration branch from the merged PR #6.
+
+- Core: optional All/Categories navigation uses KDE's existing AppsModel
+  (API checked against Plasma 6.7 and 6.8.2); no app classification database.
+  Notification history uses native flat application grouping with one initial
+  child, expand/collapse, and persistent model indexes for clear-all.
+  Quick Settings distinguishes absent Wi-Fi and Bluetooth adapters, leaves
+  the detail route available, and exposes keyboard/accessibility actions.
+  Grouped taskbar previews are bounded by the panel's own monitor geometry.
+- Visual: generated Aurorae frames with 12 px native shadow padding,
+  rounded 8 px titlebar corners, different active/inactive shadows, and
+  separate unpadded maximized frames in both variants. Bottom client corners
+  remain square rather than clipping arbitrary apps. Native PLM's Login
+  Screen settings can copy the local lock JPEG using its authorized helper;
+  the existing privileged installation and wallpaper settings are unchanged.
+- Details: selected tile icon contrast follows the actual accent; lock and
+  greeter clocks use the locale short time format, and the user label is
+  translatable. No Windows fonts are installed.
+- Offline: exact window-frame generator and both generated SVG blob hashes
+  match the local files; generator --check, XML and four alpha sample checks
+  per SVG passed. Six contrast cases passed on the exact existing color
+  helper. Added matching Qt tests and a generator check to verify-all.sh.
+  The new applet QML, actual KSVG window rendering, full repository checks
+  and CI results remain unverified locally (no Qt tools or GitHub DNS).
+- Remaining before the three-phase merge: review the reference layout and
+  category treatment, true wallpaper-tinted Mica and Acrylic calibration,
+  safe client-corner behavior, remaining native icon states/FrameSVG parity,
+  and any unfinished integration identified by CI. No stable release yet;
+  the 67.5% development-stage rubric remains unchanged.
+
 Update these categories after each substantive batch using the same rubric. Avoid claiming 1:1 visual parity until actual reference and runtime checks establish it.
+
+## Material role and native status follow-up
+
+- Application window bases remain opaque in both transparency modes; existing KWin blur and noise are reserved for translucent popups. The switch no longer makes file-manager views translucent.
+- Reuse the existing Aurorae frame generator and installed Windows-modern wallpaper package to sample an opaque active tint for Aurorae and Kvantum. Separate dark/light images, neutral inactive and disabled fills, and optional Pillow sampling provide a fallback without a new shader, daemon, global palette, or font change. This static Mica-style approximation is not position-dependent DWM Mica and does not track wallpaper changes outside the project.
+- Add 22 local icon paths (429 total), including Switch User, limited Wi-Fi levels, wired limited/VPN, and unknown charging. Two no-route aliases now use Ethernet warning. Nine changed source glyphs exist in the supplied font and rendered nonempty at 48 px. The Wi-Fi toggle no longer assumes full signal when the primary connection is not wireless.
+- Local checks: seven window-material tests passed, including separate wallpaper variants and stock-frame reset; exact tested generator/test Git hashes match, and stock generated Aurorae frames remain unchanged. Actual 3840 x 2400 light/dark Bloom images were sampled without committing artwork. Four mocked transparency transitions kept windows opaque. New CI, full importer CLI and live Plasma acceptance remain pending.
+- KWin already has blur/noise/saturation controls and native client rounding where supported. Prefer compatible native decorations or an explicitly owner-selected existing effect; do not add or enable a second effect automatically. Dynamic Mica, compositor calibration, client-corner and multi-monitor acceptance remain open. Do not merge or claim exact parity yet.
+
+## Native status and power controls follow-up
+
+- The stock Plasma 6.7/6.8 PowerDevil inhibition API replaces the two custom sleep-inhibitor subprocess/polling paths. The quick tile and battery page use the existing native manual state, not a second inhibitor. An old custom inhibitor, if active, should be released before upgrading; this migration deliberately does not kill processes by name.
+- Battery level boundaries, unknown state, charging/plugged-in distinction, accessible label, and lock-screen symbolic names have been aligned. Added 32 battery-state regression assertions (passed locally in Node; Qt/live verification remains pending).
+- Five additional symbolic device paths (434 total) reuse source glyphs from the supplied font. All five glyphs were verified and rendered locally. Do not rebuild the legacy SVG sheets solely to duplicate current Kirigami icon-theme consumers; retain compatibility fallback assets until live validation identifies an actual missing role.
+- The project remains at the recorded 67.5% development-stage estimate pending substantive acceptance. No 1:1 claim, new dependency, or merge.
+
+## Owner-defined development gate
+
+The owner requires minimal changes, use of existing KDE mechanisms and compatible upstream work, no new mandatory runtime dependencies, and maximum Windows 11 fidelity. Complete code/design work before the integration merge; live visual and desktop acceptance belongs to the subsequent owner test phase. Run only relevant source checks and the existing CI; do not make live acceptance a development-completion criterion.
+
+Latest implementation: OSD work-area positioning and recursion guard, narrow-display Alt+Tab width limits and theme-duration highlight animation (commit c8e7af8), plus 115 additional icon target paths. This expands the single local Windows-resource overlay, not a second icon theme. The source archive is not mounted in the current session, so exact new glyph rendering was not repeated.
+
+Known remaining implementation gaps: wallpaper-following Mica beyond the static package tint; final Acrylic role/alpha calibration; safe native client corner rounding with the current Aurorae design; toast and OSD details; Start/taskbar reference layout details; remaining icon names/FrameSVG states and typography across the shell. These are code/design gaps, not owner test tasks. No current claim of 100% development or pixel parity.
+
+## Native shell finishing pass: transparency and OSD
+
+The owner clarified the scope: polish a Windows 11-inspired KDE theme,
+not a new desktop environment. Retain the existing custom Start, tray,
+taskbar, clock, lock, login and window switcher, and use native Plasma,
+KWin, Qt/Kvantum and icon-theme interfaces for the remaining surfaces.
+
+- Use the shipped solid panel and dialog artwork when transparency is
+  disabled, including explicitly translucent panel selectors. Re-enable
+  restores the original artwork. Keep layout settings and inner widgets.
+- Add 34 native icon aliases for the actual OSD and common shell icon names.
+  Retain distinct high-volume, blocked and disabled fallback art where
+  an equivalent is unconfirmed. No new OSD service or icon theme.
+- The preceding CI #11 passed. The owner reattached the 273 MB resource
+  archive, but the file execution environment could not open the archive
+  in this session. New mappings were checked against the KDE 6.8 source
+  and Microsoft's glyph reference; actual archive import is not verified.
+
+## Wallpaper-following material refresh
+
+The existing transparency command now supports a one-shot current-image refresh using KDE's saved image wallpaper configuration. Prefer an unambiguous primary-screen image, otherwise a unique saved local image; ambiguous or unsupported sources return to neutral. No new shader, background service or polling. The material remains an opaque, global Mica-style approximation rather than DWM. Added targeted tests for wallpaper selection and file sampling to the existing material suite. Aurorae V2 cannot set a theme-defined bottom client radius; preserve the current native-compatible decoration rather than require another effect or a new engine.
+
+## Small native appearance consistency fixes
+
+Dark selection colors now use dark readable text on the Windows blue highlight in both KDE color palettes and the Kvantum global selection palette. Calendar accent text follows the native selection foreground. Notification cards use the same 8 px radius as shell popup frames. Taskbar close-button transitions follow the KDE animation duration; Start actions are guarded against a missing menu instance. These changes do not add components or modify KDE backends.
+
+## Separate control center and hidden icons finishing pass
+
+The owner supplied a screenshot of the former mixed flyout and requested a Windows-style control center with a separate taskbar overflow entry. Reuse the existing tray's one native applet popup and item models: the group of network, volume and battery opens Quick Settings only; the chevron opens a compact, five-column icon-only overflow, including eligible KDE applets and unpinned status notifier/background applications. No second containment or service. The flyouts now keep a gap from the panel and the native rounded frames, the chevron has a larger hit area and a single rotating icon, and the overflow has scaled icon bounds, native tooltips, and correct keyboard popup coordinates. Reset stale overflow routing and focus when switching homes or when the last hidden item disappears. Connect the existing brightness details page, reserve its complete native footer height, and align pressed/hover colors and selection dividers. Preserve user pinning, attention and accessibility states. The preceding CI #14 passed; this batch uses the existing CI and the owner's subsequent desktop test.
+
+## Notification button and Start details
+
+Move the default notification bell to the right of the clock, using the clock's existing shared KDE history proxy rather than another notification server or observer. The bell displays unread, quiet and unavailable states, with the same calendar/history flyout and keyboard operation as the clock. The original notification applet stays enabled in overflow for native popup delivery, jobs and settings; explicit user pinning still works. The horizontal bell is configurable and vertical panels retain clock activation. Remove popup-only blacklist properties not exposed by KDE 6.8's history model. Use current KDE browser/file-manager defaults plus settings, Discover, Kate and Konsole for fresh Start favorites; preserve existing favorites, native app categories, recent items and KRunner. Label the recent section Recommended and highlight search focus through the system accent. Prior CI #15 passed. This pass follows the owner's requested notification placement and KDE-first design.
+
+## Persistent native-resource inventory
+
+The public GPL repository keeps resource mapping code and non-artwork metadata. Add local source-path reuse and a metadata-only catalog export to the existing importer; no extra runtime dependency. The owner supplied the archive again, but both Python and the container failed to open the exact uploaded path this turn. No claim of successful 26H2 archive verification or upload. Keep the proprietary source and generated artwork private; a reviewed catalog can be committed for later mapping work without repeatedly attaching the binary archive.
+
+## Single-page flyout and notification finishing pass
+
+Keep the existing Wi-Fi, Bluetooth and other themed detail pages on their native PlasmaNM/BluezQt/KDE backends. Known pages use one StackView item; unknown native full representations use the same themed popup instead, never simultaneously. Make native applet activation re-entry safe; immediate replacement avoids overlapping old and new headers. Use the native themed back button, preserve keyboard actions, give empty states and adapter-off states coherent layouts, avoid retaining Wi-Fi password text after collapse/submission, and use theme fonts and highlight foreground. The notification bell owns the default visible status; the stock notification applet remains enabled in overflow for jobs/toasts and may be explicitly pinned. Opening history marks it read once and hides the native inhibition summary; closing only collapses groups, so new arrivals while open are not silently marked read. DND uses the native server's actual inhibition state, and the manual control does not override automatic rules. Existing Plasma styles cover native toast frames, font, controls, color and icon look, not every private native notification layout. No second notification server, compositor effect or backend.
+
+## High-DPI cursor and integration packaging
+
+Replace the legacy Win10OS default with the mature GPL-3.0 Bibata Modern Ice XCursor artwork (v2.0.7, sizes 16 through 96 logical pixels). The native KDE cursor manager still selects sizes and roles; no daemon or renderer. Pin the release archive SHA-256 to the FreeBSD ports checksum, extract only the selected white rounded cursor theme, preserve already-installed user themes and uninstall only marked installer-owned files. The new Windows 26H2 preview shows a softer pointer, but Microsoft has not announced a complete redesigned system cursor set. Bibata is an explicit approximation, not extracted Microsoft art. The existing CI now packages one exact-commit integration ZIP including matching plugin builds, pinned PLM source and cursor artwork. No old stable plugin download is allowed from an untagged test bundle. No private Windows archive is included. Previous CI #17 passed; current final source and package CI must be verified.

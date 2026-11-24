@@ -224,11 +224,14 @@ installed.
 Like Windows' Settings → Personalization → Colors → Transparency effects:
 
 ```bash
-./install.sh transparency off   # solid app windows (Dolphin), no blur behind popups
-./install.sh transparency on    # back to translucent (the default)
+./install.sh transparency off   # neutral opaque windows, solid popups
+./install.sh transparency on    # wallpaper-tinted opaque windows, native popup blur
+./install.sh transparency refresh # sample the current saved image wallpaper
 ```
 
-Apps that are already open change after you restart them.
+The refresh command updates the opaque tint once, without a daemon or polling. Unsupported or ambiguous wallpaper sources fall back to neutral colors.
+
+Disabling transparency also selects the shipped solid panel and dialog artwork without changing the panel layout or opacity preference. Apps that are already open change after you restart them; if Plasma retains cached artwork, log out and back in.
 
 ## Fonts
 
@@ -702,3 +705,9 @@ GNU GPL v3 — see [`LICENSE`](LICENSE).
 ## Native Windows resources (local import)
 
 See [the import guide](docs/NATIVE_ASSETS.md). Import your own Windows archive once; normal theme/icon reinstalls reuse the generated assets. The repository contains only the importer and mappings, not Microsoft resource binaries or font files.
+
+For previously imported private Windows resources, refresh the latest icon map with `python3 scripts/import-windows-assets.py --reuse`; see [Native Windows resources](docs/NATIVE_ASSETS.md) for the metadata-only inventory export.
+
+## Desktop integration test package
+
+The CI `Package integration bundle` job publishes `Windows-Modern-integration-<commit>` on pull requests and main. Download it from the successful Actions run, verify the inner ZIP against `SHA256SUMS`, extract it, and run `./install.sh`. It includes the exact commit, pinned login-manager source, matching Fedora 44/45 plugins, and the verified Bibata Modern Ice XCursor artwork. The installer uses the bundled plugin only for its exact distro/Plasma/Qt/CPU key; otherwise it builds locally. No stable tag is issued for an owner test build. Cursor size remains controlled by KDE System Settings. See [cursor credits and behavior](docs/CURSORS.md).

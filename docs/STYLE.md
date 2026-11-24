@@ -125,14 +125,15 @@ The `contents/layout.js` creates:
      The tray always ends with input language, network, volume, battery,
      in that order, as on Windows 11 (`s_windowsTail` in
      `windowstray.h`; checked by `tests/panel/e2e.py tray-order`). Only
-     those four, notifications and the camera-in-use indicator show without
+     those four and the camera-in-use indicator show without
      being pinned; every other icon waits behind the chevron until it needs
      attention or is set to "Always shown" (`calculateEffectiveStatus` in
      `systemtraymodel.cpp`).
-  6. **Digital clock** — `org.kde.windowsmodern.digitalclock` (with a
+  6. **Digital clock and notification center** — `org.kde.windowsmodern.digitalclock` (with a
       fallback to `org.kde.plasma.digitalclock`). Stacked date below the
       time, no seconds by default, `use24hFormat=1` so it follows the
-      user's locale. Time and date use the same, normal UI font size, as on
+      user's locale. The notification bell is on the clock's right, before Show Desktop.
+      Both open the same native history/calendar flyout. Time and date use the same, normal UI font size, as on
       Windows; the text shrinks only if the panel is too thin for it. The expanded popup is a dark rounded
       Windows 11 calendar with month navigation, current-day blue circle,
       hover highlights, and optional KDE calendar event dots.
@@ -261,7 +262,7 @@ numbers, and calendar plugins.
 
 Win11 refinements over upstream:
 
-- **Notification center** — clock click and Win+N (after applying shortcuts)
+- **Notification center** — clock or bell click and Win+N (after applying shortcuts)
   show the shared KDE notification history above the existing calendar.
   Cards use the system font, app icon, dismiss, clear all and supported actions.
   Manual DND writes the existing notification settings; the native tray
@@ -492,8 +493,9 @@ ButtonWidth=46     ButtonHeight=30     ButtonSpacing=0
 TitleEdgeLeft=8    ExplicitButtonSpacer=10
 ```
 
-- 1px borders on all sides, zero padding — window content goes
-  edge-to-edge with only the 1px decoration border.
+- 1px decoration borders with 12px external shadow padding on normal
+  windows. The native Aurorae shadow is independent of the client area.
+  Maximized frames have no shadow padding.
 - Title height 30px (authentic Win11 proportions).
 - `BorderSize=Tiny` is auto-set in kwinrc by `install.sh`.
 
@@ -501,7 +503,10 @@ TitleEdgeLeft=8    ExplicitButtonSpacer=10
 
 Rewritten with minimal 1px border elements:
 - Edge elements (top/bottom/left/right) are 1x1px.
-- Corner elements are 2x2px (1px border + 1px fill overlap).
+- Generated normal frames use 8px rounded top corners with a 12px shadow
+  margin and separate active/inactive opacity. Bottom corners stay square
+  because Aurorae must not clip arbitrary client content. Maximized frames
+  remain square. See scripts/theme/window-frames.py; live KSVG acceptance pending.
 - Active border: `#3F3F3F` (dark) / `#E5E5E5` (light).
 - Inactive border: `#2A2A2A` (dark) / `#D5D5D5` (light).
 - Background via `currentColor` / `ColorScheme-Background`.
@@ -546,8 +551,8 @@ a palette-level change first.
 
 #### Compositing model
 
-Both variants use the **translucent model** — `composite=true`,
-`translucent_windows=true`, `blurring=true`, `popup_blurring=true`.
+Both variants use opaque application windows (`translucent_windows=false`),
+with `composite=true`, `blurring=true`, `popup_blurring=true` for transient surfaces.
 Kvantum handles popup shadows (`menu_shadow_depth=5`,
 `tooltip_shadow_depth=2`, `shadowless_popup=false`) and acrylic-style
 blur behind menus/tooltips. The SVG `menu-shadow-*` and
@@ -598,8 +603,8 @@ Inherited from Fluent (already Win11-correct):
 #### `[Hacks]`
 
 Inherited from Fluent: `transparent_ktitle_label=true`,
-`transparent_dolphin_view=true`, `transparent_pcmanfm_sidepane=true`,
-`transparent_pcmanfm_view=true`, `transparent_menutitle=true`,
+`transparent_dolphin_view=false`, `transparent_pcmanfm_sidepane=false`,
+`transparent_pcmanfm_view=false`, `transparent_menutitle=true`,
 `transparent_arrow_button=true`, `respect_darkness=true` (both
 variants), `force_size_grip=true`, `iconless_pushbutton=false` (both
 variants), `single_top_toolbar=true`, `kcapacitybar_as_progressbar=true`.
@@ -945,3 +950,9 @@ GNU GPL v3
 ### Shared shell popup frames
 
 `popup-frames.py` and `popup-frame.svg.in` generate the 12 dialog/tooltip variants. Dialogs use 8 logical px radii, opaque normal/solid frames and a consistent tinted translucent variant (dark 78%, light 82% tint opacity). Small tooltips use a 4 px radius and solid fill. All variants share 1 px borders, 12 px shadow margins and matching masks. These are Acrylic-style approximations driven by KWin blur, not the Windows compositor or true Mica. Do not add per-applet duplicate blur overlays. `verify-all.sh` checks generated files against the source.
+
+The local wallpaper tint is confined to existing active window SVG roles. Transparency-off restores neutral fills. KWin supplies native popup blur and noise; the sampled window color is a static Mica-style approximation, not live desktop compositing.
+
+The overflow and Quick Settings share one native popup and one tray model, but never share visible home content. Both float above a docked panel with a scaled 8 logical pixel gap. Hidden icon cells show names via native tooltips and accessibility, not permanent labels. The chevron is a distinct panel entry; native application activation and context menus remain unchanged. The existing brightness detail page uses the same control-center header and footer.
+
+Known Quick Settings details use the existing themed pages over KDE backends. Native fallback pages use the same Plasma palette/frame and are displayed exclusively in the same stack. The back button is a native themed control. The clock bell is outline with no unread notifications, filled with unread notifications, and uses the disabled glyph with actual native inhibition or service failure (the tooltip distinguishes the latter). Native notification applets remain in overflow unless explicitly pinned. Native toast structure and application-defined content remain KDE-owned.

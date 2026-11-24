@@ -10,12 +10,14 @@ import "../lib" as Lib
 Lib.DetailPage {
     id: page
 
-    title: qsTr("Wi-Fi")
+    title: wifiAvailable ? qsTr("Wi-Fi") : qsTr("Network")
+    showSwitch: wifiAvailable
     switchChecked: page.wifiOn
-    emptyText: page.wifiOn ? qsTr("No available networks") : qsTr("Wi-Fi is off")
+    emptyText: !page.wifiAvailable ? qsTr("No Wi-Fi adapter available")
+        : page.wifiOn ? qsTr("No available networks") : qsTr("Wi-Fi is off")
 
     footer: Lib.MoreSettingsLink {
-        text: qsTr("More Wi-Fi settings")
+        text: page.wifiAvailable ? qsTr("More Wi-Fi settings") : qsTr("Network settings")
         onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
     }
 
@@ -89,6 +91,8 @@ Lib.DetailPage {
             if (expanded) {
                 expanded = false;
                 phase = "idle";
+                password = "";
+                showPassword = false;
             } else {
                 expanded = true;
                 phase = (connectionState === PlasmaNM.Enums.Activating) ? "connecting" : "idle";
@@ -109,6 +113,8 @@ Lib.DetailPage {
 
         function doNext() {
             handler.addAndActivateConnection(DevicePath, SpecificPath, password);
+            password = "";
+            showPassword = false;
             phase = "connecting";
         }
 
@@ -120,6 +126,8 @@ Lib.DetailPage {
         onConnectionStateChanged: {
             if (connectionState === PlasmaNM.Enums.Activated) {
                 phase = "idle";
+                password = "";
+                showPassword = false;
             } else if (connectionState === PlasmaNM.Enums.Deactivated && phase === "connecting") {
                 phase = "idle";
             }
@@ -150,6 +158,13 @@ Lib.DetailPage {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: model.ItemUniqueName
+                        Accessible.onPressAction: delegate.toggleExpand()
+                        Keys.onReturnPressed: delegate.toggleExpand()
+                        Keys.onEnterPressed: delegate.toggleExpand()
+                        Keys.onSpacePressed: delegate.toggleExpand()
                         onClicked: delegate.toggleExpand()
                     }
 
@@ -174,7 +189,6 @@ Lib.DetailPage {
                                 Layout.fillWidth: true
                                 text: model.ItemUniqueName
                                 color: Kirigami.Theme.textColor
-                                font.pixelSize: 11
                                 font.bold: connectionState === PlasmaNM.Enums.Activated
                                 elide: Text.ElideRight
                             }
@@ -183,8 +197,8 @@ Lib.DetailPage {
                                 visible: delegate.statusText().length > 0
                                 text: delegate.statusText()
                                 color: Kirigami.Theme.textColor
-                                opacity: 0.5
-                                font.pixelSize: 9
+                                opacity: 0.8
+                                font: Kirigami.Theme.smallFont
                             }
                         }
 
@@ -212,7 +226,7 @@ Lib.DetailPage {
                     Layout.fillWidth: true
                     Layout.preferredHeight: delegate.expanded ? expandedCol.implicitHeight : 0
                     clip: true
-                    Behavior on Layout.preferredHeight { NumberAnimation { duration: 180; easing.type: Easing.OutQuad } }
+                    Behavior on Layout.preferredHeight { NumberAnimation { duration: Kirigami.Units.longDuration; easing.type: Easing.OutQuad } }
 
                     ColumnLayout {
                         id: expandedCol
@@ -245,13 +259,13 @@ Lib.DetailPage {
                                     color: connectBtnMA.containsPress ? delegate.pressBg
                                          : connectBtnMA.containsMouse ? delegate.hoverBg
                                          : delegate.btnBg
-                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                    Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
 
                                     PlasmaComponents3.Label {
                                         anchors.centerIn: parent
                                         text: qsTr("Connect")
                                         color: Kirigami.Theme.textColor
-                                        font.pixelSize: 11
+                                        font: Kirigami.Theme.defaultFont
                                     }
 
                                     MouseArea {
@@ -275,7 +289,7 @@ Lib.DetailPage {
                                 text: qsTr("Enter the network security key")
                                 color: Kirigami.Theme.textColor
                                 opacity: 0.7
-                                font.pixelSize: 10
+                                font: Kirigami.Theme.smallFont
                             }
 
                             TextField {
@@ -284,7 +298,7 @@ Lib.DetailPage {
                                 echoMode: delegate.showPassword ? TextInput.Normal : TextInput.Password
                                 text: delegate.password
                                 onTextEdited: delegate.password = text
-                                font.pixelSize: 11
+                                font: Kirigami.Theme.defaultFont
                                 placeholderText: qsTr("Password")
                                 validator: RegularExpressionValidator {
                                     regularExpression: SecurityType === PlasmaNM.Enums.StaticWep
@@ -336,13 +350,13 @@ Lib.DetailPage {
                                         color: cancelBtnMA.containsPress ? delegate.pressBg
                                              : cancelBtnMA.containsMouse ? delegate.hoverBg
                                              : delegate.btnBg
-                                        Behavior on color { ColorAnimation { duration: 100 } }
+                                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
 
                                         PlasmaComponents3.Label {
                                             anchors.centerIn: parent
                                             text: qsTr("Cancel")
                                             color: Kirigami.Theme.textColor
-                                            font.pixelSize: 11
+                                            font: Kirigami.Theme.defaultFont
                                         }
 
                                         MouseArea {
@@ -350,7 +364,7 @@ Lib.DetailPage {
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
-                                            onClicked: { delegate.phase = "idle"; delegate.password = ""; }
+                                            onClicked: { delegate.phase = "idle"; delegate.password = ""; delegate.showPassword = false; }
                                         }
                                     }
                                 }
@@ -366,13 +380,13 @@ Lib.DetailPage {
                                         color: nextBtnMA.containsPress ? Qt.darker(Kirigami.Theme.highlightColor, 1.1)
                                              : Kirigami.Theme.highlightColor
                                         opacity: pwField.acceptableInput ? 1 : 0.4
-                                        Behavior on color { ColorAnimation { duration: 100 } }
+                                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
 
                                         PlasmaComponents3.Label {
                                             anchors.centerIn: parent
                                             text: qsTr("Next")
-                                            color: "#FFFFFF"
-                                            font.pixelSize: 11
+                                            color: Kirigami.Theme.highlightedTextColor
+                                            font: Kirigami.Theme.defaultFont
                                         }
 
                                         MouseArea {
@@ -397,7 +411,7 @@ Lib.DetailPage {
                                 text: qsTr("Verifying and connecting")
                                 color: Kirigami.Theme.textColor
                                 opacity: 0.7
-                                font.pixelSize: 10
+                                font: Kirigami.Theme.smallFont
                             }
 
                             PlasmaComponents3.ProgressBar {
@@ -425,13 +439,13 @@ Lib.DetailPage {
                                     color: discBtnMA.containsPress ? delegate.pressBg
                                          : discBtnMA.containsMouse ? delegate.hoverBg
                                          : delegate.btnBg
-                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                    Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
 
                                     PlasmaComponents3.Label {
                                         anchors.centerIn: parent
                                         text: qsTr("Disconnect")
                                         color: Kirigami.Theme.textColor
-                                        font.pixelSize: 11
+                                        font: Kirigami.Theme.defaultFont
                                     }
 
                                     MouseArea {

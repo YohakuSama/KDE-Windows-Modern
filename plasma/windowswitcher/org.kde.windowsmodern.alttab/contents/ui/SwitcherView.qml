@@ -50,7 +50,8 @@ FocusScope {
         Math.min(220 * unit, screenGeometry.height * 0.17)))
     readonly property int cardHeight: cardPadding * 2 + headerHeight + thumbnailHeight
 
-    readonly property int maxContentWidth: Math.max(cardHeight, screenGeometry.width * 0.9 - outerPadding * 2)
+    // Keep even a single ultrawide card within the active screen's work area.
+    readonly property int maxContentWidth: Math.max(1, Math.floor(screenGeometry.width * 0.9 - outerPadding * 2))
     readonly property int maxContentHeight: Math.max(cardHeight, screenGeometry.height * 0.8 - outerPadding * 2)
 
     // ── Colours ──
@@ -68,7 +69,8 @@ FocusScope {
     readonly property int count: cards.count
     readonly property int currentIndex: tabBox.currentIndex
 
-    width: (count === 0 ? Kirigami.Units.gridUnit * 16 : Math.max(contentWidth, cardHeight)) + outerPadding * 2
+    width: Math.min(maxContentWidth, count === 0 ? Kirigami.Units.gridUnit * 16
+        : Math.max(contentWidth, cardHeight)) + outerPadding * 2
     height: (count === 0 ? Kirigami.Units.gridUnit * 6 : flick.height) + outerPadding * 2
 
     function relayout() {
@@ -222,8 +224,9 @@ FocusScope {
                 // very tall or very wide windows stay usable.
                 readonly property real ratio: (thumbnail.implicitWidth > 0 && thumbnail.implicitHeight > 0)
                     ? thumbnail.implicitWidth / thumbnail.implicitHeight : 16 / 9
-                readonly property int previewWidth: Math.round(root.thumbnailHeight
-                    * Math.max(0.75, Math.min(2.2, ratio)))
+                readonly property int previewWidth: Math.max(1, Math.min(
+                    root.maxContentWidth - root.cardPadding * 2,
+                    Math.round(root.thumbnailHeight * Math.max(0.75, Math.min(2.2, ratio)))))
 
                 width: previewWidth + root.cardPadding * 2
                 height: root.cardHeight
@@ -238,6 +241,11 @@ FocusScope {
                     radius: root.cardRadius
                     color: card.isCurrent ? root.selectedFill
                          : cardHover.hovered ? root.hoverFill : "transparent"
+                    // Use the desktop's animation-duration setting; the focus
+                    // ring and activation remain immediate.
+                    Behavior on color {
+                        ColorAnimation { duration: Kirigami.Units.shortDuration }
+                    }
                 }
 
                 // Focus ring of the selected window.

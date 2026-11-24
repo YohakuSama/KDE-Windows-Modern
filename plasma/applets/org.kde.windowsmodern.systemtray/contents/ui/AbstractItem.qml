@@ -135,10 +135,8 @@ PlasmaCore.ToolTipArea {
         }
     }
 
-    // Behind the chevron the items open pages, so they are drawn as plain
-    // launchers (icon over name, as Windows 11's overflow draws icons), not
-    // as tiles like the Quick Settings toggles below: a background shows
-    // only on hover and press.
+    // Icon-only overflow; retain native tooltips and accessible names.
+    readonly property int overflowInset: Math.max(2, Math.round(4 * Plasmoid.configuration.scale / 100))
     Rectangle {
         visible: abstractItem.inHiddenLayout
         anchors.fill: parent
@@ -159,10 +157,10 @@ PlasmaCore.ToolTipArea {
     ColumnLayout {
         anchors.fill: abstractItem
         // Overflow is icon-only; names remain in tooltips and accessibility.
-        anchors.leftMargin: abstractItem.inHiddenLayout ? 4 : 0
-        anchors.rightMargin: abstractItem.inHiddenLayout ? 4 : 0
-        anchors.topMargin: abstractItem.inHiddenLayout ? 4 : 0
-        anchors.bottomMargin: abstractItem.inHiddenLayout ? 4 : 0
+        anchors.leftMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0
+        anchors.rightMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0
+        anchors.topMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0
+        anchors.bottomMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0
         spacing: 0
 
         Item { // centers icon and name in a flyout cell
@@ -172,7 +170,7 @@ PlasmaCore.ToolTipArea {
 
         FocusScope {
             id: iconContainer
-            scale: (abstractItem.effectivePressed || mouseArea.containsPress) ? 0.8 : 1
+            scale: (abstractItem.effectivePressed || mouseArea.containsPress) ? 0.9 : 1
 
             activeFocusOnTab: !abstractItem.inHiddenLayout
             focus: true // Required in HiddenItemsView so keyboard events can be forwarded to this item
@@ -183,7 +181,7 @@ PlasmaCore.ToolTipArea {
 
             Behavior on scale {
                 ScaleAnimator {
-                    duration: Kirigami.Units.longDuration
+                    duration: Kirigami.Units.shortDuration
                     easing.type: (abstractItem.effectivePressed || mouseArea.containsPress) ? Easing.OutCubic : Easing.InCubic
                 }
             }
@@ -194,7 +192,8 @@ PlasmaCore.ToolTipArea {
                     case Qt.Key_Enter:
                     case Qt.Key_Return:
                     case Qt.Key_Select:
-                        abstractItem.activated(Qt.point(width/2, height/2));
+                        abstractItem.activated(Plasmoid.popupPosition(iconContainer, width/2, height/2));
+                        event.accepted = true;
                         break;
                     case Qt.Key_Menu:
                         abstractItem.contextMenu(null);
@@ -205,7 +204,9 @@ PlasmaCore.ToolTipArea {
 
             property alias container: abstractItem
             property alias inVisibleLayout: abstractItem.inVisibleLayout
-            readonly property int size: abstractItem.inVisibleLayout ? root.itemSize : 24
+            readonly property int size: abstractItem.inVisibleLayout ? root.itemSize : Math.max(1, Math.min(
+                Math.round(24 * Plasmoid.configuration.scale / 100),
+                Math.floor(Math.min(abstractItem.width, abstractItem.height) - 2 * abstractItem.overflowInset)))
 
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
             implicitWidth: root.vertical && abstractItem.inVisibleLayout ? abstractItem.width : size

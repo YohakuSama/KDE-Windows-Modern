@@ -17,10 +17,10 @@ AbstractItem {
 
     itemId: model?.Id ?? ""
     text: model?.Title || model?.ToolTipTitle || ""
-    mainText: inVisibleLayout || (model?.ToolTipTitle !== "" && model?.ToolTipTitle !== text) ? model?.ToolTipTitle ?? "" : ""
+    mainText: model?.ToolTipTitle || text
     subText: model?.ToolTipSubTitle ?? ""
     textFormat: Text.AutoText
-    active: inVisibleLayout || text != mainText || subText.length > 0
+    active: inVisibleLayout || mainText.length > 0 || subText.length > 0
 
     Kirigami.Icon {
         id: iconItem

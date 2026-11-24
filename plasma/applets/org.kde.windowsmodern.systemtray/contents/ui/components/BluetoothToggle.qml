@@ -11,6 +11,7 @@ Lib.SplitTile {
     property QtObject btManager: BluezQt.Manager
 
     label: qsTr("Bluetooth")
+    toggleAvailable: btManager.adapters.length > 0
     iconSource: Funcs.btStatus(btManager).icon
     active: Funcs.btStatus(btManager).active
 
@@ -26,6 +27,8 @@ Lib.SplitTile {
     }
 
     tooltipText: {
+        if (!toggleAvailable)
+            return qsTr("Bluetooth — Unavailable");
         if (!Funcs.btStatus(btManager).active)
             return qsTr("Bluetooth — Off");
         if (connectedCount > 0)

@@ -25,16 +25,18 @@ Lib.SplitTile {
     readonly property bool wifiAvailable: availableDevices.wirelessDeviceAvailable
     readonly property bool wifiOn: wifiAvailable && enabledConnections.wirelessEnabled
 
-    label: qsTr("Wi-Fi")
+    // Keep the detail arrow available on Ethernet-only systems, but do not
+    // present a nonfunctional Wi-Fi toggle or a wired icon as Wi-Fi.
+    label: wifiAvailable ? qsTr("Wi-Fi") : qsTr("Network")
+    toggleAvailable: wifiAvailable
     iconSource: {
-        var base = activeConnectionIcon.connectionIcon;
+        const base = activeConnectionIcon.connectionIcon || "";
+        if (!wifiAvailable)
+            return base || "network-wired-symbolic";
         if (!wifiOn)
-            return base;
-        if (base.indexOf("network-wireless") === 0)
-            return "network-wireless-100";
-        if (base.indexOf("network-mobile") === 0)
-            return "network-mobile-100";
-        return base;
+            return "network-wireless-disconnected-symbolic";
+        return base.indexOf("network-wireless") === 0
+            ? base : "network-wireless-0-symbolic";
     }
     active: wifiOn
 
@@ -44,7 +46,8 @@ Lib.SplitTile {
         }
     }
 
-    tooltipText: wifiOn ? qsTr("Wi-Fi — On") : qsTr("Wi-Fi — Off")
+    tooltipText: !wifiAvailable ? qsTr("Network — Wi-Fi unavailable")
+        : wifiOn ? qsTr("Wi-Fi — On") : qsTr("Wi-Fi — Off")
 
     onRightClicked: networkMenu.popup()
 

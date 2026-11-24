@@ -13,7 +13,6 @@ import QtQuick.Layouts
 import org.kde.draganddrop as DnD
 import org.kde.kirigami as Kirigami
 import org.kde.kitemmodels as KItemModels
-import org.kde.ksvg as KSvg
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 
@@ -118,6 +117,7 @@ ContainmentItem {
 
         SystemTrayState {
             id: systemTrayState
+            popupVisible: dialog.visible
         }
 
         CurrentItemHighLight {
@@ -268,13 +268,17 @@ ContainmentItem {
                 Layout.alignment: vertical ? Qt.AlignVCenter : Qt.AlignHCenter
                 iconSize: Kirigami.Units.iconSizes.small
                 visible: root.hiddenLayout.itemCount > 0
+                onVisibleChanged: {
+                    if (!visible && systemTrayState.overflowOpen)
+                        systemTrayState.expanded = false;
+                }
             }
         }
 
         Timer {
             id: expandedSync
             interval: 100
-            onTriggered: systemTrayState.expanded = dialog.visible;
+            onTriggered: if (!dialog.visible) systemTrayState.expanded = false;
         }
 
         //Main popup
@@ -292,7 +296,10 @@ ContainmentItem {
                 default:
                     return Qt.TopEdge
             }
-            margin: (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets) ? Kirigami.Units.largeSpacing : 0
+            // Keep a visible gap and native rounded frames on docked panels.
+            margin: Math.max(Math.round(8 * Plasmoid.configuration.scale / 100),
+                (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets)
+                    ? Kirigami.Units.largeSpacing : 0)
 
             Behavior on margin {
                 NumberAnimation {
@@ -306,9 +313,7 @@ ContainmentItem {
 
             floating: Plasmoid.location == PlasmaCore.Desktop
 
-            removeBorderStrategy: Plasmoid.location === PlasmaCore.Types.Floating
-                ? PlasmaCore.AppletPopup.AtScreenEdges
-                : PlasmaCore.AppletPopup.AtScreenEdges | PlasmaCore.AppletPopup.AtPanelEdges
+            removeBorderStrategy: PlasmaCore.AppletPopup.AtScreenEdges
 
 
             hideOnWindowDeactivate: !Plasmoid.configuration.pin
@@ -321,12 +326,9 @@ ContainmentItem {
                 if (!visible) {
                     expandedSync.restart();
                 } else {
+                    expandedSync.stop();
                     dialog.requestActivate();
-                    if (expandedRepresentation.plasmoidContainer.visible) {
-                        expandedRepresentation.plasmoidContainer.forceActiveFocus();
-                    } else if (expandedRepresentation.hiddenLayout.visible) {
-                        expandedRepresentation.hiddenLayout.forceActiveFocus();
-                    }
+                    expandedRepresentation.focusCurrentPage();
                 }
             }
             mainItem: ExpandedRepresentation {
@@ -341,82 +343,6 @@ ContainmentItem {
                 Item {
                     id: preloadedStorage
                     visible: false
-                }
-
-                // Draws a line between the applet dialog and the panel
-                KSvg.SvgItem {
-                    id: separator
-                    // Only draw for popups of panel applets, not desktop applets
-                    visible: [PlasmaCore.Types.TopEdge, PlasmaCore.Types.LeftEdge, PlasmaCore.Types.RightEdge, PlasmaCore.Types.BottomEdge]
-                        .includes(Plasmoid.location) && !dialog.margin
-                    anchors {
-                        topMargin: -dialog.topPadding
-                        leftMargin: -dialog.leftPadding
-                        rightMargin: -dialog.rightPadding
-                        bottomMargin: -dialog.bottomPadding
-                    }
-                    z: 999 /* Draw the line on top of the applet */
-                    elementId: (Plasmoid.location === PlasmaCore.Types.TopEdge || Plasmoid.location === PlasmaCore.Types.BottomEdge) ? "horizontal-line" : "vertical-line"
-                    imagePath: "widgets/line"
-                    // QTBUG-120464: Use AnchorChanges instead of bindings as it's officially supported: https://doc.qt.io/qt-6/qtquick-positioning-anchors.html#changing-anchors
-                    states: [
-                        State {
-                            when: Plasmoid.location === PlasmaCore.Types.TopEdge
-                            AnchorChanges {
-                                target: separator
-                                anchors {
-                                    top: separator.parent.top
-                                    left: separator.parent.left
-                                    right: separator.parent.right
-                                }
-                            }
-                            PropertyChanges {
-                                separator.height: 1
-                            }
-                        },
-                        State {
-                            when: Plasmoid.location === PlasmaCore.Types.LeftEdge
-                            AnchorChanges {
-                                target: separator
-                                anchors {
-                                    left: separator.parent.left
-                                    top: separator.parent.top
-                                    bottom: separator.parent.bottom
-                                }
-                            }
-                            PropertyChanges {
-                                separator.width: 1
-                            }
-                        },
-                        State {
-                            when: Plasmoid.location === PlasmaCore.Types.RightEdge
-                            AnchorChanges {
-                                target: separator
-                                anchors {
-                                    top: separator.parent.top
-                                    right: separator.parent.right
-                                    bottom: separator.parent.bottom
-                                }
-                            }
-                            PropertyChanges {
-                                separator.width: 1
-                            }
-                        },
-                        State {
-                            when: Plasmoid.location === PlasmaCore.Types.BottomEdge
-                            AnchorChanges {
-                                target: separator
-                                anchors {
-                                    left: separator.parent.left
-                                    right: separator.parent.right
-                                    bottom: separator.parent.bottom
-                                }
-                            }
-                            PropertyChanges {
-                                separator.height: 1
-                            }
-                        }
-                    ]
                 }
 
                 LayoutMirroring.enabled: Application.layoutDirection === Qt.RightToLeft

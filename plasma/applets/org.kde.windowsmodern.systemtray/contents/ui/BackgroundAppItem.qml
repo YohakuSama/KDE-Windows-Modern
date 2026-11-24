@@ -19,10 +19,10 @@ AbstractItem {
 
     itemId: model.itemId
     text: model.name
-    mainText: inVisibleLayout ? model.name : ""
+    mainText: text
     subText: model.message
     textFormat: Text.AutoText
-    active: inVisibleLayout || text != mainText || subText.length > 0
+    active: inVisibleLayout || mainText.length > 0 || subText.length > 0
 
     Kirigami.Icon {
         id: iconItem

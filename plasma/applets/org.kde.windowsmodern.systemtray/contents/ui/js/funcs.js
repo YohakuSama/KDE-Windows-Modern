@@ -63,30 +63,11 @@ function volIconName(volume, muted) {
     return "audio-volume-high-symbolic";
 }
 
-function batteryIconName(percent, charging) {
-    var icon;
-    if (percent < 10) {
-        icon = "battery-000";
-    } else if (percent < 20) {
-        icon = "battery-010";
-    } else if (percent < 30) {
-        icon = "battery-020";
-    } else if (percent < 40) {
-        icon = "battery-030";
-    } else if (percent < 50) {
-        icon = "battery-040";
-    } else if (percent < 60) {
-        icon = "battery-050";
-    } else if (percent < 70) {
-        icon = "battery-060";
-    } else if (percent < 80) {
-        icon = "battery-070";
-    } else if (percent < 90) {
-        icon = "battery-080";
-    } else if (percent < 100) {
-        icon = "battery-090";
-    } else {
-        icon = "battery-100";
-    }
-    return charging ? icon + "-charging-symbolic" : icon + "-symbolic";
+function batteryIconName(percent, pluggedIn) {
+    if (!Number.isFinite(percent) || percent < 0)
+        return pluggedIn ? "battery-unknown-charging-symbolic" : "battery-unknown-symbolic";
+    // Match the native KDE BatteryIcon level boundaries, including 5%.
+    const level = percent <= 5 ? 0 : Math.min(100, Math.round(percent / 10) * 10);
+    return "battery-" + String(level).padStart(3, "0")
+        + (pluggedIn ? "-charging" : "") + "-symbolic";
 }

@@ -17,12 +17,12 @@ PlasmaCore.ToolTipArea {
     readonly property int arrowAnimationDuration: Kirigami.Units.shortDuration
     property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     property int iconSize: Kirigami.Units.iconSizes.smallMedium
-    implicitWidth: iconSize
-    implicitHeight: iconSize
+    implicitWidth: iconSize + (vertical ? 0 : 2 * Kirigami.Units.smallSpacing)
+    implicitHeight: iconSize + (vertical ? 2 * Kirigami.Units.smallSpacing : 0)
     activeFocusOnTab: true
 
     Accessible.name: subText
-    Accessible.description: i18n("Show all the items in the system tray in a popup")
+    Accessible.description: i18n("Open or close the hidden icons popup")
     Accessible.role: Accessible.Button
     Accessible.onPressAction: systemTrayState.toggleHome(true)
 
@@ -72,12 +72,7 @@ PlasmaCore.ToolTipArea {
         Behavior on rotation {
             RotationAnimation {
                 duration: tooltip.arrowAnimationDuration
-            }
-        }
-        opacity: systemTrayState.overflowOpen ? 0 : 1
-        Behavior on opacity {
-            NumberAnimation {
-                duration: tooltip.arrowAnimationDuration
+                direction: RotationAnimation.Shortest
             }
         }
 
@@ -90,37 +85,6 @@ PlasmaCore.ToolTipArea {
                 return "arrow-left-symbolic";
             } else {
                 return "arrow-up-symbolic";
-            }
-        }
-    }
-
-    Kirigami.Icon {
-        anchors.centerIn: parent
-        width: tooltip.iconSize
-        height: width
-
-        rotation: systemTrayState.overflowOpen ? 0 : -180
-        Behavior on rotation {
-            RotationAnimation {
-                duration: tooltip.arrowAnimationDuration
-            }
-        }
-        opacity: systemTrayState.overflowOpen ? 1 : 0
-        Behavior on opacity {
-            NumberAnimation {
-                duration: tooltip.arrowAnimationDuration
-            }
-        }
-
-        source: {
-            if (Plasmoid.location === PlasmaCore.Types.TopEdge) {
-                return "arrow-up-symbolic";
-            } else if (Plasmoid.location === PlasmaCore.Types.LeftEdge) {
-                return "arrow-left-symbolic";
-            } else if (Plasmoid.location === PlasmaCore.Types.RightEdge) {
-                return "arrow-right-symbolic";
-            } else {
-                return "arrow-down-symbolic";
             }
         }
     }

@@ -99,9 +99,15 @@ Loader {
         id: groupToolTip
 
         PlasmaComponents3.ScrollView {
-            // 2 * Kirigami.Units.smallSpacing is for the margin of tooltipDialog
-            readonly property real maximumWidth: Screen.desktopAvailableWidth - 2 * Kirigami.Units.smallSpacing
-            readonly property real maximumHeight: Screen.desktopAvailableHeight - 2 * Kirigami.Units.smallSpacing
+            // Constrain a group to the panel's own monitor rather than the
+            // combined virtual desktop. Keep the native available-size fallback.
+            readonly property rect panelScreen: Plasmoid.containment.screenGeometry
+            readonly property real maximumWidth: Math.max(1,
+                (panelScreen.width > 0 ? panelScreen.width : Screen.desktopAvailableWidth)
+                - 2 * Kirigami.Units.smallSpacing)
+            readonly property real maximumHeight: Math.max(1,
+                (panelScreen.height > 0 ? panelScreen.height : Screen.desktopAvailableHeight)
+                - 2 * Kirigami.Units.gridUnit)
 
             implicitWidth: {
                 // when vertical, all delegates have the same fixed width, but with an extra

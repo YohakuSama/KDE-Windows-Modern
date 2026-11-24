@@ -2,16 +2,15 @@
 # ───────────────────────────────────────────────────────────────────
 #  install-transparency.sh — Windows' "Transparency effects" switch
 #
-#    ./install.sh transparency off   solid windows, popups and taskbar
-#    ./install.sh transparency on    translucent again (the default)
+#    ./install.sh transparency off   neutral opaque windows and solid popups
+#    ./install.sh transparency on    wallpaper-tinted windows and popup blur
+#    ./install.sh transparency refresh  resample the current saved wallpaper
 #    ./install.sh transparency       show the current state
 #
-#  Off turns off Kvantum's translucent windows (Dolphin and other apps)
-#  and KWin's blur effect; without blur, Plasma draws its popups, the
-#  Start menu and flyouts with the theme's solid variant. Like Windows'
-#  Settings → Personalization → Colors → Transparency effects, it is for
-#  looks or for slower machines. The choice is remembered, so reinstalling
-#  the theme keeps it; "on" puts back the blur setting you had.
+#  Application window bases are always opaque. Off restores neutral fills
+#  and turns off KWin blur; on restores the saved blur setting and the
+#  locally sampled saved image wallpaper tint. The choice is retained
+#  across reinstall. This is a Mica-style static tint, not a DWM renderer.
 # ───────────────────────────────────────────────────────────────────
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
@@ -34,10 +33,12 @@ case "$mode" in
         # Remember the blur setting as it was ("" = never set: KWin's default, on).
         echo "blurEnabled=$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" > "$state"
         kvantum_transparency false
+        apply_window_materials false
+        apply_popup_materials false
         kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled false
         kwin_reconfigure
         info "Transparency effects off."
-        step "Apps already open stay translucent until you restart them."
+        step "Restart open apps; if the panel retains cached artwork, log out and back in."
         ;;
     on)
         if [ ! -f "$state" ]; then
@@ -51,10 +52,22 @@ case "$mode" in
             kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled --delete
         fi
         kvantum_transparency true
+        apply_window_materials true current
+        apply_popup_materials true
         rm -f "$state"
         kwin_reconfigure
         info "Transparency effects on."
-        step "Apps already open stay solid until you restart them."
+        step "Restart open apps; if the panel retains cached artwork, log out and back in."
+        ;;
+    refresh)
+        if [ -f "$state" ]; then
+            apply_window_materials false
+        else
+            apply_window_materials true current
+        fi
+        kwin_reconfigure
+        info "Window material refreshed."
+        step "Restart open apps to load the updated material."
         ;;
     status)
         if [ -f "$state" ]; then
@@ -64,7 +77,7 @@ case "$mode" in
         fi
         ;;
     *)
-        err "Usage: ./install.sh transparency [on|off]"
+        err "Usage: ./install.sh transparency [on|off|refresh]"
         exit 1
         ;;
 esac

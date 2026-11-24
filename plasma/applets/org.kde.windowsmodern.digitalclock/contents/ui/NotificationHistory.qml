@@ -16,38 +16,15 @@ import org.kde.notificationmanager as NotificationManager
 // or a watcher that only sees notifications received after opening.
 ColumnLayout {
     id: history
-    property bool opened: false
     required property date currentTime
+    required property bool notificationsAvailable
+    required property bool effectiveDnd
     spacing: Kirigami.Units.smallSpacing * 2
 
     Win11Palette { id: palette }
 
-    NotificationManager.Settings { id: settings }
-
-    NotificationManager.Notifications {
-        id: notificationModel
-        showExpired: true
-        showDismissed: true
-        // Keep file-copy/transfer jobs available through the native KDE applet.
-        showJobs: false
-        showNotifications: true
-        sortMode: NotificationManager.Notifications.SortByDate
-        groupMode: NotificationManager.Notifications.GroupDisabled
-        ignoreBlacklistDuringInhibition: true
-        blacklistedDesktopEntries: settings.historyBlacklistedApplications
-        blacklistedNotifyRcNames: settings.historyBlacklistedServices
-        popupBlacklistedDesktopEntries: settings.popupBlacklistedApplications
-        popupBlacklistedNotifyRcNames: settings.popupBlacklistedServices
-        urgencies: NotificationManager.Notifications.CriticalUrgency
-                 | NotificationManager.Notifications.NormalUrgency
-                 | (settings.lowPriorityHistory ? NotificationManager.Notifications.LowUrgency : 0)
-    }
-
-    function markRead() {
-        if (opened) notificationModel.lastRead = undefined;
-    }
-    onOpenedChanged: markRead()
-    Component.onCompleted: markRead()
+    required property var notificationModel
+    required property var settings
 
     // Respect automatic/application-driven DND; this button only controls the
     // user's manual setting, like the existing Quick Settings toggle.
@@ -67,13 +44,22 @@ ColumnLayout {
     }
 
     function clearAll() {
-        // Ungrouped model: close individual closable notifications in reverse
-        // order. Do not kill jobs or change notification rules.
+        // Take persistent indexes before closing anything: group rows can
+        // disappear or move as their children are removed. Close a group only
+        // once, including hidden children. KDE still checks each child's
+        // closable state. Jobs never enter this notification model.
+        const targets = [];
         for (let row = notificationModel.count - 1; row >= 0; --row) {
-            if (row >= notificationModel.count) continue;
             const idx = notificationModel.index(row, 0);
-            if (notificationModel.data(idx, NotificationManager.Notifications.ClosableRole))
+            if (!notificationModel.data(idx, NotificationManager.Notifications.IsInGroupRole)
+                    && notificationModel.data(idx, NotificationManager.Notifications.ClosableRole))
+                targets.push(notificationModel.makePersistentModelIndex(idx));
+        }
+        for (const target of targets) {
+            if (target && target.valid) {
+                const idx = notificationModel.index(target.row, 0);
                 notificationModel.close(idx);
+            }
         }
     }
 
@@ -91,8 +77,11 @@ ColumnLayout {
         }
 
         PlasmaComponents.ToolButton {
-            text: i18n("Manual do not disturb")
-            icon.name: history.manualDnd ? "notifications-disabled" : "notifications"
+            text: history.effectiveDnd && !history.manualDnd
+                ? i18n("Do not disturb is active due to a rule or application")
+                : i18n("Manual do not disturb")
+            icon.name: history.effectiveDnd ? "notifications-disabled" : "notifications"
+            enabled: history.notificationsAvailable
             display: PlasmaComponents.AbstractButton.IconOnly
             checkable: true
             checked: history.manualDnd
@@ -112,7 +101,7 @@ ColumnLayout {
         Layout.preferredHeight: Kirigami.Units.gridUnit * 3
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
-        text: i18n("No notifications")
+        text: history.notificationsAvailable ? i18n("No notifications") : i18n("Notification service not available")
         color: palette.textSecondary
         visible: notificationModel.count === 0
     }
@@ -133,19 +122,21 @@ ColumnLayout {
             id: card
             required property int index
             required property var model
+            readonly property bool isGroup: !!model.isGroup
+            readonly property bool inGroup: !!model.isInGroup
             readonly property var notificationId: model.id
             onNotificationIdChanged: if (replyInput) replyInput.clear()
             width: list.width - Kirigami.Units.smallSpacing
             implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
             height: implicitHeight
-            radius: 4
+            radius: 8
             color: palette.surface
             border.width: 1
             border.color: palette.surfaceBorder
 
             function submitReply() {
                 const text = replyInput.text;
-                if (!text.trim() || model.expired || !model.hasReplyAction) return;
+                if (isGroup || !text.trim() || model.expired || !model.hasReplyAction) return;
                 const idx = notificationModel.index(index, 0);
                 const behavior = model.resident ? NotificationManager.Notifications.None
                                                 : NotificationManager.Notifications.Close;
@@ -154,6 +145,7 @@ ColumnLayout {
             }
 
             function invoke(name) {
+                if (isGroup) return;
                 const idx = notificationModel.index(index, 0);
                 const behavior = model.resident ? NotificationManager.Notifications.None
                                                 : NotificationManager.Notifications.Close;
@@ -177,26 +169,37 @@ ColumnLayout {
                     Kirigami.Icon {
                         Layout.preferredWidth: Kirigami.Units.iconSizes.small
                         Layout.preferredHeight: Layout.preferredWidth
+                        visible: !card.inGroup
                         source: card.model.applicationIconName || "preferences-desktop-notification"
                     }
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
-                        text: card.model.applicationName || i18n("Notification")
+                        text: card.inGroup ? "" : (card.model.applicationName || i18n("Notification"))
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
                         color: palette.textSecondary
                         font: Kirigami.Theme.smallFont
                     }
                     PlasmaComponents.Label {
-                        text: card.model.created && !isNaN(card.model.created.getTime())
-                            ? Qt.locale().toString(card.model.created, Locale.ShortFormat) : ""
+                        text: card.isGroup ? i18np("%1 notification", "%1 notifications", card.model.groupChildrenCount || 0)
+                            : card.model.created && !isNaN(card.model.created.getTime())
+                                ? Qt.locale().toString(card.model.created, Locale.ShortFormat) : ""
                         color: palette.textSecondary
                         font: Kirigami.Theme.smallFont
                         elide: Text.ElideRight
                         Layout.maximumWidth: Kirigami.Units.gridUnit * 6
                     }
                     PlasmaComponents.ToolButton {
-                        text: i18n("Dismiss notification")
+                        visible: card.isGroup
+                        text: card.model.isGroupExpanded ? i18n("Show fewer") : i18n("Show more")
+                        icon.name: card.model.isGroupExpanded ? "go-up" : "go-down"
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        onClicked: notificationModel.setData(notificationModel.index(card.index, 0),
+                            !card.model.isGroupExpanded, NotificationManager.Notifications.IsGroupExpandedRole)
+                        PlasmaComponents.ToolTip { text: parent.text }
+                    }
+                    PlasmaComponents.ToolButton {
+                        text: card.isGroup ? i18n("Dismiss group") : i18n("Dismiss notification")
                         icon.name: "window-close"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         visible: card.model.closable
@@ -213,7 +216,7 @@ ColumnLayout {
                     wrapMode: Text.Wrap
                     maximumLineCount: 2
                     elide: Text.ElideRight
-                    visible: text.length > 0
+                    visible: !card.isGroup && text.length > 0
                 }
 
                 PlasmaComponents.Label {
@@ -223,14 +226,14 @@ ColumnLayout {
                     wrapMode: Text.Wrap
                     maximumLineCount: 4
                     elide: Text.ElideRight
-                    visible: text.length > 0
+                    visible: !card.isGroup && text.length > 0
                 }
 
                 Flow {
                     id: actions
                     Layout.fillWidth: true
                     spacing: Kirigami.Units.smallSpacing
-                    visible: !card.model.expired && (card.model.hasDefaultAction
+                    visible: !card.isGroup && !card.model.expired && (card.model.hasDefaultAction
                         || (card.model.actionNames || []).length > 0)
 
                     PlasmaComponents.Button {
@@ -256,7 +259,7 @@ ColumnLayout {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    visible: !card.model.expired && !!card.model.hasReplyAction
+                    visible: !card.isGroup && !card.model.expired && !!card.model.hasReplyAction
                     spacing: Kirigami.Units.smallSpacing
 
                     PlasmaComponents.TextField {

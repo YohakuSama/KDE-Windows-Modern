@@ -263,7 +263,7 @@ Item {
 
                 Text {
                     id: timeText
-                    text: Qt.formatTime(new Date(), "HH:mm")
+                    text: Qt.formatTime(new Date(), Qt.locale().timeFormat(Locale.ShortFormat))
                     font.family: Kirigami.Theme.defaultFont.family
                     font.weight: Font.DemiBold
                     font.pixelSize: 96
@@ -526,7 +526,7 @@ Item {
         interval: 1000; running: true; repeat: true
         onTriggered: {
             var d = new Date();
-            timeText.text = Qt.formatTime(d, "HH:mm");
+            timeText.text = Qt.formatTime(d, Qt.locale().timeFormat(Locale.ShortFormat));
             dateText.text = lockScreenRoot.dateLine(d);
         }
     }

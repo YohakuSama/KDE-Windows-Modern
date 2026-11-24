@@ -14,6 +14,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.clock as PlasmaClock
 import org.kde.plasma.private.digitalclock as DigitalClockPrivate
 import org.kde.kirigami as Kirigami
+import org.kde.notificationmanager as NotificationManager
 
 PlasmoidItem {
     id: root
@@ -24,10 +25,57 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.ShadowBackground | PlasmaCore.Types.ConfigurableBackground
 
     toolTipMainText: i18n("Clock")
-    toolTipSubText: ""
+    toolTipSubText: notificationStatusText
 
     readonly property string currentTimeZone: currentClock.timeZone
     readonly property var currentTime: currentClock.dateTime
+
+    // One shared history proxy for the bell and its existing flyout.
+    // KDE's native notification applet still handles toast and job display.
+    readonly property alias notificationModel: notificationModel
+    readonly property alias notificationSettings: notificationSettings
+    readonly property int unreadNotifications: notificationModel.unreadNotificationsCount
+    readonly property bool notificationsAvailable: NotificationManager.Server.valid
+    readonly property bool notificationsInhibited: NotificationManager.Server.inhibited
+    readonly property string notificationIcon: !notificationsAvailable || notificationsInhibited
+        ? "notifications-disabled-symbolic"
+        : unreadNotifications > 0 ? "notification-active-symbolic" : "notification-inactive-symbolic"
+    readonly property string notificationStatusText: !notificationsAvailable
+        ? i18n("Notification service not available")
+        : notificationsInhibited ? i18n("Do not disturb mode active")
+        : unreadNotifications > 0
+            ? i18np("%1 unread notification", "%1 unread notifications", unreadNotifications)
+            : i18n("No unread notifications")
+
+    NotificationManager.Settings { id: notificationSettings }
+
+    NotificationManager.Notifications {
+        id: notificationModel
+        showExpired: true
+        showDismissed: true
+        // Keep file-copy/transfer jobs available through the native KDE applet.
+        showJobs: false
+        showNotifications: true
+        sortMode: NotificationManager.Notifications.SortByDate
+        groupMode: NotificationManager.Notifications.GroupApplicationsFlat
+        groupLimit: 1
+        expandUnread: false
+        ignoreBlacklistDuringInhibition: true
+        blacklistedDesktopEntries: notificationSettings.historyBlacklistedApplications
+        blacklistedNotifyRcNames: notificationSettings.historyBlacklistedServices
+        urgencies: NotificationManager.Notifications.CriticalUrgency
+                 | NotificationManager.Notifications.NormalUrgency
+                 | (notificationSettings.lowPriorityHistory ? NotificationManager.Notifications.LowUrgency : 0)
+    }
+
+    onExpandedChanged: {
+        if (expanded) {
+            notificationModel.hideInhibitionSummary();
+            notificationModel.lastRead = undefined;
+        } else {
+            notificationModel.collapseAllGroups();
+        }
+    }
 
     // Time format strings, updated by timeFormatCorrection().
     property string timeFormat

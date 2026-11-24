@@ -15,14 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install shellcheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Install health check dependencies
+        run: sudo apt-get update && sudo apt-get install -y shellcheck python3-pil
       # Same gate scripts/release.sh enforces: required files, light/dark
       # parity, layout drift, metadata, bash -n and shellcheck.
       - name: verify-all.sh
         run: ./verify-all.sh
       - name: Native resource reader tests
         run: python3 -m unittest discover -s tests/native-assets -v
+      - name: Window material tests
+        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
 
   build-applets:
     name: Build C++ applets (Fedora ${{ matrix.fedora }})
@@ -63,6 +65,37 @@ jobs:
         with:
           name: plugins-fedora${{ matrix.fedora }}
           path: ${{ runner.temp }}/plugins/
+
+  # Package the exact tested source and matching plugins for owner testing.
+  # The archive remains a CI artifact; no stable version tag is created.
+  integration-bundle:
+    name: Package integration bundle
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    needs: [health-check, build-applets]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Download matching plugin builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: plugins-*
+          path: ${{ runner.temp }}/integration-plugins
+      - name: Package exact commit
+        run: |
+          mkdir -p "$RUNNER_TEMP/bundle-plugins"
+          cat "$RUNNER_TEMP"/integration-plugins/*/SHA256SUMS > "$RUNNER_TEMP/bundle-plugins/SHA256SUMS"
+          cp "$RUNNER_TEMP"/integration-plugins/*/*.tar.gz "$RUNNER_TEMP/bundle-plugins/"
+          WM_BUNDLE_PLUGINS_DIR="$RUNNER_TEMP/bundle-plugins" ./scripts/package.sh --integration
+          (cd dist && sha256sum KDE-Windows-Modern-*-integration-*.zip > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Modern-integration-${{ github.sha }}
+          path: |
+            dist/KDE-Windows-Modern-*-integration-*.zip
+            dist/SHA256SUMS
+          if-no-files-found: error
 
   # On a release tag, attach the prebuilt plugins (and one SHA256SUMS) to
   # the release that scripts/release.sh created.

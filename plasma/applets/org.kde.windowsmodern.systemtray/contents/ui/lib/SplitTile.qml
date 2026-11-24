@@ -12,20 +12,26 @@ ColumnLayout {
     property string label
     property string tooltipText: ""
     property bool active: false
+    property bool toggleAvailable: true
 
     signal clicked
     signal arrowClicked
     signal rightClicked
     signal middleClicked
 
-    activeFocusOnTab: true
+    activeFocusOnTab: toggleAvailable
     focus: true
 
-    Keys.onReturnPressed: tile.clicked()
-    Keys.onSpacePressed: tile.clicked()
+    Accessible.role: Accessible.CheckBox
+    Accessible.name: tile.label
+    Accessible.checked: tile.active
+    Accessible.onPressAction: if (tile.toggleAvailable) tile.clicked()
+    Keys.onReturnPressed: if (tile.toggleAvailable) tile.clicked()
+    Keys.onEnterPressed: if (tile.toggleAvailable) tile.clicked()
+    Keys.onSpacePressed: if (tile.toggleAvailable) tile.clicked()
 
     readonly property color accent: Kirigami.Theme.highlightColor
-    readonly property color fg: active ? (ColorType.isDark(Kirigami.Theme.backgroundColor) ? "#1E1E1E" : "#FFFFFF") : Kirigami.Theme.textColor
+    readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
     spacing: 4
     Layout.fillWidth: true
@@ -37,11 +43,14 @@ ColumnLayout {
         Layout.preferredHeight: width / 2
         radius: 4
         border.width: 1
-        border.color: active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        border.color: tile.activeFocus || arrowMA.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
         color: {
-            if (active)
-                return accent;
-            if (toggleMA.containsPress)
+            if (active) {
+                const alpha = toggleMA.containsPress || arrowMA.containsPress ? 0.12
+                    : toggleMA.containsMouse || arrowMA.containsMouse ? 0.06 : 0;
+                return Qt.tint(accent, Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, alpha));
+            }
+            if (toggleMA.containsPress || arrowMA.containsPress)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10);
             if (toggleMA.containsMouse || arrowMA.containsMouse)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06);
@@ -63,6 +72,7 @@ ColumnLayout {
 
         MouseArea {
             id: toggleMA
+            enabled: tile.toggleAvailable
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
@@ -89,6 +99,13 @@ ColumnLayout {
             width: parent.width * 0.30
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("%1 details").arg(tile.label)
+            Accessible.onPressAction: tile.arrowClicked()
+            Keys.onReturnPressed: tile.arrowClicked()
+            Keys.onEnterPressed: tile.arrowClicked()
+            Keys.onSpacePressed: tile.arrowClicked()
             onClicked: tile.arrowClicked()
         }
 
@@ -98,6 +115,7 @@ ColumnLayout {
             width: Kirigami.Units.iconSizes.smallMedium
             height: Kirigami.Units.iconSizes.smallMedium
             source: tile.iconSource
+            opacity: tile.toggleAvailable ? 1 : 0.55
             color: tile.fg
             isMask: true
         }
@@ -107,7 +125,7 @@ ColumnLayout {
             x: parent.width * 0.70
             width: 1
             height: parent.height * 0.5
-            color: active ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
+            color: active ? Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, 0.28) : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
         }
 
         Kirigami.Icon {

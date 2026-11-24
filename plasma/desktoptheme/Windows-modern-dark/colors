@@ -79,14 +79,14 @@ BackgroundAlternate=76,194,255
 BackgroundNormal=76,194,255
 DecorationFocus=76,194,255
 DecorationHover=63,63,63
-ForegroundActive=255,255,255
-ForegroundInactive=159,159,159
-ForegroundLink=255,255,255
-ForegroundNegative=255,80,80
-ForegroundNeutral=255,170,50
-ForegroundNormal=255,255,255
-ForegroundPositive=80,200,100
-ForegroundVisited=200,200,200
+ForegroundActive=30,30,30
+ForegroundInactive=60,60,60
+ForegroundLink=0,51,102
+ForegroundNegative=118,11,11
+ForegroundNeutral=83,47,0
+ForegroundNormal=30,30,30
+ForegroundPositive=0,70,36
+ForegroundVisited=61,33,88
 
 [Colors:Tooltip]
 BackgroundAlternate=44,44,44

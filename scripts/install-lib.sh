@@ -155,17 +155,15 @@ restart_plasmashell() {
 }
 
 # ── Cursor theme ──────────────────────────────────────────────────
-# Win10OS cursors (yeyushengfan258, GPL-3.0: the author's own drawings in
-# the Windows 10 style). Fetched from upstream at a pinned commit, never
-# bundled; skipped when the theme is already installed anywhere.
-CURSOR_THEME="Win10OS-cursors"
-CURSOR_URL="https://github.com/yeyushengfan258/Win10OS-cursors/archive/79d13bb90eb9346a40a2da5a1f5cb24cb919f256.tar.gz"
-CURSOR_SHA256="c2babe0b2ad4db74052dd724b22f0b5fa5fc6ac0a1181bf686f2c6beffebd393"
+# Native XCursor artwork; modern white/black edge, multi-size through
+# 96px. Preserve the user's chosen size and an existing installation.
+# shellcheck source=scripts/cursor-assets.sh
+source "$SRC_DIR/scripts/cursor-assets.sh"
 
 cursor_theme_installed() {
     local d
-    for d in "$HOME/.local/share/icons" "$HOME/.icons" /usr/share/icons /usr/local/share/icons; do
-        [ -f "$d/$CURSOR_THEME/index.theme" ] && return 0
+    for d in "$ICONS_DIR" "$HOME/.local/share/icons" "$HOME/.icons" /usr/share/icons /usr/local/share/icons; do
+        cursor_assets_valid "$d/$CURSOR_THEME" && return 0
     done
     return 1
 }
@@ -173,18 +171,24 @@ cursor_theme_installed() {
 install_cursor_theme() {
     cursor_theme_installed && return 0
     [ "$UID" -ne 0 ] || return 0
-    step "Cursor theme: fetching $CURSOR_THEME (GPL-3.0)"
-    local tmp dst="$HOME/.local/share/icons/$CURSOR_THEME"
+    local dst="$ICONS_DIR/$CURSOR_THEME"
+    # Do not overwrite an unrelated or incomplete user-owned theme.
+    if [ -e "$dst" ] || [ -L "$dst" ]; then
+        warn "Existing $CURSOR_THEME directory is incomplete; keeping it untouched."
+        return 0
+    fi
+    step "Cursor theme: $CURSOR_THEME (GPL-3.0)"
+    local tmp bundled="$SRC_DIR/bundled-cursors/$CURSOR_THEME"
     tmp="$(mktemp -d)"
-    if curl -sfL -o "$tmp/c.tar.gz" "$CURSOR_URL" \
-       && echo "$CURSOR_SHA256  $tmp/c.tar.gz" | sha256sum -c --status \
-       && tar -xzf "$tmp/c.tar.gz" -C "$tmp" --wildcards '*/dist/*'; then
-        ensure_dir "$dst"
-        cp -a "$tmp"/*/dist/. "$dst/"
-        ensure_dir "$HOME/.local/share/windows-modern/backup"
-        touch "$HOME/.local/share/windows-modern/backup/cursor-theme.ours"
+    if { cursor_assets_valid "$bundled" && cp -a "$bundled" "$tmp/$CURSOR_THEME"; } ||
+        fetch_cursor_assets "$tmp/$CURSOR_THEME"; then
+        ensure_dir "$ICONS_DIR"
+        if mv "$tmp/$CURSOR_THEME" "$dst"; then
+            ensure_dir "$HOME/.local/share/windows-modern/backup"
+            touch "$HOME/.local/share/windows-modern/backup/cursor-bibata.ours"
+        fi
     else
-        warn "Could not fetch the $CURSOR_THEME cursors; the cursor falls back to the system one."
+        warn "Could not install $CURSOR_THEME; Plasma retains its native fallback."
     fi
     rm -rf "$tmp"
 }
@@ -212,6 +216,8 @@ plugin_platform_key() {
 
 # The release tag this checkout is exactly (vX.Y.Z), or empty.
 release_tag() {
+    # An untagged integration bundle must never download an older stable plugin.
+    [ ! -f "$SRC_DIR/INTEGRATION-BUILD" ] || return 0
     if [ -d "$SRC_DIR/.git" ]; then
         git -C "$SRC_DIR" describe --exact-match --tags HEAD 2>/dev/null || true
     elif command -v python3 &>/dev/null; then
@@ -221,36 +227,45 @@ release_tag() {
     fi
 }
 
-# True when this checkout's release has plugins for this system.
-prebuilt_available() {
-    local key tag base
-    key="$(plugin_platform_key)"; [ -n "$key" ] || return 1
+# Matching local integration plugins take precedence over release downloads.
+prebuilt_base() {
+    local tag
     if [ -n "${WM_PREBUILT_URL:-}" ]; then
-        base="$WM_PREBUILT_URL"
+        printf '%s\n' "$WM_PREBUILT_URL"
+    elif [ -f "$SRC_DIR/INTEGRATION-BUILD" ] && [ -f "$SRC_DIR/prebuilt/SHA256SUMS" ]; then
+        printf '%s\n' "$SRC_DIR/prebuilt"
     else
         tag="$(release_tag)"; [ -n "$tag" ] || return 1
-        base="$PREBUILT_REPO_URL/$tag"
+        printf '%s\n' "$PREBUILT_REPO_URL/$tag"
     fi
-    curl -sfIL -o /dev/null "$base/windows-modern-plugins-${key}.tar.gz" 2>/dev/null \
-        || [ -f "${base#file://}/windows-modern-plugins-${key}.tar.gz" ]
+}
+
+# True when this checkout's exact build has plugins for this system.
+prebuilt_available() {
+    local key base
+    key="$(plugin_platform_key)"; [ -n "$key" ] || return 1
+    base="$(prebuilt_base)" || return 1
+    if [ -d "${base#file://}" ]; then
+        [ -f "${base#file://}/windows-modern-plugins-${key}.tar.gz" ]
+    else
+        curl -sfIL -o /dev/null "$base/windows-modern-plugins-${key}.tar.gz" 2>/dev/null
+    fi
 }
 
 # fetch_prebuilt_plugin <applet-id> <dest.so>: download this platform's
 # build, check it against the release's SHA256SUMS and extract <applet-id>.so.
 # Returns non-zero (quietly) when there is no usable prebuilt plugin.
 fetch_prebuilt_plugin() {
-    local applet="$1" dest="$2" key tag base file tmp
+    local applet="$1" dest="$2" key base file tmp
     key="$(plugin_platform_key)"; [ -n "$key" ] || return 1
-    if [ -n "${WM_PREBUILT_URL:-}" ]; then
-        base="$WM_PREBUILT_URL"
-    else
-        tag="$(release_tag)"
-        [ -n "$tag" ] || return 1
-        base="$PREBUILT_REPO_URL/$tag"
-    fi
+    base="$(prebuilt_base)" || return 1
     file="windows-modern-plugins-${key}.tar.gz"
     tmp="$(mktemp -d)"
-    if ! curl -sfL -o "$tmp/$file" "$base/$file" || ! curl -sfL -o "$tmp/SHA256SUMS" "$base/SHA256SUMS"; then
+    if [ -d "${base#file://}" ]; then
+        if ! cp "${base#file://}/$file" "${base#file://}/SHA256SUMS" "$tmp/"; then
+            rm -rf "$tmp"; return 1
+        fi
+    elif ! curl -sfL -o "$tmp/$file" "$base/$file" || ! curl -sfL -o "$tmp/SHA256SUMS" "$base/SHA256SUMS"; then
         rm -rf "$tmp"; return 1
     fi
     if ! (cd "$tmp" && grep -F " $file" SHA256SUMS | sha256sum -c --status); then
@@ -340,14 +355,57 @@ apply_kvantum_engine() {
 # they are off, holding the blur setting to restore.
 TRANSPARENCY_OFF_FILE="$HOME/.local/share/windows-modern/transparency-off"
 
-# Kvantum's see-through windows and blur, in every installed Windows Modern
-# Kvantum theme (dark and light): kvantum_transparency true|false.
-# transparent_dolphin_view/pcmanfm_* make the file managers see-through.
+# Long-lived application windows stay opaque in both modes. KWin supplies
+# live blur/noise only to the existing translucent popup surfaces.
 kvantum_transparency() {
     local value="$1" f
     for f in "$KVANTUM_DIR"/Windows-modern/*.kvconfig; do
         [ -f "$f" ] || continue
-        sed -i -E "s/^(translucent_windows|blurring|popup_blurring|blur_translucent|transparent_dolphin_view|transparent_pcmanfm_sidepane|transparent_pcmanfm_view)=.*/\1=${value}/" "$f"
+        sed -i -E \
+            -e 's/^(translucent_windows|transparent_dolphin_view|transparent_pcmanfm_sidepane|transparent_pcmanfm_view)=.*/\1=false/' \
+            -e "s/^(blurring|popup_blurring|blur_translucent)=.*/\1=${value}/" "$f"
+    done
+}
+
+# Reuse the existing frame generator and installed wallpaper package. No
+# extra effect, daemon or system-wide palette changes. Missing Pillow or
+# wallpaper yields the stock solid backgrounds.
+apply_window_materials() {
+    [ "$UID" -ne 0 ] || return 0
+    local args=(--apply-local --aurorae-dir "$AURORAE_DIR"
+                --kvantum-dir "$KVANTUM_DIR/Windows-modern")
+    if [ "$1" = true ]; then
+        if [ "${2:-package}" = current ]; then
+            args+=(--wallpaper-config "${XDG_CONFIG_HOME:-$HOME/.config}/plasma-org.kde.plasma.desktop-appletsrc")
+        elif [ -d "$WALLPAPER_DIR/Windows-modern" ]; then
+            args+=(--wallpaper-package "$WALLPAPER_DIR/Windows-modern")
+        fi
+    fi
+    python3 -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" \
+        || warn "Window material update failed; reinstall themes to restore the stock artwork."
+}
+
+# A panel may explicitly select translucent artwork even when blur is
+# disabled. Use the already shipped solid native frames in the installed
+# normal/translucent selectors, and restore exact source art on enable.
+# Preserve panel layout, opacity preferences and inner widget backgrounds.
+apply_popup_materials() {
+    [ "$UID" -ne 0 ] || return 0
+    local mode variant role source target
+    for mode in dark light; do
+        source="$SRC_DIR/plasma/desktoptheme/Windows-modern-$mode"
+        target="$PLASMA_DIR/Windows-modern-$mode"
+        [ -d "$target" ] || continue
+        for variant in "" translucent/; do
+            for role in dialogs/background.svg widgets/panel-background.svg; do
+                [ -f "$target/$variant$role" ] || continue
+                if [ "$1" = false ]; then
+                    cp "$source/solid/$role" "$target/$variant$role"
+                else
+                    cp "$source/$variant$role" "$target/$variant$role"
+                fi
+            done
+        done
     done
 }
 

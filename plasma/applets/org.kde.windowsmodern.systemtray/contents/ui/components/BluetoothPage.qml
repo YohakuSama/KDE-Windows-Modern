@@ -11,8 +11,10 @@ Lib.DetailPage {
     id: page
 
     title: qsTr("Bluetooth")
+    showSwitch: btManager.adapters.length > 0
     switchChecked: page.btOn
-    emptyText: page.btOn ? qsTr("No devices paired") : qsTr("Bluetooth is off")
+    emptyText: btManager.adapters.length === 0 ? qsTr("No Bluetooth adapter available")
+        : page.btOn ? qsTr("No devices paired") : qsTr("Bluetooth is off")
 
     footer: Lib.MoreSettingsLink {
         text: qsTr("More Bluetooth settings")
@@ -34,7 +36,7 @@ Lib.DetailPage {
 
     listView.header: PlasmaComponents3.Button {
         width: listView.width
-        height: 32
+        height: page.btOn ? Math.max(32, Kirigami.Units.gridUnit * 2) : 0
         text: qsTr("Add new device")
         icon.name: "list-add"
         flat: true
@@ -55,10 +57,10 @@ Lib.DetailPage {
         }
     }
 
-    listView.model: btManager.devices
+    listView.model: page.btOn ? btManager.devices : []
     listView.delegate: Item {
         width: listView.width
-        height: 34
+        height: Math.max(40, Kirigami.Units.gridUnit * 2)
 
         Rectangle {
             anchors.fill: parent
@@ -71,13 +73,22 @@ Lib.DetailPage {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (modelData.connected) {
+                function activateDevice() {
+                    if (!page.btOn) return;
+                    if (modelData.connected)
                         modelData.disconnectFromDevice();
-                    } else {
+                    else
                         modelData.connectToDevice();
-                    }
                 }
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: modelData.name
+                Accessible.description: modelData.connected ? qsTr("Connected") : qsTr("Disconnected")
+                Accessible.onPressAction: activateDevice()
+                Keys.onReturnPressed: activateDevice()
+                Keys.onEnterPressed: activateDevice()
+                Keys.onSpacePressed: activateDevice()
+                onClicked: activateDevice()
             }
 
             RowLayout {
@@ -101,15 +112,15 @@ Lib.DetailPage {
                         Layout.fillWidth: true
                         text: modelData.name
                         color: Kirigami.Theme.textColor
-                        font.pixelSize: 11
+                        font: Kirigami.Theme.defaultFont
                         elide: Text.ElideRight
                     }
 
                     PlasmaComponents3.Label {
                         text: modelData.connected ? qsTr("Connected") : qsTr("Disconnected")
                         color: Kirigami.Theme.textColor
-                        opacity: modelData.connected ? 0.5 : 0.3
-                        font.pixelSize: 9
+                        opacity: 0.8
+                        font: Kirigami.Theme.smallFont
                     }
                 }
             }

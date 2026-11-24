@@ -125,6 +125,7 @@ Item {
                 root.pinnedPage.favoritesList.currentIndex = -1;
                 root.pinnedPage.favoritesList.positionViewAtBeginning();
             }
+            allAppsPage.resetCategory();
             allAppsPage.allAppsList.currentIndex = -1;
             allAppsPage.allAppsList.positionViewAtBeginning();
             // Reset the search filter pills to "All".
@@ -214,6 +215,24 @@ Item {
                 property var favoritesModel: sourceModel ? sourceModel.favoritesModel : null
             }
 
+            // KDE supplies the application categories and their translated names.
+            // Flatten only the nested entries inside each category, not the root.
+            Kicker.AppsModel {
+                id: nativeCategoryModel
+                flat: true
+                sorted: true
+                showTopLevelItems: true
+                showSeparators: false
+                appletInterface: kicker
+            }
+
+            Connections {
+                target: nativeCategoryModel
+                function onModelAboutToBeReset() {
+                    allAppsPage.resetCategory();
+                }
+            }
+
             Kicker.RecentUsageModel {
                 id: recentUsage
                 shownItems: Plasmoid.configuration.showRecentApps && Plasmoid.configuration.showRecentDocs
@@ -271,6 +290,9 @@ Item {
                     id: allAppsPage
                     anchors.fill: parent
                     visible: root.leftColumnState !== 2
+                    flatModel: sortedAppsModel
+                    categoryModel: nativeCategoryModel
+                    categoryMode: Plasmoid.configuration.allAppsViewMode === 2
                     onKeyNavUpFromList: {
                         root.leftColumnState = 0;
                         allAppsPage.allAppsList.positionViewAtBeginning();
@@ -298,7 +320,8 @@ Item {
 
                             PlasmaComponents3.Label {
                                 Layout.fillWidth: true
-                                text: i18n("Recent")
+                                text: i18n("Recommended")
+                                Accessible.description: i18n("Recently used applications and documents")
                                 font.weight: Font.DemiBold
                                 visible: Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs
                             }
@@ -326,11 +349,39 @@ Item {
                                 visible: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) && recentGrid.count === 0
                             }
 
-                            PlasmaComponents3.Label {
+                            RowLayout {
                                 Layout.fillWidth: true
                                 Layout.bottomMargin: Kirigami.Units.smallSpacing
-                                text: i18n("All")
-                                font.weight: Font.DemiBold
+                                spacing: Kirigami.Units.smallSpacing
+
+                                AToolButton {
+                                    visible: allAppsPage.inCategory
+                                    text: i18n("Back")
+                                    iconName: "go-previous"
+                                    mirror: true
+                                    flat: true
+                                    onClicked: allAppsPage.backToCategories()
+                                }
+
+                                PlasmaComponents3.Label {
+                                    Layout.fillWidth: true
+                                    text: allAppsPage.inCategory ? allAppsPage.categoryTitle : i18n("All")
+                                    textFormat: Text.PlainText
+                                    elide: Text.ElideRight
+                                    font.weight: Font.DemiBold
+                                }
+
+                                AToolButton {
+                                    text: allAppsPage.categoryMode ? i18n("List") : i18n("Categories")
+                                    iconName: allAppsPage.categoryMode ? "view-list-icons" : "view-grid"
+                                    flat: true
+                                    onClicked: {
+                                        root.leftColumnState = 1;
+                                        allAppsPage.resetCategory();
+                                        Plasmoid.configuration.allAppsViewMode = allAppsPage.categoryMode ? 0 : 2;
+                                        Qt.callLater(allAppsPage.focusFirstApp);
+                                    }
+                                }
                             }
                         }
                     }
@@ -636,6 +687,8 @@ Item {
                         powerMenu.close();
                     } else if (root.searching) {
                         root.reset();
+                    } else if (root.leftColumnState === 1 && allAppsPage.inCategory) {
+                        allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {
                         root.leftColumnState = 0;
                         startSearch.focusSearch();
@@ -679,7 +732,7 @@ Item {
 
         function setModels() {
             sortedAppsModel.sourceModel = findRowModel(rootModel, "KICKER_ALL_MODEL");
-            allAppsPage.allAppsList.model = sortedAppsModel;
+            allAppsPage.resetCategory();
         }
 
         // Locate a rootModel child row by its description.  The Kicker

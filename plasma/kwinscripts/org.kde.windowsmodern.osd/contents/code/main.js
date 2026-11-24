@@ -8,22 +8,45 @@
     SPDX-License-Identifier: GPL-3.0-or-later
 */
 
-const GAP = 12; // px between the OSD and the taskbar (or screen edge)
+const GAP = 12; // logical pixels between the OSD and the taskbar (or screen edge)
+
+function position(area, g) {
+    if (![area.x, area.y, area.width, area.height, g.width, g.height].every(Number.isFinite)
+        || area.width <= 0 || area.height <= 0 || g.width <= 0 || g.height <= 0) {
+        return null;
+    }
+    // Preserve the native OSD size. On a work area smaller than the OSD,
+    // anchor at the visible top/left rather than moving its start off-screen.
+    return {
+        x: Math.round(area.x + Math.max(0, (area.width - g.width) / 2)),
+        y: Math.round(area.y + Math.max(0, area.height - g.height - GAP))
+    };
+}
 
 function place(win) {
-    const area = workspace.clientArea(KWin.MaximizeArea, win);
     const g = win.frameGeometry;
-    const x = Math.round(area.x + (area.width - g.width) / 2);
-    const y = Math.round(area.y + area.height - g.height - GAP);
-    if (g.x !== x || g.y !== y) {
-        win.frameGeometry = { x: x, y: y, width: g.width, height: g.height };
+    const target = position(workspace.clientArea(KWin.MaximizeArea, win), g);
+    if (target && (g.x !== target.x || g.y !== target.y)) {
+        win.frameGeometry = { x: target.x, y: target.y, width: g.width, height: g.height };
     }
 }
 
 function watch(win) {
     if (!win || !win.onScreenDisplay) return;
-    place(win);
-    win.frameGeometryChanged.connect(() => place(win));
+    let placing = false;
+    const reposition = () => {
+        // Geometry assignment can synchronously emit frameGeometryChanged.
+        // Prevent recursion if the compositor constrains the requested move.
+        if (placing) return;
+        placing = true;
+        try {
+            place(win);
+        } finally {
+            placing = false;
+        }
+    };
+    win.frameGeometryChanged.connect(reposition);
+    reposition();
 }
 
 workspace.windowAdded.connect(watch);

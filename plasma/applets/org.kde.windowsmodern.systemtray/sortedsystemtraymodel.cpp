@@ -35,8 +35,6 @@ bool SortedSystemTrayModel::lessThanConfigurationPage(const QModelIndex &left, c
 bool SortedSystemTrayModel::lessThanSystemTray(const QModelIndex &left, const QModelIndex &right) const {
     QVariant lid = left.data(static_cast<int>(BaseModel::BaseRole::ItemId));
     QVariant rid = right.data(static_cast<int>(BaseModel::BaseRole::ItemId));
-    if (rid.toString() == QLatin1String("org.kde.plasma.notifications")) return false;
-    if (lid.toString() == QLatin1String("org.kde.plasma.notifications")) return true;
     const int ltail = WindowsTray::tail().indexOf(lid.toString());
     const int rtail = WindowsTray::tail().indexOf(rid.toString());
     if (ltail != -1 || rtail != -1) return ltail < rtail; // -1 (not in the tail) sorts first

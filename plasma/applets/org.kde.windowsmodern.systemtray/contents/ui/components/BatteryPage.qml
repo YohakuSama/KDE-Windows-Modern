@@ -7,6 +7,7 @@ import org.kde.plasma.private.batterymonitor
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils
 import "../lib" as Lib
+import "../js/funcs.js" as Funcs
 
 Lib.Page {
     id: page
@@ -21,15 +22,25 @@ Lib.Page {
         id: powerProfiles
     }
 
-    readonly property string percent: batteryControl.percent + "%"
-    readonly property bool isCharging: batteryControl.state === BatteryControlModel.Charging || batteryControl.state === BatteryControlModel.FullyCharged
+    readonly property bool hasBattery: batteryControl.hasCumulative
+    readonly property bool percentKnown: hasBattery && Number.isFinite(batteryControl.percent) && batteryControl.percent >= 0
+    readonly property string percent: percentKnown ? qsTr("%1%").arg(batteryControl.percent) : qsTr("Unknown")
+    readonly property bool isCharging: batteryControl.state === BatteryControlModel.Charging
     readonly property bool isFull: batteryControl.state === BatteryControlModel.FullyCharged
+    readonly property string batteryStatus: !hasBattery ? qsTr("No battery")
+        : isFull ? qsTr("Fully charged")
+        : isCharging ? qsTr("Charging")
+        : batteryControl.state === BatteryControlModel.Discharging ? qsTr("Discharging")
+        : batteryControl.pluggedIn ? qsTr("Plugged in") : qsTr("Battery status unknown")
 
     property string timeLeft: ""
     property string health: "--"
-    property bool blockSleep: false
+    readonly property bool blockSleep: inhibitionControl.isManuallyInhibited
 
-    readonly property string blockerName: "WindowsModernQuickSettings"
+    InhibitionControl {
+        id: inhibitionControl
+        isSilent: true
+    }
 
     Plasma5Support.DataSource {
         id: healthSrc
@@ -47,37 +58,9 @@ Lib.Page {
         }
     }
 
-    Plasma5Support.DataSource {
-        id: inhibitorCheck
-        engine: "executable"
-        connectedSources: []
-        interval: 3000
-        onNewData: function (sourceName, data) {
-            var output = data["stdout"] || "";
-            page.blockSleep = output.includes(page.blockerName);
-        }
-        function check(cmd) {
-            if (connectedSources.indexOf(cmd) === -1)
-                connectSource(cmd);
-        }
-    }
-
-    Plasma5Support.DataSource {
-        id: execOnce
-        engine: "executable"
-        connectedSources: []
-        onNewData: function (sourceName, data) {
-            disconnectSource(sourceName);
-        }
-        function run(cmd) {
-            connectSource(cmd);
-        }
-    }
-
     Component.onCompleted: {
         page._updateTime();
         healthSrc.get("upower -i $(upower -e | grep battery | head -n 1) | awk '/capacity/ {print $2}' | tr -d ' %' | tr ',' '.'");
-        inhibitorCheck.check("systemd-inhibit --list --no-legend");
     }
 
     function _updateTime() {
@@ -92,13 +75,10 @@ Lib.Page {
     }
 
     function _toggleBlockSleep() {
-        if (page.blockSleep) {
-            execOnce.run("pkill -f " + page.blockerName);
-            page.blockSleep = false;
-        } else {
-            execOnce.run("systemd-inhibit --what=idle:sleep --who=\"" + page.blockerName + "\" --why=\"Inhibited by user\" sleep infinity &");
-            page.blockSleep = true;
-        }
+        if (inhibitionControl.isManuallyInhibited)
+            inhibitionControl.uninhibit();
+        else
+            inhibitionControl.inhibit(qsTr("Automatic sleep and screen locking disabled by user"));
     }
 
     ColumnLayout {
@@ -106,7 +86,7 @@ Lib.Page {
         spacing: 8
 
         PlasmaComponents3.Label {
-            text: page.isFull ? qsTr("Fully charged") : page.isCharging ? qsTr("Charging") : qsTr("Discharging")
+            text: page.batteryStatus
             font.pixelSize: 10
             opacity: 0.6
             color: Kirigami.Theme.textColor
@@ -119,7 +99,8 @@ Lib.Page {
             Kirigami.Icon {
                 Layout.preferredWidth: 20
                 Layout.preferredHeight: 20
-                source: page.isCharging ? "battery-100-charging" : "battery-100"
+                source: page.hasBattery ? Funcs.batteryIconName(batteryControl.percent, batteryControl.pluggedIn)
+                    : "battery-missing-symbolic"
             }
 
             PlasmaComponents3.Label {
@@ -143,6 +124,7 @@ Lib.Page {
         }
 
         PlasmaComponents3.ProgressBar {
+            visible: page.percentKnown
             Layout.fillWidth: true
             from: 0
             to: 100
@@ -219,7 +201,7 @@ Lib.Page {
                     case "balanced":
                         return "emblem-ok";
                     case "power-saver":
-                        return "battery-low";
+                        return "battery-profile-powersave-symbolic";
                     default:
                         return "";
                     }
@@ -259,7 +241,7 @@ Lib.Page {
 
             PlasmaComponents3.Switch {
                 checked: page.blockSleep
-                onToggled: page._toggleBlockSleep()
+                onClicked: page._toggleBlockSleep()
             }
         }
     }

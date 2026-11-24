@@ -25,7 +25,7 @@ For example, use `python3 scripts/import-windows-assets.py ~/Downloads/Windows-r
 The importer reads only the selected members, never executes Windows binaries
 and never installs or sets the Segoe text fonts. Output lives in
 $XDG_DATA_HOME/windows-modern/native-assets (default ~/.local/share).
-Future icons/themes/all installations pick it up automatically.
+Future icons/themes/all installations pick it up automatically. The local manifest now remembers the source path after a successful import. Keep the archive at a stable private location and use `python3 scripts/import-windows-assets.py --reuse` after a mapping update, without downloading or supplying the archive again.
 The local manifest records the SHA-256 and byte size of each selected original
 resource, as well as the generated output hashes. Duplicate selected paths,
 non-regular archive entries, out-of-root selected paths and resources larger
@@ -75,7 +75,13 @@ The public fallback package is retained for installs without owner resources.
 A standalone `./install.sh sessionlock` selects the installed native lock
 package if present, without changing the desktop wallpaper. With no installed
 native lock package it keeps the current lock wallpaper. Native system greeter
-installation is separate and still requires review.
+installation is separate. After installing the greeter, use System Settings >
+Login Screen > Appearance (systemsettings kcm_plasmalogin) as the desktop
+user. Select the imported JPEG in the installed Windows-modern-lock package
+under contents/images and Apply. PLM's authorized helper copies the selected
+image into its own wallpaper directory. The installer does not overwrite
+existing login wallpaper settings; select your previous wallpaper there to
+revert this optional choice.
 
 The freedesktop sound theme maps matching events only. Do not force-enable
 notification sounds when the owner has disabled them. To restore the previous
@@ -105,3 +111,33 @@ paths resolve to 193 distinct generated icon contents in the offline
 source-generation check. The battery saver tile now requests the actual
 power-saving icon instead of the low-battery icon. Leave unconfirmed off/blocked
 states on the existing fallback artwork. This is not live Plasma verification.
+
+The status mapping follow-up adds 22 paths (429 total) for account switching, limited Wi-Fi levels, wired limited/VPN, and unknown charging. Two existing no-route aliases use Ethernet warning. All nine changed glyphs rendered nonempty from the supplied font. Rerun the existing importer before reinstalling icons. See Microsoft's [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font).
+
+The device compatibility follow-up adds five paths (434 total): headphones, headset, webcam, phone and mouse. All five source glyphs were checked in the owner's local font. Plasma 6.7/6.8 native applet icon-name consumers should use the existing icon theme rather than duplicating those glyphs into legacy sheets unnecessarily. Reimport resources before installing icons; keep the unconfirmed legacy roles unchanged.
+
+## Shell and everyday application action coverage
+
+The map now targets 549 paths (115 more than the previous 434), including both standard and symbolic forms of toolbar, file-manager, media, notification, password visibility, power, window and text editing actions. The old USB glyph used for the eject alias has been replaced with the dedicated Eject glyph. Existing color icons and genuine app logos remain distinct. Newly mapped source codepoints are documented by Microsoft for Segoe Fluent Icons; they are optional for older archives, and absent ones are listed in the local manifest rather than aborting the complete import. The original archive is not mounted in this session, so these additions have not been rendered from its bytes. Reimport locally to apply the new map. No Windows resources are committed.
+
+## Native OSD coverage
+
+The map targets 583 icon paths, including the actual KDE 6.8 OSD
+names for screen brightness, keyboard brightness and layout, touchpad on,
+Wi-Fi on, Bluetooth on, mobile connectivity, virtual keyboard activation
+and dismissal, and power profiles. Plasma's existing OSD calls these
+names through Kirigami. No replacement service is installed. Keep existing
+artwork for distinct disabled, blocked and high-volume warning states
+where a matching glyph has not been established. New codepoints remain
+optional until checked with the supplied font.
+
+## Persistent resource reference
+
+The public GPL repository tracks the semantic mapping and documentation, not original Microsoft binaries, fonts, generated artwork or a private download credential. Keep the original archive in a private location you control and have permission to use. To refresh the mappings and produce a shareable metadata inventory, run:
+
+```bash
+python3 scripts/import-windows-assets.py --reuse --catalog docs/native-assets-catalog.json
+./install.sh icons
+```
+
+On first use provide the original path instead of `--reuse`. The catalog contains only font version, codepoint numbers, MUN group IDs, selected source hashes/sizes, mapping hash and coverage; no artwork, local source path or executable data. It may be reviewed and committed as metadata after verifying it contains no private information. Use a new catalog filename or deliberately remove the old catalog before regenerating; the importer never overwrites an existing catalog. The archive does not need to be committed or attached to each conversation for future mapping review once the catalog is available. Actual rendering and source-file verification still use the private local archive.

@@ -136,3 +136,7 @@ For a subsequent release (e.g. `1.1.0`):
 3. `./scripts/release.sh 1.1.0`
 4. Update the KDE Store: `scripts/store/store-publish.py update all`
    (section 3a).
+
+## Integration packages for desktop testing
+
+On PRs and main, CI runs the existing checks/builds and then invokes `scripts/package.sh --integration` using the matching checked plugin artifacts. It uploads the single full ZIP and SHA256SUMS to the Actions run. The package carries `INTEGRATION-BUILD` with its exact commit, pinned PLM source, local ABI-specific plugin archives, and one verified upstream XCursor theme. The installer never pulls older stable binaries for these untagged bundles. This workflow does not publish a tag or change release metadata.

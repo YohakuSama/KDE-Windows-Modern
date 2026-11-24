@@ -17,6 +17,7 @@ Item {
         "org.kde.plasma.bluetooth":         "bluetooth",
         "org.kde.plasma.volume":             "volume",
         "org.kde.plasma.battery":            "battery",
+        "org.kde.plasma.brightness":         "brightness",
         "org.kde.plasma.clipboard":          "clipboard",
         "org.kde.plasma.devicenotifier":     "devicenotifier",
         "org.kde.plasma.mediacontroller":    "mediacontroller"

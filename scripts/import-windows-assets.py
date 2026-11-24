@@ -126,11 +126,31 @@ def build(stage, data, mapping):
         outputs[relative] = {'source': source, 'sha256': digest}
     libs = {name: pe_resources(data['SystemResources/'+name]) for name in mapping['libraries'].values()}
     font = TTFont(io.BytesIO(data['Fonts/SegoeIcons.ttf']))
+    # A metadata-only inventory is useful for reviewing mappings without
+    # moving or redistributing Microsoft font outlines, bitmaps or binaries.
+    cmap = font.getBestCmap()
+    catalog = {
+        'font_version': font['name'].getDebugName(5),
+        'glyph_codepoints': [f'{code:04x}' for code in sorted(cmap)],
+        'mun_icon_groups': {
+            name: sorted({key[1] for key in resources if len(key) > 1 and key[0] == 14})
+            for name, resources in sorted(libs.items())
+        },
+    }
+    # The owner archive is version 1.56; allow newly mapped symbols to
+    # fall back to bundled art if an older archive lacks them. Required
+    # previously verified resources still fail atomically if missing.
+    optional_glyphs = set(mapping.get('optional_glyphs', []))
+    missing_optional_glyphs = []
     for source, names in mapping['icons'].items():
         if ':' in source:
             lib, group = source.split(':')
             content = icon_svg(libs[mapping['libraries'][lib]], int(group))
         else:
+            if source in optional_glyphs and int(source, 16) not in cmap:
+                missing_optional_glyphs.append(source)
+                print('Optional glyph unavailable: ' + source)
+                continue
             content = glyph_svg(font, source)
         for name in names.split():
             write('icons/'+name+'.svg',content,source)
@@ -160,26 +180,56 @@ def build(stage, data, mapping):
             write(sounddir+'/stereo/'+event+'.wav',data[name],name)
     report = {'font': 'Segoe Fluent Icons', 'sources': source_manifest(data), 'outputs': outputs, 'icon_names': sum(x.startswith('icons/') for x in outputs),
               'wallpaper_images':len(seen_wallpapers),'sound_events':sum(x.endswith('.wav') for x in outputs)}
+    report['missing_optional_glyphs'] = missing_optional_glyphs
+    report['resource_catalog'] = catalog
     (stage/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('source', type=Path, help='Windows resource ZIP/TAR archive or extracted Windows directory')
+    parser.add_argument('source', type=Path, nargs='?', help='Windows resource ZIP/TAR archive or extracted Windows directory')
+    parser.add_argument('--reuse', action='store_true', help='Reimport from the source remembered by a successful local import')
+    parser.add_argument('--catalog', type=Path, help='Export only resource IDs, source hashes and mapping coverage as JSON')
     parser.add_argument('--output', type=Path, default=Path(os.environ.get('XDG_DATA_HOME',Path.home()/'.local/share'))/'windows-modern/native-assets')
     args = parser.parse_args()
-    mapping = json.loads(Path(__file__).with_name('native-assets-map.json').read_text())
+    dest = args.output.expanduser().absolute()
+    if (args.source is None) == (not args.reuse):
+        parser.error('Provide a source path or --reuse, not both.')
+    if args.reuse:
+        try:
+            previous_manifest = json.loads((dest/'manifest.json').read_text(encoding='utf-8'))
+            source = Path(previous_manifest['source_path'])
+        except (OSError, ValueError, KeyError, TypeError):
+            parser.error('No remembered source. Import once with its local path.')
+    else:
+        source = args.source
+    source = source.expanduser().resolve()
+    if not source.exists():
+        parser.error(f'Resource source does not exist: {source}; import with its current path.')
+    if source == dest or dest in source.parents or (source.is_dir() and source in dest.parents):
+        parser.error('Keep the original resource source and the generated output in separate locations.')
+    if args.catalog:
+        catalog_path = args.catalog.expanduser().resolve()
+        if catalog_path == source or catalog_path == dest or dest in catalog_path.parents or catalog_path.exists():
+            parser.error('Catalog must be a new file outside the source archive and generated output.')
+        if source.is_dir() and source in catalog_path.parents:
+            parser.error('Do not write the catalog into the original resource directory.')
+    mapping_file = Path(__file__).with_name('native-assets-map.json')
+    mapping_bytes = mapping_file.read_bytes()
+    mapping = json.loads(mapping_bytes)
     wanted = {'SystemResources/'+name for name in mapping['libraries'].values()} | {'Fonts/SegoeIcons.ttf'}
     wanted.update(name for _,_,source,dark in mapping['wallpapers'] for name in (source,dark) if name)
     wanted.update('Media/'+name+'.wav' for name in mapping['sounds'])
-    data = read_assets(args.source,wanted)
-    dest = args.output.expanduser().absolute()
+    data = read_assets(source,wanted)
     dest.parent.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.native-assets-',dir=dest.parent) as temp:
         stage=Path(temp)/'new'
         stage.mkdir()
         report=build(stage,data,mapping)
+        report['source_path'] = str(source)  # Local manifest only; never in the catalog.
+        report['mapping_sha256'] = hashlib.sha256(mapping_bytes).hexdigest()
+        (stage/'manifest.json').write_text(json.dumps(report,indent=2)+'\n', encoding='utf-8')
         previous=Path(temp)/'previous'
         if dest.exists():
             if not (dest/'manifest.json').is_file():
@@ -192,6 +242,21 @@ def main():
                 previous.rename(dest)
             raise
     print(f"Imported {report['icon_names']} icon names, {report['wallpaper_images']} unique wallpapers, {report['sound_events']} sound events into {dest}")
+    if args.catalog:
+        # Do not export the local path, actual icon contents, font outlines,
+        # wallpapers or audio. Exclusive creation prevents overwriting files.
+        catalog = {
+            **report['resource_catalog'],
+            'sources': report['sources'],
+            'mapping_sha256': report['mapping_sha256'],
+            'mapped_icon_paths': report['icon_names'],
+            'missing_optional_glyphs': report['missing_optional_glyphs'],
+        }
+        catalog_path.parent.mkdir(parents=True, exist_ok=True)
+        with catalog_path.open('x', encoding='utf-8') as file:
+            json.dump(catalog, file, indent=2)
+            file.write('\n')
+        print(f'Exported metadata-only resource catalog to {catalog_path}')
     print('Run ./install.sh icons and ./install.sh themes, then ./install.sh sounds.')
 
 

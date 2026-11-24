@@ -15,8 +15,6 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
 import "components" as Components
-import "lib" as Lib
-
 QQC2.StackView {
     id: mainStack
     focus: true
@@ -27,10 +25,10 @@ QQC2.StackView {
     readonly property Item activeApplet: systemTrayState.activeApplet
 
     // Whether the active applet is one we render a themed flyout for.
-    readonly property bool themedActive: flyoutRouter.isThemedApplet(activeApplet)
+    readonly property bool themedActive: !!(themedPages && themedPages[flyoutRouter.flyoutNameForApplet(activeApplet)])
 
     // Height reserved at the bottom for the themed page's footer link.
-    readonly property int themedFooterHeight: (themedActive && footerLoader.item) ? footerLoader.item.implicitHeight : 0
+    readonly property int themedFooterHeight: (themedActive && footerLoader.item) ? themedFooter.implicitHeight : 0
 
     /* Heading — only relevant for unknown (non-themed) applets */
     property bool appletHasHeading: false
@@ -46,7 +44,7 @@ QQC2.StackView {
     }
 
     function _themedContentHeight(): int {
-        return mainStack.height - mainStack.themedFooterHeight
+        return Math.max(0, mainStack.height - mainStack.themedFooterHeight)
     }
 
     onActiveAppletChanged: {
@@ -65,7 +63,7 @@ QQC2.StackView {
                     "opacity": 1,
                     "KeyNavigation.up": mainStack.KeyNavigation.up,
                     "KeyNavigation.backtab": mainStack.KeyNavigation.backtab
-                }, QQC2.StackView.ReplaceTransition)
+                }, QQC2.StackView.Immediate)
             }
             return
         }
@@ -90,12 +88,8 @@ QQC2.StackView {
                 }
             }
 
-            let unFlipped = systemTrayState.oldVisualIndex < systemTrayState.newVisualIndex
-            if (Application.layoutDirection !== Qt.LeftToRight) {
-                unFlipped = !unFlipped
-            }
-
-            const isTransitionEnabled = systemTrayState.expanded
+            // Native fallback and custom pages are exclusive, never drawn
+            // together during a StackView replacement.
             ;(mainStack.empty ? mainStack.push : mainStack.replace)(activeApplet.fullRepresentationItem, {
                 "width": Qt.binding(() => mainStack.width),
                 "height": Qt.binding(() => mainStack.height),
@@ -104,9 +98,9 @@ QQC2.StackView {
                 "opacity": 1,
                 "KeyNavigation.up": mainStack.KeyNavigation.up,
                 "KeyNavigation.backtab": mainStack.KeyNavigation.backtab
-            }, isTransitionEnabled ? (unFlipped ? QQC2.StackView.PushTransition : QQC2.StackView.PopTransition) : QQC2.StackView.Immediate)
+            }, QQC2.StackView.Immediate)
         } else {
-            mainStack.clear()
+            mainStack.clear(QQC2.StackView.Immediate)
         }
     }
 
@@ -120,7 +114,8 @@ QQC2.StackView {
         target: Plasmoid
         function onAppletRemoved(applet) {
             if (applet === systemTrayState.activeApplet) {
-                mainStack.clear()
+                systemTrayState.setActiveApplet(null)
+                mainStack.clear(QQC2.StackView.Immediate)
             }
         }
     }
@@ -150,6 +145,7 @@ QQC2.StackView {
         "bluetooth":       bluetoothPageComp,
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
+        "brightness":      brightnessPageComp,
         "clipboard":       clipboardPageComp,
         "devicenotifier":  deviceNotifierPageComp,
         "mediacontroller": mediaControllerPageComp
@@ -176,6 +172,12 @@ QQC2.StackView {
     Component {
         id: batteryPageComp
         Components.BatteryPage {
+            onBack: systemTrayState.setActiveApplet(null)
+        }
+    }
+    Component {
+        id: brightnessPageComp
+        Components.BrightnessPage {
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
