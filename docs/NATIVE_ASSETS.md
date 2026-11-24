@@ -33,7 +33,7 @@ file versions are 10.0.26100.7705 (imageres), 10.0.26100.9974 (shell32) and
 10.0.26100.1 (imagesp1). File versions alone do not prove the Windows OS
 release or build; do not relabel the source by assumption.
 
-Initial import: 256 mapped icon paths, 22 distinct usable stock wallpaper
+Initial import: 358 mapped icon paths, 22 distinct usable stock wallpaper
 images, 20 sound-event filenames. Exact SHA-256 duplicates share disk
 content, and conflicting target paths fail before the previous local
 import is replaced. The icon map is intentionally semantic: original color
@@ -42,8 +42,13 @@ resources by MUN group ID; monochrome vectors by Segoe Fluent codepoint
 SVG files derived locally from the font preserve the em box and semantic
 ColorScheme-Text class. Icon names/contexts remain compatible with KDE.
 Different context/role names and genuine app logos are not indiscriminately
-collapsed. Five KDE Wi-Fi strength steps map to the available Windows levels;
+collapsed. KDE Wi-Fi strength steps map to the available Windows levels;
 unverified locked, blocked and special states keep existing artwork.
+The current KDE network applet appends -symbolic to its live connection name,
+and the native battery widget requests battery-NNN[-charging][-profile-powersave]-symbolic.
+These standard names now resolve directly to the same imported artwork. Numeric
+battery and energy-saving variants remain distinct. File actions and window
+control icon names are also mapped; decoration SVG buttons are separate.
 
 The Bloom package uses Windows/img0.jpg and img19.jpg for light and dark.
 The lock package uses Screen/img100.jpg; other usable full images are offered

@@ -10,8 +10,10 @@ the `Version` field shared by every component's metadata.
 
 - Add a local, repeatable importer for the supplied Windows resource libraries,
   Segoe Fluent Icons glyphs, original wallpapers and selected system sounds.
-- Initial mapping covers 256 icon paths, 22 unique wallpaper images and 20
-  sound events (verified on the reference archive). Preserve source IDs and
+- Initial mapping covers 358 icon paths, 22 unique wallpaper images and 20
+  sound events (verified on the reference archive). Map numeric battery,
+  charging and energy-saver symbolic variants and live network names used
+  by KDE, plus the common window and file action icons. Preserve source IDs and
   hashes; identical content is hard-linked and output collisions are rejected.
 - Install imported icons over the existing windows-modern theme, replace the
   installed wallpaper package with the original Bloom light/dark pair, use
