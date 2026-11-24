@@ -25,7 +25,7 @@ RowLayout {
         Layout.preferredWidth: Kirigami.Units.gridUnit * 2
         Layout.preferredHeight: Kirigami.Units.gridUnit * 2
         Layout.alignment: Qt.AlignVCenter
-        text: qsTr("Back")
+        text: i18n("Back")
         display: PlasmaComponents3.AbstractButton.IconOnly
         icon.name: Application.layoutDirection === Qt.RightToLeft ? "go-next" : "go-previous"
         onClicked: header.back()
