@@ -204,14 +204,16 @@ PlasmaCore.ToolTipArea {
 
             property alias container: abstractItem
             property alias inVisibleLayout: abstractItem.inVisibleLayout
-            readonly property int size: abstractItem.inVisibleLayout ? root.itemSize : Math.max(1, Math.min(
+            readonly property int size: abstractItem.inVisibleLayout
+                ? (abstractItem.groupedQuickSettings ? root.coreItemSize : root.itemSize)
+                : Math.max(1, Math.min(
                 Math.round(24 * Plasmoid.configuration.scale / 100),
                 Math.floor(Math.min(abstractItem.width, abstractItem.height) - 2 * abstractItem.overflowInset)))
 
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            // Native compact representations get an actual square glyph
-            // box rather than the entire panel height. Text-based keyboard
-            // indicators retain the cell width to avoid clipping locale names.
+            // Native core applets need extra room for their own internal
+            // icon padding. Other tray glyphs and overflow keep their sizes.
+            // Text-based keyboard indicators retain the cell width.
             readonly property bool languageIndicator: abstractItem.inVisibleLayout
                 && abstractItem.itemId === "org.kde.plasma.keyboardlayout"
             implicitWidth: languageIndicator && !root.vertical ? abstractItem.width : size
