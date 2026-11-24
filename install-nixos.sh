@@ -227,6 +227,7 @@ PYTHON="$PROFILE/bin/python3"
 export PATH="$PROFILE/bin:$PATH"
 export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
 "$PYTHON" -c 'from gi.repository import Gio, GLib; import PIL, fontTools'
+"$PYTHON" "$ROOT/scripts/check-startmenu-keys.py"
 prefix="$(cat "$PROFILE/wm-qt-plugin-prefix")"
 plugin="$PROFILE/$prefix"
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"

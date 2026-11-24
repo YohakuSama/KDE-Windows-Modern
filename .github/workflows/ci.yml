@@ -21,6 +21,8 @@ jobs:
       # parity, layout drift, metadata, bash -n and shellcheck.
       - name: verify-all.sh
         run: ./verify-all.sh
+      - name: Validate Qt Quick Start menu key handlers
+        run: python3 scripts/check-startmenu-keys.py
       - name: Native resource reader tests
         run: python3 -m unittest discover -s tests/native-assets -v
       - name: Window material tests

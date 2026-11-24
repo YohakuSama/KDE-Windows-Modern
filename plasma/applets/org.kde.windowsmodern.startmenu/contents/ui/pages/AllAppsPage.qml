@@ -133,11 +133,17 @@ ColumnLayout {
 
         Keys.onReturnPressed: allAppsPage.activateCurrent()
         Keys.onEnterPressed: allAppsPage.activateCurrent()
-        Keys.onHomePressed: if (count > 0) { currentIndex = 0; positionViewAtIndex(0, ListView.Beginning); }
-        Keys.onEndPressed: if (count > 0) { currentIndex = count - 1; positionViewAtIndex(currentIndex, ListView.End); }
+        // Qt Quick Keys has no Home/End-specific signals. Use its generic
+        // pressed handler so the entire applet can load on Plasma 6.
         Keys.onPressed: event => {
+            if (count <= 0) return;
+            if (event.key === Qt.Key_Home || event.key === Qt.Key_End) {
+                currentIndex = event.key === Qt.Key_Home ? 0 : count - 1;
+                positionViewAtIndex(currentIndex, event.key === Qt.Key_Home ? ListView.Beginning : ListView.End);
+                event.accepted = true;
+                return;
+            }
             if (event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown) {
-                if (count <= 0) return;
                 const step = Math.max(1, Math.floor(height / (Math.floor(Kirigami.Units.gridUnit * 1.8) + spacing)));
                 currentIndex = Math.max(0, Math.min(count - 1,
                     Math.max(0, currentIndex) + (event.key === Qt.Key_PageUp ? -step : step)));

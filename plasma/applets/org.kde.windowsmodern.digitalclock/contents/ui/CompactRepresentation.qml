@@ -42,7 +42,8 @@ MouseArea {
     // clock got a square cell and a full-year date overflowed it.
     readonly property int leadingInset: Kirigami.Units.smallSpacing
     readonly property int trailingInset: showBell ? 0 : Kirigami.Units.smallSpacing
-    readonly property int bellCellWidth: 32
+    readonly property int bellCellWidth: 28
+    readonly property int bellIconSize: 16
     implicitWidth: panelContent.implicitWidth + leadingInset + trailingInset
     implicitHeight: panelHeight
     Layout.minimumWidth: implicitWidth
@@ -253,15 +254,14 @@ MouseArea {
             text: i18n("Notification center")
             display: PlasmaComponents.AbstractButton.IconOnly
             icon.name: main.plasmoidItem.notificationIcon
-            // A 16px icon request also includes the SVG's transparent
-            // canvas. Give the bell its own 24px box with no button padding.
-            icon.width: 24
-            icon.height: 24
+            // A compact notification glyph, with an independent click target.
+            icon.width: main.bellIconSize
+            icon.height: main.bellIconSize
             padding: 0
             contentItem: Item {
                 Kirigami.Icon {
                     anchors.centerIn: parent
-                    width: Math.min(24, parent.width, parent.height)
+                    width: Math.min(main.bellIconSize, parent.width, parent.height)
                     height: width
                     roundToIconSize: false
                     source: main.plasmoidItem.notificationIcon

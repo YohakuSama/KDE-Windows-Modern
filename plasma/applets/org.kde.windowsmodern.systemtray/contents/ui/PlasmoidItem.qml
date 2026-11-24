@@ -154,6 +154,7 @@ AbstractItem {
             PlasmaNM.ConnectionIcon { id: liveConnection }
             Kirigami.Icon {
                 anchors.fill: parent
+                roundToIconSize: false
                 source: {
                     const icon = liveConnection.connectionIcon;
                     if (!icon) return "network-unavailable-symbolic";

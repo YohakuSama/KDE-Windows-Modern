@@ -7,29 +7,25 @@ function iconSize(thickness, scaleToFit) {
     return Math.min(limit, scaleToFit ? Math.max(16, Math.min(48, Math.round(limit * 2 / 3))) : 16);
 }
 
-// Size the visible core icon box independently from KDE's native render
-// size. The shipped status SVGs contain whitespace: e.g. a 16px-wide
-// battery drawing in a 24px viewBox. A 28px display box gives that
-// drawing about 19px of ink, rather than the 11px from a 16px box.
+// System-tray glyphs are smaller than taskbar app icons. Default 18px
+// logical box, independent of the Start logo. Scale only if explicitly
+// selected in the tray settings; cap the size even on very tall panels.
 function coreIconSize(thickness, scaleToFit) {
     const limit = Math.max(1, Math.floor(thickness));
-    return Math.min(limit, Math.max(28, iconSize(thickness, scaleToFit)));
+    return Math.min(limit, scaleToFit ? Math.max(18, Math.min(32, Math.round(limit * 3 / 8))) : 18);
 }
 
-// Render at a standard KDE icon size at or above the display size, then
-// scale the native compact representation as a whole. Otherwise a 28px
-// item may be rounded down to 22px again by Kirigami.Icon. Keep the real
-// native applet, including its changing icon, badge, and tooltip state.
+// Keep the native applet at the same 32px render geometry as before;
+// shrink the visual host, not the underlying applet's state or hit area.
 function coreRenderSize(displaySize) {
     if (displaySize <= 16) return 16;
-    if (displaySize <= 22) return 22;
     if (displaySize <= 32) return 32;
     return 48;
 }
 
 function coreCellLength(size, coreSize, spacing) {
-    // Default cells are 30px with a 28px display box; stay compact.
-    return Math.max(cellLength(size, true, spacing), coreSize + 2);
+    // Default core cells are 24px, not the previous 30px.
+    return Math.max(cellLength(size, true, spacing), coreSize + 4);
 }
 
 function isQuickSettings(id) {
