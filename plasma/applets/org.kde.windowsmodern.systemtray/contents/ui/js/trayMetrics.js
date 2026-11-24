@@ -7,16 +7,28 @@ function iconSize(thickness, scaleToFit) {
     return Math.min(limit, scaleToFit ? Math.max(16, Math.min(48, Math.round(limit * 2 / 3))) : 16);
 }
 
-// The native network/volume/battery applets render inside their own
-// padded compact representations. A 16px *container* makes the actual
-// glyph smaller than the 16px Windows target. Give them a 22px square
-// (Qt's next standard icon size), independently of the 24px click cell.
+// Size the visible core icon box independently from KDE's native render
+// size. The shipped status SVGs contain whitespace: e.g. a 16px-wide
+// battery drawing in a 24px viewBox. A 28px display box gives that
+// drawing about 19px of ink, rather than the 11px from a 16px box.
 function coreIconSize(thickness, scaleToFit) {
     const limit = Math.max(1, Math.floor(thickness));
-    return Math.min(limit, Math.max(22, iconSize(thickness, scaleToFit)));
+    return Math.min(limit, Math.max(28, iconSize(thickness, scaleToFit)));
+}
+
+// Render at a standard KDE icon size at or above the display size, then
+// scale the native compact representation as a whole. Otherwise a 28px
+// item may be rounded down to 22px again by Kirigami.Icon. Keep the real
+// native applet, including its changing icon, badge, and tooltip state.
+function coreRenderSize(displaySize) {
+    if (displaySize <= 16) return 16;
+    if (displaySize <= 22) return 22;
+    if (displaySize <= 32) return 32;
+    return 48;
 }
 
 function coreCellLength(size, coreSize, spacing) {
+    // Default cells are 30px with a 28px display box; stay compact.
     return Math.max(cellLength(size, true, spacing), coreSize + 2);
 }
 
