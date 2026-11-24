@@ -33,6 +33,23 @@ Item {
             verticalStepSize: 120
         }
     }
+    Flickable {
+        id: gridWithoutRail
+        x: 0
+        width: 300
+        height: 220
+        contentWidth: width
+        contentHeight: 440
+        visible: false
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        Kirigami.WheelHandler {
+            target: gridWithoutRail
+            filterMouseEvents: true
+            blockTargetWheel: true
+            verticalStepSize: 80
+        }
+    }
     TestCase {
         name: "NativeQuickSettingsScroll"
         when: windowShown
@@ -50,6 +67,21 @@ Item {
             tryCompare(bar, "indicatorVisible", true);
             mouseMove(view, 80, 100);
             tryCompare(bar, "indicatorVisible", false);
+        }
+        function test_gridWithoutRailStillScrolls() {
+            view.visible = false;
+            gridWithoutRail.visible = true;
+            gridWithoutRail.contentY = 0;
+            mouseWheel(gridWithoutRail, 100, 100, 0, -120);
+            tryVerify(() => gridWithoutRail.contentY >= 70, 1500);
+            mouseWheel(gridWithoutRail, 100, 100, 0, -360);
+            tryCompare(gridWithoutRail, "contentY", 220, 1500);
+            gridWithoutRail.visible = false;
+            view.visible = true;
+        }
+        function cleanup() {
+            gridWithoutRail.visible = false;
+            view.visible = true;
         }
         function test_wheelMovesImmediatelyToNextRow() {
             mouseWheel(view, 100, 100, 0, -120);

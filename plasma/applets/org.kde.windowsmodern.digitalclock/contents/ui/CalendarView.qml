@@ -44,7 +44,7 @@ ColumnLayout {
 
     readonly property int firstDayOfWeek: Plasmoid.configuration.firstDayOfWeek > -1
         ? Plasmoid.configuration.firstDayOfWeek
-        : calendarLocale.firstDayOfWeek
+        : Qt.locale().firstDayOfWeek
 
     readonly property bool showWeekNumbers: Plasmoid.configuration.showWeekNumbers
 
