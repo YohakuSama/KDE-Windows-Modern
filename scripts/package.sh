@@ -6,6 +6,7 @@
 #    ./scripts/package.sh            # build all components
 #    ./scripts/package.sh <name>...   # build specific components
 #    ./scripts/package.sh --list      # list available components
+#    ./scripts/package.sh --integration # full owner test bundle with local CI plugins
 #
 #  Output: dist/WindowsModern-<component>-<version>.zip  (KDE Store items)
 #          dist/KDE-Windows-Modern-<version>.zip         (full GitHub bundle)
@@ -119,7 +120,13 @@ mkdir -p "$DIST_DIR"
 : > "$MANIFEST"
 
 FULL_BUILD=1
-if [[ $# -gt 0 ]]; then
+INTEGRATION=0
+if [[ "${1:-}" == "--integration" ]]; then
+    [[ $# -eq 1 ]] || { err "--integration cannot be combined with component names"; exit 1; }
+    INTEGRATION=1
+    FULL_BUILD=0
+    info "Building one integration bundle..."
+elif [[ $# -gt 0 ]]; then
     FULL_BUILD=0
     info "Building selected components..."
     for want in "$@"; do
@@ -149,6 +156,9 @@ info "Building full GitHub release bundle..."
 FULL_VER="$(get_version "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.json")"
 [[ -z "$FULL_VER" ]] && FULL_VER="1.0.0"
 FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}.zip"
+if [[ "$INTEGRATION" -eq 1 ]]; then
+    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-integration-$(git -C "$SRC_DIR" rev-parse --short HEAD).zip"
+fi
 if [[ -n "$(git -C "$SRC_DIR" status --porcelain --untracked-files=no)" ]]; then
     warn "Working tree has uncommitted changes — the full bundle is built from HEAD and will not include them."
 fi
@@ -173,10 +183,35 @@ with zipfile.ZipFile(sys.argv[1], "a", zipfile.ZIP_DEFLATED) as out, zipfile.Zip
 PYEOF
     rm -f "$PLM_ZIP"
 else
+    if [[ "$INTEGRATION" -eq 1 ]]; then
+        err "Integration bundle requires the pinned login manager source."
+        exit 1
+    fi
     warn "Login manager source not available at the pinned commit — the bundle cannot build the greeter."
 fi
+
+if [[ "$INTEGRATION" -eq 1 ]]; then
+    # Include the exact CI-built plugins and verified cursor artwork, not
+    # an older release's binaries or the owner's private Windows archive.
+    # shellcheck source=scripts/cursor-assets.sh
+    source "$SCRIPT_DIR/cursor-assets.sh"
+    plugins="${WM_BUNDLE_PLUGINS_DIR:?Set WM_BUNDLE_PLUGINS_DIR to the CI plugin directory}"
+    [[ -f "$plugins/SHA256SUMS" ]] || { err "Missing CI plugin checksums"; exit 1; }
+    (cd "$plugins" && sha256sum -c SHA256SUMS)
+    stage="$(mktemp -d)"
+    trap 'rm -rf "$stage"' EXIT
+    prefix="KDE-Windows-Modern-${FULL_VER}"
+    mkdir -p "$stage/$prefix/prebuilt" "$stage/$prefix/bundled-cursors"
+    cp -a "$plugins/." "$stage/$prefix/prebuilt/"
+    fetch_cursor_assets "$stage/$prefix/bundled-cursors/$CURSOR_THEME" || { err "Could not verify and stage cursor artwork"; exit 1; }
+    git -C "$SRC_DIR" rev-parse HEAD > "$stage/$prefix/INTEGRATION-BUILD"
+    # Preserve upstream cursor symlinks and zip the extra payload only.
+    (cd "$stage" && zip -qry "$FULL_OUT" "$prefix/prebuilt" "$prefix/bundled-cursors" "$prefix/INTEGRATION-BUILD")
+    rm -rf "$stage"
+    trap - EXIT
+fi
 echo "$FULL_OUT" >> "$MANIFEST"
-step "built KDE-Windows-Modern-${FULL_VER}.zip  (full bundle from $(git -C "$SRC_DIR" rev-parse --short HEAD))"
+step "built $(basename "$FULL_OUT")  (full bundle from $(git -C "$SRC_DIR" rev-parse --short HEAD))"
 
 # ── Prune stale artifacts ──────────────────────────────────────────
 # Anything in dist/ a full run did not build (renamed/removed components,

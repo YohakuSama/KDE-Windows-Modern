@@ -707,3 +707,7 @@ GNU GPL v3 — see [`LICENSE`](LICENSE).
 See [the import guide](docs/NATIVE_ASSETS.md). Import your own Windows archive once; normal theme/icon reinstalls reuse the generated assets. The repository contains only the importer and mappings, not Microsoft resource binaries or font files.
 
 For previously imported private Windows resources, refresh the latest icon map with `python3 scripts/import-windows-assets.py --reuse`; see [Native Windows resources](docs/NATIVE_ASSETS.md) for the metadata-only inventory export.
+
+## Desktop integration test package
+
+The CI `Package integration bundle` job publishes `Windows-Modern-integration-<commit>` on pull requests and main. Download it from the successful Actions run, verify the inner ZIP against `SHA256SUMS`, extract it, and run `./install.sh`. It includes the exact commit, pinned login-manager source, matching Fedora 44/45 plugins, and the verified Bibata Modern Ice XCursor artwork. The installer uses the bundled plugin only for its exact distro/Plasma/Qt/CPU key; otherwise it builds locally. No stable tag is issued for an owner test build. Cursor size remains controlled by KDE System Settings. See [cursor credits and behavior](docs/CURSORS.md).

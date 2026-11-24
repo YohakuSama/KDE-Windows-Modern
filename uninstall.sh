@@ -109,6 +109,10 @@ uninstall_component() {
                 rm_path "$HOME/.local/share/icons/Win10OS-cursors"
                 rm -f "$HOME/.local/share/windows-modern/backup/cursor-theme.ours"
             fi
+            if [ -f "$HOME/.local/share/windows-modern/backup/cursor-bibata.ours" ]; then
+                rm_path "$ICONS_DIR/Bibata-Modern-Ice"
+                rm -f "$HOME/.local/share/windows-modern/backup/cursor-bibata.ours"
+            fi
             # Aurorae packages are lowercase in the current repo
             rm_path "$AURORAE_DIR/windows-modern"*-aurorae
             rm_path "$AURORAE_DIR/Windows-modern"*-aurorae
