@@ -310,8 +310,21 @@ ColumnLayout {
     Item {
         id: zoomHost
         Layout.fillWidth: true
-        Layout.preferredHeight: monthView.implicitHeight
+        // Do not derive the host height from the hidden Month layout:
+        // zooming to Year/Decade or opening a hidden popup can collapse it.
+        readonly property real weekColumnWidth: calendarView.showWeekNumbers
+            ? Kirigami.Units.gridUnit * 1.5 : 0
+        readonly property real dayCellSize: Math.max(28,
+            (width - weekColumnWidth - 6 * calendarGrid.spacing) / 7)
+        Layout.preferredHeight: Math.ceil(dayCellSize * 6 + 5 * calendarGrid.spacing
+            + weekdayMetrics.height + calendarView.spacing)
+        Layout.minimumHeight: Layout.preferredHeight
         clip: true
+
+        FontMetrics {
+            id: weekdayMetrics
+            font: Kirigami.Theme.smallFont
+        }
 
         ZoomLevel {
             anchors.fill: parent
