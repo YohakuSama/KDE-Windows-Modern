@@ -309,8 +309,7 @@ Item {
                             anchors.fill: parent
                             source: {
                                 var faceUrl = kuser.faceIconUrl.toString()
-                                if (faceUrl !== "") return faceUrl
-                                return "file:///usr/share/icons/breeze/apps/48/kuser.svg"
+                                return faceUrl
                             }
                             cache: false
                             fillMode: Image.PreserveAspectCrop
@@ -323,6 +322,12 @@ Item {
                                     radius: avatarArea.width / 2
                                 }
                             }
+                        }
+
+                        Kirigami.Icon {
+                            anchors.fill: parent
+                            source: "avatar-default"
+                            visible: userAvatar.status !== Image.Ready
                         }
 
                         Rectangle {

@@ -6,6 +6,12 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Icons
+
+- Fill 11 missing application/arrow icon names with existing canonical SVGs in
+  the single Windows Modern theme; remove the Start avatar's hard-coded Breeze
+  file path in favor of the active icon theme.
+
 ### Tray and taskbar
 
 - Move the overflow chevron before the tray icons; separate the compact

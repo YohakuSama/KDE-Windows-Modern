@@ -16,6 +16,32 @@ Follow the current KDE system UI font and Qt language fallback; never change fon
 
 Keep theme frames in the Plasma style; share geometry, colors, typography roles and icons where components have the same visual semantics. Keep Start, clock, tray and window behavior modular. Use existing model/activation/keyboard/accessibility paths. Keep both color variants synchronized. Avoid duplicate generated files without a generator or parity check.
 
+## Single icon library
+
+`icons/windows-modern/` is the single installed Freedesktop icon theme. Do not
+install multiple Windows-look icon packs or add per-widget hard-coded asset
+paths. Keep a canonical SVG per visual role and use compatible aliases for
+Desktop Entry names and state names. Identical alias content may share the
+same Git blob. Preserve distinct color vs. symbolic roles, genuine application
+logos, signal levels, muted/charging states and theme-aware recoloring.
+Plasma FrameSVG icon sheets remain where its SVG APIs require them; use the
+same icon design there rather than creating a separate user-visible theme.
+Retain Breeze/hicolor as a compatibility fallback for unknown applications,
+not as the intended source of the Windows shell's own glyphs.
+
+Reference projects: [ELEVEN](https://github.com/innerpulsenet/ELEVEN) for
+preserving panel/font settings and leveraging native KWin/Plasma geometry,
+[Fluent KDE](https://github.com/vinceliuice/Fluent-kde) for theme integration,
+and [Fluent System Icons](https://github.com/microsoft/fluentui-system-icons)
+for consistent symbolic drawing. Review before importing; do not stack themes
+or copy redundant renderers.
+
+For original Windows reference assets, record the image build, file and
+resource ID, then map by function/state, not by numeric extraction order.
+Do not publish proprietary Windows resources; optional local imports can
+remain outside Git. Windows 11 Experimental Build 29712.1000 is the initial
+reference candidate, not a confirmed 27H2 retail release.
+
 ## Acceptance matrix (pending unless verified on a live desktop)
 
 | Surface | Compare |
@@ -30,4 +56,4 @@ Keep theme frames in the Plasma style; share geometry, colors, typography roles 
 | Icons | Freedesktop name and alias resolution, symbolic/color states, DPI, dark/light |
 | Installer | Upgrade without layout reset, reversible changes, system fonts unchanged |
 
-Test at 100%, 125%, 150%, 200%; light/dark, zh-CN and en-US, different wallpaper and system fonts, transparency on/off, at least two monitor arrangements. Run repository health checks, Qt tests, C++ builds and live screenshot/e2e checks. Unverified work stays draft; don't label it a release or pixel-identical.
+Test at 100%, 125%, 150%, 200%; light/dark, zh-CN and en-US, different wallpaper and system fonts, transparency on/off, at least two monitor arrangements. Run repository health checks, Qt tests, C++ builds and live screenshot/e2e checks. The owner may choose to merge an integration build to main for desktop testing before runtime validation. Label it as unverified, keep the changes reversible, and do not label it a stable release or pixel-identical.
