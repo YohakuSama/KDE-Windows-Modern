@@ -23,12 +23,9 @@ QtObject {
     readonly property color textDisabled:     isDark ? "#5A5A5A" : "#A0A0A0"
     // The accent follows System Settings → Colors (Windows Modern's schemes
     // use Windows' #4CC2FF / #0067C0); text on it is black or white,
-    // whichever reads better, as Windows does (black on light blue in dark).
+    // as defined by the native selection palette (dark text on light blue in dark).
     readonly property color accent:           Kirigami.Theme.highlightColor
-    readonly property color accentText: {
-        const c = accent;
-        return (c.r * 0.299 + c.g * 0.587 + c.b * 0.114) > 0.55 ? "#000000" : "#FFFFFF";
-    }
+    readonly property color accentText: Kirigami.Theme.highlightedTextColor
     readonly property color hover:            isDark ? "#3F3F3F" : "#E9E9E9"
     readonly property color pressed:          isDark ? "#4A4A4A" : "#DADADA"
 }

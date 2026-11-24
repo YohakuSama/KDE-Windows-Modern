@@ -131,3 +131,7 @@ KWin, Qt/Kvantum and icon-theme interfaces for the remaining surfaces.
 ## Wallpaper-following material refresh
 
 The existing transparency command now supports a one-shot current-image refresh using KDE's saved image wallpaper configuration. Prefer an unambiguous primary-screen image, otherwise a unique saved local image; ambiguous or unsupported sources return to neutral. No new shader, background service or polling. The material remains an opaque, global Mica-style approximation rather than DWM. Added targeted tests for wallpaper selection and file sampling to the existing material suite. Aurorae V2 cannot set a theme-defined bottom client radius; preserve the current native-compatible decoration rather than require another effect or a new engine.
+
+## Small native appearance consistency fixes
+
+Dark selection colors now use dark readable text on the Windows blue highlight in both KDE color palettes and the Kvantum global selection palette. Calendar accent text follows the native selection foreground. Notification cards use the same 8 px radius as shell popup frames. Taskbar close-button transitions follow the KDE animation duration; Start actions are guarded against a missing menu instance. These changes do not add components or modify KDE backends.

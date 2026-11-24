@@ -154,7 +154,7 @@ ColumnLayout {
             width: list.width - Kirigami.Units.smallSpacing
             implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
             height: implicitHeight
-            radius: 4
+            radius: 8
             color: palette.surface
             border.width: 1
             border.color: palette.surfaceBorder

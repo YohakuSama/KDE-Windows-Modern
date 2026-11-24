@@ -316,7 +316,7 @@ Item {
                             : closeButton.hovered
                                 ? "#C42B1C"
                                 : "transparent"
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
                     }
 
                     Kirigami.Icon {
