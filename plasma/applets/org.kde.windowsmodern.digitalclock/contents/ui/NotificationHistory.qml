@@ -19,7 +19,8 @@ ColumnLayout {
     required property date currentTime
     required property bool notificationsAvailable
     required property bool effectiveDnd
-    spacing: Kirigami.Units.smallSpacing * 2
+    spacing: 8
+    readonly property int minimumSectionHeight: Math.ceil(historyHeader.implicitHeight + spacing + 32)
 
     Win11Palette { id: palette }
 
@@ -64,6 +65,7 @@ ColumnLayout {
     }
 
     RowLayout {
+        id: historyHeader
         Layout.fillWidth: true
         spacing: Kirigami.Units.smallSpacing
 
@@ -98,7 +100,9 @@ ColumnLayout {
 
     PlasmaComponents.Label {
         Layout.fillWidth: true
-        Layout.preferredHeight: Kirigami.Units.gridUnit * 3
+        Layout.fillHeight: true
+        Layout.minimumHeight: 0
+        Layout.preferredHeight: 32
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         text: history.notificationsAvailable ? i18n("No notifications") : i18n("Notification service not available")
@@ -108,19 +112,21 @@ ColumnLayout {
 
     ListView {
         id: list
+        objectName: "wmNotificationList"
         Layout.fillWidth: true
-        Layout.preferredHeight: Math.min(Kirigami.Units.gridUnit * 12,
-            Math.max(Kirigami.Units.gridUnit * 4, contentHeight))
+        Layout.fillHeight: true
+        Layout.minimumHeight: 0
+        Layout.preferredHeight: Math.max(32, contentHeight)
         visible: count > 0
         model: notificationModel
         spacing: Kirigami.Units.smallSpacing * 2
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: FluentScrollBar {}
+        QQC2.ScrollBar.vertical: FluentScrollBar { objectName: "wmNotificationScrollBar" }
         Kirigami.WheelHandler {
             target: list
             filterMouseEvents: true
-            blockTargetWheel: false
+            blockTargetWheel: true
             keyNavigationEnabled: false
             verticalStepSize: 120
         }

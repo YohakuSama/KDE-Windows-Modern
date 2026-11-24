@@ -64,6 +64,26 @@ Item {
             }
             return null;
         }
+        function test_calendarFitsWithoutOuterScroll() {
+            const content = findChild(popup, "wmClockContent");
+            const calendar = findChild(popup, "wmCalendarSection");
+            const bar = findChild(popup, "wmNotificationScrollBar");
+            const grid = findChild(popup, "wmCalendarDayGrid");
+            verify(content !== null && calendar !== null && bar !== null && grid !== null);
+            for (const h of [600, 720, 900]) {
+                clock.popupScreenGeometry = Qt.rect(0, 0, 1280, h);
+                tryVerify(() => {
+                    const pos = calendar.mapToItem(popup, 0, 0);
+                    const gridPos = grid.mapToItem(popup, 0, 0);
+                    return calendar.height > 150 && pos.y >= 0
+                        && pos.y + calendar.height <= popup.height - 15
+                        && grid.height >= 6 * grid.cellHeight + 5 * grid.spacing - 1
+                        && gridPos.y + grid.height <= popup.height - 15;
+                }, 2000);
+                verify(!bar.visible || !bar.indicatorVisible);
+            }
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+        }
         function test_collapseCalendarDoesNotCollapseWindow() {
             popup.calendarExpanded = false;
             verify(popup.implicitHeight >= 220);

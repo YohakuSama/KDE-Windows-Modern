@@ -55,158 +55,169 @@ FocusScope {
         event.accepted = true;
     }
 
-    Flickable {
-        id: viewport
+    // The calendar is fixed in the popup, not nested inside an outer
+    // scroll view. Only notification cards scroll when they exceed their
+    // allocated viewport. The calendar rows adapt to the available height.
+    ColumnLayout {
+        id: mainColumn
+        objectName: "wmClockContent"
         anchors.fill: parent
-        contentWidth: width
-        contentHeight: mainColumn.height + 2 * expandedRoot.margin
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-        QQC2.ScrollBar.vertical: FluentScrollBar {}
-        Kirigami.WheelHandler {
-            target: viewport
-            filterMouseEvents: true
-            keyNavigationEnabled: false
-            verticalStepSize: 120
+        anchors.margins: expandedRoot.margin
+        spacing: 8
+
+        NotificationHistory {
+            id: history
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: minimumSectionHeight
+            Layout.preferredHeight: minimumSectionHeight
+            currentTime: expandedRoot.clockApplet.currentTime
+            notificationsAvailable: expandedRoot.clockApplet.notificationsAvailable
+            effectiveDnd: expandedRoot.clockApplet.notificationsInhibited
+            notificationModel: expandedRoot.clockApplet.notificationModel
+            settings: expandedRoot.clockApplet.notificationSettings
         }
 
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 1
+            color: palette.surfaceBorder
+        }
+
+
+        // ── Header: large time (with superscript AM/PM) and full date ──
         ColumnLayout {
-            id: mainColumn
-            x: expandedRoot.margin
-            y: expandedRoot.margin
-            width: Math.max(1, (viewport.width > 0 ? viewport.width : expandedRoot.implicitWidth)
-                - 2 * expandedRoot.margin)
-            height: implicitHeight
-            spacing: Kirigami.Units.largeSpacing
+            id: headerColumn
+            Layout.fillWidth: true
+            Layout.fillHeight: false
+            spacing: Kirigami.Units.smallSpacing / 2
 
-            NotificationHistory {
-                Layout.fillWidth: true
-                currentTime: expandedRoot.clockApplet.currentTime
-                notificationsAvailable: expandedRoot.clockApplet.notificationsAvailable
-                effectiveDnd: expandedRoot.clockApplet.notificationsInhibited
-                notificationModel: expandedRoot.clockApplet.notificationModel
-                settings: expandedRoot.clockApplet.notificationSettings
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 1
-                color: palette.surfaceBorder
-            }
-
-
-            // ── Header: large time (with superscript AM/PM) and full date ──
-            ColumnLayout {
-                id: headerColumn
-                Layout.fillWidth: true
+            RowLayout {
+                id: timeRow
+                visible: Plasmoid.configuration.showTimeInNotificationCenter
+                Layout.alignment: Qt.AlignHCenter
                 spacing: Kirigami.Units.smallSpacing / 2
 
-                RowLayout {
-                    id: timeRow
-                    visible: Plasmoid.configuration.showTimeInNotificationCenter
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: Kirigami.Units.smallSpacing / 2
-
-                    PlasmaComponents.Label {
-                        id: timeHeader
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        textFormat: Text.PlainText
-                        text: {
-                            const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
-                            // Render the AM/PM suffix separately so it can be smaller.
-                            if (fmt.toLowerCase().includes("ap")) {
-                                return Qt.locale().toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
-                            }
-                            return Qt.locale().toString(expandedRoot.clockApplet.currentTime, fmt);
+                PlasmaComponents.Label {
+                    id: timeHeader
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    textFormat: Text.PlainText
+                    text: {
+                        const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
+                        // Render the AM/PM suffix separately so it can be smaller.
+                        if (fmt.toLowerCase().includes("ap")) {
+                            return Qt.locale().toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
                         }
-                        color: palette.text
-                        font {
-                            family: Kirigami.Theme.defaultFont.family
-                            weight: Font.DemiBold
-                            pixelSize: 40
-                            features: { "tnum": 1 }
-                        }
+                        return Qt.locale().toString(expandedRoot.clockApplet.currentTime, fmt);
                     }
-
-                    PlasmaComponents.Label {
-                        id: amPmLabel
-                        visible: expandedRoot.clockApplet.timeFormatWithSeconds.toLowerCase().includes("ap")
-                        horizontalAlignment: Text.AlignLeft
-                        verticalAlignment: Text.AlignTop
-                        textFormat: Text.PlainText
-                        text: Qt.locale().toString(expandedRoot.clockApplet.currentTime, "AP")
-                        color: palette.text
-                        font {
-                            family: Kirigami.Theme.defaultFont.family
-                            weight: Font.DemiBold
-                            pixelSize: Math.round(timeHeader.font.pixelSize * 0.45)
-                        }
-                        Layout.alignment: Qt.AlignTop
-                        Layout.topMargin: timeHeader.font.pixelSize * 0.12
+                    color: palette.text
+                    font {
+                        family: Kirigami.Theme.defaultFont.family
+                        weight: Font.DemiBold
+                        pixelSize: 40
+                        features: { "tnum": 1 }
                     }
                 }
 
-                RowLayout {
+                PlasmaComponents.Label {
+                    id: amPmLabel
+                    visible: expandedRoot.clockApplet.timeFormatWithSeconds.toLowerCase().includes("ap")
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignTop
+                    textFormat: Text.PlainText
+                    text: Qt.locale().toString(expandedRoot.clockApplet.currentTime, "AP")
+                    color: palette.text
+                    font {
+                        family: Kirigami.Theme.defaultFont.family
+                        weight: Font.DemiBold
+                        pixelSize: Math.round(timeHeader.font.pixelSize * 0.45)
+                    }
+                    Layout.alignment: Qt.AlignTop
+                    Layout.topMargin: timeHeader.font.pixelSize * 0.12
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                PlasmaComponents.Label {
+                    id: dateHeader
                     Layout.fillWidth: true
-                    PlasmaComponents.Label {
-                        id: dateHeader
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignLeft
-                        verticalAlignment: Text.AlignVCenter
-                        textFormat: Text.PlainText
-                        elide: Text.ElideRight
-                        // Windows 11 shows the locale's long date without the year.
-                        text: Qt.locale().toString(expandedRoot.clockApplet.currentTime,
-                                                   DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)))
-                        color: palette.textSecondary
-                        font {
-                            family: Kirigami.Theme.defaultFont.family
-                            pixelSize: 14
-                        }
-                    }
-
-                    PlasmaComponents.ToolButton {
-                        text: expandedRoot.calendarExpanded ? i18n("Collapse calendar") : i18n("Expand calendar")
-                        icon.name: expandedRoot.calendarExpanded ? "go-up-symbolic" : "go-down-symbolic"
-                        display: PlasmaComponents.AbstractButton.IconOnly
-                        onClicked: expandedRoot.calendarExpanded = !expandedRoot.calendarExpanded
-                        PlasmaComponents.ToolTip { text: parent.text }
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                    textFormat: Text.PlainText
+                    elide: Text.ElideRight
+                    // Windows 11 shows the locale's long date without the year.
+                    text: Qt.locale().toString(expandedRoot.clockApplet.currentTime,
+                                               DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)))
+                    color: palette.textSecondary
+                    font {
+                        family: Kirigami.Theme.defaultFont.family
+                        pixelSize: 14
                     }
                 }
-            }
 
-            // ── Calendar grid ──
-            CalendarView {
-                id: calendarView
-                applet: expandedRoot.clockApplet
-                Layout.fillWidth: true
-                visible: expandedRoot.calendarExpanded
-                focus: visible
+                PlasmaComponents.ToolButton {
+                    text: expandedRoot.calendarExpanded ? i18n("Collapse calendar") : i18n("Expand calendar")
+                    icon.name: expandedRoot.calendarExpanded ? "go-up-symbolic" : "go-down-symbolic"
+                    display: PlasmaComponents.AbstractButton.IconOnly
+                    onClicked: expandedRoot.calendarExpanded = !expandedRoot.calendarExpanded
+                    PlasmaComponents.ToolTip { text: parent.text }
+                }
             }
+        }
 
-            // ── Optional timezone list ──
-            TimeZoneView {
-                id: timeZoneView
-                applet: expandedRoot.clockApplet
-                Layout.fillWidth: true
-                Layout.preferredHeight: visible ? Kirigami.Units.gridUnit * 8 : 0
-                visible: expandedRoot.calendarExpanded && (Plasmoid.configuration.selectedTimeZones.length > 1 || Plasmoid.configuration.showLocalTimezone)
-            }
+        // ── Calendar grid ──
+        CalendarView {
+            id: calendarView
+            objectName: "wmCalendarSection"
+            applet: expandedRoot.clockApplet
+            Layout.fillWidth: true
+            Layout.fillHeight: false
+            visible: expandedRoot.calendarExpanded
+            focus: visible
+            // Reserve the real header, notification minimum and optional
+            // sections. No hardcoded scrolling viewport or clipped last row.
+            readonly property real extraHeight:
+                (timeZoneView.visible ? timeZoneView.Layout.preferredHeight : 0)
+                + (agenda.visible ? agenda.implicitHeight + 1 : 0)
+            readonly property int gaps: 3 + (timeZoneView.visible ? 1 : 0) + (agenda.visible ? 2 : 0)
+            dayHeightLimit: Math.max(12, Math.min(40, Math.floor(
+                (mainColumn.height - history.minimumSectionHeight - headerColumn.implicitHeight
+                 - extraHeight - 1 - gaps * mainColumn.spacing - chromeHeight) / 6)))
+        }
 
-            Rectangle {
-                Layout.fillWidth: true
-                visible: expandedRoot.calendarExpanded
-                implicitHeight: 1
-                color: palette.surfaceBorder
-            }
+        // ── Optional timezone list ──
+        TimeZoneView {
+            id: timeZoneView
+            applet: expandedRoot.clockApplet
+            Layout.fillWidth: true
+            Layout.preferredHeight: visible ? Math.min(84, implicitHeight) : 0
+            Layout.minimumHeight: 0
+            Layout.maximumHeight: Layout.preferredHeight
+            visible: expandedRoot.calendarExpanded && (Plasmoid.configuration.selectedTimeZones.length > 1 || Plasmoid.configuration.showLocalTimezone)
+        }
 
-            DayAgenda {
-                Layout.fillWidth: true
-                visible: expandedRoot.calendarExpanded
-                date: calendarView.selectedDate
-                events: calendarView.selectedDayEvents
-            }
+        Rectangle {
+            Layout.fillWidth: true
+            visible: agenda.visible
+            implicitHeight: 1
+            color: palette.surfaceBorder
+        }
+
+        DayAgenda {
+            id: agenda
+            Layout.fillWidth: true
+            visible: expandedRoot.calendarExpanded && calendarView.selectedDayEvents.length > 0
+            date: calendarView.selectedDate
+            events: calendarView.selectedDayEvents
+            // Preserve up to four events when room permits, prioritizing
+            // the calendar's six rows on shorter displays.
+            maximumEvents: Math.max(1, Math.min(4, Math.floor(
+                (mainColumn.height - history.minimumSectionHeight - headerColumn.implicitHeight
+                 - calendarView.chromeHeight - 6 * 24 - 5 * mainColumn.spacing
+                 - (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + mainColumn.spacing : 0)
+                 - 32) / 36)))
         }
     }
 }

@@ -387,7 +387,7 @@ ColumnLayout {
                 id: tileScrollBar
                 parent: scrollTrack
                 anchors.fill: parent
-                policy: QQC2.ScrollBar.AlwaysOn
+                policy: QQC2.ScrollBar.AsNeeded
             }
 
         }

@@ -33,3 +33,17 @@ class SystemIconRolesTests(unittest.TestCase):
         self.assertIn('status/system-logout', MAPPING['icons']['f3b1'].split())
         self.assertNotIn('actions/system-suspend-hibernate',
                          [path for names in MAPPING['icons'].values() for path in names.split()])
+
+    def test_panel_optical_families(self):
+        groups = MAPPING['panel_glyph_groups']
+        glyphs = [code for group in groups.values() for code in group]
+        self.assertEqual(len(glyphs), len(set(glyphs)))
+        self.assertTrue(set(glyphs).issubset(MAPPING['icons']))
+        self.assertNotIn('eb1a', groups['battery'])
+        self.assertEqual(groups['batteryUnknownCharging'], ['eb1a'])
+        for level in ('e83f', 'ea93', 'e850', 'e85a'):
+            self.assertIn(level, groups['battery'])
+        self.assertEqual(groups['volume'], ['e992', 'e993', 'e994'])
+        self.assertEqual(groups['volumeHigh'], ['e995'])
+        self.assertEqual(groups['volumeMuted'], ['e74f'])
+        self.assertEqual(groups['bluetooth'], ['e702'])
