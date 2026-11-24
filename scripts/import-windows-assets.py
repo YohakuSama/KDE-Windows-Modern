@@ -15,6 +15,7 @@ import wave
 from PIL import Image
 from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
+from fontTools.pens.boundsPen import BoundsPen
 
 from native_assets_input import read_assets, source_manifest
 from native_assets_index import IndexedResources
@@ -108,7 +109,42 @@ def icon_svg(resources, group):
     raise ValueError(f'No decodable icon in group {group}')
 
 
-def glyph_svg(font, code):
+def panel_glyph_transforms(font, groups):
+    """One isotropic transform per status family, using real outline bounds."""
+    glyphs = font.getGlyphSet()
+    cmap = font.getBestCmap()
+    em = font['head'].unitsPerEm
+    ascent = font['hhea'].ascent
+    result = {}
+    for codes in groups.values():
+        boxes = []
+        for code in codes:
+            name = cmap.get(int(code, 16))
+            if name is None:
+                continue
+            pen = BoundsPen(glyphs)
+            glyphs[name].draw(pen)
+            if pen.bounds is None:
+                continue
+            left, bottom, right, top = pen.bounds
+            offset = (em - font['hmtx'][name][0]) / 2
+            boxes.append((left + offset, ascent - top, right + offset, ascent - bottom))
+        if not boxes:
+            continue
+        x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+        x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+        extent = max(x1 - x0, y1 - y0)
+        if extent <= 0:
+            continue
+        scale = (em * 23 / 24) / extent
+        tx = em / 2 - scale * (x0 + x1) / 2
+        ty = em / 2 - scale * (y0 + y1) / 2
+        for code in codes:
+            result[code] = f'translate({tx:.8f} {ty:.8f}) scale({scale:.8f}) '
+    return result
+
+
+def glyph_svg(font, code, panel_transform=''):
     glyphs = font.getGlyphSet()
     name = font.getBestCmap()[int(code,16)]
     pen = SVGPathPen(glyphs)
@@ -123,7 +159,7 @@ def glyph_svg(font, code):
     # signal levels and chevrons. KDE recolors the semantic text class.
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 {em} {em}">'
             '<defs><style id="current-color-scheme" type="text/css">.ColorScheme-Text {color:#232629;}</style></defs>'
-            f'<path class="ColorScheme-Text" fill="currentColor" transform="translate({(em-advance)/2} {ascent}) scale(1 -1)" d="{path}"/></svg>\n').encode()
+            f'<path class="ColorScheme-Text" fill="currentColor" transform="{panel_transform}translate({(em-advance)/2} {ascent}) scale(1 -1)" d="{path}"/></svg>\n').encode()
 
 
 def build(stage, data, mapping, indexed=None):
@@ -159,6 +195,7 @@ def build(stage, data, mapping, indexed=None):
     # The owner archive is version 1.56; allow newly mapped symbols to
     # fall back to bundled art if an older archive lacks them. Required
     # previously verified resources still fail atomically if missing.
+    panel_transforms = panel_glyph_transforms(font, mapping.get('panel_glyph_groups', {}))
     optional_glyphs = set(mapping.get('optional_glyphs', []))
     missing_optional_glyphs = []
     for source, names in mapping['icons'].items():
@@ -173,7 +210,10 @@ def build(stage, data, mapping, indexed=None):
                 continue
             content = glyph_svg(font, source)
         for name in names.split():
-            write('icons/'+name+'.svg',content,source)
+            rendered = content
+            if source in panel_transforms and name.startswith('status/') and name.endswith('-symbolic'):
+                rendered = glyph_svg(font, source, panel_transforms[source])
+            write('icons/'+name+'.svg',rendered,source)
     font.close()
     seen_wallpapers = set()
     for package, label, source, dark in mapping['wallpapers']:

@@ -17,3 +17,9 @@ Upstream references:
 - https://invent.kde.org/plasma/plasma-desktop/-/blob/master/applets/kickoff/KickoffListView.qml
 - https://invent.kde.org/frameworks/kirigami/-/blob/master/src/wheelhandler.cpp
 - https://github.com/Eisteed/menu-11-next/blob/master/contents/ui/MenuRepresentation.qml
+
+Revision after owner comparison screenshots:
+- Task icons use a 24 logical-pixel canvas and 87.5% maximum painted extent (31.5 physical pixels at 150%). Normalize real task icons by alpha bounds, preserving aspect ratio and the Start optical inset.
+- Native symbolic status families use the union of actual font outline bounds and one isotropic transform per family. A 16 logical-pixel box has a maximum painted extent of 23 physical pixels at 150%. Signal levels do not resize independently. Battery remains wider than tall, as in the original artwork. Locate installed Windows Modern glyphs directly, falling back to the icon name when absent.
+- The Windows clock default is a 12 logical-pixel font, H:mm and yyyy/M/d. Existing mode 1 becomes the theme default; regional format remains available separately. Explicit 12/24-hour and custom date settings are retained.
+- Start footer uses 56 logical-pixel height, 28px side insets, 24px avatar and 20px power glyph. The neutral SVG fallback is project artwork, not a recovered Windows account bitmap.

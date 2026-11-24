@@ -28,6 +28,10 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QJsonArray>
+#include <QIcon>
+#include <QImage>
+#include <QPixmap>
+#include "panelicon.h"
 #include <QMenu>
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -71,6 +75,24 @@ Backend::Backend(QObject *parent)
 
     s_instances.append(this);
     setupShortcuts();
+}
+
+QVariant Backend::normalizedPanelIcon(const QVariant &decoration) const
+{
+    QIcon original;
+    if (decoration.canConvert<QIcon>()) {
+        original = decoration.value<QIcon>();
+    } else if (decoration.metaType().id() == QMetaType::QString) {
+        original = QIcon::fromTheme(decoration.toString());
+    }
+    if (original.isNull()) {
+        return decoration;
+    }
+    const QImage canvas = WindowsModern::normalizedPanelImage(original.pixmap(QSize(96, 96), 1.0).toImage());
+    if (canvas.isNull()) {
+        return decoration;
+    }
+    return QVariant::fromValue(QIcon(QPixmap::fromImage(canvas)));
 }
 
 Backend::~Backend()
