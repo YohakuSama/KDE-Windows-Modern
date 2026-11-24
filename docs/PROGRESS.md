@@ -176,3 +176,7 @@ native settings entry for hidden Wi-Fi networks. New Start instances default
 to the compact account/power footer; existing optional folder shortcuts are
 preserved, and their labels reflect actual destinations. No MS artwork is
 added to main. Source changes need CI and desktop reference validation.
+
+## System action review
+
+Use real SessionManagement hibernate capability, add its row only when available, preserve existing power actions, and use explicit symbolic icon names for the power/account menu. Align original mapped status/action aliases; test the source roles and keyboard navigation with and without hibernate. The exact Windows hibernate icon remains unverified; use the existing semantic KDE fallback. Existing mapped source IDs occur in the owner index, but visual review remains separate. No blind artwork replacements or new Windows binary assets. Full NixOS plugin builds and live acceptance remain pending.

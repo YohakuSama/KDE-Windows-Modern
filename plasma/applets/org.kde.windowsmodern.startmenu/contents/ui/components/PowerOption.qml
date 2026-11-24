@@ -24,6 +24,7 @@ Item {
     signal activated
     signal navigationRequested(int direction)
 
+    enabled: optionEnabled
     activeFocusOnTab: optionEnabled
     Accessible.role: Accessible.Button
     Accessible.name: label
@@ -61,6 +62,8 @@ Item {
             Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
             Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
             source: option.iconSource
+            isMask: true
+            color: Kirigami.Theme.textColor
             opacity: option.optionEnabled ? Theme.opacityFull : Theme.disabledIconOpacity
         }
 
