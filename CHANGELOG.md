@@ -25,6 +25,10 @@ the `Version` field shared by every component's metadata.
 
 ### Native Windows resources
 
+- Expand the local icon map to 407 paths, including microphone mute, touchpad,
+  keyboard illumination, night light and menu/lock states. Use the power-saving
+  icon for the Quick Settings battery saver tile instead of a low-battery icon.
+
 - Accept ZIP and TAR archives or extracted resource directories; reject duplicate,
   oversized and unsafe selected members consistently. Record SHA-256 and size
   for each original input in the local manifest. Add synthetic regression tests.

@@ -30,7 +30,9 @@ Overall development estimate: **67.5% (rounded to 68%)** as of this batch. Live 
 ## Resource input follow-up (draft integration)
 
 - Added ZIP/TAR/extracted-directory input validation and original resource SHA-256/size provenance in the local manifest. All 12 synthetic source-reader regression tests passed locally; CI now runs them independently of proprietary assets.
-- The newly mentioned upload was not found in the main tree or Releases. No new reference resources were inspected or imported in this follow-up. Full repository health, C++/QML compilation and live desktop acceptance remain unverified.
+- The owner subsequently attached the actual 273,203,214-byte archive. Verified 467 files and 711 icon groups in three MUN libraries; the font identifies itself as Segoe Fluent Icons 1.56 with 2,036 cmap entries. The exact committed input reader successfully read all 45 selected source files; all selected JPEGs and WAVs passed format checks.
+- Add 18 mapped paths (407 total) for the live microphone, keyboard, touchpad, night light, menu, lock and volume roles. The offline reproduction of the icon-generation functions produced valid SVG for all mapped sources (193 distinct contents); all ten touched glyphs rendered nonempty at 48 px. The map has no duplicate target paths. The battery saver tile uses its actual power-saving role. This check did not execute the entire importer CLI from a checkout.
+- DNS prevented a local clone. Full repository health, C++/QML compilation, CI results and live desktop acceptance remain unverified.
 - The 67.5% development estimate is unchanged: this batch improves reproducibility and input handling, not visual acceptance stages.
 
 Update these categories after each substantive batch using the same rubric. Avoid claiming 1:1 visual parity until actual reference and runtime checks establish it.

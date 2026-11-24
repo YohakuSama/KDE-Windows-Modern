@@ -91,3 +91,14 @@ the existing theme and Breeze/hicolor compatibility fallback. No additional
 icon theme is activated.
 
 The follow-up map covers 389 names, including explicit restart, sign-out, sleep, notification bell/snooze and offline network roles. These added codepoints exist in the supplied Segoe Fluent Icons font. The same names are replaced rather than layered; existing special-state fallback remains where Windows equivalents are not established.
+
+The subsequent real-archive check covered all 45 selected source files with the
+new source reader (matching its committed Git blob), 22 distinct JPEGs and
+18 WAV sources. Added 18 icon aliases for microphone active/muted, touchpad,
+keyboard, keyboard brightness, night-light enabled, lock/unlock, application
+menu and zero-volume states. The supplied font contains each required glyph;
+the ten touched glyphs rasterized to nonempty images offline. The 407 mapped
+paths resolve to 193 distinct generated icon contents in the offline
+source-generation check. The battery saver tile now requests the actual
+power-saving icon instead of the low-battery icon. Leave unconfirmed off/blocked
+states on the existing fallback artwork. This is not live Plasma verification.
