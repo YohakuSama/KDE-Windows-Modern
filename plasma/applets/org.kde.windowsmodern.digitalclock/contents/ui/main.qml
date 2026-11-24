@@ -24,8 +24,9 @@ PlasmoidItem {
 
     Plasmoid.backgroundHints: PlasmaCore.Types.ShadowBackground | PlasmaCore.Types.ConfigurableBackground
 
-    toolTipMainText: i18n("Clock")
-    toolTipSubText: notificationStatusText
+    // Tooltips must not cover the notification/calendar flyout.
+    toolTipMainText: expanded ? "" : i18n("Clock")
+    toolTipSubText: expanded ? "" : notificationStatusText
 
     readonly property string currentTimeZone: currentClock.timeZone
     readonly property var currentTime: currentClock.dateTime
