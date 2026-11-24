@@ -25,6 +25,17 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: 16 * actionPanel.scale
 
+    // A pre-map size from the hardware/configuration and tile geometry,
+    // not visible children. Qt Layout implicitHeight can be zero while
+    // the window is hidden. Reserve a complete first viewport in that case.
+    readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
+    readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
+    readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
+    readonly property int homeHeight: Math.ceil(Math.max(220 * scale,
+        12 * scale + Math.max(64 * scale, toggleViewport.viewportHeight)
+        + (sliderRows > 0 ? (sliderRows * 36 + (sliderRows - 1) * 12 + 14 + 32) * scale : 16 * scale)
+        + 48 * scale))
+
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
         toggleViewport.cancelDrag();
@@ -432,8 +443,7 @@ ColumnLayout {
     }
 
     GridLayout {
-        visible: (Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable)
-            || (Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable)
+        visible: actionPanel.brightnessShown || actionPanel.volumeShown
         Layout.fillWidth: true
         Layout.leftMargin: 14 * actionPanel.scale
         Layout.rightMargin: 14 * actionPanel.scale

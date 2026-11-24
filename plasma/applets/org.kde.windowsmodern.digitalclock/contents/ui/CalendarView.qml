@@ -25,7 +25,7 @@ ColumnLayout {
     enum Zoom { Month, Year, Decade }
 
     // The applet root (main.qml): the clock and the popup's expanded state.
-    readonly property var applet: root
+    required property var applet
     readonly property date today: applet.currentTime
 
     // Year/month currently displayed by the calendar (0-based month).
@@ -152,8 +152,8 @@ ColumnLayout {
     // Like Windows, the flyout always opens on today's month.
     Connections {
         target: calendarView.applet
-        function onExpandedChanged() {
-            if (calendarView.applet.expanded) {
+        function onFlyoutOpenChanged() {
+            if (calendarView.applet.flyoutOpen) {
                 calendarView.resetToToday();
             }
         }

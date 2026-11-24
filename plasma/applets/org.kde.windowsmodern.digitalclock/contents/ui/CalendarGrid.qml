@@ -45,7 +45,7 @@ Item {
             model: Calendar.generateMonthGrid(
                 calendarView.displayedYear,
                 calendarView.displayedMonth,
-                root.currentTime,
+                calendarView.today,
                 calendarView.selectedDate,
                 calendarView.firstDayOfWeek)
 

@@ -34,8 +34,8 @@ MouseArea {
     readonly property bool showBell: Plasmoid.configuration.showNotificationButton
         && Plasmoid.formFactor !== PlasmaCore.Types.Vertical
     property bool wasExpanded: false
-    function toggleFlyout(previous = plasmoidItem.expanded) {
-        plasmoidItem.expanded = !previous;
+    function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
+        plasmoidItem.toggleFlyout(previous);
     }
 
     // The panel sizes applets from their Layout hints; without them the
@@ -139,7 +139,7 @@ MouseArea {
     Keys.onSpacePressed: toggleFlyout()
 
     acceptedButtons: Qt.LeftButton
-    onPressed: wasExpanded = plasmoidItem.expanded
+    onPressed: wasExpanded = plasmoidItem.flyoutOpen
     onClicked: mouse => {
         if (mouse.button === Qt.LeftButton)
             toggleFlyout(wasExpanded);
@@ -155,7 +155,7 @@ MouseArea {
         anchors.fill: parent
         anchors.margins: 2
         radius: 4
-        visible: main.containsMouse || main.activeFocus || main.plasmoidItem.expanded
+        visible: main.containsMouse || main.activeFocus || main.plasmoidItem.flyoutOpen
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                        Kirigami.Theme.textColor.b, main.containsPress ? 0.12 : 0.06)
     }
@@ -270,11 +270,11 @@ MouseArea {
             Accessible.name: text
             Accessible.description: main.plasmoidItem.notificationStatusText
             property bool wasExpanded: false
-            onPressed: wasExpanded = main.plasmoidItem.expanded
+            onPressed: wasExpanded = main.plasmoidItem.flyoutOpen
             onClicked: main.toggleFlyout(wasExpanded)
             PlasmaComponents.ToolTip {
                 text: main.plasmoidItem.notificationStatusText
-                visible: notificationButton.hovered && !main.plasmoidItem.expanded
+                visible: notificationButton.hovered && !main.plasmoidItem.flyoutOpen
             }
         }
     }

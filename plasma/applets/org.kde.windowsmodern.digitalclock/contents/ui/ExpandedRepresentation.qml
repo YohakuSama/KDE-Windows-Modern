@@ -19,6 +19,7 @@ import "code/dateformat.js" as DateFormat
 
 Item {
     id: expandedRoot
+    required property var clockApplet
     property bool calendarExpanded: true
 
     Win11Palette { id: palette }
@@ -27,12 +28,13 @@ Item {
     // Plasma supplies its frame, blur and shadow; the children use one palette.
     readonly property int margin: Kirigami.Units.largeSpacing
     readonly property bool horizontalPanel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
-    readonly property int availableScreenHeight: Plasmoid.screenGeometry.height > 0
-        ? Math.max(1, Math.floor(Math.min(Plasmoid.screenGeometry.height * 0.95,
-            Plasmoid.screenGeometry.height - (horizontalPanel ? root.height : 0) - 4 * margin)))
+    readonly property int availableScreenHeight: Plasmoid.screenGeometry.height >= 100
+        ? Math.max(1, Math.floor(Math.min(Plasmoid.screenGeometry.height * 0.92,
+            Plasmoid.screenGeometry.height - (horizontalPanel
+                ? Math.min(96, clockApplet.compactRepresentationItem?.height || 48) : 0) - 4 * margin)))
         : 720
     readonly property int configuredWidth: Math.max(240, Plasmoid.configuration.expandedWidth || 320)
-    implicitWidth: Math.max(1, Math.min(configuredWidth, Plasmoid.screenGeometry.width > 0
+    implicitWidth: Math.max(1, Math.min(configuredWidth, Plasmoid.screenGeometry.width >= 100
         ? Math.floor(Plasmoid.screenGeometry.width - 4 * margin) : configuredWidth))
     Layout.minimumWidth: implicitWidth
     Layout.preferredWidth: implicitWidth
@@ -70,11 +72,11 @@ Item {
 
             NotificationHistory {
                 Layout.fillWidth: true
-                currentTime: root.currentTime
-                notificationsAvailable: root.notificationsAvailable
-                effectiveDnd: root.notificationsInhibited
-                notificationModel: root.notificationModel
-                settings: root.notificationSettings
+                currentTime: expandedRoot.clockApplet.currentTime
+                notificationsAvailable: expandedRoot.clockApplet.notificationsAvailable
+                effectiveDnd: expandedRoot.clockApplet.notificationsInhibited
+                notificationModel: expandedRoot.clockApplet.notificationModel
+                settings: expandedRoot.clockApplet.notificationSettings
             }
 
             Rectangle {
@@ -101,12 +103,12 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         textFormat: Text.PlainText
                         text: {
-                            const fmt = root.timeFormatWithSeconds;
+                            const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
                             // Render the AM/PM suffix separately so it can be smaller.
                             if (fmt.toLowerCase().includes("ap")) {
-                                return Qt.locale().toString(root.currentTime, fmt.replace(/\s+AP/i, ""));
+                                return Qt.locale().toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
                             }
-                            return Qt.locale().toString(root.currentTime, fmt);
+                            return Qt.locale().toString(expandedRoot.clockApplet.currentTime, fmt);
                         }
                         color: palette.text
                         font {
@@ -119,11 +121,11 @@ Item {
 
                     PlasmaComponents.Label {
                         id: amPmLabel
-                        visible: root.timeFormatWithSeconds.toLowerCase().includes("ap")
+                        visible: expandedRoot.clockApplet.timeFormatWithSeconds.toLowerCase().includes("ap")
                         horizontalAlignment: Text.AlignLeft
                         verticalAlignment: Text.AlignTop
                         textFormat: Text.PlainText
-                        text: Qt.locale().toString(root.currentTime, "AP")
+                        text: Qt.locale().toString(expandedRoot.clockApplet.currentTime, "AP")
                         color: palette.text
                         font {
                             family: Kirigami.Theme.defaultFont.family
@@ -144,7 +146,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         textFormat: Text.PlainText
                         // Windows 11 shows the locale's long date without the year.
-                        text: Qt.locale().toString(root.currentTime,
+                        text: Qt.locale().toString(expandedRoot.clockApplet.currentTime,
                                                    DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)))
                         color: palette.textSecondary
                         font {
@@ -166,6 +168,7 @@ Item {
             // ── Calendar grid ──
             CalendarView {
                 id: calendarView
+                applet: expandedRoot.clockApplet
                 Layout.fillWidth: true
                 visible: expandedRoot.calendarExpanded
                 focus: visible
@@ -174,6 +177,7 @@ Item {
             // ── Optional timezone list ──
             TimeZoneView {
                 id: timeZoneView
+                applet: expandedRoot.clockApplet
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? Kirigami.Units.gridUnit * 8 : 0
                 visible: expandedRoot.calendarExpanded && (Plasmoid.configuration.selectedTimeZones.length > 1 || Plasmoid.configuration.showLocalTimezone)

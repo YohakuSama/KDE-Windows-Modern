@@ -17,6 +17,7 @@ import org.kde.kirigami as Kirigami
 
 ColumnLayout {
     id: timeZoneView
+    required property var applet
 
     Win11Palette { id: palette }
 
@@ -38,14 +39,14 @@ ColumnLayout {
         Layout.preferredHeight: contentHeight
         interactive: false
 
-        model: root.selectedTimeZonesDeduplicatingExplicitLocalTimeZone()
+        model: timeZoneView.applet.selectedTimeZonesDeduplicatingExplicitLocalTimeZone()
 
         delegate: RowLayout {
             id: listItem
 
             required property string modelData
 
-            readonly property bool isCurrentTimeZone: tzClock.timeZone === root.currentTimeZone
+            readonly property bool isCurrentTimeZone: tzClock.timeZone === timeZoneView.applet.currentTimeZone
             readonly property string tzLabel: {
                 switch (Plasmoid.configuration.displayTimezoneFormat) {
                 case 0: // Code
@@ -71,7 +72,7 @@ ColumnLayout {
             }
 
             PlasmaComponents.Label {
-                text: root.formatTime(tzClock.dateTime, Plasmoid.configuration.showSeconds === 2)
+                text: timeZoneView.applet.formatTime(tzClock.dateTime, Plasmoid.configuration.showSeconds === 2)
                 color: listItem.isCurrentTimeZone ? palette.text : palette.textSecondary
                 font.weight: listItem.isCurrentTimeZone ? Font.Bold : Font.Normal
                 textFormat: Text.PlainText
@@ -79,7 +80,7 @@ ColumnLayout {
 
             PlasmaComponents.Label {
                 visible: !listItem.isCurrentTimeZone
-                text: root.formatOffset(tzClock.dateTime)
+                text: timeZoneView.applet.formatOffset(tzClock.dateTime)
                 color: palette.textSecondary
                 font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                 textFormat: Text.PlainText
