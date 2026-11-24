@@ -15,6 +15,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kitemmodels as KItemModels
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+import "js/trayMetrics.js" as TrayMetrics
 
 ContainmentItem {
     id: root
@@ -23,17 +24,19 @@ ContainmentItem {
     readonly property bool reverseLayout: Plasmoid.configuration.reverseIconOrder
     property Item hoveredQuickSetting: null
 
-    Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.small : mainLayout.implicitWidth + Kirigami.Units.smallSpacing
-    Layout.minimumHeight: vertical ? mainLayout.implicitHeight + Kirigami.Units.smallSpacing : Kirigami.Units.iconSizes.small
+    Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.small : mainLayout.implicitWidth
+    Layout.minimumHeight: vertical ? mainLayout.implicitHeight : Kirigami.Units.iconSizes.small
 
     LayoutMirroring.enabled: !vertical && ((Application.layoutDirection === Qt.RightToLeft) !== reverseLayout)
     LayoutMirroring.childrenInherit: true
 
     readonly property alias systemTrayState: systemTrayState
-    readonly property alias itemSize: tasksGrid.itemSize
+    readonly property int itemSize: TrayMetrics.iconSize(vertical ? width : height, Plasmoid.configuration.scaleIconsToFit)
+    readonly property int trayCellLength: TrayMetrics.cellLength(itemSize, false, Plasmoid.configuration.iconSpacing)
+    readonly property int systemCellLength: TrayMetrics.cellLength(itemSize, true, Plasmoid.configuration.iconSpacing)
     readonly property alias visibleLayout: tasksGrid
     readonly property alias hiddenLayout: expandedRepresentation.hiddenLayout
-    readonly property bool oneRowOrColumn: tasksGrid.rowsOrColumns === 1
+    readonly property bool oneRowOrColumn: true
 
     readonly property alias hiddenModel: hiddenModel
 
@@ -176,82 +179,58 @@ ContainmentItem {
 
             flow: root.vertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
 
-            GridView {
+            // A tray contains a small finite list of live applets. Repeater
+            // preserves every delegate while a one-row layout allows the
+            // Windows system group to use narrower cells than third-party SNI.
+            GridLayout {
                 id: tasksGrid
 
-                // Windows 11: overflow first, then visible icons and the
-                // network/volume/battery group (ordered by WindowsTray::tail).
                 Layout.row: root.vertical && !root.reverseLayout ? 1 : 0
                 Layout.column: root.vertical ? 0 : 1
-
                 Layout.alignment: Qt.AlignCenter
+                rows: root.vertical ? Math.max(1, trayItems.count) : 1
+                columns: root.vertical ? 1 : Math.max(1, trayItems.count)
+                rowSpacing: 0
+                columnSpacing: 0
 
-                interactive: false //disable features we don't need
-                flow: root.vertical ? GridView.LeftToRight : GridView.TopToBottom
-
-                // Tell the grid to populate bottom-to-top when flipped on a vertical panel
-                verticalLayoutDirection: (root.vertical && root.reverseLayout) ? GridView.BottomToTop : GridView.TopToBottom
-
-                // The icon size to display when not using the auto-scaling setting
-                readonly property int smallIconSize: Kirigami.Units.iconSizes.small
-
-                readonly property bool autoSize: Plasmoid.configuration.scaleIconsToFit
-
-                readonly property int gridThickness: root.vertical ? root.width : root.height
-                // Should change to 2 rows/columns on a 56px panel (in standard DPI)
-                readonly property int rowsOrColumns: autoSize ? 1 : Math.max(1, Math.min(count, Math.floor(gridThickness / (smallIconSize + Kirigami.Units.smallSpacing))))
-
-                // Add margins only if the panel is larger than a small icon (to avoid large gaps between tiny icons)
-                readonly property int cellSpacing: Kirigami.Units.smallSpacing * Plasmoid.configuration.iconSpacing
-                readonly property int smallSizeCellLength: gridThickness < smallIconSize ? smallIconSize : smallIconSize + cellSpacing
-
-                cellHeight: {
-                    if (root.vertical) {
-                        return autoSize ? itemSize + (gridThickness < itemSize ? 0 : cellSpacing) : smallSizeCellLength
-                    } else {
-                        return autoSize ? root.height : Math.floor(root.height / rowsOrColumns)
-                    }
-                }
-                cellWidth: {
-                    if (root.vertical) {
-                        return autoSize ? root.width : Math.floor(root.width / rowsOrColumns)
-                    } else {
-                        return autoSize ? itemSize + (gridThickness < itemSize ? 0 : cellSpacing) : smallSizeCellLength
-                    }
+                readonly property int count: trayItems.count
+                readonly property int rowsOrColumns: 1
+                readonly property int itemSize: root.itemSize
+                function itemAtIndex(index) {
+                    return index >= 0 && index < trayItems.count ? trayItems.itemAt(index) : null;
                 }
 
-                //depending on the form factor, we are calculating only one dimension, second is always the same as root/parent
-                implicitHeight: root.vertical ? cellHeight * Math.ceil(count / rowsOrColumns) : root.height
-                implicitWidth: !root.vertical ? cellWidth * Math.ceil(count / rowsOrColumns) : root.width
+                Repeater {
+                    id: trayItems
+                    model: activeModel
 
-                readonly property int itemSize: {
-                    if (autoSize) {
-                        return Kirigami.Units.iconSizes.roundedIconSize(Math.min(Math.min(root.width, root.height) / rowsOrColumns, Kirigami.Units.iconSizes.enormous))
-                    } else {
-                        return smallIconSize
-                    }
-                }
+                    delegate: ItemLoader {
+                        id: delegate
 
-                model: activeModel
+                        readonly property bool systemGroup: TrayMetrics.isQuickSettings(model.itemId)
+                        readonly property int cellLength: systemGroup ? root.systemCellLength : root.trayCellLength
+                        readonly property int positionIndex: TrayMetrics.visualIndex(index, trayItems.count,
+                            root.vertical, root.reverseLayout)
 
-                delegate: ItemLoader {
-                    id: delegate
+                        Layout.row: root.vertical ? positionIndex : 0
+                        Layout.column: root.vertical ? 0 : positionIndex
+                        Layout.preferredWidth: root.vertical ? root.width : cellLength
+                        Layout.preferredHeight: root.vertical ? cellLength : root.height
+                        Layout.minimumWidth: Layout.preferredWidth
+                        Layout.maximumWidth: Layout.preferredWidth
+                        Layout.minimumHeight: Layout.preferredHeight
+                        Layout.maximumHeight: Layout.preferredHeight
 
-                    width: tasksGrid.cellWidth
-                    height: tasksGrid.cellHeight
-
-                    // We need to recalculate the stacking order of the z values due to how keyboard navigation works
-                    // the tab order depends exclusively from this, so we redo it as the position in the list
-                    // ensuring tab navigation focuses the expected items
-                    Component.onCompleted: {
-                        let item = tasksGrid.itemAtIndex(index - 1);
-                        if (item) {
-                            Plasmoid.stackItemBefore(delegate, item)
-                        } else {
-                            item = tasksGrid.itemAtIndex(index + 1);
-                        }
-                        if (item) {
-                            Plasmoid.stackItemAfter(delegate, item)
+                        // Preserve native keyboard stacking after model changes.
+                        Component.onCompleted: {
+                            const previous = tasksGrid.itemAtIndex(index - 1);
+                            if (previous) {
+                                Plasmoid.stackItemBefore(delegate, previous);
+                            } else {
+                                const next = tasksGrid.itemAtIndex(index + 1);
+                                if (next)
+                                    Plasmoid.stackItemAfter(delegate, next);
+                            }
                         }
                     }
                 }
@@ -266,7 +245,8 @@ ContainmentItem {
                 Layout.fillWidth: vertical
                 Layout.fillHeight: !vertical
                 Layout.alignment: vertical ? Qt.AlignVCenter : Qt.AlignHCenter
-                iconSize: Kirigami.Units.iconSizes.small
+                iconSize: Math.min(16, root.itemSize)
+                cellLength: root.trayCellLength
                 visible: root.hiddenLayout.itemCount > 0
                 onVisibleChanged: {
                     if (!visible && systemTrayState.overflowOpen)

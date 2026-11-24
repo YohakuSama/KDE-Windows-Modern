@@ -12,6 +12,7 @@ Lib.DetailPage {
 
     title: wifiAvailable ? qsTr("Wi-Fi") : qsTr("Network")
     showSwitch: wifiAvailable
+    switchEnabled: wifiAdministrativelyEnabled
     switchChecked: page.wifiOn
     emptyText: !page.wifiAvailable ? qsTr("No Wi-Fi adapter available")
         : page.wifiOn ? qsTr("No available networks") : qsTr("Wi-Fi is off")
@@ -32,10 +33,13 @@ Lib.DetailPage {
     }
 
     readonly property bool wifiAvailable: availableDevices.wirelessDeviceAvailable
-    readonly property bool wifiOn: wifiAvailable && enabledConnections.wirelessEnabled
+    readonly property bool wifiAdministrativelyEnabled: wifiAvailable
+        && enabledConnections.wirelessHwEnabled && !PlasmaNM.Configuration.airplaneModeEnabled
+    readonly property bool wifiOn: wifiAvailable && enabledConnections.wirelessHwEnabled
+        && enabledConnections.wirelessEnabled
 
     onSwitchToggled: {
-        if (wifiAvailable) {
+        if (wifiAdministrativelyEnabled) {
             handler.enableWireless(!wifiOn);
         }
     }

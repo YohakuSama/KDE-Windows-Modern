@@ -2,6 +2,7 @@ import QtQuick
 import org.kde.plasma.plasma5support as Plasma5Support
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.bluezqt as BluezQt
+import org.kde.kcmutils
 import "../lib" as Lib
 import "../js/funcs.js" as Funcs
 
@@ -10,12 +11,15 @@ Lib.SplitTile {
 
     property QtObject btManager: BluezQt.Manager
 
+    readonly property bool available: btManager.adapters.length > 0
     label: qsTr("Bluetooth")
-    toggleAvailable: btManager.adapters.length > 0
-    iconSource: Funcs.btStatus(btManager).icon
+    toggleAvailable: available
+    // Same original Bluetooth glyph in all toggle states; active/disabled
+    // appearance comes from the real radio state, not an invented artwork.
+    iconSource: "network-bluetooth-symbolic"
     active: Funcs.btStatus(btManager).active
 
-    onClicked: Funcs.toggleBluetooth(btManager)
+    onClicked: if (available) Funcs.toggleBluetooth(btManager)
 
     readonly property int connectedCount: {
         var c = 0;
@@ -38,7 +42,7 @@ Lib.SplitTile {
 
     onRightClicked: btMenu.popup()
 
-    onMiddleClicked: Qt.openUrlExternally("systemsettings://kcm_bluetooth")
+    onMiddleClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
 
     PlasmaComponents3.Menu {
         id: btMenu
@@ -56,7 +60,7 @@ Lib.SplitTile {
         PlasmaComponents3.MenuItem {
             text: qsTr("Bluetooth settings")
             icon.name: "configure"
-            onClicked: Qt.openUrlExternally("systemsettings://kcm_bluetooth")
+            onClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
         }
     }
 

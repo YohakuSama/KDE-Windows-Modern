@@ -170,3 +170,14 @@ source tree; main and integration packages do not include Microsoft assets.
 Task View E7C4 and GridView F0E2 are distinct roles; the latter is optional
 pending verification against the supplied font. The supplied directories
 still lack default account-picture files, Store package artwork and cursors.
+
+### Keep the installed original icons current
+
+The icon installer now checks the local manifest against the exact mapping
+revision and verifies every expected mapped SVG before removing the old
+installed theme. If the local import is stale or damaged it reruns the
+existing importer with `--reuse`, using the remembered local source. If
+that source is gone, it stops without deleting the installed icon theme.
+Keep a local copy of the indexed owner resources even after the temporary
+Git branch is removed. Without an import, bundled icons remain a fallback;
+the installer explicitly reports that they are not verified Windows originals.

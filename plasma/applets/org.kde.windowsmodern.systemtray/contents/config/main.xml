@@ -34,11 +34,11 @@
       <default>false</default>
     </entry>
     <entry name="scaleIconsToFit" type="bool">
-      <label>Whether to automatically scale System Tray icons to fix the available thickness of the panel. If false, tray icons will be capped at the smallMedium size (22px) and become a two-row/column layout when the panel is thick.</label>
+      <label>Whether to scale tray glyphs with panel thickness. The default uses one row or column of 16 logical pixel glyphs.</label>
       <default>false</default>
     </entry>
     <entry name="iconSpacing" type="int">
-      <label>spacing between icons, determined by this number multiplied by Kirigami.Units.smallSpacing</label>
+      <label>Tray cell spacing: small (1), Windows default (2), or large (6).</label>
       <default>2</default>
     </entry>
     <entry name="pin" type="Bool">

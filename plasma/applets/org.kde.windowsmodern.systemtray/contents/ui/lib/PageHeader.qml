@@ -8,6 +8,7 @@ RowLayout {
 
     property string title
     property bool showSwitch: false
+    property bool switchEnabled: true
     property bool switchChecked: false
 
     signal back
@@ -40,6 +41,7 @@ RowLayout {
 
     PlasmaComponents3.Switch {
         visible: header.showSwitch
+        enabled: header.switchEnabled
         checked: header.switchChecked
         onToggled: header.switchToggled()
         Accessible.name: header.title

@@ -15,6 +15,7 @@ Item {
     property int iconSize: Kirigami.Units.iconSizes.smallMedium
     property bool pressed: false
     property bool showArrow: false
+    property bool iconClickable: false
 
     signal moved(int value)
     signal released
@@ -52,7 +53,8 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
+                enabled: root.iconClickable
+                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: root.iconClicked()
             }
         }
@@ -92,7 +94,7 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
+                cursorShape: root.showArrow ? Qt.PointingHandCursor : Qt.ArrowCursor
                 enabled: root.showArrow
                 onClicked: root.arrowClicked()
             }

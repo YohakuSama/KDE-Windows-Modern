@@ -1,6 +1,7 @@
 import QtQuick
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.volume as Vol
+import org.kde.kcmutils
 import "../lib" as Lib
 import "../js/funcs.js" as Funcs
 
@@ -12,6 +13,7 @@ Lib.Slider {
 
     iconSource: Funcs.volIconName(sinkAvailable ? sink.volume : 0, sinkAvailable ? sink.muted : true)
     showArrow: true
+    iconClickable: sinkAvailable
 
     readonly property int maxVol: sinkAvailable && sink.canRaiseVolume ? 98304 : 65536
 
@@ -64,12 +66,13 @@ Lib.Slider {
         PlasmaComponents3.MenuItem {
             text: qsTr("Test sound")
             icon.name: "audio-volume-high"
-            onClicked: Vol.VolumeFeedback.play()
+            enabled: root.sinkAvailable
+            onClicked: if (root.sinkAvailable) feedback.play(root.sink.index)
         }
         PlasmaComponents3.MenuItem {
             text: qsTr("Audio settings")
             icon.name: "configure"
-            onClicked: Qt.openUrlExternally("systemsettings://kcm_pulseaudio")
+            onClicked: KCMLauncher.openSystemSettings("kcm_pulseaudio")
         }
     }
 }

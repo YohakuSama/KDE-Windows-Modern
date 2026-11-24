@@ -7,6 +7,7 @@ ColumnLayout {
 
     property string title
     property bool showSwitch: false
+    property bool switchEnabled: true
     property bool switchChecked: false
     property bool contentFillsHeight: true
     property Component footer: null
@@ -21,6 +22,7 @@ ColumnLayout {
     PageHeader {
         title: page.title
         showSwitch: page.showSwitch
+        switchEnabled: page.switchEnabled
         switchChecked: page.switchChecked
         onBack: page.back()
         onSwitchToggled: page.switchToggled()
