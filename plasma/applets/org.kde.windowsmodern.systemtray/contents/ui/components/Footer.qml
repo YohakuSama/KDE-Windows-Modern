@@ -39,7 +39,7 @@ Rectangle {
         opacity: batteryMouse.containsMouse ? 1 : 0.85
 
         Accessible.role: Accessible.Button
-        Accessible.name: battery.percentKnown ? qsTr("Battery %1%").arg(battery.percent) : qsTr("Battery level unknown")
+        Accessible.name: battery.percentKnown ? i18n("Battery %1%", battery.percent) : i18n("Battery level unknown")
         Accessible.onPressAction: footer.batteryClicked()
         activeFocusOnTab: visible
         Keys.onReturnPressed: footer.batteryClicked()
@@ -63,9 +63,9 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         buttonSize: Math.round(18 * footer.uiScale)
         iconSource: "configure"
-        tooltipText: qsTr("All settings")
+        tooltipText: i18n("All settings")
         Accessible.role: Accessible.Button
-        Accessible.name: qsTr("All settings")
+        Accessible.name: i18n("All settings")
         onClicked: KCMLauncher.openSystemSettings("")
         onRightClicked: gearMenu.popup()
     }
@@ -74,27 +74,27 @@ Rectangle {
         id: gearMenu
 
         PlasmaComponents3.MenuItem {
-            text: qsTr("Display settings")
+            text: i18n("Display settings")
             icon.name: "preferences-desktop-display"
             onClicked: KCMLauncher.openSystemSettings("kcm_kscreen")
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Sound settings")
+            text: i18n("Sound settings")
             icon.name: "audio-volume-high"
             onClicked: KCMLauncher.openSystemSettings("kcm_pulseaudio")
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Network settings")
+            text: i18n("Network settings")
             icon.name: "network-wireless"
             onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Power settings")
+            text: i18n("Power settings")
             icon.name: "battery"
             onClicked: KCMLauncher.openSystemSettings("kcm_powerdevilprofilesconfig")
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Notification settings")
+            text: i18n("Notification settings")
             icon.name: "notifications"
             onClicked: KCMLauncher.openSystemSettings("kcm_notifications")
         }

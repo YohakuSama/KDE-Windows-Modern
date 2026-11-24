@@ -35,7 +35,7 @@ Item {
 
         PlasmaComponents3.Label {
             visible: root.hasBattery && root.percentKnown
-            text: qsTr("%1%").arg(batteryControl.percent)
+            text: i18n("%1%", batteryControl.percent)
             color: Kirigami.Theme.textColor
             opacity: 0.9
             font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1

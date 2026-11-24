@@ -150,7 +150,7 @@ ColumnLayout {
             activeFocusOnTab: true
             onActiveFocusChanged: if (activeFocus && tile.orderView) tile.orderView.ensureVisible(tile.orderKey)
             Accessible.role: Accessible.Button
-            Accessible.name: qsTr("%1 details").arg(tile.label)
+            Accessible.name: i18n("%1 details", tile.label)
             Accessible.onPressAction: tile.arrowClicked()
             Keys.onReturnPressed: tile.arrowClicked()
             Keys.onEnterPressed: tile.arrowClicked()

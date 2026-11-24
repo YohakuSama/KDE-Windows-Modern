@@ -403,7 +403,7 @@ ColumnLayout {
                 icon.name: "go-up-symbolic"
                 icon.width: Kirigami.Units.iconSizes.small
                 icon.height: icon.width
-                text: qsTr("Previous quick settings")
+                text: i18n("Previous quick settings")
                 display: PlasmaComponents3.AbstractButton.IconOnly
                 enabled: toggleViewport.contentY > 0.5 && !toggleViewport.dragKey
                 onClicked: toggleViewport.page(-1)
@@ -422,7 +422,7 @@ ColumnLayout {
                 icon.name: "go-down-symbolic"
                 icon.width: Kirigami.Units.iconSizes.small
                 icon.height: icon.width
-                text: qsTr("Next quick settings")
+                text: i18n("Next quick settings")
                 display: PlasmaComponents3.AbstractButton.IconOnly
                 enabled: toggleViewport.contentY < toggleViewport.maxOffset - 0.5 && !toggleViewport.dragKey
                 onClicked: toggleViewport.page(1)

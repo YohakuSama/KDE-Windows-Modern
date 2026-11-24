@@ -22,6 +22,7 @@ source "$SCRIPT_DIR/scripts/config-backup.sh"
 # ── Install component by name (non-fatal on failure) ────────────────
 # Components that failed, reported at the end instead of a plain "Done.".
 FAILED_COMPONENTS=()
+WM_TRANSLATIONS_INSTALLED=0
 
 is_nixos() {
     [ -r /etc/os-release ] && grep -Eq '^ID="?nixos"?$' /etc/os-release
@@ -52,6 +53,15 @@ install_component() {
         esac
     fi
     if [ -x "$script" ]; then
+        # Install the applet-domain catalogs before any applet reloads.
+        if [ "$name" != deps ] && [ "$WM_TRANSLATIONS_INSTALLED" -eq 0 ]; then
+            if ! python3 -I "$SRC_DIR/scripts/install-translations.py"; then
+                err "Windows Modern translations could not be installed."
+                FAILED_COMPONENTS+=(translations)
+                return 1
+            fi
+            WM_TRANSLATIONS_INSTALLED=1
+        fi
         bash "$script" || {
             FAILED_COMPONENTS+=("$name")
             err "Component '$name' failed — continuing with remaining components."

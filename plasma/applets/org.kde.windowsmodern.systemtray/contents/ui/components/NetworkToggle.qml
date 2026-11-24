@@ -31,7 +31,7 @@ Lib.SplitTile {
 
     // Keep the detail arrow available on Ethernet-only systems, but do not
     // present a nonfunctional Wi-Fi toggle or a wired icon as Wi-Fi.
-    label: wifiAvailable ? qsTr("Wi-Fi") : qsTr("Network")
+    label: wifiAvailable ? i18n("Wi-Fi") : i18n("Network")
     toggleAvailable: wifiAdministrativelyEnabled
     // The toggle depicts the Wi-Fi radio, not the current signal strength.
     // The native connection list and panel icon still report real strength.
@@ -48,9 +48,9 @@ Lib.SplitTile {
         }
     }
 
-    tooltipText: !wifiAvailable ? qsTr("Network — Wi-Fi unavailable")
-        : !wifiAdministrativelyEnabled ? qsTr("Wi-Fi — Disabled by hardware or airplane mode")
-        : wifiOn ? qsTr("Wi-Fi — On") : qsTr("Wi-Fi — Off")
+    tooltipText: !wifiAvailable ? i18n("Network — Wi-Fi unavailable")
+        : !wifiAdministrativelyEnabled ? i18n("Wi-Fi — Disabled by hardware or airplane mode")
+        : wifiOn ? i18n("Wi-Fi — On") : i18n("Wi-Fi — Off")
 
     onRightClicked: networkMenu.popup()
 
@@ -60,23 +60,23 @@ Lib.SplitTile {
         id: networkMenu
 
         PlasmaComponents3.MenuItem {
-            text: qsTr("Open Wi-Fi settings")
+            text: i18n("Open Wi-Fi settings")
             icon.name: "configure"
             onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Create hotspot…")
+            text: i18n("Create hotspot…")
             icon.name: "network-wireless-hotspot"
             enabled: handler.hotspotSupported && !handler.hotspotActive
             onClicked: handler.createHotspot()
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Connect to hidden network…")
+            text: i18n("Connect to hidden network…")
             icon.name: "network-wireless-secure"
             onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Known networks…")
+            text: i18n("Known networks…")
             icon.name: "preferences-system-network"
             onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
