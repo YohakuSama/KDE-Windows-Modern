@@ -89,6 +89,7 @@ FocusScope {
         ColumnLayout {
             id: headerColumn
             Layout.fillWidth: true
+            Layout.fillHeight: false
             spacing: Kirigami.Units.smallSpacing / 2
 
             RowLayout {
@@ -172,6 +173,7 @@ FocusScope {
             objectName: "wmCalendarSection"
             applet: expandedRoot.clockApplet
             Layout.fillWidth: true
+            Layout.fillHeight: false
             visible: expandedRoot.calendarExpanded
             focus: visible
             // Reserve the real header, notification minimum and optional
@@ -209,7 +211,13 @@ FocusScope {
             visible: expandedRoot.calendarExpanded && calendarView.selectedDayEvents.length > 0
             date: calendarView.selectedDate
             events: calendarView.selectedDayEvents
-            maximumEvents: 1
+            // Preserve up to four events when room permits, prioritizing
+            // the calendar's six rows on shorter displays.
+            maximumEvents: Math.max(1, Math.min(4, Math.floor(
+                (mainColumn.height - history.minimumSectionHeight - headerColumn.implicitHeight
+                 - calendarView.chromeHeight - 6 * 24 - 5 * mainColumn.spacing
+                 - (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + mainColumn.spacing : 0)
+                 - 32) / 36)))
         }
     }
 }

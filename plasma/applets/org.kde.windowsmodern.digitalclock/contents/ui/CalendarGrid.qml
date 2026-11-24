@@ -15,6 +15,7 @@ import "Calendar.js" as Calendar
 
 Item {
     id: calendarGrid
+    objectName: "wmCalendarDayGrid"
     required property var calendarController
 
     // Keep seven columns and six rows visible even on a shorter screen.
