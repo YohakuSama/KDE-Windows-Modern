@@ -7,6 +7,19 @@ function iconSize(thickness, scaleToFit) {
     return Math.min(limit, scaleToFit ? Math.max(16, Math.min(48, Math.round(limit * 2 / 3))) : 16);
 }
 
+// The native network/volume/battery applets render inside their own
+// padded compact representations. A 16px *container* makes the actual
+// glyph smaller than the 16px Windows target. Give them a 22px square
+// (Qt's next standard icon size), independently of the 24px click cell.
+function coreIconSize(thickness, scaleToFit) {
+    const limit = Math.max(1, Math.floor(thickness));
+    return Math.min(limit, Math.max(22, iconSize(thickness, scaleToFit)));
+}
+
+function coreCellLength(size, coreSize, spacing) {
+    return Math.max(cellLength(size, true, spacing), coreSize + 2);
+}
+
 function isQuickSettings(id) {
     return id === "org.kde.plasma.networkmanagement"
         || id === "org.kde.plasma.volume"
