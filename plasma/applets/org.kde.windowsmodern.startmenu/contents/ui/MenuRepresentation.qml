@@ -242,16 +242,8 @@ Item {
                     }
                 }
                 onSearchFocusResults: rootItem.focusActivePageResults()
-                onSearchNavUp: {
-                    if (root.leftColumnState === 0) root.pinnedPage?.navigateUp();
-                    else if (root.leftColumnState === 1) allAppsPage.navigateUp();
-                    else if (root.leftColumnState === 2) searchPage.navigateUp();
-                }
-                onSearchNavDown: {
-                    if (root.leftColumnState === 0) root.pinnedPage?.navigateDown();
-                    else if (root.leftColumnState === 1) allAppsPage.navigateDown();
-                    else if (root.leftColumnState === 2) searchPage.navigateDown();
-                }
+                onSearchNavUp: rootItem.navigateFromSearch(-1)
+                onSearchNavDown: rootItem.navigateFromSearch(1)
                 onSearchActivateFirstResult: {
                     rootItem.activateCurrentItem();
                 }
@@ -348,6 +340,7 @@ Item {
                     id: searchPage
                     anchors.fill: parent
                     visible: root.leftColumnState === 2
+                    onFocusSearchRequested: startSearch.focusSearch()
                     onContextMenuRequested: function(actions, x, y, context) {
                         var pos = searchPage.mapToItem(sharedContextMenu, x, y);
                         sharedContextMenu.open(actions, pos.x, pos.y, context);
@@ -386,9 +379,12 @@ Item {
                         text: kuser.fullName || kuser.loginName
                         Layout.maximumWidth: rootItem.width * 0.32
                         Layout.preferredHeight: Kirigami.Units.gridUnit * 2
+                        Accessible.name: i18n("Account")
+                        Accessible.description: accountButton.text
                         onClicked: {
-                            commandSource.exec("systemsettings kcm_users");
-                            root.closeMenu();
+                            powerMenu.accountMode = true;
+                            powerMenu.visualParent = accountButton;
+                            powerMenu.open();
                         }
                         contentItem: RowLayout {
                             spacing: Kirigami.Units.smallSpacing
@@ -425,7 +421,7 @@ Item {
                                 elide: Text.ElideRight
                             }
                         }
-                        PlasmaComponents3.ToolTip { text: i18n("Account settings") }
+                        PlasmaComponents3.ToolTip { text: i18n("Account") }
                     }
 
                     Item { Layout.fillWidth: true }
@@ -447,6 +443,7 @@ Item {
                         Layout.preferredWidth: Kirigami.Units.gridUnit * 2
                         Layout.preferredHeight: Layout.preferredWidth
                         onClicked: {
+                            powerMenu.accountMode = false;
                             powerMenu.visualParent = powerButton;
                             powerMenu.open();
                         }
@@ -455,13 +452,19 @@ Item {
                 }
             }
 
-            // ── Power options popup (in-dialog, not a separate window) ────
+            // ── Account / power popup (reuse one in-dialog menu) ───────────
             ShutdownMenu {
                 id: powerMenu
                 anchors.fill: parent
                 onClosed: {
-                    startSearch.focusSearch();
+                    if (root.visible && powerMenu.visualParent)
+                        powerMenu.visualParent.forceActiveFocus();
                 }
+                onAccountSettingsRequested: {
+                    commandSource.exec("systemsettings kcm_users");
+                    root.closeMenu();
+                }
+                onActionInvoked: root.closeMenu()
             }
 
             // ── Shared context menu for list delegates ─────────────────────
@@ -502,13 +505,32 @@ Item {
                 }
             }
 
+            function hasPinnedApps() {
+                return root.pinnedPage && root.pinnedPage.favoritesList.count > 0;
+            }
+
+            function navigateFromSearch(direction) {
+                if (root.leftColumnState === 0 && !hasPinnedApps())
+                    root.leftColumnState = 1;
+                const page = root.leftColumnState === 0 ? root.pinnedPage
+                           : root.leftColumnState === 1 ? allAppsPage : searchPage;
+                if (direction < 0)
+                    page.navigateUp();
+                else
+                    page.navigateDown();
+            }
+
             function focusActivePageResults() {
+                if (root.leftColumnState === 0 && !hasPinnedApps())
+                    root.leftColumnState = 1;
                 if (root.leftColumnState === 0) {
-                    root.pinnedPage?.tryActivate(0);
-                } else if (root.leftColumnState === 1) {
-                    allAppsPage.tryActivate(0);
+                    root.pinnedPage.tryActivate(Math.max(0, root.pinnedPage.favoritesList.currentIndex));
+                } else if (root.leftColumnState === 1 && allAppsPage.allAppsList.count > 0) {
+                    allAppsPage.tryActivate(Math.max(0, allAppsPage.allAppsList.currentIndex));
+                } else if (root.leftColumnState === 2 && searchPage.resultsView.count > 0) {
+                    searchPage.tryActivate(Math.max(0, searchPage.resultsView.currentIndex), 0);
                 } else {
-                    searchPage.tryActivate(0, 0);
+                    accountButton.forceActiveFocus();
                 }
             }
 
@@ -574,6 +596,13 @@ Item {
             // Navigation keys (Tab, arrows, Enter) are left for children to
             // handle, and only reach here if no child consumed them.
             Keys.onPressed: event => {
+                if (powerMenu.opened) {
+                    // The footer popup owns input until dismissed.
+                    event.accepted = true;
+                    if (event.key === Qt.Key_Escape)
+                        powerMenu.close();
+                    return;
+                }
 
                 // Ctrl+digit launches a pinned favorite (1..9).
                 if (event.modifiers === Qt.ControlModifier) {

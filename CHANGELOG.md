@@ -6,6 +6,14 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Start menu
+
+- Separate account and power actions using the existing in-dialog popup and
+  native KDE session capabilities. Restore focus after dismissal and support
+  arrow, Tab and Enter navigation through enabled rows.
+- Fix stale search-field references in filter and keyboard handlers, move
+  focus into the selected results view, and use the All list if pins are empty.
+
 ### Lock and login
 
 - Replace square unlock/login text field frames with matching 4 px corners,

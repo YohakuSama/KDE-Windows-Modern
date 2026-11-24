@@ -83,6 +83,7 @@ RowLayout {
             }
         }
         Keys.onReturnPressed: searchBox.searchActivateFirstResult()
+        Keys.onEnterPressed: searchBox.searchActivateFirstResult()
 
         Kirigami.Icon {
             source: "search"

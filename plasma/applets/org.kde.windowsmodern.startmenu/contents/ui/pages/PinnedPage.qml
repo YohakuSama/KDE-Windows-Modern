@@ -114,6 +114,9 @@ ColumnLayout {
         highlightMoveDuration: 0
         keyNavigationEnabled: true
 
+        Keys.onReturnPressed: pinnedPage.activateCurrent()
+        Keys.onEnterPressed: pinnedPage.activateCurrent()
+
         Keys.onUpPressed: event => {
             if (currentIndex < pinnedPage.columns) {
                 event.accepted = true;

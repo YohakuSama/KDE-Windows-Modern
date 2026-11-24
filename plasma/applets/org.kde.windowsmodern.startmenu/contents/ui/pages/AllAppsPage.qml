@@ -79,6 +79,9 @@ ColumnLayout {
 
         highlightMoveDuration: 0
 
+        Keys.onReturnPressed: allAppsPage.activateCurrent()
+        Keys.onEnterPressed: allAppsPage.activateCurrent()
+
         Keys.onUpPressed: event => {
             if (currentIndex <= 0) {
                 event.accepted = true;
