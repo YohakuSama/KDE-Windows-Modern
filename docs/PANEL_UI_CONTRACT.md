@@ -64,3 +64,13 @@ Revision after owner comparison screenshots:
 - Quick Settings uses its entire three-column width. No reserved rail, thumb, or paging arrows. Wheel/touch/keyboard still reach every tile. Other overflow lists paint a scrollbar indicator only on gutter hover or press.
 - Align independent status outlines to the center of their original 16px logical canvas. Retain common scale within families; separate standard and limited Wi-Fi states so weak signal art keeps its relative dot position. Center tray cells with equal top/bottom layout stretch and refresh grouped hover boundaries after Repeater delegates exist.
 - No change to the task icon canvas, panel layout or installer. Full desktop horizontal centering cannot be assessed from cropped tray screenshots. Native popup placement requires Wayland verification.
+
+## Modern battery and shared system group
+
+- Use a project-drawn color battery glyph based on Microsoft's October 28, 2025 KB5067036 visual update. The original resource archive contains the older single-color glyphs, not a confirmed copy of the new colored asset. The new artwork is not represented as an extracted Microsoft original.
+- Use actual cumulative battery percentage, charging/fully-charged AC state, and the KDE power-saver profile. Green indicates charging or fully charged on AC, yellow power saver, red critical (project threshold 5%), neutral other states. Unknown values never show a false percentage. No internal battery: keep the native applet representation. The taskbar percentage is optional, enabled by default, with stable text width; vertical panels keep their compact icon-only layout.
+- The battery visual is shared by the taskbar, Quick Settings footer and battery page. Its 20x16 logical-pixel canvas occupies 30x24 physical pixels at 150%, retaining the existing 16px logical glyph height. Other glyph sizes and taskbar height remain unchanged.
+- Quick Settings highlighting is rendered once per contiguous physical run of network, volume and battery cells, behind their real layout geometry. Do not round three independent rectangles or bridge unrelated tray items.
+- Default Windows clock format is now h:mm AP, with literal English AM/PM even on a Chinese desktop. Keep the explicit regional and 24-hour choices. The compact time line remains right aligned above yyyy/M/d.
+- Shared dateformat.js copies must remain byte-identical. Pass QML Locale enums to JS helpers rather than resolving them inside a .pragma library.
+- Reference: https://support.microsoft.com/en-au/servicing/os/windows-11/2025/10/october-28-2025-kb5067036-os-builds-26200-7019-and-26100-7019-preview
