@@ -12,7 +12,9 @@ Item {
     height: 620
 
     function i18n(text) { return text; }
-    function i18nc(context, text) { return text; }
+    function i18nc(context, text) {
+        return context === "@info calendar display locale (translate to a Qt locale name)" ? "zh_CN" : text;
+    }
     function i18np(singular, plural, n) {
         return (n === 1 ? singular : plural).replace("%1", n);
     }
@@ -47,6 +49,12 @@ Item {
     TestCase {
         name: "ClockExpandedRepresentation"
         when: windowShown
+        function test_chineseCalendarWithIndependentLocale() {
+            compare(popup.calendarLocale.name, "zh_CN");
+            tryCompare(findChild(popup, "wmCalendarDateHeading"), "text", "11月25日 星期三");
+            tryCompare(findChild(popup, "wmCalendarMonthHeading"), "text", "2026年11月");
+            compare(popup.nativePopup, null);
+        }
         function test_fullCalendarHasUsableGeometry() {
             compare(popup.implicitWidth, 320);
             verify(popup.implicitHeight >= 400);

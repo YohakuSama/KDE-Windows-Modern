@@ -8,6 +8,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtQuick.Controls as QQC2
 
 import org.kde.plasma.plasmoid
@@ -21,6 +22,31 @@ FocusScope {
     id: expandedRoot
     required property var clockApplet
     property bool calendarExpanded: true
+
+    // Match the translated UI language without changing LC_TIME.
+    readonly property var calendarLocale: Qt.locale(DateFormat.calendarLocaleName(
+        i18nc("@info calendar display locale (translate to a Qt locale name)", "system"),
+        Qt.locale().name))
+
+    // Preserve the native Plasma full representation. Its default margin
+    // is zero on docked panels; change only this applet's popup window.
+    readonly property var nativePopup: {
+        const win = expandedRoot.Window.window;
+        return win && win.objectName === "popupWindow" && "margin" in win
+            && "removeBorderStrategy" in win ? win : null;
+    }
+    Binding {
+        target: expandedRoot.nativePopup
+        property: "margin"
+        value: 8
+        when: expandedRoot.nativePopup !== null
+    }
+    Binding {
+        target: expandedRoot.nativePopup
+        property: "removeBorderStrategy"
+        value: PlasmaCore.AppletPopup.Never
+        when: expandedRoot.nativePopup !== null
+    }
 
     Win11Palette { id: palette }
 
@@ -148,8 +174,8 @@ FocusScope {
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
                     // Windows 11 shows the locale's long date without the year.
-                    text: Qt.locale().toString(expandedRoot.clockApplet.currentTime,
-                                               DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)))
+                    objectName: "wmCalendarDateHeading"
+                    text: DateFormat.calendarLongDate(expandedRoot.calendarLocale, expandedRoot.clockApplet.currentTime)
                     color: palette.textSecondary
                     font {
                         family: Kirigami.Theme.defaultFont.family
@@ -171,6 +197,7 @@ FocusScope {
         CalendarView {
             id: calendarView
             objectName: "wmCalendarSection"
+            calendarLocale: expandedRoot.calendarLocale
             applet: expandedRoot.clockApplet
             Layout.fillWidth: true
             Layout.fillHeight: false
@@ -207,6 +234,7 @@ FocusScope {
 
         DayAgenda {
             id: agenda
+            calendarLocale: expandedRoot.calendarLocale
             Layout.fillWidth: true
             visible: expandedRoot.calendarExpanded && calendarView.selectedDayEvents.length > 0
             date: calendarView.selectedDate
