@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Exact-path transaction for the reversible NixOS desktop test install."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -258,19 +259,63 @@ def make_staging(root, state):
     make_writable(lock, files=True)
     shutil.copy2(native / "icons/status/avatar-default.svg", lock / "default-avatar.svg")
 
+COMPILED_IDS = ("org.kde.windowsmodern.systemtray", "org.kde.windowsmodern.icontasks")
+
+
+def compiled_overrides():
+    # Local KPackage directories can shadow the new embedded QML in the
+    # compiled applets. Back up and remove these exact two paths only.
+    return [DATA / "plasma/plasmoids" / name for name in COMPILED_IDS]
+
+
 def all_targets(mapping):
-    return list(mapping) + [CONFIG / name for name in CONFIG_NAMES] + [
+    return list(mapping) + compiled_overrides() + [CONFIG / name for name in CONFIG_NAMES] + [
         DATA / "kxmlgui5/dolphin/dolphinui.rc",
     ] + [DATA / "locale" / lang / "LC_MESSAGES" / (domain + ".mo")
          for lang in LANGUAGES for domain in DOMAINS]
 
+def package_digest(path):
+    if not path.is_dir() or path.is_symlink():
+        raise RuntimeError("Expected real applet directory: " + str(path))
+    h = hashlib.sha256()
+    for item in sorted(path.rglob("*")):
+        relative = item.relative_to(path).as_posix().encode()
+        if item.is_symlink():
+            h.update(b"L\0" + relative + b"\0" + os.fsencode(os.readlink(item)) + b"\0")
+        elif item.is_file():
+            h.update(b"F\0" + relative + b"\0")
+            h.update(hashlib.sha256(item.read_bytes()).digest())
+    return h.hexdigest()
+
+
+def verify_sources(root):
+    for name in APP_IDS:
+        expected = package_digest(root / "plasma/applets" / name)
+        installed = package_digest(DATA / "plasma/plasmoids" / name)
+        if expected != installed:
+            raise RuntimeError("Installed applet differs from test source: " + name)
+        print(f"Verified QML {name}: {installed}")
+    for path in compiled_overrides():
+        if exists(path):
+            raise RuntimeError("Local package shadows compiled applet: " + str(path))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["install", "restore", "snapshot-current"])
+    parser.add_argument("action", choices=["install", "restore", "snapshot-current", "restore-upgrade", "verify-sources"])
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--state", type=Path, required=True)
     parser.add_argument("--profile", type=Path, required=True)
+    parser.add_argument("--upgrade-backup", type=Path)
     args = parser.parse_args()
+    if args.action == "verify-sources":
+        verify_sources(args.root)
+        return
+    if args.action == "restore-upgrade":
+        if args.upgrade_backup is None:
+            raise ValueError("Missing upgrade backup")
+        restore(args.upgrade_backup)
+        return
     backup = args.state / "original"
     if args.action == "restore":
         restore(backup)
@@ -287,8 +332,15 @@ def main():
         validate(dst)
         if not exists(src):
             raise RuntimeError("Missing installation input: " + str(src))
-    # Store the original pre-test state once. Reinstalls never overwrite it.
-    snapshot(backup, all_targets(mapping))
+    targets = all_targets(mapping)
+    # Back up the currently active version before overwriting anything.
+    # Preserve the original pre-test baseline independently for uninstall.
+    if args.upgrade_backup is not None:
+        previous = json.loads((backup / "manifest.json").read_text())
+        snapshot(args.upgrade_backup, targets + [Path(key) for key in previous["entries"]])
+    snapshot(backup, targets)
+    for path in compiled_overrides():
+        remove(validate(path))
     # Make writable local copies of file-level configuration symlinks. The
     # original link is restored on uninstall; no Nix configuration is edited.
     for name in CONFIG_NAMES:

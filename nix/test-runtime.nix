@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Build against the desktop's own nixpkgs revision, not a global system overlay.
-{ nixpkgsPath, plasmaVersion }:
+{ nixpkgsPath, plasmaVersion, buildToken }:
 let
   pkgs = import (builtins.toPath nixpkgsPath) { };
   k = pkgs.kdePackages;
@@ -13,12 +13,13 @@ let
   ];
   makeApplet = { name, src, id, rename ? false }: pkgs.stdenv.mkDerivation {
     pname = "windows-modern-test-" + name;
-    version = plasmaVersion;
+    version = plasmaVersion + "-" + buildToken;
+    wmBuildToken = buildToken;
     src = lib.cleanSourceWith {
       inherit src;
       filter = path: type:
         let n = baseNameOf path; in
-        !(n == "build" || lib.hasPrefix "build-" n || n == ".git");
+        !(n == "build" || lib.hasPrefix "build-" n || n == "wm-build" || n == ".git");
     };
     nativeBuildInputs = [ pkgs.cmake pkgs.ninja k.extra-cmake-modules k.qttools pkgs.python3 ];
     buildInputs = deps;
@@ -39,6 +40,16 @@ let
               if old in text:
                   path.write_text(text.replace(old, new), encoding="utf-8")
       PY
+    '' + ''
+      # A distinct token in the actual ELF, not merely the output symlink.
+      # Each run has new derivations for both applets; shared dependencies
+      # retain normal Nix caching.
+      cat > wm_build_identity.cpp <<EOF
+      extern "C" __attribute__((visibility("default"))) const char *windowsmodern_nixos_build_token() {
+          return "$wmBuildToken";
+      }
+      EOF
+      printf '\n%s\n' 'target_sources(${id} PRIVATE wm_build_identity.cpp)' >> CMakeLists.txt
     '';
     configurePhase = ''
       runHook preConfigure
@@ -53,6 +64,7 @@ let
     installPhase = ''
       runHook preInstall
       install -Dm755 wm-build/lib/plasma/applets/${id}.so "$out/${prefix}/plasma/applets/${id}.so"
+      printf '%s\n' "$src" > "$out/wm-source-${name}"
       runHook postInstall
     '';
   };
@@ -69,16 +81,18 @@ let
   };
   python = pkgs.python3.withPackages (p: [ p.pillow p.fonttools p.pygobject3 ]);
 in
+assert lib.assertMsg (builtins.match "[a-zA-Z0-9.-]+" buildToken != null) "Invalid test build token";
 assert lib.assertMsg (k.plasma-workspace.version == plasmaVersion)
   "Nixpkgs Plasma version does not match the running desktop; refusing an ABI-mismatched test build.";
 pkgs.symlinkJoin {
-  name = "windows-modern-nixos-test-runtime-" + plasmaVersion;
+  name = "windows-modern-nixos-test-runtime-" + plasmaVersion + "-" + buildToken;
   paths = [
     tasks tray pkgs.qt6Packages.qtstyleplugin-kvantum pkgs.bibata-cursors
     python pkgs.git pkgs.curl pkgs.gnutar pkgs.zip pkgs.unzip pkgs.dbus
     pkgs.xdg-utils pkgs.haruna k.kate pkgs.mission-center
   ];
   postBuild = ''
+    printf '%s\n' '${buildToken}' > "$out/wm-build-token"
     printf '%s\n' '${prefix}' > "$out/wm-qt-plugin-prefix"
     printf '%s\n' '${lib.getLib pkgs.glib}/lib/girepository-1.0:${pkgs.gobject-introspection}/lib/girepository-1.0' > "$out/wm-gi-typelib-path"
   '';

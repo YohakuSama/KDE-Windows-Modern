@@ -25,17 +25,30 @@ fi
 case "$action" in 1|install|all) action=install ;; 2|uninstall|remove) action=uninstall ;; *) echo "仅支持 1 或 2。"; exit 2 ;; esac
 systemctl --user cat "$SERVICE" >/dev/null || { echo "未找到 Plasma 用户服务。" >&2; exit 1; }
 
-# Only restore these environment variables. Never reset the rest of the user's environment.
-read_env() { systemctl --user show-environment | sed -n "s/^$1=//p" | head -n1; }
+# Restore only the variables owned by this test. Migrate older backups once.
+capture_env() {
+    local destination="$1" current
+    current="$(systemctl --user show-environment)" || return 1
+    printf '%s\n' "$current" | grep -E '^(QT_PLUGIN_PATH|XDG_DATA_DIRS|QML_DISABLE_DISK_CACHE)=' > "$destination" || [ "$?" -eq 1 ]
+}
 remember_env() {
-    [ ! -f "$STATE/original-env" ] || return 0
-    systemctl --user show-environment | grep -E '^(QT_PLUGIN_PATH|XDG_DATA_DIRS)=' > "$STATE/original-env" || true
+    if [ ! -f "$STATE/original-env" ]; then
+        capture_env "$STATE/original-env" || return 1
+    elif [ ! -f "$STATE/cache-env-saved" ]; then
+        local current
+        current="$(systemctl --user show-environment)" || return 1
+        if ! grep -q '^QML_DISABLE_DISK_CACHE=' "$STATE/original-env"; then
+            printf '%s\n' "$current" | grep '^QML_DISABLE_DISK_CACHE=' >> "$STATE/original-env" || [ "$?" -eq 1 ]
+        fi
+    fi
+    touch "$STATE/cache-env-saved"
 }
 restore_env() {
-    [ -f "$STATE/original-env" ] || return 0
+    local source="${1:-$STATE/original-env}"
+    [ -f "$source" ] || return 0
     local key line
-    for key in QT_PLUGIN_PATH XDG_DATA_DIRS; do
-        line="$(grep -m1 "^$key=" "$STATE/original-env" || true)"
+    for key in QT_PLUGIN_PATH XDG_DATA_DIRS QML_DISABLE_DISK_CACHE; do
+        line="$(grep -m1 "^$key=" "$source" || true)"
         if [ -n "$line" ]; then systemctl --user set-environment "$line"; else systemctl --user unset-environment "$key"; fi
     done
 }
@@ -48,11 +61,11 @@ set_profile_env() {
     data="$PROFILE/share:$old_data"
     mkdir -p "$CONFIG/environment.d" "$CONFIG/systemd/user/$SERVICE.d"
     # systemd environment.d also makes the runtime available on the next login.
-    printf 'QT_PLUGIN_PATH=%s\nXDG_DATA_DIRS=%s\n' "$qt" "$data" > "$CONFIG/environment.d/90-windows-modern-test.conf"
-    printf '[Service]\nEnvironment="QT_PLUGIN_PATH=%s"\nEnvironment="XDG_DATA_DIRS=%s"\n' \
+    printf 'QT_PLUGIN_PATH=%s\nXDG_DATA_DIRS=%s\nQML_DISABLE_DISK_CACHE=1\n' "$qt" "$data" > "$CONFIG/environment.d/90-windows-modern-test.conf"
+    printf '[Service]\nEnvironment="QT_PLUGIN_PATH=%s"\nEnvironment="XDG_DATA_DIRS=%s"\nEnvironment="QML_DISABLE_DISK_CACHE=1"\n' \
         "$qt" "$data" > "$CONFIG/systemd/user/$SERVICE.d/90-windows-modern-test.conf"
     systemctl --user daemon-reload
-    systemctl --user set-environment "QT_PLUGIN_PATH=$qt" "XDG_DATA_DIRS=$data"
+    systemctl --user set-environment "QT_PLUGIN_PATH=$qt" "XDG_DATA_DIRS=$data" "QML_DISABLE_DISK_CACHE=1"
 }
 wait_shell() {
     local n
@@ -149,6 +162,44 @@ recover_legacy_residue || {
     exit 1
 }
 
+# Each build has its own stable GC root. Keep the active runtime until a
+# verified upgrade commits. Never remove shared Nix store objects.
+remove_build_dir() {
+    local d="$1"
+    [ -d "$d" ] && [ ! -L "$d" ] && [ -f "$d/owned-build" ] || return 1
+    find -P "$d" -type d -exec chmod u+rwx -- {} + || return 1
+    rm -rf -- "$d" || return 1
+    [ ! -e "$d" ]
+}
+restore_previous_version() {
+    local d="$1" old oldpython
+    [ -f "$d/previous-runtime" ] && [ -f "$d/previous-env" ] || return 1
+    old="$(cat "$d/previous-runtime")" || return 1
+    case "$old" in /nix/store/*) ;; *) return 1 ;; esac
+    oldpython="$old/bin/python3"
+    [ -x "$oldpython" ] || return 1
+    stop_shell || return 1
+    if [ -f "$d/previous/manifest.json" ]; then
+        "$oldpython" "$ROOT/scripts/nixos-test-state.py" restore-upgrade --root "$ROOT" --state "$STATE" --profile "$old" --upgrade-backup "$d/previous" || { start_shell || true; return 1; }
+    fi
+    ln -sfn "$old" "$STATE/runtime" || return 1
+    systemctl --user daemon-reload || return 1
+    restore_env "$d/previous-env" || return 1
+    kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
+    busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null 2>&1 || true
+    start_shell || return 1
+    rm -f -- "$STATE/pending-build" || return 1
+    echo "已恢复升级前的运行时和桌面配置：$old"
+}
+if [ -f "$STATE/pending-build" ]; then
+    pending="$(cat "$STATE/pending-build")"
+    if [[ ! "$pending" =~ ^run\.[a-zA-Z0-9]+$ ]] ||
+       ! restore_previous_version "$STATE/builds/$pending"; then
+        echo "上次升级中断，恢复未完成；保留全部备份。" >&2
+        exit 1
+    fi
+fi
+
 if [ "$action" = uninstall ]; then
     if [ ! -f "$STATE/original/manifest.json" ]; then
         if [ -f "$STATE/owned-state" ]; then
@@ -175,23 +226,16 @@ if [ "$action" = uninstall ]; then
     exit 0
 fi
 
+upgrading=0
 if [ -f "$STATE/original/manifest.json" ]; then
-    echo "检测到上一次测试安装，先备份并恢复原桌面，再自动安装新版本。"
-    PROFILE="$(readlink -f "$STATE/runtime")"
-    PYTHON="$PROFILE/bin/python3"
-    [ -x "$PYTHON" ] || { echo "旧测试运行时缺失，保留备份，停止更新。" >&2; exit 1; }
-    export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
-    stop_shell
-    if ! "$PYTHON" "$ROOT/scripts/nixos-test-state.py" snapshot-current --root "$ROOT" --state "$STATE" --profile "$PROFILE"; then
-        start_shell || true
-        echo "更新前备份失败，未删除测试文件。" >&2
-        exit 1
-    fi
-    restore_original || { echo "旧测试恢复未完成，已保留备份。" >&2; exit 1; }
-    finish_cleanup
+    upgrading=1
+    old_profile="$(readlink -f "$STATE/runtime")"
+    [ -x "$old_profile/bin/python3" ] || { echo "旧测试运行时缺失，保留备份，停止升级。" >&2; exit 1; }
+    echo "增量升级：保留现有任务栏及原始卸载备份。"
+    echo "当前运行时：$old_profile"
 fi
 
-for cmd in nix-build nix systemctl busctl plasmashell plasma-apply-lookandfeel plasma-apply-wallpaperimage \
+for cmd in nix-build nix nix-hash systemctl busctl plasmashell plasma-apply-lookandfeel plasma-apply-wallpaperimage \
            kwriteconfig6 kreadconfig6 kbuildsycoca6; do
     command -v "$cmd" >/dev/null || { echo "缺少当前 Plasma 系统命令：$cmd" >&2; exit 1; }
 done
@@ -201,8 +245,25 @@ if [ -e "$STATE" ] && [ ! -f "$STATE/owned-state" ]; then
     echo "测试目录已存在但没有本脚本的所有权记录：$STATE" >&2
     exit 1
 fi
-mkdir -p "$STATE"
+mkdir -p "$STATE/builds"
 touch "$STATE/owned-state"
+BUILD_DIR="$(mktemp -d "$STATE/builds/run.XXXXXXXXXXXX")"
+touch "$BUILD_DIR/owned-build"
+BUILD_TOKEN="$(basename "$BUILD_DIR")"
+source_revision=unknown
+if [ -f "$ROOT/INTEGRATION-BUILD" ]; then
+    source_revision="$(head -n 1 "$ROOT/INTEGRATION-BUILD")"
+elif command -v git >/dev/null && git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    source_revision="$(git -C "$ROOT" rev-parse HEAD)"
+fi
+printf '源码版本：%s\n构建编号：%s\n' "$source_revision" "$BUILD_TOKEN"
+for applet in systemtray icontasks; do
+    digest="$(nix-hash --type sha256 "$ROOT/plasma/applets/org.kde.windowsmodern.$applet")"
+    printf '%s 源码哈希：%s\n' "$applet" "$digest"
+done
+# Before switching, a failed build or resource import cannot affect the
+# active desktop; remove only this attempt's own GC root and staging.
+trap 'rc=$?; if [ "$rc" -ne 0 ]; then remove_build_dir "$BUILD_DIR" || true; fi' EXIT
 # Prefer the exact nixpkgs revision of the running system, then its pinned
 # registry/channel. The build expression and ABI check reject mismatches.
 version="$(plasmashell --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
@@ -221,8 +282,13 @@ if [ -z "$nixpkgs" ]; then nixpkgs="$(nix-instantiate --find-file nixpkgs 2>/dev
 [ -d "$nixpkgs" ] || { echo "找不到当前系统对应的 nixpkgs。" >&2; exit 1; }
 echo "构建 Plasma $version 的系统托盘、任务栏及完整测试运行时……"
 nix-build "$ROOT/nix/test-runtime.nix" --argstr nixpkgsPath "$nixpkgs" --argstr plasmaVersion "$version" \
-    --out-link "$STATE/runtime-next"
-PROFILE="$(readlink -f "$STATE/runtime-next")"
+    --argstr buildToken "$BUILD_TOKEN" --out-link "$BUILD_DIR/runtime"
+PROFILE="$(readlink -f "$BUILD_DIR/runtime")"
+[ "$(cat "$PROFILE/wm-build-token")" = "$BUILD_TOKEN" ] || { echo "构建编号错误，拒绝旧运行时。" >&2; exit 1; }
+printf '新运行时：%s\n' "$PROFILE"
+if [ "$upgrading" -eq 1 ] && [ "$PROFILE" = "$old_profile" ]; then
+    echo "新旧运行时路径相同，拒绝继续安装。" >&2; exit 1
+fi
 PYTHON="$PROFILE/bin/python3"
 export PATH="$PROFILE/bin:$PATH"
 export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
@@ -233,6 +299,8 @@ plugin="$PROFILE/$prefix"
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"
 tasks="$plugin/plasma/applets/org.kde.windowsmodern.icontasks.so"
 [ -s "$tray" ] && [ -s "$tasks" ] || { echo "两个 C++ 插件未完整构建。" >&2; exit 1; }
+"$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" --token "$BUILD_TOKEN" --tray "$tray" --tasks "$tasks"
+printf '系统托盘构建输入：%s\n任务栏构建输入：%s\n' "$(cat "$PROFILE/wm-source-systemtray")" "$(cat "$PROFILE/wm-source-icontasks")"
 
 # Exact Qt/Plasma library paths must agree with the live shell, not just
 # their major version. An incompatible update is stopped before any settings change.
@@ -266,16 +334,29 @@ WM_NATIVE_RESOURCE_SOURCE="$input" WM_NATIVE_ASSETS_DIR="$STATE/native" bash "$R
 # A successful build/import is not a configuration change. Back up the
 # running desktop after stopping the shell so its final settings are flushed.
 remember_env
-ln -sfn "$STATE/runtime-next" "$STATE/runtime"
+upgrade_args=()
+if [ "$upgrading" -eq 1 ]; then
+    printf '%s\n' "$old_profile" > "$BUILD_DIR/previous-runtime"
+    capture_env "$BUILD_DIR/previous-env"
+    upgrade_args=(--upgrade-backup "$BUILD_DIR/previous")
+    printf '%s\n' "$(basename "$BUILD_DIR")" > "$STATE/pending-build"
+fi
 rollback() {
     local rc="${1:-$?}"
     trap - ERR EXIT INT TERM
     set +e
     echo "安装未完成，正在恢复安装前的桌面……" >&2
-    if [ -f "$STATE/original/manifest.json" ]; then
+    if [ "$upgrading" -eq 1 ]; then
+        if restore_previous_version "$BUILD_DIR"; then
+            remove_build_dir "$BUILD_DIR" || echo "失败构建残留：$BUILD_DIR" >&2
+        else
+            echo "升级回滚失败，保留原始和升级前备份：$STATE" >&2
+        fi
+    elif [ -f "$STATE/original/manifest.json" ]; then
         restore_original && finish_cleanup || echo "自动恢复失败，备份已保留：$STATE" >&2
     else
         start_shell || true
+        remove_build_dir "$BUILD_DIR" || true
     fi
     exit "$rc"
 }
@@ -285,13 +366,19 @@ trap 'exit 143' TERM
 trap 'rc=$?; if [ "$rc" -ne 0 ]; then rollback "$rc"; fi' EXIT
 echo "正在自动备份原始桌面配置和将被替换的资源……"
 stop_shell
-"$PYTHON" "$ROOT/scripts/nixos-test-state.py" install --root "$ROOT" --state "$STATE" --profile "$PROFILE"
+"$PYTHON" "$ROOT/scripts/nixos-test-state.py" install --root "$ROOT" --state "$STATE" --profile "$PROFILE" "${upgrade_args[@]}"
+"$PYTHON" "$ROOT/scripts/nixos-test-state.py" verify-sources --root "$ROOT" --state "$STATE" --profile "$PROFILE"
+ln -sfn "$PROFILE" "$STATE/runtime"
 set_profile_env "$plugin"
 start_shell
 
 export WM_SHORTCUT_BACKUP="$STATE/shortcut-backup.json"
 kbuildsycoca6 --noincremental >/dev/null
-plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant" --resetLayout
+if [ "$upgrading" -eq 0 ]; then
+    plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant" --resetLayout
+else
+    plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant"
+fi
 kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle "$( [ "$variant" = dark ] && echo kvantum-dark || echo kvantum )"
 kwriteconfig6 --file Kvantum/kvantum.kvconfig --group General --key theme Windows-modern
 kwriteconfig6 --file kdeglobals --group Icons --key Theme windows-modern
@@ -317,11 +404,13 @@ fi
     --kvantum-dir "$CONFIG/Kvantum/Windows-modern" --wallpaper-package "$DATA/wallpapers/Windows-modern"
 busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 sleep 2
-"$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group shortcuts
-"$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group apps
-stop_shell
-"$PYTHON" "$ROOT/scripts/windows-shortcuts.py" tray-apply
-start_shell
+if [ "$upgrading" -eq 0 ]; then
+    "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group shortcuts
+    "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group apps
+    stop_shell
+    "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" tray-apply
+    start_shell
+fi
 bash "$ROOT/scripts/set-wallpaper.sh"
 
 # Do not report success with stock fallback applets or a stale C++ plugin.
@@ -330,9 +419,41 @@ for id in org.kde.windowsmodern.startmenu org.kde.windowsmodern.systemtray \
           org.kde.windowsmodern.icontasks org.kde.windowsmodern.digitalclock org.kde.windowsmodern.showdesktop; do
     grep -qx "plugin=$id" "$layout" || { echo "任务栏未加载 $id" >&2; false; }
 done
-pid="$(systemctl --user show "$SERVICE" -p MainPID --value)"
-grep -Fq 'org.kde.windowsmodern.systemtray.so' "/proc/$pid/maps"
-grep -Fq 'org.kde.windowsmodern.icontasks.so' "/proc/$pid/maps"
+# A filename match is NOT sufficient. Verify both mapped objects have
+# exactly the new immutable store paths, inodes, and compiled build token.
+verified=0
+for attempt in {1..20}; do
+    pid="$(systemctl --user show "$SERVICE" -p MainPID --value)"
+    if "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" --token "$BUILD_TOKEN" --tray "$tray" --tasks "$tasks" --pid "$pid" --quiet 2>/dev/null; then
+        verified=1
+        break
+    fi
+    sleep 1
+done
+[ "$verified" -eq 1 ] || {
+    "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" --token "$BUILD_TOKEN" --tray "$tray" --tasks "$tasks" --pid "$pid"
+    echo "Plasma 未加载本次构建，拒绝报告安装成功。" >&2
+    false
+}
+"$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" --token "$BUILD_TOKEN" --tray "$tray" --tasks "$tasks" --pid "$pid"
+"$PYTHON" "$ROOT/scripts/nixos-test-state.py" verify-sources --root "$ROOT" --state "$STATE" --profile "$PROFILE"
+if [ "$upgrading" -eq 1 ]; then
+    backups="$(dirname "$STATE")/windows-modern-nixos-backups"
+    mkdir -p "$backups"
+    saved="$(mktemp -d "$backups/upgrade-$(date +%Y%m%d-%H%M%S).XXXXXX")"
+    cp -a "$BUILD_DIR/previous" "$BUILD_DIR/previous-env" "$BUILD_DIR/previous-runtime" "$saved/"
+    echo "升级前备份：$saved"
+    rm -f -- "$STATE/pending-build"
+fi
+printf '%s\n' "$BUILD_TOKEN" > "$STATE/active-build"
 trap - ERR EXIT INT TERM
-echo "完整测试安装已完成。原版壁纸、锁屏、开始菜单、任务栏及快捷设置已安装。"
+# Only after verification and backup: retire the previous build roots.
+for old_build in "$STATE"/builds/run.*; do
+    [ "$old_build" = "$BUILD_DIR" ] && continue
+    [ -d "$old_build" ] || continue
+    remove_build_dir "$old_build" || echo "保留无法安全清理的旧构建：$old_build" >&2
+done
+if [ -L "$STATE/runtime-next" ]; then rm -f -- "$STATE/runtime-next"; fi
+printf '安装完成，当前运行时：%s\n构建编号：%s\n' "$PROFILE" "$BUILD_TOKEN"
+echo "原版壁纸、锁屏、开始菜单、任务栏及快捷设置已更新。"
 echo "运行同一脚本并选择 2，即可恢复原桌面并清理本次安装。"
