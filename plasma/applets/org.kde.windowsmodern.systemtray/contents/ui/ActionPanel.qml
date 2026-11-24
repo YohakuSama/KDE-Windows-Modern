@@ -46,8 +46,8 @@ ColumnLayout {
 
     onVisibleChanged: if (!visible && toggleViewport) toggleViewport.cancelDrag()
 
-    // Full-width three-column grid. Wheel, touch and focused tile keys
-    // still reach every row without a separate arrow/scrollbar rail.
+    // The 26H2 reference has page dots and a single directional arrow
+    // only when more than two rows are available. No idle scrollbar rail.
     Item {
         id: toggleRow
         Layout.fillWidth: true
@@ -71,6 +71,7 @@ ColumnLayout {
         Flickable {
             id: toggleViewport
             anchors.fill: parent
+            anchors.rightMargin: hasMoreRows ? Math.round(16 * actionPanel.scale) : 0
             objectName: "wmQuickSettingsGridViewport"
             readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile, castTile, accessibilityTile]
             readonly property var knownKeys: tiles.map(tile => tile.orderKey)
@@ -80,8 +81,8 @@ ColumnLayout {
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
             readonly property bool hasMoreRows: rows > 2
-            readonly property real rowGap: Math.round(12 * actionPanel.scale)
-            readonly property real columnGap: Math.round(6 * actionPanel.scale)
+            readonly property real rowGap: Math.round(16 * actionPanel.scale)
+            readonly property real columnGap: Math.round(12 * actionPanel.scale)
             readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
             // Height follows the tallest caption (system font), not the
             // effective visibility or width of a GridLayout parent.
@@ -91,6 +92,8 @@ ColumnLayout {
             readonly property real rowStride: rowHeight + rowGap
             readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
+            readonly property int pageCount: Math.max(1, Math.ceil(rows / 2))
+            readonly property int currentPage: maxOffset > 0 ? Math.round(contentY / maxOffset * (pageCount - 1)) : 0
 
             property string dragKey: ""
             property int dropIndex: -1
@@ -128,6 +131,10 @@ ColumnLayout {
 
             function page(direction) {
                 setOffsetImmediately(contentY + direction * height);
+            }
+
+            function showPage(index) {
+                setOffsetImmediately(pageCount > 1 ? index * maxOffset / (pageCount - 1) : 0);
             }
 
             // The same native wheel event filter used by Plasma Kickoff.
@@ -376,6 +383,66 @@ ColumnLayout {
             }
 
 
+        }
+
+        Column {
+            id: pageControls
+            objectName: "wmQuickSettingsPageControls"
+            visible: toggleViewport.hasMoreRows
+            width: Math.round(16 * actionPanel.scale)
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+
+            Repeater {
+                model: toggleViewport.pageCount
+                delegate: Item {
+                    id: pageDot
+                    required property int index
+                    width: pageControls.width
+                    height: Math.round(12 * actionPanel.scale)
+                    Accessible.role: Accessible.Button
+                    Accessible.name: i18n("Page %1", index + 1)
+                    Accessible.onPressAction: toggleViewport.showPage(index)
+                    activeFocusOnTab: true
+                    Keys.onReturnPressed: toggleViewport.showPage(index)
+                    Keys.onSpacePressed: toggleViewport.showPage(index)
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: Math.round((toggleViewport.currentPage === pageDot.index ? 6 : 4) * actionPanel.scale)
+                        height: width
+                        radius: width / 2
+                        color: Kirigami.Theme.textColor
+                        opacity: toggleViewport.currentPage === pageDot.index || pageDot.activeFocus ? 0.9 : 0.4
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: toggleViewport.showPage(pageDot.index) }
+                }
+            }
+
+            Item {
+                id: pageArrow
+                width: pageControls.width
+                height: Math.round(16 * actionPanel.scale)
+                readonly property bool atEnd: toggleViewport.contentY >= toggleViewport.maxOffset - 1
+                function navigate() { toggleViewport.page(atEnd ? -1 : 1); }
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: atEnd ? i18n("Previous page") : i18n("Next page")
+                Accessible.onPressAction: navigate()
+                Keys.onReturnPressed: navigate()
+                Keys.onSpacePressed: navigate()
+                Kirigami.Icon {
+                    anchors.centerIn: parent
+                    width: Math.round(12 * actionPanel.scale)
+                    height: width
+                    source: pageArrow.atEnd ? "go-up" : "go-down"
+                    isMask: true
+                    color: Kirigami.Theme.textColor
+                    roundToIconSize: false
+                    opacity: pageArrow.activeFocus ? 1 : 0.7
+                }
+                MouseArea { anchors.fill: parent; onClicked: pageArrow.navigate() }
+            }
         }
     }
 

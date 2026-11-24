@@ -74,8 +74,9 @@ ColumnLayout {
         AToolButton {
             visible: favoritesListView.count > pinnedPage.columns * pinnedPage.previewRows
             flat: true
+            linkStyle: true
             iconName: pinnedPage.showAllPinned ? "go-up" : "go-down"
-            text: pinnedPage.showAllPinned ? i18n("Show less") : i18n("Show all pinned")
+            text: pinnedPage.showAllPinned ? i18n("Show less") : i18n("Show all")
             onClicked: {
                 pinnedPage.showAllPinned = !pinnedPage.showAllPinned;
                 if (!pinnedPage.showAllPinned) {
@@ -83,14 +84,6 @@ ColumnLayout {
                     favoritesListView.positionViewAtBeginning();
                 }
             }
-        }
-        AToolButton {
-            buttonHeight: 25
-            flat: true
-            iconName: "go-next"
-            text: i18n("All apps")
-            Layout.rightMargin: Kirigami.Units.mediumSpacing
-            onClicked: pinnedPage.showAllAppsRequested()
         }
     }
 
@@ -105,7 +98,7 @@ ColumnLayout {
         clip: true
         interactive: false
         cellWidth: Math.max(1, Math.floor(width / pinnedPage.columns))
-        cellHeight: Math.max(80, Kirigami.Units.iconSizes.medium + 2 * Kirigami.Units.gridUnit + 12)
+        cellHeight: 80
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
 
@@ -118,7 +111,7 @@ ColumnLayout {
 
         delegate: ListItemDelegate {
             gridMode: true
-            iconSize: Kirigami.Units.iconSizes.medium
+            iconSize: 32
             dragEnabled: true
         }
 

@@ -21,7 +21,7 @@ Rectangle {
     implicitHeight: buttonHeight
     implicitWidth: row.implicitWidth + (Kirigami.Units.mediumSpacing * 2)
 
-    border.width: 1
+    border.width: linkStyle ? 0 : 1
     border.color: Qt.rgba(Kirigami.Theme.textColor.r,
                            Kirigami.Theme.textColor.g,
                            Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
@@ -36,7 +36,7 @@ Rectangle {
                    ? Qt.rgba(Kirigami.Theme.textColor.r,
                               Kirigami.Theme.textColor.g,
                               Kirigami.Theme.textColor.b, Theme.buttonFlatHoverOpacity)
-                   : Qt.rgba(Kirigami.Theme.textColor.r,
+                   : linkStyle ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r,
                               Kirigami.Theme.textColor.g,
                               Kirigami.Theme.textColor.b, Theme.buttonFlatBackgroundOpacity);
         }
@@ -50,6 +50,7 @@ Rectangle {
 
     property alias text: lb.text
     property bool flat: false
+    property bool linkStyle: false
     property alias iconName: icon.source
     property bool mirror: false
 

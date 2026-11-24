@@ -165,11 +165,13 @@ Item {
         FocusScope {
             id: rootItem
 
-            readonly property int margin: Kirigami.Units.gridUnit
+            readonly property int margin: 28
             readonly property rect screen: Plasmoid.screenGeometry
-            readonly property int wantedWidth: screen.width >= 1440 ? 768 : 600
+            readonly property bool largeLayout: screen.width >= 1440
+            readonly property int wantedWidth: largeLayout ? 768 : 560
+            readonly property int wantedHeight: largeLayout ? 720 : 640
             width: Math.max(1, Math.min(wantedWidth, screen.width > 0 ? screen.width - 2 * margin : wantedWidth))
-            height: Math.max(1, Math.min(720, screen.height > 0 ? screen.height - 4 * margin : 720))
+            height: Math.max(1, Math.min(wantedHeight, screen.height > 0 ? screen.height - 3 * margin : wantedHeight))
             focus: true
 
             // Note: do NOT auto-redirect to the search field here.
@@ -305,6 +307,7 @@ Item {
                     flatModel: sortedAppsModel
                     categoryModel: nativeCategoryModel
                     categoryMode: Plasmoid.configuration.allAppsViewMode === 2
+                    gridMode: Plasmoid.configuration.allAppsViewMode === 1
                     onKeyNavUpFromList: {
                         root.leftColumnState = 0;
                         allAppsPage.allAppsList.positionViewAtBeginning();
@@ -340,8 +343,9 @@ Item {
                                     font.weight: Font.DemiBold
                                 }
                                 AToolButton {
-                                    visible: recentGrid.count > 4
+                                    visible: recentGrid.count > recentGrid.recentColumns * 2
                                     flat: true
+                                    linkStyle: true
                                     iconName: root.showMoreRecent ? "go-up" : "go-next"
                                     text: root.showMoreRecent ? i18n("Show less") : i18n("More")
                                     onClicked: root.showMoreRecent = !root.showMoreRecent
@@ -351,10 +355,11 @@ Item {
                             GridView {
                                 id: recentGrid
                                 Layout.fillWidth: true
+                                readonly property int recentColumns: rootItem.largeLayout ? 3 : 2
                                 Layout.preferredHeight: (root.showMoreRecent
-                                    ? Math.ceil(count / 2) : Math.min(2, Math.ceil(count / 2))) * cellHeight
-                                cellWidth: Math.max(1, Math.floor(width / 2))
-                                cellHeight: Math.max(48, Kirigami.Units.iconSizes.smallMedium + Kirigami.Units.gridUnit)
+                                    ? Math.ceil(count / recentColumns) : Math.min(2, Math.ceil(count / recentColumns))) * cellHeight
+                                cellWidth: Math.max(1, Math.floor(width / recentColumns))
+                                cellHeight: 40
                                 visible: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) && count > 0
                                 model: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
                                     ? recentUsage : null
@@ -395,14 +400,22 @@ Item {
                                     font.weight: Font.DemiBold
                                 }
 
-                                AToolButton {
-                                    text: allAppsPage.categoryMode ? i18n("List") : i18n("Categories")
-                                    iconName: allAppsPage.categoryMode ? "view-list-icons" : "view-grid"
-                                    flat: true
-                                    onClicked: {
+                                PlasmaComponents3.ComboBox {
+                                    id: viewSelector
+                                    Layout.preferredWidth: Math.max(132, implicitWidth)
+                                    Layout.preferredHeight: 30
+                                    model: [i18n("List"), i18n("Grid"), i18n("Category")]
+                                    currentIndex: Plasmoid.configuration.allAppsViewMode
+                                    displayText: i18n("View: %1", currentText)
+                                    background: Rectangle {
+                                        radius: 4
+                                        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                            Kirigami.Theme.textColor.b, viewSelector.hovered || viewSelector.activeFocus ? 0.06 : 0)
+                                    }
+                                    onActivated: index => {
                                         root.leftColumnState = 1;
                                         allAppsPage.resetCategory();
-                                        Plasmoid.configuration.allAppsViewMode = allAppsPage.categoryMode ? 0 : 2;
+                                        Plasmoid.configuration.allAppsViewMode = index;
                                         Qt.callLater(allAppsPage.focusFirstApp);
                                     }
                                 }

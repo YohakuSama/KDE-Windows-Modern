@@ -12,7 +12,7 @@ Lib.Slider {
     property int panelScreenIndex: -1
 
     iconSource: "brightness-high-symbolic"
-    iconSize: Kirigami.Units.iconSizes.smallMedium
+    iconSize: 20
     showArrow: true
 
     ScreenBrightnessControl {

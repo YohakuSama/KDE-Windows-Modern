@@ -12,7 +12,7 @@ Item {
     property int to: 100
     property int value: 0
     property int stepSize: 1
-    property int iconSize: Kirigami.Units.iconSizes.smallMedium
+    property int iconSize: 20
     property bool pressed: false
     property bool showArrow: false
     property bool iconClickable: false
@@ -48,6 +48,7 @@ Item {
             Layout.preferredHeight: root.iconSize
             Layout.alignment: Qt.AlignVCenter
             source: root.iconSource
+            roundToIconSize: false
             isMask: true
             color: Kirigami.Theme.textColor
 
@@ -66,6 +67,50 @@ Item {
             to: root.to
             value: root.value
             stepSize: root.stepSize
+            leftPadding: 0
+            rightPadding: 0
+
+            // Fluent track and thumb; the native control retains keyboard,
+            // mouse, accessibility, wheel and value semantics.
+            background: Item {
+                x: slider.leftPadding + 10
+                y: (slider.height - height) / 2
+                width: Math.max(0, slider.availableWidth - 20)
+                height: 4
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 2
+                    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                        Kirigami.Theme.textColor.b, 0.38)
+                }
+                Rectangle {
+                    width: parent.width * slider.position
+                    height: parent.height
+                    x: slider.mirrored ? parent.width - width : 0
+                    radius: 2
+                    color: Kirigami.Theme.highlightColor
+                }
+            }
+
+            handle: Rectangle {
+                x: slider.leftPadding + slider.visualPosition * Math.max(0, slider.availableWidth - width)
+                y: (slider.height - height) / 2
+                width: 20
+                height: 20
+                radius: width / 2
+                color: Kirigami.Theme.backgroundColor
+                border.width: 1
+                border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                    Kirigami.Theme.textColor.b, 0.20)
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: slider.pressed ? 10 : 12
+                    height: width
+                    radius: width / 2
+                    color: Kirigami.Theme.highlightColor
+                }
+            }
+
             onMoved: root.moved(value)
             onPressedChanged: {
                 if (!slider.pressed)

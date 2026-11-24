@@ -1,4 +1,10 @@
 {
+  "Show all": "显示全部",
+  "Grid": "网格",
+  "View: %1": "视图：%1",
+  "Page %1": "第 %1 页",
+  "Previous page": "上一页",
+  "Next page": "下一页",
   "Bluetooth devices": "蓝牙设备",
   "Accessibility": "辅助功能",
   "Cast": "投屏",

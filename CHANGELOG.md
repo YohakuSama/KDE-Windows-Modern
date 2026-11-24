@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Windows 11 26H2 Start and Quick Settings
+
+- Use responsive category preview cards and list/grid/category selection in the inline Start home, compact the search field and pinned preview, and remove the redundant All apps shortcut.
+- Restore conditional Quick Settings page dots and a single direction arrow; refine tile spacing, split controls and Fluent slider proportions without replacing the KDE backends.
+
 ### Calendar and panel optical balance
 
 - Accumulate calendar wheel deltas, ignore horizontal and zero input, and limit touchpad swipes to one page until idle.

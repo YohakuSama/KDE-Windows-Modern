@@ -119,9 +119,10 @@ ColumnLayout {
 
         Kirigami.Icon {
             anchors.centerIn: parent
-            width: Kirigami.Units.iconSizes.smallMedium
-            height: Kirigami.Units.iconSizes.smallMedium
+            width: 20
+            height: width
             source: tile.iconSource
+            roundToIconSize: false
             color: tile.fg
             isMask: true
         }

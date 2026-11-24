@@ -43,19 +43,20 @@ RowLayout {
         Layout.fillWidth: true
         focus: true
         placeholderText: i18n("Search for apps, settings, and files")
-        topPadding: 8
-        bottomPadding: 8
-        leftPadding: Kirigami.Units.gridUnit + Kirigami.Units.iconSizes.small
-        font.pointSize: Kirigami.Theme.defaultFont.pointSize
+        Layout.preferredHeight: 32
+        topPadding: 4
+        bottomPadding: 4
+        leftPadding: 36
+        font.pixelSize: 14
 
         background: Rectangle {
-            color: Kirigami.Theme.backgroundColor
-            radius: Kirigami.Units.smallSpacing * 3
+            color: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Dark
+                ? Qt.rgba(0, 0, 0, 0.22) : Qt.rgba(1, 1, 1, 0.68)
+            radius: height / 2
             border.width: 1
-            border.color: searchFieldInput.activeFocus ? Kirigami.Theme.highlightColor
-                : Qt.rgba(Kirigami.Theme.textColor.r,
-                          Kirigami.Theme.textColor.g,
-                          Kirigami.Theme.textColor.b, Theme.fieldBorderOpacity)
+            border.color: Qt.rgba(Kirigami.Theme.textColor.r,
+                                  Kirigami.Theme.textColor.g,
+                                  Kirigami.Theme.textColor.b, searchFieldInput.activeFocus ? 0.15 : 0.08)
             Behavior on border.color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
         }
 

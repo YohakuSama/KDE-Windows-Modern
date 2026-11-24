@@ -124,7 +124,7 @@ ColumnLayout {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * 0.70
+            width: parent.width * 0.60
             acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -144,7 +144,7 @@ ColumnLayout {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * 0.30
+            width: parent.width * 0.40
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             activeFocusOnTab: true
@@ -159,11 +159,12 @@ ColumnLayout {
         }
 
         Kirigami.Icon {
-            x: parent.width * 0.35 - width / 2
+            x: parent.width * 0.38 - width / 2
             anchors.verticalCenter: parent.verticalCenter
-            width: Kirigami.Units.iconSizes.smallMedium
-            height: Kirigami.Units.iconSizes.smallMedium
+            width: 20
+            height: width
             source: tile.iconSource
+            roundToIconSize: false
             opacity: tile.toggleAvailable ? 1 : 0.55
             color: tile.fg
             isMask: true
@@ -171,14 +172,15 @@ ColumnLayout {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            x: parent.width * 0.70
+            x: parent.width * 0.60
             width: 1
             height: parent.height * 0.5
+            visible: toggleMA.containsMouse || arrowMA.containsMouse || arrowMA.activeFocus
             color: active ? Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, 0.28) : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
         }
 
         Kirigami.Icon {
-            x: bg.width * 0.85 - width / 2
+            x: bg.width * 0.68 - width / 2
             anchors.verticalCenter: parent.verticalCenter
             width: Kirigami.Units.iconSizes.small
             height: Kirigami.Units.iconSizes.small
