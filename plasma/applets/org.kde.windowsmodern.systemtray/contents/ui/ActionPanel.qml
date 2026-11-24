@@ -59,7 +59,7 @@ ColumnLayout {
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
         Layout.maximumHeight: implicitHeight
-        readonly property int railWidth: Math.round(24 * actionPanel.scale)
+        readonly property int railWidth: Math.max(24, Math.round(24 * actionPanel.scale))
         readonly property int railGap: Math.round(4 * actionPanel.scale)
 
         // Measure the caption independently of visibility. QQuickLayout
@@ -142,6 +142,29 @@ ColumnLayout {
                 scrollTo(start + direction * 2 * rowStride);
             }
 
+            function setOffsetImmediately(offset) {
+                scrollMotion.stop();
+                cancelFlick();
+                contentY = Order.clampOffset(offset, maxOffset);
+            }
+
+            function scrollWheel(event) {
+                const delta = Order.wheelDistance(event.pixelDelta.y, event.angleDelta.y, rowStride);
+                if (delta === 0 || !hasMoreRows || dragKey !== "") {
+                    event.accepted = false;
+                    return;
+                }
+                setOffsetImmediately(contentY - delta);
+                event.accepted = true;
+            }
+
+            WheelHandler {
+                target: null
+                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                enabled: toggleViewport.hasMoreRows && toggleViewport.dragKey === ""
+                onWheel: event => toggleViewport.scrollWheel(event)
+            }
+
             function ensureVisible(key) {
                 const index = visibleKeys.indexOf(key);
                 if (index < 0 || dragKey !== "")
@@ -214,7 +237,7 @@ ColumnLayout {
                 cancelDrag();
                 if (destination >= 0)
                     saveMove(key, destination);
-                scrollTo(Order.snapOffset(contentY, rowStride, maxOffset));
+                setOffsetImmediately(contentY);
             }
 
             function cancelDrag(key) {
@@ -229,19 +252,19 @@ ColumnLayout {
                     cancelDrag();
                     Qt.callLater(() => {
                         if (!toggleViewport.dragKey)
-                            toggleViewport.scrollTo(Order.snapOffset(toggleViewport.contentY,
-                                toggleViewport.rowStride, toggleViewport.maxOffset));
+                            toggleViewport.setOffsetImmediately(toggleViewport.contentY);
                     });
                 }
             }
             onMovementStarted: scrollMotion.stop()
-            onMovementEnded: if (!dragKey) scrollTo(Order.snapOffset(contentY, rowStride, maxOffset))
+            // Preserve the precise wheel, touchpad or thumb position; do not
+            // snap back to a row when a gesture stops.
 
             NumberAnimation {
                 id: scrollMotion
                 target: toggleViewport
                 property: "contentY"
-                duration: Kirigami.Units.shortDuration
+                duration: Math.min(100, Kirigami.Units.shortDuration)
                 easing.type: Easing.OutCubic
             }
 
@@ -366,34 +389,7 @@ ColumnLayout {
                 z: 1
             }
 
-            QQC2.ScrollBar.vertical: QQC2.ScrollBar {
-                id: rowScrollBar
-                parent: scrollTrack
-                anchors.fill: parent
-                policy: QQC2.ScrollBar.AlwaysOn
-                leftPadding: Math.max(0, (width - 4) / 2)
-                rightPadding: leftPadding
-                contentItem: Rectangle {
-                    implicitWidth: 4
-                    radius: width / 2
-                    color: Kirigami.Theme.textColor
-                    opacity: rowScrollBar.pressed || rowScrollBar.hovered ? 0.65 : 0.40
-                }
-                background: Rectangle {
-                    width: 2
-                    x: (parent.width - width) / 2
-                    radius: 1
-                    color: Kirigami.Theme.textColor
-                    opacity: 0.12
-                }
-                onPressedChanged: {
-                    if (pressed)
-                        scrollMotion.stop();
-                    else if (!toggleViewport.dragKey)
-                        toggleViewport.scrollTo(Order.snapOffset(toggleViewport.contentY,
-                            toggleViewport.rowStride, toggleViewport.maxOffset));
-                }
-            }
+
         }
 
         // The rail is reserved from the row count, not scrollbar geometry,
@@ -425,6 +421,54 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.minimumHeight: 8
+                readonly property real thumbHeight: Math.min(height, Math.max(24,
+                    height * toggleViewport.height / Math.max(1, toggleViewport.contentHeight)))
+                readonly property real thumbTravel: Math.max(0, height - thumbHeight)
+                readonly property real thumbY: toggleViewport.maxOffset > 0
+                    ? thumbTravel * toggleViewport.contentY / toggleViewport.maxOffset : 0
+
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 2
+                    height: parent.height
+                    radius: 1
+                    color: Kirigami.Theme.textColor
+                    opacity: 0.16
+                }
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: scrollTrack.thumbY
+                    width: railPointer.containsMouse || railPointer.pressed ? 8 : 4
+                    height: scrollTrack.thumbHeight
+                    radius: width / 2
+                    color: Kirigami.Theme.textColor
+                    opacity: railPointer.pressed ? 0.8 : railPointer.containsMouse ? 0.65 : 0.45
+                }
+
+                // The entire rail is the hit target. A drag across its
+                // available travel maps directly to the full content range.
+                // No smoothing animation, repeated paging or row snap.
+                MouseArea {
+                    id: railPointer
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton
+                    enabled: toggleViewport.hasMoreRows && toggleViewport.dragKey === ""
+                    property real grabOffset: 0
+                    onPressed: mouse => {
+                        const y = mouse.y;
+                        grabOffset = y >= scrollTrack.thumbY && y <= scrollTrack.thumbY + scrollTrack.thumbHeight
+                            ? y - scrollTrack.thumbY : scrollTrack.thumbHeight / 2;
+                        toggleViewport.setOffsetImmediately(Order.thumbOffset(y, grabOffset,
+                            scrollTrack.height, scrollTrack.thumbHeight, toggleViewport.maxOffset));
+                    }
+                    onPositionChanged: mouse => {
+                        if (pressed)
+                            toggleViewport.setOffsetImmediately(Order.thumbOffset(mouse.y, grabOffset,
+                                scrollTrack.height, scrollTrack.thumbHeight, toggleViewport.maxOffset));
+                    }
+                    onWheel: wheel => toggleViewport.scrollWheel(wheel)
+                }
             }
             PlasmaComponents3.ToolButton {
                 id: nextPageButton

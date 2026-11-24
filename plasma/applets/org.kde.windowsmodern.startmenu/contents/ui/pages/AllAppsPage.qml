@@ -108,7 +108,7 @@ ColumnLayout {
         clip: true
         interactive: true
         spacing: Kirigami.Units.smallSpacing / 2
-        readonly property int scrollGutter: 14
+        readonly property int scrollGutter: 18
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1

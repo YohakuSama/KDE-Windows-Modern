@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
-// Windows 11 reference sizes are logical pixels. Qt handles output scaling.
+// Windows 11 at 100%: 48px taskbar, 24px task icons, 16px tray icons.
+// DPI is applied by Qt, never by multiplying the logical size by screen DPR.
+// Explicit panel-size scaling remains an opt-in; 48px always gives 16px.
 function iconSize(thickness, scaleToFit) {
     const limit = Math.max(1, Math.floor(thickness));
-    return Math.min(limit, scaleToFit ? Math.max(16, Math.min(48, Math.round(limit * 2 / 3))) : 16);
+    const requested = scaleToFit ? Math.max(16, Math.min(32, Math.round(limit / 3))) : 16;
+    return Math.min(limit, requested);
 }
 
-// System-tray glyphs are smaller than taskbar app icons. Default 18px
-// logical box, independent of the Start logo. Scale only if explicitly
-// selected in the tray settings; cap the size even on very tall panels.
 function coreIconSize(thickness, scaleToFit) {
-    const limit = Math.max(1, Math.floor(thickness));
-    return Math.min(limit, scaleToFit ? Math.max(18, Math.min(32, Math.round(limit * 3 / 8))) : 18);
+    return iconSize(thickness, scaleToFit);
 }
 
-// Keep the native applet at the same 32px render geometry as before;
-// shrink the visual host, not the underlying applet's state or hit area.
+// Fallback host for native compact applets, used only if the direct status
+// glyph component cannot load. It does not determine the rendered glyph size.
 function coreRenderSize(displaySize) {
-    if (displaySize <= 16) return 16;
+    if (displaySize < 16) return 16;
     if (displaySize <= 32) return 32;
     return 48;
 }

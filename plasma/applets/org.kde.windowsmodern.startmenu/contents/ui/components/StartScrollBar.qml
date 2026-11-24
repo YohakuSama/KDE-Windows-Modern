@@ -6,9 +6,10 @@ import org.kde.kirigami as Kirigami
 PlasmaComponents3.ScrollBar {
     id: bar
     policy: PlasmaComponents3.ScrollBar.AsNeeded
-    width: 12
-    padding: 2
-    minimumSize: height > 0 ? Math.min(1, 28 / height) : 0
+    width: 16
+    padding: 4
+    hoverEnabled: true
+    minimumSize: height > 0 ? Math.min(1, 32 / height) : 0
     contentItem: Rectangle {
         implicitWidth: 8
         radius: width / 2

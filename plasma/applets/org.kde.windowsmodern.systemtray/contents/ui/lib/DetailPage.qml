@@ -22,6 +22,27 @@ Page {
         boundsBehavior: Flickable.StopAtBounds
         PlasmaComponents3.ScrollBar.vertical: PlasmaComponents3.ScrollBar {
             policy: PlasmaComponents3.ScrollBar.AsNeeded
+            width: 16
+            hoverEnabled: true
+        }
+        WheelHandler {
+            target: null
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            enabled: list.visible && list.contentHeight > list.height
+            onWheel: event => {
+                const pixels = event.pixelDelta.y;
+                const angle = event.angleDelta.y;
+                const row = list.currentItem ? Math.max(28, list.currentItem.height + list.spacing)
+                                             : Math.max(40, Kirigami.Units.gridUnit * 2);
+                const delta = pixels !== 0 && Math.abs(angle) < 120 ? pixels
+                            : angle !== 0 ? angle / 120 * 3 * row : pixels;
+                if (delta === 0) { event.accepted = false; return; }
+                const low = list.originY - list.topMargin;
+                const high = Math.max(low, list.originY + list.contentHeight - list.height + list.bottomMargin);
+                list.cancelFlick();
+                list.contentY = Math.max(low, Math.min(high, list.contentY - delta));
+                event.accepted = true;
+            }
         }
     }
 

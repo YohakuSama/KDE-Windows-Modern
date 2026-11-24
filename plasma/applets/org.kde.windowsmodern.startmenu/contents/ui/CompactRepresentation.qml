@@ -40,11 +40,11 @@ Item {
     // or the much smaller system-tray glyphs.
     readonly property bool useDefaultLogo: !useCustomButtonImage && Plasmoid.configuration.icon === "start-here"
     readonly property int cellThickness: vertical ? width : height
-    readonly property int taskIconSize: Kirigami.Units.iconSizes.roundedIconSize(Math.max(0, cellThickness - 4))
+    // Microsoft Windows 11 taskbar icon reference: 24 logical pixels.
+    // The default SVG has a tight viewBox; no extra enlargement or shrink.
     readonly property int startIconSize: inPanel
-        ? (useDefaultLogo ? Math.min(cellThickness, 30, Math.round(cellThickness * 0.75))
-                          : Math.min(cellThickness, Math.round(taskIconSize * 1.48)))
-        : Math.min(width, height)
+        ? Math.max(1, Math.min(24, cellThickness - 4, width, height))
+        : Math.max(1, Math.min(width, height))
 
     // Hover (and open menu) tile: the taskbar's own tile without a bar
     // (tasks.svg "launcher-hover", as for a pinned app), for the panel edge.

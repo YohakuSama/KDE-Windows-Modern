@@ -43,7 +43,7 @@ MouseArea {
     readonly property int leadingInset: Kirigami.Units.smallSpacing
     readonly property int trailingInset: showBell ? 0 : Kirigami.Units.smallSpacing
     readonly property int bellCellWidth: 28
-    readonly property int bellIconSize: 16
+    readonly property int bellIconSize: Math.max(1, Math.min(16, Math.floor(panelHeight)))
     implicitWidth: panelContent.implicitWidth + leadingInset + trailingInset
     implicitHeight: panelHeight
     Layout.minimumWidth: implicitWidth
