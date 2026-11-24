@@ -82,14 +82,15 @@ Item {
             compare(button.Accessible.description, "Open Start and search");
         }
 
-        // Icon Tasks' rule: the cell minus the frame's borders, rounded down
-        // to a standard icon size; 32 px on a 48 px taskbar, like app icons.
+        // Match the 28px task icon canvas; only shrink when the cell is
+        // narrower than the canvas plus the frame's borders.
         function test_glyphSize_data() {
             return [
-                { tag: "30px panel", cell: 30, expected: 22 },
-                { tag: "36px panel", cell: 36, expected: 32 },
-                { tag: "48px panel", cell: 48, expected: 32 },
-                { tag: "64px panel", cell: 64, expected: 48 },
+                { tag: "24px panel", cell: 24, expected: 20 },
+                { tag: "30px panel", cell: 30, expected: 26 },
+                { tag: "36px panel", cell: 36, expected: 28 },
+                { tag: "48px panel", cell: 48, expected: 28 },
+                { tag: "64px panel", cell: 64, expected: 28 },
             ];
         }
         function test_glyphSize(data) {
@@ -116,7 +117,7 @@ Item {
         // the glyph follows the shorter side.
         function test_glyphFollowsShorterSide() {
             const button = makeButton({ width: 120, height: 30 });
-            compare(button.glyphSize, 22);
+            compare(button.glyphSize, 26);
         }
 
         function test_states() {

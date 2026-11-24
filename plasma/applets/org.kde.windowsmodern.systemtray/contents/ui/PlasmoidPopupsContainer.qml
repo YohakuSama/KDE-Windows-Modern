@@ -49,6 +49,16 @@ QQC2.StackView {
 
     onActiveAppletChanged: Qt.callLater(mainStack.showActiveApplet)
 
+    // Native Bluetooth and device pages can create their full item after
+    // activeAppletChanged. Retry on that actual signal, not a polling timer.
+    Connections {
+        target: mainStack.activeApplet
+        function onFullRepresentationItemChanged() {
+            if (!mainStack.themedActive)
+                Qt.callLater(mainStack.showActiveApplet);
+        }
+    }
+
     function showActiveApplet() {
         mainStack.appletHasHeading = false
         mainStack.appletHasFooter = false
@@ -86,17 +96,22 @@ QQC2.StackView {
                 activeApplet.fullRepresentationItem instanceof PlasmaExtras.Representation) {
                 if (activeApplet.fullRepresentationItem.header && activeApplet.fullRepresentationItem.header instanceof PlasmaExtras.PlasmoidHeading) {
                     mainStack.appletHasHeading = true
-                    activeApplet.fullRepresentationItem.header.background.visible = false
+                    if (activeApplet.fullRepresentationItem.header.background)
+                        activeApplet.fullRepresentationItem.header.background.visible = false
                 }
                 if (activeApplet.fullRepresentationItem.footer && activeApplet.fullRepresentationItem.footer instanceof PlasmaExtras.PlasmoidHeading) {
                     mainStack.appletHasFooter = true
-                    activeApplet.fullRepresentationItem.footer.background.visible = false
+                    if (activeApplet.fullRepresentationItem.footer.background)
+                        activeApplet.fullRepresentationItem.footer.background.visible = false
                 }
             }
 
-            // Native fallback and custom pages are exclusive, never drawn
-            // together during a StackView replacement.
-            ;(mainStack.empty ? mainStack.push : mainStack.replace)(activeApplet.fullRepresentationItem, {
+            // Do not push the same native view twice if its creation and
+            // the applet activation queued the same update.
+            const page = activeApplet.fullRepresentationItem;
+            if (mainStack.currentItem === page)
+                return;
+            const properties = {
                 "width": Qt.binding(() => mainStack.width),
                 "height": Qt.binding(() => mainStack.height),
                 "x": 0,
@@ -104,7 +119,11 @@ QQC2.StackView {
                 "opacity": 1,
                 "KeyNavigation.up": mainStack.KeyNavigation.up,
                 "KeyNavigation.backtab": mainStack.KeyNavigation.backtab
-            }, QQC2.StackView.Immediate)
+            };
+            if (mainStack.empty)
+                mainStack.push(page, properties, QQC2.StackView.Immediate);
+            else
+                mainStack.replace(page, properties, QQC2.StackView.Immediate);
         } else {
             mainStack.clear(QQC2.StackView.Immediate)
         }
@@ -148,24 +167,16 @@ QQC2.StackView {
 
     readonly property var themedPages: ({
         "network":         networkPageComp,
-        "bluetooth":       bluetoothPageComp,
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
         "brightness":      brightnessPageComp,
         "clipboard":       clipboardPageComp,
-        "devicenotifier":  deviceNotifierPageComp,
         "mediacontroller": mediaControllerPageComp
     })
 
     Component {
         id: networkPageComp
         Components.NetworkPage {
-            onBack: systemTrayState.setActiveApplet(null)
-        }
-    }
-    Component {
-        id: bluetoothPageComp
-        Components.BluetoothPage {
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
@@ -190,12 +201,6 @@ QQC2.StackView {
     Component {
         id: clipboardPageComp
         Components.ClipboardPage {
-            onBack: systemTrayState.setActiveApplet(null)
-        }
-    }
-    Component {
-        id: deviceNotifierPageComp
-        Components.DeviceNotifierPage {
             onBack: systemTrayState.setActiveApplet(null)
         }
     }

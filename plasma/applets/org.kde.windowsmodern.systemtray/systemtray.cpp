@@ -32,6 +32,11 @@
 #include <Plasma/PluginLoader>
 
 #include <KAcceleratorManager>
+#include <KIO/ApplicationLauncherJob>
+#include <KNotificationJobUiDelegate>
+#include <KPluginMetaData>
+#include <KService>
+#include <KSycoca>
 #include <KActionCollection>
 #include <KSharedConfig>
 #include <KWindowSystem>
@@ -41,8 +46,30 @@ using namespace Qt::StringLiterals;
 SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args)
     : Plasma::Containment(parent, data, args)
 {
+    connect(KSycoca::self(), &KSycoca::databaseChanged, this, &SystemTray::castAvailabilityChanged);
     setHasConfigurationInterface(true);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
+}
+
+bool SystemTray::accessibilityAvailable() const
+{
+    return KPluginMetaData::findPluginById(u"plasma/kcms/systemsettings"_s, u"kcm_access"_s).isValid();
+}
+
+bool SystemTray::castAvailable() const
+{
+    return bool(KService::serviceByDesktopName(u"org.gnome.NetworkDisplays"_s));
+}
+
+void SystemTray::openCast()
+{
+    const auto service = KService::serviceByDesktopName(u"org.gnome.NetworkDisplays"_s);
+    if (!service) {
+        return;
+    }
+    auto *job = new KIO::ApplicationLauncherJob(service);
+    job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
+    job->start();
 }
 
 SystemTray::~SystemTray()

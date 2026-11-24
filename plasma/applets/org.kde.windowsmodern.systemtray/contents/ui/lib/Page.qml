@@ -39,6 +39,7 @@ ColumnLayout {
         topPadding: 0
         bottomPadding: 0
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical: FluentScrollBar {}
         Kirigami.WheelHandler {
             target: scrollView
             filterMouseEvents: true

@@ -116,7 +116,7 @@ ColumnLayout {
         spacing: Kirigami.Units.smallSpacing * 2
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
+        QQC2.ScrollBar.vertical: FluentScrollBar {}
         Kirigami.WheelHandler {
             target: list
             filterMouseEvents: true

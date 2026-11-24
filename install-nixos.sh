@@ -51,11 +51,16 @@ remember_env() {
 restore_env() {
     local source="${1:-$STATE/original-env}"
     [ -f "$source" ] || return 0
-    local key line
+    local key line result=0
     for key in QT_PLUGIN_PATH XDG_DATA_DIRS QML_DISABLE_DISK_CACHE; do
         line="$(grep -m1 "^$key=" "$source" || true)"
-        if [ -n "$line" ]; then systemctl --user set-environment "$line"; else systemctl --user unset-environment "$key"; fi
+        if [ -n "$line" ]; then
+            systemctl --user set-environment "$line" || result=1
+        else
+            systemctl --user unset-environment "$key" || result=1
+        fi
     done
+    return "$result"
 }
 set_profile_env() {
     local plugin="$1" old_qt old_data qt data
@@ -73,15 +78,17 @@ set_profile_env() {
     systemctl --user set-environment "QT_PLUGIN_PATH=$qt" "XDG_DATA_DIRS=$data" "QML_DISABLE_DISK_CACHE=1"
 }
 wait_shell() {
-    local n
-    for n in {1..30}; do
+    for _ in {1..30}; do
         if busctl --user status org.kde.plasmashell >/dev/null 2>&1; then return 0; fi
         sleep 1
     done
     echo "Plasma Shell 启动失败。" >&2
     return 1
 }
-start_shell() { systemctl --user start "$SERVICE"; wait_shell; }
+start_shell() {
+    systemctl --user start "$SERVICE" || return 1
+    wait_shell
+}
 stop_shell() { systemctl --user stop "$SERVICE"; }
 unload_scripts() {
     for id in org.kde.windowsmodern.osd org.kde.windowsmodern.snapkeys org.kde.windowsmodern.snaplayouts; do
@@ -136,7 +143,8 @@ recover_legacy_residue() {
         echo "无法确认旧测试目录的来源，已保留。" >&2
         return 1
     fi
-    local backups="$(dirname "$STATE")/windows-modern-nixos-backups"
+    local backups
+    backups="$(dirname "$STATE")/windows-modern-nixos-backups"
     local archived saved
     [ -d "$backups" ] || return 1
     archived="$(find -P "$backups" -mindepth 3 -maxdepth 3 -type f -path '*/original/manifest.json' -print -quit)" || return 1
@@ -149,7 +157,8 @@ recover_legacy_residue() {
 finish_cleanup() {
     # Save the original snapshot before removing test files or GC roots.
     # Explicitly check every command: rollback runs with errexit disabled.
-    local backups="$(dirname "$STATE")/windows-modern-nixos-backups"
+    local backups
+    backups="$(dirname "$STATE")/windows-modern-nixos-backups"
     mkdir -p "$backups" || return 1
     local saved
     saved="$(mktemp -d "$backups/$(date +%Y%m%d-%H%M%S).XXXXXX")" || return 1
@@ -177,7 +186,7 @@ remove_build_dir() {
     [ ! -e "$d" ]
 }
 restore_previous_version() {
-    local d="$1" old oldpython
+    local d="$1" old oldpython result=0
     [ -f "$d/previous-runtime" ] && [ -f "$d/previous-env" ] || return 1
     old="$(cat "$d/previous-runtime")" || return 1
     case "$old" in /nix/store/*) ;; *) return 1 ;; esac
@@ -187,12 +196,15 @@ restore_previous_version() {
     if [ -f "$d/previous/manifest.json" ]; then
         "$oldpython" "$ROOT/scripts/nixos-test-state.py" restore-upgrade --root "$ROOT" --state "$STATE" --profile "$old" --upgrade-backup "$d/previous" || { start_shell || true; return 1; }
     fi
-    ln -sfn "$old" "$STATE/runtime" || return 1
-    systemctl --user daemon-reload || return 1
-    restore_env "$d/previous-env" || return 1
+    # Even if one restoration step fails, attempt to bring the shell back.
+    # Retain the recovery marker and both build roots until every step passes.
+    ln -sfn "$old" "$STATE/runtime" || result=1
+    systemctl --user daemon-reload || result=1
+    restore_env "$d/previous-env" || result=1
     kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null 2>&1 || true
-    start_shell || return 1
+    start_shell || result=1
+    [ "$result" -eq 0 ] || return 1
     rm -f -- "$STATE/pending-build" || return 1
     echo "已恢复升级前的运行时和桌面配置：$old"
 }
@@ -217,7 +229,8 @@ if [ "$action" = uninstall ]; then
     fi
     PROFILE="$(readlink -f "$STATE/runtime")"
     PYTHON="$PROFILE/bin/python3"
-    export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+    GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+    export GI_TYPELIB_PATH
     [ -x "$PYTHON" ] || { echo "测试运行时缺失，保留备份以免丢失原配置。" >&2; exit 1; }
     remember_env
     stop_shell
@@ -226,7 +239,7 @@ if [ "$action" = uninstall ]; then
         echo "卸载前备份失败，未删除测试文件。" >&2
         exit 1
     fi
-    restore_original || { echo "恢复未完成，已保留全部备份；请重新运行选项 2。" >&2; exit 1; }
+    restore_original || { echo "恢复未完成，已保留全部备份；请重新运行选项 3。" >&2; exit 1; }
     finish_cleanup
     echo "已卸载测试安装，原始桌面配置已恢复。"
     exit 0
@@ -314,14 +327,18 @@ if [ "$upgrading" -eq 1 ] && [ "$PROFILE" = "$old_profile" ]; then
 fi
 PYTHON="$PROFILE/bin/python3"
 export PATH="$PROFILE/bin:$PATH"
-export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+export GI_TYPELIB_PATH
 "$PYTHON" -c 'from gi.repository import Gio, GLib; import PIL, fontTools'
 "$PYTHON" "$ROOT/scripts/check-startmenu-keys.py"
 prefix="$(cat "$PROFILE/wm-qt-plugin-prefix")"
 plugin="$PROFILE/$prefix"
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"
 tasks="$plugin/plasma/applets/org.kde.windowsmodern.icontasks.so"
-[ -s "$tray" ] && [ -s "$tasks" ] || { echo "两个 C++ 插件未完整构建。" >&2; exit 1; }
+if [[ ! -s "$tray" || ! -s "$tasks" ]]; then
+    echo "两个 C++ 插件未完整构建。" >&2
+    exit 1
+fi
 tray_token="$(cat "$PROFILE/wm-token-systemtray")"
 tasks_token="$(cat "$PROFILE/wm-token-icontasks")"
 verify_args=(--tray-token "$tray_token" --tasks-token "$tasks_token" --tray "$tray" --tasks "$tasks")
@@ -372,8 +389,6 @@ if [ "$upgrading" -eq 1 ]; then
     printf '%s\n' "$old_profile" > "$BUILD_DIR/previous-runtime"
     capture_env "$BUILD_DIR/previous-env"
     upgrade_args=(--upgrade-backup "$BUILD_DIR/previous")
-    printf '%s\n' "$(basename "$BUILD_DIR")" > "$BUILD_DIR/pending-marker"
-    mv -T -- "$BUILD_DIR/pending-marker" "$STATE/pending-build"
 fi
 rollback() {
     local rc="${1:-$?}"
@@ -398,6 +413,16 @@ rollback() {
 trap 'exit 130' INT
 trap 'exit 143' TERM
 trap 'rc=$?; if [ "$rc" -ne 0 ]; then rollback "$rc"; fi' EXIT
+# Publish recovery information only after replacing the pre-build cleanup
+# trap. A failure here must never delete the build named by pending-build.
+if [ "$upgrading" -eq 1 ]; then
+    printf '%s\n' "$(basename "$BUILD_DIR")" > "$BUILD_DIR/pending-marker"
+    mv -T -- "$BUILD_DIR/pending-marker" "$STATE/pending-build"
+else
+    # Keep the recovery interpreter reachable even if the first installation
+    # fails between creating its original manifest and switching the shell.
+    ln -sfn "$PROFILE" "$STATE/runtime"
+fi
 echo "正在自动备份原始桌面配置和将被替换的资源……"
 stop_shell
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" install --root "$ROOT" --state "$STATE" --profile "$PROFILE" "${upgrade_args[@]}"
@@ -456,7 +481,7 @@ done
 # A filename match is NOT sufficient. Verify both mapped objects have
 # exactly the new immutable store paths, inodes, and compiled build token.
 verified=0
-for attempt in {1..20}; do
+for _ in {1..20}; do
     pid="$(systemctl --user show "$SERVICE" -p MainPID --value)"
     if "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" "${verify_args[@]}" --pid "$pid" --quiet 2>/dev/null; then
         verified=1

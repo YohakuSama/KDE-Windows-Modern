@@ -119,7 +119,7 @@ fi
 # The layout reset/restart may briefly leave Plasma's D-Bus service
 # unavailable. Apply once it is ready, and surface a real failure.
 applied=false
-for attempt in 1 2 3 4 5; do
+for _ in 1 2 3 4 5; do
     if "$APPLY_TOOL" "$wallpaper_dir"; then
         applied=true
         break

@@ -6,6 +6,7 @@
 */
 #pragma once
 
+#include <Plasma/Plasma>
 #include <QDir>
 #include <QFile>
 #include <QList>
@@ -59,7 +60,7 @@ inline bool alwaysShown(const QString &itemId)
 }
 
 // Icons that appear in the tray without being pinned. As on Windows 11,
-// every other icon (apps, Bluetooth, clipboard, brightness...) waits behind
+// other icons (apps, clipboard, brightness...) wait behind
 // the chevron until it needs attention or the user pins it ("Always shown").
 inline bool shownByDefault(const QString &itemId)
 {
@@ -67,5 +68,28 @@ inline bool shownByDefault(const QString &itemId)
     // notification applet enabled in overflow for transfer jobs and settings.
     return tail().contains(itemId)
         || itemId == QLatin1String("org.kde.plasma.cameraindicator"); // privacy: camera in use
+}
+inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::Types::ItemStatus status,
+                                                bool eligible, bool pinned, bool hiddenByUser)
+{
+    using Status = Plasma::Types::ItemStatus;
+    if (!eligible || (!pinned && status == Status::HiddenStatus)) {
+        return Status::HiddenStatus;
+    }
+    if (pinned) {
+        return Status::ActiveStatus;
+    }
+    if (hiddenByUser || itemId == QLatin1String("org.kde.plasma.notifications")) {
+        return Status::PassiveStatus;
+    }
+    const bool dynamicDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
+        || itemId == QLatin1String("org.kde.plasma.devicenotifier");
+    const bool needsAttention = status == Status::NeedsAttentionStatus || status == Status::RequiresAttentionStatus
+        || status == Status::AcceptingInputStatus;
+    const bool activeDefault = (status == Status::ActiveStatus || status == Status::UnknownStatus) && shownByDefault(itemId);
+    if (needsAttention || activeDefault || (dynamicDevice && status == Status::ActiveStatus) || alwaysShown(itemId)) {
+        return Status::ActiveStatus;
+    }
+    return Status::PassiveStatus;
 }
 }

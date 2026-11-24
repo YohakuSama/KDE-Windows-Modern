@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
-// Windows 11 at 100%: 48px taskbar, 24px task icons, 16px tray icons.
+// Windows Modern at 100%: 48px taskbar, 28px task icons, 16px tray icons.
 // DPI is applied by Qt, never by multiplying the logical size by screen DPR.
 // Explicit panel-size scaling remains an opt-in; 48px always gives 16px.
 function iconSize(thickness, scaleToFit) {

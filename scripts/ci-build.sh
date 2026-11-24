@@ -18,9 +18,16 @@ for applet in systemtray icontasks; do
     src="$SRC_DIR/plasma/applets/org.kde.windowsmodern.$applet"
     build="$BUILD_ROOT/$applet"
     echo "==> Building $applet in $build"
-    cmake -S "$src" -B "$build" -DCMAKE_BUILD_TYPE=Release
+    options=()
+    if [[ "$applet" == systemtray ]]; then
+        options+=(-DWINDOWSMODERN_TEST_TRAY=ON)
+    fi
+    cmake -S "$src" -B "$build" -DCMAKE_BUILD_TYPE=Release "${options[@]}"
     cmake --build "$build" --parallel "$(nproc)"
 
+    if [[ "$applet" == systemtray ]]; then
+        ctest --test-dir "$build" --output-on-failure --no-tests=error
+    fi
     so="$(find "$build" -path '*plasma/applets/*.so' -print -quit)"
     if [ -z "$so" ]; then
         echo "ERROR: $applet produced no plugin .so" >&2

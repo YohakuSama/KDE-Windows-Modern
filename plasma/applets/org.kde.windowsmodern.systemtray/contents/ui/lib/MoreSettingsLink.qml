@@ -18,7 +18,7 @@ Item {
         text: root.text
         color: ma.containsMouse ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
         opacity: ma.containsMouse ? 1 : 0.6
-        font.pixelSize: 11
+        font.pixelSize: 12
     }
 
     MouseArea {

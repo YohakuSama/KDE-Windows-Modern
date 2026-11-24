@@ -45,12 +45,9 @@ MouseArea {
     readonly property bool darkTheme: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.textColor)
                                       === Kirigami.ColorUtils.Light
 
-    // Glyph size: Icon Tasks' rule for app icons, the cell minus the hover
-    // frame's borders rounded down to a standard icon size: 32 px on a
-    // 48 px taskbar. The glyphs fill ~20 of their 24 units, so they look
-    // as large as the app icons' art (~28 px), as on Windows.
-    readonly property int glyphSize: Kirigami.Units.iconSizes.roundedIconSize(
-        Math.max(Kirigami.Units.iconSizes.small, Math.min(width, height) - 2 * tileInset))
+    // Match the fixed logical canvas of Start and icon-only tasks. Do not
+    // snap 28 to a different icon size at fractional output scaling.
+    readonly property int glyphSize: Math.max(1, Math.min(28, Math.floor(Math.min(width, height) - 2 * tileInset)))
 
     hoverEnabled: true
     activeFocusOnTab: true
@@ -116,6 +113,7 @@ MouseArea {
         anchors.centerIn: parent
         width: button.glyphSize
         height: button.glyphSize
+        roundToIconSize: false
         source: button.iconName
         fallback: button.fallbackIconName
         isMask: true

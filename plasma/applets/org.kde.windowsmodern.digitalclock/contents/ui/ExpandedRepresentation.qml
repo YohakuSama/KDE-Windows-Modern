@@ -26,7 +26,7 @@ FocusScope {
 
     // Plasma owns the popup window and transfers these layout hints.
     // Derive hints from the panel's screen, not this hidden view's geometry.
-    readonly property int margin: Kirigami.Units.largeSpacing
+    readonly property int margin: 16
     readonly property var panelScreen: clockApplet.popupScreenGeometry
     readonly property real screenWidth: Number(panelScreen?.width || 0)
     readonly property real screenHeight: Number(panelScreen?.height || 0)
@@ -62,9 +62,7 @@ FocusScope {
         contentHeight: mainColumn.height + 2 * expandedRoot.margin
         boundsBehavior: Flickable.StopAtBounds
         clip: true
-        QQC2.ScrollBar.vertical: QQC2.ScrollBar {
-            policy: QQC2.ScrollBar.AsNeeded
-        }
+        QQC2.ScrollBar.vertical: FluentScrollBar {}
         Kirigami.WheelHandler {
             target: viewport
             filterMouseEvents: true
@@ -105,6 +103,7 @@ FocusScope {
 
                 RowLayout {
                     id: timeRow
+                    visible: Plasmoid.configuration.showTimeInNotificationCenter
                     Layout.alignment: Qt.AlignHCenter
                     spacing: Kirigami.Units.smallSpacing / 2
 
@@ -125,7 +124,7 @@ FocusScope {
                         font {
                             family: Kirigami.Theme.defaultFont.family
                             weight: Font.DemiBold
-                            pixelSize: Kirigami.Units.gridUnit * 3
+                            pixelSize: 40
                             features: { "tnum": 1 }
                         }
                     }
@@ -156,13 +155,14 @@ FocusScope {
                         horizontalAlignment: Text.AlignLeft
                         verticalAlignment: Text.AlignVCenter
                         textFormat: Text.PlainText
+                        elide: Text.ElideRight
                         // Windows 11 shows the locale's long date without the year.
                         text: Qt.locale().toString(expandedRoot.clockApplet.currentTime,
                                                    DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)))
                         color: palette.textSecondary
                         font {
                             family: Kirigami.Theme.defaultFont.family
-                            pixelSize: Kirigami.Units.gridUnit * 1.1
+                            pixelSize: 14
                         }
                     }
 

@@ -1,35 +1,5 @@
 .pragma library
 
-function btStatus(btManager) {
-    var connectedDevices = [];
-    for (var i = 0; i < btManager.devices.length; ++i) {
-        var device = btManager.devices[i];
-        if (device.connected) {
-            connectedDevices.push(device);
-        }
-    }
-
-    if (btManager.bluetoothBlocked) {
-        return { active: false, message: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Disabled"), icon: "network-bluetooth-inactive-symbolic" };
-    } else if (!btManager.bluetoothOperational) {
-        if (!btManager.adapters.length) {
-            return { active: false, message: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Unavailable"), icon: "network-bluetooth-inactive-symbolic" };
-        }
-        return { active: false, message: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Offline"), icon: "network-bluetooth-inactive-symbolic" };
-    } else if (connectedDevices.length >= 1) {
-        return { active: true, message: connectedDevices[0].name, icon: "network-bluetooth-activated-symbolic" };
-    }
-    return { active: true, message: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Not Connected"), icon: "network-bluetooth-symbolic" };
-}
-
-function toggleBluetooth(btManager) {
-    var enable = !btManager.bluetoothOperational;
-    btManager.bluetoothBlocked = !enable;
-    for (var i = 0; i < btManager.adapters.length; ++i) {
-        btManager.adapters[i].powered = enable;
-    }
-}
-
 // Manual preference is independent of automatic/application inhibition.
 function manualInhibition(settings, now) {
     if (!settings) return false;

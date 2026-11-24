@@ -22,6 +22,7 @@ KWin.TabBoxSwitcher {
     Instantiator {
         active: switcher.visible
         delegate: PlasmaCore.Dialog {
+            id: dialog
             location: PlasmaCore.Types.Floating
             visible: true
             flags: Qt.ToolTip | Qt.X11BypassWindowManagerHint
@@ -37,8 +38,11 @@ KWin.TabBoxSwitcher {
                 focus: true
             }
 
-            onSceneGraphError: () => {
-                // Intentionally empty: without a handler QtQuick may qFatal() on a graphics reset.
+            readonly property Connections sceneGraphConnection: Connections {
+                target: dialog
+                function onSceneGraphError(error, message) {
+                    console.warn("Alt+Tab scene graph error", error, message)
+                }
             }
         }
     }

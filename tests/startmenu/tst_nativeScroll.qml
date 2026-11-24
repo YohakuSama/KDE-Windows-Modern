@@ -29,6 +29,13 @@ Item {
             testList.cancelFlick();
             testList.contentY = 0;
         }
+        function test_scrollbarGeometry() {
+            mouseMove(testList, 80, 100);
+            tryCompare(bar, "thumbWidth", 2);
+            compare(bar.width, 16);
+            mouseMove(bar, bar.width / 2, bar.height / 2);
+            tryCompare(bar, "thumbWidth", 6);
+        }
         function test_threeRowsPerNotch() {
             mouseWheel(testList, 80, 100, 0, -120);
             tryVerify(() => testList.contentY >= 110, 1500);

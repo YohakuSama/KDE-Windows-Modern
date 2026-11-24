@@ -11,6 +11,7 @@ import QtQuick
 import QtQuick.Layouts
 
 import org.kde.kirigami as Kirigami
+import org.kde.kcmutils as KCMUtils
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.extras as PlasmaExtras
@@ -81,7 +82,14 @@ Item {
         const applet = Plasmoid.appletForPluginId(pluginId)
         if (applet) {
             systemTrayState.setActiveApplet(applet)
+            return
         }
+        const settings = {
+            network: "kcm_networkmanagement", bluetooth: "kcm_bluetooth",
+            volume: "kcm_pulseaudio", battery: "kcm_powerdevilprofilesconfig",
+            brightness: "kcm_powerdevilprofilesconfig"
+        }
+        KCMUtils.KCMLauncher.openSystemSettings(settings[name])
     }
 
     // Header — only for unknown (non-themed) applets. Themed pages have their

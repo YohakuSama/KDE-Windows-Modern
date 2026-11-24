@@ -12,5 +12,6 @@ QtObject {
         property bool showLocalTimezone: false
         property int displayTimezoneFormat: 0
         property int showSeconds: 0
+        property bool showTimeInNotificationCenter: true
     }
 }

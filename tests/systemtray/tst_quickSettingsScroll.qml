@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtTest
 import org.kde.kirigami as Kirigami
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib"
 
 Item {
     id: root
@@ -22,11 +23,9 @@ Item {
             height: view.contentHeight
             color: "transparent"
         }
-        QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+        QQC2.ScrollBar.vertical: FluentScrollBar {
             id: bar
-            width: 24
             policy: QQC2.ScrollBar.AlwaysOn
-            stepSize: Math.max(0.01, size * 0.9)
         }
         Kirigami.WheelHandler {
             target: view
@@ -40,6 +39,13 @@ Item {
         function init() {
             view.cancelFlick();
             view.contentY = 0;
+        }
+        function test_scrollbarGeometry() {
+            mouseMove(view, 100, 100);
+            tryCompare(bar, "thumbWidth", 2);
+            compare(bar.width, 16);
+            mouseMove(bar, bar.width / 2, bar.height / 2);
+            tryCompare(bar, "thumbWidth", 6);
         }
         function test_wheelMovesImmediatelyToNextRow() {
             mouseWheel(view, 100, 100, 0, -120);
