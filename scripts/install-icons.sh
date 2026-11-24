@@ -6,12 +6,29 @@
 source "$(dirname "$0")/install-lib.sh"
 
 THEME_NAME="windows-modern"
+PROJECT_DIR="$SRC_DIR"
 SRC_DIR="$SRC_DIR/icons/$THEME_NAME"
 THEME_DIR="$ICONS_DIR/$THEME_NAME"
 
 if [ ! -d "$SRC_DIR" ]; then
     warn "Icon pack not found at $SRC_DIR"
     exit 1
+fi
+
+# Never silently overlay an older import on a newer theme. Reuse the
+# original local source if the mapping changed; leave the installed theme
+# untouched if the source was removed or verification fails.
+if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ]; then
+    if ! python3 "$PROJECT_DIR/scripts/check-native-icon-import.py" "$NATIVE_ASSETS_DIR" "$PROJECT_DIR/scripts/native-assets-map.json"; then
+        info "Refreshing local Windows icon mappings from the remembered source..."
+        if ! python3 "$PROJECT_DIR/scripts/import-windows-assets.py" --reuse --output "$NATIVE_ASSETS_DIR" ||
+            ! python3 "$PROJECT_DIR/scripts/check-native-icon-import.py" "$NATIVE_ASSETS_DIR" "$PROJECT_DIR/scripts/native-assets-map.json"; then
+            err "Local Windows icon refresh failed. Existing installed icon theme was not removed."
+            exit 1
+        fi
+    fi
+else
+    warn "No local native asset manifest: installing bundled compatibility artwork, not verified Windows originals."
 fi
 
 info "Installing icon pack ($THEME_NAME)..."

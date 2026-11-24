@@ -1,6 +1,7 @@
 import QtQuick
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.networkmanagement as PlasmaNM
+import org.kde.kcmutils
 import "../lib" as Lib
 
 Lib.SplitTile {
@@ -29,15 +30,13 @@ Lib.SplitTile {
     // present a nonfunctional Wi-Fi toggle or a wired icon as Wi-Fi.
     label: wifiAvailable ? qsTr("Wi-Fi") : qsTr("Network")
     toggleAvailable: wifiAvailable
-    iconSource: {
-        const base = activeConnectionIcon.connectionIcon || "";
-        if (!wifiAvailable)
-            return base || "network-wired-symbolic";
-        if (!wifiOn)
-            return "network-wireless-disconnected-symbolic";
-        return base.indexOf("network-wireless") === 0
-            ? base : "network-wireless-0-symbolic";
-    }
+    // The toggle depicts the Wi-Fi radio, not the current signal strength.
+    // The native connection list and panel icon still report real strength.
+    iconSource: wifiAvailable ? "network-wireless-symbolic"
+        : (activeConnectionIcon.connectionIcon
+            ? (activeConnectionIcon.connectionIcon.endsWith("-symbolic")
+                ? activeConnectionIcon.connectionIcon : activeConnectionIcon.connectionIcon + "-symbolic")
+            : "network-unavailable-symbolic")
     active: wifiOn
 
     onClicked: {
@@ -51,7 +50,7 @@ Lib.SplitTile {
 
     onRightClicked: networkMenu.popup()
 
-    onMiddleClicked: Qt.openUrlExternally("systemsettings://kcm_networkmanagement")
+    onMiddleClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
 
     PlasmaComponents3.Menu {
         id: networkMenu
@@ -59,7 +58,7 @@ Lib.SplitTile {
         PlasmaComponents3.MenuItem {
             text: qsTr("Open Wi-Fi settings")
             icon.name: "configure"
-            onClicked: Qt.openUrlExternally("systemsettings://kcm_networkmanagement")
+            onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
         PlasmaComponents3.MenuItem {
             text: qsTr("Create hotspot…")
@@ -70,12 +69,12 @@ Lib.SplitTile {
         PlasmaComponents3.MenuItem {
             text: qsTr("Connect to hidden network…")
             icon.name: "network-wireless-secure"
-            onClicked: Qt.openUrlExternally("systemsettings://kcm_networkmanagement")
+            onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
         PlasmaComponents3.MenuItem {
             text: qsTr("Known networks…")
             icon.name: "preferences-system-network"
-            onClicked: Qt.openUrlExternally("systemsettings://kcm_networkmanagement")
+            onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
     }
 }

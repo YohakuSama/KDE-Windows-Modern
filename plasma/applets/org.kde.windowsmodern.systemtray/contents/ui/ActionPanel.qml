@@ -261,7 +261,7 @@ ColumnLayout {
                     orderKey: "bluetooth"
                     orderView: toggleViewport
                     buttonHeight: Math.round(48 * actionPanel.scale)
-                    included: true
+                    included: available
                     visible: included
                     onArrowClicked: actionPanel.requestPage("bluetooth")
                 }

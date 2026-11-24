@@ -130,5 +130,5 @@ Lib.Slider {
         }
     }
 
-    onIconClicked: NightLightInhibitor.toggleInhibition()
+    // The sun is a brightness label, not a second Night Light toggle.
 }
