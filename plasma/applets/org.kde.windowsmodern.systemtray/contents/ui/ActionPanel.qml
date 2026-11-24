@@ -287,7 +287,7 @@ ColumnLayout {
                     orderKey: "night-light"
                     orderView: toggleViewport
                     buttonHeight: Math.round(48 * actionPanel.scale)
-                    included: Plasmoid.configuration.showNightLight
+                    included: Plasmoid.configuration.showNightLight && available
                     visible: included
                 }
                 Components.ColorSchemeToggle {
@@ -319,7 +319,7 @@ ColumnLayout {
                     orderKey: "hotspot"
                     orderView: toggleViewport
                     buttonHeight: Math.round(48 * actionPanel.scale)
-                    included: Plasmoid.configuration.showHotspot && hotspotSupported
+                    included: Plasmoid.configuration.showHotspot && (hotspotSupported || hotspotActive)
                     visible: included
                 }
             }

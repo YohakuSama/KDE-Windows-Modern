@@ -3,7 +3,7 @@
     SPDX-License-Identifier: GPL-3.0-or-later
 
     A Windows 11 taskbar button: a square cell with a centred monochrome
-    glyph (Glyph.qml) as large as the app icons, and the Icon Tasks
+    theme icon as large as the app icons, and the Icon Tasks
     buttons' hover tile. Pressed shows the same
     tile with WinUI's pressed fill and shrinks the glyph, as the Windows
     taskbar does.
@@ -25,8 +25,9 @@ import org.kde.kirigami as Kirigami
 MouseArea {
     id: button
 
-    // The glyph: markup of a 24 x 24 SVG drawing in currentColor.
-    property string glyph
+    // Resolve the icon through the same theme as the native applets.
+    property string iconName
+    property string fallbackIconName: "unknown"
     // Accessible name ("Search"); also what screen readers announce.
     property string text
     property string description
@@ -110,11 +111,15 @@ MouseArea {
         }
     }
 
-    Glyph {
+    Kirigami.Icon {
+        objectName: "taskbarButtonIcon"
         anchors.centerIn: parent
         width: button.glyphSize
         height: button.glyphSize
-        svg: button.glyph
+        source: button.iconName
+        fallback: button.fallbackIconName
+        isMask: true
+        color: Kirigami.Theme.textColor
         scale: button.showPressed ? 0.9 : 1
 
         Behavior on scale {

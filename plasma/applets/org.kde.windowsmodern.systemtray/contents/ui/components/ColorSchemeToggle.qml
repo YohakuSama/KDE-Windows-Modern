@@ -8,23 +8,21 @@ import "../js/colorType.js" as ColorType
 Lib.Tile {
     id: tile
 
-    property bool darkMode: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property bool darkMode: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
-    label: darkMode ? qsTr("Dark Mode") : qsTr("Light Mode")
+    label: qsTr("Dark Mode")
     iconSource: darkMode ? "weather-clear-night-symbolic" : "weather-clear-symbolic"
-    active: false
+    active: darkMode
 
-    onClicked: {
-        var target = darkMode ? Plasmoid.configuration.lightTheme : Plasmoid.configuration.darkTheme;
-        darkMode = !darkMode;
-        colorschemeExec.exec("plasma-apply-lookandfeel --apply " + target);
+    function switchTheme() {
+        const target = darkMode ? Plasmoid.configuration.lightTheme : Plasmoid.configuration.darkTheme;
+        if (/^[A-Za-z0-9_.-]+$/.test(target))
+            colorschemeExec.exec("plasma-apply-lookandfeel --apply " + target);
     }
 
-    onMiddleClicked: {
-        darkMode = !darkMode;
-        var target = darkMode ? Plasmoid.configuration.darkTheme : Plasmoid.configuration.lightTheme;
-        colorschemeExec.exec("plasma-apply-lookandfeel --apply " + target);
-    }
+    // Reflect the actual applied palette, never a guessed toggle state.
+    onClicked: switchTheme()
+    onMiddleClicked: switchTheme()
 
     tooltipText: darkMode ? qsTr("Switch to light mode") : qsTr("Switch to dark mode")
 

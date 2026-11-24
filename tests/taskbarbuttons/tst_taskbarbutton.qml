@@ -22,7 +22,7 @@ Item {
             TaskbarButton {
                 width: 48
                 height: 48
-                glyph: "<rect width='24' height='24' fill='currentColor'/>"
+                iconName: "edit-find-symbolic"
                 text: "Search"
                 description: "Open Start and search"
             }
@@ -39,6 +39,13 @@ Item {
             triggeredSpy.clear();
             triggeredSpy.target = button;
             return button;
+        }
+
+        function test_themeIcon() {
+            const button = makeButton();
+            const icon = findChild(button, "taskbarButtonIcon");
+            verify(icon);
+            compare(icon.source, "edit-find-symbolic");
         }
 
         function test_click() {
@@ -127,7 +134,7 @@ Item {
             SearchBox {
                 height: 48
                 width: preferredWidth
-                glyph: "<rect width='24' height='24' fill='currentColor'/>"
+                iconName: "edit-find-symbolic"
                 text: "Search"
                 placeholder: "Search"
                 description: "Open Start and search"

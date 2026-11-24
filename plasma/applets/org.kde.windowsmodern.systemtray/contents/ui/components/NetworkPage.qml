@@ -78,7 +78,7 @@ Lib.DetailPage {
             if (connectionState === PlasmaNM.Enums.Activated) {
                 return SecurityType === PlasmaNM.Enums.NoneSecurity ? qsTr("Connected, open") : qsTr("Connected, secured");
             }
-            if (connectionState === PlasmaNM.Enums.Activating || phase === "connecting") {
+            if (connectionState === PlasmaNM.Enums.Activating) {
                 return qsTr("Verifying and connecting");
             }
             if (phase === "password") {
@@ -95,7 +95,7 @@ Lib.DetailPage {
                 showPassword = false;
             } else {
                 expanded = true;
-                phase = (connectionState === PlasmaNM.Enums.Activating) ? "connecting" : "idle";
+                phase = "idle";
             }
         }
 
@@ -104,10 +104,8 @@ Lib.DetailPage {
                 phase = "password";
             } else if (!predictableWirelessPassword && !Uuid) {
                 handler.addAndActivateConnection(DevicePath, SpecificPath);
-                phase = "connecting";
             } else {
                 handler.activateConnection(ConnectionPath, DevicePath, SpecificPath);
-                phase = "connecting";
             }
         }
 
@@ -115,7 +113,7 @@ Lib.DetailPage {
             handler.addAndActivateConnection(DevicePath, SpecificPath, password);
             password = "";
             showPassword = false;
-            phase = "connecting";
+            phase = "idle";
         }
 
         function doDisconnect() {
@@ -128,8 +126,6 @@ Lib.DetailPage {
                 phase = "idle";
                 password = "";
                 showPassword = false;
-            } else if (connectionState === PlasmaNM.Enums.Deactivated && phase === "connecting") {
-                phase = "idle";
             }
         }
 
@@ -405,7 +401,7 @@ Lib.DetailPage {
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 6
-                            visible: delegate.expanded && delegate.phase === "connecting"
+                            visible: delegate.expanded && connectionState === PlasmaNM.Enums.Activating
 
                             PlasmaComponents3.Label {
                                 text: qsTr("Verifying and connecting")

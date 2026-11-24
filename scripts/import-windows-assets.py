@@ -17,6 +17,7 @@ from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
 
 from native_assets_input import read_assets, source_manifest
+from native_assets_index import IndexedResources
 
 
 def pe_resources(data):
@@ -64,6 +65,22 @@ def pe_resources(data):
     return result
 
 
+def png_svg(content, width, height):
+    b64 = base64.b64encode(content).decode('ascii')
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
+            f'width="{width}" height="{height}" viewBox="0 0 {width} {height}"><image width="{width}" height="{height}" '
+            f'xlink:href="data:image/png;base64,{b64}"/></svg>\n').encode()
+
+
+def indexed_icon_svg(indexed, module, group):
+    content, dimensions = indexed.preview(module, group)
+    with Image.open(io.BytesIO(content)) as image:
+        if image.format != 'PNG' or image.size != dimensions:
+            raise ValueError(f'Unexpected preview image: {module}:{group}')
+        image.verify()
+    return png_svg(content, *dimensions)
+
+
 def icon_svg(resources, group):
     key = sorted(k for k in resources if k[:2] == (14, group))[0]
     g = resources[key]
@@ -109,7 +126,7 @@ def glyph_svg(font, code):
             f'<path class="ColorScheme-Text" fill="currentColor" transform="translate({(em-advance)/2} {ascent}) scale(1 -1)" d="{path}"/></svg>\n').encode()
 
 
-def build(stage, data, mapping):
+def build(stage, data, mapping, indexed=None):
     hashes = {}
     outputs = {}
     def write(relative, content, source):
@@ -124,7 +141,8 @@ def build(stage, data, mapping):
             p.write_bytes(content)
             hashes[digest] = p
         outputs[relative] = {'source': source, 'sha256': digest}
-    libs = {name: pe_resources(data['SystemResources/'+name]) for name in mapping['libraries'].values()}
+    modules = sorted(mapping['libraries'].values())
+    libs = {} if indexed else {name: pe_resources(data['SystemResources/'+name]) for name in modules}
     font = TTFont(io.BytesIO(data['Fonts/SegoeIcons.ttf']))
     # A metadata-only inventory is useful for reviewing mappings without
     # moving or redistributing Microsoft font outlines, bitmaps or binaries.
@@ -133,8 +151,9 @@ def build(stage, data, mapping):
         'font_version': font['name'].getDebugName(5),
         'glyph_codepoints': [f'{code:04x}' for code in sorted(cmap)],
         'mun_icon_groups': {
-            name: sorted({key[1] for key in resources if len(key) > 1 and key[0] == 14})
-            for name, resources in sorted(libs.items())
+            name: (indexed.numeric_group_ids(name) if indexed else
+                   sorted({key[1] for key in libs[name] if len(key) > 1 and key[0] == 14}))
+            for name in modules
         },
     }
     # The owner archive is version 1.56; allow newly mapped symbols to
@@ -145,7 +164,8 @@ def build(stage, data, mapping):
     for source, names in mapping['icons'].items():
         if ':' in source:
             lib, group = source.split(':')
-            content = icon_svg(libs[mapping['libraries'][lib]], int(group))
+            module = mapping['libraries'][lib]
+            content = indexed_icon_svg(indexed, module, int(group)) if indexed else icon_svg(libs[module], int(group))
         else:
             if source in optional_glyphs and int(source, 16) not in cmap:
                 missing_optional_glyphs.append(source)
@@ -182,13 +202,16 @@ def build(stage, data, mapping):
               'wallpaper_images':len(seen_wallpapers),'sound_events':sum(x.endswith('.wav') for x in outputs)}
     report['missing_optional_glyphs'] = missing_optional_glyphs
     report['resource_catalog'] = catalog
+    if indexed:
+        report['indexed_source'] = {'manifest_sha256': indexed.manifest_sha256,
+                                    'source_archive': indexed.index['source_archive']}
     (stage/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('source', type=Path, nargs='?', help='Windows resource ZIP/TAR archive or extracted Windows directory')
+    parser.add_argument('source', type=Path, nargs='?', help='Windows resource ZIP/TAR archive, extracted Windows directory or indexed resource checkout')
     parser.add_argument('--reuse', action='store_true', help='Reimport from the source remembered by a successful local import')
     parser.add_argument('--catalog', type=Path, help='Export only resource IDs, source hashes and mapping coverage as JSON')
     parser.add_argument('--output', type=Path, default=Path(os.environ.get('XDG_DATA_HOME',Path.home()/'.local/share'))/'windows-modern/native-assets')
@@ -221,12 +244,13 @@ def main():
     wanted = {'SystemResources/'+name for name in mapping['libraries'].values()} | {'Fonts/SegoeIcons.ttf'}
     wanted.update(name for _,_,source,dark in mapping['wallpapers'] for name in (source,dark) if name)
     wanted.update('Media/'+name+'.wav' for name in mapping['sounds'])
-    data = read_assets(source,wanted)
+    indexed = IndexedResources(source) if source.is_dir() and (source / 'resource-manifest.json').is_file() else None
+    data = indexed.read_originals(wanted) if indexed else read_assets(source,wanted)
     dest.parent.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.native-assets-',dir=dest.parent) as temp:
         stage=Path(temp)/'new'
         stage.mkdir()
-        report=build(stage,data,mapping)
+        report=build(stage,data,mapping,indexed)
         report['source_path'] = str(source)  # Local manifest only; never in the catalog.
         report['mapping_sha256'] = hashlib.sha256(mapping_bytes).hexdigest()
         (stage/'manifest.json').write_text(json.dumps(report,indent=2)+'\n', encoding='utf-8')

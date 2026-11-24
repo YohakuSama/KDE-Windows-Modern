@@ -484,6 +484,7 @@ Item {
                         Layout.maximumWidth: implicitWidth
                         Layout.minimumWidth: 0
                         executable: commandSource
+                        onShortcutInvoked: root.closeMenu()
                     }
 
                     PlasmaComponents3.ToolButton {

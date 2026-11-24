@@ -40,8 +40,12 @@ and acceptance process.
    light-only or dark-only gap is a bug.
 5. **Build on KDE, don't fight it.** Use KWin and Plasma's own mechanisms
    (window-switcher layouts, tiling, effects, look-and-feel packages, global
-   shortcuts) wherever they exist. Forks of upstream code (System Tray, Icon
-   Tasks) stay as small as possible so they survive Plasma updates.
+   shortcuts) wherever they exist. Theme first; customize presentation and
+   interaction only where the Windows 11 reference requires it. Keep native
+   KDE pages for complex operations and show only real, supported actions;
+   never simulate successful backend state or add decorative dummy buttons.
+   Forks of upstream code (System Tray, Icon Tasks) stay as small as possible
+   so they survive Plasma updates.
 6. **Never break the user's system.** Every install step is reversible, files
    owned by distro packages are moved aside and restored rather than deleted,
    nothing is built as root, and a failed install leaves the previous state

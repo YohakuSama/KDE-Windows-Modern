@@ -16,6 +16,7 @@ Item {
     id: placesRow
 
     property var executable: null
+    signal shortcutInvoked
 
     readonly property var allLocations: [
         { text: i18n("Home"),          icon: "user-home",             command: 'xdg-open "$HOME"' },
@@ -24,8 +25,8 @@ Item {
         { text: i18n("Music"),          icon: "folder-music",         command: 'xdg-open "$(xdg-user-dir MUSIC)"' },
         { text: i18n("Downloads"),      icon: "folder-download",      command: 'xdg-open "$(xdg-user-dir DOWNLOAD)"' },
         { text: i18n("Recent Items"),   icon: "document-open-recent", command: "dolphin recentlyused:/files" },
-        { text: i18n("This PC"),        icon: "computer",             command: "dolphin" },
-        { text: i18n("Update"),         icon: "system-software-update", command: "plasma-discover" },
+        { text: i18n("File Manager"),   icon: "system-file-manager",  command: 'xdg-open "$HOME"' },
+        { text: i18n("Software Center"), icon: "system-software-install", command: "plasma-discover" },
         { text: i18n("Terminal"),       icon: "utilities-terminal",   command: "T=$(kreadconfig6 --file kdeglobals --group General --key TerminalApplication); command -v ${T:-konsole} >/dev/null 2>&1 && exec ${T:-konsole} || exec alacritty" },
         { text: i18n("Run..."),         icon: "system-run",           command: "krunner" }
     ]
@@ -72,9 +73,10 @@ Item {
                     display: PlasmaComponents3.AbstractButton.IconOnly
                     PlasmaComponents3.ToolTip { text: parent.text }
                     onClicked: {
-                        if (placesRow.executable && modelData.command)
+                        if (placesRow.executable && modelData.command) {
                             placesRow.executable.exec(modelData.command);
-                        root.closeMenu();
+                            placesRow.shortcutInvoked();
+                        }
                     }
                 }
             }

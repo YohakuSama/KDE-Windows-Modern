@@ -43,12 +43,6 @@ PlasmoidItem {
     // Taskbar > Search names them: 0 "Search box", 1 "Search icon only".
     readonly property bool showBox: Plasmoid.configuration.searchMode === 0 && !vertical
 
-    // The magnifier, drawn like Windows': lens up and right, handle down
-    // and left. 24 x 24, in currentColor (Glyph.qml).
-    readonly property string magnifierGlyph:
-        "<circle cx='14.2' cy='9.8' r='7.2' fill='none' stroke='currentColor' stroke-width='1.6'/>"
-        + "<path d='M9.1 14.9 L2.6 21.4' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round'/>"
-
     preferredRepresentation: fullRepresentation
     Plasmoid.icon: "edit-find"
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
@@ -73,7 +67,7 @@ PlasmoidItem {
         id: searchBox
         anchors.fill: parent
         visible: root.showBox
-        glyph: root.magnifierGlyph
+        iconName: "edit-find-symbolic"
         text: i18nc("@action:button taskbar search box", "Search")
         placeholder: i18nc("@info:placeholder taskbar search box", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")
@@ -83,7 +77,7 @@ PlasmoidItem {
     TaskbarButton {
         anchors.fill: parent
         visible: !root.showBox
-        glyph: root.magnifierGlyph
+        iconName: "edit-find-symbolic"
         text: i18nc("@action:button taskbar button", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")
         onTriggered: root.openSearch()
