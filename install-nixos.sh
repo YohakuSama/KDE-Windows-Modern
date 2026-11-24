@@ -82,8 +82,8 @@ restore_original() {
         start_shell || true
         return 1
     fi
-    systemctl --user daemon-reload
-    restore_env
+    systemctl --user daemon-reload || result=1
+    restore_env || result=1
     kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null 2>&1 || true
     start_shell || result=1
@@ -98,19 +98,31 @@ finish_cleanup() {
     saved="$(mktemp -d "$backups/$(date +%Y%m%d-%H%M%S).XXXXXX")"
     cp -a "$STATE/original" "$saved/"
     if [ -d "$STATE/before-uninstall" ]; then cp -a "$STATE/before-uninstall" "$saved/"; fi
+    # Unlink only the test GC root; do not delete shared Nix store paths.
     rm -rf -- "$STATE"
     printf '原始备份保留于：%s\n' "$saved"
 }
 
 if [ "$action" = uninstall ]; then
     if [ ! -f "$STATE/original/manifest.json" ]; then
-        echo "没有本脚本的安装记录，不删除其他安装或系统文件。"
+        if [ -f "$STATE/owned-state" ]; then
+            rm -rf -- "$STATE"
+            echo "已清理未完成安装的构建链接和临时资源。"
+        else
+            echo "没有本脚本的安装记录，不删除其他安装或系统文件。"
+        fi
         exit 0
     fi
     PROFILE="$(readlink -f "$STATE/runtime")"
     PYTHON="$PROFILE/bin/python3"
+    export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
     [ -x "$PYTHON" ] || { echo "测试运行时缺失，保留备份以免丢失原配置。" >&2; exit 1; }
-    "$PYTHON" "$ROOT/scripts/nixos-test-state.py" snapshot-current --root "$ROOT" --state "$STATE" --profile "$PROFILE"
+    stop_shell
+    if ! "$PYTHON" "$ROOT/scripts/nixos-test-state.py" snapshot-current --root "$ROOT" --state "$STATE" --profile "$PROFILE"; then
+        start_shell || true
+        echo "卸载前备份失败，未删除测试文件。" >&2
+        exit 1
+    fi
     restore_original || { echo "恢复未完成，已保留全部备份；请重新运行选项 2。" >&2; exit 1; }
     finish_cleanup
     echo "已卸载测试安装，原始桌面配置已恢复。"
@@ -123,7 +135,12 @@ for cmd in nix-build nix systemctl busctl plasmashell plasma-apply-lookandfeel p
 done
 systemctl --user is-active --quiet "$SERVICE" || { echo "Plasma 桌面服务未运行。" >&2; exit 1; }
 umask 077
+if [ -e "$STATE" ] && [ ! -f "$STATE/owned-state" ]; then
+    echo "测试目录已存在但没有本脚本的所有权记录：$STATE" >&2
+    exit 1
+fi
 mkdir -p "$STATE"
+touch "$STATE/owned-state"
 # Prefer the exact nixpkgs revision of the running system, then its pinned
 # registry/channel. The build expression and ABI check reject mismatches.
 version="$(plasmashell --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
@@ -146,6 +163,8 @@ nix-build "$ROOT/nix/test-runtime.nix" --argstr nixpkgsPath "$nixpkgs" --argstr 
 PROFILE="$(readlink -f "$STATE/runtime-next")"
 PYTHON="$PROFILE/bin/python3"
 export PATH="$PROFILE/bin:$PATH"
+export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+"$PYTHON" -c 'from gi.repository import Gio, GLib; import PIL, fontTools'
 prefix="$(cat "$PROFILE/wm-qt-plugin-prefix")"
 plugin="$PROFILE/$prefix"
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"
@@ -188,6 +207,7 @@ ln -sfn "$STATE/runtime-next" "$STATE/runtime"
 rollback() {
     local rc="${1:-$?}"
     trap - ERR EXIT INT TERM
+    set +e
     echo "安装未完成，正在恢复安装前的桌面……" >&2
     if [ -f "$STATE/original/manifest.json" ]; then
         restore_original && finish_cleanup || echo "自动恢复失败，备份已保留：$STATE" >&2
@@ -196,9 +216,9 @@ rollback() {
     fi
     exit "$rc"
 }
-trap 'rollback $?' ERR
-trap 'rollback 130' INT
-trap 'rollback 143' TERM
+# Run destructive rollback once in the main shell, including signals.
+trap 'exit 130' INT
+trap 'exit 143' TERM
 trap 'rc=$?; if [ "$rc" -ne 0 ]; then rollback "$rc"; fi' EXIT
 stop_shell
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" install --root "$ROOT" --state "$STATE" --profile "$PROFILE"

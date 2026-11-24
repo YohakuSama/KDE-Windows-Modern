@@ -6,6 +6,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import shlex
+import stat
 import subprocess
 import tempfile
 
@@ -48,6 +50,11 @@ def remove(path):
     if path.is_symlink() or path.is_file():
         path.unlink()
     elif path.is_dir():
+        # Copies of store packages can be mode 0555. Make only real
+        # directories in our copy writable, never symlink targets.
+        for base, dirs, _ in os.walk(path, followlinks=False):
+            base = Path(base)
+            base.chmod(base.stat().st_mode | stat.S_IWUSR | stat.S_IXUSR)
         shutil.rmtree(path)
 
 def copy(src, dst):
@@ -111,7 +118,26 @@ def plan(root, state, profile):
         desktop = profile / "share/applications" / name
         if not desktop.is_file():
             raise RuntimeError("Built application launcher missing: " + name)
-        result[DATA / "applications" / name] = desktop.resolve()
+        # The profile is deliberately not a global system package. Bind the
+        # copied launchers to its actual binaries rather than session PATH.
+        launcher = state / "staged-launchers" / name
+        launcher.parent.mkdir(parents=True, exist_ok=True)
+        lines = []
+        for line in desktop.read_text(encoding="utf-8").splitlines():
+            if line.startswith(("Exec=", "TryExec=")):
+                key, command = line.split("=", 1)
+                args = shlex.split(command)
+                if args and not args[0].startswith("/"):
+                    binary = profile / "bin" / args[0]
+                    if binary.is_file():
+                        token = args[0]
+                        command = str(binary) + command[len(token):]
+                line = key + "=" + command
+            elif line == "DBusActivatable=true":
+                line = "DBusActivatable=false"
+            lines.append(line)
+        launcher.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        result[DATA / "applications" / name] = launcher
     return result
 
 def snapshot(backup, targets):
@@ -221,7 +247,9 @@ def main():
         return
     if args.action == "snapshot-current":
         manifest = json.loads((backup / "manifest.json").read_text())
-        snapshot(args.state / "before-uninstall", [Path(key) for key in manifest["entries"]])
+        snapshot(args.state / "before-uninstall",
+                 [Path(key) for key in manifest["entries"]
+                  if Path(key).is_relative_to(CONFIG) or key.endswith("/dolphinui.rc")])
         return
     make_staging(args.root, args.state)
     mapping = plan(args.root, args.state, args.profile)
@@ -237,6 +265,7 @@ def main():
         path = CONFIG / name
         if path.is_symlink() and path.exists():
             replace(path.resolve(), path)
+            path.chmod(path.stat().st_mode | stat.S_IWUSR)
     for dst, src in mapping.items():
         replace(src, dst)
     for variant in ("dark", "light"):

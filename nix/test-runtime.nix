@@ -67,7 +67,7 @@ let
     src = ../plasma/applets/org.kde.windowsmodern.systemtray;
     id = "org.kde.windowsmodern.systemtray";
   };
-  python = pkgs.python3.withPackages (p: [ p.pillow p.fonttools ]);
+  python = pkgs.python3.withPackages (p: [ p.pillow p.fonttools p.pygobject3 ]);
 in
 assert lib.assertMsg (k.plasma-workspace.version == plasmaVersion)
   "Nixpkgs Plasma version does not match the running desktop; refusing an ABI-mismatched test build.";
@@ -80,5 +80,6 @@ pkgs.symlinkJoin {
   ];
   postBuild = ''
     printf '%s\n' '${prefix}' > "$out/wm-qt-plugin-prefix"
+    printf '%s\n' '${lib.getLib pkgs.glib}/lib/girepository-1.0:${pkgs.gobject-introspection}/lib/girepository-1.0' > "$out/wm-gi-typelib-path"
   '';
 }
