@@ -389,18 +389,11 @@ Item {
                     anchors.fill: parent
                     spacing: Kirigami.Units.smallSpacing
 
-                    Rectangle {
-                        width: 32; height: 32
-                        radius: 16
-                        color: "#33FFFFFF"
-                        visible: model.icon !== ""
-
-                        Image {
-                            anchors.fill: parent
-                            source: model.icon
-                            fillMode: Image.PreserveAspectCrop
-                            clip: true
-                        }
+                    AccountAvatar {
+                        width: 32
+                        height: 32
+                        size: 32
+                        source: model.icon
                     }
 
                     Text {

@@ -8,6 +8,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtCore
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
@@ -34,15 +35,16 @@ MouseArea {
     readonly property bool showBell: Plasmoid.configuration.showNotificationButton
         && Plasmoid.formFactor !== PlasmaCore.Types.Vertical
     property bool wasExpanded: false
-    function toggleFlyout(previous = plasmoidItem.expanded) {
-        plasmoidItem.expanded = !previous;
+    function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
+        plasmoidItem.toggleFlyout(previous);
     }
 
     // The panel sizes applets from their Layout hints; without them the
     // clock got a square cell and a full-year date overflowed it.
-    readonly property int leadingInset: Kirigami.Units.smallSpacing
+    readonly property int leadingInset: 4
     readonly property int trailingInset: showBell ? 0 : Kirigami.Units.smallSpacing
-    readonly property int bellCellWidth: 32
+    readonly property int bellCellWidth: 24
+    readonly property int bellIconSize: Math.max(1, Math.min(16, Math.floor(panelHeight)))
     implicitWidth: panelContent.implicitWidth + leadingInset + trailingInset
     implicitHeight: panelHeight
     Layout.minimumWidth: implicitWidth
@@ -94,8 +96,9 @@ MouseArea {
     readonly property int linePixelSize: {
         // QML uses logical pixels; physical screen DPI would apply fractional
         // scaling twice. Measure the actual configured Qt font instead.
-        const wanted = baseFont.pixelSize > 0
-            ? baseFont.pixelSize : Math.round(baseMetrics.height / lineHeightFactor);
+        const wanted = Plasmoid.configuration.autoFontAndSize
+            ? 12 : (baseFont.pixelSize > 0
+                ? baseFont.pixelSize : Math.round(baseMetrics.height / lineHeightFactor));
         const minMargin = 2;
         const fits = Math.floor((panelHeight - 2 * minMargin) / lineCount / lineHeightFactor);
         return Math.max(6, Math.min(wanted, fits));
@@ -124,8 +127,10 @@ MouseArea {
             return Qt.formatDate(d, Qt.ISODate);
         } else if (format === "longDate") {
             return Qt.formatDate(d, Qt.locale(), Locale.LongFormat);
-        } else {
+        } else if (format === "regionalDate") {
             return Qt.locale().toString(d, DateFormat.shortDateFullYear(Qt.locale().dateFormat(Locale.ShortFormat)));
+        } else {
+            return Qt.formatDate(d, DateFormat.windowsShortDate());
         }
     }
 
@@ -138,7 +143,7 @@ MouseArea {
     Keys.onSpacePressed: toggleFlyout()
 
     acceptedButtons: Qt.LeftButton
-    onPressed: wasExpanded = plasmoidItem.expanded
+    onPressed: wasExpanded = plasmoidItem.flyoutOpen
     onClicked: mouse => {
         if (mouse.button === Qt.LeftButton)
             toggleFlyout(wasExpanded);
@@ -154,7 +159,7 @@ MouseArea {
         anchors.fill: parent
         anchors.margins: 2
         radius: 4
-        visible: main.containsMouse || main.activeFocus || main.plasmoidItem.expanded
+        visible: main.containsMouse || main.activeFocus || main.plasmoidItem.flyoutOpen
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                        Kirigami.Theme.textColor.b, main.containsPress ? 0.12 : 0.06)
     }
@@ -164,7 +169,7 @@ MouseArea {
         anchors.fill: parent
         anchors.leftMargin: main.leadingInset
         anchors.rightMargin: main.trailingInset
-        spacing: Kirigami.Units.smallSpacing
+        spacing: 4
 
         ColumnLayout {
             id: contentLayout
@@ -181,7 +186,7 @@ MouseArea {
                 verticalAlignment: Text.AlignVCenter
                 textFormat: Text.PlainText
 
-                text: Qt.locale().toString(clock.dateTime, Plasmoid.configuration.showSeconds === 2 ? root.timeFormatWithSeconds : root.timeFormat)
+                text: Qt.locale().toString(clock.dateTime, Plasmoid.configuration.showSeconds === 2 ? main.plasmoidItem.timeFormatWithSeconds : main.plasmoidItem.timeFormat)
 
                 font {
                     family: main.baseFont.family
@@ -253,28 +258,34 @@ MouseArea {
             text: i18n("Notification center")
             display: PlasmaComponents.AbstractButton.IconOnly
             icon.name: main.plasmoidItem.notificationIcon
-            // A 16px icon request also includes the SVG's transparent
-            // canvas. Give the bell its own 24px box with no button padding.
-            icon.width: 24
-            icon.height: 24
+            // A compact notification glyph, with an independent click target.
+            icon.width: main.bellIconSize
+            icon.height: main.bellIconSize
             padding: 0
             contentItem: Item {
                 Kirigami.Icon {
                     anchors.centerIn: parent
-                    width: Math.min(24, parent.width, parent.height)
+                    width: Math.min(main.bellIconSize, parent.width, parent.height)
                     height: width
                     roundToIconSize: false
-                    source: main.plasmoidItem.notificationIcon
+                    isMask: true
+                    color: Kirigami.Theme.textColor
+                    source: {
+                        const name = main.plasmoidItem.notificationIcon;
+                        const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
+                            "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
+                        return String(file).length > 0 ? file : name;
+                    }
                 }
             }
             Accessible.name: text
             Accessible.description: main.plasmoidItem.notificationStatusText
             property bool wasExpanded: false
-            onPressed: wasExpanded = main.plasmoidItem.expanded
+            onPressed: wasExpanded = main.plasmoidItem.flyoutOpen
             onClicked: main.toggleFlyout(wasExpanded)
             PlasmaComponents.ToolTip {
                 text: main.plasmoidItem.notificationStatusText
-                visible: notificationButton.hovered && !main.plasmoidItem.expanded
+                visible: notificationButton.hovered && !main.plasmoidItem.flyoutOpen
             }
         }
     }

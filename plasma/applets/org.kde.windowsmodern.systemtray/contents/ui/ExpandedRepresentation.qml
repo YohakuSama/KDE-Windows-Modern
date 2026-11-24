@@ -21,26 +21,33 @@ import "components" as Components
 Item {
     id: popup
 
-    // The overflow is a compact icon-only grid; Quick Settings and details
-    // keep the existing 360px surface and their KDE backends.
+    // Never derive the window's initial size from an effectively hidden
+    // QQuickLayout. The native popup is sized before the window is mapped.
     readonly property bool overflowHome: systemTrayState.overflowMode && !systemTrayState.activeApplet
-    readonly property int popupWidth: overflowHome
-        ? Math.round(216 * actionPanel.scale) : Math.round(360 * actionPanel.scale)
-    Layout.minimumWidth: popupWidth
-    Layout.maximumWidth: popupWidth
+    readonly property real uiScale: Math.max(0.5, actionPanel.scale)
+    readonly property rect screenRect: Plasmoid.screenGeometry
+    readonly property int availableWidth: screenRect.width >= 100
+        ? Math.max(1, Math.floor(screenRect.width * 0.92)) : 720
+    readonly property int availableHeight: screenRect.height >= 100
+        ? Math.max(1, Math.floor(Math.min(screenRect.height * 0.92,
+            screenRect.height - Math.min(96, root.vertical ? root.width : root.height) - 24))) : 720
+    readonly property int popupWidth: Math.min(availableWidth,
+        Math.round((overflowHome ? 216 : 360) * uiScale))
+    readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
+        * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
+        + Math.round(16 * uiScale)
+    readonly property int popupHeight: Math.min(availableHeight,
+        systemTrayState.activeApplet ? Math.max(360, Kirigami.Units.gridUnit * 24)
+        : overflowHome ? overflowHeight : actionPanel.homeHeight)
 
-    // Height: applet pages are gridUnit*24. The Quick Settings view (no
-    // active applet) fits its content exactly, like Windows 11, so a few
-    // hidden icons don't leave an empty band above the toggles.
-    // updateMinSize() grows to the minimum, updateMaxSize() shrinks to the
-    // maximum — both bypass the saved-size flag.
-    readonly property int quickSettingsHeight: Math.max(1, Math.ceil(actionPanelMode.implicitHeight))
-    Layout.minimumHeight: systemTrayState.activeApplet
-        ? Kirigami.Units.gridUnit * 24
-        : quickSettingsHeight
-    Layout.maximumHeight: systemTrayState.activeApplet
-        ? Kirigami.Units.gridUnit * 24
-        : quickSettingsHeight
+    implicitWidth: popupWidth
+    implicitHeight: popupHeight
+    Layout.minimumWidth: popupWidth
+    Layout.preferredWidth: popupWidth
+    Layout.maximumWidth: popupWidth
+    Layout.minimumHeight: popupHeight
+    Layout.preferredHeight: popupHeight
+    Layout.maximumHeight: popupHeight
 
     property alias hiddenLayout: hiddenItemsView.layout
     property alias plasmoidContainer: container

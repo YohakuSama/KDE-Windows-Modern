@@ -25,10 +25,20 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: 16 * actionPanel.scale
 
+    // A pre-map size from the hardware/configuration and tile geometry,
+    // not visible children. Qt Layout implicitHeight can be zero while
+    // the window is hidden. Reserve a complete first viewport in that case.
+    readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
+    readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
+    readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
+    readonly property int homeHeight: Math.ceil(Math.max(220 * scale,
+        12 * scale + Math.max(64 * scale, toggleViewport.viewportHeight)
+        + (sliderRows > 0 ? (sliderRows * 36 + (sliderRows - 1) * 12 + 14 + 32) * scale : 16 * scale)
+        + 48 * scale))
+
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
         toggleViewport.cancelDrag();
-        scrollMotion.stop();
         toggleViewport.cancelFlick();
         toggleViewport.contentY = 0;
     }
@@ -48,7 +58,7 @@ ColumnLayout {
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
         Layout.maximumHeight: implicitHeight
-        readonly property int railWidth: Math.round(24 * actionPanel.scale)
+        readonly property int railWidth: Math.max(24, Math.round(24 * actionPanel.scale))
         readonly property int railGap: Math.round(4 * actionPanel.scale)
 
         // Measure the caption independently of visibility. QQuickLayout
@@ -113,22 +123,25 @@ ColumnLayout {
                 return tiles.find(tile => tile.orderKey === key) || null;
             }
 
-            function scrollTo(offset) {
-                scrollMotion.stop();
-                const destination = Order.clampOffset(offset, maxOffset);
-                if (Math.abs(destination - contentY) < 1 || Kirigami.Units.shortDuration === 0) {
-                    contentY = destination;
-                    return;
-                }
-                scrollMotion.from = contentY;
-                scrollMotion.to = destination;
-                scrollMotion.start();
+            function setOffsetImmediately(offset) {
+                cancelFlick();
+                contentY = Order.clampOffset(offset, maxOffset);
             }
 
             function page(direction) {
-                const start = scrollMotion.running ? scrollMotion.to : contentY;
-                cancelFlick();
-                scrollTo(start + direction * 2 * rowStride);
+                setOffsetImmediately(contentY + direction * height);
+            }
+
+            // The same native wheel event filter used by Plasma Kickoff.
+            // It handles both the grid and the attached vertical scrollbar,
+            // including angle/pixel delta conversion on Wayland.
+            Kirigami.WheelHandler {
+                target: toggleViewport.hasMoreRows && toggleViewport.dragKey === ""
+                    ? toggleViewport : null
+                filterMouseEvents: true
+                blockTargetWheel: true
+                keyNavigationEnabled: false
+                verticalStepSize: Math.max(120, toggleViewport.rowStride)
             }
 
             function ensureVisible(key) {
@@ -138,9 +151,9 @@ ColumnLayout {
                 const top = Math.floor(index / 3) * rowStride;
                 const bottom = top + rowHeight;
                 if (top < contentY)
-                    scrollTo(top);
+                    setOffsetImmediately(top);
                 else if (bottom > contentY + height)
-                    scrollTo(bottom - height);
+                    setOffsetImmediately(bottom - height);
             }
 
             function saveMove(key, to) {
@@ -184,7 +197,6 @@ ColumnLayout {
                 dropIndex = visibleKeys.indexOf(key);
                 dragKey = key;
                 cancelFlick();
-                scrollMotion.stop();
             }
 
             function updateDrag(key, position) {
@@ -203,7 +215,7 @@ ColumnLayout {
                 cancelDrag();
                 if (destination >= 0)
                     saveMove(key, destination);
-                scrollTo(Order.snapOffset(contentY, rowStride, maxOffset));
+                setOffsetImmediately(contentY);
             }
 
             function cancelDrag(key) {
@@ -218,22 +230,10 @@ ColumnLayout {
                     cancelDrag();
                     Qt.callLater(() => {
                         if (!toggleViewport.dragKey)
-                            toggleViewport.scrollTo(Order.snapOffset(toggleViewport.contentY,
-                                toggleViewport.rowStride, toggleViewport.maxOffset));
+                            toggleViewport.setOffsetImmediately(toggleViewport.contentY);
                     });
                 }
             }
-            onMovementStarted: scrollMotion.stop()
-            onMovementEnded: if (!dragKey) scrollTo(Order.snapOffset(contentY, rowStride, maxOffset))
-
-            NumberAnimation {
-                id: scrollMotion
-                target: toggleViewport
-                property: "contentY"
-                duration: Kirigami.Units.shortDuration
-                easing.type: Easing.OutCubic
-            }
-
             // Dragging near the edge reaches later rows without requiring
             // the user to drop the tile and scroll separately.
             Timer {
@@ -355,34 +355,37 @@ ColumnLayout {
                 z: 1
             }
 
+
+            // A real attached Qt Quick Controls scrollbar: its position,
+            // size and thumb drag are driven by the Flickable itself.
+            // Reparent only the visual rail, as supported by Qt.
             QQC2.ScrollBar.vertical: QQC2.ScrollBar {
-                id: rowScrollBar
+                id: tileScrollBar
                 parent: scrollTrack
                 anchors.fill: parent
                 policy: QQC2.ScrollBar.AlwaysOn
-                leftPadding: Math.max(0, (width - 4) / 2)
+                hoverEnabled: true
+                leftPadding: Math.max(0, (width - 8) / 2)
                 rightPadding: leftPadding
+                topPadding: 0
+                bottomPadding: 0
+                minimumSize: Math.min(1, 24 / Math.max(1, height))
+                stepSize: Math.max(0.01, size * 0.9)
                 contentItem: Rectangle {
-                    implicitWidth: 4
+                    implicitWidth: 8
                     radius: width / 2
                     color: Kirigami.Theme.textColor
-                    opacity: rowScrollBar.pressed || rowScrollBar.hovered ? 0.65 : 0.40
+                    opacity: tileScrollBar.pressed ? 0.8 : tileScrollBar.hovered ? 0.65 : 0.45
                 }
                 background: Rectangle {
                     width: 2
                     x: (parent.width - width) / 2
                     radius: 1
                     color: Kirigami.Theme.textColor
-                    opacity: 0.12
-                }
-                onPressedChanged: {
-                    if (pressed)
-                        scrollMotion.stop();
-                    else if (!toggleViewport.dragKey)
-                        toggleViewport.scrollTo(Order.snapOffset(toggleViewport.contentY,
-                            toggleViewport.rowStride, toggleViewport.maxOffset));
+                    opacity: 0.16
                 }
             }
+
         }
 
         // The rail is reserved from the row count, not scrollbar geometry,
@@ -413,7 +416,7 @@ ColumnLayout {
                 id: scrollTrack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.minimumHeight: 8
+                Layout.minimumHeight: 24
             }
             PlasmaComponents3.ToolButton {
                 id: nextPageButton
@@ -432,8 +435,7 @@ ColumnLayout {
     }
 
     GridLayout {
-        visible: (Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable)
-            || (Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable)
+        visible: actionPanel.brightnessShown || actionPanel.volumeShown
         Layout.fillWidth: true
         Layout.leftMargin: 14 * actionPanel.scale
         Layout.rightMargin: 14 * actionPanel.scale

@@ -53,35 +53,14 @@ SessionManagementScreen {
         }
     }
 
-    // ── Custom avatar (replaces built-in UserList) ──
-    Item {
+    // Always show a user image or the Windows default account avatar.
+    AccountAvatar {
         Layout.alignment: Qt.AlignHCenter
         Layout.preferredWidth: 140
         Layout.preferredHeight: 140
         Layout.bottomMargin: 16
-
-        Image {
-            id: avatarImg
-            anchors.fill: parent
-            source: {
-                if (sessionManager.userListModel && sessionManager.userListModel.count > 0) {
-                    const icon = sessionManager.userListModel.get(0).icon;
-                    if (icon) return icon;
-                }
-                return "";
-            }
-            fillMode: Image.PreserveAspectCrop
-            sourceSize: Qt.size(140, 140)
-            asynchronous: true
-
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: 140; height: 140
-                    radius: 70
-                }
-            }
-        }
+        source: sessionManager.userListModel && sessionManager.userListModel.count > 0
+            ? sessionManager.userListModel.get(0).icon : ""
     }
 
     // ── Username ──

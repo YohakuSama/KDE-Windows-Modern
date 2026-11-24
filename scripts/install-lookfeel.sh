@@ -20,6 +20,12 @@ cp -r "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark" "$LOOKFEEL_DIR/
 step "Light theme"
 rm -rf "$LOOKFEEL_DIR/org.kde.windowsmodern.light"
 cp -r "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.light" "$LOOKFEEL_DIR/"
+avatar="$NATIVE_ASSETS_DIR/icons/status/avatar-default.svg"
+[ -s "$avatar" ] || avatar="$SRC_DIR/icons/windows-modern/status/avatar-default.svg"
+for variant in dark light; do
+    lock="$LOOKFEEL_DIR/org.kde.windowsmodern.$variant/contents/lockscreen"
+    [ ! -d "$lock" ] || cp "$avatar" "$lock/default-avatar.svg"
+done
 
 # Both global themes name the modern multi-size cursor: make sure it exists, or
 # applying a theme would leave the cursor on a fallback.

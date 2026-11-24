@@ -56,7 +56,7 @@ start.writeConfig("icon", "start-here");
 // 3. Icon-only task manager. The Windows Modern fork deliberately reuses
 //    the stock plugin ID, so this loads the fork when it is installed and
 //    the stock icons-only task manager otherwise — no separate fallback.
-var tasks = panel.addWidget("org.kde.plasma.icontasks");
+var tasks = panel.addWidget(pick("org.kde.windowsmodern.icontasks", "org.kde.plasma.icontasks"));
 tasks.currentConfigGroup = new Array("General");
 // Pinned like Windows 11's default taskbar: File Explorer, the browser,
 //    the Store (Plasma's preferred file manager and browser, and Discover).

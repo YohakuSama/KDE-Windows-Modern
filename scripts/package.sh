@@ -6,7 +6,8 @@
 #    ./scripts/package.sh            # build all components
 #    ./scripts/package.sh <name>...   # build specific components
 #    ./scripts/package.sh --list      # list available components
-#    ./scripts/package.sh --integration # full owner test bundle with local CI plugins
+#    ./scripts/package.sh --integration # integration bundle with local CI plugins
+#    ./scripts/package.sh --owner       # private test bundle, source builds + native resources
 #
 #  Output: dist/WindowsModern-<component>-<version>.zip  (KDE Store items)
 #          dist/KDE-Windows-Modern-<version>.zip         (full GitHub bundle)
@@ -117,11 +118,21 @@ if [[ "${1:-}" == "--list" ]]; then
 fi
 
 mkdir -p "$DIST_DIR"
+OWNER=0
+if [[ "${1:-}" == "--owner" ]]; then
+    [[ $# -eq 1 ]] || { err "--owner cannot be combined with component names"; exit 1; }
+    OWNER=1
+    # Private test archives must never enter release.sh's public manifest.
+    MANIFEST="$DIST_DIR/.owner-manifest"
+fi
 : > "$MANIFEST"
 
 FULL_BUILD=1
 INTEGRATION=0
-if [[ "${1:-}" == "--integration" ]]; then
+if [[ "$OWNER" -eq 1 ]]; then
+    FULL_BUILD=0
+    info "Building private owner test bundle with original Windows resources..."
+elif [[ "${1:-}" == "--integration" ]]; then
     [[ $# -eq 1 ]] || { err "--integration cannot be combined with component names"; exit 1; }
     INTEGRATION=1
     FULL_BUILD=0
@@ -158,6 +169,8 @@ FULL_VER="$(get_version "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dar
 FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}.zip"
 if [[ "$INTEGRATION" -eq 1 ]]; then
     FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-integration-$(git -C "$SRC_DIR" rev-parse --short HEAD).zip"
+elif [[ "$OWNER" -eq 1 ]]; then
+    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-owner-$(git -C "$SRC_DIR" rev-parse --short HEAD).zip"
 fi
 if [[ -n "$(git -C "$SRC_DIR" status --porcelain --untracked-files=no)" ]]; then
     warn "Working tree has uncommitted changes — the full bundle is built from HEAD and will not include them."
@@ -207,6 +220,18 @@ if [[ "$INTEGRATION" -eq 1 ]]; then
     git -C "$SRC_DIR" rev-parse HEAD > "$stage/$prefix/INTEGRATION-BUILD"
     # Preserve upstream cursor symlinks and zip the extra payload only.
     (cd "$stage" && zip -qry "$FULL_OUT" "$prefix/prebuilt" "$prefix/bundled-cursors" "$prefix/INTEGRATION-BUILD")
+    rm -rf "$stage"
+    trap - EXIT
+fi
+if [[ "$OWNER" -eq 1 ]]; then
+    stage="$(mktemp -d)"
+    trap 'rm -rf "$stage"' EXIT
+    prefix="KDE-Windows-Modern-${FULL_VER}"
+    mkdir -p "$stage/$prefix"
+    bash "$SCRIPT_DIR/stage-native-resources.sh" "$stage/$prefix/native-resources"
+    # A source-build test archive never tries to download stale release binaries.
+    git -C "$SRC_DIR" rev-parse HEAD > "$stage/$prefix/INTEGRATION-BUILD"
+    (cd "$stage" && zip -qry "$FULL_OUT" "$prefix/native-resources" "$prefix/INTEGRATION-BUILD")
     rm -rf "$stage"
     trap - EXIT
 fi

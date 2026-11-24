@@ -12,7 +12,7 @@ import "../js/funcs.js" as Funcs
 Lib.Page {
     id: page
 
-    title: qsTr("Battery")
+    title: i18n("Battery")
 
     BatteryControlModel {
         id: batteryControl
@@ -24,14 +24,14 @@ Lib.Page {
 
     readonly property bool hasBattery: batteryControl.hasCumulative
     readonly property bool percentKnown: hasBattery && Number.isFinite(batteryControl.percent) && batteryControl.percent >= 0
-    readonly property string percent: percentKnown ? qsTr("%1%").arg(batteryControl.percent) : qsTr("Unknown")
+    readonly property string percent: percentKnown ? i18n("%1%", batteryControl.percent) : i18n("Unknown")
     readonly property bool isCharging: batteryControl.state === BatteryControlModel.Charging
     readonly property bool isFull: batteryControl.state === BatteryControlModel.FullyCharged
-    readonly property string batteryStatus: !hasBattery ? qsTr("No battery")
-        : isFull ? qsTr("Fully charged")
-        : isCharging ? qsTr("Charging")
-        : batteryControl.state === BatteryControlModel.Discharging ? qsTr("Discharging")
-        : batteryControl.pluggedIn ? qsTr("Plugged in") : qsTr("Battery status unknown")
+    readonly property string batteryStatus: !hasBattery ? i18n("No battery")
+        : isFull ? i18n("Fully charged")
+        : isCharging ? i18n("Charging")
+        : batteryControl.state === BatteryControlModel.Discharging ? i18n("Discharging")
+        : batteryControl.pluggedIn ? i18n("Plugged in") : i18n("Battery status unknown")
 
     property string timeLeft: ""
     property string health: "--"
@@ -78,7 +78,7 @@ Lib.Page {
         if (inhibitionControl.isManuallyInhibited)
             inhibitionControl.uninhibit();
         else
-            inhibitionControl.inhibit(qsTr("Automatic sleep and screen locking disabled by user"));
+            inhibitionControl.inhibit(i18n("Automatic sleep and screen locking disabled by user"));
     }
 
     ColumnLayout {
@@ -136,7 +136,7 @@ Lib.Page {
             visible: page.health !== "--"
 
             PlasmaComponents3.Label {
-                text: qsTr("Battery health")
+                text: i18n("Battery health")
                 font.pixelSize: 9
                 opacity: 0.5
                 color: Kirigami.Theme.textColor
@@ -174,7 +174,7 @@ Lib.Page {
         }
 
         Lib.SectionHeader {
-            text: qsTr("Power Profiles")
+            text: i18n("Power Profiles")
         }
 
         Repeater {
@@ -185,11 +185,11 @@ Lib.Page {
                 text: {
                     switch (modelData) {
                     case "performance":
-                        return qsTr("Performance");
+                        return i18n("Performance");
                     case "balanced":
-                        return qsTr("Balanced");
+                        return i18n("Balanced");
                     case "power-saver":
-                        return qsTr("Power Saver");
+                        return i18n("Power Saver");
                     default:
                         return modelData;
                     }
@@ -230,7 +230,7 @@ Lib.Page {
             }
 
             PlasmaComponents3.Label {
-                text: qsTr("Block sleep & screen lock")
+                text: i18n("Block sleep & screen lock")
                 font.pixelSize: 12
                 color: Kirigami.Theme.textColor
             }
@@ -247,7 +247,7 @@ Lib.Page {
     }
 
     footer: Lib.MoreSettingsLink {
-        text: qsTr("Power settings")
+        text: i18n("Power settings")
         onClicked: Qt.openUrlExternally("systemsettings://kcm_powerdevilprofilesconfig")
     }
 }

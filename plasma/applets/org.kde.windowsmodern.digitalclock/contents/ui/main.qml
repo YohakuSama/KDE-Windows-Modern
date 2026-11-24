@@ -15,6 +15,7 @@ import org.kde.plasma.clock as PlasmaClock
 import org.kde.plasma.private.digitalclock as DigitalClockPrivate
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
+import "code/dateformat.js" as DateFormat
 
 PlasmoidItem {
     id: root
@@ -25,8 +26,18 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.ShadowBackground | PlasmaCore.Types.ConfigurableBackground
 
     // Tooltips must not cover the notification/calendar flyout.
-    toolTipMainText: expanded ? "" : i18n("Clock")
-    toolTipSubText: expanded ? "" : notificationStatusText
+    readonly property bool flyoutOpen: expanded
+    readonly property var popupScreenGeometry: Plasmoid.screenGeometry
+    readonly property real popupPanelExtent: compactRepresentationItem
+        ? (Plasmoid.formFactor === PlasmaCore.Types.Vertical
+            ? compactRepresentationItem.width : compactRepresentationItem.height) : 48
+    toolTipMainText: flyoutOpen ? "" : i18n("Clock")
+    toolTipSubText: flyoutOpen ? "" : notificationStatusText
+    Plasmoid.status: flyoutOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
+
+    function toggleFlyout(previous = flyoutOpen) {
+        expanded = !previous;
+    }
 
     readonly property string currentTimeZone: currentClock.timeZone
     readonly property var currentTime: currentClock.dateTime
@@ -69,8 +80,8 @@ PlasmoidItem {
                  | (notificationSettings.lowPriorityHistory ? NotificationManager.Notifications.LowUrgency : 0)
     }
 
-    onExpandedChanged: {
-        if (expanded) {
+    onFlyoutOpenChanged: {
+        if (flyoutOpen) {
             notificationModel.hideInhibitionSummary();
             notificationModel.lastRead = undefined;
         } else {
@@ -91,7 +102,7 @@ PlasmoidItem {
         timeZone: Plasmoid.configuration.lastSelectedTimezone
         // Second-by-second only while seconds are on screen: the flyout's
         // large clock shows them (it showed :00 with minute updates).
-        trackSeconds: root.expanded || Plasmoid.configuration.showSeconds === 2
+        trackSeconds: root.flyoutOpen || Plasmoid.configuration.showSeconds === 2
     }
 
     PlasmaClock.Clock {
@@ -164,55 +175,20 @@ PlasmoidItem {
 
     // Computes time format strings based on locale and user settings.
     function timeFormatCorrection(timeFormatString = Qt.locale().timeFormat(Locale.ShortFormat)) {
-        const regexp = /(hh*)(.+)(mm)/i;
-        const match = regexp.exec(timeFormatString);
-
-        if (!match) {
-            root.timeFormat = timeFormatString;
-            root.timeFormatWithSeconds = timeFormatString;
-            return;
-        }
-
-        const hours = match[1];
-        const delimiter = match[2];
-        const minutes = match[3];
-        const seconds = "ss";
-        const amPm = "AP";
-        const uses24hFormatByDefault = timeFormatString.toLowerCase().indexOf("ap") === -1;
-
-        // QLocale does not convert 12h/24h when uppercase H is used, so lowercase h/hh.
-        let result = hours.toLowerCase() + delimiter + minutes;
-        let resultSec = result + delimiter + seconds;
-
-        // Append AM/PM when user chose 12h or left it as locale default and locale uses 12h.
-        if ((Plasmoid.configuration.use24hFormat === Qt.PartiallyChecked && !uses24hFormatByDefault)
-                || Plasmoid.configuration.use24hFormat === Qt.Unchecked) {
-            result += " " + amPm;
-            resultSec += " " + amPm;
-        }
-
-        root.timeFormat = result;
-        root.timeFormatWithSeconds = resultSec;
+        const formats = DateFormat.clockFormats(Plasmoid.configuration.use24hFormat, timeFormatString);
+        root.timeFormat = formats.time;
+        root.timeFormatWithSeconds = formats.seconds;
     }
 
-    preferredRepresentation: compactRep
-
-    Component {
-        id: compactRep
-        CompactRepresentation {
-            plasmoidItem: root
-        }
+    // Match Plasma's native digital-clock implementation. Do not use the
+    // compact icon as the full representation or create a second window.
+    preferredRepresentation: compactRepresentation
+    compactRepresentation: CompactRepresentation {
+        plasmoidItem: root
     }
-
-    Component {
-        id: fullRep
-        ExpandedRepresentation {}
+    fullRepresentation: ExpandedRepresentation {
+        clockApplet: root
     }
-
-    compactRepresentation: compactRep
-
-    fullRepresentation: fullRep
-
     activationTogglesExpanded: true
     hideOnWindowDeactivate: !Plasmoid.configuration.pin
 

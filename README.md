@@ -78,9 +78,9 @@ Windows Modern includes matching window decorations, widget styles, color scheme
 
 ## Installation
 
-### NixOS: limited user-space preview
+### NixOS: full reversible desktop test
 
-The full mutable-system installer and Fedora prebuilt C++ plugins do not support NixOS yet. For a limited theme test, use `bash ./install.sh preview --dark` (or `--light`) as your desktop user, not root. Ensure KDE/Qt, Kvantum, Bash, Python and the resource import dependencies are present through your own system configuration. To use original Windows icons, import your local indexed resources before preview (see [Native assets](docs/NATIVE_ASSETS.md)). The preview stages and applies the theme without resetting your panel; add Windows Modern Start, Search, Task View and Digital Clock manually through Add Widgets. The native task manager and tray remain in place. Custom C++ tray/taskbar, session-lock overlay and greeter require a separate NixOS package/integration test. Restore saved settings with `bash ./uninstall.sh --list-backups` and `bash ./uninstall.sh --restore`. The preview itself still requires live NixOS validation.
+Run `bash install.sh` as your desktop user inside Plasma. Enter `1` for a first installation, `2` for an incremental upgrade, or `3` to uninstall and restore the original desktop. No changes to configuration.nix or Home Manager are required. The test builds the C++ tray and taskbar locally against your running Plasma ABI, includes the session lock screen and automatically imports the indexed Windows resources. The boot greeter remains separate. An upgrade builds fresh plugins before switching, snapshots the current desktop, preserves the existing panel layout and original uninstall baseline, and restores the previous runtime if verification fails. See the NixOS full desktop testing section below.
 
 
 ### Quick start (also: setting up a new machine)
@@ -716,3 +716,9 @@ For previously imported private Windows resources, refresh the latest icon map w
 ## Desktop integration test package
 
 The CI `Package integration bundle` job publishes `Windows-Modern-integration-<commit>` on pull requests and main. Download it from the successful Actions run, verify the inner ZIP against `SHA256SUMS`, extract it, and run `./install.sh`. It includes the exact commit, pinned login-manager source, matching Fedora 44/45 plugins, and the verified Bibata Modern Ice XCursor artwork. The installer uses the bundled plugin only for its exact distro/Plasma/Qt/CPU key; otherwise it builds locally. No stable tag is issued for an owner test build. Cursor size remains controlled by KDE System Settings. See [cursor credits and behavior](docs/CURSORS.md).
+
+### NixOS full desktop testing (no declarative changes)
+
+Run `bash install-nixos.sh` inside the Plasma desktop as your normal user. Enter **1** for first installation, **2** to upgrade an existing installation, or **3** to uninstall and restore the pre-test desktop. `bash install.sh all --light` selects the light variant on NixOS; dark is the default. The script builds both C++ plugins against the running system's nixpkgs/Plasma ABI, uses a separate task-manager ID and user-level plugin environment, imports the original Windows resources, and refuses to report success with stock fallback applets. Each C++ applet has an identity compiled into its ELF, derived from its filtered source, build recipe, package set and Plasma ABI. Nix rebuilds changed inputs only. Upgrades verify exact mapped store paths and file identities, disable the Plasma QML disk cache, skip unchanged payloads and verified native assets, and leave the existing layout, theme, wallpaper and shortcuts alone. It never edits configuration.nix, Home Manager declarations, /nix/store, or the system login manager. Backups are saved under XDG_STATE_HOME and the test's GC root is removed on uninstall. Existing files from before the test are restored, not deleted. KWin may require a fresh login for cached QML or the Qt environment of already running apps.
+
+For an owner-only ZIP with the original resource inputs, run `bash scripts/package.sh --owner`. This does not require CI-built plugins.

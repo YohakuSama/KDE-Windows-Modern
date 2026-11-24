@@ -10,14 +10,14 @@ import "../lib" as Lib
 Lib.DetailPage {
     id: page
 
-    title: qsTr("Bluetooth")
+    title: i18n("Bluetooth")
     showSwitch: btManager.adapters.length > 0
     switchChecked: page.btOn
-    emptyText: btManager.adapters.length === 0 ? qsTr("No Bluetooth adapter available")
-        : page.btOn ? qsTr("No devices paired") : qsTr("Bluetooth is off")
+    emptyText: btManager.adapters.length === 0 ? i18n("No Bluetooth adapter available")
+        : page.btOn ? i18n("No devices paired") : i18n("Bluetooth is off")
 
     footer: Lib.MoreSettingsLink {
-        text: qsTr("More Bluetooth settings")
+        text: i18n("More Bluetooth settings")
         onClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
     }
 
@@ -37,7 +37,7 @@ Lib.DetailPage {
     listView.header: PlasmaComponents3.Button {
         width: listView.width
         height: page.btOn ? Math.max(32, Kirigami.Units.gridUnit * 2) : 0
-        text: qsTr("Add new device")
+        text: i18n("Add new device")
         icon.name: "list-add"
         flat: true
         visible: page.btOn
@@ -83,7 +83,7 @@ Lib.DetailPage {
                 activeFocusOnTab: true
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.name
-                Accessible.description: modelData.connected ? qsTr("Connected") : qsTr("Disconnected")
+                Accessible.description: modelData.connected ? i18n("Connected") : i18n("Disconnected")
                 Accessible.onPressAction: activateDevice()
                 Keys.onReturnPressed: activateDevice()
                 Keys.onEnterPressed: activateDevice()
@@ -117,7 +117,7 @@ Lib.DetailPage {
                     }
 
                     PlasmaComponents3.Label {
-                        text: modelData.connected ? qsTr("Connected") : qsTr("Disconnected")
+                        text: modelData.connected ? i18n("Connected") : i18n("Disconnected")
                         color: Kirigami.Theme.textColor
                         opacity: 0.8
                         font: Kirigami.Theme.smallFont

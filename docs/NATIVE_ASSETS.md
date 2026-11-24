@@ -181,3 +181,7 @@ that source is gone, it stops without deleting the installed icon theme.
 Keep a local copy of the indexed owner resources even after the temporary
 Git branch is removed. Without an import, bundled icons remain a fallback;
 the installer explicitly reports that they are not verified Windows originals.
+
+## Owner testing bundle
+
+The exact resource index is in the `resources/windows11` branch at `272e06c87be0f548cebb2558392019b941df20d4`. Run `bash scripts/package.sh --owner` to build a private source-build test ZIP including the indexed PNGs and original wallpaper, MUN, Segoe icon font and audio inputs used by the importer. Its separate manifest is not uploaded by the public release script. The normal installer automatically imports these bundled files; `bash scripts/prepare-native-assets.sh` also restores them from the pinned branch when testing a checkout. Original account-picture files are absent from the index; the default account image uses the existing verified imageres group 88 mapping. Personal account photos take precedence.

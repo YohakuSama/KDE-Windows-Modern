@@ -542,15 +542,22 @@ FloatingToolTipArea {
     Loader {
         id: iconBox
 
+        readonly property bool panelIconOnly: !task.inPopup && task.tasksRoot.iconsOnly
+        readonly property real panelIconSize: Math.max(1, Math.min(24, task.width, task.height))
+
         anchors {
             left: parent.left
             leftMargin: adjustMargin(true, parent.width, taskFrame.margins.left)
-            top: parent.top
+            top: iconBox.panelIconOnly ? undefined : parent.top
+            verticalCenter: iconBox.panelIconOnly ? parent.verticalCenter : undefined
             topMargin: adjustMargin(false, parent.height, taskFrame.margins.top)
         }
 
-        width: task.inPopup ? Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium) : Math.min(task.parent?.minimumWidth ?? 0, task.height)
-        height: task.inPopup ? width : (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)
+        width: panelIconOnly ? panelIconSize
+            : task.inPopup ? Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium)
+            : Math.min(task.parent?.minimumWidth ?? 0, task.height)
+        height: panelIconOnly || task.inPopup ? width
+            : (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)
                  - adjustMargin(false, parent.height, taskFrame.margins.bottom))
 
         asynchronous: true
@@ -576,13 +583,16 @@ FloatingToolTipArea {
             id: icon
 
             anchors.fill: parent
+            roundToIconSize: !iconBox.panelIconOnly
 
             // Windows 11 keeps a hovered app's icon as it is; the hover tile
             // alone shows it. (Upstream lightens it: active: task.highlighted.)
             active: false
             enabled: true
 
-            source: task.model.decoration
+            source: iconBox.panelIconOnly
+                ? task.tasksRoot.backend.normalizedPanelIcon(task.model.decoration)
+                : task.model.decoration
         }
 
         states: [
@@ -600,7 +610,8 @@ FloatingToolTipArea {
 
                 PropertyChanges {
                     iconBox.anchors.leftMargin: 0
-                    iconBox.width: Math.min(task.parent.minimumWidth, tasksRoot.height)
+                    iconBox.width: iconBox.panelIconOnly ? iconBox.panelIconSize
+                        : Math.min(task.parent.minimumWidth, tasksRoot.height)
                         - iconBox.adjustMargin(true, task.width, taskFrame.margins.left)
                         - iconBox.adjustMargin(true, task.width, taskFrame.margins.right)
                 }

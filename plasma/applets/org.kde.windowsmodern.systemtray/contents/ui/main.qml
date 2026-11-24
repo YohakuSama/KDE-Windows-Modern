@@ -299,8 +299,57 @@ ContainmentItem {
 
 
             hideOnWindowDeactivate: !Plasmoid.configuration.pin
-            visible: systemTrayState.expanded
-            appletInterface: root
+            // Do not attach an appletInterface: AppletPopup would restore
+            // and persist the previously collapsed popupWidth/popupHeight.
+            // Explicitly size the window BEFORE showing it instead.
+            visible: false
+            animated: false
+
+            readonly property int wantedWidth: Math.ceil(expandedRepresentation.popupWidth + leftPadding + rightPadding)
+            readonly property int wantedHeight: Math.ceil(expandedRepresentation.popupHeight + topPadding + bottomPadding)
+            function applyGeometry() {
+                width = wantedWidth;
+                height = wantedHeight;
+            }
+            function openForState() {
+                if (systemTrayState.expanded) {
+                    expandedSync.stop();
+                    applyGeometry();
+                    visible = true;
+                    geometryProbe.attempts = 0;
+                    geometryProbe.restart();
+                } else {
+                    visible = false;
+                }
+            }
+            onWantedWidthChanged: if (visible) Qt.callLater(applyGeometry)
+            onWantedHeightChanged: if (visible) Qt.callLater(applyGeometry)
+
+            Connections {
+                target: systemTrayState
+                function onExpandedChanged() { dialog.openForState(); }
+            }
+            Timer {
+                id: geometryProbe
+                interval: 180
+                repeat: true
+                property int attempts: 0
+                onTriggered: {
+                    if (!dialog.visible) { stop(); return; }
+                    attempts++;
+                    const ok = Math.abs(dialog.width - dialog.wantedWidth) <= 2
+                        && Math.abs(dialog.height - dialog.wantedHeight) <= 2
+                        && expandedRepresentation.height >= expandedRepresentation.popupHeight - 2;
+                    if (ok || attempts >= 3) {
+                        console.info("WM_POPUP tray", ok ? "OK" : "SIZE_MISMATCH",
+                            dialog.width, dialog.height, expandedRepresentation.width,
+                            expandedRepresentation.height, "expected", dialog.wantedWidth, dialog.wantedHeight);
+                        stop();
+                    } else {
+                        dialog.applyGeometry();
+                    }
+                }
+            }
 
             backgroundHints: (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) ? PlasmaCore.AppletPopup.SolidBackground : PlasmaCore.AppletPopup.StandardBackground
 
@@ -311,7 +360,7 @@ ContainmentItem {
                 } else {
                     expandedSync.stop();
                     dialog.requestActivate();
-                    expandedRepresentation.focusCurrentPage();
+                    Qt.callLater(expandedRepresentation.focusCurrentPage);
                 }
             }
             mainItem: ExpandedRepresentation {

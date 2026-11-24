@@ -24,9 +24,10 @@ Item {
     })
 
     function flyoutNameForApplet(applet) {
-        if (!applet || !applet.Plasmoid)
-            return ""
-        return mapping[applet.Plasmoid.pluginName] || ""
+        if (!applet)
+            return "";
+        const plugin = applet.plasmoid?.pluginName || applet.Plasmoid?.pluginName || "";
+        return mapping[plugin] || "";
     }
 
     function isThemedApplet(applet) {

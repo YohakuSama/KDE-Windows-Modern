@@ -69,6 +69,8 @@ def main():
         directory.mkdir(parents=True, exist_ok=True)
         for domain in DOMAINS:
             path = directory / (domain + ".mo")
+            if path.is_file() and not path.is_symlink() and path.read_bytes() == content:
+                continue
             with tempfile.NamedTemporaryFile(dir=directory, delete=False) as tmp:
                 tmp.write(content)
             os.chmod(tmp.name, 0o644)

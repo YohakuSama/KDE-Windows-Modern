@@ -17,6 +17,7 @@ import org.kde.kirigami as Kirigami
 MouseArea {
     id: dayDelegate
 
+    required property var calendarController
     required property var dayData
     required property PlasmaCalendar.DaysModel daysModel
     required property int eventsRevision
@@ -37,10 +38,10 @@ MouseArea {
     Accessible.name: dayData.day
         + (dayData.isToday ? i18n(", today") : "")
         + (dayData.isSelected ? i18n(", selected") : "")
-    Accessible.onPressAction: calendarView.selectDate(dayData.date)  // as the month/year tiles
+    Accessible.onPressAction: dayDelegate.calendarController.selectDate(dayData.date)  // as the month/year tiles
 
     onClicked: {
-        calendarView.selectDate(dayData.date);
+        dayDelegate.calendarController.selectDate(dayData.date);
     }
 
     // One circle in every state (hover, press, picked ring, today), as on

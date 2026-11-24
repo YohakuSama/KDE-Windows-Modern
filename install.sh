@@ -14,6 +14,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# NixOS uses a complete reversible test install, not the old preview.
+if grep -Eq '^ID="?nixos"?$' /etc/os-release 2>/dev/null; then
+    case "${1:-menu}" in
+        --light|--dark) exec bash "$SCRIPT_DIR/install-nixos.sh" menu "$@" ;;
+        *) exec bash "$SCRIPT_DIR/install-nixos.sh" "$@" ;;
+    esac
+fi
 # shellcheck source=scripts/install-lib.sh
 source "$SCRIPT_DIR/scripts/install-lib.sh"
 # shellcheck source=scripts/config-backup.sh

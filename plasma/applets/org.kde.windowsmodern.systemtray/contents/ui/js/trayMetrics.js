@@ -1,35 +1,30 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
-// Windows 11 reference sizes are logical pixels. Qt handles output scaling.
+// Windows 11 at 100%: 48px taskbar, 24px task icons, 16px tray icons.
+// DPI is applied by Qt, never by multiplying the logical size by screen DPR.
+// Explicit panel-size scaling remains an opt-in; 48px always gives 16px.
 function iconSize(thickness, scaleToFit) {
     const limit = Math.max(1, Math.floor(thickness));
-    return Math.min(limit, scaleToFit ? Math.max(16, Math.min(48, Math.round(limit * 2 / 3))) : 16);
+    const requested = scaleToFit ? Math.max(16, Math.min(32, Math.round(limit / 3))) : 16;
+    return Math.min(limit, requested);
 }
 
-// Size the visible core icon box independently from KDE's native render
-// size. The shipped status SVGs contain whitespace: e.g. a 16px-wide
-// battery drawing in a 24px viewBox. A 28px display box gives that
-// drawing about 19px of ink, rather than the 11px from a 16px box.
 function coreIconSize(thickness, scaleToFit) {
-    const limit = Math.max(1, Math.floor(thickness));
-    return Math.min(limit, Math.max(28, iconSize(thickness, scaleToFit)));
+    return iconSize(thickness, scaleToFit);
 }
 
-// Render at a standard KDE icon size at or above the display size, then
-// scale the native compact representation as a whole. Otherwise a 28px
-// item may be rounded down to 22px again by Kirigami.Icon. Keep the real
-// native applet, including its changing icon, badge, and tooltip state.
+// Fallback host for native compact applets, used only if the direct status
+// glyph component cannot load. It does not determine the rendered glyph size.
 function coreRenderSize(displaySize) {
-    if (displaySize <= 16) return 16;
-    if (displaySize <= 22) return 22;
+    if (displaySize < 16) return 16;
     if (displaySize <= 32) return 32;
     return 48;
 }
 
 function coreCellLength(size, coreSize, spacing) {
-    // Default cells are 30px with a 28px display box; stay compact.
-    return Math.max(cellLength(size, true, spacing), coreSize + 2);
+    // Default core cells are 24px, not the previous 30px.
+    return Math.max(cellLength(size, true, spacing), coreSize + 4);
 }
 
 function isQuickSettings(id) {

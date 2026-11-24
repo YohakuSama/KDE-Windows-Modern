@@ -35,17 +35,15 @@ Item {
     Accessible.description: i18nc("@info:tooltip", "Open the Start menu")
     Accessible.onPressAction: if (dashWindow) dashWindow.toggleMenu()
 
-    // The Start logo follows the task icons' size instead of snapping on its
-    // own: Icon Tasks draws icons at the standard size that fits the cell
-    // minus tasks.svg's 2+2 px margins (22 px up to a 35 px panel, 32 px
-    // from 36 px), while a cell-filling Start icon stayed at 32 px up to a
-    // 47 px panel and looked too small in between. ×1.48 keeps the logo
-    // (63 % of its canvas) about 10 % larger than app art (≈85 %), which is
-    // exactly today's look at 34 and 48 px (docs/STYLE.md).
+    // Use the same 24px icon canvas as task icons. The default logo keeps
+    // its original 4px optical inset on the 64px artwork canvas.
+    readonly property bool useDefaultLogo: !useCustomButtonImage && Plasmoid.configuration.icon === "start-here"
     readonly property int cellThickness: vertical ? width : height
-    readonly property int taskIconSize: Kirigami.Units.iconSizes.roundedIconSize(Math.max(0, cellThickness - 4))
-    readonly property int startIconSize: inPanel ? Math.min(cellThickness, Math.round(taskIconSize * 1.48))
-                                                 : Math.min(width, height)
+    // Microsoft Windows 11 taskbar icon reference: 24 logical pixels.
+    // Retain the original optical inset; no extra scale transform.
+    readonly property int startIconSize: inPanel
+        ? Math.max(1, Math.min(24, cellThickness - 4, width, height))
+        : Math.max(1, Math.min(width, height))
 
     // Hover (and open menu) tile: the taskbar's own tile without a bar
     // (tasks.svg "launcher-hover", as for a pinned app), for the panel edge.
@@ -73,7 +71,8 @@ Item {
         width: root.startIconSize
         height: root.startIconSize
         roundToIconSize: false
-        source: useCustomButtonImage ? Plasmoid.configuration.customButtonImage : Plasmoid.configuration.icon
+        source: useCustomButtonImage ? Plasmoid.configuration.customButtonImage
+            : (root.useDefaultLogo ? Qt.resolvedUrl("start-logo.svg") : Plasmoid.configuration.icon)
         // Windows 11 does not lighten the logo on hover (the tile shows it);
         // pressing shrinks it slightly, like the other taskbar buttons.
         active: false

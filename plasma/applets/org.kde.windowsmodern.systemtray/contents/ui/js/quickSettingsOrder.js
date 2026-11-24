@@ -44,3 +44,4 @@ function slotAt(x, y, width, stride, count) {
     const column = Math.min(2, Math.floor(x * 3 / width));
     return Math.min(count - 1, Math.floor(y / stride) * 3 + column);
 }
+

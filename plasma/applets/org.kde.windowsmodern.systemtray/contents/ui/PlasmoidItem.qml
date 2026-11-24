@@ -8,11 +8,16 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtCore
 
 import org.kde.kirigami as Kirigami
 
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.plasmoid
+import org.kde.plasma.networkmanagement as PlasmaNM
+import org.kde.plasma.private.volume as Vol
+import org.kde.plasma.private.battery as BatteryBackend
+import "js/funcs.js" as Funcs
 
 AbstractItem {
     id: plasmoidContainer
@@ -135,12 +140,81 @@ AbstractItem {
         }
     }
 
-    // Keep the native applet's geometry at a standard icon size and
-    // scale its visual host, not the tray cell or the mouse hit area.
-    // For all other applets (including hidden items), the host is
-    // identical to the original iconContainer geometry.
+    // Use the same direct 16px symbolic glyph box for all three live
+    // status icons. Native applets remain responsible for activation,
+    // tooltips and context menus, but their internal icon rounding and
+    // transparent padding no longer decide the displayed size.
+    Loader {
+        id: statusGlyphLoader
+        parent: plasmoidContainer.iconContainer
+        anchors.centerIn: parent
+        width: parent.width
+        height: parent.height
+        active: plasmoidContainer.groupedQuickSettings
+        sourceComponent: {
+            switch (plasmoidContainer.itemId) {
+            case "org.kde.plasma.networkmanagement": return networkGlyph;
+            case "org.kde.plasma.volume": return volumeGlyph;
+            case "org.kde.plasma.battery": return batteryGlyph;
+            default: return null;
+            }
+        }
+    }
+
+    function panelGlyph(name) {
+        const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
+            "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
+        return String(file).length > 0 ? file : name;
+    }
+
+    Component {
+        id: networkGlyph
+        Item {
+            PlasmaNM.ConnectionIcon { id: liveConnection }
+            Kirigami.Icon {
+                anchors.fill: parent
+                roundToIconSize: false
+                isMask: true
+                source: {
+                    const icon = liveConnection.connectionIcon;
+                    if (!icon) return plasmoidContainer.panelGlyph("network-unavailable-symbolic");
+                    return plasmoidContainer.panelGlyph(icon.endsWith("-symbolic") ? icon : icon + "-symbolic");
+                }
+                color: Kirigami.Theme.textColor
+            }
+        }
+    }
+
+    Component {
+        id: volumeGlyph
+        Kirigami.Icon {
+            readonly property var sink: Vol.PreferredDevice.sink
+            readonly property bool available: !!sink && sink.name !== "auto_null"
+            roundToIconSize: false
+            isMask: true
+            source: plasmoidContainer.panelGlyph(Funcs.volIconName(available ? sink.volume : 0, !available || sink.muted))
+            color: Kirigami.Theme.textColor
+        }
+    }
+
+    Component {
+        id: batteryGlyph
+        Item {
+            BatteryBackend.BatteryControlModel { id: liveBattery }
+            Kirigami.Icon {
+                anchors.fill: parent
+                roundToIconSize: false
+                isMask: true
+                source: plasmoidContainer.panelGlyph(Funcs.batteryIconName(liveBattery.hasCumulative ? liveBattery.percent : -1,
+                    liveBattery.pluggedIn))
+                color: Kirigami.Theme.textColor
+            }
+        }
+    }
+
     Item {
         id: nativeAppletHost
+        visible: statusGlyphLoader.status !== Loader.Ready
         parent: plasmoidContainer.iconContainer
         anchors.centerIn: parent
         width: plasmoidContainer.groupedQuickSettings

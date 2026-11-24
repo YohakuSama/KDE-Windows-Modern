@@ -428,7 +428,7 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: footerRow.implicitHeight + rootItem.margin
+                height: 56
                 color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                Kirigami.Theme.textColor.b, 0.035)
 
@@ -445,15 +445,16 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: rootItem.margin
-                    anchors.rightMargin: rootItem.margin
-                    spacing: Kirigami.Units.smallSpacing
+                    anchors.leftMargin: 28
+                    anchors.rightMargin: 28
+                    spacing: 8
 
                     PlasmaComponents3.ToolButton {
                         id: accountButton
                         text: kuser.fullName || kuser.loginName
                         Layout.maximumWidth: rootItem.width * 0.32
-                        Layout.preferredHeight: Kirigami.Units.gridUnit * 2
+                        Layout.preferredHeight: 40
+                        Layout.alignment: Qt.AlignVCenter
                         Accessible.name: i18n("Account")
                         Accessible.description: accountButton.text
                         onClicked: {
@@ -465,8 +466,9 @@ Item {
                             spacing: Kirigami.Units.smallSpacing
                             Item {
                                 id: avatarArea
-                                Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-                                Layout.preferredHeight: Layout.preferredWidth
+                                Layout.preferredWidth: 24
+                                Layout.preferredHeight: 24
+                                Layout.alignment: Qt.AlignVCenter
                                 Image {
                                     id: userAvatar
                                     anchors.fill: parent
@@ -483,9 +485,10 @@ Item {
                                         }
                                     }
                                 }
-                                Kirigami.Icon {
+                                Image {
                                     anchors.fill: parent
-                                    source: "avatar-default"
+                                    source: Qt.resolvedUrl("default-account.svg")
+                                    fillMode: Image.PreserveAspectFit
                                     visible: userAvatar.status !== Image.Ready
                                 }
                             }
@@ -514,10 +517,24 @@ Item {
                     PlasmaComponents3.ToolButton {
                         id: powerButton
                         text: i18n("Power")
-                        icon.name: "system-shutdown"
+                        icon.name: "system-shutdown-symbolic"
+                        icon.width: 20
+                        icon.height: 20
                         display: PlasmaComponents3.AbstractButton.IconOnly
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 2
-                        Layout.preferredHeight: Layout.preferredWidth
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
+                        Layout.alignment: Qt.AlignVCenter
+                        contentItem: Item {
+                            Kirigami.Icon {
+                                anchors.centerIn: parent
+                                width: 20
+                                height: 20
+                                roundToIconSize: false
+                                isMask: true
+                                color: Kirigami.Theme.textColor
+                                source: "system-shutdown-symbolic"
+                            }
+                        }
                         onClicked: {
                             powerMenu.accountMode = false;
                             powerMenu.visualParent = powerButton;

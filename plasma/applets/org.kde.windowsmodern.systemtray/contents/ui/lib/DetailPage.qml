@@ -22,6 +22,15 @@ Page {
         boundsBehavior: Flickable.StopAtBounds
         PlasmaComponents3.ScrollBar.vertical: PlasmaComponents3.ScrollBar {
             policy: PlasmaComponents3.ScrollBar.AsNeeded
+            width: 16
+            hoverEnabled: true
+        }
+        Kirigami.WheelHandler {
+            target: list
+            filterMouseEvents: true
+            keyNavigationEnabled: false
+            verticalStepSize: Math.max(120, 3 * (list.currentItem
+                ? list.currentItem.height + list.spacing : Kirigami.Units.gridUnit * 2))
         }
     }
 
