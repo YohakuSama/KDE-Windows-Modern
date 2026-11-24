@@ -35,21 +35,35 @@ ColumnLayout {
 
     onVisibleChanged: if (!visible && toggleViewport) toggleViewport.cancelDrag()
 
-    RowLayout {
+    // The Flickable has no useful implicitWidth. Do not ask RowLayout
+    // to divide space between it and the rail: the rail's controls can
+    // take all the width while the three-column grid shrinks to slivers.
+    Item {
+        id: toggleRow
         Layout.fillWidth: true
         Layout.leftMargin: Math.round(14 * actionPanel.scale)
         Layout.rightMargin: Math.round(14 * actionPanel.scale)
         Layout.topMargin: Math.round(12 * actionPanel.scale)
-        Layout.preferredHeight: toggleViewport.viewportHeight
-        Layout.minimumHeight: toggleViewport.viewportHeight
-        Layout.maximumHeight: toggleViewport.viewportHeight
-        spacing: Math.round(4 * actionPanel.scale)
+        implicitHeight: toggleViewport.viewportHeight
+        Layout.preferredHeight: implicitHeight
+        Layout.minimumHeight: implicitHeight
+        Layout.maximumHeight: implicitHeight
+        readonly property int railWidth: Math.round(24 * actionPanel.scale)
+        readonly property int railGap: Math.round(4 * actionPanel.scale)
+
+        // Measure the caption independently of visibility. QQuickLayout
+        // can report zero implicit size before its window becomes visible.
+        PlasmaComponents3.Label {
+            id: captionProbe
+            visible: false
+            text: "Ag"
+            font: Kirigami.Theme.defaultFont
+        }
 
         Flickable {
             id: toggleViewport
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.preferredHeight: viewportHeight
+            anchors.fill: parent
+            anchors.rightMargin: hasMoreRows ? toggleRow.railWidth + toggleRow.railGap : 0
             readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile]
             readonly property var knownKeys: tiles.map(tile => tile.orderKey)
             readonly property var availableKeys: tiles.filter(tile => tile.included).map(tile => tile.orderKey)
@@ -64,7 +78,8 @@ ColumnLayout {
             // Height follows the tallest caption (system font), not the
             // effective visibility or width of a GridLayout parent.
             readonly property real rowHeight: tiles.reduce((largest, tile) =>
-                tile.included ? Math.max(largest, tile.implicitHeight) : largest, 0)
+                tile.included ? Math.max(largest, tile.implicitHeight) : largest,
+                Math.round(48 * actionPanel.scale) + 4 + captionProbe.implicitHeight)
             readonly property real rowStride: rowHeight + rowGap
             readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
@@ -375,8 +390,10 @@ ColumnLayout {
         ColumnLayout {
             id: navigationRail
             visible: toggleViewport.hasMoreRows
-            Layout.preferredWidth: Math.round(20 * actionPanel.scale)
-            Layout.fillHeight: true
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            width: toggleRow.railWidth
             spacing: 2
 
             PlasmaComponents3.ToolButton {

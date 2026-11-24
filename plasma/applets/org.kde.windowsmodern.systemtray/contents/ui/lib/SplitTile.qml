@@ -70,7 +70,8 @@ ColumnLayout {
 
     spacing: 4
     Layout.fillWidth: true
-    Layout.preferredWidth: 0
+    // Width is supplied by the explicitly sized three-column viewport.
+    // A zero preferred-width hint is not a valid tile size.
 
     Rectangle {
         id: bg

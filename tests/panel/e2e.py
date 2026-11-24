@@ -272,8 +272,17 @@ def clock(p, c):
                                     and n.role == "label" and n.name.endswith(year)), None))
     p.shot("clock")
     c.check(header is not None, f"clock opens the calendar ({header.name!r})" if header else "clock opens the calendar")
-    c.check(visible("Notifications", exclude_window=panel_window) is not None,
-            "clock flyout also opens notification history")
+    history = visible("Notifications", exclude_window=panel_window)
+    c.check(history is not None, "clock flyout also opens notification history")
+    # On Wayland popup origins can be relative to the popup itself, but
+    # extents still expose a collapsed/blank flyout.
+    if header:
+        popup = next((n for n in a11y.nodes(APP)
+                      if n.window == header.window and n.depth == 0), None)
+        c.check(popup is not None and popup.rect[2] >= 200 and popup.rect[3] >= 160,
+                f"calendar flyout has a usable surface ({popup.rect if popup else None})")
+        c.check(header.rect[2] >= 80 and header.rect[3] >= 10,
+                f"calendar header is not collapsed ({header.rect})")
     labels = [n.name for n in a11y.nodes(APP) if header and n.window == header.window and n.showing
               and n.role == "label" and len(n.name) > 8 and not n.name.endswith(year)]
     print(f"        flyout labels: {labels[:3]}")
@@ -286,6 +295,16 @@ def quick_settings(p, c):
     tile = wait_for(lambda: visible("Wi-Fi", exclude_window=panel_window))
     p.shot("quick-settings")
     c.check(tile is not None, "network icon opens grouped Quick Settings (Wi-Fi tile visible)")
+    if tile:
+        # The old RowLayout let the rail consume the grid's entire width.
+        # Checking only the accessible name missed the one-pixel tiles.
+        c.check(tile.rect[2] >= 48 and tile.rect[3] >= 32,
+                f"Wi-Fi tile has a usable button size ({tile.rect})")
+        toggles = [n for n in a11y.nodes(APP) if n.showing and n.window == tile.window
+                   and n.role == "check box"]
+        for toggle in toggles:
+            c.check(toggle.rect[2] >= 48 and toggle.rect[3] >= 32,
+                    f"{toggle.name!r} tile is not collapsed ({toggle.rect})")
     c.check(not _cards(panel_window), "overflow items are absent from Quick Settings")
     gear = visible("All settings", exclude_window=panel_window)
     c.check(gear is not None, "Quick Settings has the Settings gear in its footer")
