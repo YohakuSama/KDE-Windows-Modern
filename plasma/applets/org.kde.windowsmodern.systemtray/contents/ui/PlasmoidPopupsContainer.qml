@@ -30,7 +30,7 @@ QQC2.StackView {
     readonly property bool themedActive: flyoutRouter.isThemedApplet(activeApplet)
 
     // Height reserved at the bottom for the themed page's footer link.
-    readonly property int themedFooterHeight: (themedActive && footerLoader.item) ? footerLoader.item.implicitHeight : 0
+    readonly property int themedFooterHeight: (themedActive && footerLoader.item) ? themedFooter.implicitHeight : 0
 
     /* Heading — only relevant for unknown (non-themed) applets */
     property bool appletHasHeading: false
@@ -150,6 +150,7 @@ QQC2.StackView {
         "bluetooth":       bluetoothPageComp,
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
+        "brightness":      brightnessPageComp,
         "clipboard":       clipboardPageComp,
         "devicenotifier":  deviceNotifierPageComp,
         "mediacontroller": mediaControllerPageComp
@@ -176,6 +177,12 @@ QQC2.StackView {
     Component {
         id: batteryPageComp
         Components.BatteryPage {
+            onBack: systemTrayState.setActiveApplet(null)
+        }
+    }
+    Component {
+        id: brightnessPageComp
+        Components.BrightnessPage {
             onBack: systemTrayState.setActiveApplet(null)
         }
     }

@@ -45,6 +45,16 @@ Item {
     property alias hiddenLayout: hiddenItemsView.layout
     property alias plasmoidContainer: container
 
+    function focusCurrentPage() {
+        if (systemTrayState.activeApplet) {
+            container.forceActiveFocus();
+        } else if (overflowHome) {
+            hiddenItemsView.layout.forceActiveFocus();
+        } else {
+            actionPanel.forceActiveFocus();
+        }
+    }
+
     readonly property bool themedActive: container.themedActive
     readonly property bool unknownActive: systemTrayState.activeApplet && !popup.themedActive
 
@@ -249,6 +259,10 @@ Item {
                 id: actionPanel
                 Layout.fillWidth: true
                 visible: !systemTrayState.overflowMode
+                onVisibleChanged: {
+                    if (visible && dialog.visible && !systemTrayState.activeApplet)
+                        forceActiveFocus();
+                }
                 onRequestPage: name => popup.activateFlyout(name)
             }
         }

@@ -45,9 +45,12 @@ ColumnLayout {
         border.width: 1
         border.color: tile.activeFocus || arrowMA.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
         color: {
-            if (active)
-                return accent;
-            if (toggleMA.containsPress)
+            if (active) {
+                const alpha = toggleMA.containsPress || arrowMA.containsPress ? 0.12
+                    : toggleMA.containsMouse || arrowMA.containsMouse ? 0.06 : 0;
+                return Qt.tint(accent, Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, alpha));
+            }
+            if (toggleMA.containsPress || arrowMA.containsPress)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10);
             if (toggleMA.containsMouse || arrowMA.containsMouse)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06);
@@ -122,7 +125,7 @@ ColumnLayout {
             x: parent.width * 0.70
             width: 1
             height: parent.height * 0.5
-            color: active ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
+            color: active ? Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, 0.28) : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
         }
 
         Kirigami.Icon {

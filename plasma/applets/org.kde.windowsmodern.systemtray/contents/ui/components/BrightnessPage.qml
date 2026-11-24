@@ -78,8 +78,8 @@ Lib.Page {
                 PlasmaComponents3.Label {
                     Layout.leftMargin: 22
                     text: modelData.label || qsTr("Display %1").arg(index + 1)
-                    font.pixelSize: 10
-                    opacity: 0.5
+                    font: Kirigami.Theme.smallFont
+                    opacity: 0.8
                     color: Kirigami.Theme.textColor
                 }
 

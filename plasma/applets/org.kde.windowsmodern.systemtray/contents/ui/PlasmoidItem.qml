@@ -22,11 +22,12 @@ AbstractItem {
     text: applet?.Plasmoid.title ?? ""
 
     itemId: applet?.Plasmoid.pluginName ?? ""
-    mainText: applet && (inVisibleLayout || (applet.toolTipMainText && applet.toolTipMainText != text)) ? applet.toolTipMainText : ""
+    mainText: applet ? (applet.toolTipMainText || text) : ""
     subText: applet?.toolTipSubText ?? ""
     mainItem: applet?.toolTipItem ?? null
     textFormat: applet?.toolTipTextFormat ?? 0 /* Text.AutoText, the default value */
-    active: inVisibleLayout || (systemTrayState.activeApplet !== applet && (text != mainText || subText.length > 0))
+    active: inVisibleLayout || (!!applet && systemTrayState.activeApplet !== applet
+        && (mainText.length > 0 || subText.length > 0))
 
     // FIXME: Use an input type agnostic way to activate whatever the primary
     // action of a plasmoid is supposed to be, even if it's just expanding the

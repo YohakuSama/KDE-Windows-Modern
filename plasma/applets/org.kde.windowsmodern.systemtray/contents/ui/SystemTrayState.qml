@@ -16,6 +16,7 @@ QtObject {
     // - there is an active applet or
     // - 'Status and Notification' with hidden items is shown
     property bool expanded: false
+    property bool popupVisible: false
     // Overflow and Quick Settings are distinct homes of the same native popup.
     // Keep the originating home when navigating to a child applet page.
     property bool overflowMode: false
@@ -29,6 +30,10 @@ QtObject {
             expanded = false;
             return;
         }
+        // Reopen cleanly if native deactivation hid the popup before the
+        // deferred expanded-state synchronization.
+        if (expanded && !popupVisible)
+            expanded = false;
         overflowMode = overflow;
         setActiveApplet(null);
         expanded = true;
@@ -88,6 +93,7 @@ QtObject {
                 activeApplet.expanded = false
                 activeApplet = null
             }
+            overflowMode = false
         }
         acceptExpandedChange = false
         root.expanded = expanded
