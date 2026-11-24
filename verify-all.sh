@@ -46,6 +46,11 @@ done
 check_dir  "Kvantum/Windows-modern"                         "Kvantum theme"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"
 check_file "icons/windows-modern/index.theme"               "Icon pack"
+if python3 -I scripts/theme/popup-frames.py --check >/dev/null; then
+    pass "popup frame generator (dark/light, solid/acrylic, tooltip)"
+else
+    fail "popup frames differ from their generator — run scripts/theme/popup-frames.py"
+fi
 check_file "plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/ui/main.qml" "Alt+Tab switcher"
 # The top/left/right and hover task frames are generated from the bottom
 # ones; a hand edit would make the panel edges drift apart again.

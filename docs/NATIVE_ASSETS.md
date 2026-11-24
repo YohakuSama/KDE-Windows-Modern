@@ -72,3 +72,5 @@ compositor), third-party app icons, pointer cursors and full material/layout
 fidelity require live validation or further mappings. Unmapped names keep
 the existing theme and Breeze/hicolor compatibility fallback. No additional
 icon theme is activated.
+
+The follow-up map covers 389 names, including explicit restart, sign-out, sleep, notification bell/snooze and offline network roles. These added codepoints exist in the supplied Segoe Fluent Icons font. The same names are replaced rather than layered; existing special-state fallback remains where Windows equivalents are not established.

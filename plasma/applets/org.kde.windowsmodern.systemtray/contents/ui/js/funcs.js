@@ -30,36 +30,25 @@ function toggleBluetooth(btManager) {
     }
 }
 
-function checkInhibition(notificationSettings) {
-    if (!notificationSettings) {
-        return false;
-    }
-    var inhibited = false;
-    var inhibitedUntil = notificationSettings.notificationsInhibitedUntil;
-    if (!isNaN(inhibitedUntil.getTime())) {
-        inhibited |= (Date.now() < inhibitedUntil.getTime());
-    }
-    if (notificationSettings.notificationsInhibitedByApplication) {
-        inhibited |= true;
-    }
-    if (notificationSettings.inhibitNotificationsWhenScreensMirrored) {
-        inhibited |= notificationSettings.screensMirrored;
-    }
-    return inhibited;
+// Manual preference is independent of automatic/application inhibition.
+function manualInhibition(settings, now) {
+    if (!settings) return false;
+    const until = settings.notificationsInhibitedUntil;
+    return !!until && !isNaN(until.getTime()) && until.getTime() > now;
 }
 
-function toggleDnd(notificationSettings) {
-    if (checkInhibition(notificationSettings)) {
-        notificationSettings.notificationsInhibitedUntil = undefined;
-        notificationSettings.revokeApplicationInhibitions();
-        notificationSettings.screensMirrored = false;
-        notificationSettings.save();
-        return;
-    }
-    var d = new Date();
-    d.setYear(d.getFullYear() + 1);
-    notificationSettings.notificationsInhibitedUntil = d;
-    notificationSettings.save();
+function checkInhibition(settings, now = Date.now()) {
+    if (!settings) return false;
+    return manualInhibition(settings, now)
+        || !!settings.notificationsInhibitedByApplication
+        || (settings.inhibitNotificationsWhenScreensMirrored && settings.screensMirrored);
+}
+
+function toggleDnd(settings, durationMs = 365 * 24 * 60 * 60 * 1000, now = Date.now()) {
+    if (!settings) return;
+    settings.notificationsInhibitedUntil = manualInhibition(settings, now)
+        ? undefined : new Date(now + durationMs);
+    settings.save();
 }
 
 function volIconName(volume, muted) {

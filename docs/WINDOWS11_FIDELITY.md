@@ -39,8 +39,7 @@ or copy redundant renderers.
 For original Windows reference assets, record the image build, file and
 resource ID, then map by function/state, not by numeric extraction order.
 Do not publish proprietary Windows resources; optional local imports can
-remain outside Git. Windows 11 Experimental Build 29712.1000 is the initial
-reference candidate, not a confirmed 27H2 retail release.
+remain outside Git. The chosen target is Windows 11 26H2 General Availability (OS build 26300), not an experimental preview. The supplied resource file versions alone do not prove the installed OS build.
 
 ## Acceptance matrix (pending unless verified on a live desktop)
 
@@ -59,3 +58,5 @@ reference candidate, not a confirmed 27H2 retail release.
 Test at 100%, 125%, 150%, 200%; light/dark, zh-CN and en-US, different wallpaper and system fonts, transparency on/off, at least two monitor arrangements. Run repository health checks, Qt tests, C++ builds and live screenshot/e2e checks. The owner may choose to merge an integration build to main for desktop testing before runtime validation. Label it as unverified, keep the changes reversible, and do not label it a stable release or pixel-identical.
 
 The [native resource importer](NATIVE_ASSETS.md) takes an explicit owner-provided archive. It generates the local canonical assets and a SHA-256 source manifest; the installer overlays only the mapped roles on the existing theme. Do not commit generated files or substitute unrelated Windows glyphs for KDE-only actions.
+
+Shell popup frames are generated from one geometry template (see `scripts/theme/popup-frames.py`). Normal and explicit solid variants use opaque fallback colors; the translucent selector uses a consistent Acrylic-style tint with the same 8 px mask and edges. Tooltips use a distinct 4 px solid frame. Native KWin blur remains responsible for background sampling. Exact DWM noise, tint calibration, true wallpaper-tinted Mica and live compositor validation remain outstanding.
