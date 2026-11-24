@@ -135,9 +135,25 @@ AbstractItem {
         }
     }
 
+    // Keep the native applet's geometry at a standard icon size and
+    // scale its visual host, not the tray cell or the mouse hit area.
+    // For all other applets (including hidden items), the host is
+    // identical to the original iconContainer geometry.
+    Item {
+        id: nativeAppletHost
+        parent: plasmoidContainer.iconContainer
+        anchors.centerIn: parent
+        width: plasmoidContainer.groupedQuickSettings
+            ? plasmoidContainer.coreNativeRenderSize : parent.width
+        height: plasmoidContainer.groupedQuickSettings ? width : parent.height
+        scale: plasmoidContainer.groupedQuickSettings && width > 0
+            ? parent.width / width : 1
+        transformOrigin: Item.Center
+    }
+
     onAppletChanged: {
         if (applet) {
-            applet.parent = iconContainer
+            applet.parent = nativeAppletHost
             applet.anchors.fill = applet.parent
             applet.visible = true
 

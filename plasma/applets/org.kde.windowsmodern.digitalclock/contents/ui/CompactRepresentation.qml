@@ -247,12 +247,26 @@ MouseArea {
             Layout.minimumWidth: main.bellCellWidth
             Layout.preferredWidth: main.bellCellWidth
             Layout.maximumWidth: main.bellCellWidth
-            Layout.preferredHeight: Math.min(main.panelHeight, implicitHeight)
+            Layout.minimumHeight: Math.min(main.panelHeight, 24)
+            Layout.preferredHeight: Math.min(main.panelHeight, 32)
+            Layout.maximumHeight: Layout.preferredHeight
             text: i18n("Notification center")
             display: PlasmaComponents.AbstractButton.IconOnly
             icon.name: main.plasmoidItem.notificationIcon
-            icon.width: Kirigami.Units.iconSizes.small
-            icon.height: Kirigami.Units.iconSizes.small
+            // A 16px icon request also includes the SVG's transparent
+            // canvas. Give the bell its own 24px box with no button padding.
+            icon.width: 24
+            icon.height: 24
+            padding: 0
+            contentItem: Item {
+                Kirigami.Icon {
+                    anchors.centerIn: parent
+                    width: Math.min(24, parent.width, parent.height)
+                    height: width
+                    roundToIconSize: false
+                    source: main.plasmoidItem.notificationIcon
+                }
+            }
             Accessible.name: text
             Accessible.description: main.plasmoidItem.notificationStatusText
             property bool wasExpanded: false

@@ -33,6 +33,7 @@ PlasmaCore.ToolTipArea {
     required textFormat
 
     readonly property alias iconContainer: iconContainer
+    readonly property int coreNativeRenderSize: root.coreNativeRenderSize
     readonly property bool inHiddenLayout: effectiveStatus === PlasmaCore.Types.PassiveStatus
     readonly property bool inVisibleLayout: effectiveStatus === PlasmaCore.Types.ActiveStatus
 
