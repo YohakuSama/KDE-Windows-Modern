@@ -23,6 +23,13 @@ Item {
 
     signal activated
 
+    activeFocusOnTab: optionEnabled
+    Accessible.role: Accessible.Button
+    Accessible.name: label
+    Accessible.onPressAction: if (optionEnabled) activated()
+    Keys.onReturnPressed: if (optionEnabled) activated()
+    Keys.onSpacePressed: if (optionEnabled) activated()
+
     width: parent ? parent.width : Kirigami.Units.gridUnit * 10
     height: Math.floor(Kirigami.Units.gridUnit * 1.6)
 
@@ -30,10 +37,10 @@ Item {
         anchors.fill: parent
         anchors.margins: 1
         radius: Kirigami.Units.smallSpacing / 2
-        color: option.optionEnabled && hoverArea.containsMouse
+        color: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus)
                ? Kirigami.Theme.hoverColor
                : "transparent"
-        opacity: option.optionEnabled && hoverArea.containsMouse ? Theme.opacityFull : Theme.opacityHidden
+        opacity: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus) ? Theme.opacityFull : Theme.opacityHidden
         Behavior on opacity { NumberAnimation { duration: 80 } }
     }
 
@@ -54,7 +61,7 @@ Item {
         PlasmaComponents3.Label {
             text: option.label
             color: option.optionEnabled ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
-            font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1
+            font: Kirigami.Theme.defaultFont
         }
     }
 

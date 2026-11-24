@@ -120,6 +120,7 @@ def _start_typing(p, c, how):
         p.click("Start")
     opened = wait_for(lambda: visible("Pinned"))
     c.check(opened is not None, f"Start menu opens ({how})")
+    c.check(visible("Power") is not None, "Start footer exposes a power-menu button")
     time.sleep(0.4)
     query = "settings"
     p.vi.type_text(query)

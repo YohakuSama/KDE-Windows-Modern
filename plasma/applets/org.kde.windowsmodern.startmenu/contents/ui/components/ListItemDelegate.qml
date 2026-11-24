@@ -23,10 +23,15 @@ import "../code/theme.js" as Theme
 Item {
     id: item
 
-    width: ListView.view ? ListView.view.width : parent.width
-    height: showDescription ? Kirigami.Units.gridUnit * 2 : Math.floor(Kirigami.Units.gridUnit * 1.5)
+    readonly property bool inGrid: !!item.GridView.view
+    readonly property var hostView: inGrid ? item.GridView.view : item.ListView.view
+    property bool gridMode: false
+    width: hostView ? (inGrid ? hostView.cellWidth : hostView.width) : (parent ? parent.width : 0)
+    height: inGrid && hostView ? hostView.cellHeight
+        : (showDescription ? Kirigami.Units.gridUnit * 2 : Math.floor(Kirigami.Units.gridUnit * 1.8))
 
-    clip: true
+    clip: !_dragging
+    z: _dragging ? 10 : 0
 
     enabled: !model.disabled
 
@@ -40,12 +45,15 @@ Item {
 
     Accessible.role: Accessible.MenuItem
     Accessible.name: model.display !== undefined ? model.display : ""
+    Accessible.onPressAction: launchApp()
 
     // ── Drag state ─────────────────────────────────────────────────────
     // These properties are only mutated when dragEnabled is true.  They
     // track an in-progress drag initiated from pressAndHold or
     // press-then-move beyond a threshold.
     property bool _dragging: false
+    property real _dragStartX: 0
+    property real _dragOffsetX: 0
     property real _dragStartY: 0
     property real _dragOffsetY: 0
 
@@ -58,7 +66,8 @@ Item {
         opacity: {
             if (item._dragging) return Theme.opacityHidden;
             if (mouseArea.containsMouse) return Theme.opacityFull;
-            if (item.ListView.isCurrentItem) return Theme.listItemCurrentOpacity;
+            if (item.inGrid ? item.GridView.isCurrentItem : item.ListView.isCurrentItem)
+                return Theme.listItemCurrentOpacity;
             return Theme.opacityHidden;
         }
         Behavior on opacity { NumberAnimation { duration: 90 } }
@@ -73,8 +82,8 @@ Item {
     Rectangle {
         id: dropIndicator
         visible: {
-            var view = item.ListView.view
-            if (!view || item._dragging) return false
+            var view = item.hostView
+            if (!view || item.inGrid || item._dragging) return false
             if (view.dropTargetIndex !== item.itemIndex) return false
             return view.dropTargetIndex !== view.draggingIndex
         }
@@ -85,13 +94,25 @@ Item {
         color: Kirigami.Theme.highlightColor
         // Anchor to the top when dragging up, bottom when dragging down.
         anchors.top: {
-            var view = item.ListView.view
+            var view = item.hostView
             return (view && view.dropTargetIndex < view.draggingIndex) ? parent.top : undefined
         }
         anchors.bottom: {
-            var view = item.ListView.view
+            var view = item.hostView
             return (view && view.dropTargetIndex > view.draggingIndex) ? parent.bottom : undefined
         }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: 2
+        radius: Kirigami.Units.smallSpacing
+        color: "transparent"
+        border.color: Kirigami.Theme.highlightColor
+        border.width: 2
+        visible: item.inGrid && item.dragEnabled && item.hostView && !item._dragging
+            && item.hostView.dropTargetIndex === item.itemIndex
+            && item.hostView.draggingIndex !== item.itemIndex
     }
 
     // ── Content row ────────────────────────────────────────────────────
@@ -102,7 +123,10 @@ Item {
         // Lift the content during a drag: follow the cursor vertically,
         // scale up slightly, and raise opacity for a "grabbed" feel.
         transform: [
-            Translate { y: item._dragging ? item._dragOffsetY : 0 },
+            Translate {
+                x: item._dragging ? item._dragOffsetX : 0
+                y: item._dragging ? item._dragOffsetY : 0
+            },
             Scale {
                 xScale: item._dragging ? 1.02 : 1.0
                 yScale: item._dragging ? 1.02 : 1.0
@@ -114,54 +138,44 @@ Item {
 
         Behavior on opacity { NumberAnimation { duration: 90 } }
 
-        Row {
-            id: row
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            anchors.leftMargin: Kirigami.Units.largeSpacing
-            anchors.right: parent.right
-            anchors.rightMargin: Kirigami.Units.largeSpacing
-            spacing: Kirigami.Units.largeSpacing
+        Kirigami.Icon {
+            id: icon
+            x: item.gridMode ? (parent.width - width) / 2 : Kirigami.Units.largeSpacing
+            y: item.gridMode ? Kirigami.Units.largeSpacing : (parent.height - height) / 2
+            width: item.iconSize
+            height: width
+            animated: false
+            source: model.decoration !== undefined ? model.decoration : ""
+        }
 
-            Kirigami.Icon {
-                id: icon
-                anchors.verticalCenter: parent.verticalCenter
-                width: item.iconSize
-                height: width
-                animated: false
-                source: model.decoration !== undefined ? model.decoration : ""
+        Column {
+            id: textBlock
+            x: item.gridMode ? Kirigami.Units.smallSpacing : icon.x + icon.width + Kirigami.Units.largeSpacing
+            y: item.gridMode ? icon.y + icon.height + Kirigami.Units.smallSpacing : (parent.height - height) / 2
+            width: Math.max(0, parent.width - x - Kirigami.Units.smallSpacing)
+            spacing: Kirigami.Units.smallSpacing / 2
+
+            PlasmaComponents3.Label {
+                width: parent.width
+                horizontalAlignment: item.gridMode ? Text.AlignHCenter : Text.AlignLeft
+                maximumLineCount: item.gridMode ? 2 : 1
+                wrapMode: item.gridMode ? Text.Wrap : Text.NoWrap
+                elide: Text.ElideRight
+                color: Kirigami.Theme.textColor
+                font: Kirigami.Theme.defaultFont
+                text: ("name" in model ? model.name : (model.display !== undefined ? model.display : ""))
+                textFormat: Text.PlainText
             }
 
-            Column {
-                id: textBlock
-                anchors.verticalCenter: parent.verticalCenter
-                width: row.width - icon.width - row.spacing
-                spacing: Kirigami.Units.smallSpacing / 2
-
-                PlasmaComponents3.Label {
-                    id: label
-                    width: parent.width
-                    horizontalAlignment: Text.AlignLeft
-                    maximumLineCount: 1
-                    elide: Text.ElideRight
-                    color: Kirigami.Theme.textColor
-                    font.pointSize: Kirigami.Theme.defaultFont.pointSize
-                    text: ("name" in model ? model.name : (model.display !== undefined ? model.display : ""))
-                    textFormat: Text.PlainText
-                }
-
-                PlasmaComponents3.Label {
-                    id: desc
-                    visible: item.showDescription && text.length > 0
-                    width: parent.width
-                    horizontalAlignment: Text.AlignLeft
-                    maximumLineCount: 1
-                    elide: Text.ElideRight
-                    color: Kirigami.Theme.disabledTextColor
-                    font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1
-                    text: ("description" in model ? (model.description !== undefined ? model.description : "") : "")
-                    textFormat: Text.PlainText
-                }
+            PlasmaComponents3.Label {
+                visible: item.showDescription && text.length > 0
+                width: parent.width
+                maximumLineCount: 1
+                elide: Text.ElideRight
+                color: Kirigami.Theme.disabledTextColor
+                font: Kirigami.Theme.smallFont
+                text: ("description" in model ? (model.description !== undefined ? model.description : "") : "")
+                textFormat: Text.PlainText
             }
         }
     }
@@ -193,7 +207,7 @@ Item {
 
         onPositionChanged: mouse => {
             if (!_mightDrag || item._dragging) {
-                if (item._dragging) updateDrag(mouse.y);
+                if (item._dragging) updateDrag(mouse.x, mouse.y);
                 return;
             }
 
@@ -202,7 +216,7 @@ Item {
                 var dx = mouse.x - _pressX;
                 var dy = mouse.y - _pressY;
                 if (Math.abs(dy) > mouseArea.dragThreshold || Math.abs(dx) > mouseArea.dragThreshold) {
-                    beginDrag(mouse.y);
+                    beginDrag(mouse.x, mouse.y);
                 }
             }
         }
@@ -220,13 +234,24 @@ Item {
             _pressY = -1;
 
             // Normal click handling.
-            var view = item.ListView.view;
+            var view = item.hostView;
             if (view) view.forceActiveFocus();
             if (mouse.button === Qt.RightButton) {
                 openContextMenu(mouse.x, mouse.y);
                 return;
             }
             launchApp();
+        }
+
+        onCanceled: {
+            item._dragging = false;
+            item._dragOffsetX = 0;
+            item._dragOffsetY = 0;
+            _mightDrag = false;
+            if (item.dragEnabled && item.hostView) {
+                item.hostView.draggingIndex = -1;
+                item.hostView.dropTargetIndex = -1;
+            }
         }
 
         onClicked: {
@@ -237,23 +262,32 @@ Item {
         }
 
         // ── Drag helpers ──────────────────────────────────────────────
-        function beginDrag(localY) {
-            var view = item.ListView.view;
+        function beginDrag(localX, localY) {
+            var view = item.hostView;
             if (!view || !view.model || typeof view.model.moveRow !== "function") return;
 
             item._dragging = true;
+            item._dragStartX = localX;
+            item._dragOffsetX = 0;
             item._dragStartY = localY;
             item._dragOffsetY = 0;
             view.draggingIndex = item.itemIndex;
         }
 
-        function updateDrag(localY) {
-            var view = item.ListView.view;
+        function updateDrag(localX, localY) {
+            var view = item.hostView;
             if (!view) return;
 
             // Offset relative to the press point, mapped into view coords.
             var delta = localY - item._dragStartY;
             item._dragOffsetY = delta;
+            if (item.inGrid) {
+                item._dragOffsetX = localX - item._dragStartX;
+                const point = item.mapToItem(view.contentItem, localX, localY);
+                const target = view.indexAt(point.x, point.y);
+                if (target >= 0) view.dropTargetIndex = target;
+                return;
+            }
 
             // Compute the drop target by counting how many siblings have
             // their centre ABOVE the dragged item's current centre.  That
@@ -278,11 +312,12 @@ Item {
         }
 
         function endDrag() {
-            var view = item.ListView.view;
+            var view = item.hostView;
             var from = item.itemIndex;
             var to = view ? view.dropTargetIndex : -1;
 
             item._dragging = false;
+            item._dragOffsetX = 0;
             item._dragOffsetY = 0;
 
             if (view) {
@@ -302,7 +337,7 @@ Item {
     }
 
     function launchApp() {
-        var view = item.ListView.view
+        var view = item.hostView
         if (view && view.model && typeof view.model.trigger === "function") {
             view.model.trigger(item.itemIndex, "", null);
             root.closeMenu();
@@ -319,7 +354,7 @@ Item {
         if (acts.length === 0) return
 
         var pos = item.mapToItem(sharedContextMenu, localX, localY)
-        var view = item.ListView.view
+        var view = item.hostView
         sharedContextMenu.open(acts, pos.x, pos.y, {
             model: view ? view.model : null,
             index: item.itemIndex

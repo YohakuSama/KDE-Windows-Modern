@@ -80,8 +80,9 @@ Not added, even on request, unless this brief changes:
 
 ## Visual target (work in progress)
 
-- Start: search at the top, pinned apps in a grid, build-specific All/Recent
-  layout, account and power actions in the footer. Follow Start alignment.
+- Start: search at the top, responsive pinned grid, inline Recent and All
+  list, account/folder/power footer. Category/grid alternatives for All and
+  the exact reference layout remain integration follow-ups.
 - Tray: Windows 11 grouped Quick Settings entry, overflow placement,
   notification/calendar placement and flyout structure.
 - Window decorations: rounded corners and shadow/elevation where the target

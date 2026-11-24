@@ -6,6 +6,14 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Start menu
+
+- Replace the inherited two-column layout with top search, a responsive pinned
+  grid, local Recent items and a scrollable All list. Keep Kicker favorites,
+  search, sorting, drag and context actions.
+- Move account, configured system shortcuts and a menu-only power button to
+  the footer. Preserve system typography and existing user preferences.
+
 ### Notification center
 
 - Combine shared KDE notification history and calendar in the clock flyout.
