@@ -46,3 +46,20 @@ function clockFormats(mode, regionalFormat) {
         ? fmt.slice(0, match.index + match[0].length) + ":ss" + fmt.slice(match.index + match[0].length)
         : "H:mm:ss"};
 }
+
+function calendarLocaleName(translated, fallback) {
+    return /^[a-z]{2,3}([_-][A-Za-z]{2,4}){0,2}$/.test(translated)
+        ? translated.replace(/-/g, "_") : fallback;
+}
+
+function calendarMonthTitle(locale, year, month) {
+    if (/^zh(?:[_-]|$)/i.test(locale.name))
+        return year + "年" + (month + 1) + "月";
+    return locale.standaloneMonthName(month, Locale.LongFormat) + " " + year;
+}
+
+function calendarLongDate(locale, date) {
+    if (/^zh(?:[_-]|$)/i.test(locale.name))
+        return locale.toString(date, "M月d日 dddd");
+    return locale.toString(date, longDateWithoutYear(locale.dateFormat(Locale.LongFormat)));
+}

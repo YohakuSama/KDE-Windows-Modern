@@ -56,3 +56,11 @@ Revision after owner comparison screenshots:
 - All Fluent scrollbars retain the 16 epx input region and native thumb drag. Paint the 2 epx indicator only during interaction; expand to 6 epx on hover/press. Quick Settings retains the 24H2 paging arrows and wheel access to extra rows. Brightness and volume sliders are functional controls, not redundant scrollbars.
 - The imported font's battery-unknown-charging glyph is 2560 font units wide, while normal battery outlines are approximately 1664 and charging outlines 1836. It must not determine normal battery scaling. Keep the normal battery levels and charging states together, separate the exceptional glyph. Treat the loudest speaker and mute glyph separately from the ordinary speaker family, preserving the relative speaker body geometry. Bluetooth uses its own original outline. No change to the 16 logical-pixel tray box, 28px task box, or installer.
 - These changes use the actual source font geometry; verify the rendered desktop at 150% before claiming a matching shell appearance.
+
+## Follow-up from the Chinese desktop capture
+
+- Follow translated UI language for calendar date/month/weekday labels independently of LC_TIME. The Simplified Chinese catalog selects zh_CN; untranslated interfaces keep the system locale.
+- Keep the native clock full representation. Apply an 8 logical-pixel popup margin and retain all frame borders through the native AppletPopup window properties. At 150%, the margin is 12 physical pixels before frame shadows. Do not change docked panel geometry.
+- Quick Settings uses its entire three-column width. No reserved rail, thumb, or paging arrows. Wheel/touch/keyboard still reach every tile. Other overflow lists paint a scrollbar indicator only on gutter hover or press.
+- Align independent status outlines to the center of their original 16px logical canvas. Retain common scale within families; separate standard and limited Wi-Fi states so weak signal art keeps its relative dot position. Center tray cells with equal top/bottom layout stretch and refresh grouped hover boundaries after Repeater delegates exist.
+- No change to the task icon canvas, panel layout or installer. Full desktop horizontal centering cannot be assessed from cropped tray screenshots. Native popup placement requires Wayland verification.

@@ -16,7 +16,7 @@ QQC2.ScrollBar {
     minimumSize: height > 0 ? Math.min(1, 32 / height) : 0
     readonly property int thumbWidth: pointer.hovered || pressed ? 6 : 2
     // Keep the input gutter available without painting an idle thumb.
-    readonly property bool indicatorVisible: size < 1 && (active || pointer.hovered || pressed)
+    readonly property bool indicatorVisible: size < 1 && (pointer.hovered || pressed)
 
     HoverHandler { id: pointer }
 

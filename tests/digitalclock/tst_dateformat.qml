@@ -55,6 +55,16 @@ TestCase {
         compare(loc.toString(day, DateFormat.shortDateFullYear(loc.dateFormat(Locale.ShortFormat))), data.expected);
     }
 
+    function test_calendarLanguageFollowsInterface() {
+        const loc = Qt.locale(DateFormat.calendarLocaleName("zh_CN", "en_US"));
+        compare(loc.name, "zh_CN");
+        compare(DateFormat.calendarMonthTitle(loc, 2026, 10), "2026年11月");
+        compare(DateFormat.calendarLongDate(loc, new Date(2026, 10, 25)), "11月25日 星期三");
+        compare(DateFormat.calendarLocaleName("system", "en_US"), "en_US");
+        compare(DateFormat.calendarLocaleName("invalid name", "en_US"), "en_US");
+        compare(DateFormat.calendarMonthTitle(Qt.locale("en_US"), 2026, 10), "November 2026");
+    }
+
     function test_windowsTaskbarClock() {
         const sample = new Date(2026, 8, 30, 5, 6, 7);
         compare(Qt.formatDate(sample, DateFormat.windowsShortDate()), "2026/9/30");

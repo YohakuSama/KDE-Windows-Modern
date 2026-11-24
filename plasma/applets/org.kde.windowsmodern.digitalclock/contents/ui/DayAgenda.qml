@@ -22,6 +22,7 @@ ColumnLayout {
 
     required property date date
     required property var events
+    property var calendarLocale: Qt.locale()
     // Events listed before "+N more".
     property int maximumEvents: 4
 
@@ -37,8 +38,7 @@ ColumnLayout {
         Layout.fillWidth: true
         textFormat: Text.PlainText
         elide: Text.ElideRight
-        text: Qt.locale().toString(agenda.date,
-                                   DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)))
+        text: DateFormat.calendarLongDate(agenda.calendarLocale, agenda.date)
         color: palette.text
         font.weight: Font.DemiBold
     }

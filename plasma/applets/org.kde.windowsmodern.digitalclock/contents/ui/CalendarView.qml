@@ -15,6 +15,7 @@ import org.kde.plasma.workspace.calendar as PlasmaCalendar
 import org.kde.kirigami as Kirigami
 
 import "Calendar.js" as Calendar
+import "code/dateformat.js" as DateFormat
 
 ColumnLayout {
     id: calendarView
@@ -26,6 +27,7 @@ ColumnLayout {
 
     // The applet root (main.qml): the clock and the popup's expanded state.
     required property var applet
+    property var calendarLocale: Qt.locale()
     readonly property date today: applet.currentTime
     // Use the same row pitch in the month and zoomed-out views.
     property real dayHeightLimit: 40
@@ -238,6 +240,7 @@ ColumnLayout {
 
         PlasmaComponents.Label {
             id: headerTitle
+            objectName: "wmCalendarMonthHeading"
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignLeft
             verticalAlignment: Text.AlignVCenter
@@ -249,8 +252,8 @@ ColumnLayout {
                 case CalendarView.Zoom.Decade:
                     return calendarView.decadeStart + " – " + (calendarView.decadeStart + 9);
                 }
-                return Qt.locale().standaloneMonthName(calendarView.displayedMonth, Locale.LongFormat)
-                       + " " + calendarView.displayedYear;
+                return DateFormat.calendarMonthTitle(calendarView.calendarLocale,
+                    calendarView.displayedYear, calendarView.displayedMonth);
             }
             // The decade is the last level: greyed like the dimmed years.
             color: headerButton.enabled ? palette.text : palette.textDisabled
@@ -369,7 +372,7 @@ ColumnLayout {
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             textFormat: Text.PlainText
-                            text: Qt.locale().standaloneDayName((calendarView.firstDayOfWeek + index) % 7, Locale.ShortFormat)
+                            text: calendarView.calendarLocale.standaloneDayName((calendarView.firstDayOfWeek + index) % 7, Locale.ShortFormat)
                             color: palette.textSecondary
                             font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                         }
@@ -421,7 +424,7 @@ ColumnLayout {
                 id: yearGrid
                 anchors.fill: parent
                 tiles: Calendar.generateYearGrid(calendarView.displayedYear, calendarView.today,
-                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(m => Qt.locale().standaloneMonthName(m, Locale.ShortFormat)))
+                    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(m => calendarView.calendarLocale.standaloneMonthName(m, Locale.ShortFormat)))
                 onPicked: index => {
                     const tile = tiles[index];
                     calendarView.displayedYear = tile.year;

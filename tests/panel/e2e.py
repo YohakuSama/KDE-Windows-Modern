@@ -269,10 +269,12 @@ def clock(p, c):
     year = time.strftime("%Y")
     p.click("Clock")
     header = wait_for(lambda: next((n for n in a11y.nodes(APP) if n.window != panel_window and n.showing
-                                    and n.role == "label" and n.name.endswith(year)), None))
+                                    and n.role == "label"
+                                    and (n.name.endswith(year) or n.name.startswith(year + "年"))), None))
     p.shot("clock")
     c.check(header is not None, f"clock opens the calendar ({header.name!r})" if header else "clock opens the calendar")
-    history = visible("Notifications", exclude_window=panel_window)
+    history = (visible("Notifications", exclude_window=panel_window)
+               or visible("通知", exclude_window=panel_window))
     c.check(history is not None, "clock flyout also opens notification history")
     # On Wayland popup origins can be relative to the popup itself, but
     # extents still expose a collapsed/blank flyout.
@@ -305,6 +307,11 @@ def quick_settings(p, c):
         for toggle in toggles:
             c.check(toggle.rect[2] >= 48 and toggle.rect[3] >= 32,
                     f"{toggle.name!r} tile is not collapsed ({toggle.rect})")
+    if tile:
+        paging_names = {"Previous quick settings", "Next quick settings", "上一组快捷设置", "下一组快捷设置"}
+        paging_controls = [n for n in a11y.nodes(APP) if n.showing
+                           and n.window == tile.window and n.name in paging_names]
+        c.check(not paging_controls, "Quick Settings has no separate arrow rail")
     c.check(not _cards(panel_window), "overflow items are absent from Quick Settings")
     gear = visible("All settings", exclude_window=panel_window)
     c.check(gear is not None, "Quick Settings has the Settings gear in its footer")

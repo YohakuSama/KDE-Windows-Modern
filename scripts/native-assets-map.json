@@ -445,12 +445,7 @@
       "e701",
       "e872",
       "e873",
-      "e874",
-      "eb5f",
-      "eb60",
-      "eb61",
-      "eb62",
-      "eb63"
+      "e874"
     ],
     "wired": [
       "e839",
@@ -507,6 +502,24 @@
     ],
     "bluetooth": [
       "e702"
+    ],
+    "wifiLimited": [
+      "eb5f",
+      "eb60",
+      "eb61",
+      "eb62",
+      "eb63"
     ]
-  }
+  },
+  "panel_glyph_center_groups": [
+    "wired",
+    "networkOther",
+    "volume",
+    "volumeHigh",
+    "volumeMuted",
+    "battery",
+    "batteryUnknownCharging",
+    "notification",
+    "bluetooth"
+  ]
 }

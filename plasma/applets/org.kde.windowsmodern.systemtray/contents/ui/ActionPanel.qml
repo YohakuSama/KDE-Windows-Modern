@@ -6,7 +6,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls as QQC2
 
 import org.kde.plasma.plasmoid
 import org.kde.kcmutils as KCMUtils
@@ -47,9 +46,8 @@ ColumnLayout {
 
     onVisibleChanged: if (!visible && toggleViewport) toggleViewport.cancelDrag()
 
-    // The Flickable has no useful implicitWidth. Do not ask RowLayout
-    // to divide space between it and the rail: the rail's controls can
-    // take all the width while the three-column grid shrinks to slivers.
+    // Full-width three-column grid. Wheel, touch and focused tile keys
+    // still reach every row without a separate arrow/scrollbar rail.
     Item {
         id: toggleRow
         Layout.fillWidth: true
@@ -60,8 +58,6 @@ ColumnLayout {
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
         Layout.maximumHeight: implicitHeight
-        readonly property int railWidth: 16
-        readonly property int railGap: Math.round(4 * actionPanel.scale)
 
         // Measure the caption independently of visibility. QQuickLayout
         // can report zero implicit size before its window becomes visible.
@@ -75,7 +71,7 @@ ColumnLayout {
         Flickable {
             id: toggleViewport
             anchors.fill: parent
-            anchors.rightMargin: hasMoreRows ? toggleRow.railWidth + toggleRow.railGap : 0
+            objectName: "wmQuickSettingsGridViewport"
             readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile, castTile, accessibilityTile]
             readonly property var knownKeys: tiles.map(tile => tile.orderKey)
             readonly property var availableKeys: tiles.filter(tile => tile.included).map(tile => tile.orderKey)
@@ -143,7 +139,7 @@ ColumnLayout {
                 filterMouseEvents: true
                 blockTargetWheel: true
                 keyNavigationEnabled: false
-                verticalStepSize: Math.max(120, toggleViewport.rowStride)
+                verticalStepSize: Math.max(1, toggleViewport.rowStride)
             }
 
             function ensureVisible(key) {
@@ -380,61 +376,6 @@ ColumnLayout {
             }
 
 
-            // A real attached Qt Quick Controls scrollbar: its position,
-            // size and thumb drag are driven by the Flickable itself.
-            // Reparent only the visual rail, as supported by Qt.
-            QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
-                id: tileScrollBar
-                parent: scrollTrack
-                anchors.fill: parent
-                policy: QQC2.ScrollBar.AsNeeded
-            }
-
-        }
-
-        // The rail is reserved from the row count, not scrollbar geometry,
-        // avoiding a width -> row height -> visibility feedback loop.
-        ColumnLayout {
-            id: navigationRail
-            visible: toggleViewport.hasMoreRows
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            width: toggleRow.railWidth
-            spacing: 2
-
-            PlasmaComponents3.ToolButton {
-                id: previousPageButton
-                Layout.fillWidth: true
-                Layout.preferredHeight: Math.round(20 * actionPanel.scale)
-                icon.name: "go-up-symbolic"
-                icon.width: Kirigami.Units.iconSizes.small
-                icon.height: icon.width
-                text: i18n("Previous quick settings")
-                display: PlasmaComponents3.AbstractButton.IconOnly
-                enabled: toggleViewport.contentY > 0.5 && !toggleViewport.dragKey
-                onClicked: toggleViewport.page(-1)
-                PlasmaComponents3.ToolTip { text: previousPageButton.text }
-            }
-            Item {
-                id: scrollTrack
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.minimumHeight: 24
-            }
-            PlasmaComponents3.ToolButton {
-                id: nextPageButton
-                Layout.fillWidth: true
-                Layout.preferredHeight: Math.round(20 * actionPanel.scale)
-                icon.name: "go-down-symbolic"
-                icon.width: Kirigami.Units.iconSizes.small
-                icon.height: icon.width
-                text: i18n("Next quick settings")
-                display: PlasmaComponents3.AbstractButton.IconOnly
-                enabled: toggleViewport.contentY < toggleViewport.maxOffset - 0.5 && !toggleViewport.dragKey
-                onClicked: toggleViewport.page(1)
-                PlasmaComponents3.ToolTip { text: nextPageButton.text }
-            }
         }
     }
 

@@ -109,15 +109,19 @@ def icon_svg(resources, group):
     raise ValueError(f'No decodable icon in group {group}')
 
 
-def panel_glyph_transforms(font, groups):
-    """One isotropic transform per status family, using real outline bounds."""
+def panel_glyph_transforms(font, groups, center_groups=()):
+    """Common scale per family, with optical centers for independent states.
+
+    Wi-Fi levels keep their relative signal-dot position; other status
+    variants center their actual outlines rather than the whole family box.
+    """
     glyphs = font.getGlyphSet()
     cmap = font.getBestCmap()
     em = font['head'].unitsPerEm
     ascent = font['hhea'].ascent
     result = {}
-    for codes in groups.values():
-        boxes = []
+    for group, codes in groups.items():
+        bounds = {}
         for code in codes:
             name = cmap.get(int(code, 16))
             if name is None:
@@ -128,18 +132,20 @@ def panel_glyph_transforms(font, groups):
                 continue
             left, bottom, right, top = pen.bounds
             offset = (em - font['hmtx'][name][0]) / 2
-            boxes.append((left + offset, ascent - top, right + offset, ascent - bottom))
-        if not boxes:
+            bounds[code] = (left + offset, ascent - top, right + offset, ascent - bottom)
+        if not bounds:
             continue
+        boxes = list(bounds.values())
         x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
         x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
         extent = max(x1 - x0, y1 - y0)
         if extent <= 0:
             continue
         scale = (em * 23 / 24) / extent
-        tx = em / 2 - scale * (x0 + x1) / 2
-        ty = em / 2 - scale * (y0 + y1) / 2
-        for code in codes:
+        for code, box in bounds.items():
+            left, top, right, bottom = box if group in center_groups else (x0, y0, x1, y1)
+            tx = em / 2 - scale * (left + right) / 2
+            ty = em / 2 - scale * (top + bottom) / 2
             result[code] = f'translate({tx:.8f} {ty:.8f}) scale({scale:.8f}) '
     return result
 
@@ -195,7 +201,8 @@ def build(stage, data, mapping, indexed=None):
     # The owner archive is version 1.56; allow newly mapped symbols to
     # fall back to bundled art if an older archive lacks them. Required
     # previously verified resources still fail atomically if missing.
-    panel_transforms = panel_glyph_transforms(font, mapping.get('panel_glyph_groups', {}))
+    panel_transforms = panel_glyph_transforms(font, mapping.get('panel_glyph_groups', {}),
+                                              mapping.get('panel_glyph_center_groups', []))
     optional_glyphs = set(mapping.get('optional_glyphs', []))
     missing_optional_glyphs = []
     for source, names in mapping['icons'].items():

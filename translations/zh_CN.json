@@ -424,5 +424,6 @@
   "@item:inlistbox time display option\u0004Windows 24-hour": "Windows 24 小时制",
   "Regional short date": "地区短日期",
   "@item:inlistbox date display option\u0004Regional short date": "地区短日期",
-  "Keyboard Backlight": "键盘背光"
+  "Keyboard Backlight": "键盘背光",
+  "@info calendar display locale (translate to a Qt locale name)\u0004system": "zh_CN"
 }

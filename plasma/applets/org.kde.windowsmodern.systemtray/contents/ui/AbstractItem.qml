@@ -58,6 +58,9 @@ PlasmaCore.ToolTipArea {
         readonly property bool backwards: root.vertical ? root.reverseLayout
             : ((Application.layoutDirection === Qt.RightToLeft) !== root.reverseLayout)
         function adjacentCore(offset) {
+            // Repeater.count can already be final before the adjacent
+            // delegate exists. Read its revision so the group joins later.
+            const revision = root.visibleLayout.delegateRevision;
             const count = root.visibleLayout.count;
             const neighborIndex = abstractItem.index + offset * (backwards ? -1 : 1);
             return neighborIndex >= 0 && neighborIndex < count
@@ -184,9 +187,11 @@ PlasmaCore.ToolTipArea {
         anchors.bottomMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0
         spacing: 0
 
-        Item { // centers icon and name in a flyout cell
+        Item {
             Layout.fillHeight: true
-            visible: abstractItem.inHiddenLayout
+            Layout.minimumHeight: 0
+            Layout.preferredHeight: 0
+            Layout.verticalStretchFactor: 1
         }
 
         FocusScope {
@@ -277,7 +282,9 @@ PlasmaCore.ToolTipArea {
 
         Item {
             Layout.fillHeight: true
-            visible: abstractItem.inHiddenLayout
+            Layout.minimumHeight: 0
+            Layout.preferredHeight: 0
+            Layout.verticalStretchFactor: 1
         }
     }
 }
