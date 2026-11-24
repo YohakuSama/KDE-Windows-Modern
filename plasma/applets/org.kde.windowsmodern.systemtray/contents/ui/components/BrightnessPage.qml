@@ -5,6 +5,10 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.brightnesscontrolplugin
 import org.kde.kitemmodels as KItemModels
 import org.kde.kcmutils
+import org.kde.plasma.plasmoid
+import org.kde.plasma.plasma5support as Plasma5Support
+import org.kde.plasma.workspace.dbus as DBus
+import "../js/colorType.js" as ColorType
 import "../lib" as Lib
 
 Lib.Page {
@@ -16,6 +20,29 @@ Lib.Page {
     ScreenBrightnessControl {
         id: sbControl
         isSilent: false
+    }
+
+    KeyboardBrightnessControl { id: keyboardControl }
+    readonly property bool darkMode: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    Plasma5Support.DataSource {
+        id: themeExec
+        engine: "executable"
+        connectedSources: []
+        onNewData: (sourceName, data) => themeExec.disconnectSource(sourceName)
+    }
+    function toggleTheme() {
+        const target = darkMode ? Plasmoid.configuration.lightTheme : Plasmoid.configuration.darkTheme;
+        if (/^[A-Za-z0-9_.-]+$/.test(target))
+            themeExec.connectSource("plasma-apply-lookandfeel --apply " + target);
+    }
+    DBus.Properties {
+        id: nightLight
+        busType: DBus.BusType.Session
+        service: "org.kde.KWin.NightLight"
+        path: "/org/kde/KWin/NightLight"
+        iface: "org.kde.KWin.NightLight"
+        readonly property bool available: Boolean(properties.available)
+        readonly property bool running: Boolean(properties.running)
     }
 
     property var displays: []
@@ -116,6 +143,63 @@ Lib.Page {
             }
         }
 
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 44
+            Layout.leftMargin: 12
+            Layout.rightMargin: 12
+            visible: keyboardControl.isBrightnessAvailable
+            Kirigami.Icon {
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 20
+                source: "input-keyboard-brightness"
+            }
+            ColumnLayout {
+                Layout.fillWidth: true
+                PlasmaComponents3.Label { text: i18n("Keyboard Backlight") }
+                PlasmaComponents3.Slider {
+                    Layout.fillWidth: true
+                    from: 0
+                    to: keyboardControl.brightnessMax
+                    value: keyboardControl.brightness
+                    stepSize: 1
+                    onMoved: keyboardControl.brightness = value
+                }
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 44
+            Layout.leftMargin: 12
+            Layout.rightMargin: 12
+            Kirigami.Icon {
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 20
+                source: "redshift-status-on-symbolic"
+            }
+            PlasmaComponents3.Label { Layout.fillWidth: true; text: i18n("Night Light") }
+            PlasmaComponents3.Switch {
+                checked: nightLight.running && !NightLightInhibitor.inhibited
+                enabled: nightLight.available
+                onClicked: NightLightInhibitor.toggleInhibition()
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 44
+            Layout.leftMargin: 12
+            Layout.rightMargin: 12
+            Kirigami.Icon {
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 20
+                source: "weather-clear-night-symbolic"
+            }
+            PlasmaComponents3.Label { Layout.fillWidth: true; text: i18n("Dark Mode") }
+            PlasmaComponents3.Switch {
+                checked: page.darkMode
+                onClicked: page.toggleTheme()
+            }
+        }
         Rectangle {
             Layout.fillWidth: true
             Layout.topMargin: 8
@@ -128,7 +212,7 @@ Lib.Page {
     footer: ColumnLayout {
         Lib.MoreSettingsLink {
             text: i18n("Night color settings")
-            onClicked: KCMLauncher.openSystemSettings("kcm_nightcolor")
+            onClicked: KCMLauncher.openSystemSettings("kcm_nightlight")
         }
         Lib.MoreSettingsLink {
             text: i18n("Display settings")
