@@ -11,6 +11,7 @@ import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 
 import org.kde.plasma.plasmoid
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
 
@@ -25,14 +26,25 @@ Item {
     // A single flyout with notification history above the existing calendar.
     // Plasma supplies its frame, blur and shadow; the children use one palette.
     readonly property int margin: Kirigami.Units.largeSpacing
+    readonly property bool horizontalPanel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
     readonly property int availableScreenHeight: Plasmoid.screenGeometry.height > 0
-        ? Math.max(Kirigami.Units.gridUnit * 8,
-                   Plasmoid.screenGeometry.height - Kirigami.Units.gridUnit * 5)
+        ? Math.max(1, Math.floor(Math.min(Plasmoid.screenGeometry.height * 0.95,
+            Plasmoid.screenGeometry.height - (horizontalPanel ? root.height : 0) - 4 * margin)))
         : 720
-    implicitWidth: Plasmoid.configuration.expandedWidth
+    readonly property int configuredWidth: Math.max(240, Plasmoid.configuration.expandedWidth || 320)
+    implicitWidth: Math.max(1, Math.min(configuredWidth, Plasmoid.screenGeometry.width > 0
+        ? Math.floor(Plasmoid.screenGeometry.width - 4 * margin) : configuredWidth))
+    Layout.minimumWidth: implicitWidth
     Layout.preferredWidth: implicitWidth
     Layout.maximumWidth: implicitWidth
-    implicitHeight: Math.min(availableScreenHeight, Math.ceil(mainColumn.implicitHeight + 2 * margin))
+
+    // The native popup reads its size hints before mapping the window.
+    // Hidden child layouts can have zero implicit height at that point.
+    // Use a stable nonzero viewport; content taller than it scrolls.
+    readonly property int desiredHeight: calendarExpanded
+        ? Math.max(560, Kirigami.Units.gridUnit * 28)
+        : Math.max(220, Kirigami.Units.gridUnit * 11)
+    implicitHeight: Math.min(availableScreenHeight, desiredHeight)
     Layout.minimumHeight: implicitHeight
     Layout.preferredHeight: implicitHeight
     Layout.maximumHeight: implicitHeight
@@ -42,7 +54,7 @@ Item {
         id: viewport
         anchors.fill: parent
         contentWidth: width
-        contentHeight: mainColumn.implicitHeight + 2 * expandedRoot.margin
+        contentHeight: mainColumn.height + 2 * expandedRoot.margin
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
@@ -51,7 +63,9 @@ Item {
             id: mainColumn
             x: expandedRoot.margin
             y: expandedRoot.margin
-            width: Math.max(1, viewport.width - 2 * expandedRoot.margin)
+            width: Math.max(1, (viewport.width > 0 ? viewport.width : expandedRoot.implicitWidth)
+                - 2 * expandedRoot.margin)
+            height: implicitHeight
             spacing: Kirigami.Units.largeSpacing
 
             NotificationHistory {
