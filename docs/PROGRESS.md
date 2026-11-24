@@ -127,3 +127,7 @@ KWin, Qt/Kvantum and icon-theme interfaces for the remaining surfaces.
   archive, but the file execution environment could not open the archive
   in this session. New mappings were checked against the KDE 6.8 source
   and Microsoft's glyph reference; actual archive import is not verified.
+
+## Wallpaper-following material refresh
+
+The existing transparency command now supports a one-shot current-image refresh using KDE's saved image wallpaper configuration. Prefer an unambiguous primary-screen image, otherwise a unique saved local image; ambiguous or unsupported sources return to neutral. No new shader, background service or polling. The material remains an opaque, global Mica-style approximation rather than DWM. Added targeted tests for wallpaper selection and file sampling to the existing material suite. Aurorae V2 cannot set a theme-defined bottom client radius; preserve the current native-compatible decoration rather than require another effect or a new engine.

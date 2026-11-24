@@ -245,7 +245,7 @@ case "${1:-menu}" in
         echo "    deps           Kvantum, Flatpak and the C++ applets' build dependencies"
         echo "    fonts          Segoe UI (or open Selawik if missing) and Cascadia Mono"
         echo "    sounds         Local Windows sound theme (requires resource import)"
-        echo "    transparency   on|off — Windows' Transparency effects switch (off: solid windows and popups)"
+        echo "    transparency   on|off|refresh — Windows' Transparency effects switch (off: solid windows and popups)"
         echo "    greeter        Boot greeter / login screen (PLM build, user test)"
         echo ""
         echo "  Note: 'all' includes the session lock screen, Alt+Tab switcher, shortcuts and apps. The boot greeter is"

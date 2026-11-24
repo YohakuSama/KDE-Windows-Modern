@@ -226,7 +226,10 @@ Like Windows' Settings → Personalization → Colors → Transparency effects:
 ```bash
 ./install.sh transparency off   # neutral opaque windows, solid popups
 ./install.sh transparency on    # wallpaper-tinted opaque windows, native popup blur
+./install.sh transparency refresh # sample the current saved image wallpaper
 ```
+
+The refresh command updates the opaque tint once, without a daemon or polling. Unsupported or ambiguous wallpaper sources fall back to neutral colors.
 
 Disabling transparency also selects the shipped solid panel and dialog artwork without changing the panel layout or opacity preference. Apps that are already open change after you restart them; if Plasma retains cached artwork, log out and back in.
 

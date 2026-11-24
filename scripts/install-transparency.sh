@@ -4,11 +4,12 @@
 #
 #    ./install.sh transparency off   neutral opaque windows and solid popups
 #    ./install.sh transparency on    wallpaper-tinted windows and popup blur
+#    ./install.sh transparency refresh  resample the current saved wallpaper
 #    ./install.sh transparency       show the current state
 #
 #  Application window bases are always opaque. Off restores neutral fills
 #  and turns off KWin blur; on restores the saved blur setting and the
-#  locally sampled Windows-modern wallpaper tint. The choice is retained
+#  locally sampled saved image wallpaper tint. The choice is retained
 #  across reinstall. This is a Mica-style static tint, not a DWM renderer.
 # ───────────────────────────────────────────────────────────────────
 # shellcheck source=scripts/install-lib.sh
@@ -51,12 +52,22 @@ case "$mode" in
             kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled --delete
         fi
         kvantum_transparency true
-        apply_window_materials true
+        apply_window_materials true current
         apply_popup_materials true
         rm -f "$state"
         kwin_reconfigure
         info "Transparency effects on."
         step "Restart open apps; if the panel retains cached artwork, log out and back in."
+        ;;
+    refresh)
+        if [ -f "$state" ]; then
+            apply_window_materials false
+        else
+            apply_window_materials true current
+        fi
+        kwin_reconfigure
+        info "Window material refreshed."
+        step "Restart open apps to load the updated material."
         ;;
     status)
         if [ -f "$state" ]; then
@@ -66,7 +77,7 @@ case "$mode" in
         fi
         ;;
     *)
-        err "Usage: ./install.sh transparency [on|off]"
+        err "Usage: ./install.sh transparency [on|off|refresh]"
         exit 1
         ;;
 esac

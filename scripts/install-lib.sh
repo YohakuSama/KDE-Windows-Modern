@@ -359,8 +359,12 @@ apply_window_materials() {
     [ "$UID" -ne 0 ] || return 0
     local args=(--apply-local --aurorae-dir "$AURORAE_DIR"
                 --kvantum-dir "$KVANTUM_DIR/Windows-modern")
-    if [ "$1" = true ] && [ -d "$WALLPAPER_DIR/Windows-modern" ]; then
-        args+=(--wallpaper-package "$WALLPAPER_DIR/Windows-modern")
+    if [ "$1" = true ]; then
+        if [ "${2:-package}" = current ]; then
+            args+=(--wallpaper-config "${XDG_CONFIG_HOME:-$HOME/.config}/plasma-org.kde.plasma.desktop-appletsrc")
+        elif [ -d "$WALLPAPER_DIR/Windows-modern" ]; then
+            args+=(--wallpaper-package "$WALLPAPER_DIR/Windows-modern")
+        fi
     fi
     python3 -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" \
         || warn "Window material update failed; reinstall themes to restore the stock artwork."

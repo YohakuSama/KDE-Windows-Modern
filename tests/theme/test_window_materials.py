@@ -102,5 +102,45 @@ class WindowMaterialTests(unittest.TestCase):
             self.assertEqual(frames.wallpaper_color(package, 'dark'), frames.tint_color('dark', (255, 0, 0)))
 
 
+    def test_current_wallpaper_selection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            primary = root / 'blue wallpaper.jpg'
+            secondary = root / 'green.png'
+            primary.touch()
+            secondary.touch()
+            config = root / 'appletsrc'
+
+            def section(index, screen, uri, plugin='org.kde.image'):
+                return (f'[Containments][{index}]\nplugin=org.kde.plasma.folder\n'
+                        f'lastScreen={screen}\nwallpaperplugin={plugin}\n'
+                        f'[Containments][{index}][Wallpaper][org.kde.image][General]\n'
+                        f'Image={uri}\n')
+
+            first = section(2, 0, primary.as_uri())
+            second = section(3, 1, secondary.as_uri())
+            config.write_text(first + second, encoding='utf-8')
+            self.assertEqual(frames.configured_wallpaper(config), primary)
+            config.write_text(first + section(4, 0, secondary.as_uri()), encoding='utf-8')
+            self.assertIsNone(frames.configured_wallpaper(config))
+            config.write_text(section(2, 0, primary.as_uri(), 'org.kde.slideshow'), encoding='utf-8')
+            self.assertIsNone(frames.configured_wallpaper(config))
+            config.write_text(section(2, 0, 'https://example.invalid/image.jpg'), encoding='utf-8')
+            self.assertIsNone(frames.configured_wallpaper(config))
+
+    def test_samples_local_image(self):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest('optional Pillow unavailable')
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / 'wallpaper.png'
+            Image.new('RGB', (32, 32), (0, 0, 255)).save(image)
+            self.assertEqual(frames.wallpaper_color(image, 'dark'),
+                             frames.tint_color('dark', (0, 0, 255)))
+            self.assertEqual(frames.wallpaper_color(image, 'light'),
+                             frames.tint_color('light', (0, 0, 255)))
+
+
 if __name__ == '__main__':
     unittest.main()

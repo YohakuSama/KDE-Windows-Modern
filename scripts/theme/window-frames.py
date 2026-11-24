@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Generate Aurorae decorations with native shadow padding and rounded tops."""
 import argparse
+import configparser
 import os
 import re
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 PADDING = 12
@@ -95,6 +97,55 @@ def tint_color(mode, mean):
     return "#" + "".join(f"{value:02X}" for value in values)
 
 
+IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+
+
+def configured_wallpaper(config):
+    """Use a saved local image without polling or changing KDE settings.
+
+    Global SVG themes cannot tint individual monitors separately. Prefer
+    a unique saved primary-screen image; do not guess between activities.
+    """
+    parser = configparser.ConfigParser(interpolation=None, strict=False,
+                                       delimiters=("=",))
+    try:
+        with config.open(encoding="utf-8") as source:
+            parser.read_file(source)
+        candidates = []
+        for section in parser.sections():
+            match = re.fullmatch(r"Containments\]\[([^\]]+)\]\[Wallpaper\]\[org\.kde\.image\]\[General", section)
+            if not match:
+                continue
+            owner = "Containments][" + match.group(1)
+            if not parser.has_section(owner):
+                continue
+            containment = parser[owner]
+            if containment.get("wallpaperplugin") != "org.kde.image":
+                continue
+            if containment.get("plugin") not in ("org.kde.plasma.desktop", "org.kde.plasma.folder"):
+                continue
+            value = parser[section].get("Image", "").strip()
+            if not value:
+                continue
+            if value.startswith("file:"):
+                uri = urlsplit(value)
+                if uri.netloc not in ("", "localhost") or uri.query or uri.fragment:
+                    continue
+                path = Path(unquote(uri.path))
+            else:
+                path = Path(value)
+            if path.is_absolute() and (path.is_dir() or
+                    (path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES)):
+                candidates.append((containment.get("lastScreen", ""), path))
+        primary = {path for screen, path in candidates if screen == "0"}
+        paths = primary or {path for _, path in candidates}
+        if len(paths) == 1:
+            return next(iter(paths))
+    except (OSError, ValueError, configparser.Error) as error:
+        print(f"Saved wallpaper unavailable: {error}", file=sys.stderr)
+    return None
+
+
 def wallpaper_color(package, mode):
     if package is None:
         return None
@@ -102,13 +153,17 @@ def wallpaper_color(package, mode):
         # Pillow is already used by the optional native-resource importer.
         # Do not install a runtime dependency merely to calculate a tint.
         from PIL import Image, ImageStat
+        if package.is_file():
+            with Image.open(package) as image:
+                image.thumbnail((64, 64), Image.Resampling.BOX)
+                return tint_color(mode, ImageStat.Stat(image.convert("RGB")).mean)
         folders = ("images_dark", "images") if mode == "dark" else ("images",)
         for name in folders:
             directory = package / "contents" / name
             if not directory.is_dir():
                 continue
             images = sorted(p for p in directory.iterdir()
-                            if p.is_file() and p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp"))
+                            if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES)
             if not images:
                 continue
             # A wallpaper package may have several resolutions of one image.
@@ -167,14 +222,20 @@ def main():
     action.add_argument('--apply-local', action='store_true')
     parser.add_argument('--aurorae-dir', type=Path)
     parser.add_argument('--kvantum-dir', type=Path)
-    parser.add_argument('--wallpaper-package', type=Path)
+    wallpaper = parser.add_mutually_exclusive_group()
+    wallpaper.add_argument('--wallpaper-package', type=Path)
+    wallpaper.add_argument('--wallpaper-config', type=Path)
     args = parser.parse_args()
     if args.apply_local:
         if os.geteuid() == 0 or not args.aurorae_dir or not args.kvantum_dir:
             parser.error('--apply-local requires a normal user and both installed theme paths')
-        apply_local(args.aurorae_dir, args.kvantum_dir, args.wallpaper_package)
+        selected = (configured_wallpaper(args.wallpaper_config)
+                    if args.wallpaper_config else args.wallpaper_package)
+        if args.wallpaper_config and selected is None:
+            print("No unambiguous local image wallpaper; using neutral window bases.")
+        apply_local(args.aurorae_dir, args.kvantum_dir, selected)
         return
-    if args.aurorae_dir or args.kvantum_dir or args.wallpaper_package:
+    if args.aurorae_dir or args.kvantum_dir or args.wallpaper_package or args.wallpaper_config:
         parser.error('Installed theme arguments require --apply-local')
     for mode in ('dark', 'light'):
         path = ROOT / 'aurorae' / f'windows-modern-{mode}-aurorae' / 'decoration.svg'
