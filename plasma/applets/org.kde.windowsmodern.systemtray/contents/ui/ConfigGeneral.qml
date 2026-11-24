@@ -214,7 +214,7 @@ KCMUtils.ScrollViewKCM {
                 Layout.preferredWidth: formLayout.maxComboboxWidth
                 model: [
                     {
-                        "label": i18nc("@item:inlistbox Icon size", "Small"),
+                        "label": i18nc("@item:inlistbox Icon size", "Windows default (16 px)"),
                         "size": "small"
                     },
                     {
@@ -242,7 +242,7 @@ KCMUtils.ScrollViewKCM {
                         "spacing": 1
                     },
                     {
-                        "label": i18nc("@item:inlistbox Icon spacing", "Normal"),
+                        "label": i18nc("@item:inlistbox Icon spacing", "Windows default"),
                         "spacing": 2
                     },
                     {

@@ -184,3 +184,7 @@ Use real SessionManagement hibernate capability, add its row only when available
 ## Installer safety for owner testing
 
 Reject the full mutable-system plugin/layout installation on NixOS. Add a user-space preview that stages theme/icon/QML components, applies the global theme without resetting the panel, and preserves the existing native task manager/tray. Exclude system plugin install, dependency manager, shell override, shortcuts and greeter. Full installation on other distros aborts layout reset if component installation failed. This is a limited preview, not full NixOS packaging; live tests are pending.
+
+## Tray geometry and icon resolution (Plasma 6.8.3 reference)
+
+Separate actual glyph boxes from click cells. One row/column, 16 logical px default artwork, 32 px notification/overflow cells and 24 px core network/volume/battery cells. Preserve native delegates, real status, context actions, scroll and keyboard navigation, user-configured larger icons and reverse order. Use a finite model repeater instead of a font-metric-dependent multirow GridView. Add pure geometry regression tests; not a live desktop visual test. Legacy SVG sheets remain for native KSvg callers. Current KDE applet source uses Kirigami/icon-theme names for the network, volume, battery and Bluetooth tray symbols; fix mapped roles and import freshness rather than replacing their backend.

@@ -209,8 +209,17 @@ PlasmaCore.ToolTipArea {
                 Math.floor(Math.min(abstractItem.width, abstractItem.height) - 2 * abstractItem.overflowInset)))
 
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            implicitWidth: root.vertical && abstractItem.inVisibleLayout ? abstractItem.width : size
-            implicitHeight: !root.vertical && abstractItem.inVisibleLayout ? abstractItem.height : size
+            // Native compact representations get an actual square glyph
+            // box rather than the entire panel height. Text-based keyboard
+            // indicators retain the cell width to avoid clipping locale names.
+            readonly property bool languageIndicator: abstractItem.inVisibleLayout
+                && abstractItem.itemId === "org.kde.plasma.keyboardlayout"
+            implicitWidth: languageIndicator && !root.vertical ? abstractItem.width : size
+            implicitHeight: languageIndicator && root.vertical ? abstractItem.height : size
+            Layout.preferredWidth: implicitWidth
+            Layout.preferredHeight: implicitHeight
+            Layout.maximumWidth: implicitWidth
+            Layout.maximumHeight: implicitHeight
         }
 
         Item {

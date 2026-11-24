@@ -16,9 +16,10 @@ PlasmaCore.ToolTipArea {
 
     readonly property int arrowAnimationDuration: Kirigami.Units.shortDuration
     property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
-    property int iconSize: Kirigami.Units.iconSizes.smallMedium
-    implicitWidth: iconSize + (vertical ? 0 : 2 * Kirigami.Units.smallSpacing)
-    implicitHeight: iconSize + (vertical ? 2 * Kirigami.Units.smallSpacing : 0)
+    property int iconSize: 16
+    property int cellLength: 32
+    implicitWidth: vertical ? iconSize : cellLength
+    implicitHeight: vertical ? cellLength : iconSize
     activeFocusOnTab: true
 
     Accessible.name: subText
@@ -68,6 +69,9 @@ PlasmaCore.ToolTipArea {
         width: tooltip.iconSize
         height: width
 
+        isMask: true
+        color: Kirigami.Theme.textColor
+        roundToIconSize: false
         rotation: systemTrayState.overflowOpen ? 180 : 0
         Behavior on rotation {
             RotationAnimation {
