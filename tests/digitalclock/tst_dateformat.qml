@@ -55,6 +55,17 @@ TestCase {
         compare(loc.toString(day, DateFormat.shortDateFullYear(loc.dateFormat(Locale.ShortFormat))), data.expected);
     }
 
+    function test_windowsTaskbarClock() {
+        const sample = new Date(2026, 8, 30, 5, 6, 7);
+        compare(Qt.formatDate(sample, DateFormat.windowsShortDate()), "2026/9/30");
+        const fmt = DateFormat.clockFormats(1, "h:mm AP");
+        compare(Qt.formatTime(sample, fmt.time), "5:06");
+        compare(Qt.formatTime(sample, fmt.seconds), "5:06:07");
+        compare(DateFormat.clockFormats(0, "HH:mm").time, "h:mm AP");
+        compare(DateFormat.clockFormats(2, "h:mm AP").time, "HH:mm");
+        compare(DateFormat.clockFormats(3, "h:mm AP").time, "h:mm AP");
+    }
+
     function test_shortDateFullYear_patterns() {
         compare(DateFormat.shortDateFullYear("dd.MM.yy"), "dd.MM.yyyy");
         compare(DateFormat.shortDateFullYear("yy-MM-dd"), "yyyy-MM-dd");

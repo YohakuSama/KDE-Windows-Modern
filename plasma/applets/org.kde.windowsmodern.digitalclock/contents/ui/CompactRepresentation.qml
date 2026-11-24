@@ -8,6 +8,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtCore
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
@@ -40,9 +41,9 @@ MouseArea {
 
     // The panel sizes applets from their Layout hints; without them the
     // clock got a square cell and a full-year date overflowed it.
-    readonly property int leadingInset: Kirigami.Units.smallSpacing
+    readonly property int leadingInset: 4
     readonly property int trailingInset: showBell ? 0 : Kirigami.Units.smallSpacing
-    readonly property int bellCellWidth: 28
+    readonly property int bellCellWidth: 24
     readonly property int bellIconSize: Math.max(1, Math.min(16, Math.floor(panelHeight)))
     implicitWidth: panelContent.implicitWidth + leadingInset + trailingInset
     implicitHeight: panelHeight
@@ -95,8 +96,9 @@ MouseArea {
     readonly property int linePixelSize: {
         // QML uses logical pixels; physical screen DPI would apply fractional
         // scaling twice. Measure the actual configured Qt font instead.
-        const wanted = baseFont.pixelSize > 0
-            ? baseFont.pixelSize : Math.round(baseMetrics.height / lineHeightFactor);
+        const wanted = Plasmoid.configuration.autoFontAndSize
+            ? 12 : (baseFont.pixelSize > 0
+                ? baseFont.pixelSize : Math.round(baseMetrics.height / lineHeightFactor));
         const minMargin = 2;
         const fits = Math.floor((panelHeight - 2 * minMargin) / lineCount / lineHeightFactor);
         return Math.max(6, Math.min(wanted, fits));
@@ -125,8 +127,10 @@ MouseArea {
             return Qt.formatDate(d, Qt.ISODate);
         } else if (format === "longDate") {
             return Qt.formatDate(d, Qt.locale(), Locale.LongFormat);
-        } else {
+        } else if (format === "regionalDate") {
             return Qt.locale().toString(d, DateFormat.shortDateFullYear(Qt.locale().dateFormat(Locale.ShortFormat)));
+        } else {
+            return Qt.formatDate(d, DateFormat.windowsShortDate());
         }
     }
 
@@ -165,7 +169,7 @@ MouseArea {
         anchors.fill: parent
         anchors.leftMargin: main.leadingInset
         anchors.rightMargin: main.trailingInset
-        spacing: Kirigami.Units.smallSpacing
+        spacing: 4
 
         ColumnLayout {
             id: contentLayout
@@ -182,7 +186,7 @@ MouseArea {
                 verticalAlignment: Text.AlignVCenter
                 textFormat: Text.PlainText
 
-                text: Qt.locale().toString(clock.dateTime, Plasmoid.configuration.showSeconds === 2 ? root.timeFormatWithSeconds : root.timeFormat)
+                text: Qt.locale().toString(clock.dateTime, Plasmoid.configuration.showSeconds === 2 ? main.plasmoidItem.timeFormatWithSeconds : main.plasmoidItem.timeFormat)
 
                 font {
                     family: main.baseFont.family
@@ -264,7 +268,14 @@ MouseArea {
                     width: Math.min(main.bellIconSize, parent.width, parent.height)
                     height: width
                     roundToIconSize: false
-                    source: main.plasmoidItem.notificationIcon
+                    isMask: true
+                    color: Kirigami.Theme.textColor
+                    source: {
+                        const name = main.plasmoidItem.notificationIcon;
+                        const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
+                            "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
+                        return String(file).length > 0 ? file : name;
+                    }
                 }
             }
             Accessible.name: text

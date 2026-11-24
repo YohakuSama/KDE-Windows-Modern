@@ -162,8 +162,9 @@ KCMUtils.SimpleKCM {
                 Layout.preferredWidth: appearancePage.comboBoxWidth
                 model: [
                     i18nc("@item:inlistbox time display option", "12-Hour"),
-                    i18nc("@item:inlistbox time display option", "Use region defaults"),
-                    i18nc("@item:inlistbox time display option", "24-Hour")
+                    i18nc("@item:inlistbox time display option", "Windows 24-hour"),
+                    i18nc("@item:inlistbox time display option", "24-Hour"),
+                    i18nc("@item:inlistbox time display option", "Use region defaults")
                 ]
                 onActivated: appearancePage.cfg_use24hFormat = currentIndex
             }
@@ -200,6 +201,11 @@ KCMUtils.SimpleKCM {
                     {
                         label: i18nc("@item:inlistbox date display option, e.g. all numeric", "Short date"),
                         name: "shortDate",
+                        formatter(d) { return Qt.formatDate(d, "yyyy/M/d"); }
+                    },
+                    {
+                        label: i18nc("@item:inlistbox date display option", "Regional short date"),
+                        name: "regionalDate",
                         formatter(d) { return Qt.formatDate(d, Qt.locale(), Locale.ShortFormat); }
                     },
                     {

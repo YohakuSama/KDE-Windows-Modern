@@ -15,6 +15,7 @@ import org.kde.plasma.clock as PlasmaClock
 import org.kde.plasma.private.digitalclock as DigitalClockPrivate
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
+import "code/dateformat.js" as DateFormat
 
 PlasmoidItem {
     id: root
@@ -174,35 +175,9 @@ PlasmoidItem {
 
     // Computes time format strings based on locale and user settings.
     function timeFormatCorrection(timeFormatString = Qt.locale().timeFormat(Locale.ShortFormat)) {
-        const regexp = /(hh*)(.+)(mm)/i;
-        const match = regexp.exec(timeFormatString);
-
-        if (!match) {
-            root.timeFormat = timeFormatString;
-            root.timeFormatWithSeconds = timeFormatString;
-            return;
-        }
-
-        const hours = match[1];
-        const delimiter = match[2];
-        const minutes = match[3];
-        const seconds = "ss";
-        const amPm = "AP";
-        const uses24hFormatByDefault = timeFormatString.toLowerCase().indexOf("ap") === -1;
-
-        // QLocale does not convert 12h/24h when uppercase H is used, so lowercase h/hh.
-        let result = hours.toLowerCase() + delimiter + minutes;
-        let resultSec = result + delimiter + seconds;
-
-        // Append AM/PM when user chose 12h or left it as locale default and locale uses 12h.
-        if ((Plasmoid.configuration.use24hFormat === Qt.PartiallyChecked && !uses24hFormatByDefault)
-                || Plasmoid.configuration.use24hFormat === Qt.Unchecked) {
-            result += " " + amPm;
-            resultSec += " " + amPm;
-        }
-
-        root.timeFormat = result;
-        root.timeFormatWithSeconds = resultSec;
+        const formats = DateFormat.clockFormats(Plasmoid.configuration.use24hFormat, timeFormatString);
+        root.timeFormat = formats.time;
+        root.timeFormatWithSeconds = formats.seconds;
     }
 
     // Match Plasma's native digital-clock implementation. Do not use the
