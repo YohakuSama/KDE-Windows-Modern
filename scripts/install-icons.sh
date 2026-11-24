@@ -20,7 +20,18 @@ rm -rf "$THEME_DIR"
 
 step "Copying $THEME_NAME"
 ensure_dir "$ICONS_DIR"
-cp -r "$SRC_DIR" "$THEME_DIR"
+cp -a "$SRC_DIR" "$THEME_DIR"
+
+# Same theme ID and filenames; no competing Windows icon theme.
+if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ]; then
+    step "Applying local Windows icon mappings"
+    while IFS= read -r -d '' asset; do
+        relative="${asset#"$NATIVE_ASSETS_DIR/icons/"}"
+        stem="${relative%.svg}"
+        rm -f "$THEME_DIR/$stem.png" "$THEME_DIR/$stem.svgz" "$THEME_DIR/$stem.xpm"
+    done < <(find "$NATIVE_ASSETS_DIR/icons" -type f -name '*.svg' -print0)
+    cp -a --remove-destination "$NATIVE_ASSETS_DIR/icons/." "$THEME_DIR/"
+fi
 
 if command -v gtk-update-icon-cache &>/dev/null; then
     gtk-update-icon-cache -f "$THEME_DIR" &>/dev/null || true

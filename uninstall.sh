@@ -265,6 +265,15 @@ uninstall_component() {
             rm_path "$HOME/.local/share/applications/windowsmodern-screenshot.desktop"
             info "Windows shortcuts removed; your previous keys are back."
             ;;
+        sounds)
+            sound_backup="$HOME/.local/share/windows-modern/backup/sound-theme"
+            if [ -f "$sound_backup" ] && command -v kwriteconfig6 &>/dev/null; then
+                kwriteconfig6 --file kdeglobals --group Sounds --key Theme "$(cat "$sound_backup")"
+                rm -f "$sound_backup"
+            fi
+            rm_path "${XDG_DATA_HOME:-$HOME/.local/share}/sounds/windows-modern"
+            info "Sound theme restored; local imported assets are retained."
+            ;;
         fonts)
             backup_dir="$HOME/.local/share/windows-modern/backup"
             for key in font fixed; do
@@ -313,7 +322,7 @@ uninstall_component() {
             info "remove them with your package manager / flatpak if you want."
             ;;
         all)
-            for c in shortcuts apps fonts themes icons lookfeel layout showdesk startmenu systray icontasks digitalclock taskbarbuttons sessionlock alttab greeter; do
+            for c in shortcuts apps sounds fonts themes icons lookfeel layout showdesk startmenu systray icontasks digitalclock taskbarbuttons sessionlock alttab greeter; do
                 uninstall_component "$c"
             done
             reset_kwin_borders
@@ -321,7 +330,7 @@ uninstall_component() {
             ;;
         *)
             err "Unknown component: $name"
-            echo "Available: themes, icons, lookfeel, layout, showdesk, startmenu, systray, icontasks, digitalclock, taskbarbuttons, sessionlock, alttab, shortcuts, apps, fonts, greeter, greetersystem, all"
+            echo "Available: themes, icons, lookfeel, layout, showdesk, startmenu, systray, icontasks, digitalclock, taskbarbuttons, sessionlock, alttab, shortcuts, apps, sounds, fonts, greeter, greetersystem, all"
             exit 1
             ;;
     esac
@@ -374,6 +383,7 @@ case "${1:-}" in
     echo "  shortcuts  Windows keyboard shortcuts (previous keys restored)"
     echo "  apps       App defaults (video player, Snipping Tool, Ctrl+Shift+Esc)"
     echo "  fonts      Previous UI and monospace fonts back"
+    echo "  sounds     Previous system sound theme back"
     echo "  greeter    Boot greeter (user theme + revert patches)"
     echo "  greetersystem Restore system greeter binary (needs sudo)"
     echo "  all        Uninstall everything"
