@@ -19,8 +19,13 @@ Item {
         name: "ModernBatteryGlyph"
         when: windowShown
         function test_liveStateAndSize() {
-            compare(glyph.implicitWidth, 20);
-            compare(glyph.implicitHeight, 16);
+            compare(glyph.implicitWidth, 23);
+            compare(glyph.implicitHeight, 18);
+            const outline = findChild(glyph, "wmBatteryOutline");
+            const terminal = findChild(glyph, "wmBatteryTerminal");
+            verify(outline !== null && terminal !== null);
+            compare(outline.y + outline.height / 2, 8);
+            compare(terminal.y + terminal.height / 2, 8);
             glyph.percent = 95;
             glyph.charging = true;
             compare(glyph.visualState, "charging");

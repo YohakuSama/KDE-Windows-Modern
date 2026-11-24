@@ -46,8 +46,8 @@ MouseArea {
                                       === Kirigami.ColorUtils.Light
 
     // Match the fixed logical canvas of Start and icon-only tasks. Do not
-    // snap 28 to a different icon size at fractional output scaling.
-    readonly property int glyphSize: Math.max(1, Math.min(28, Math.floor(Math.min(width, height) - 2 * tileInset)))
+    // snap 30 to a different icon size at fractional output scaling.
+    readonly property int glyphSize: Math.max(1, Math.min(30, Math.floor(Math.min(width, height) - 2 * tileInset)))
 
     hoverEnabled: true
     activeFocusOnTab: true

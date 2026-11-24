@@ -8,7 +8,7 @@ import "../js/funcs.js" as Funcs
 
 Item {
     id: root
-    property real glyphSize: 16
+    property real glyphSize: 18
     property real percent: -1
     property bool charging: false
     property bool saver: false
@@ -37,18 +37,20 @@ Item {
         transformOrigin: Item.Center
 
         Rectangle {
+            objectName: "wmBatteryTerminal"
             x: 18
-            y: 7
+            y: 5.5
             width: 1.5
             height: 5
             radius: 0.75
             color: root.foreground
         }
         Rectangle {
+            objectName: "wmBatteryOutline"
             x: 1
-            y: 4.5
+            y: 2.5
             width: 17
-            height: 10
+            height: 11
             radius: 2
             color: "transparent"
             border.color: root.foreground
@@ -58,15 +60,14 @@ Item {
             objectName: "wmBatteryLevelFill"
             visible: root.visualState !== "unknown" && width > 0
             x: 3
-            y: 6.5
+            y: 4.5
             width: 13 * root.fillFraction
-            height: 6
+            height: 7
             radius: Math.min(1, width / 2)
             color: root.levelColor
         }
         Text {
             anchors.centerIn: parent
-            anchors.verticalCenterOffset: 1.5
             visible: root.visualState === "unknown"
             text: "?"
             color: root.foreground
@@ -80,7 +81,7 @@ Item {
                 strokeColor: root.backgroundColor
                 fillColor: root.foreground
                 joinStyle: ShapePath.RoundJoin
-                PathSvg { path: "M 10.6 0.5 L 6.7 6.3 L 9.6 6.3 L 8.8 10.2 L 14 4.5 L 10.9 4.5 Z" }
+                PathSvg { path: "M 10.6 2.5 L 6.7 8.3 L 9.6 8.3 L 8.8 12.2 L 14 6.5 L 10.9 6.5 Z" }
             }
         }
     }

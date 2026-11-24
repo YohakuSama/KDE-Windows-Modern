@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Calendar and panel optical balance
+
+- Accumulate calendar wheel deltas, ignore horizontal and zero input, and limit touchpad swipes to one page until idle.
+- Increase task and tray glyph canvases without changing the default panel height or tray cell pitch; center the project-drawn battery outline and terminal. Live Windows 11 comparison remains pending.
+
 ### Native status and power controls
 
 - Reuse PowerDevil's manual inhibition state in both existing controls; remove shell polling and process-name termination.

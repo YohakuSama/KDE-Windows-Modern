@@ -3,8 +3,8 @@
 Reference desktop: Windows Modern on Plasma 6.8.3 / Qt 6.12, Wayland, 150% output scale.
 
 - Use Qt logical coordinates. A 48px panel occupies 72 physical pixels at 150%.
-- Task icons and Start use a 28px logical canvas. Retain optical padding in the artwork. The Start SVG has a 64px canvas with a 56px painted area, which renders at 36.75 physical pixels at 150%; do not tighten the viewBox to the path bounds or apply an extra scale. The owner reported that the previous 24px canvas (31.5 physical pixels of painted area) was too small on a 48px logical panel. Do not force arbitrary third-party artwork into a cropped shape.
-- Tray uses 16px logical icon boxes; do not use the task icon size or multiply by DPR.
+- Task icons and Start use a 30px logical canvas. Retain optical padding in the artwork. The Start SVG has a 64px canvas with a 56px painted area, which renders at 39.375 physical pixels at 150%; do not tighten the viewBox to the path bounds or apply an extra scale. The owner reported that the previous 24px canvas (31.5 physical pixels of painted area) was too small on a 48px logical panel. Do not force arbitrary third-party artwork into a cropped shape.
+- Tray uses 18px logical icon boxes; do not use the task icon size or multiply by DPR.
 - Use Plasma's native compact/full representations for digital clock; give the full representation explicit positive minimum/preferred/maximum layout hints. No second popup window, manual resize timers or saved-size overrides.
 - Use Kirigami.WheelHandler for Flickable/ListView and attached Qt Controls scrollbars. It handles Wayland wheel delta conversion; use 120 logical pixels (three 40px rows) per detent for lists, at least one row per detent for quick settings. Native scrollbar dragging maps position to content range; no snapping or separate drag animation.
 - A build/geometry formula check is not a GUI test. Run QtTest wheel/drag checks at QT_SCALE_FACTOR=1.5; verify the real calendar/notification surface and quick-settings behavior under Plasma before marking an integration build verified.
@@ -74,3 +74,10 @@ Revision after owner comparison screenshots:
 - Default Windows clock format is now h:mm AP, with literal English AM/PM even on a Chinese desktop. Keep the explicit regional and 24-hour choices. The compact time line remains right aligned above yyyy/M/d.
 - Shared dateformat.js copies must remain byte-identical. Pass QML Locale enums to JS helpers rather than resolving them inside a .pragma library.
 - Reference: https://support.microsoft.com/en-au/servicing/os/windows-11/2025/10/october-28-2025-kb5067036-os-builds-26200-7019-and-26100-7019-preview
+
+## Calendar wheel and panel optical follow-up (pending live acceptance)
+
+- The current provisional task canvas is 30 logical pixels, with the same 87.5% painted extent and preserved aspect ratio. Start, Search, Task View and Icon Tasks use this canvas with a 4px total cell inset. This is a measured adjustment of the previous baseline, not verified Windows 11 parity.
+- Status glyphs and the notification bell use an 18px logical box. The default 32px overflow/notification and 24px core cells stay fixed, so larger glyphs do not inflate their layout. The 16px overflow chevron remains a separate affordance. Keep Qt responsible for output scaling.
+- The fallback modern battery keeps its outline, terminal and fill vertically centered; its panel canvas is 22.5 by 18 logical pixels (rounded up for width). The pinned resource branch contains the three icon MUN libraries and SegoeIcons.ttf; the font table directory has no color glyph tables. No named modern battery artwork was found. This does not rule out an unclassified numeric image group. Do not claim the project-drawn battery is an extracted Microsoft asset or redistribute private resources.
+- The calendar owns the wheel events over its grid. Angle deltas accumulate to 120 units; a coalesced event pages at most once. Pixel deltas accumulate to a provisional 64 logical-pixel threshold, then latch for the continuous swipe and inertia until 300ms of inactivity. Zero and horizontal-dominant input does not page. Reset partial input on zoom changes and reopening. Test real mice and touchpads in Plasma, including at 150% scale; offscreen QtTest covers synthetic detents and the pixel-input handler, not native touchpad delivery.

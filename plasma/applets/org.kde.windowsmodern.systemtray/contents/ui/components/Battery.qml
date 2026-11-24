@@ -16,7 +16,7 @@ Item {
         || batteryControl.state === BatteryControlModel.FullyCharged)
 
     property bool showPercentage: true
-    property real glyphSize: 16
+    property real glyphSize: 18
     property real labelPixelSize: 12
     property real percentageWidth: 0
 

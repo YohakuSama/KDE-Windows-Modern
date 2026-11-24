@@ -82,15 +82,15 @@ Item {
             compare(button.Accessible.description, "Open Start and search");
         }
 
-        // Match the 28px task icon canvas; only shrink when the cell is
+        // Match the 30px task icon canvas; only shrink when the cell is
         // narrower than the canvas plus the frame's borders.
         function test_glyphSize_data() {
             return [
                 { tag: "24px panel", cell: 24, expected: 20 },
                 { tag: "30px panel", cell: 30, expected: 26 },
-                { tag: "36px panel", cell: 36, expected: 28 },
-                { tag: "48px panel", cell: 48, expected: 28 },
-                { tag: "64px panel", cell: 64, expected: 28 },
+                { tag: "36px panel", cell: 36, expected: 30 },
+                { tag: "48px panel", cell: 48, expected: 30 },
+                { tag: "64px panel", cell: 64, expected: 30 },
             ];
         }
         function test_glyphSize(data) {

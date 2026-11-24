@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
-// Windows Modern at 100%: 48px taskbar, 28px task icons, 16px tray icons.
+// Windows Modern at 100%: 48px taskbar, 30px task icons, 18px tray icons.
 // DPI is applied by Qt, never by multiplying the logical size by screen DPR.
-// Explicit panel-size scaling remains an opt-in; 48px always gives 16px.
+// Explicit panel-size scaling remains an opt-in; 48px always gives 18px.
 function iconSize(thickness, scaleToFit) {
     const limit = Math.max(1, Math.floor(thickness));
-    const requested = scaleToFit ? Math.max(16, Math.min(32, Math.round(limit / 3))) : 16;
+    const requested = scaleToFit ? Math.max(18, Math.min(32, Math.round(limit * 3 / 8))) : 18;
     return Math.min(limit, requested);
 }
 
@@ -37,7 +37,10 @@ function cellLength(size, compact, spacing) {
     // Normal Windows notification items/chevron: 32; core group: 24.
     // Keep the existing KDE spacing choices without tying them to font size.
     const extra = spacing === 1 ? 8 : spacing === 6 ? 24 : 16;
-    return Math.max(size + 4, size + extra - (compact ? 8 : 0));
+    // At the normal 18px glyph size, preserve the existing 32/24px
+    // cells. A larger painted glyph must not inflate the whole tray.
+    const opticalInset = size >= 18 ? 2 : 0;
+    return Math.max(size + 4, size + extra - opticalInset - (compact ? 8 : 0));
 }
 
 function visualIndex(index, count, vertical, reversed) {

@@ -40,6 +40,75 @@ ColumnLayout {
     property date selectedDate: today
     property int zoom: CalendarView.Zoom.Month
 
+    // A wheel event is not necessarily a physical detent. Wayland can
+    // deliver many fractional angle events or pixel events for one gesture.
+    property real wheelAngleRemainder: 0
+    property real wheelPixelRemainder: 0
+    property bool wheelPixelGesture: false
+    property bool wheelPixelPaged: false
+    readonly property int wheelPixelThreshold: 64
+
+    Timer {
+        id: wheelIdle
+        interval: 300
+        repeat: false
+        onTriggered: calendarView.resetWheelInput()
+    }
+
+    function resetWheelInput() {
+        wheelAngleRemainder = 0;
+        wheelPixelRemainder = 0;
+        wheelPixelGesture = false;
+        wheelPixelPaged = false;
+    }
+
+    function handleWheel(angleX, angleY, pixelX, pixelY) {
+        // Use pixels when present; never count both representations.
+        const hasPixels = pixelX !== 0 || pixelY !== 0;
+        const dx = hasPixels ? pixelX : angleX;
+        const dy = hasPixels ? pixelY : angleY;
+        if (dy === 0 || Math.abs(dx) > Math.abs(dy))
+            return;
+
+        if (hasPixels) {
+            if (!wheelPixelGesture) {
+                resetWheelInput();
+                wheelPixelGesture = true;
+            }
+            // Only one page per continuous swipe, including its inertia.
+            wheelIdle.restart();
+            if (wheelPixelPaged)
+                return;
+            if (wheelPixelRemainder * dy < 0)
+                wheelPixelRemainder = 0;
+            wheelPixelRemainder += dy;
+            if (Math.abs(wheelPixelRemainder) >= wheelPixelThreshold) {
+                wheelPixelPaged = true;
+                page(wheelPixelRemainder > 0 ? -1 : 1);
+            }
+            return;
+        }
+
+        // Some touchpads send angle-only events at the end of a pixel swipe.
+        if (wheelPixelGesture) {
+            wheelIdle.restart();
+            return;
+        }
+        wheelIdle.restart();
+        if (wheelAngleRemainder * dy < 0)
+            wheelAngleRemainder = 0;
+        wheelAngleRemainder += dy;
+        if (Math.abs(wheelAngleRemainder) >= 120) {
+            const step = wheelAngleRemainder > 0 ? -1 : 1;
+            // Do not queue extra pages from a coalesced event. Retain only
+            // the fractional part, not skipped whole detents.
+            wheelAngleRemainder %= 120;
+            page(step);
+        }
+    }
+
+    onZoomChanged: resetWheelInput()
+
     readonly property int decadeStart: Math.floor(displayedYear / 10) * 10
 
     readonly property int firstDayOfWeek: Plasmoid.configuration.firstDayOfWeek > -1
@@ -95,6 +164,7 @@ ColumnLayout {
     focus: true
 
     function resetToToday() {
+        resetWheelInput();
         selectDate(today);
         zoom = CalendarView.Zoom.Month;
     }
@@ -454,7 +524,10 @@ ColumnLayout {
             anchors.fill: parent
             acceptedButtons: Qt.NoButton
             onWheel: wheel => {
-                calendarView.page(wheel.angleDelta.y > 0 ? -1 : 1);
+                calendarView.handleWheel(wheel.angleDelta.x, wheel.angleDelta.y,
+                                         wheel.pixelDelta.x, wheel.pixelDelta.y);
+                // The calendar owns this surface; do not let a parent
+                // scroll handler process the same wheel event a second time.
                 wheel.accepted = true;
             }
         }

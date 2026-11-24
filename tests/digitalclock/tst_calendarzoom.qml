@@ -195,6 +195,48 @@ Item {
             compare(view.zoom, CalendarView.Zoom.Decade);
         }
 
+        function test_fractionalWheelDetent() {
+            for (let i = 0; i < 3; ++i) {
+                mouseWheel(view, view.width / 2, view.height * 0.7, 0, -30);
+                compare(view.displayedMonth, 10);
+            }
+            mouseWheel(view, view.width / 2, view.height * 0.7, 0, -30);
+            compare(view.displayedMonth, 11);
+            // Zero vertical or horizontally dominant events do not navigate.
+            view.handleWheel(120, 0, 0, 0);
+            view.handleWheel(120, 20, 0, 0);
+            view.handleWheel(0, 0, 0, 0);
+            compare(view.displayedMonth, 11);
+            // A large coalesced event cannot jump several months.
+            view.handleWheel(0, -480, 0, 0);
+            compare(view.displayedMonth, 0);
+            compare(view.displayedYear, 2027);
+        }
+
+        function test_pixelSwipeAndInertia() {
+            for (let i = 0; i < 3; ++i)
+                view.handleWheel(0, -120, 0, -16);
+            compare(view.displayedMonth, 10);
+            view.handleWheel(0, -120, 0, -16);
+            compare(view.displayedMonth, 11);
+            for (let i = 0; i < 20; ++i)
+                view.handleWheel(0, -120, 0, -16);
+            view.handleWheel(0, -120, 0, 0);
+            compare(view.displayedMonth, 11);
+            tryCompare(view, "wheelPixelGesture", false, 1000);
+            view.handleWheel(0, 120, 0, 64);
+            compare(view.displayedMonth, 10);
+        }
+
+        function test_wheelRemainderResetOnZoom() {
+            view.handleWheel(0, -90, 0, 0);
+            clickHeader();
+            view.handleWheel(0, -30, 0, 0);
+            compare(view.displayedYear, 2026);
+            view.handleWheel(0, -90, 0, 0);
+            compare(view.displayedYear, 2027);
+        }
+
         function test_arrowsPageByLevel() {
             mouseClick(navButton(false));
             compare(view.displayedMonth, 11);
