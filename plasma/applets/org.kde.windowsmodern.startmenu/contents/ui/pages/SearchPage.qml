@@ -214,13 +214,17 @@ Item {
 
         onActivated: root.closeMenu()
 
-        PlasmaComponents3.ScrollBar.vertical: PlasmaComponents3.ScrollBar {
-            policy: PlasmaComponents3.ScrollBar.AsNeeded
+        readonly property int scrollGutter: 14
+        readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
+        PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
+        StartWheelHandler {
+            view: resultsView
+            rowHeight: Math.floor(Kirigami.Units.gridUnit * 1.6)
         }
 
         // Custom section header: full-row, collapsible
         section.delegate: Rectangle {
-            width: resultsView.width
+            width: resultsView.contentColumnWidth
             height: headerRow.implicitHeight + Kirigami.Units.smallSpacing
             color: "transparent"
 
@@ -267,7 +271,7 @@ Item {
         delegate: Item {
             id: resultDelegate
 
-            width: resultsView.width
+            width: resultsView.contentColumnWidth
             implicitHeight: visible ? Math.floor(Kirigami.Units.gridUnit * 1.6) : 0
 
             required property int index

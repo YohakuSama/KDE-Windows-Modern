@@ -10,7 +10,7 @@ Lib.Tile {
 
     readonly property bool darkMode: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
-    label: qsTr("Dark Mode")
+    label: i18n("Dark Mode")
     iconSource: darkMode ? "weather-clear-night-symbolic" : "weather-clear-symbolic"
     active: darkMode
 
@@ -24,7 +24,7 @@ Lib.Tile {
     onClicked: switchTheme()
     onMiddleClicked: switchTheme()
 
-    tooltipText: darkMode ? qsTr("Switch to light mode") : qsTr("Switch to dark mode")
+    tooltipText: darkMode ? i18n("Switch to light mode") : i18n("Switch to dark mode")
 
     Plasma5Support.DataSource {
         id: colorschemeExec

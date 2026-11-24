@@ -22,7 +22,7 @@ Lib.Tile {
 
     readonly property bool manualDnd: Funcs.manualInhibition(notificationSettings, now)
     readonly property bool effectiveDnd: Funcs.checkInhibition(notificationSettings, now)
-    label: qsTr("Do Not Disturb")
+    label: i18n("Do Not Disturb")
     iconSource: effectiveDnd ? "notifications-disabled" : "notifications"
     active: manualDnd
 
@@ -35,6 +35,6 @@ Lib.Tile {
         Funcs.toggleDnd(notificationSettings, 60 * 60 * 1000, now);
     }
 
-    tooltipText: manualDnd ? qsTr("Do Not Disturb — On")
-        : effectiveDnd ? qsTr("Do Not Disturb is enabled automatically") : qsTr("Do Not Disturb — Off")
+    tooltipText: manualDnd ? i18n("Do Not Disturb — On")
+        : effectiveDnd ? i18n("Do Not Disturb is enabled automatically") : i18n("Do Not Disturb — Off")
 }

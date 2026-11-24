@@ -22,6 +22,8 @@ ColumnLayout {
 
     property alias favoritesList: favoritesListView
     property int columns: width >= 690 ? 8 : (width >= 430 ? 6 : 4)
+    property bool showAllPinned: false
+    readonly property int previewRows: Math.max(1, Plasmoid.configuration.numberRows)
 
     signal showAllAppsRequested
     signal keyNavUpFromList
@@ -70,6 +72,19 @@ ColumnLayout {
         Item { Layout.fillWidth: true }
 
         AToolButton {
+            visible: favoritesListView.count > pinnedPage.columns * pinnedPage.previewRows
+            flat: true
+            iconName: pinnedPage.showAllPinned ? "go-up" : "go-down"
+            text: pinnedPage.showAllPinned ? i18n("Show less") : i18n("Show all pinned")
+            onClicked: {
+                pinnedPage.showAllPinned = !pinnedPage.showAllPinned;
+                if (!pinnedPage.showAllPinned) {
+                    favoritesListView.currentIndex = -1;
+                    favoritesListView.positionViewAtBeginning();
+                }
+            }
+        }
+        AToolButton {
             buttonHeight: 25
             flat: true
             iconName: "go-next"
@@ -79,16 +94,16 @@ ColumnLayout {
         }
     }
 
-    // Responsive pinned grid, limited to a few visible rows. Extra pins
-    // remain scrollable and reorderable without affecting the All list.
+    // Extra pins expand into the shared home list, avoiding a second
+    // nested scroll area. The original Kicker drag-to-reorder stays intact.
     GridView {
         id: favoritesListView
         Layout.fillWidth: true
-        Layout.preferredHeight: Math.min(Math.max(1, Plasmoid.configuration.numberRows),
-            Math.ceil(count / pinnedPage.columns)) * cellHeight
+        Layout.preferredHeight: (pinnedPage.showAllPinned ? Math.ceil(count / pinnedPage.columns)
+            : Math.min(pinnedPage.previewRows, Math.ceil(count / pinnedPage.columns))) * cellHeight
         visible: count > 0
         clip: true
-        interactive: contentHeight > height
+        interactive: false
         cellWidth: Math.max(1, Math.floor(width / pinnedPage.columns))
         cellHeight: Math.max(80, Kirigami.Units.iconSizes.medium + 2 * Kirigami.Units.gridUnit + 12)
         boundsBehavior: Flickable.StopAtBounds
@@ -101,10 +116,6 @@ ColumnLayout {
         property int draggingIndex: -1
         property int dropTargetIndex: -1
 
-        PlasmaComponents3.ScrollBar.vertical: PlasmaComponents3.ScrollBar {
-            policy: PlasmaComponents3.ScrollBar.AsNeeded
-        }
-
         delegate: ListItemDelegate {
             gridMode: true
             iconSize: Kirigami.Units.iconSizes.medium
@@ -116,6 +127,11 @@ ColumnLayout {
 
         Keys.onReturnPressed: pinnedPage.activateCurrent()
         Keys.onEnterPressed: pinnedPage.activateCurrent()
+
+        onCurrentIndexChanged: {
+            if (currentIndex >= pinnedPage.columns * pinnedPage.previewRows)
+                pinnedPage.showAllPinned = true;
+        }
 
         Keys.onUpPressed: event => {
             if (currentIndex < pinnedPage.columns) {

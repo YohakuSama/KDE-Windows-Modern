@@ -114,6 +114,7 @@ Item {
         // Pinned and All now share the same scrollable home.
         readonly property var pinnedPage: allAppsPage.allAppsList.headerItem?.pinnedSectionItem ?? null
         property int leftColumnState: 0
+        property bool showMoreRecent: false
 
         onSearchingChanged: {
             if (searching) {
@@ -139,10 +140,12 @@ Item {
         function reset() {
             startSearch.searchText = "";
             leftColumnState = 0;
+            showMoreRecent = false;
             // Nothing highlighted until hovered or picked with the arrow keys,
             // as on Windows (a ListView makes its first item current as soon
             // as it has items, so the first pinned app always looked selected).
             if (root.pinnedPage) {
+                root.pinnedPage.showAllPinned = false;
                 root.pinnedPage.favoritesList.currentIndex = -1;
                 root.pinnedPage.favoritesList.positionViewAtBeginning();
             }
@@ -273,7 +276,13 @@ Item {
                     if (powerMenu.opened) {
                         powerMenu.close();
                     } else if (startSearch.searchText !== "") {
-                        startSearch.searchText = "";
+                        root.reset();
+                    } else if (allAppsPage.inCategory) {
+                        allAppsPage.backToCategories();
+                    } else if (root.leftColumnState === 1) {
+                        root.leftColumnState = 0;
+                        allAppsPage.allAppsList.positionViewAtBeginning();
+                        startSearch.focusSearch();
                     } else {
                         root.closeMenu();
                     }
@@ -304,7 +313,7 @@ Item {
 
                     homeHeader: Component {
                         ColumnLayout {
-                            width: allAppsPage.allAppsList.width
+                            width: allAppsPage.allAppsList.contentColumnWidth
                             height: implicitHeight
                             spacing: Kirigami.Units.largeSpacing
                             property alias pinnedSectionItem: pinnedSection
@@ -321,25 +330,37 @@ Item {
                                 onKeyNavUpFromList: startSearch.focusSearch()
                             }
 
-                            PlasmaComponents3.Label {
+                            RowLayout {
                                 Layout.fillWidth: true
-                                text: i18n("Recommended")
-                                Accessible.description: i18n("Recently used applications and documents")
-                                font.weight: Font.DemiBold
                                 visible: Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs
+                                PlasmaComponents3.Label {
+                                    Layout.fillWidth: true
+                                    text: i18n("Recommended")
+                                    Accessible.description: i18n("Recently used applications and documents")
+                                    font.weight: Font.DemiBold
+                                }
+                                AToolButton {
+                                    visible: recentGrid.count > 4
+                                    flat: true
+                                    iconName: root.showMoreRecent ? "go-up" : "go-next"
+                                    text: root.showMoreRecent ? i18n("Show less") : i18n("More")
+                                    onClicked: root.showMoreRecent = !root.showMoreRecent
+                                }
                             }
 
                             GridView {
                                 id: recentGrid
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: Math.min(2, Math.ceil(count / 2)) * cellHeight
+                                Layout.preferredHeight: (root.showMoreRecent
+                                    ? Math.ceil(count / 2) : Math.min(2, Math.ceil(count / 2))) * cellHeight
                                 cellWidth: Math.max(1, Math.floor(width / 2))
                                 cellHeight: Math.max(48, Kirigami.Units.iconSizes.smallMedium + Kirigami.Units.gridUnit)
                                 visible: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) && count > 0
                                 model: (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
                                     ? recentUsage : null
                                 clip: true
-                                interactive: contentHeight > height
+                                // The outer list is the only vertical scroller.
+                                interactive: false
                                 boundsBehavior: Flickable.StopAtBounds
                                 currentIndex: -1
                                 delegate: ListItemDelegate { iconSize: Kirigami.Units.iconSizes.smallMedium }
@@ -569,10 +590,13 @@ Item {
                     root.leftColumnState = 1;
                 const page = root.leftColumnState === 0 ? root.pinnedPage
                            : root.leftColumnState === 1 ? allAppsPage : searchPage;
+                if (!page)
+                    return;
                 if (direction < 0)
                     page.navigateUp();
                 else
                     page.navigateDown();
+                focusActivePageResults();
             }
 
             function focusActivePageResults() {
@@ -695,6 +719,7 @@ Item {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {
                         root.leftColumnState = 0;
+                        allAppsPage.allAppsList.positionViewAtBeginning();
                         startSearch.focusSearch();
                     } else {
                         root.closeMenu();

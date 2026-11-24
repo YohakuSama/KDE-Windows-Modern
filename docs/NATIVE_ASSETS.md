@@ -71,7 +71,7 @@ The Bloom package uses Windows/img0.jpg and img19.jpg for light and dark.
 The lock package uses Screen/img100.jpg; other usable full images are offered
 as stock choices. Duplicate Spotlight and lock-screen images are not copied
 twice; the small Spotlight preview and solid blue placeholder are excluded.
-The public fallback package is retained for installs without owner resources.
+The installer restores the locally imported original Bloom package (both light and dark) after Plasma's layout reset and restart. Run `./install.sh wallpaper` to restore it without changing panels, icons or fonts. If the generated package is missing, the installer tries the remembered original resource source; it reports failure if no original is available. The public compatibility wallpaper is retained, but applying it requires the explicit command `./install.sh wallpaper --allow-fallback`.
 A standalone `./install.sh sessionlock` selects the installed native lock
 package if present, without changing the desktop wallpaper. With no installed
 native lock package it keeps the current lock wallpaper. Native system greeter

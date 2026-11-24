@@ -47,7 +47,7 @@ else
     LAYOUT_DIR="$HOME/.local/share/plasma/layout-templates"
     LOOKFEEL_DIR="$HOME/.local/share/plasma/look-and-feel"
     KVANTUM_DIR="$HOME/.config/Kvantum"
-    WALLPAPER_DIR="$HOME/.local/share/wallpapers"
+    WALLPAPER_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/wallpapers"
     ICONS_DIR="$HOME/.local/share/icons"
     APPLETS_DIR="$HOME/.local/share/plasma/plasmoids"
     TABBOX_DIR="$HOME/.local/share/kwin/tabbox"
@@ -334,7 +334,8 @@ apply_lookandfeel() {
     fi
     info "Applying $id ${reset_flag:+with layout reset}..."
     plasma-apply-lookandfeel -a "$id" $reset_flag
-    bash "$SRC_DIR/scripts/set-wallpaper.sh" || true
+    # Apply the wallpaper only after the caller has completed layout reset
+    # and restarted Plasma. Otherwise the new desktop may overwrite it.
 }
 
 # Set the Application Style (widgetStyle) so Kvantum actually renders.

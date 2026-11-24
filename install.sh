@@ -22,6 +22,7 @@ source "$SCRIPT_DIR/scripts/config-backup.sh"
 # ── Install component by name (non-fatal on failure) ────────────────
 # Components that failed, reported at the end instead of a plain "Done.".
 FAILED_COMPONENTS=()
+WM_TRANSLATIONS_INSTALLED=0
 
 is_nixos() {
     [ -r /etc/os-release ] && grep -Eq '^ID="?nixos"?$' /etc/os-release
@@ -52,6 +53,15 @@ install_component() {
         esac
     fi
     if [ -x "$script" ]; then
+        # Install the applet-domain catalogs before any applet reloads.
+        if [ "$name" != deps ] && [ "$WM_TRANSLATIONS_INSTALLED" -eq 0 ]; then
+            if ! python3 -I "$SRC_DIR/scripts/install-translations.py"; then
+                err "Windows Modern translations could not be installed."
+                FAILED_COMPONENTS+=(translations)
+                return 1
+            fi
+            WM_TRANSLATIONS_INSTALLED=1
+        fi
         bash "$script" || {
             FAILED_COMPONENTS+=("$name")
             err "Component '$name' failed — continuing with remaining components."
@@ -127,6 +137,9 @@ install_everything() {
     # Let the layout script finish writing panels before restarting Plasma.
     sleep 1
     restart_plasmashell
+    if [ "$UID" -ne 0 ]; then
+        bash "$SRC_DIR/scripts/set-wallpaper.sh" || FAILED_COMPONENTS+=(wallpaper)
+    fi
 
     # ── Phase D: behaviour (needs the new panel and a running shell) ──
     info "Windows shortcuts and apps..."
@@ -191,6 +204,7 @@ install_preview() {
     apply_lookandfeel "$(lookfeel_id "$variant")"
     apply_kvantum_engine "$variant"
     restart_plasmashell
+    bash "$SRC_DIR/scripts/set-wallpaper.sh" || FAILED_COMPONENTS+=(wallpaper)
     info "Preview installed. Add Windows Modern Start, Search, Task View and Digital Clock through Add Widgets."
     warn "Existing tray and task manager remain in place; custom C++ plugins and login/lock overlay are outside preview."
 }
@@ -300,6 +314,9 @@ case "${1:-menu}" in
         echo ""
         echo "  Components (install + apply immediately):"
         echo "    themes         Aurorae, colors, Kvantum, Plasma themes, wallpapers"
+        echo "    wallpaper      Restore the imported original Windows 11 Bloom to all desktops"
+        echo "    wallpaper --allow-fallback   Explicitly select the public substitute"
+        echo "    translations   Install the Simplified Chinese applet catalogs"
         echo "    icons          Windows Modern icon pack"
         echo "    lookfeel       Global themes (asks Light/Dark)"
         echo "    layout         Panel layout template"
@@ -342,6 +359,12 @@ case "${1:-menu}" in
         ;;
     transparency)
         bash "$SCRIPT_DIR/scripts/install-transparency.sh" "${2:-}" || FAILED_COMPONENTS+=("transparency")
+        ;;
+    wallpaper)
+        bash "$SCRIPT_DIR/scripts/set-wallpaper.sh" "${2:-}" || FAILED_COMPONENTS+=(wallpaper)
+        ;;
+    translations)
+        python3 -I "$SRC_DIR/scripts/install-translations.py" || FAILED_COMPONENTS+=(translations)
         ;;
     *)
         install_component "$1"

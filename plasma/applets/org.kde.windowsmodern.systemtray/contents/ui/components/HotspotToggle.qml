@@ -12,7 +12,7 @@ Lib.Tile {
     readonly property bool hotspotSupported: handler.hotspotSupported
     readonly property bool hotspotActive: handler.hotspotActive
 
-    label: qsTr("Hotspot")
+    label: i18n("Hotspot")
     iconSource: "network-wireless-hotspot"
     active: hotspotActive
     visible: hotspotSupported || hotspotActive
@@ -24,5 +24,5 @@ Lib.Tile {
             handler.createHotspot();
     }
 
-    tooltipText: hotspotActive ? qsTr("Hotspot — On") : qsTr("Hotspot — Off")
+    tooltipText: hotspotActive ? i18n("Hotspot — On") : i18n("Hotspot — Off")
 }

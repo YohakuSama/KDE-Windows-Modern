@@ -12,7 +12,7 @@ Lib.SplitTile {
     property QtObject btManager: BluezQt.Manager
 
     readonly property bool available: btManager.adapters.length > 0
-    label: qsTr("Bluetooth")
+    label: i18n("Bluetooth")
     toggleAvailable: available
     // Same original Bluetooth glyph in all toggle states; active/disabled
     // appearance comes from the real radio state, not an invented artwork.
@@ -32,12 +32,12 @@ Lib.SplitTile {
 
     tooltipText: {
         if (!toggleAvailable)
-            return qsTr("Bluetooth — Unavailable");
+            return i18n("Bluetooth — Unavailable");
         if (!Funcs.btStatus(btManager).active)
-            return qsTr("Bluetooth — Off");
+            return i18n("Bluetooth — Off");
         if (connectedCount > 0)
-            return qsTr("Bluetooth — %1 connected").arg(connectedCount);
-        return qsTr("Bluetooth — On, not connected");
+            return i18n("Bluetooth — %1 connected", connectedCount);
+        return i18n("Bluetooth — On, not connected");
     }
 
     onRightClicked: btMenu.popup()
@@ -48,17 +48,17 @@ Lib.SplitTile {
         id: btMenu
 
         PlasmaComponents3.MenuItem {
-            text: qsTr("Add new device…")
+            text: i18n("Add new device…")
             icon.name: "list-add"
             onClicked: btExec.exec("bluedevil-wizard")
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Send file…")
+            text: i18n("Send file…")
             icon.name: "document-send"
             onClicked: btExec.exec("bluedevil-sendfile")
         }
         PlasmaComponents3.MenuItem {
-            text: qsTr("Bluetooth settings")
+            text: i18n("Bluetooth settings")
             icon.name: "configure"
             onClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
         }

@@ -62,6 +62,10 @@ RowLayout {
         // No onTextChanged here: searchText aliases this text, so QML already
         // emits searchTextChanged. Emitting it again ran every search twice.
         Keys.onPressed: event => {
+            // Chinese/Japanese/Korean input methods own navigation and
+            // confirmation while their candidate/composition UI is active.
+            if (searchFieldInput.inputMethodComposing)
+                return;
             if (event.key === Qt.Key_Escape) {
                 event.accepted = true;
                 searchBox.searchEscapePressed();
@@ -83,8 +87,14 @@ RowLayout {
                 return;
             }
         }
-        Keys.onReturnPressed: searchBox.searchActivateFirstResult()
-        Keys.onEnterPressed: searchBox.searchActivateFirstResult()
+        Keys.onReturnPressed: event => {
+            if (searchFieldInput.inputMethodComposing) { event.accepted = false; return; }
+            searchBox.searchActivateFirstResult();
+        }
+        Keys.onEnterPressed: event => {
+            if (searchFieldInput.inputMethodComposing) { event.accepted = false; return; }
+            searchBox.searchActivateFirstResult();
+        }
 
         Kirigami.Icon {
             source: "search"
