@@ -46,16 +46,27 @@ def validate(path):
             return path
     raise ValueError("Target outside the desktop user's data/config: " + str(path))
 
+def make_writable(path, *, files=False):
+    # Never chmod a symlink (including Nix store links in copied packages).
+    if path.is_symlink() or not path.exists():
+        return
+    mode = path.stat().st_mode
+    if stat.S_ISDIR(mode):
+        path.chmod(mode | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        for child in path.iterdir():
+            if not child.is_symlink() and (files or child.is_dir()):
+                make_writable(child, files=files)
+    elif files and stat.S_ISREG(mode):
+        path.chmod(mode | stat.S_IRUSR | stat.S_IWUSR)
+
+
 def remove(path):
     if path.is_symlink() or path.is_file():
         path.unlink()
     elif path.is_dir():
-        # Copies of store packages can be mode 0555. Make only real
-        # directories in our copy writable, never symlink targets.
-        for base, dirs, _ in os.walk(path, followlinks=False):
-            base = Path(base)
-            base.chmod(base.stat().st_mode | stat.S_IWUSR | stat.S_IXUSR)
+        make_writable(path)
         shutil.rmtree(path)
+
 
 def copy(src, dst):
     if src.is_symlink():
@@ -65,21 +76,37 @@ def copy(src, dst):
     else:
         shutil.copy2(src, dst)
 
-def replace(src, dst):
+
+def replace(src, dst, *, writable=False):
     dst = validate(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".wm-test-", dir=dst.parent) as tmp:
-        stage = Path(tmp)
-        copy(src, stage / "new")
-        previous = stage / "previous"
+    # Reserve unique names; both renames must stay within dst.parent.
+    # Cross-parent directory renames require write access to the directory
+    # itself on Linux, even when both parents are writable.
+    reservation = Path(tempfile.mkdtemp(prefix=".wm-test-", dir=dst.parent))
+    new = reservation.with_name(reservation.name + "-new")
+    previous = reservation.with_name(reservation.name + "-previous")
+    committed = False
+    try:
+        copy(src, new)
+        if writable:
+            make_writable(new, files=True)
         if exists(dst):
             dst.rename(previous)
         try:
-            (stage / "new").rename(dst)
+            new.rename(dst)
         except BaseException:
             if exists(previous):
                 previous.rename(dst)
             raise
+        committed = True
+    finally:
+        remove(new)
+        # If rollback itself fails, leave the previous directory intact.
+        if committed:
+            remove(previous)
+        reservation.rmdir()
+
 
 def atomic_json(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -190,6 +217,7 @@ def make_staging(root, state):
     icons = state / "staged-icons"
     remove(icons)
     shutil.copytree(root / "icons/windows-modern", icons, symlinks=True)
+    make_writable(icons, files=True)
     for asset in (native / "icons").rglob("*.svg"):
         relative = asset.relative_to(native / "icons")
         dst = icons / relative
@@ -222,10 +250,12 @@ def make_staging(root, state):
         if src.name == "logout":
             # KPackage refuses symlinks outside the logout package.
             shutil.copytree(src, dst, symlinks=False)
+            make_writable(dst, files=True)
         else:
             dst.symlink_to(src.resolve())
     lock = shell / "contents/lockscreen"
     shutil.copytree(root / "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen", lock)
+    make_writable(lock, files=True)
     shutil.copy2(native / "icons/status/avatar-default.svg", lock / "default-avatar.svg")
 
 def all_targets(mapping):
@@ -264,10 +294,9 @@ def main():
     for name in CONFIG_NAMES:
         path = CONFIG / name
         if path.is_symlink() and path.exists():
-            replace(path.resolve(), path)
-            path.chmod(path.stat().st_mode | stat.S_IWUSR)
+            replace(path.resolve(), path, writable=True)
     for dst, src in mapping.items():
-        replace(src, dst)
+        replace(src, dst, writable=True)
     for variant in ("dark", "light"):
         lock = DATA / "plasma/look-and-feel" / ("org.kde.windowsmodern." + variant) / "contents/lockscreen"
         if lock.is_dir():

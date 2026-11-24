@@ -89,24 +89,70 @@ restore_original() {
     start_shell || result=1
     return "$result"
 }
-finish_cleanup() {
-    # Keep a copy of the original snapshot, but remove the test's GC root,
-    # resource cache, generated images, build outputs and exact installed files.
+cleanup_state() {
+    # Only remove the exact test-owned directory. Never follow Nix store
+    # symlinks, and never chmod or delete the archived original snapshot.
+    [ -d "$STATE" ] && [ ! -L "$STATE" ] && [ -f "$STATE/owned-state" ] || return 1
+    local retired
+    retired="$(mktemp -d "$(dirname "$STATE")/.windows-modern-nixos-cleanup.XXXXXX")" || return 1
+    rmdir -- "$retired" || return 1
+    mv -T -- "$STATE" "$retired" || return 1
+    if ! find -P "$retired" -type d -exec chmod u+rwx -- {} + ||
+       ! rm -rf -- "$retired" || [ -e "$retired" ]; then
+        printf '清理未完成，剩余测试文件位于：%s\n' "$retired" >&2
+        return 1
+    fi
+}
+
+# Older versions could successfully restore the desktop, copy its snapshot
+# to the backup directory, then partially fail to delete the read-only
+# logout tree. If the ownership marker has already been removed, do not
+# guess that an unknown directory is disposable: preserve the recognized
+# residue beside the backups and free the active test path.
+recover_legacy_residue() {
+    [ ! -L "$STATE" ] || { echo "测试目录是符号链接，拒绝操作。" >&2; return 1; }
+    [ -e "$STATE" ] || return 0
+    [ -f "$STATE/owned-state" ] && return 0
+    [ -d "$STATE" ] && [ ! -f "$STATE/original/manifest.json" ] || return 1
+    if [ ! -d "$STATE/staged-shell" ] && [ ! -d "$STATE/original/files" ]; then
+        echo "无法确认旧测试目录的来源，已保留。" >&2
+        return 1
+    fi
     local backups="$(dirname "$STATE")/windows-modern-nixos-backups"
-    mkdir -p "$backups"
+    local archived saved
+    [ -d "$backups" ] || return 1
+    archived="$(find -P "$backups" -mindepth 3 -maxdepth 3 -type f -path '*/original/manifest.json' -print -quit)" || return 1
+    [ -n "$archived" ] || { echo "未找到已保存的原始备份，保留旧目录。" >&2; return 1; }
+    saved="$(mktemp -d "$backups/legacy-cleanup.XXXXXX")" || return 1
+    mv -T -- "$STATE" "$saved/residue" || return 1
+    printf '旧版清理残留已隔离：%s\n' "$saved/residue"
+}
+
+finish_cleanup() {
+    # Save the original snapshot before removing test files or GC roots.
+    # Explicitly check every command: rollback runs with errexit disabled.
+    local backups="$(dirname "$STATE")/windows-modern-nixos-backups"
+    mkdir -p "$backups" || return 1
     local saved
-    saved="$(mktemp -d "$backups/$(date +%Y%m%d-%H%M%S).XXXXXX")"
-    cp -a "$STATE/original" "$saved/"
-    if [ -d "$STATE/before-uninstall" ]; then cp -a "$STATE/before-uninstall" "$saved/"; fi
-    # Unlink only the test GC root; do not delete shared Nix store paths.
-    rm -rf -- "$STATE"
+    saved="$(mktemp -d "$backups/$(date +%Y%m%d-%H%M%S).XXXXXX")" || return 1
+    cp -a "$STATE/original" "$saved/" || return 1
+    [ -f "$saved/original/manifest.json" ] || return 1
+    if [ -d "$STATE/before-uninstall" ]; then
+        cp -a "$STATE/before-uninstall" "$saved/" || return 1
+    fi
     printf '原始备份保留于：%s\n' "$saved"
+    cleanup_state || return 1
+}
+
+recover_legacy_residue || {
+    echo "无法安全处理旧测试目录，未修改桌面。" >&2
+    exit 1
 }
 
 if [ "$action" = uninstall ]; then
     if [ ! -f "$STATE/original/manifest.json" ]; then
         if [ -f "$STATE/owned-state" ]; then
-            rm -rf -- "$STATE"
+            cleanup_state || exit 1
             echo "已清理未完成安装的构建链接和临时资源。"
         else
             echo "没有本脚本的安装记录，不删除其他安装或系统文件。"
