@@ -29,8 +29,7 @@ import org.kde.kirigami as Kirigami
 MouseArea {
     id: box
 
-    // The magnifier: markup of a 24 x 24 SVG drawing in currentColor.
-    property string glyph
+    property string iconName: "edit-find-symbolic"
     property string text
     property string description
     property string placeholder
@@ -102,14 +101,18 @@ MouseArea {
             ColorAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
         }
 
-        Glyph {
+        Kirigami.Icon {
             id: magnifier
+            objectName: "searchBoxIcon"
 
             anchors.verticalCenter: parent.verticalCenter
             x: Math.round(box.boxHeight * 12 / 32)
             width: Math.round(box.boxHeight / 2)
             height: width
-            svg: box.glyph
+            source: box.iconName
+            fallback: "edit-find"
+            isMask: true
+            color: Kirigami.Theme.textColor
         }
 
         Text {
