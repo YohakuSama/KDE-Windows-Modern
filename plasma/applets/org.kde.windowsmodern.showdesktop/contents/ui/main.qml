@@ -32,14 +32,15 @@ PlasmoidItem {
 
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
 
-    Layout.minimumWidth: Kirigami.Units.iconSizes.medium
-    Layout.minimumHeight: Kirigami.Units.iconSizes.medium
-
-    Layout.maximumWidth: vertical ? Layout.minimumWidth : Math.max(1, Plasmoid.configuration.size)
-    Layout.maximumHeight: vertical ? Math.max(1, Plasmoid.configuration.size) : Layout.minimumHeight
-
-    Layout.preferredWidth: Layout.maximumWidth
-    Layout.preferredHeight: Layout.maximumHeight
+    // Minimum must never exceed maximum: the old 32px minimum
+    // overrode the 6px sliver and left a blank cell to the bell's right.
+    readonly property int sliverSize: Math.max(1, Plasmoid.configuration.size)
+    Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.medium : sliverSize
+    Layout.minimumHeight: vertical ? sliverSize : Kirigami.Units.iconSizes.medium
+    Layout.maximumWidth: Layout.minimumWidth
+    Layout.maximumHeight: Layout.minimumHeight
+    Layout.preferredWidth: Layout.minimumWidth
+    Layout.preferredHeight: Layout.minimumHeight
 
     Plasmoid.constraintHints: Plasmoid.CanFillArea
 
