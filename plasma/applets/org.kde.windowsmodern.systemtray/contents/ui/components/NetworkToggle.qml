@@ -60,18 +60,20 @@ Lib.SplitTile {
         id: networkMenu
 
         PlasmaComponents3.MenuItem {
-            text: i18n("Open Wi-Fi settings")
+            text: tile.wifiAvailable ? i18n("Open Wi-Fi settings") : i18n("Network settings")
             icon.name: "configure"
             onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
         PlasmaComponents3.MenuItem {
             text: i18n("Create hotspot…")
+            visible: tile.wifiAvailable
             icon.name: "network-wireless-hotspot"
             enabled: handler.hotspotSupported && !handler.hotspotActive
             onClicked: handler.createHotspot()
         }
         PlasmaComponents3.MenuItem {
             text: i18n("Connect to hidden network…")
+            visible: tile.wifiAvailable
             icon.name: "network-wireless-secure"
             onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }

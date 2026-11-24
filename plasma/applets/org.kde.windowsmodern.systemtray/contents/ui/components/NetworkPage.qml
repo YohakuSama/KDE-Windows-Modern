@@ -14,7 +14,7 @@ Lib.DetailPage {
     showSwitch: wifiAvailable
     switchEnabled: wifiAdministrativelyEnabled
     switchChecked: page.wifiOn
-    emptyText: !page.wifiAvailable ? i18n("No Wi-Fi adapter available")
+    emptyText: !page.wifiAvailable ? i18n("No network connection")
         : page.wifiOn ? i18n("No available networks") : i18n("Wi-Fi is off")
 
     footer: Lib.MoreSettingsLink {
@@ -80,6 +80,7 @@ Lib.DetailPage {
 
         function statusText() {
             if (connectionState === PlasmaNM.Enums.Activated) {
+                if (Type !== PlasmaNM.Enums.Wireless) return i18n("Connected");
                 return SecurityType === PlasmaNM.Enums.NoneSecurity ? i18n("Connected, open") : i18n("Connected, secured");
             }
             if (connectionState === PlasmaNM.Enums.Activating) {

@@ -129,6 +129,22 @@ if [ "$action" = uninstall ]; then
     exit 0
 fi
 
+if [ -f "$STATE/original/manifest.json" ]; then
+    echo "检测到上一次测试安装，先备份并恢复原桌面，再自动安装新版本。"
+    PROFILE="$(readlink -f "$STATE/runtime")"
+    PYTHON="$PROFILE/bin/python3"
+    [ -x "$PYTHON" ] || { echo "旧测试运行时缺失，保留备份，停止更新。" >&2; exit 1; }
+    export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+    stop_shell
+    if ! "$PYTHON" "$ROOT/scripts/nixos-test-state.py" snapshot-current --root "$ROOT" --state "$STATE" --profile "$PROFILE"; then
+        start_shell || true
+        echo "更新前备份失败，未删除测试文件。" >&2
+        exit 1
+    fi
+    restore_original || { echo "旧测试恢复未完成，已保留备份。" >&2; exit 1; }
+    finish_cleanup
+fi
+
 for cmd in nix-build nix systemctl busctl plasmashell plasma-apply-lookandfeel plasma-apply-wallpaperimage \
            kwriteconfig6 kreadconfig6 kbuildsycoca6; do
     command -v "$cmd" >/dev/null || { echo "缺少当前 Plasma 系统命令：$cmd" >&2; exit 1; }
@@ -220,6 +236,7 @@ rollback() {
 trap 'exit 130' INT
 trap 'exit 143' TERM
 trap 'rc=$?; if [ "$rc" -ne 0 ]; then rollback "$rc"; fi' EXIT
+echo "正在自动备份原始桌面配置和将被替换的资源……"
 stop_shell
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" install --root "$ROOT" --state "$STATE" --profile "$PROFILE"
 set_profile_env "$plugin"

@@ -13,6 +13,7 @@ import org.kde.kirigami as Kirigami
 
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.plasmoid
+import org.kde.plasma.networkmanagement as PlasmaNM
 
 AbstractItem {
     id: plasmoidContainer
@@ -139,8 +140,33 @@ AbstractItem {
     // scale its visual host, not the tray cell or the mouse hit area.
     // For all other applets (including hidden items), the host is
     // identical to the original iconContainer geometry.
+    // Use NetworkManager's live connection state, not a static Wi-Fi glyph.
+    // Keep the native applet alive for tooltips, menus and interaction.
+    Loader {
+        id: networkIconLoader
+        parent: plasmoidContainer.iconContainer
+        anchors.centerIn: parent
+        width: parent.width
+        height: parent.height
+        active: plasmoidContainer.groupedQuickSettings
+            && plasmoidContainer.itemId === "org.kde.plasma.networkmanagement"
+        sourceComponent: Item {
+            PlasmaNM.ConnectionIcon { id: liveConnection }
+            Kirigami.Icon {
+                anchors.fill: parent
+                source: {
+                    const icon = liveConnection.connectionIcon;
+                    if (!icon) return "network-unavailable-symbolic";
+                    return icon.endsWith("-symbolic") ? icon : icon + "-symbolic";
+                }
+                color: Kirigami.Theme.textColor
+            }
+        }
+    }
+
     Item {
         id: nativeAppletHost
+        visible: networkIconLoader.status !== Loader.Ready
         parent: plasmoidContainer.iconContainer
         anchors.centerIn: parent
         width: plasmoidContainer.groupedQuickSettings
