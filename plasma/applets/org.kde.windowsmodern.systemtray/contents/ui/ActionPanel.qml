@@ -39,7 +39,6 @@ ColumnLayout {
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
         toggleViewport.cancelDrag();
-        scrollMotion.stop();
         toggleViewport.cancelFlick();
         toggleViewport.contentY = 0;
     }
@@ -124,45 +123,25 @@ ColumnLayout {
                 return tiles.find(tile => tile.orderKey === key) || null;
             }
 
-            function scrollTo(offset) {
-                scrollMotion.stop();
-                const destination = Order.clampOffset(offset, maxOffset);
-                if (Math.abs(destination - contentY) < 1 || Kirigami.Units.shortDuration === 0) {
-                    contentY = destination;
-                    return;
-                }
-                scrollMotion.from = contentY;
-                scrollMotion.to = destination;
-                scrollMotion.start();
-            }
-
-            function page(direction) {
-                const start = scrollMotion.running ? scrollMotion.to : contentY;
-                cancelFlick();
-                scrollTo(start + direction * 2 * rowStride);
-            }
-
             function setOffsetImmediately(offset) {
-                scrollMotion.stop();
                 cancelFlick();
                 contentY = Order.clampOffset(offset, maxOffset);
             }
 
-            function scrollWheel(event) {
-                const delta = Order.wheelDistance(event.pixelDelta.y, event.angleDelta.y, rowStride);
-                if (delta === 0 || !hasMoreRows || dragKey !== "") {
-                    event.accepted = false;
-                    return;
-                }
-                setOffsetImmediately(contentY - delta);
-                event.accepted = true;
+            function page(direction) {
+                setOffsetImmediately(contentY + direction * height);
             }
 
-            WheelHandler {
-                target: null
-                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                enabled: toggleViewport.hasMoreRows && toggleViewport.dragKey === ""
-                onWheel: event => toggleViewport.scrollWheel(event)
+            // The same native wheel event filter used by Plasma Kickoff.
+            // It handles both the grid and the attached vertical scrollbar,
+            // including angle/pixel delta conversion on Wayland.
+            Kirigami.WheelHandler {
+                target: toggleViewport.hasMoreRows && toggleViewport.dragKey === ""
+                    ? toggleViewport : null
+                filterMouseEvents: true
+                blockTargetWheel: true
+                keyNavigationEnabled: false
+                verticalStepSize: Math.max(120, toggleViewport.rowStride)
             }
 
             function ensureVisible(key) {
@@ -172,9 +151,9 @@ ColumnLayout {
                 const top = Math.floor(index / 3) * rowStride;
                 const bottom = top + rowHeight;
                 if (top < contentY)
-                    scrollTo(top);
+                    setOffsetImmediately(top);
                 else if (bottom > contentY + height)
-                    scrollTo(bottom - height);
+                    setOffsetImmediately(bottom - height);
             }
 
             function saveMove(key, to) {
@@ -218,7 +197,6 @@ ColumnLayout {
                 dropIndex = visibleKeys.indexOf(key);
                 dragKey = key;
                 cancelFlick();
-                scrollMotion.stop();
             }
 
             function updateDrag(key, position) {
@@ -256,18 +234,6 @@ ColumnLayout {
                     });
                 }
             }
-            onMovementStarted: scrollMotion.stop()
-            // Preserve the precise wheel, touchpad or thumb position; do not
-            // snap back to a row when a gesture stops.
-
-            NumberAnimation {
-                id: scrollMotion
-                target: toggleViewport
-                property: "contentY"
-                duration: Math.min(100, Kirigami.Units.shortDuration)
-                easing.type: Easing.OutCubic
-            }
-
             // Dragging near the edge reaches later rows without requiring
             // the user to drop the tile and scroll separately.
             Timer {
@@ -390,6 +356,36 @@ ColumnLayout {
             }
 
 
+            // A real attached Qt Quick Controls scrollbar: its position,
+            // size and thumb drag are driven by the Flickable itself.
+            // Reparent only the visual rail, as supported by Qt.
+            QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+                id: tileScrollBar
+                parent: scrollTrack
+                anchors.fill: parent
+                policy: QQC2.ScrollBar.AlwaysOn
+                hoverEnabled: true
+                leftPadding: Math.max(0, (width - 8) / 2)
+                rightPadding: leftPadding
+                topPadding: 0
+                bottomPadding: 0
+                minimumSize: Math.min(1, 24 / Math.max(1, height))
+                stepSize: Math.max(0.01, size * 0.9)
+                contentItem: Rectangle {
+                    implicitWidth: 8
+                    radius: width / 2
+                    color: Kirigami.Theme.textColor
+                    opacity: tileScrollBar.pressed ? 0.8 : tileScrollBar.hovered ? 0.65 : 0.45
+                }
+                background: Rectangle {
+                    width: 2
+                    x: (parent.width - width) / 2
+                    radius: 1
+                    color: Kirigami.Theme.textColor
+                    opacity: 0.16
+                }
+            }
+
         }
 
         // The rail is reserved from the row count, not scrollbar geometry,
@@ -420,55 +416,7 @@ ColumnLayout {
                 id: scrollTrack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.minimumHeight: 8
-                readonly property real thumbHeight: Math.min(height, Math.max(24,
-                    height * toggleViewport.height / Math.max(1, toggleViewport.contentHeight)))
-                readonly property real thumbTravel: Math.max(0, height - thumbHeight)
-                readonly property real thumbY: toggleViewport.maxOffset > 0
-                    ? thumbTravel * toggleViewport.contentY / toggleViewport.maxOffset : 0
-
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 2
-                    height: parent.height
-                    radius: 1
-                    color: Kirigami.Theme.textColor
-                    opacity: 0.16
-                }
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: scrollTrack.thumbY
-                    width: railPointer.containsMouse || railPointer.pressed ? 8 : 4
-                    height: scrollTrack.thumbHeight
-                    radius: width / 2
-                    color: Kirigami.Theme.textColor
-                    opacity: railPointer.pressed ? 0.8 : railPointer.containsMouse ? 0.65 : 0.45
-                }
-
-                // The entire rail is the hit target. A drag across its
-                // available travel maps directly to the full content range.
-                // No smoothing animation, repeated paging or row snap.
-                MouseArea {
-                    id: railPointer
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    acceptedButtons: Qt.LeftButton
-                    enabled: toggleViewport.hasMoreRows && toggleViewport.dragKey === ""
-                    property real grabOffset: 0
-                    onPressed: mouse => {
-                        const y = mouse.y;
-                        grabOffset = y >= scrollTrack.thumbY && y <= scrollTrack.thumbY + scrollTrack.thumbHeight
-                            ? y - scrollTrack.thumbY : scrollTrack.thumbHeight / 2;
-                        toggleViewport.setOffsetImmediately(Order.thumbOffset(y, grabOffset,
-                            scrollTrack.height, scrollTrack.thumbHeight, toggleViewport.maxOffset));
-                    }
-                    onPositionChanged: mouse => {
-                        if (pressed)
-                            toggleViewport.setOffsetImmediately(Order.thumbOffset(mouse.y, grabOffset,
-                                scrollTrack.height, scrollTrack.thumbHeight, toggleViewport.maxOffset));
-                    }
-                    onWheel: wheel => toggleViewport.scrollWheel(wheel)
-                }
+                Layout.minimumHeight: 24
             }
             PlasmaComponents3.ToolButton {
                 id: nextPageButton

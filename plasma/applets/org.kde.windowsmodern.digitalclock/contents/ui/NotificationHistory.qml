@@ -117,6 +117,13 @@ ColumnLayout {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
+        Kirigami.WheelHandler {
+            target: list
+            filterMouseEvents: true
+            blockTargetWheel: false
+            keyNavigationEnabled: false
+            verticalStepSize: 120
+        }
 
         delegate: Rectangle {
             id: card

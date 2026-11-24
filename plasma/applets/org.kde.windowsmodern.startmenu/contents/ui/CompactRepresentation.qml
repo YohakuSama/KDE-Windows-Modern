@@ -35,13 +35,12 @@ Item {
     Accessible.description: i18nc("@info:tooltip", "Open the Start menu")
     Accessible.onPressAction: if (dashWindow) dashWindow.toggleMenu()
 
-    // The bundled default logo has a tight viewBox around the original
-    // Windows-style artwork. Do not size it from the padded icon theme SVG
-    // or the much smaller system-tray glyphs.
+    // Use the same 24px icon canvas as task icons. The default logo keeps
+    // its original 4px optical inset on the 64px artwork canvas.
     readonly property bool useDefaultLogo: !useCustomButtonImage && Plasmoid.configuration.icon === "start-here"
     readonly property int cellThickness: vertical ? width : height
     // Microsoft Windows 11 taskbar icon reference: 24 logical pixels.
-    // The default SVG has a tight viewBox; no extra enlargement or shrink.
+    // Retain the original optical inset; no extra scale transform.
     readonly property int startIconSize: inPanel
         ? Math.max(1, Math.min(24, cellThickness - 4, width, height))
         : Math.max(1, Math.min(width, height))

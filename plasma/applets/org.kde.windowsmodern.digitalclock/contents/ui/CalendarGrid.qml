@@ -15,6 +15,7 @@ import "Calendar.js" as Calendar
 
 Item {
     id: calendarGrid
+    required property var calendarController
 
     // Square cells: height derived from width, clamped to avoid negative/zero sizes.
     readonly property real cellWidth: Math.max(28, (width - (columns - 1) * spacing) / columns)
@@ -43,11 +44,11 @@ Item {
             id: gridRepeater
 
             model: Calendar.generateMonthGrid(
-                calendarView.displayedYear,
-                calendarView.displayedMonth,
-                calendarView.today,
-                calendarView.selectedDate,
-                calendarView.firstDayOfWeek)
+                calendarGrid.calendarController.displayedYear,
+                calendarGrid.calendarController.displayedMonth,
+                calendarGrid.calendarController.today,
+                calendarGrid.calendarController.selectedDate,
+                calendarGrid.calendarController.firstDayOfWeek)
 
             delegate: CalendarDayDelegate {
                 required property var modelData
@@ -55,9 +56,10 @@ Item {
                 width: calendarGrid.cellWidth
                 height: calendarGrid.cellHeight
 
+                calendarController: calendarGrid.calendarController
                 dayData: modelData
-                daysModel: calendarView.calendarBackend.daysModel
-                eventsRevision: calendarView.eventsRevision
+                daysModel: calendarGrid.calendarController.calendarBackend.daysModel
+                eventsRevision: calendarGrid.calendarController.eventsRevision
             }
         }
 

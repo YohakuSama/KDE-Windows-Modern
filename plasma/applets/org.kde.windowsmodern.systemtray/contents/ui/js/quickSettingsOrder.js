@@ -45,16 +45,3 @@ function slotAt(x, y, width, stride, count) {
     return Math.min(count - 1, Math.floor(y / stride) * 3 + column);
 }
 
-// Full thumb travel maps to the complete scroll range.
-function thumbOffset(pointerY, grab, trackHeight, thumbHeight, maximum) {
-    const travel = Math.max(0, trackHeight - thumbHeight);
-    return travel > 0 ? clampOffset((pointerY - grab) / travel * maximum, maximum) : 0;
-}
-
-// High-resolution touchpad movement is continuous; a physical wheel
-// detent advances one complete quick-settings row.
-function wheelDistance(pixelDelta, angleDelta, stride) {
-    if (pixelDelta !== 0 && Math.abs(angleDelta) < 120)
-        return pixelDelta;
-    return angleDelta !== 0 ? angleDelta / 120 * stride : pixelDelta;
-}

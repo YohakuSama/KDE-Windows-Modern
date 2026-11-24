@@ -25,20 +25,17 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.ShadowBackground | PlasmaCore.Types.ConfigurableBackground
 
     // Tooltips must not cover the notification/calendar flyout.
-    readonly property bool flyoutOpen: clockPopup.visible
+    readonly property bool flyoutOpen: expanded
+    readonly property var popupScreenGeometry: Plasmoid.screenGeometry
+    readonly property real popupPanelExtent: compactRepresentationItem
+        ? (Plasmoid.formFactor === PlasmaCore.Types.Vertical
+            ? compactRepresentationItem.width : compactRepresentationItem.height) : 48
     toolTipMainText: flyoutOpen ? "" : i18n("Clock")
     toolTipSubText: flyoutOpen ? "" : notificationStatusText
     Plasmoid.status: flyoutOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
 
     function toggleFlyout(previous = flyoutOpen) {
-        if (previous) {
-            clockPopup.visible = false;
-        } else {
-            clockPopup.applyGeometry();
-            clockPopup.visible = true;
-            clockGeometryProbe.attempts = 0;
-            clockGeometryProbe.restart();
-        }
+        expanded = !previous;
     }
 
     readonly property string currentTimeZone: currentClock.timeZone
@@ -208,96 +205,17 @@ PlasmoidItem {
         root.timeFormatWithSeconds = resultSec;
     }
 
-    preferredRepresentation: compactRep
-
-    Component {
-        id: compactRep
-        CompactRepresentation {
-            plasmoidItem: root
-        }
+    // Match Plasma's native digital-clock implementation. Do not use the
+    // compact icon as the full representation or create a second window.
+    preferredRepresentation: compactRepresentation
+    compactRepresentation: CompactRepresentation {
+        plasmoidItem: root
     }
-
-    compactRepresentation: compactRep
-    fullRepresentation: compactRep
-
-    // Own a native anchored window, as the tray does. The desktop shell's
-    // automatic full-representation popup must not create a second window
-    // or restore stale tiny dimensions. The applet still owns the shortcut.
-    activationTogglesExpanded: false
-
-    Connections {
-        target: Plasmoid
-        function onActivated() { root.toggleFlyout(); }
+    fullRepresentation: ExpandedRepresentation {
+        clockApplet: root
     }
-
-    PlasmaCore.AppletPopup {
-        id: clockPopup
-        objectName: "windowsmodernClockPopup"
-        visible: false
-        animated: false
-        visualParent: root.compactRepresentationItem ?? root
-        popupDirection: {
-            switch (Plasmoid.location) {
-                case PlasmaCore.Types.TopEdge: return Qt.BottomEdge;
-                case PlasmaCore.Types.LeftEdge: return Qt.RightEdge;
-                case PlasmaCore.Types.RightEdge: return Qt.LeftEdge;
-                default: return Qt.TopEdge;
-            }
-        }
-        margin: Math.max(8, Kirigami.Units.smallSpacing)
-        floating: Plasmoid.location === PlasmaCore.Types.Desktop
-        removeBorderStrategy: PlasmaCore.AppletPopup.AtScreenEdges
-        hideOnWindowDeactivate: !Plasmoid.configuration.pin
-        backgroundHints: (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersOpaqueBackground)
-            ? PlasmaCore.AppletPopup.SolidBackground : PlasmaCore.AppletPopup.StandardBackground
-
-        // Deliberately no appletInterface: no saved window size.
-        readonly property int wantedWidth: Math.ceil(clockContent.implicitWidth + leftPadding + rightPadding)
-        readonly property int wantedHeight: Math.ceil(clockContent.implicitHeight + topPadding + bottomPadding)
-        function applyGeometry() {
-            width = wantedWidth;
-            height = wantedHeight;
-        }
-        onWantedWidthChanged: if (visible) Qt.callLater(applyGeometry)
-        onWantedHeightChanged: if (visible) Qt.callLater(applyGeometry)
-        onVisibleChanged: {
-            if (visible) {
-                requestActivate();
-                Qt.callLater(() => clockContent.forceActiveFocus());
-            }
-        }
-
-        mainItem: ExpandedRepresentation {
-            id: clockContent
-            clockApplet: root
-            Keys.onEscapePressed: event => {
-                event.accepted = true;
-                clockPopup.visible = false;
-            }
-        }
-
-        Timer {
-            id: clockGeometryProbe
-            interval: 180
-            repeat: true
-            property int attempts: 0
-            onTriggered: {
-                if (!clockPopup.visible) { stop(); return; }
-                attempts++;
-                const ok = Math.abs(clockPopup.width - clockPopup.wantedWidth) <= 2
-                    && Math.abs(clockPopup.height - clockPopup.wantedHeight) <= 2
-                    && clockContent.height >= clockContent.implicitHeight - 2;
-                if (ok || attempts >= 3) {
-                    console.info("WM_POPUP clock", ok ? "OK" : "SIZE_MISMATCH",
-                        clockPopup.width, clockPopup.height, clockContent.width, clockContent.height,
-                        "expected", clockPopup.wantedWidth, clockPopup.wantedHeight);
-                    stop();
-                } else {
-                    clockPopup.applyGeometry();
-                }
-            }
-        }
-    }
+    activationTogglesExpanded: true
+    hideOnWindowDeactivate: !Plasmoid.configuration.pin
 
     Connections {
         target: Plasmoid.configuration
