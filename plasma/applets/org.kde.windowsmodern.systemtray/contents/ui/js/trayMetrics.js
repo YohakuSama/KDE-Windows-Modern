@@ -43,3 +43,30 @@ function cellLength(size, compact, spacing) {
 function visualIndex(index, count, vertical, reversed) {
     return vertical && reversed ? Math.max(0, count - index - 1) : index;
 }
+
+ // Group by physical adjacency, after the Qt layout has positioned the
+ // delegates. Non-system icons always break a run (including in RTL).
+function groupRects(cells, vertical) {
+    const ordered = cells.filter(c => c.width > 0 && c.height > 0)
+        .slice().sort((a, b) => vertical ? a.y - b.y : a.x - b.x);
+    const result = [];
+    let run = null;
+    for (const c of ordered) {
+        if (!c.systemGroup) {
+            run = null;
+            continue;
+        }
+        if (!run) {
+            run = {x: c.x, y: c.y, width: c.width, height: c.height};
+            result.push(run);
+        } else {
+            const right = Math.max(run.x + run.width, c.x + c.width);
+            const bottom = Math.max(run.y + run.height, c.y + c.height);
+            run.x = Math.min(run.x, c.x);
+            run.y = Math.min(run.y, c.y);
+            run.width = right - run.x;
+            run.height = bottom - run.y;
+        }
+    }
+    return result;
+}

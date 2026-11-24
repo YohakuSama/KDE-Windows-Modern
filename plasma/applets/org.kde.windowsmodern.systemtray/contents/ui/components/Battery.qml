@@ -1,9 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-import QtCore
 import org.kde.plasma.private.battery
+import org.kde.plasma.private.batterymonitor
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
-import "../js/funcs.js" as Funcs
 
 Item {
     id: root
@@ -11,45 +11,45 @@ Item {
     property alias hasBattery: batteryControl.hasCumulative
     property alias percent: batteryControl.percent
     property alias pluggedIn: batteryControl.pluggedIn
-    readonly property bool percentKnown: Number.isFinite(percent) && percent >= 0
+    readonly property bool percentKnown: hasBattery && Number.isFinite(percent) && percent >= 0
+    readonly property bool charging: pluggedIn && (batteryControl.state === BatteryControlModel.Charging
+        || batteryControl.state === BatteryControlModel.FullyCharged)
+
+    property bool showPercentage: true
+    property real glyphSize: 16
+    property real labelPixelSize: 12
+    property real percentageWidth: 0
 
     implicitWidth: row.implicitWidth
-    implicitHeight: 16
+    implicitHeight: Math.max(glyphSize, row.implicitHeight)
 
-    BatteryControlModel {
-        id: batteryControl
-    }
+    BatteryControlModel { id: batteryControl }
+    PowerProfilesControl { id: powerProfiles }
 
     Row {
         id: row
-        anchors.fill: parent
+        anchors.centerIn: parent
         spacing: 3
 
-        Kirigami.Icon {
-            width: 20
-            height: 20
+        BatteryGlyph {
+            glyphSize: root.glyphSize
+            width: implicitWidth
+            height: implicitHeight
             anchors.verticalCenter: parent.verticalCenter
-            roundToIconSize: false
-            source: {
-                const name = Funcs.batteryIconName(batteryControl.percent, batteryControl.pluggedIn);
-                const exact = StandardPaths.locate(StandardPaths.GenericDataLocation,
-                    "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
-                if (String(exact).length > 0)
-                    return exact;
-                const fallback = StandardPaths.locate(StandardPaths.GenericDataLocation,
-                    "icons/windows-modern/status/" + name.replace(/-symbolic$/, "") + ".svg", StandardPaths.LocateFile);
-                return String(fallback).length > 0 ? fallback : name;
-            }
-            color: Kirigami.Theme.textColor
-            isMask: true
+            percent: root.percentKnown ? root.percent : -1
+            charging: root.charging
+            saver: powerProfiles.activeProfile === "power-saver"
         }
 
         PlasmaComponents3.Label {
-            visible: root.hasBattery && root.percentKnown
-            text: i18n("%1%", batteryControl.percent)
+            visible: root.showPercentage && root.percentKnown
+            text: i18n("%1%", Math.round(root.percent))
+            width: Math.max(implicitWidth, root.percentageWidth)
             color: Kirigami.Theme.textColor
-            opacity: 0.9
-            font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1
+            font.family: Kirigami.Theme.defaultFont.family
+            font.pixelSize: root.labelPixelSize
+            font.features: { "tnum": 1 }
+            horizontalAlignment: Text.AlignLeft
             anchors.verticalCenter: parent.verticalCenter
         }
     }

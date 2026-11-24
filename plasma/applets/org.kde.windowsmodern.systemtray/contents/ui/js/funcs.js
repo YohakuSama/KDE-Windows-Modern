@@ -41,3 +41,16 @@ function batteryIconName(percent, pluggedIn) {
     return "battery-" + String(level).padStart(3, "0")
         + (pluggedIn ? "-charging" : "") + "-symbolic";
 }
+
+ // Visual state is derived from the power backend, never a fake level.
+function batteryVisualState(percent, charging, saver) {
+    if (!Number.isFinite(percent) || percent < 0) return "unknown";
+    if (charging) return "charging";
+    if (percent <= 5) return "critical";
+    if (saver) return "saver";
+    return "normal";
+}
+
+function batteryFillFraction(percent) {
+    return Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) / 100 : 0;
+}

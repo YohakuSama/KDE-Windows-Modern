@@ -31,6 +31,7 @@ KCMUtils.ScrollViewKCM {
 
     property bool cfg_scaleIconsToFit
     property int cfg_iconSpacing
+    property bool cfg_showBatteryPercentage
     property bool cfg_reverseIconOrder
     property bool cfg_showAllItems
     property list<string> cfg_shownItems: []
@@ -261,6 +262,12 @@ KCMUtils.ScrollViewKCM {
                 onActivated: index => {
                     iconsPage.cfg_iconSpacing = model[currentIndex]["spacing"];
                 }
+            }
+
+            QQC2.CheckBox {
+                text: i18n("Show battery percentage")
+                checked: iconsPage.cfg_showBatteryPercentage
+                onToggled: iconsPage.cfg_showBatteryPercentage = checked
             }
 
             QQC2.ComboBox {

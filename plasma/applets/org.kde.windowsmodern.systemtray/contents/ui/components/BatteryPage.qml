@@ -96,11 +96,13 @@ Lib.Page {
             Layout.fillWidth: true
             spacing: 8
 
-            Kirigami.Icon {
-                Layout.preferredWidth: 20
-                Layout.preferredHeight: 20
-                source: page.hasBattery ? Funcs.batteryIconName(batteryControl.percent, batteryControl.pluggedIn)
-                    : "battery-missing-symbolic"
+            BatteryGlyph {
+                glyphSize: 20
+                Layout.preferredWidth: implicitWidth
+                Layout.preferredHeight: implicitHeight
+                percent: page.percentKnown ? batteryControl.percent : -1
+                charging: batteryControl.pluggedIn && (page.isCharging || page.isFull)
+                saver: powerProfiles.activeProfile === "power-saver"
             }
 
             PlasmaComponents3.Label {
