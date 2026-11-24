@@ -32,6 +32,7 @@ Item {
     // it — delegates inside Milou.ResultsView can't resolve that id
     // directly due to Qt 6 Repeater delegate scoping.
     signal contextMenuRequested(var actions, real globalX, real globalY, var context)
+    signal focusSearchRequested
 
     // Track collapsed categories as a comma-separated string so QML
     // binding updates fire reliably (var objects don't notify on nested
@@ -82,7 +83,8 @@ Item {
 
     function tryActivate(row, col) {
         if (resultsView.count > 0) {
-            resultsView.currentIndex = 0;
+            resultsView.currentIndex = Math.max(0, Math.min(row, resultsView.count - 1));
+            resultsView.forceActiveFocus();
         }
     }
 
@@ -178,9 +180,9 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
+                        const q = resultsView.queryString;
                         resultsView.singleRunner = modelData.runner;
-                        // Force re-query: reset and re-apply the query
-                        var q = bottomBarContent.searchText;
+                        // Force re-query using the current query, not a removed UI id.
                         resultsView.queryString = "";
                         resultsView.queryString = q;
                     }
@@ -434,10 +436,13 @@ Item {
             visible: !searchPage.isCollapsed(resultDelegate.ListView.section)
         }
 
+        Keys.onReturnPressed: searchPage.activateCurrent()
+        Keys.onEnterPressed: searchPage.activateCurrent()
+
         Keys.onUpPressed: event => {
             if (currentIndex <= 0) {
                 event.accepted = true;
-                bottomBarContent.focusSearch();
+                searchPage.focusSearchRequested();
             }
         }
     }

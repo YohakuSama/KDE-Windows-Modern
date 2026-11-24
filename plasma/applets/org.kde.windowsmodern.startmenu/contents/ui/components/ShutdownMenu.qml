@@ -2,7 +2,7 @@
  *   License: GPL-3.0-or-later
  *   Author: Jeysef
  *
- *   Power options popup for the Start footer power button.  Rendered as
+ *   Account and power options popup for the Start footer. Rendered as
  *   an in-dialog floating panel (NOT a separate PlasmaComponents3.Menu
  *   window) so the parent dialog's hideOnWindowDeactivate does not fire
  *   and close the whole start menu.
@@ -16,14 +16,35 @@ import org.kde.plasma.private.sessions
 import org.kde.kirigami as Kirigami
 
 import "../code/theme.js" as Theme
+import "../code/footerNavigation.js" as FooterNavigation
 
 Item {
     id: root
 
     property Item visualParent
+    property bool accountMode: false
     readonly property bool opened: popup.visible
+    readonly property var options: [settingsOption, lockOption, switchOption, logoutOption,
+                                    sleepOption, shutdownOption, rebootOption]
 
     signal closed
+    signal accountSettingsRequested
+    signal actionInvoked
+
+    function moveFocus(direction) {
+        const available = options.map(option => option.visible && option.optionEnabled);
+        const current = options.findIndex(option => option.activeFocus);
+        const next = FooterNavigation.nextEnabledIndex(available, current, direction);
+        if (next >= 0)
+            options[next].forceActiveFocus();
+        else
+            popup.forceActiveFocus();
+    }
+
+    function finishAction() {
+        root.close();
+        root.actionInvoked();
+    }
 
     SessionManagement { id: sessionManager }
 
@@ -71,63 +92,106 @@ Item {
             spacing: 0
 
             PowerOption {
+                id: settingsOption
+                visible: root.accountMode
+                iconSource: "configure"
+                label: i18n("Account settings")
+                onActivated: {
+                    root.close();
+                    root.accountSettingsRequested();
+                }
+                onNavigationRequested: direction => root.moveFocus(direction)
+            }
+
+            PowerOption {
                 id: lockOption
+                visible: root.accountMode
                 iconSource: "system-lock-screen"
                 label: i18n("Lock")
                 optionEnabled: sessionManager.canLock
                 onActivated: {
-                    sessionManager.lock()
-                    root.close()
+                    sessionManager.lock();
+                    root.finishAction();
                 }
+                onNavigationRequested: direction => root.moveFocus(direction)
             }
 
             PowerOption {
+                id: switchOption
+                visible: root.accountMode
+                iconSource: "system-switch-user"
+                label: i18n("Switch user")
+                optionEnabled: sessionManager.canSwitchUser && sessionManager.canLock
+                onActivated: {
+                    sessionManager.switchUser();
+                    root.finishAction();
+                }
+                onNavigationRequested: direction => root.moveFocus(direction)
+            }
+
+            PowerOption {
+                id: logoutOption
+                visible: root.accountMode
                 iconSource: "system-log-out"
-                label: i18n("Log out")
+                label: i18n("Sign out")
                 optionEnabled: sessionManager.canLogout
                 onActivated: {
-                    sessionManager.requestLogout()
-                    root.close()
+                    sessionManager.requestLogout();
+                    root.finishAction();
                 }
+                onNavigationRequested: direction => root.moveFocus(direction)
             }
 
             PowerOption {
+                id: sleepOption
+                visible: !root.accountMode
                 iconSource: "system-suspend"
                 label: i18n("Sleep")
                 optionEnabled: sessionManager.canSuspend
                 onActivated: {
-                    sessionManager.suspend()
-                    root.close()
+                    sessionManager.suspend();
+                    root.finishAction();
                 }
+                onNavigationRequested: direction => root.moveFocus(direction)
             }
 
             PowerOption {
-                iconSource: "system-reboot"
-                label: i18n("Restart")
-                optionEnabled: sessionManager.canReboot
-                onActivated: {
-                    sessionManager.requestReboot()
-                    root.close()
-                }
-            }
-
-            // Separator
-            Rectangle {
-                width: powerColumn.width
-                height: 1
-                color: Qt.rgba(Kirigami.Theme.textColor.r,
-                               Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, Theme.separatorOpacity)
-            }
-
-            PowerOption {
+                id: shutdownOption
+                visible: !root.accountMode
                 iconSource: "system-shutdown"
                 label: i18n("Shut down")
                 optionEnabled: sessionManager.canShutdown
                 onActivated: {
-                    sessionManager.requestShutdown()
-                    root.close()
+                    sessionManager.requestShutdown();
+                    root.finishAction();
                 }
+                onNavigationRequested: direction => root.moveFocus(direction)
+            }
+
+            PowerOption {
+                id: rebootOption
+                visible: !root.accountMode
+                iconSource: "system-reboot"
+                label: i18n("Restart")
+                optionEnabled: sessionManager.canReboot
+                onActivated: {
+                    sessionManager.requestReboot();
+                    root.finishAction();
+                }
+                onNavigationRequested: direction => root.moveFocus(direction)
+            }
+        }
+
+        // Consume unhandled keys while the popup owns focus, rather than
+        // accidentally sending printable characters or shortcuts to Start search.
+        Keys.onPressed: event => {
+            event.accepted = true;
+            if (event.key === Qt.Key_Escape) {
+                root.close();
+            } else if (event.key === Qt.Key_Up || event.key === Qt.Key_Backtab) {
+                root.moveFocus(-1);
+            } else if (event.key === Qt.Key_Down || event.key === Qt.Key_Tab) {
+                root.moveFocus(event.modifiers & Qt.ShiftModifier ? -1 : 1);
             }
         }
 
@@ -138,12 +202,16 @@ Item {
     function open() {
         if (!root.visualParent) return
 
+        // Lay out only the active menu's visible rows before measuring.
+        popup.visible = true;
+        powerColumn.forceLayout();
         var popupW = popup.width
         var popupH = popup.height
         var gap = Kirigami.Units.smallSpacing
 
-        // Default: open above the button, right-aligned to its right edge.
-        var pos = root.visualParent.mapToItem(root, root.visualParent.width - popupW, -popupH - gap)
+        // Account opens at the leading edge; Power stays at the trailing edge.
+        const alignLeft = root.accountMode !== root.visualParent.LayoutMirroring.enabled;
+        var pos = root.visualParent.mapToItem(root, alignLeft ? 0 : root.visualParent.width - popupW, -popupH - gap)
 
         // If the popup would go above the top of the dialog, open below
         // the button instead.
@@ -156,9 +224,9 @@ Item {
 
         popup.x = pos.x
         popup.y = Math.max(gap, Math.min(pos.y, root.height - popupH - gap))
-        popup.visible = true
         popup.opacity = 1
-        if (lockOption.optionEnabled) lockOption.forceActiveFocus();
+        popup.forceActiveFocus();
+        root.moveFocus(1);
     }
 
     function close() {

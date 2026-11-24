@@ -18,11 +18,28 @@ python3 scripts/import-windows-assets.py ~/Downloads/Windows-resources.tar.gz
 ./install.sh sounds
 ```
 
-An extracted directory containing Windows/ works too. Do not run as root.
+A ZIP archive, a TAR archive (including tar.gz), or an extracted directory
+containing Windows/ also works. An archive may contain the resource directories
+at its root or under a Windows/ directory. Do not run as root.
+For example, use `python3 scripts/import-windows-assets.py ~/Downloads/Windows-resources.zip`.
 The importer reads only the selected members, never executes Windows binaries
 and never installs or sets the Segoe text fonts. Output lives in
 $XDG_DATA_HOME/windows-modern/native-assets (default ~/.local/share).
 Future icons/themes/all installations pick it up automatically.
+The local manifest records the SHA-256 and byte size of each selected original
+resource, as well as the generated output hashes. Duplicate selected paths,
+non-regular archive entries, out-of-root selected paths and resources larger
+than 64 MiB are rejected before the previous import is changed. The import
+never extracts an archive member to its original path.
+
+Run the source-reader regression tests without any Windows resources:
+
+```bash
+python3 -m unittest discover -s tests/native-assets -v
+```
+
+The test fixtures are synthetic; keep the archive, generated files and local
+manifest out of public source control.
 
 ## Verified reference inventory
 
@@ -55,7 +72,10 @@ The lock package uses Screen/img100.jpg; other usable full images are offered
 as stock choices. Duplicate Spotlight and lock-screen images are not copied
 twice; the small Spotlight preview and solid blue placeholder are excluded.
 The public fallback package is retained for installs without owner resources.
-Native system greeter installation is separate and still requires review.
+A standalone `./install.sh sessionlock` selects the installed native lock
+package if present, without changing the desktop wallpaper. With no installed
+native lock package it keeps the current lock wallpaper. Native system greeter
+installation is separate and still requires review.
 
 The freedesktop sound theme maps matching events only. Do not force-enable
 notification sounds when the owner has disabled them. To restore the previous
@@ -74,3 +94,14 @@ the existing theme and Breeze/hicolor compatibility fallback. No additional
 icon theme is activated.
 
 The follow-up map covers 389 names, including explicit restart, sign-out, sleep, notification bell/snooze and offline network roles. These added codepoints exist in the supplied Segoe Fluent Icons font. The same names are replaced rather than layered; existing special-state fallback remains where Windows equivalents are not established.
+
+The subsequent real-archive check covered all 45 selected source files with the
+new source reader (matching its committed Git blob), 22 distinct JPEGs and
+18 WAV sources. Added 18 icon aliases for microphone active/muted, touchpad,
+keyboard, keyboard brightness, night-light enabled, lock/unlock, application
+menu and zero-volume states. The supplied font contains each required glyph;
+the ten touched glyphs rasterized to nonempty images offline. The 407 mapped
+paths resolve to 193 distinct generated icon contents in the offline
+source-generation check. The battery saver tile now requests the actual
+power-saving icon instead of the low-battery icon. Leave unconfirmed off/blocked
+states on the existing fallback artwork. This is not live Plasma verification.

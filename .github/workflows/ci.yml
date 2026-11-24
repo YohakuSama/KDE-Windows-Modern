@@ -21,6 +21,8 @@ jobs:
       # parity, layout drift, metadata, bash -n and shellcheck.
       - name: verify-all.sh
         run: ./verify-all.sh
+      - name: Native resource reader tests
+        run: python3 -m unittest discover -s tests/native-assets -v
 
   build-applets:
     name: Build C++ applets (Fedora ${{ matrix.fedora }})

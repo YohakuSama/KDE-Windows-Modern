@@ -22,13 +22,19 @@ Item {
     property bool optionEnabled: true
 
     signal activated
+    signal navigationRequested(int direction)
 
     activeFocusOnTab: optionEnabled
     Accessible.role: Accessible.Button
     Accessible.name: label
     Accessible.onPressAction: if (optionEnabled) activated()
     Keys.onReturnPressed: if (optionEnabled) activated()
+    Keys.onEnterPressed: if (optionEnabled) activated()
     Keys.onSpacePressed: if (optionEnabled) activated()
+    Keys.onUpPressed: navigationRequested(-1)
+    Keys.onDownPressed: navigationRequested(1)
+    Keys.onBacktabPressed: navigationRequested(-1)
+    Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
     width: parent ? parent.width : Kirigami.Units.gridUnit * 10
     height: Math.floor(Kirigami.Units.gridUnit * 1.6)

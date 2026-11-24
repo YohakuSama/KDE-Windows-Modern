@@ -6,6 +6,21 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Start menu
+
+- Separate account and power actions using the existing in-dialog popup and
+  native KDE session capabilities. Restore focus after dismissal and support
+  arrow, Tab and Enter navigation through enabled rows.
+- Fix stale search-field references in filter and keyboard handlers, move
+  focus into the selected results view, and use the All list if pins are empty.
+
+### Lock and login
+
+- Replace square unlock/login text field frames with matching 4 px corners,
+  36 px height and a bottom focus accent. Keep the native authentication path.
+- Standalone session-lock installation selects the native lock wallpaper when
+  installed; it leaves the desktop and missing-resource fallback unchanged.
+
 ### Integration refinements
 
 - Do Not Disturb toggles now change the user's manual preference only; they
@@ -24,6 +39,14 @@ the `Version` field shared by every component's metadata.
 - Add a deterministic frame-generation check to the repository health gate.
 
 ### Native Windows resources
+
+- Expand the local icon map to 407 paths, including microphone mute, touchpad,
+  keyboard illumination, night light and menu/lock states. Use the power-saving
+  icon for the Quick Settings battery saver tile instead of a low-battery icon.
+
+- Accept ZIP and TAR archives or extracted resource directories; reject duplicate,
+  oversized and unsafe selected members consistently. Record SHA-256 and size
+  for each original input in the local manifest. Add synthetic regression tests.
 
 - Add a local, repeatable importer for the supplied Windows resource libraries,
   Segoe Fluent Icons glyphs, original wallpapers and selected system sounds.

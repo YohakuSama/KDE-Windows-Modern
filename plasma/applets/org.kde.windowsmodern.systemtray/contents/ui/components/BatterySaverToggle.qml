@@ -14,7 +14,8 @@ Lib.SplitTile {
 
     visible: available
     label: qsTr("Battery Saver")
-    iconSource: "battery-low-symbolic"
+    // Use the power-saving role, not a low-charge battery indicator.
+    iconSource: "battery-profile-powersave-symbolic"
     active: saverOn
 
     onClicked: {

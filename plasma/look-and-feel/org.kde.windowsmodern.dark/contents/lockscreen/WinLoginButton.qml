@@ -20,6 +20,7 @@ QQC2.ToolButton {
 
     background: Rectangle {
         color: root.hovered ? WinStyle.hoverBackground : "transparent"
+        radius: WinStyle.textFieldRadius
     }
 
 }

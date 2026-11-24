@@ -32,7 +32,7 @@ Rectangle {
                             Kirigami.Theme.textColor.g,
                             Kirigami.Theme.textColor.b, Theme.buttonHoverOpacity);
         if (flat) {
-            return mouseItem.containsMouse
+            return (mouseItem.containsMouse || item.activeFocus)
                    ? Qt.rgba(Kirigami.Theme.textColor.r,
                               Kirigami.Theme.textColor.g,
                               Kirigami.Theme.textColor.b, Theme.buttonFlatHoverOpacity)
@@ -40,7 +40,7 @@ Rectangle {
                               Kirigami.Theme.textColor.g,
                               Kirigami.Theme.textColor.b, Theme.buttonFlatBackgroundOpacity);
         }
-        return mouseItem.containsMouse ? hover : Kirigami.Theme.backgroundColor;
+        return (mouseItem.containsMouse || item.activeFocus) ? hover : Kirigami.Theme.backgroundColor;
     }
 
     Behavior on color { ColorAnimation { duration: 90 } }
@@ -55,7 +55,10 @@ Rectangle {
 
     signal clicked
 
+    activeFocusOnTab: true
     Keys.onSpacePressed: item.clicked()
+    Keys.onReturnPressed: item.clicked()
+    Keys.onEnterPressed: item.clicked()
 
     // A button for screen readers too ("All apps", "Back"): it was exposed
     // as a plain label, which cannot be pressed.

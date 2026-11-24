@@ -176,8 +176,19 @@ SessionManagementScreen {
         Rectangle {
             anchors.fill: parent
             color: WinStyle.panelBackground
-            border.color: passwordField.textField.activeFocus ? WinStyle.accentColor : WinStyle.mutedForegroundColor
-            radius: 0
+            border.color: WinStyle.textFieldBorderColor
+            radius: WinStyle.textFieldRadius
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 2
+                height: 2
+                radius: 1
+                color: WinStyle.accentColor
+                visible: passwordField.textField.activeFocus
+            }
         }
 
         WinTextField {
