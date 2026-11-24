@@ -119,3 +119,14 @@ The device compatibility follow-up adds five paths (434 total): headphones, head
 ## Shell and everyday application action coverage
 
 The map now targets 549 paths (115 more than the previous 434), including both standard and symbolic forms of toolbar, file-manager, media, notification, password visibility, power, window and text editing actions. The old USB glyph used for the eject alias has been replaced with the dedicated Eject glyph. Existing color icons and genuine app logos remain distinct. Newly mapped source codepoints are documented by Microsoft for Segoe Fluent Icons; they are optional for older archives, and absent ones are listed in the local manifest rather than aborting the complete import. The original archive is not mounted in this session, so these additions have not been rendered from its bytes. Reimport locally to apply the new map. No Windows resources are committed.
+
+## Native OSD coverage
+
+The map targets 583 icon paths, including the actual KDE 6.8 OSD
+names for screen brightness, keyboard brightness and layout, touchpad on,
+Wi-Fi on, Bluetooth on, mobile connectivity, virtual keyboard activation
+and dismissal, and power profiles. Plasma's existing OSD calls these
+names through Kirigami. No replacement service is installed. Keep existing
+artwork for distinct disabled, blocked and high-volume warning states
+where a matching glyph has not been established. New codepoints remain
+optional until checked with the supplied font.

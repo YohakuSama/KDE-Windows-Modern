@@ -109,3 +109,21 @@ The owner requires minimal changes, use of existing KDE mechanisms and compatibl
 Latest implementation: OSD work-area positioning and recursion guard, narrow-display Alt+Tab width limits and theme-duration highlight animation (commit c8e7af8), plus 115 additional icon target paths. This expands the single local Windows-resource overlay, not a second icon theme. The source archive is not mounted in the current session, so exact new glyph rendering was not repeated.
 
 Known remaining implementation gaps: wallpaper-following Mica beyond the static package tint; final Acrylic role/alpha calibration; safe native client corner rounding with the current Aurorae design; toast and OSD details; Start/taskbar reference layout details; remaining icon names/FrameSVG states and typography across the shell. These are code/design gaps, not owner test tasks. No current claim of 100% development or pixel parity.
+
+## Native shell finishing pass: transparency and OSD
+
+The owner clarified the scope: polish a Windows 11-inspired KDE theme,
+not a new desktop environment. Retain the existing custom Start, tray,
+taskbar, clock, lock, login and window switcher, and use native Plasma,
+KWin, Qt/Kvantum and icon-theme interfaces for the remaining surfaces.
+
+- Use the shipped solid panel and dialog artwork when transparency is
+  disabled, including explicitly translucent panel selectors. Re-enable
+  restores the original artwork. Keep layout settings and inner widgets.
+- Add 34 native icon aliases for the actual OSD and common shell icon names.
+  Retain distinct high-volume, blocked and disabled fallback art where
+  an equivalent is unconfirmed. No new OSD service or icon theme.
+- The preceding CI #11 passed. The owner reattached the 273 MB resource
+  archive, but the file execution environment could not open the archive
+  in this session. New mappings were checked against the KDE 6.8 source
+  and Microsoft's glyph reference; actual archive import is not verified.

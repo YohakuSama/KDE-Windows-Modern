@@ -228,7 +228,7 @@ Like Windows' Settings → Personalization → Colors → Transparency effects:
 ./install.sh transparency on    # wallpaper-tinted opaque windows, native popup blur
 ```
 
-Apps that are already open change after you restart them.
+Disabling transparency also selects the shipped solid panel and dialog artwork without changing the panel layout or opacity preference. Apps that are already open change after you restart them; if Plasma retains cached artwork, log out and back in.
 
 ## Fonts
 

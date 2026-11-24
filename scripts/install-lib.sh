@@ -366,6 +366,30 @@ apply_window_materials() {
         || warn "Window material update failed; reinstall themes to restore the stock artwork."
 }
 
+# A panel may explicitly select translucent artwork even when blur is
+# disabled. Use the already shipped solid native frames in the installed
+# normal/translucent selectors, and restore exact source art on enable.
+# Preserve panel layout, opacity preferences and inner widget backgrounds.
+apply_popup_materials() {
+    [ "$UID" -ne 0 ] || return 0
+    local mode variant role source target
+    for mode in dark light; do
+        source="$SRC_DIR/plasma/desktoptheme/Windows-modern-$mode"
+        target="$PLASMA_DIR/Windows-modern-$mode"
+        [ -d "$target" ] || continue
+        for variant in "" translucent/; do
+            for role in dialogs/background.svg widgets/panel-background.svg; do
+                [ -f "$target/$variant$role" ] || continue
+                if [ "$1" = false ]; then
+                    cp "$source/solid/$role" "$target/$variant$role"
+                else
+                    cp "$source/$variant$role" "$target/$variant$role"
+                fi
+            done
+        done
+    done
+}
+
 kwin_reconfigure() {
     command -v dbus-send &>/dev/null || return 0
     dbus-send --session --type=method_call --dest=org.kde.KWin /KWin org.kde.KWin.reconfigure \

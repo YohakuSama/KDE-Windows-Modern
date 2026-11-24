@@ -33,10 +33,11 @@ case "$mode" in
         echo "blurEnabled=$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" > "$state"
         kvantum_transparency false
         apply_window_materials false
+        apply_popup_materials false
         kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled false
         kwin_reconfigure
         info "Transparency effects off."
-        step "Restart open apps to load the neutral opaque material."
+        step "Restart open apps; if the panel retains cached artwork, log out and back in."
         ;;
     on)
         if [ ! -f "$state" ]; then
@@ -51,10 +52,11 @@ case "$mode" in
         fi
         kvantum_transparency true
         apply_window_materials true
+        apply_popup_materials true
         rm -f "$state"
         kwin_reconfigure
         info "Transparency effects on."
-        step "Restart open apps to load the wallpaper-tinted opaque material."
+        step "Restart open apps; if the panel retains cached artwork, log out and back in."
         ;;
     status)
         if [ -f "$state" ]; then
