@@ -705,3 +705,5 @@ GNU GPL v3 — see [`LICENSE`](LICENSE).
 ## Native Windows resources (local import)
 
 See [the import guide](docs/NATIVE_ASSETS.md). Import your own Windows archive once; normal theme/icon reinstalls reuse the generated assets. The repository contains only the importer and mappings, not Microsoft resource binaries or font files.
+
+For previously imported private Windows resources, refresh the latest icon map with `python3 scripts/import-windows-assets.py --reuse`; see [Native Windows resources](docs/NATIVE_ASSETS.md) for the metadata-only inventory export.

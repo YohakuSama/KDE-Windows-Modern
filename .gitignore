@@ -25,6 +25,8 @@ __pycache__/
 
 # Owner-supplied Windows reference files and generated assets
 /Windows-resources/
-/Windows-resources.tar.gz
+/Windows-resources*.tar.gz
+/Windows-resources*.zip
+/Windows-resources*.tar
 /Windows/
 /native-assets/

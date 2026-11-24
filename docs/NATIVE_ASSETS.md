@@ -25,7 +25,7 @@ For example, use `python3 scripts/import-windows-assets.py ~/Downloads/Windows-r
 The importer reads only the selected members, never executes Windows binaries
 and never installs or sets the Segoe text fonts. Output lives in
 $XDG_DATA_HOME/windows-modern/native-assets (default ~/.local/share).
-Future icons/themes/all installations pick it up automatically.
+Future icons/themes/all installations pick it up automatically. The local manifest now remembers the source path after a successful import. Keep the archive at a stable private location and use `python3 scripts/import-windows-assets.py --reuse` after a mapping update, without downloading or supplying the archive again.
 The local manifest records the SHA-256 and byte size of each selected original
 resource, as well as the generated output hashes. Duplicate selected paths,
 non-regular archive entries, out-of-root selected paths and resources larger
@@ -130,3 +130,14 @@ names through Kirigami. No replacement service is installed. Keep existing
 artwork for distinct disabled, blocked and high-volume warning states
 where a matching glyph has not been established. New codepoints remain
 optional until checked with the supplied font.
+
+## Persistent resource reference
+
+The public GPL repository tracks the semantic mapping and documentation, not original Microsoft binaries, fonts, generated artwork or a private download credential. Keep the original archive in a private location you control and have permission to use. To refresh the mappings and produce a shareable metadata inventory, run:
+
+```bash
+python3 scripts/import-windows-assets.py --reuse --catalog docs/native-assets-catalog.json
+./install.sh icons
+```
+
+On first use provide the original path instead of `--reuse`. The catalog contains only font version, codepoint numbers, MUN group IDs, selected source hashes/sizes, mapping hash and coverage; no artwork, local source path or executable data. It may be reviewed and committed as metadata after verifying it contains no private information. Use a new catalog filename or deliberately remove the old catalog before regenerating; the importer never overwrites an existing catalog. The archive does not need to be committed or attached to each conversation for future mapping review once the catalog is available. Actual rendering and source-file verification still use the private local archive.
