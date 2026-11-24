@@ -34,6 +34,7 @@ ContainmentItem {
     readonly property int itemSize: TrayMetrics.iconSize(vertical ? width : height, Plasmoid.configuration.scaleIconsToFit)
     readonly property int trayCellLength: TrayMetrics.cellLength(itemSize, false, Plasmoid.configuration.iconSpacing)
     readonly property int coreItemSize: TrayMetrics.coreIconSize(vertical ? width : height, Plasmoid.configuration.scaleIconsToFit)
+    readonly property int coreNativeRenderSize: TrayMetrics.coreRenderSize(coreItemSize)
     readonly property int systemCellLength: TrayMetrics.coreCellLength(itemSize, coreItemSize, Plasmoid.configuration.iconSpacing)
     readonly property alias visibleLayout: tasksGrid
     readonly property alias hiddenLayout: expandedRepresentation.hiddenLayout
