@@ -51,6 +51,11 @@ if python3 -I scripts/theme/popup-frames.py --check >/dev/null; then
 else
     fail "popup frames differ from their generator — run scripts/theme/popup-frames.py"
 fi
+if python3 -I scripts/theme/window-frames.py --check >/dev/null; then
+    pass "Aurorae window frame generator (dark/light, active/inactive, maximized)"
+else
+    fail "Aurorae window frames differ from their generator — run scripts/theme/window-frames.py"
+fi
 check_file "plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/ui/main.qml" "Alt+Tab switcher"
 # The top/left/right and hover task frames are generated from the bottom
 # ones; a hand edit would make the panel edges drift apart again.

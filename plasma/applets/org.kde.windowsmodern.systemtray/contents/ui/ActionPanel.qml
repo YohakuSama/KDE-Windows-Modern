@@ -88,6 +88,8 @@ ColumnLayout {
     }
 
     GridLayout {
+        visible: (Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable)
+            || (Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable)
         Layout.fillWidth: true
         Layout.leftMargin: 14 * actionPanel.scale
         Layout.rightMargin: 14 * actionPanel.scale
@@ -97,6 +99,7 @@ ColumnLayout {
         columnSpacing: 0
 
         Components.BrightnessSlider {
+            id: brightnessSlider
             Layout.fillWidth: true
             Layout.columnSpan: 3
             visible: Plasmoid.configuration.showBrightness && brightnessAvailable
@@ -106,9 +109,10 @@ ColumnLayout {
             onArrowClicked: actionPanel.requestPage("brightness")
         }
         Components.VolumeSlider {
+            id: volumeSlider
             Layout.fillWidth: true
             Layout.columnSpan: 3
-            Layout.preferredHeight: 36
+            Layout.preferredHeight: Math.round(36 * actionPanel.scale)
             visible: Plasmoid.configuration.showVolume && sinkAvailable
             onArrowClicked: actionPanel.requestPage("volume")
         }

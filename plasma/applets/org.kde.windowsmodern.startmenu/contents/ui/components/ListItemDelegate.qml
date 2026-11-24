@@ -340,6 +340,10 @@ Item {
 
     function launchApp() {
         var view = item.hostView
+        if (view && typeof view.activateRow === "function") {
+            view.activateRow(item.itemIndex);
+            return;
+        }
         if (view && view.model && typeof view.model.trigger === "function") {
             view.model.trigger(item.itemIndex, "", null);
             root.closeMenu();
@@ -347,6 +351,8 @@ Item {
     }
 
     function openContextMenu(localX, localY) {
+        // A category is a navigation row, not a pinnable application.
+        if (model.isParent) return;
         var favModel = (typeof kicker !== "undefined" && kicker.globalFavorites)
                        ? kicker.globalFavorites : null
         var favId = (model.favoriteId !== undefined) ? model.favoriteId : ""

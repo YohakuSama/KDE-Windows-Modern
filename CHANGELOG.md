@@ -6,6 +6,16 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Combined pre-release integration
+
+- Add native app category navigation, application-grouped notifications,
+  and Quick Settings keyboard/device-state refinements.
+- Constrain taskbar group previews to their panel monitor.
+- Generate matching light/dark Aurorae titlebar corners and native shadows,
+  including separate maximized frames; keep client-area corners safe.
+- Follow locale time formatting in lock/login, and document the native
+  Plasma Login Manager wallpaper import route.
+
 ### Start menu
 
 - Separate account and power actions using the existing in-dialog popup and

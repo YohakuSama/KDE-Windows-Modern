@@ -113,7 +113,7 @@ SessionManagementScreen {
         Layout.bottomMargin: 4
         text: {
             if (root.showUsernamePrompt) {
-                return "User";
+                return i18nd("plasma_login", "User");
             }
             if (userList.currentItem && userList.currentItem.realName) {
                 return userList.currentItem.realName;

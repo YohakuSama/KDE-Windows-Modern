@@ -492,8 +492,9 @@ ButtonWidth=46     ButtonHeight=30     ButtonSpacing=0
 TitleEdgeLeft=8    ExplicitButtonSpacer=10
 ```
 
-- 1px borders on all sides, zero padding — window content goes
-  edge-to-edge with only the 1px decoration border.
+- 1px decoration borders with 12px external shadow padding on normal
+  windows. The native Aurorae shadow is independent of the client area.
+  Maximized frames have no shadow padding.
 - Title height 30px (authentic Win11 proportions).
 - `BorderSize=Tiny` is auto-set in kwinrc by `install.sh`.
 
@@ -501,7 +502,10 @@ TitleEdgeLeft=8    ExplicitButtonSpacer=10
 
 Rewritten with minimal 1px border elements:
 - Edge elements (top/bottom/left/right) are 1x1px.
-- Corner elements are 2x2px (1px border + 1px fill overlap).
+- Generated normal frames use 8px rounded top corners with a 12px shadow
+  margin and separate active/inactive opacity. Bottom corners stay square
+  because Aurorae must not clip arbitrary client content. Maximized frames
+  remain square. See scripts/theme/window-frames.py; live KSVG acceptance pending.
 - Active border: `#3F3F3F` (dark) / `#E5E5E5` (light).
 - Inactive border: `#2A2A2A` (dark) / `#D5D5D5` (light).
 - Background via `currentColor` / `ColorScheme-Background`.

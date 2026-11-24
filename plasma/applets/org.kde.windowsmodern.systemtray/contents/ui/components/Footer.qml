@@ -40,6 +40,11 @@ Rectangle {
 
         Accessible.role: Accessible.Button
         Accessible.name: qsTr("Battery %1%").arg(battery.percent)
+        Accessible.onPressAction: footer.batteryClicked()
+        activeFocusOnTab: visible
+        Keys.onReturnPressed: footer.batteryClicked()
+        Keys.onEnterPressed: footer.batteryClicked()
+        Keys.onSpacePressed: footer.batteryClicked()
 
         MouseArea {
             id: batteryMouse

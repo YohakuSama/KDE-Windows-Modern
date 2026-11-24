@@ -75,7 +75,13 @@ The public fallback package is retained for installs without owner resources.
 A standalone `./install.sh sessionlock` selects the installed native lock
 package if present, without changing the desktop wallpaper. With no installed
 native lock package it keeps the current lock wallpaper. Native system greeter
-installation is separate and still requires review.
+installation is separate. After installing the greeter, use System Settings >
+Login Screen > Appearance (systemsettings kcm_plasmalogin) as the desktop
+user. Select the imported JPEG in the installed Windows-modern-lock package
+under contents/images and Apply. PLM's authorized helper copies the selected
+image into its own wallpaper directory. The installer does not overwrite
+existing login wallpaper settings; select your previous wallpaper there to
+revert this optional choice.
 
 The freedesktop sound theme maps matching events only. Do not force-enable
 notification sounds when the owner has disabled them. To restore the previous

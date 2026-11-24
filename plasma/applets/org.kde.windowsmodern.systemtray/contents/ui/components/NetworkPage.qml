@@ -10,12 +10,13 @@ import "../lib" as Lib
 Lib.DetailPage {
     id: page
 
-    title: qsTr("Wi-Fi")
+    title: wifiAvailable ? qsTr("Wi-Fi") : qsTr("Network")
     switchChecked: page.wifiOn
-    emptyText: page.wifiOn ? qsTr("No available networks") : qsTr("Wi-Fi is off")
+    emptyText: !page.wifiAvailable ? qsTr("No Wi-Fi adapter available")
+        : page.wifiOn ? qsTr("No available networks") : qsTr("Wi-Fi is off")
 
     footer: Lib.MoreSettingsLink {
-        text: qsTr("More Wi-Fi settings")
+        text: page.wifiAvailable ? qsTr("More Wi-Fi settings") : qsTr("Network settings")
         onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
     }
 

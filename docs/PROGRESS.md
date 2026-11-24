@@ -48,4 +48,41 @@ Overall development estimate: **67.5% (rounded to 68%)** as of this batch. Live 
 - The exact footer-navigation JavaScript helper passed ten targeted Node assertions and exhaustive enabled-row invariant checks for up to eight options. Added the same ten cases to the existing Qt test suite. The Qt tests, repository health checks, QML build and live Start interaction/visual acceptance could not be run here (Qt tools absent and GitHub DNS unavailable in the local environment).
 - The 67.5% development-stage estimate remains unchanged until the existing categories pass their acceptance gates; no new feature scope or release claim.
 
+## Pre-release scope freeze and phase completion branch
+
+Owner decision: finish the three development phases (core desktop interactions,
+visual fidelity, shared details) before merging the next integration into main.
+Then do live acceptance and narrowly scoped fixes before tagging a stable
+release. Do not add unrelated features or dependencies.
+
+This batch starts that combined integration branch from the merged PR #6.
+
+- Core: optional All/Categories navigation uses KDE's existing AppsModel
+  (API checked against Plasma 6.7 and 6.8.2); no app classification database.
+  Notification history uses native flat application grouping with one initial
+  child, expand/collapse, and persistent model indexes for clear-all.
+  Quick Settings distinguishes absent Wi-Fi and Bluetooth adapters, leaves
+  the detail route available, and exposes keyboard/accessibility actions.
+  Grouped taskbar previews are bounded by the panel's own monitor geometry.
+- Visual: generated Aurorae frames with 12 px native shadow padding,
+  rounded 8 px titlebar corners, different active/inactive shadows, and
+  separate unpadded maximized frames in both variants. Bottom client corners
+  remain square rather than clipping arbitrary apps. Native PLM's Login
+  Screen settings can copy the local lock JPEG using its authorized helper;
+  the existing privileged installation and wallpaper settings are unchanged.
+- Details: selected tile icon contrast follows the actual accent; lock and
+  greeter clocks use the locale short time format, and the user label is
+  translatable. No Windows fonts are installed.
+- Offline: exact window-frame generator and both generated SVG blob hashes
+  match the local files; generator --check, XML and four alpha sample checks
+  per SVG passed. Six contrast cases passed on the exact existing color
+  helper. Added matching Qt tests and a generator check to verify-all.sh.
+  The new applet QML, actual KSVG window rendering, full repository checks
+  and CI results remain unverified locally (no Qt tools or GitHub DNS).
+- Remaining before the three-phase merge: review the reference layout and
+  category treatment, true wallpaper-tinted Mica and Acrylic calibration,
+  safe client-corner behavior, remaining native icon states/FrameSVG parity,
+  and any unfinished integration identified by CI. No stable release yet;
+  the 67.5% development-stage rubric remains unchanged.
+
 Update these categories after each substantive batch using the same rubric. Avoid claiming 1:1 visual parity until actual reference and runtime checks establish it.

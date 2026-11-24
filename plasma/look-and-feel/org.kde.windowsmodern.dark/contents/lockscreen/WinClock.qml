@@ -34,7 +34,7 @@ Column {
 
     Text {
         id: timeText
-        text: Qt.formatTime(new Date(), "HH:mm")
+        text: Qt.formatTime(new Date(), Qt.locale().timeFormat(Locale.ShortFormat))
         font.family: WinStyle.fontFamily
         font.weight: Font.DemiBold
         font.pixelSize: WinStyle.clockTimePixelSize
@@ -59,7 +59,7 @@ Column {
         repeat: true
         onTriggered: {
             const now = new Date();
-            timeText.text = Qt.formatTime(now, "HH:mm");
+            timeText.text = Qt.formatTime(now, Qt.locale().timeFormat(Locale.ShortFormat));
             dateText.text = root.dateLine(now);
         }
     }

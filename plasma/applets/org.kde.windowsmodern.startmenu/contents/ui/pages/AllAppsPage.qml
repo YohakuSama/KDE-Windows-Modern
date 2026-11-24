@@ -21,6 +21,53 @@ ColumnLayout {
 
     property alias allAppsList: allAppsListView
     property Component homeHeader: null
+    property var flatModel: null
+    property var categoryModel: null
+    property bool categoryMode: false
+    property var categoryChild: null
+    property string categoryTitle: ""
+    property int categoryRow: 0
+    readonly property bool inCategory: categoryMode && categoryChild !== null
+
+    function resetCategory() {
+        categoryChild = null;
+        categoryTitle = "";
+        categoryRow = 0;
+    }
+
+    onCategoryModeChanged: resetCategory()
+
+    function focusFirstApp() {
+        scrollToAll();
+        tryActivate(0);
+    }
+
+    function backToCategories() {
+        const row = categoryRow;
+        resetCategory();
+        Qt.callLater(function() {
+            allAppsListView.positionViewAtIndex(row, ListView.Contain);
+            tryActivate(row);
+        });
+    }
+
+    function activateRow(row) {
+        const source = allAppsListView.model;
+        if (!source || row < 0 || row >= allAppsListView.count)
+            return;
+        if (categoryMode && !inCategory) {
+            const child = source.modelForRow(row);
+            if (child) {
+                categoryRow = row;
+                categoryTitle = source.labelForRow(row);
+                categoryChild = child;
+                Qt.callLater(focusFirstApp);
+                return;
+            }
+        }
+        if (source.trigger(row, "", null))
+            root.closeMenu();
+    }
 
     function scrollToAll() {
         if (allAppsListView.count > 0)
@@ -50,10 +97,7 @@ ColumnLayout {
     }
 
     function activateCurrent() {
-        if (allAppsListView.currentIndex >= 0 && allAppsListView.model) {
-            allAppsListView.model.trigger(allAppsListView.currentIndex, "", null);
-            root.closeMenu();
-        }
+        activateRow(allAppsListView.currentIndex);
     }
 
     // ── All apps vertical list ───────────────────────────────────────────
@@ -66,6 +110,10 @@ ColumnLayout {
         spacing: Kirigami.Units.smallSpacing / 2
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
+        model: allAppsPage.categoryMode
+            ? (allAppsPage.categoryChild || allAppsPage.categoryModel)
+            : allAppsPage.flatModel
+        function activateRow(row) { allAppsPage.activateRow(row); }
         header: allAppsPage.homeHeader
         headerPositioning: ListView.InlineHeader
 
@@ -82,6 +130,12 @@ ColumnLayout {
         Keys.onReturnPressed: allAppsPage.activateCurrent()
         Keys.onEnterPressed: allAppsPage.activateCurrent()
 
+        Keys.onLeftPressed: event => {
+            if (allAppsPage.inCategory) {
+                event.accepted = true;
+                allAppsPage.backToCategories();
+            }
+        }
         Keys.onUpPressed: event => {
             if (currentIndex <= 0) {
                 event.accepted = true;

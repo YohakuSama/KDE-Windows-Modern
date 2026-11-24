@@ -20,11 +20,16 @@ ColumnLayout {
     activeFocusOnTab: true
     focus: true
 
+    Accessible.role: Accessible.CheckBox
+    Accessible.name: tile.label
+    Accessible.checked: tile.active
+    Accessible.onPressAction: tile.clicked()
     Keys.onReturnPressed: tile.clicked()
+    Keys.onEnterPressed: tile.clicked()
     Keys.onSpacePressed: tile.clicked()
 
     readonly property color accent: Kirigami.Theme.highlightColor
-    readonly property color fg: active ? (ColorType.isDark(Kirigami.Theme.backgroundColor) ? "#1E1E1E" : "#FFFFFF") : Kirigami.Theme.textColor
+    readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
     spacing: 4
     Layout.fillWidth: true
@@ -36,7 +41,7 @@ ColumnLayout {
         Layout.preferredHeight: width / 2
         radius: 4
         border.width: 1
-        border.color: active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        border.color: tile.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
         color: {
             if (active)
                 return accent;
