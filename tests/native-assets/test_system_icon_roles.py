@@ -47,3 +47,14 @@ class SystemIconRolesTests(unittest.TestCase):
         self.assertEqual(groups['volumeHigh'], ['e995'])
         self.assertEqual(groups['volumeMuted'], ['e74f'])
         self.assertEqual(groups['bluetooth'], ['e702'])
+
+    def test_panel_independent_state_optical_centers(self):
+        groups = MAPPING['panel_glyph_groups']
+        centered = set(MAPPING['panel_glyph_center_groups'])
+        self.assertTrue(centered.issubset(groups))
+        self.assertIn('battery', centered)
+        self.assertIn('volume', centered)
+        self.assertIn('notification', centered)
+        self.assertNotIn('wifi', centered)
+        self.assertNotIn('wifiLimited', centered)
+        self.assertEqual(groups['wifi'], ['e701', 'e872', 'e873', 'e874'])

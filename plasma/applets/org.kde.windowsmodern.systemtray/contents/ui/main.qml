@@ -196,6 +196,7 @@ ContainmentItem {
                 columnSpacing: 0
 
                 readonly property int count: trayItems.count
+                property int delegateRevision: 0
                 readonly property int rowsOrColumns: 1
                 readonly property int itemSize: root.itemSize
                 function itemAtIndex(index) {
@@ -205,6 +206,8 @@ ContainmentItem {
                 Repeater {
                     id: trayItems
                     model: activeModel
+                    onItemAdded: (index, item) => tasksGrid.delegateRevision++
+                    onItemRemoved: (index, item) => tasksGrid.delegateRevision++
 
                     delegate: ItemLoader {
                         id: delegate

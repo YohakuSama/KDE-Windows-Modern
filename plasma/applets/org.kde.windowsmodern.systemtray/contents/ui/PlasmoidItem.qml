@@ -15,6 +15,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.plasmoid
 import org.kde.plasma.networkmanagement as PlasmaNM
+import org.kde.bluezqt as BluezQt
 import org.kde.plasma.private.volume as Vol
 import org.kde.plasma.private.battery as BatteryBackend
 import "js/funcs.js" as Funcs
@@ -151,11 +152,15 @@ AbstractItem {
         width: parent.width
         height: parent.height
         active: plasmoidContainer.groupedQuickSettings
+            || (plasmoidContainer.inVisibleLayout
+                && plasmoidContainer.itemId === "org.kde.plasma.bluetooth"
+                && BluezQt.Manager.bluetoothOperational)
         sourceComponent: {
             switch (plasmoidContainer.itemId) {
             case "org.kde.plasma.networkmanagement": return networkGlyph;
             case "org.kde.plasma.volume": return volumeGlyph;
             case "org.kde.plasma.battery": return batteryGlyph;
+            case "org.kde.plasma.bluetooth": return bluetoothGlyph;
             default: return null;
             }
         }
@@ -189,6 +194,16 @@ AbstractItem {
                 }
                 color: Kirigami.Theme.textColor
             }
+        }
+    }
+
+    Component {
+        id: bluetoothGlyph
+        Kirigami.Icon {
+            roundToIconSize: false
+            isMask: true
+            source: plasmoidContainer.panelGlyph("network-bluetooth-symbolic")
+            color: Kirigami.Theme.textColor
         }
     }
 
