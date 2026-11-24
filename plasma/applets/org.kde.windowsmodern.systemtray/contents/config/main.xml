@@ -54,7 +54,7 @@
       <max>150</max>
     </entry>
     <entry name="quickSettingsOrder" type="String">
-      <label>Stable identifiers for the user\u0027s quick settings tile order.</label>
+      <label>Stable identifiers for the user's quick settings tile order.</label>
       <default></default>
     </entry>
     <entry name="showVolume" type="Bool">

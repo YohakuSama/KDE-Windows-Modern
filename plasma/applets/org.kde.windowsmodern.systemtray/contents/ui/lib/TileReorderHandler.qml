@@ -5,9 +5,9 @@ import QtQuick
 // A touch swipe still belongs to the enclosing Flickable.
 DragHandler {
     id: handler
-    required property Item tile
-    readonly property Item view: tile.orderView
-    enabled: view !== null && tile.included
+    required property Item hostTile
+    readonly property Item view: hostTile.orderView
+    enabled: view !== null && hostTile.included
     target: null
     acceptedButtons: Qt.LeftButton
     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
@@ -18,19 +18,19 @@ DragHandler {
             return;
         if (transition === PointerDevice.GrabExclusive) {
             const position = view.mapFromItem(null, point.scenePosition.x, point.scenePosition.y);
-            view.beginDrag(tile.orderKey, position);
+            view.beginDrag(hostTile.orderKey, position);
         } else if (transition === PointerDevice.UngrabExclusive) {
             const position = view.mapFromItem(null, point.scenePosition.x, point.scenePosition.y);
-            view.finishDrag(tile.orderKey, position);
+            view.finishDrag(hostTile.orderKey, position);
         } else if (transition === PointerDevice.CancelGrabExclusive) {
-            view.cancelDrag(tile.orderKey);
+            view.cancelDrag(hostTile.orderKey);
         }
     }
 
     onActiveTranslationChanged: {
         if (active && view) {
             const position = view.mapFromItem(null, centroid.scenePosition.x, centroid.scenePosition.y);
-            view.updateDrag(tile.orderKey, position);
+            view.updateDrag(hostTile.orderKey, position);
         }
     }
 }

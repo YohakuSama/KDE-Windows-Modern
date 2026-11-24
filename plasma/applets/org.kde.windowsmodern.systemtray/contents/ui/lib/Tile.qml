@@ -19,8 +19,11 @@ ColumnLayout {
     readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
     readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
 
-    Layout.row: Math.max(0, Math.floor(orderIndex / 3))
-    Layout.column: Math.max(0, orderIndex % 3)
+    // A stable three-column grid, with vacant cells in a partial final row.
+    x: orderView && orderIndex >= 0 ? (orderIndex % 3) * (orderView.cellWidth + orderView.columnGap) : 0
+    y: orderView && orderIndex >= 0 ? Math.floor(orderIndex / 3) * orderView.rowStride : 0
+    width: orderView ? orderView.cellWidth : implicitWidth
+    height: orderView ? orderView.rowHeight : implicitHeight
     visible: included
     z: reordering ? 10 : 0
     opacity: reordering ? 0.85 : 1
@@ -28,7 +31,9 @@ ColumnLayout {
         x: tile.reordering ? tile.orderView.dragOffsetX : 0
         y: tile.reordering ? tile.orderView.dragOffsetY : 0
     }
-    TileReorderHandler { tile: tile }
+    TileReorderHandler { hostTile: tile }
+
+    function focusForKeyboard() { forceActiveFocus(Qt.TabFocusReason); }
 
     onActiveFocusChanged: {
         if (activeFocus && orderView)

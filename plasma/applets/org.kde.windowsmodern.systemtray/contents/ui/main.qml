@@ -324,7 +324,7 @@ ContainmentItem {
 
             onVisibleChanged: {
                 if (!visible) {
-                    expandedRepresentation.resetQuickSettings();
+                    if (expandedRepresentation) expandedRepresentation.resetQuickSettings();
                     expandedSync.restart();
                 } else {
                     expandedSync.stop();

@@ -33,7 +33,7 @@ ColumnLayout {
         toggleViewport.contentY = 0;
     }
 
-    onVisibleChanged: if (!visible) toggleViewport.cancelDrag()
+    onVisibleChanged: if (!visible && toggleViewport) toggleViewport.cancelDrag()
 
     RowLayout {
         Layout.fillWidth: true
@@ -58,10 +58,15 @@ ColumnLayout {
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
             readonly property bool hasMoreRows: rows > 2
-            readonly property real rowHeight: rows > 0
-                ? Math.max(0, (tileGrid.implicitHeight - Math.max(0, rows - 1) * tileGrid.rowSpacing) / rows) : 0
-            readonly property real rowStride: rowHeight + tileGrid.rowSpacing
-            readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? tileGrid.rowSpacing : 0))
+            readonly property real rowGap: Math.round(12 * actionPanel.scale)
+            readonly property real columnGap: Math.round(6 * actionPanel.scale)
+            readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
+            // Height follows the tallest caption (system font), not the
+            // effective visibility or width of a GridLayout parent.
+            readonly property real rowHeight: tiles.reduce((largest, tile) =>
+                tile.included ? Math.max(largest, tile.implicitHeight) : largest, 0)
+            readonly property real rowStride: rowHeight + rowGap
+            readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
 
             property string dragKey: ""
@@ -74,7 +79,7 @@ ColumnLayout {
             property bool ready: false
 
             contentWidth: width
-            contentHeight: tileGrid.implicitHeight
+            contentHeight: tileGrid.height
             flickableDirection: Flickable.VerticalFlick
             boundsBehavior: Flickable.StopAtBounds
             clip: true
@@ -106,8 +111,9 @@ ColumnLayout {
             }
 
             function page(direction) {
+                const start = scrollMotion.running ? scrollMotion.to : contentY;
                 cancelFlick();
-                scrollTo((scrollMotion.running ? scrollMotion.to : contentY) + direction * 2 * rowStride);
+                scrollTo(start + direction * 2 * rowStride);
             }
 
             function ensureVisible(key) {
@@ -149,7 +155,7 @@ ColumnLayout {
                 } else {
                     const next = tileForKey(visibleKeys[to]);
                     if (next)
-                        next.forceActiveFocus(Qt.TabFocusReason);
+                        next.focusForKeyboard();
                 }
                 return true;
             }
@@ -157,12 +163,13 @@ ColumnLayout {
             function beginDrag(key, position) {
                 if (dragKey !== "" || visibleKeys.indexOf(key) < 0)
                     return;
-                scrollMotion.stop();
-                cancelFlick();
-                dragStart = pointerPosition = position;
+                dragStart = position;
+                pointerPosition = position;
                 dragStartOffset = contentY;
                 dropIndex = visibleKeys.indexOf(key);
                 dragKey = key;
+                cancelFlick();
+                scrollMotion.stop();
             }
 
             function updateDrag(key, position) {
@@ -235,15 +242,11 @@ ColumnLayout {
                 }
             }
 
-            GridLayout {
+            Item {
                 id: tileGrid
                 width: toggleViewport.width
-                height: implicitHeight
-                columns: 3
-                uniformCellWidths: true
-                uniformCellHeights: true
-                rowSpacing: Math.round(12 * actionPanel.scale)
-                columnSpacing: Math.round(6 * actionPanel.scale)
+                height: Math.max(0, toggleViewport.rows * toggleViewport.rowStride
+                    - (toggleViewport.rows > 0 ? toggleViewport.rowGap : 0))
                 Components.NetworkToggle {
                     id: networkTile
                     orderKey: "network"
@@ -251,7 +254,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: true
                     visible: included
-                    Layout.fillWidth: true
                     onArrowClicked: actionPanel.requestPage("network")
                 }
                 Components.BluetoothToggle {
@@ -261,7 +263,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: true
                     visible: included
-                    Layout.fillWidth: true
                     onArrowClicked: actionPanel.requestPage("bluetooth")
                 }
                 Components.AirplaneToggle {
@@ -271,7 +272,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showAirplane
                     visible: included
-                    Layout.fillWidth: true
                 }
                 Components.BatterySaverToggle {
                     id: batterySaverTile
@@ -280,7 +280,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showBatterySaver && available
                     visible: included
-                    Layout.fillWidth: true
                     onArrowClicked: actionPanel.requestPage("battery")
                 }
                 Components.NightLightToggle {
@@ -290,7 +289,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showNightLight
                     visible: included
-                    Layout.fillWidth: true
                 }
                 Components.ColorSchemeToggle {
                     id: colorSchemeTile
@@ -299,7 +297,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showColorScheme
                     visible: included
-                    Layout.fillWidth: true
                 }
                 Components.DndToggle {
                     id: dndTile
@@ -308,7 +305,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showDnd
                     visible: included
-                    Layout.fillWidth: true
                 }
                 Components.MicMuteToggle {
                     id: micTile
@@ -317,7 +313,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showMicMute && available
                     visible: included
-                    Layout.fillWidth: true
                 }
                 Components.HotspotToggle {
                     id: hotspotTile
@@ -326,7 +321,6 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showHotspot && hotspotSupported
                     visible: included
-                    Layout.fillWidth: true
                 }
             }
 
@@ -386,6 +380,7 @@ ColumnLayout {
             spacing: 2
 
             PlasmaComponents3.ToolButton {
+                id: previousPageButton
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.round(20 * actionPanel.scale)
                 icon.name: "go-up-symbolic"
@@ -395,7 +390,7 @@ ColumnLayout {
                 display: PlasmaComponents3.AbstractButton.IconOnly
                 enabled: toggleViewport.contentY > 0.5 && !toggleViewport.dragKey
                 onClicked: toggleViewport.page(-1)
-                PlasmaComponents3.ToolTip { text: parent.text }
+                PlasmaComponents3.ToolTip { text: previousPageButton.text }
             }
             Item {
                 id: scrollTrack
@@ -404,6 +399,7 @@ ColumnLayout {
                 Layout.minimumHeight: 8
             }
             PlasmaComponents3.ToolButton {
+                id: nextPageButton
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.round(20 * actionPanel.scale)
                 icon.name: "go-down-symbolic"
@@ -413,7 +409,7 @@ ColumnLayout {
                 display: PlasmaComponents3.AbstractButton.IconOnly
                 enabled: toggleViewport.contentY < toggleViewport.maxOffset - 0.5 && !toggleViewport.dragKey
                 onClicked: toggleViewport.page(1)
-                PlasmaComponents3.ToolTip { text: parent.text }
+                PlasmaComponents3.ToolTip { text: nextPageButton.text }
             }
         }
     }
