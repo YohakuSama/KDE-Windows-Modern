@@ -189,7 +189,6 @@ Lib.DetailPage {
                                 Layout.fillWidth: true
                                 text: model.ItemUniqueName
                                 color: Kirigami.Theme.textColor
-                                font: Kirigami.Theme.defaultFont
                                 font.bold: connectionState === PlasmaNM.Enums.Activated
                                 elide: Text.ElideRight
                             }

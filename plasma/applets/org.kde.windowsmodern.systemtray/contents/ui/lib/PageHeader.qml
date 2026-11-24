@@ -26,7 +26,7 @@ RowLayout {
         Layout.alignment: Qt.AlignVCenter
         text: qsTr("Back")
         display: PlasmaComponents3.AbstractButton.IconOnly
-        icon.name: Qt.application.layoutDirection === Qt.RightToLeft ? "go-next" : "go-previous"
+        icon.name: Application.layoutDirection === Qt.RightToLeft ? "go-next" : "go-previous"
         onClicked: header.back()
         PlasmaComponents3.ToolTip { text: parent.text }
     }
@@ -34,7 +34,6 @@ RowLayout {
     PlasmaComponents3.Label {
         text: header.title
         color: Kirigami.Theme.textColor
-        font: Kirigami.Theme.defaultFont
         font.weight: Font.DemiBold
         Layout.fillWidth: true
     }

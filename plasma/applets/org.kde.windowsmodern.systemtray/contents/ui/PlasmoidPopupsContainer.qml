@@ -25,7 +25,7 @@ QQC2.StackView {
     readonly property Item activeApplet: systemTrayState.activeApplet
 
     // Whether the active applet is one we render a themed flyout for.
-    readonly property bool themedActive: !!themedPages[flyoutRouter.flyoutNameForApplet(activeApplet)]
+    readonly property bool themedActive: !!(themedPages && themedPages[flyoutRouter.flyoutNameForApplet(activeApplet)])
 
     // Height reserved at the bottom for the themed page's footer link.
     readonly property int themedFooterHeight: (themedActive && footerLoader.item) ? themedFooter.implicitHeight : 0
