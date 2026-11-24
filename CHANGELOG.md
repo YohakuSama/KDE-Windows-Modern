@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Materials and status glyphs
+
+- Keep application bases opaque; reuse the existing wallpaper/frame generator for a bounded local active tint and KWin for popup blur/noise.
+- Add 22 native icon mappings for account switching, limited networks, VPN and unknown charging.
+
 ### Combined pre-release integration
 
 - Add native app category navigation, application-grouped notifications,

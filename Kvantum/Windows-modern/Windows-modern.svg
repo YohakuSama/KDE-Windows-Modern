@@ -233,8 +233,8 @@
  <path id="menuitem-normal-top" d="m193 495h8v2h-8z" fill-rule="evenodd" opacity=".1" stroke-width=".70711"/>
  <path id="menuitem-normal-bottom" d="m193 505h8v2h-8z" fill-rule="evenodd" opacity=".1" stroke-width=".70711"/>
  <path id="menuitem-normal" d="m193 497h8v8h-8z" fill-rule="evenodd" opacity=".1"/>
- <path id="window-normal" d="m380 814.26h30v30h-30z" fill="#ffffff" fill-rule="evenodd" opacity=".8" style="paint-order:normal"/>
- <path id="window-normal-inactive" d="m412 814.26h30v30h-30z" fill="#ffffff" fill-rule="evenodd" opacity=".8" style="paint-order:normal"/>
+ <path id="window-normal" d="m380 814.26h30v30h-30z" fill="#F9F9F9" fill-rule="evenodd" opacity="1" style="paint-order:normal"/>
+ <path id="window-normal-inactive" d="m412 814.26h30v30h-30z" fill="#F9F9F9" fill-rule="evenodd" opacity="1" style="paint-order:normal"/>
  <rect id="menubar-normal" x="307" y="359" width="20" height="20" fill="#F9F9F9"/>
  <rect id="menubar-normal-left" transform="rotate(90)" x="359" y="-307" width="20" height="5" fill="#F9F9F9"/>
  <rect id="menubar-normal-topleft" transform="rotate(90)" x="354" y="-307" width="5" height="5" fill="#F9F9F9"/>

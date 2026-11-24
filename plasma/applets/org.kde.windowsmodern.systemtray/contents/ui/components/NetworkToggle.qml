@@ -36,7 +36,7 @@ Lib.SplitTile {
         if (!wifiOn)
             return "network-wireless-disconnected-symbolic";
         return base.indexOf("network-wireless") === 0
-            ? base : "network-wireless-100-symbolic";
+            ? base : "network-wireless-0-symbolic";
     }
     active: wifiOn
 

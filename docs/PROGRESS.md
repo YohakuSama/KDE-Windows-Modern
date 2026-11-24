@@ -86,3 +86,11 @@ This batch starts that combined integration branch from the merged PR #6.
   the 67.5% development-stage rubric remains unchanged.
 
 Update these categories after each substantive batch using the same rubric. Avoid claiming 1:1 visual parity until actual reference and runtime checks establish it.
+
+## Material role and native status follow-up
+
+- Application window bases remain opaque in both transparency modes; existing KWin blur and noise are reserved for translucent popups. The switch no longer makes file-manager views translucent.
+- Reuse the existing Aurorae frame generator and installed Windows-modern wallpaper package to sample an opaque active tint for Aurorae and Kvantum. Separate dark/light images, neutral inactive and disabled fills, and optional Pillow sampling provide a fallback without a new shader, daemon, global palette, or font change. This static Mica-style approximation is not position-dependent DWM Mica and does not track wallpaper changes outside the project.
+- Add 22 local icon paths (429 total), including Switch User, limited Wi-Fi levels, wired limited/VPN, and unknown charging. Two no-route aliases now use Ethernet warning. Nine changed source glyphs exist in the supplied font and rendered nonempty at 48 px. The Wi-Fi toggle no longer assumes full signal when the primary connection is not wireless.
+- Local checks: seven window-material tests passed, including separate wallpaper variants and stock-frame reset; exact tested generator/test Git hashes match, and stock generated Aurorae frames remain unchanged. Actual 3840 x 2400 light/dark Bloom images were sampled without committing artwork. Four mocked transparency transitions kept windows opaque. New CI, full importer CLI and live Plasma acceptance remain pending.
+- KWin already has blur/noise/saturation controls and native client rounding where supported. Prefer compatible native decorations or an explicitly owner-selected existing effect; do not add or enable a second effect automatically. Dynamic Mica, compositor calibration, client-corner and multi-monitor acceptance remain open. Do not merge or claim exact parity yet.

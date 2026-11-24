@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Generate Aurorae decorations with native shadow padding and rounded tops."""
 import argparse
+import os
+import re
+import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -13,7 +16,9 @@ EDGES = ('top', 'bottom', 'left', 'right')
 CORNERS = ('topleft', 'topright', 'bottomleft', 'bottomright')
 
 
-def render(mode):
+def render(mode, active_color=None):
+    if active_color is not None and not re.fullmatch(r"#[0-9A-Fa-f]{6}", active_color):
+        raise ValueError("Invalid active window color")
     bg, active, inactive = ('#202020', '#3F3F3F', '#2A2A2A') if mode == 'dark' else (
         '#F9F9F9', '#E5E5E5', '#D5D5D5')
     lines = ['<svg xmlns="http://www.w3.org/2000/svg" width="144" height="240" viewBox="0 0 144 240">',
@@ -31,9 +36,11 @@ def render(mode):
                   f'      <stop offset="0" stop-color="#000000" stop-opacity="{alpha:.3f}"/><stop offset="0.45" stop-color="#000000" stop-opacity="{alpha*0.3:.3f}"/><stop offset="1" stop-color="#000000" stop-opacity="0"/>',
                   '    </radialGradient>']
     lines.append('  </defs>')
-    fill = 'class="ColorScheme-Background" fill="currentColor"'
+    neutral_fill = 'class="ColorScheme-Background" fill="currentColor"'
+    active_fill = f'fill="{active_color}"' if active_color else neutral_fill
     for row, (prefix, border, shade) in enumerate((('decoration', active, 'active'),
                                                    ('decoration-inactive', inactive, 'inactive'))):
+        fill = active_fill if row == 0 else neutral_fill
         y = 4 + row * 88
         # All four sides have equal 20 px slice dimensions: 12 px shadow
         # outside the client and 8 px inside. Only the top is rounded; a
@@ -63,6 +70,7 @@ def render(mode):
     # KWin uses this separate no-padding surface when maximized.
     for row, (prefix, border) in enumerate((('decoration-maximized', active),
                                              ('decoration-maximized-inactive', inactive))):
+        fill = active_fill if row == 0 else neutral_fill
         y = 4 + row * 20
         for i, part in enumerate((*EDGES, *CORNERS, 'center')):
             attrs = fill if part == 'center' else f'fill="{border}"'
@@ -75,10 +83,99 @@ def render(mode):
     return result
 
 
+# Sample the selected wallpaper once. This is a bounded, opaque Mica-style
+# approximation, not DWM's position-dependent material or a live blur shader.
+BASE_COLORS = {"dark": "#202020", "light": "#F9F9F9"}
+
+
+def tint_color(mode, mean):
+    base = int(BASE_COLORS[mode][1:3], 16)
+    weight = 0.10 if mode == "dark" else 0.06
+    values = [round(base * (1 - weight) + value * weight) for value in mean]
+    return "#" + "".join(f"{value:02X}" for value in values)
+
+
+def wallpaper_color(package, mode):
+    if package is None:
+        return None
+    try:
+        # Pillow is already used by the optional native-resource importer.
+        # Do not install a runtime dependency merely to calculate a tint.
+        from PIL import Image, ImageStat
+        folders = ("images_dark", "images") if mode == "dark" else ("images",)
+        for name in folders:
+            directory = package / "contents" / name
+            if not directory.is_dir():
+                continue
+            images = sorted(p for p in directory.iterdir()
+                            if p.is_file() and p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp"))
+            if not images:
+                continue
+            # A wallpaper package may have several resolutions of one image.
+            # Averaging a tiny downsample avoids retaining any source artwork.
+            with Image.open(images[-1]) as image:
+                image.thumbnail((64, 64), Image.Resampling.BOX)
+                return tint_color(mode, ImageStat.Stat(image.convert("RGB")).mean)
+    except (ImportError, OSError, ValueError) as error:
+        print(f"Wallpaper tint unavailable: {error}", file=sys.stderr)
+    return None
+
+
+def patch_window_svg(svg, active, inactive):
+    # Keep the existing Kvantum artwork and every non-window role intact.
+    # The two window paths already implement active/inactive state selection.
+    for element, color in (("window-normal", active), ("window-normal-inactive", inactive)):
+        if not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
+            raise ValueError("Invalid window fill")
+        pattern = rf'<path\b[^>]*\bid="{element}"[^>]*/>'
+
+        def replace(match):
+            path = match.group(0)
+            path, fills = re.subn(r'\bfill="[^"]*"', f'fill="{color}"', path)
+            path, opacities = re.subn(r'\bopacity="[^"]*"', 'opacity="1"', path)
+            if fills != 1 or opacities != 1:
+                raise ValueError("Unexpected Kvantum window element: " + element)
+            return path
+
+        svg, count = re.subn(pattern, replace, svg)
+        if count != 1:
+            raise ValueError("Missing or duplicate Kvantum window element: " + element)
+    ET.fromstring(svg)
+    return svg
+
+
+def apply_local(aurorae_dir, kvantum_dir, package=None):
+    # Prepare both variants before writing; no package or configuration edits.
+    changes = {}
+    for mode, base in BASE_COLORS.items():
+        active = wallpaper_color(package, mode)
+        decoration = aurorae_dir / f"windows-modern-{mode}-aurorae" / "decoration.svg"
+        kvantum = kvantum_dir / ("Windows-modernDark.svg" if mode == "dark" else "Windows-modern.svg")
+        if decoration.is_file():
+            changes[decoration] = render(mode, active)
+        if kvantum.is_file():
+            changes[kvantum] = patch_window_svg(kvantum.read_text(encoding="utf-8"), active or base, base)
+        print(f"{mode}: active {active or base}, inactive {base}")
+    for path, value in changes.items():
+        path.write_text(value, encoding="utf-8")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', action='store_true')
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument('--check', action='store_true')
+    action.add_argument('--apply-local', action='store_true')
+    parser.add_argument('--aurorae-dir', type=Path)
+    parser.add_argument('--kvantum-dir', type=Path)
+    parser.add_argument('--wallpaper-package', type=Path)
     args = parser.parse_args()
+    if args.apply_local:
+        if os.geteuid() == 0 or not args.aurorae_dir or not args.kvantum_dir:
+            parser.error('--apply-local requires a normal user and both installed theme paths')
+        apply_local(args.aurorae_dir, args.kvantum_dir, args.wallpaper_package)
+        return
+    if args.aurorae_dir or args.kvantum_dir or args.wallpaper_package:
+        parser.error('Installed theme arguments require --apply-local')
     for mode in ('dark', 'light'):
         path = ROOT / 'aurorae' / f'windows-modern-{mode}-aurorae' / 'decoration.svg'
         expected = render(mode)

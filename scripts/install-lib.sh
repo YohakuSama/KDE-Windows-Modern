@@ -340,15 +340,30 @@ apply_kvantum_engine() {
 # they are off, holding the blur setting to restore.
 TRANSPARENCY_OFF_FILE="$HOME/.local/share/windows-modern/transparency-off"
 
-# Kvantum's see-through windows and blur, in every installed Windows Modern
-# Kvantum theme (dark and light): kvantum_transparency true|false.
-# transparent_dolphin_view/pcmanfm_* make the file managers see-through.
+# Long-lived application windows stay opaque in both modes. KWin supplies
+# live blur/noise only to the existing translucent popup surfaces.
 kvantum_transparency() {
     local value="$1" f
     for f in "$KVANTUM_DIR"/Windows-modern/*.kvconfig; do
         [ -f "$f" ] || continue
-        sed -i -E "s/^(translucent_windows|blurring|popup_blurring|blur_translucent|transparent_dolphin_view|transparent_pcmanfm_sidepane|transparent_pcmanfm_view)=.*/\1=${value}/" "$f"
+        sed -i -E \
+            -e 's/^(translucent_windows|transparent_dolphin_view|transparent_pcmanfm_sidepane|transparent_pcmanfm_view)=.*/\1=false/' \
+            -e "s/^(blurring|popup_blurring|blur_translucent)=.*/\1=${value}/" "$f"
     done
+}
+
+# Reuse the existing frame generator and installed wallpaper package. No
+# extra effect, daemon or system-wide palette changes. Missing Pillow or
+# wallpaper yields the stock solid backgrounds.
+apply_window_materials() {
+    [ "$UID" -ne 0 ] || return 0
+    local args=(--apply-local --aurorae-dir "$AURORAE_DIR"
+                --kvantum-dir "$KVANTUM_DIR/Windows-modern")
+    if [ "$1" = true ] && [ -d "$WALLPAPER_DIR/Windows-modern" ]; then
+        args+=(--wallpaper-package "$WALLPAPER_DIR/Windows-modern")
+    fi
+    python3 -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" \
+        || warn "Window material update failed; reinstall themes to restore the stock artwork."
 }
 
 kwin_reconfigure() {

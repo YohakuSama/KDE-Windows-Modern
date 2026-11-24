@@ -15,14 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install shellcheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Install health check dependencies
+        run: sudo apt-get update && sudo apt-get install -y shellcheck python3-pil
       # Same gate scripts/release.sh enforces: required files, light/dark
       # parity, layout drift, metadata, bash -n and shellcheck.
       - name: verify-all.sh
         run: ./verify-all.sh
       - name: Native resource reader tests
         run: python3 -m unittest discover -s tests/native-assets -v
+      - name: Window material tests
+        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
 
   build-applets:
     name: Build C++ applets (Fedora ${{ matrix.fedora }})

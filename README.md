@@ -224,8 +224,8 @@ installed.
 Like Windows' Settings → Personalization → Colors → Transparency effects:
 
 ```bash
-./install.sh transparency off   # solid app windows (Dolphin), no blur behind popups
-./install.sh transparency on    # back to translucent (the default)
+./install.sh transparency off   # neutral opaque windows, solid popups
+./install.sh transparency on    # wallpaper-tinted opaque windows, native popup blur
 ```
 
 Apps that are already open change after you restart them.

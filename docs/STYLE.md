@@ -550,8 +550,8 @@ a palette-level change first.
 
 #### Compositing model
 
-Both variants use the **translucent model** — `composite=true`,
-`translucent_windows=true`, `blurring=true`, `popup_blurring=true`.
+Both variants use opaque application windows (`translucent_windows=false`),
+with `composite=true`, `blurring=true`, `popup_blurring=true` for transient surfaces.
 Kvantum handles popup shadows (`menu_shadow_depth=5`,
 `tooltip_shadow_depth=2`, `shadowless_popup=false`) and acrylic-style
 blur behind menus/tooltips. The SVG `menu-shadow-*` and
@@ -602,8 +602,8 @@ Inherited from Fluent (already Win11-correct):
 #### `[Hacks]`
 
 Inherited from Fluent: `transparent_ktitle_label=true`,
-`transparent_dolphin_view=true`, `transparent_pcmanfm_sidepane=true`,
-`transparent_pcmanfm_view=true`, `transparent_menutitle=true`,
+`transparent_dolphin_view=false`, `transparent_pcmanfm_sidepane=false`,
+`transparent_pcmanfm_view=false`, `transparent_menutitle=true`,
 `transparent_arrow_button=true`, `respect_darkness=true` (both
 variants), `force_size_grip=true`, `iconless_pushbutton=false` (both
 variants), `single_top_toolbar=true`, `kcapacitybar_as_progressbar=true`.
@@ -949,3 +949,5 @@ GNU GPL v3
 ### Shared shell popup frames
 
 `popup-frames.py` and `popup-frame.svg.in` generate the 12 dialog/tooltip variants. Dialogs use 8 logical px radii, opaque normal/solid frames and a consistent tinted translucent variant (dark 78%, light 82% tint opacity). Small tooltips use a 4 px radius and solid fill. All variants share 1 px borders, 12 px shadow margins and matching masks. These are Acrylic-style approximations driven by KWin blur, not the Windows compositor or true Mica. Do not add per-applet duplicate blur overlays. `verify-all.sh` checks generated files against the source.
+
+The local wallpaper tint is confined to existing active window SVG roles. Transparency-off restores neutral fills. KWin supplies native popup blur and noise; the sampled window color is a static Mica-style approximation, not live desktop compositing.

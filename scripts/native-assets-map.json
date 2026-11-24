@@ -187,7 +187,7 @@
     "e917": "actions/clock-symbolic",
     "f305": "actions/system-reboot actions/system-reboot-symbolic",
     "f3b1": "actions/system-log-out actions/system-log-out-symbolic",
-    "f384": "status/network-unavailable status/network-unavailable-symbolic status/network-wireless-disconnected status/network-wireless-disconnected-symbolic status/network-wired-disconnected status/network-wired-disconnected-symbolic status/network-wired-no-route status/network-wired-no-route-symbolic",
+    "f384": "status/network-unavailable status/network-unavailable-symbolic status/network-wireless-disconnected status/network-wireless-disconnected-symbolic status/network-wired-disconnected status/network-wired-disconnected-symbolic",
     "f2a3": "actions/notifications actions/notifications-symbolic status/notifications status/notifications-symbolic status/notification-inactive status/notification-inactive-symbolic status/notification-empty status/notification-empty-symbolic",
     "f2a5": "status/notification-active status/notification-active-symbolic",
     "f2a8": "actions/notifications-disabled actions/notifications-disabled-symbolic status/notifications-disabled status/notifications-disabled-symbolic status/notification-disabled status/notification-disabled-symbolic",
@@ -203,7 +203,16 @@
     "ec54": "status/audio-input-microphone-muted status/audio-input-microphone-muted-symbolic status/microphone-sensitivity-muted status/microphone-sensitivity-muted-symbolic",
     "efa5": "devices/input-touchpad devices/input-touchpad-symbolic",
     "ed39": "status/keyboard-brightness status/keyboard-brightness-symbolic",
-    "f08c": "status/redshift-status-on-symbolic"
+    "f08c": "status/redshift-status-on-symbolic",
+    "e748": "actions/system-switch-user actions/system-switch-user-symbolic status/system-switch-user status/system-switch-user-symbolic",
+    "eb5f": "status/network-wireless-0-limited status/network-wireless-0-limited-symbolic",
+    "eb60": "status/network-wireless-20-limited status/network-wireless-20-limited-symbolic",
+    "eb61": "status/network-wireless-40-limited status/network-wireless-40-limited-symbolic",
+    "eb62": "status/network-wireless-60-limited status/network-wireless-60-limited-symbolic",
+    "eb63": "status/network-wireless-80-limited status/network-wireless-80-limited-symbolic status/network-wireless-100-limited status/network-wireless-100-limited-symbolic",
+    "eb56": "status/network-wired-activated-limited status/network-wired-activated-limited-symbolic status/network-wired-no-route status/network-wired-no-route-symbolic",
+    "f8cc": "status/network-wired-activated-locked status/network-wired-activated-locked-symbolic",
+    "eb1a": "status/battery-unknown-charging status/battery-unknown-charging-symbolic"
   },
   "wallpapers": [
     [

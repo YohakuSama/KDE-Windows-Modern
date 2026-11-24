@@ -111,3 +111,5 @@ paths resolve to 193 distinct generated icon contents in the offline
 source-generation check. The battery saver tile now requests the actual
 power-saving icon instead of the low-battery icon. Leave unconfirmed off/blocked
 states on the existing fallback artwork. This is not live Plasma verification.
+
+The status mapping follow-up adds 22 paths (429 total) for account switching, limited Wi-Fi levels, wired limited/VPN, and unknown charging. Two existing no-route aliases use Ethernet warning. All nine changed glyphs rendered nonempty from the supplied font. Rerun the existing importer before reinstalling icons. See Microsoft's [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font).

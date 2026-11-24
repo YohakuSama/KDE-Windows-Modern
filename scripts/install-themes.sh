@@ -66,6 +66,14 @@ else
     cp -r "$SRC_DIR/wallpaper/"* "$WALLPAPER_DIR/"
 fi
 
+if [ "$UID" -ne 0 ]; then
+    if [ -f "$TRANSPARENCY_OFF_FILE" ]; then
+        apply_window_materials false
+    else
+        apply_window_materials true
+    fi
+fi
+
 info "Themes installed."
 
 # ── Standalone: make the change visible ─────────────────────────────
