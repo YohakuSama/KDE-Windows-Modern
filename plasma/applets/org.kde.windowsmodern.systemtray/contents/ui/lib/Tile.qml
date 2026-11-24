@@ -12,13 +12,38 @@ ColumnLayout {
     property string label
     property string tooltipText: ""
     property bool active: false
+    property bool included: true
+    property string orderKey: ""
+    property Item orderView: null
+    property real buttonHeight: -1
+    readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
+    readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
+
+    Layout.row: Math.max(0, Math.floor(orderIndex / 3))
+    Layout.column: Math.max(0, orderIndex % 3)
+    visible: included
+    z: reordering ? 10 : 0
+    opacity: reordering ? 0.85 : 1
+    transform: Translate {
+        x: tile.reordering ? tile.orderView.dragOffsetX : 0
+        y: tile.reordering ? tile.orderView.dragOffsetY : 0
+    }
+    TileReorderHandler { tile: tile }
+
+    onActiveFocusChanged: {
+        if (activeFocus && orderView)
+            orderView.ensureVisible(orderKey);
+    }
+    Keys.onPressed: event => {
+        if (orderView && orderView.handleTileKey(orderKey, event.key, event.modifiers))
+            event.accepted = true;
+    }
 
     signal clicked
     signal rightClicked
     signal middleClicked
 
     activeFocusOnTab: true
-    focus: true
 
     Accessible.role: Accessible.CheckBox
     Accessible.name: tile.label
@@ -38,7 +63,7 @@ ColumnLayout {
     Rectangle {
         id: bg
         Layout.fillWidth: true
-        Layout.preferredHeight: width / 2
+        Layout.preferredHeight: tile.buttonHeight > 0 ? tile.buttonHeight : width / 2
         radius: 4
         border.width: 1
         border.color: tile.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)

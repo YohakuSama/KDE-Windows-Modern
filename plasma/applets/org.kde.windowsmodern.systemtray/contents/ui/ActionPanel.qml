@@ -9,8 +9,11 @@ import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 
 import org.kde.plasma.plasmoid
+import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents3
 
 import "components" as Components
+import "js/quickSettingsOrder.js" as Order
 
 ColumnLayout {
     id: actionPanel
@@ -22,67 +25,395 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: 16 * actionPanel.scale
 
-    // Scroll additional rows independently of the sliders and footer.
-    Flickable {
-        id: toggleViewport
-        Layout.fillWidth: true
-        Layout.leftMargin: 14 * actionPanel.scale
-        Layout.rightMargin: 14 * actionPanel.scale
-        Layout.topMargin: 12 * actionPanel.scale
-        Layout.preferredHeight: Math.min(toggleGrid.implicitHeight,
-            2 * networkTile.implicitHeight + toggleGrid.rowSpacing)
-        contentWidth: width
-        contentHeight: toggleGrid.implicitHeight
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-        interactive: contentHeight > height
-        QQC2.ScrollBar.vertical: QQC2.ScrollBar { policy: QQC2.ScrollBar.AsNeeded }
+    // Only this viewport scrolls; the sliders and footer remain fixed.
+    function resetScroll() {
+        toggleViewport.cancelDrag();
+        scrollMotion.stop();
+        toggleViewport.cancelFlick();
+        toggleViewport.contentY = 0;
+    }
 
-        GridLayout {
-            id: toggleGrid
-            width: toggleViewport.width
-            height: implicitHeight
-            columns: 3
-            rowSpacing: 12 * actionPanel.scale
-            columnSpacing: 6 * actionPanel.scale
-    
-            Components.NetworkToggle {
-                id: networkTile
-                Layout.fillWidth: true
-                onArrowClicked: actionPanel.requestPage("network")
+    onVisibleChanged: if (!visible) toggleViewport.cancelDrag()
+
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.leftMargin: Math.round(14 * actionPanel.scale)
+        Layout.rightMargin: Math.round(14 * actionPanel.scale)
+        Layout.topMargin: Math.round(12 * actionPanel.scale)
+        Layout.preferredHeight: toggleViewport.viewportHeight
+        Layout.minimumHeight: toggleViewport.viewportHeight
+        Layout.maximumHeight: toggleViewport.viewportHeight
+        spacing: Math.round(4 * actionPanel.scale)
+
+        Flickable {
+            id: toggleViewport
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredHeight: viewportHeight
+            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile]
+            readonly property var knownKeys: tiles.map(tile => tile.orderKey)
+            readonly property var availableKeys: tiles.filter(tile => tile.included).map(tile => tile.orderKey)
+            readonly property var order: Order.normalizeOrder(
+                String(Plasmoid.configuration.quickSettingsOrder || "").split(","), knownKeys)
+            readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
+            readonly property int rows: Math.ceil(visibleKeys.length / 3)
+            readonly property bool hasMoreRows: rows > 2
+            readonly property real rowHeight: rows > 0
+                ? Math.max(0, (tileGrid.implicitHeight - Math.max(0, rows - 1) * tileGrid.rowSpacing) / rows) : 0
+            readonly property real rowStride: rowHeight + tileGrid.rowSpacing
+            readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? tileGrid.rowSpacing : 0))
+            readonly property real maxOffset: Math.max(0, contentHeight - height)
+
+            property string dragKey: ""
+            property int dropIndex: -1
+            property point dragStart: Qt.point(0, 0)
+            property point pointerPosition: Qt.point(0, 0)
+            property real dragStartOffset: 0
+            readonly property real dragOffsetX: pointerPosition.x - dragStart.x
+            readonly property real dragOffsetY: pointerPosition.y - dragStart.y + contentY - dragStartOffset
+            property bool ready: false
+
+            contentWidth: width
+            contentHeight: tileGrid.implicitHeight
+            flickableDirection: Flickable.VerticalFlick
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+            pixelAligned: true
+            interactive: hasMoreRows && dragKey === ""
+
+            // Mouse drags belong to tile reordering; wheel, touchpad and
+            // touchscreen gestures still scroll. Qt 6.9 added this property.
+            Component.onCompleted: {
+                if ("acceptedButtons" in toggleViewport)
+                    toggleViewport.acceptedButtons = Qt.NoButton;
+                ready = true;
             }
-            Components.BluetoothToggle {
-                Layout.fillWidth: true
-                onArrowClicked: actionPanel.requestPage("bluetooth")
+
+            function tileForKey(key) {
+                return tiles.find(tile => tile.orderKey === key) || null;
             }
-            Components.AirplaneToggle {
-                Layout.fillWidth: true
-                visible: Plasmoid.configuration.showAirplane
+
+            function scrollTo(offset) {
+                scrollMotion.stop();
+                const destination = Order.clampOffset(offset, maxOffset);
+                if (Math.abs(destination - contentY) < 1 || Kirigami.Units.shortDuration === 0) {
+                    contentY = destination;
+                    return;
+                }
+                scrollMotion.from = contentY;
+                scrollMotion.to = destination;
+                scrollMotion.start();
             }
-            Components.BatterySaverToggle {
-                Layout.fillWidth: true
-                visible: Plasmoid.configuration.showBatterySaver && available
-                onArrowClicked: actionPanel.requestPage("battery")
+
+            function page(direction) {
+                cancelFlick();
+                scrollTo((scrollMotion.running ? scrollMotion.to : contentY) + direction * 2 * rowStride);
             }
-            Components.NightLightToggle {
-                Layout.fillWidth: true
-                visible: Plasmoid.configuration.showNightLight
+
+            function ensureVisible(key) {
+                const index = visibleKeys.indexOf(key);
+                if (index < 0 || dragKey !== "")
+                    return;
+                const top = Math.floor(index / 3) * rowStride;
+                const bottom = top + rowHeight;
+                if (top < contentY)
+                    scrollTo(top);
+                else if (bottom > contentY + height)
+                    scrollTo(bottom - height);
             }
-            Components.ColorSchemeToggle {
-                Layout.fillWidth: true
-                visible: Plasmoid.configuration.showColorScheme
+
+            function saveMove(key, to) {
+                const next = Order.moveVisible(order, availableKeys, key, to);
+                if (next.join(",") !== order.join(","))
+                    Plasmoid.configuration.quickSettingsOrder = next.join(",");
             }
-            Components.DndToggle {
-                Layout.fillWidth: true
-                visible: Plasmoid.configuration.showDnd
+
+            function handleTileKey(key, pressedKey, modifiers) {
+                const from = visibleKeys.indexOf(key);
+                let delta = 0;
+                switch (pressedKey) {
+                case Qt.Key_Left: delta = -1; break;
+                case Qt.Key_Right: delta = 1; break;
+                case Qt.Key_Up: delta = -3; break;
+                case Qt.Key_Down: delta = 3; break;
+                case Qt.Key_PageUp: page(-1); return true;
+                case Qt.Key_PageDown: page(1); return true;
+                default: return false;
+                }
+                const to = from + delta;
+                if (from < 0 || to < 0 || to >= visibleKeys.length)
+                    return false;
+                if (modifiers & Qt.ControlModifier) {
+                    saveMove(key, to);
+                    Qt.callLater(() => ensureVisible(key));
+                } else {
+                    const next = tileForKey(visibleKeys[to]);
+                    if (next)
+                        next.forceActiveFocus(Qt.TabFocusReason);
+                }
+                return true;
             }
-            Components.MicMuteToggle {
-                Layout.fillWidth: true
-                visible: Plasmoid.configuration.showMicMute
+
+            function beginDrag(key, position) {
+                if (dragKey !== "" || visibleKeys.indexOf(key) < 0)
+                    return;
+                scrollMotion.stop();
+                cancelFlick();
+                dragStart = pointerPosition = position;
+                dragStartOffset = contentY;
+                dropIndex = visibleKeys.indexOf(key);
+                dragKey = key;
             }
-            Components.HotspotToggle {
+
+            function updateDrag(key, position) {
+                if (dragKey !== key)
+                    return;
+                pointerPosition = position;
+                dropIndex = position.y >= 0 && position.y < height
+                    ? Order.slotAt(position.x, position.y + contentY, width, rowStride, visibleKeys.length) : -1;
+            }
+
+            function finishDrag(key, position) {
+                if (dragKey !== key)
+                    return;
+                updateDrag(key, position);
+                const destination = dropIndex;
+                cancelDrag();
+                if (destination >= 0)
+                    saveMove(key, destination);
+                scrollTo(Order.snapOffset(contentY, rowStride, maxOffset));
+            }
+
+            function cancelDrag(key) {
+                if (key !== undefined && dragKey !== key)
+                    return;
+                dragKey = "";
+                dropIndex = -1;
+            }
+
+            onVisibleKeysChanged: {
+                if (ready) {
+                    cancelDrag();
+                    Qt.callLater(() => {
+                        if (!toggleViewport.dragKey)
+                            toggleViewport.scrollTo(Order.snapOffset(toggleViewport.contentY,
+                                toggleViewport.rowStride, toggleViewport.maxOffset));
+                    });
+                }
+            }
+            onMovementStarted: scrollMotion.stop()
+            onMovementEnded: if (!dragKey) scrollTo(Order.snapOffset(contentY, rowStride, maxOffset))
+
+            NumberAnimation {
+                id: scrollMotion
+                target: toggleViewport
+                property: "contentY"
+                duration: Kirigami.Units.shortDuration
+                easing.type: Easing.OutCubic
+            }
+
+            // Dragging near the edge reaches later rows without requiring
+            // the user to drop the tile and scroll separately.
+            Timer {
+                interval: 30
+                repeat: true
+                running: toggleViewport.dragKey !== "" && toggleViewport.hasMoreRows
+                onTriggered: {
+                    const point = toggleViewport.pointerPosition;
+                    if (point.x < 0 || point.x >= toggleViewport.width
+                            || point.y < 0 || point.y >= toggleViewport.height)
+                        return;
+                    const edge = Math.round(20 * actionPanel.scale);
+                    const direction = point.y < edge ? -1
+                        : point.y > toggleViewport.height - edge ? 1 : 0;
+                    if (direction !== 0) {
+                        toggleViewport.contentY = Order.clampOffset(
+                            toggleViewport.contentY + direction * 5 * actionPanel.scale,
+                            toggleViewport.maxOffset);
+                        toggleViewport.updateDrag(toggleViewport.dragKey, point);
+                    }
+                }
+            }
+
+            GridLayout {
+                id: tileGrid
+                width: toggleViewport.width
+                height: implicitHeight
+                columns: 3
+                uniformCellWidths: true
+                uniformCellHeights: true
+                rowSpacing: Math.round(12 * actionPanel.scale)
+                columnSpacing: Math.round(6 * actionPanel.scale)
+                Components.NetworkToggle {
+                    id: networkTile
+                    orderKey: "network"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: true
+                    visible: included
+                    Layout.fillWidth: true
+                    onArrowClicked: actionPanel.requestPage("network")
+                }
+                Components.BluetoothToggle {
+                    id: bluetoothTile
+                    orderKey: "bluetooth"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: true
+                    visible: included
+                    Layout.fillWidth: true
+                    onArrowClicked: actionPanel.requestPage("bluetooth")
+                }
+                Components.AirplaneToggle {
+                    id: airplaneTile
+                    orderKey: "airplane"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: Plasmoid.configuration.showAirplane
+                    visible: included
+                    Layout.fillWidth: true
+                }
+                Components.BatterySaverToggle {
+                    id: batterySaverTile
+                    orderKey: "battery-saver"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: Plasmoid.configuration.showBatterySaver && available
+                    visible: included
+                    Layout.fillWidth: true
+                    onArrowClicked: actionPanel.requestPage("battery")
+                }
+                Components.NightLightToggle {
+                    id: nightLightTile
+                    orderKey: "night-light"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: Plasmoid.configuration.showNightLight
+                    visible: included
+                    Layout.fillWidth: true
+                }
+                Components.ColorSchemeToggle {
+                    id: colorSchemeTile
+                    orderKey: "color-scheme"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: Plasmoid.configuration.showColorScheme
+                    visible: included
+                    Layout.fillWidth: true
+                }
+                Components.DndToggle {
+                    id: dndTile
+                    orderKey: "dnd"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: Plasmoid.configuration.showDnd
+                    visible: included
+                    Layout.fillWidth: true
+                }
+                Components.MicMuteToggle {
+                    id: micTile
+                    orderKey: "microphone"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: Plasmoid.configuration.showMicMute && available
+                    visible: included
+                    Layout.fillWidth: true
+                }
+                Components.HotspotToggle {
+                    id: hotspotTile
+                    orderKey: "hotspot"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: Plasmoid.configuration.showHotspot && hotspotSupported
+                    visible: included
+                    Layout.fillWidth: true
+                }
+            }
+
+            Rectangle {
+                readonly property Item destination: toggleViewport.dropIndex >= 0
+                    ? toggleViewport.tileForKey(toggleViewport.visibleKeys[toggleViewport.dropIndex]) : null
+                visible: toggleViewport.dragKey !== "" && destination !== null
+                    && destination.orderKey !== toggleViewport.dragKey
+                x: destination ? destination.x : 0
+                y: destination ? destination.y : 0
+                width: destination ? destination.width : 0
+                height: destination ? destination.buttonHeight : 0
+                radius: 4
+                color: "transparent"
+                border.width: 2
+                border.color: Kirigami.Theme.highlightColor
+                z: 1
+            }
+
+            QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+                id: rowScrollBar
+                parent: scrollTrack
+                anchors.fill: parent
+                policy: QQC2.ScrollBar.AlwaysOn
+                leftPadding: Math.max(0, (width - 4) / 2)
+                rightPadding: leftPadding
+                contentItem: Rectangle {
+                    implicitWidth: 4
+                    radius: width / 2
+                    color: Kirigami.Theme.textColor
+                    opacity: rowScrollBar.pressed || rowScrollBar.hovered ? 0.65 : 0.40
+                }
+                background: Rectangle {
+                    width: 2
+                    x: (parent.width - width) / 2
+                    radius: 1
+                    color: Kirigami.Theme.textColor
+                    opacity: 0.12
+                }
+                onPressedChanged: {
+                    if (pressed)
+                        scrollMotion.stop();
+                    else if (!toggleViewport.dragKey)
+                        toggleViewport.scrollTo(Order.snapOffset(toggleViewport.contentY,
+                            toggleViewport.rowStride, toggleViewport.maxOffset));
+                }
+            }
+        }
+
+        // The rail is reserved from the row count, not scrollbar geometry,
+        // avoiding a width -> row height -> visibility feedback loop.
+        ColumnLayout {
+            id: navigationRail
+            visible: toggleViewport.hasMoreRows
+            Layout.preferredWidth: Math.round(20 * actionPanel.scale)
+            Layout.fillHeight: true
+            spacing: 2
+
+            PlasmaComponents3.ToolButton {
                 Layout.fillWidth: true
-                visible: Plasmoid.configuration.showHotspot && hotspotSupported
+                Layout.preferredHeight: Math.round(20 * actionPanel.scale)
+                icon.name: "go-up-symbolic"
+                icon.width: Kirigami.Units.iconSizes.small
+                icon.height: icon.width
+                text: qsTr("Previous quick settings")
+                display: PlasmaComponents3.AbstractButton.IconOnly
+                enabled: toggleViewport.contentY > 0.5 && !toggleViewport.dragKey
+                onClicked: toggleViewport.page(-1)
+                PlasmaComponents3.ToolTip { text: parent.text }
+            }
+            Item {
+                id: scrollTrack
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.minimumHeight: 8
+            }
+            PlasmaComponents3.ToolButton {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.round(20 * actionPanel.scale)
+                icon.name: "go-down-symbolic"
+                icon.width: Kirigami.Units.iconSizes.small
+                icon.height: icon.width
+                text: qsTr("Next quick settings")
+                display: PlasmaComponents3.AbstractButton.IconOnly
+                enabled: toggleViewport.contentY < toggleViewport.maxOffset - 0.5 && !toggleViewport.dragKey
+                onClicked: toggleViewport.page(1)
+                PlasmaComponents3.ToolTip { text: parent.text }
             }
         }
     }

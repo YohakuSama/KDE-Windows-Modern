@@ -160,6 +160,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     PATH lib
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/Tile.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/TileReorderHandler.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/SplitTile.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/Slider.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/SectionHeader.qml
@@ -175,6 +176,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/funcs.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/colorType.js
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/quickSettingsOrder.js
 )
 ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     PATH components
