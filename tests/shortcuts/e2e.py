@@ -154,7 +154,7 @@ def notifications(vi, c, out):
     page = wait_for(lambda: next((n for n in a11y.nodes("plasmashell") if n.showing and n.role == "heading"
                                   and n.name == "Notifications"), None))
     screenshot(out / "notifications.png")
-    c.check(page is not None, "Win+N opens the notifications page")
+    c.check(page is not None, "Win+N opens the notification and calendar flyout")
     vi.tap(e.KEY_ESC)
 
 

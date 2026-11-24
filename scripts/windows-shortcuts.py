@@ -176,7 +176,8 @@ def restore(group):
 # ([...][Applets][N][Shortcuts] global=...), read when Plasma Shell starts.
 APPLETSRC = pathlib.Path.home() / ".config/plasma-org.kde.plasma.desktop-appletsrc"
 TRAYS = ("org.kde.windowsmodern.systemtray", "org.kde.plasma.systemtray")
-TRAY_KEYS = {None: "Meta+A", "org.kde.plasma.notifications": "Meta+N"}  # None = the tray itself
+CLOCK = "org.kde.windowsmodern.digitalclock"
+NOTIFICATIONS = "org.kde.plasma.notifications"
 
 
 def _groups():
@@ -193,21 +194,35 @@ def _groups():
 
 
 def tray_targets():
-    """[(group path, key)] for the tray on the primary screen's panel."""
+    """[(group path, key)] for Quick Settings and notification/calendar.
+
+    Prefer the Windows Modern clock for Win+N. Release the previous
+    notification applet binding before assigning it to the clock. Preserve
+    unrelated shortcuts and fall back to the native tray if no clock exists.
+    """
     groups = _groups()
     panels = sorted((int(g[1]) for g, kv in groups.items()
                      if len(g) == 2 and g[0] == "Containments" and kv.get("plugin") == "org.kde.panel"
                      and kv.get("lastScreen") == "0"))
     for panel in panels:
-        for g, kv in groups.items():
-            if len(g) == 4 and g[:3] == ("Containments", str(panel), "Applets") and kv.get("plugin") in TRAYS:
-                out = [(g, TRAY_KEYS[None])]
-                for c, ckv in groups.items():
-                    if len(c) == 6 and c[:4] == g and c[4] == "Applets" and ckv.get("plugin") in TRAY_KEYS:
-                        out.append((c, TRAY_KEYS[ckv["plugin"]]))
-                return out
+        prefix = ("Containments", str(panel), "Applets")
+        applets = [(g, kv) for g, kv in groups.items() if len(g) == 4 and g[:3] == prefix]
+        clock = next((g for g, kv in applets if kv.get("plugin") == CLOCK), None)
+        tray = next((g for g, kv in applets if kv.get("plugin") in TRAYS), None)
+        if not clock and not tray:
+            continue
+        out = [(tray, "Meta+A")] if tray else []
+        notification = next((g for g, kv in groups.items()
+                             if tray and len(g) == 6 and g[:4] == tray and g[4] == "Applets"
+                             and kv.get("plugin") == NOTIFICATIONS), None)
+        if clock:
+            if notification and groups.get(notification + ("Shortcuts",), {}).get("global") == "Meta+N":
+                out.append((notification, ""))
+            out.append((clock, "Meta+N"))
+        elif notification:
+            out.append((notification, "Meta+N"))
+        return out
     return []
-
 
 def _kconfig(path, value=None, delete=False):
     args = ["--file", str(APPLETSRC)]
@@ -224,7 +239,7 @@ def _kconfig(path, value=None, delete=False):
 def tray_apply():
     targets = tray_targets()
     if not targets:
-        print("  no system tray found on the primary screen's panel — skipped")
+        print("  no supported tray or clock found on the primary screen's panel — skipped")
         return 0
     backup = load_backup()
     for path, key in targets:
