@@ -272,6 +272,12 @@ numbers, and calendar plugins.
 
 Win11 refinements over upstream:
 
+- **Notification center** — clock click and Win+N (after applying shortcuts)
+  show the shared KDE notification history above the existing calendar.
+  Cards use the system font, app icon, dismiss, clear all and supported actions.
+  Manual DND writes the existing notification settings; the native tray
+  notification applet remains for jobs and advanced interactions. The
+  calendar/agenda remain accessible with scroll on short displays.
 - **Windows-sized compact clock** — every line (time, date, time zone)
   uses the same font size: the system UI font in Automatic mode, the
   chosen size in Manual mode. It never grows with the panel; it shrinks

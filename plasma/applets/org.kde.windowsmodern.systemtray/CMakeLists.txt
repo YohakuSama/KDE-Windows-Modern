@@ -204,7 +204,6 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/KeyboardBrightnessSlider.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/Footer.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/ClipboardPage.qml
-        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/NotificationsPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/DeviceNotifierPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/MediaControllerPage.qml
 )

@@ -18,7 +18,6 @@ Item {
         "org.kde.plasma.volume":             "volume",
         "org.kde.plasma.battery":            "battery",
         "org.kde.plasma.clipboard":          "clipboard",
-        "org.kde.plasma.notifications":      "notifications",
         "org.kde.plasma.devicenotifier":     "devicenotifier",
         "org.kde.plasma.mediacontroller":    "mediacontroller"
     })

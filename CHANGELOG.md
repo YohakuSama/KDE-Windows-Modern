@@ -6,6 +6,15 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Notification center
+
+- Combine shared KDE notification history and calendar in the clock flyout.
+  Add notification cards, dismiss/clear, action buttons and manual DND.
+- Route Win+N to the custom clock when present, releasing the old tray binding
+  and backing up user settings. Keep the native notification applet for jobs
+  and advanced interactions.
+- Fit the clock flyout to the screen and scroll when space is limited.
+
 ### Icons
 
 - Fill 11 missing application/arrow icon names with existing canonical SVGs in

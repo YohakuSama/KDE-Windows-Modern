@@ -271,6 +271,8 @@ def clock(p, c):
                                     and n.role == "label" and n.name.endswith(year)), None))
     p.shot("clock")
     c.check(header is not None, f"clock opens the calendar ({header.name!r})" if header else "clock opens the calendar")
+    c.check(visible("Notifications", exclude_window=panel_window) is not None,
+            "clock flyout also opens notification history")
     labels = [n.name for n in a11y.nodes(APP) if header and n.window == header.window and n.showing
               and n.role == "label" and len(n.name) > 8 and not n.name.endswith(year)]
     print(f"        flyout labels: {labels[:3]}")

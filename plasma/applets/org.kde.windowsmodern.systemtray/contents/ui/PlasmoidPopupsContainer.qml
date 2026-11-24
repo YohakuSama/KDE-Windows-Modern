@@ -151,7 +151,6 @@ QQC2.StackView {
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
         "clipboard":       clipboardPageComp,
-        "notifications":   notificationsPageComp,
         "devicenotifier":  deviceNotifierPageComp,
         "mediacontroller": mediaControllerPageComp
     })
@@ -183,12 +182,6 @@ QQC2.StackView {
     Component {
         id: clipboardPageComp
         Components.ClipboardPage {
-            onBack: systemTrayState.setActiveApplet(null)
-        }
-    }
-    Component {
-        id: notificationsPageComp
-        Components.NotificationsPage {
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
