@@ -26,3 +26,11 @@ Verify exact source artwork before adding mappings. Account pictures and Microso
 ## NixOS is a separate platform
 
 Fedora 44/45 builds are distro-specific ABI checks and prebuilt plugin packages; they are not universal Linux binaries. The existing installer assumes conventional writable /usr paths and dnf, pacman or apt. It must not overwrite the Nix store or remove a stock Plasma package on NixOS. The two C++ plugins need Nix derivations using the owner's pinned nixpkgs Plasma/Qt versions, and the login-manager replacement needs its own declarative system integration. Keep the stock lock/login configuration usable until verified. User-level theme and resource auditing is separate from these system changes. No NixOS runtime acceptance is claimed.
+
+The indexed resource branch is now the review reference. The metadata-only
+snapshot is `docs/windows11-resource-index.json`; do not equate a group ID
+existing with a verified semantic match. Search/Task View now consume icon
+names rather than inline drawings. Native palette and hotspot state must
+reflect the actual KDE service; missing hardware does not get a dummy tile.
+Default account-picture and Store artwork still require visual verification
+of the actual original, not a guessed MUN ID. NixOS live tests remain open.

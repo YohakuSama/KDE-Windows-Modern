@@ -64,12 +64,13 @@ Lib.SplitTile {
         PlasmaComponents3.MenuItem {
             text: qsTr("Create hotspot…")
             icon.name: "network-wireless-hotspot"
+            enabled: handler.hotspotSupported && !handler.hotspotActive
             onClicked: handler.createHotspot()
         }
         PlasmaComponents3.MenuItem {
             text: qsTr("Connect to hidden network…")
             icon.name: "network-wireless-secure"
-            onClicked: handler.addAndActivateConnection("")
+            onClicked: Qt.openUrlExternally("systemsettings://kcm_networkmanagement")
         }
         PlasmaComponents3.MenuItem {
             text: qsTr("Known networks…")

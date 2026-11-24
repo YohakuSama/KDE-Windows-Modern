@@ -6,6 +6,8 @@ import "../lib" as Lib
 Lib.Tile {
     id: tile
 
+    readonly property bool available: nightLight.available
+
     label: qsTr("Night Light")
     iconSource: {
         if (!nightLight.available)
@@ -16,7 +18,7 @@ Lib.Tile {
     }
     active: nightLight.running && !nightLight.inhibited
 
-    onClicked: NightLightInhibitor.toggleInhibition()
+    onClicked: if (tile.available) NightLightInhibitor.toggleInhibition()
 
     tooltipText: {
         if (!nightLight.available)

@@ -159,3 +159,20 @@ Replace the legacy Win10OS default with the mature GPL-3.0 Bibata Modern Ice XCu
 ## Quick Settings interaction and visual detail pass
 
 Keep the existing native backends and icon names. The grid reserves exactly two rows when six or more supported tiles are present, with consistent button height, a narrow independent scroll rail, previous/next controls and row-aligned resting positions. Brightness, volume and the footer remain outside the viewport. Store the tile order in Plasma configuration by stable identifiers; unavailable hardware and disabled entries retain their positions when re-enabled. Mouse/trackpad pointer drag reorders without invoking a tile action; touch scrolling remains available, and Ctrl+arrow provides keyboard reordering. Split toggle and detail-arrow feedback are independent; detail navigation preserves the current scroll position and closing the popup resets it. Use native theme colors and animation duration. Added headless order and scroll math tests. Source-only development in this session; CI and live Plasma/NixOS rendering and interaction must be verified separately. No extracted Windows artwork or resource mapping changes.
+
+## Indexed owner resources and functional UI review
+
+The owner supplied a separate indexed resource branch. Cross-checked its
+manifest with the Git tree: 467 originals, 713 ICO groups, 5,405 PNG frames;
+all 6,585 paths are present, and listed original/ICO sizes agree. Every one
+of the 63 numeric mapped group IDs exists. Binary re-decoding and semantic
+image comparisons were not available from the current tool environment.
+Reuse the existing indexed previews via the local importer with source and
+PNG hash checks. Replace inline Search/Task View artwork with theme icon
+lookups and distinguish the documented GridView glyph. KDE 6.7/6.8 Handler
+hotspotActive is the native source of truth; do not guess asynchronous
+connection or appearance state. Hide unsupported Night Light and use a real
+native settings entry for hidden Wi-Fi networks. New Start instances default
+to the compact account/power footer; existing optional folder shortcuts are
+preserved, and their labels reflect actual destinations. No MS artwork is
+added to main. Source changes need CI and desktop reference validation.
