@@ -196,8 +196,8 @@ with zipfile.ZipFile(sys.argv[1], "a", zipfile.ZIP_DEFLATED) as out, zipfile.Zip
 PYEOF
     rm -f "$PLM_ZIP"
 else
-    if [[ "$INTEGRATION" -eq 1 ]]; then
-        err "Integration bundle requires the pinned login manager source."
+    if [[ "$INTEGRATION" -eq 1 || "$OWNER" -eq 1 ]]; then
+        err "Test bundle requires the pinned login manager source."
         exit 1
     fi
     warn "Login manager source not available at the pinned commit — the bundle cannot build the greeter."
@@ -228,10 +228,13 @@ if [[ "$OWNER" -eq 1 ]]; then
     trap 'rm -rf "$stage"' EXIT
     prefix="KDE-Windows-Modern-${FULL_VER}"
     mkdir -p "$stage/$prefix"
+    # Archive the tests subtree directly so the normal release export-ignore
+    # rule still applies to public theme ZIPs.
+    git -C "$SRC_DIR" archive --prefix=tests/ HEAD:tests | tar -xf - -C "$stage/$prefix"
     bash "$SCRIPT_DIR/stage-native-resources.sh" "$stage/$prefix/native-resources"
     # A source-build test archive never tries to download stale release binaries.
     git -C "$SRC_DIR" rev-parse HEAD > "$stage/$prefix/INTEGRATION-BUILD"
-    (cd "$stage" && zip -qry "$FULL_OUT" "$prefix/native-resources" "$prefix/INTEGRATION-BUILD")
+    (cd "$stage" && zip -qry "$FULL_OUT" "$prefix/native-resources" "$prefix/INTEGRATION-BUILD" "$prefix/tests")
     rm -rf "$stage"
     trap - EXIT
 fi

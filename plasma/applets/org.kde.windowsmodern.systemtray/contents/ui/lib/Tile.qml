@@ -12,6 +12,7 @@ ColumnLayout {
     property string label
     property string tooltipText: ""
     property bool active: false
+    property bool checkable: true
     property bool included: true
     property string orderKey: ""
     property Item orderView: null
@@ -50,7 +51,8 @@ ColumnLayout {
 
     activeFocusOnTab: true
 
-    Accessible.role: Accessible.CheckBox
+    Accessible.role: checkable ? Accessible.CheckBox : Accessible.Button
+    Accessible.checkable: checkable
     Accessible.name: tile.label
     Accessible.checked: tile.active
     Accessible.onPressAction: tile.clicked()

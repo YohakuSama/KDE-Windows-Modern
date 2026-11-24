@@ -184,7 +184,6 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/NetworkPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/NetworkToggle.qml
-        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/BluetoothPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/BluetoothToggle.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/VolumePage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/VolumeSlider.qml
@@ -201,13 +200,11 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/ColorSchemeToggle.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/MicMuteToggle.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/HotspotToggle.qml
-        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/CastInvertToggle.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/InhibitSleepToggle.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/TouchpadToggle.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/KeyboardBrightnessSlider.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/Footer.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/ClipboardPage.qml
-        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/DeviceNotifierPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/MediaControllerPage.qml
 )
 ecm_target_qml_sources(org.kde.windowsmodern.systemtray
@@ -218,3 +215,11 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/volume/InputDeviceSection.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/volume/VolumeMixerSection.qml
 )
+
+option(WINDOWSMODERN_TEST_TRAY "Build tray status regression tests" OFF)
+if(WINDOWSMODERN_TEST_TRAY)
+    enable_testing()
+    add_executable(test_traystatus "${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/systemtray/test_traystatus.cpp")
+    target_link_libraries(test_traystatus PRIVATE Plasma::Plasma)
+    add_test(NAME tray-status COMMAND test_traystatus)
+endif()

@@ -65,7 +65,7 @@ if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ] && [ -d "$NATIV
     step "Installing original Windows wallpaper packages"
     # Replace each owned package, not every similarly named wallpaper.
     for package in "$NATIVE_ASSETS_DIR/wallpapers/"*; do
-        [ -d "$package" ] && [ -f "$package/metadata.json" ] || continue
+        [[ -d "$package" && -f "$package/metadata.json" ]] || continue
         name="$(basename "$package")"
         case "$name" in Windows-modern*) ;; *) continue ;; esac
         stage="$(mktemp -d "$WALLPAPER_DIR/.windows-modern-wallpaper.XXXXXX")"

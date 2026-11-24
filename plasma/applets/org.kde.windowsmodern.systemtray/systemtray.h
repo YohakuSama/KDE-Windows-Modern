@@ -32,11 +32,17 @@ class SystemTray : public Plasma::Containment
     Q_PROPERTY(QAbstractItemModel *systemTrayModel READ sortedSystemTrayModel CONSTANT)
     Q_PROPERTY(QAbstractItemModel *configSystemTrayModel READ configSystemTrayModel CONSTANT)
 
+    Q_PROPERTY(bool accessibilityAvailable READ accessibilityAvailable CONSTANT)
+    Q_PROPERTY(bool castAvailable READ castAvailable NOTIFY castAvailabilityChanged)
+
 public:
     SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args);
     ~SystemTray() override;
 
     void init() override;
+    bool accessibilityAvailable() const;
+    bool castAvailable() const;
+    Q_INVOKABLE void openCast();
 
     void restoreContents(KConfigGroup &group) override;
 
@@ -54,6 +60,9 @@ public:
     Q_INVOKABLE void secondaryActivate(const QString &service, QPoint pos);
     Q_INVOKABLE void openContextMenu(const QString &service, QPoint pos, QQuickItem *statusNotifierIcon);
     Q_INVOKABLE void scroll(const QString &service, int delta, const QString &direction);
+
+Q_SIGNALS:
+    void castAvailabilityChanged();
 
 private Q_SLOTS:
     void onEnabledAppletsChanged();

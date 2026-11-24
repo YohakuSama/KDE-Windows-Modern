@@ -56,32 +56,9 @@ void BaseModel::onConfigurationChanged() {
 }
 
 Plasma::Types::ItemStatus BaseModel::calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId) const {
-    if (!canRender) return Plasma::Types::ItemStatus::HiddenStatus;
-    bool forcedShown = m_showAllItems || m_shownItems.contains(itemId);
-    bool forcedHidden = m_hiddenItems.contains(itemId);
-    bool isDisabledSni = m_settings->isDisabledStatusNotifier(itemId);
-    if (!forcedShown && (status == Plasma::Types::ItemStatus::HiddenStatus || isDisabledSni))
-        return Plasma::Types::ItemStatus::HiddenStatus;
-    // The clock owns the default notification bell; keep the native
-    // notification applet available in overflow, even when it has jobs.
-    // Explicit user pinning/show-all still takes precedence.
-    if (itemId == QLatin1String("org.kde.plasma.notifications") && !forcedShown)
-        return Plasma::Types::ItemStatus::PassiveStatus;
-    // Windows 11: an unpinned icon shows only if it is one of the defaults,
-    // or while it needs attention (or has its popup open).
-    // (Unknown is what applets report when they never set a status.)
-    const bool needsUser = status == Plasma::Types::ItemStatus::NeedsAttentionStatus
-        || status == Plasma::Types::ItemStatus::RequiresAttentionStatus
-        || status == Plasma::Types::ItemStatus::AcceptingInputStatus;
-    const bool active = status == Plasma::Types::ItemStatus::ActiveStatus
-        || status == Plasma::Types::ItemStatus::UnknownStatus;
-    const bool wantsTray = needsUser || (active && WindowsTray::shownByDefault(itemId))
-        || WindowsTray::alwaysShown(itemId); // Hidden (e.g. no battery) returned above
-    if (forcedShown || (!forcedHidden && wantsTray))
-        return Plasma::Types::ItemStatus::ActiveStatus;
-    // Eligible unpinned items stay reachable through the overflow. Only
-    // disabled or non-renderable items are completely hidden (handled above).
-    return Plasma::Types::ItemStatus::PassiveStatus;
+    const bool pinned = m_showAllItems || m_shownItems.contains(itemId);
+    const bool disabled = m_settings && m_settings->isDisabledStatusNotifier(itemId);
+    return WindowsTray::effectiveStatus(itemId, status, canRender && !disabled, pinned, m_hiddenItems.contains(itemId));
 }
 
 static QString plasmoidCategoryForMetadata(const KPluginMetaData &metadata) {
@@ -147,7 +124,11 @@ void PlasmoidModel::addApplet(Plasma::Applet *applet) {
     m_items[idx].applet = applet;
     connect(applet, &Plasma::Applet::statusChanged, this, [this, applet](Plasma::Types::ItemStatus) {
         int idx = indexOfPluginId(applet->pluginMetaData().pluginId());
-        Q_EMIT dataChanged(index(idx, 0), index(idx, 0), {static_cast<int>(BaseRole::Status)});
+        if (idx < 0 || m_items[idx].applet != applet) {
+            return;
+        }
+        const auto changed = index(idx, 0);
+        Q_EMIT dataChanged(changed, changed, {static_cast<int>(BaseRole::Status), static_cast<int>(BaseRole::EffectiveStatus)});
     });
     Q_EMIT dataChanged(index(idx, 0), index(idx, 0));
 }

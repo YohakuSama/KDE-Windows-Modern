@@ -3,12 +3,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.brightnesscontrolplugin
-import org.kde.kitemmodels as KItemModels
 import org.kde.kcmutils
-import org.kde.plasma.plasmoid
-import org.kde.plasma.plasma5support as Plasma5Support
-import org.kde.plasma.workspace.dbus as DBus
-import "../js/colorType.js" as ColorType
 import "../lib" as Lib
 
 Lib.Page {
@@ -23,88 +18,26 @@ Lib.Page {
     }
 
     KeyboardBrightnessControl { id: keyboardControl }
-    readonly property bool darkMode: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    Plasma5Support.DataSource {
-        id: themeExec
-        engine: "executable"
-        connectedSources: []
-        onNewData: (sourceName, data) => themeExec.disconnectSource(sourceName)
-    }
-    function toggleTheme() {
-        const target = darkMode ? Plasmoid.configuration.lightTheme : Plasmoid.configuration.darkTheme;
-        if (/^[A-Za-z0-9_.-]+$/.test(target))
-            themeExec.connectSource("plasma-apply-lookandfeel --apply " + target);
-    }
-    DBus.Properties {
-        id: nightLight
-        busType: DBus.BusType.Session
-        service: "org.kde.KWin.NightLight"
-        path: "/org/kde/KWin/NightLight"
-        iface: "org.kde.KWin.NightLight"
-        readonly property bool available: Boolean(properties.available)
-        readonly property bool running: Boolean(properties.running)
-    }
-
-    property var displays: []
-    property bool _dragging: false
-
-    function refreshDisplays() {
-        if (_dragging)
-            return;
-        const model = sbControl.displays;
-        if (!model || model.rowCount() === 0) {
-            page.displays = [];
-            return;
-        }
-        const labelRole = model.KItemModels.KRoleNames.role("label");
-        const brightnessRole = model.KItemModels.KRoleNames.role("brightness");
-        const maxBrightnessRole = model.KItemModels.KRoleNames.role("maxBrightness");
-        const displayNameRole = model.KItemModels.KRoleNames.role("displayName");
-        let displayList = [];
-        for (let i = 0; i < model.rowCount(); i++) {
-            const idx = model.index(i, 0);
-            displayList.push({
-                displayName: model.data(idx, displayNameRole),
-                label: model.data(idx, labelRole),
-                brightness: model.data(idx, brightnessRole),
-                maxBrightness: model.data(idx, maxBrightnessRole)
-            });
-        }
-        page.displays = displayList;
-    }
-
-    Connections {
-        target: sbControl.displays
-        function onDataChanged() {
-            page.refreshDisplays();
-        }
-        function onModelReset() {
-            page.refreshDisplays();
-        }
-        function onRowsInserted() {
-            page.refreshDisplays();
-        }
-        function onRowsRemoved() {
-            page.refreshDisplays();
-        }
-    }
-
-    Component.onCompleted: page.refreshDisplays()
-
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 0
 
         Repeater {
-            model: page.displays
+            model: sbControl.displays
 
             delegate: ColumnLayout {
+                id: display
+                required property int index
+                required property string displayName
+                required property string label
+                required property int brightness
+                required property int maxBrightness
                 Layout.fillWidth: true
                 spacing: 4
 
                 PlasmaComponents3.Label {
                     Layout.leftMargin: 22
-                    text: modelData.label || i18n("Display %1", index + 1)
+                    text: display.label || i18n("Display %1", display.index + 1)
                     font: Kirigami.Theme.smallFont
                     opacity: 0.8
                     color: Kirigami.Theme.textColor
@@ -125,19 +58,14 @@ Lib.Page {
                     }
 
                     PlasmaComponents3.Slider {
-                        id: slider
+                        Accessible.name: display.label
                         Layout.fillWidth: true
-                        from: modelData.maxBrightness > 100 ? 1 : 0
-                        to: modelData.maxBrightness
-                        value: modelData.brightness
-                        stepSize: Math.max(1, Math.floor(modelData.maxBrightness / 100))
+                        from: 0
+                        to: display.maxBrightness
+                        value: display.brightness
+                        stepSize: Math.max(1, Math.floor(display.maxBrightness / 100))
 
-                        onMoved: sbControl.setBrightness(modelData.displayName, value)
-                        onPressedChanged: {
-                            page._dragging = slider.pressed;
-                            if (!slider.pressed)
-                                page.refreshDisplays();
-                        }
+                        onMoved: sbControl.setBrightness(display.displayName, value)
                     }
                 }
             }
@@ -166,46 +94,6 @@ Lib.Page {
                     onMoved: keyboardControl.brightness = value
                 }
             }
-        }
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-            Layout.leftMargin: 12
-            Layout.rightMargin: 12
-            Kirigami.Icon {
-                Layout.preferredWidth: 20
-                Layout.preferredHeight: 20
-                source: "redshift-status-on-symbolic"
-            }
-            PlasmaComponents3.Label { Layout.fillWidth: true; text: i18n("Night Light") }
-            PlasmaComponents3.Switch {
-                checked: nightLight.running && !NightLightInhibitor.inhibited
-                enabled: nightLight.available
-                onClicked: NightLightInhibitor.toggleInhibition()
-            }
-        }
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-            Layout.leftMargin: 12
-            Layout.rightMargin: 12
-            Kirigami.Icon {
-                Layout.preferredWidth: 20
-                Layout.preferredHeight: 20
-                source: "weather-clear-night-symbolic"
-            }
-            PlasmaComponents3.Label { Layout.fillWidth: true; text: i18n("Dark Mode") }
-            PlasmaComponents3.Switch {
-                checked: page.darkMode
-                onClicked: page.toggleTheme()
-            }
-        }
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.topMargin: 8
-            Layout.bottomMargin: 8
-            height: 1
-            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
         }
     }
 

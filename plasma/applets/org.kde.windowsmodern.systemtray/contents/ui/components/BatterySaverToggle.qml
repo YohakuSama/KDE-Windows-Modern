@@ -12,7 +12,9 @@ Lib.SplitTile {
     readonly property bool saverOn: powerProfiles.activeProfile === "power-saver"
     readonly property bool available: powerProfiles.isPowerProfileDaemonInstalled && powerProfiles.profiles.indexOf("power-saver") >= 0
 
+    property string previousProfile: ""
     visible: available
+    toggleAvailable: available && powerProfiles.profiles.some(name => name !== "power-saver")
     label: i18n("Battery Saver")
     // Use the power-saving role, not a low-charge battery indicator.
     iconSource: "battery-profile-powersave-symbolic"
@@ -20,8 +22,11 @@ Lib.SplitTile {
 
     onClicked: {
         if (saverOn) {
-            powerProfiles.setProfile(powerProfiles.configuredProfile || "balanced");
+            const profile = [previousProfile, powerProfiles.configuredProfile, "balanced", ...powerProfiles.profiles]
+                .find(name => name && name !== "power-saver" && powerProfiles.profiles.includes(name));
+            if (profile) powerProfiles.setProfile(profile);
         } else {
+            previousProfile = powerProfiles.activeProfile;
             powerProfiles.setProfile("power-saver");
         }
     }

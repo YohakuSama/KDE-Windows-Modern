@@ -9,6 +9,7 @@ import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 
 import org.kde.plasma.plasmoid
+import org.kde.kcmutils as KCMUtils
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 
@@ -75,7 +76,7 @@ ColumnLayout {
             id: toggleViewport
             anchors.fill: parent
             anchors.rightMargin: hasMoreRows ? toggleRow.railWidth + toggleRow.railGap : 0
-            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile]
+            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile, castTile, accessibilityTile]
             readonly property var knownKeys: tiles.map(tile => tile.orderKey)
             readonly property var availableKeys: tiles.filter(tile => tile.included).map(tile => tile.orderKey)
             readonly property var order: Order.normalizeOrder(
@@ -329,6 +330,28 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showMicMute && available
                     visible: included
+                }
+                Lib.Tile {
+                    id: castTile
+                    orderKey: "cast"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    included: Plasmoid.castAvailable
+                    checkable: false
+                    label: i18n("Cast")
+                    iconSource: "video-display"
+                    onClicked: Plasmoid.openCast()
+                }
+                Lib.Tile {
+                    id: accessibilityTile
+                    orderKey: "accessibility"
+                    orderView: toggleViewport
+                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    checkable: false
+                    included: Plasmoid.accessibilityAvailable
+                    label: i18n("Accessibility")
+                    iconSource: "preferences-desktop-accessibility"
+                    onClicked: KCMUtils.KCMLauncher.openSystemSettings("kcm_access")
                 }
                 Components.HotspotToggle {
                     id: hotspotTile

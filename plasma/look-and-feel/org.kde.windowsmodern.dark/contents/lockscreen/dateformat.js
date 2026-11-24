@@ -30,3 +30,19 @@ function longDateWithoutYear(longFormat) {
     f = f.replace(/[\s,]*y+(?:年|년)?/, "");
     return f.trim();
 }
+
+
+// Existing mode 1 is the Windows Modern theme default. Keep explicit
+// choices 0 and 2; provide regional defaults as a separate choice (3).
+function windowsShortDate() { return "yyyy/M/d"; }
+
+function clockFormats(mode, regionalFormat) {
+    if (mode === 0) return {time: "h:mm AP", seconds: "h:mm:ss AP"};
+    if (mode === 1) return {time: "H:mm", seconds: "H:mm:ss"};
+    if (mode === 2) return {time: "HH:mm", seconds: "HH:mm:ss"};
+    const fmt = String(regionalFormat || "H:mm");
+    const match = /m{1,2}/.exec(fmt);
+    return {time: fmt, seconds: match
+        ? fmt.slice(0, match.index + match[0].length) + ":ss" + fmt.slice(match.index + match[0].length)
+        : "H:mm:ss"};
+}

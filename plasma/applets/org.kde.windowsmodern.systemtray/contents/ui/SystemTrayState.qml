@@ -111,6 +111,7 @@ QtObject {
     }
 
     readonly property Connections rootConnections: Connections {
+        target: root
         function onExpandedChanged() {
             if (systemTrayState.acceptExpandedChange) {
                 systemTrayState.expanded = root.expanded

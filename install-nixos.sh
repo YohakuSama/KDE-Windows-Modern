@@ -73,8 +73,7 @@ set_profile_env() {
     systemctl --user set-environment "QT_PLUGIN_PATH=$qt" "XDG_DATA_DIRS=$data" "QML_DISABLE_DISK_CACHE=1"
 }
 wait_shell() {
-    local n
-    for n in {1..30}; do
+    for _ in {1..30}; do
         if busctl --user status org.kde.plasmashell >/dev/null 2>&1; then return 0; fi
         sleep 1
     done
@@ -136,7 +135,8 @@ recover_legacy_residue() {
         echo "无法确认旧测试目录的来源，已保留。" >&2
         return 1
     fi
-    local backups="$(dirname "$STATE")/windows-modern-nixos-backups"
+    local backups
+    backups="$(dirname "$STATE")/windows-modern-nixos-backups"
     local archived saved
     [ -d "$backups" ] || return 1
     archived="$(find -P "$backups" -mindepth 3 -maxdepth 3 -type f -path '*/original/manifest.json' -print -quit)" || return 1
@@ -149,7 +149,8 @@ recover_legacy_residue() {
 finish_cleanup() {
     # Save the original snapshot before removing test files or GC roots.
     # Explicitly check every command: rollback runs with errexit disabled.
-    local backups="$(dirname "$STATE")/windows-modern-nixos-backups"
+    local backups
+    backups="$(dirname "$STATE")/windows-modern-nixos-backups"
     mkdir -p "$backups" || return 1
     local saved
     saved="$(mktemp -d "$backups/$(date +%Y%m%d-%H%M%S).XXXXXX")" || return 1
@@ -217,7 +218,8 @@ if [ "$action" = uninstall ]; then
     fi
     PROFILE="$(readlink -f "$STATE/runtime")"
     PYTHON="$PROFILE/bin/python3"
-    export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+    GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+    export GI_TYPELIB_PATH
     [ -x "$PYTHON" ] || { echo "测试运行时缺失，保留备份以免丢失原配置。" >&2; exit 1; }
     remember_env
     stop_shell
@@ -314,14 +316,18 @@ if [ "$upgrading" -eq 1 ] && [ "$PROFILE" = "$old_profile" ]; then
 fi
 PYTHON="$PROFILE/bin/python3"
 export PATH="$PROFILE/bin:$PATH"
-export GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+export GI_TYPELIB_PATH
 "$PYTHON" -c 'from gi.repository import Gio, GLib; import PIL, fontTools'
 "$PYTHON" "$ROOT/scripts/check-startmenu-keys.py"
 prefix="$(cat "$PROFILE/wm-qt-plugin-prefix")"
 plugin="$PROFILE/$prefix"
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"
 tasks="$plugin/plasma/applets/org.kde.windowsmodern.icontasks.so"
-[ -s "$tray" ] && [ -s "$tasks" ] || { echo "两个 C++ 插件未完整构建。" >&2; exit 1; }
+if [[ ! -s "$tray" || ! -s "$tasks" ]]; then
+    echo "两个 C++ 插件未完整构建。" >&2
+    exit 1
+fi
 tray_token="$(cat "$PROFILE/wm-token-systemtray")"
 tasks_token="$(cat "$PROFILE/wm-token-icontasks")"
 verify_args=(--tray-token "$tray_token" --tasks-token "$tasks_token" --tray "$tray" --tasks "$tasks")
@@ -456,7 +462,7 @@ done
 # A filename match is NOT sufficient. Verify both mapped objects have
 # exactly the new immutable store paths, inodes, and compiled build token.
 verified=0
-for attempt in {1..20}; do
+for _ in {1..20}; do
     pid="$(systemctl --user show "$SERVICE" -p MainPID --value)"
     if "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" "${verify_args[@]}" --pid "$pid" --quiet 2>/dev/null; then
         verified=1

@@ -86,11 +86,13 @@ QQC2.StackView {
                 activeApplet.fullRepresentationItem instanceof PlasmaExtras.Representation) {
                 if (activeApplet.fullRepresentationItem.header && activeApplet.fullRepresentationItem.header instanceof PlasmaExtras.PlasmoidHeading) {
                     mainStack.appletHasHeading = true
-                    activeApplet.fullRepresentationItem.header.background.visible = false
+                    if (activeApplet.fullRepresentationItem.header.background)
+                        activeApplet.fullRepresentationItem.header.background.visible = false
                 }
                 if (activeApplet.fullRepresentationItem.footer && activeApplet.fullRepresentationItem.footer instanceof PlasmaExtras.PlasmoidHeading) {
                     mainStack.appletHasFooter = true
-                    activeApplet.fullRepresentationItem.footer.background.visible = false
+                    if (activeApplet.fullRepresentationItem.footer.background)
+                        activeApplet.fullRepresentationItem.footer.background.visible = false
                 }
             }
 
@@ -148,24 +150,16 @@ QQC2.StackView {
 
     readonly property var themedPages: ({
         "network":         networkPageComp,
-        "bluetooth":       bluetoothPageComp,
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
         "brightness":      brightnessPageComp,
         "clipboard":       clipboardPageComp,
-        "devicenotifier":  deviceNotifierPageComp,
         "mediacontroller": mediaControllerPageComp
     })
 
     Component {
         id: networkPageComp
         Components.NetworkPage {
-            onBack: systemTrayState.setActiveApplet(null)
-        }
-    }
-    Component {
-        id: bluetoothPageComp
-        Components.BluetoothPage {
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
@@ -190,12 +184,6 @@ QQC2.StackView {
     Component {
         id: clipboardPageComp
         Components.ClipboardPage {
-            onBack: systemTrayState.setActiveApplet(null)
-        }
-    }
-    Component {
-        id: deviceNotifierPageComp
-        Components.DeviceNotifierPage {
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
