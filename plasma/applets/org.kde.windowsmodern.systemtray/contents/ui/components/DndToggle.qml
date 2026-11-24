@@ -10,22 +10,31 @@ Lib.Tile {
         id: notificationSettings
     }
 
-    label: qsTr("Do Not Disturb")
-    iconSource: Funcs.checkInhibition(notificationSettings) ? "notifications-disabled" : "notifications"
-    active: Funcs.checkInhibition(notificationSettings)
-
-    onClicked: Funcs.toggleDnd(notificationSettings)
-
-    onMiddleClicked: {
-        if (Funcs.checkInhibition(notificationSettings)) {
-            notificationSettings.notificationsInhibitedUntil = undefined;
-        } else {
-            var d = new Date();
-            d.setHours(d.getHours() + 1);
-            notificationSettings.notificationsInhibitedUntil = d;
-        }
-        notificationSettings.save();
+    // Update expiry while the flyout is open, without background polling.
+    property double now: Date.now()
+    Timer {
+        interval: 60000
+        running: tile.visible
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: tile.now = Date.now()
     }
 
-    tooltipText: Funcs.checkInhibition(notificationSettings) ? qsTr("Do Not Disturb — On") : qsTr("Do Not Disturb — Off")
+    readonly property bool manualDnd: Funcs.manualInhibition(notificationSettings, now)
+    readonly property bool effectiveDnd: Funcs.checkInhibition(notificationSettings, now)
+    label: qsTr("Do Not Disturb")
+    iconSource: effectiveDnd ? "notifications-disabled" : "notifications"
+    active: manualDnd
+
+    onClicked: {
+        now = Date.now();
+        Funcs.toggleDnd(notificationSettings, undefined, now);
+    }
+    onMiddleClicked: {
+        now = Date.now();
+        Funcs.toggleDnd(notificationSettings, 60 * 60 * 1000, now);
+    }
+
+    tooltipText: manualDnd ? qsTr("Do Not Disturb — On")
+        : effectiveDnd ? qsTr("Do Not Disturb is enabled automatically") : qsTr("Do Not Disturb — Off")
 }

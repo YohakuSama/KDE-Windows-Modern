@@ -18,6 +18,7 @@ import "code/dateformat.js" as DateFormat
 
 Item {
     id: expandedRoot
+    property bool calendarExpanded: true
 
     Win11Palette { id: palette }
 
@@ -56,6 +57,7 @@ Item {
             NotificationHistory {
                 Layout.fillWidth: true
                 opened: root.expanded
+                currentTime: root.currentTime
             }
 
             Rectangle {
@@ -116,19 +118,30 @@ Item {
                     }
                 }
 
-                PlasmaComponents.Label {
-                    id: dateHeader
+                RowLayout {
                     Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    textFormat: Text.PlainText
-                    // Windows 11 shows the locale's long date without the year.
-                    text: Qt.locale().toString(root.currentTime,
-                                               DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)))
-                    color: palette.textSecondary
-                    font {
-                        family: Kirigami.Theme.defaultFont.family
-                        pixelSize: Kirigami.Units.gridUnit * 1.1
+                    PlasmaComponents.Label {
+                        id: dateHeader
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignLeft
+                        verticalAlignment: Text.AlignVCenter
+                        textFormat: Text.PlainText
+                        // Windows 11 shows the locale's long date without the year.
+                        text: Qt.locale().toString(root.currentTime,
+                                                   DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)))
+                        color: palette.textSecondary
+                        font {
+                            family: Kirigami.Theme.defaultFont.family
+                            pixelSize: Kirigami.Units.gridUnit * 1.1
+                        }
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        text: expandedRoot.calendarExpanded ? i18n("Collapse calendar") : i18n("Expand calendar")
+                        icon.name: expandedRoot.calendarExpanded ? "go-up-symbolic" : "go-down-symbolic"
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        onClicked: expandedRoot.calendarExpanded = !expandedRoot.calendarExpanded
+                        PlasmaComponents.ToolTip { text: parent.text }
                     }
                 }
             }
@@ -137,7 +150,8 @@ Item {
             CalendarView {
                 id: calendarView
                 Layout.fillWidth: true
-                focus: true
+                visible: expandedRoot.calendarExpanded
+                focus: visible
             }
 
             // ── Optional timezone list ──
@@ -145,17 +159,19 @@ Item {
                 id: timeZoneView
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? Kirigami.Units.gridUnit * 8 : 0
-                visible: Plasmoid.configuration.selectedTimeZones.length > 1 || Plasmoid.configuration.showLocalTimezone
+                visible: expandedRoot.calendarExpanded && (Plasmoid.configuration.selectedTimeZones.length > 1 || Plasmoid.configuration.showLocalTimezone)
             }
 
             Rectangle {
                 Layout.fillWidth: true
+                visible: expandedRoot.calendarExpanded
                 implicitHeight: 1
                 color: palette.surfaceBorder
             }
 
             DayAgenda {
                 Layout.fillWidth: true
+                visible: expandedRoot.calendarExpanded
                 date: calendarView.selectedDate
                 events: calendarView.selectedDayEvents
             }

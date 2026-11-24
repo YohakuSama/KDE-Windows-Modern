@@ -17,6 +17,7 @@ import org.kde.notificationmanager as NotificationManager
 ColumnLayout {
     id: history
     property bool opened: false
+    required property date currentTime
     spacing: Kirigami.Units.smallSpacing * 2
 
     Win11Palette { id: palette }
@@ -43,7 +44,7 @@ ColumnLayout {
     }
 
     function markRead() {
-        if (opened) notificationModel.lastRead = new Date();
+        if (opened) notificationModel.lastRead = undefined;
     }
     onOpenedChanged: markRead()
     Component.onCompleted: markRead()
@@ -52,7 +53,7 @@ ColumnLayout {
     // user's manual setting, like the existing Quick Settings toggle.
     readonly property bool manualDnd: {
         const until = settings.notificationsInhibitedUntil;
-        return until && !isNaN(until.getTime()) && until.getTime() > root.currentTime.getTime();
+        return until && !isNaN(until.getTime()) && until.getTime() > history.currentTime.getTime();
     }
     function toggleDnd() {
         if (manualDnd) {
@@ -132,13 +133,25 @@ ColumnLayout {
             id: card
             required property int index
             required property var model
+            readonly property var notificationId: model.id
+            onNotificationIdChanged: if (replyInput) replyInput.clear()
             width: list.width - Kirigami.Units.smallSpacing
             implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
             height: implicitHeight
-            radius: 6
+            radius: 4
             color: palette.surface
             border.width: 1
             border.color: palette.surfaceBorder
+
+            function submitReply() {
+                const text = replyInput.text;
+                if (!text.trim() || model.expired || !model.hasReplyAction) return;
+                const idx = notificationModel.index(index, 0);
+                const behavior = model.resident ? NotificationManager.Notifications.None
+                                                : NotificationManager.Notifications.Close;
+                replyInput.clear();
+                notificationModel.reply(idx, text, behavior);
+            }
 
             function invoke(name) {
                 const idx = notificationModel.index(index, 0);
@@ -238,6 +251,28 @@ ColumnLayout {
                             width: Math.min(implicitWidth, actions.width)
                             onClicked: card.invoke(modelData)
                         }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    visible: !card.model.expired && !!card.model.hasReplyAction
+                    spacing: Kirigami.Units.smallSpacing
+
+                    PlasmaComponents.TextField {
+                        id: replyInput
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        placeholderText: card.model.replyPlaceholderText || i18n("Reply")
+                        Accessible.name: card.model.replyActionLabel || i18n("Reply to notification")
+                        onAccepted: card.submitReply()
+                    }
+
+                    PlasmaComponents.Button {
+                        text: card.model.replySubmitButtonText || i18n("Send")
+                        icon.name: card.model.replySubmitButtonIconName || "document-send"
+                        enabled: replyInput.text.trim().length > 0
+                        onClicked: card.submitReply()
                     }
                 }
             }
