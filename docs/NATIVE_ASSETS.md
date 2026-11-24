@@ -72,7 +72,10 @@ The lock package uses Screen/img100.jpg; other usable full images are offered
 as stock choices. Duplicate Spotlight and lock-screen images are not copied
 twice; the small Spotlight preview and solid blue placeholder are excluded.
 The public fallback package is retained for installs without owner resources.
-Native system greeter installation is separate and still requires review.
+A standalone `./install.sh sessionlock` selects the installed native lock
+package if present, without changing the desktop wallpaper. With no installed
+native lock package it keeps the current lock wallpaper. Native system greeter
+installation is separate and still requires review.
 
 The freedesktop sound theme maps matching events only. Do not force-enable
 notification sounds when the owner has disabled them. To restore the previous

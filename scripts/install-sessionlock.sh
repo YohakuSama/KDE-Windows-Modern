@@ -96,6 +96,12 @@ fi
 # ── 5. Reset kscreenlockerrc so it doesn't point to a non-existent standalone shell ──
 kwriteconfig6 --file kscreenlockerrc --group Greeter --key Theme --delete 2>/dev/null || true
 
+# Standalone install: use the imported lock image, without touching the desktop.
+# The batch installer applies both wallpapers once through the global theme.
+if ! is_batch && [ "$UID" -ne 0 ]; then
+    bash "$SRC_DIR/scripts/set-wallpaper.sh" --lock-only || warn "Could not set the lock wallpaper."
+fi
+
 # ── 6. Rebuild cache ──
 kbuildsycoca6 2>/dev/null || true
 

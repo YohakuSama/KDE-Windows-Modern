@@ -6,6 +6,13 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Lock and login
+
+- Replace square unlock/login text field frames with matching 4 px corners,
+  36 px height and a bottom focus accent. Keep the native authentication path.
+- Standalone session-lock installation selects the native lock wallpaper when
+  installed; it leaves the desktop and missing-resource fallback unchanged.
+
 ### Integration refinements
 
 - Do Not Disturb toggles now change the user's manual preference only; they

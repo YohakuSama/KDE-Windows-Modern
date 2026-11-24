@@ -125,17 +125,30 @@ SessionManagementScreen {
         }
     }
 
-    // ── MDL2 password field + submit button ──
+    // ── Password field + submit button ──
     Item {
         Layout.fillWidth: true
-        implicitHeight: 32
+        Layout.maximumWidth: 380
+        Layout.alignment: Qt.AlignHCenter
+        implicitHeight: 36
 
         Rectangle {
             id: passwordBorder
             anchors.fill: parent
-            color: passwordBox.focus ? "#40000000" : "#40000000"
-            border.color: passwordBox.focus ? "#4CC2FF" : "#A0A0A0"
-            radius: 0
+            color: "#40000000"
+            border.color: "#66FFFFFF"
+            radius: 4
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 2
+                height: 2
+                radius: 1
+                color: "#4CC2FF"
+                visible: passwordBox.activeFocus
+            }
         }
 
         TextField {
@@ -144,7 +157,7 @@ SessionManagementScreen {
             anchors.right: loginButton.left
             anchors.rightMargin: 4
             anchors.verticalCenter: parent.verticalCenter
-            height: 32
+            height: parent.height
 
             property bool showPassword: false
             echoMode: showPassword ? TextInput.Normal : TextInput.Password
@@ -195,8 +208,8 @@ SessionManagementScreen {
             anchors.right: parent.right
             anchors.rightMargin: 2
             anchors.verticalCenter: parent.verticalCenter
-            width: 28
-            height: 28
+            width: 32
+            height: 32
 
             icon.name: LayoutMirroring.enabled ? "go-previous" : "go-next"
             visible: passwordBox.text.length > 0
@@ -208,6 +221,7 @@ SessionManagementScreen {
 
             background: Rectangle {
                 color: parent.hovered ? "#33FFFFFF" : "transparent"
+                radius: 4
             }
         }
     }

@@ -35,4 +35,10 @@ Overall development estimate: **67.5% (rounded to 68%)** as of this batch. Live 
 - DNS prevented a local clone. Full repository health, C++/QML compilation, CI results and live desktop acceptance remain unverified.
 - The 67.5% development estimate is unchanged: this batch improves reproducibility and input handling, not visual acceptance stages.
 
+## Lock and login appearance follow-up (draft integration)
+
+- Align the existing unlock and login fields at 36 logical pixels, with 4 px corners, subdued borders and a 2 px focus accent. Preserve all native authentication, keyboard and user selection paths. The styling is a Windows 11 approximation pending reference comparison.
+- Standalone session-lock installation selects the installed native lock wallpaper without changing the desktop. If the native package is absent it leaves the lock wallpaper alone. The owner archive contains the verified 3840 x 2160 JPEG used by this package.
+- The exact wallpaper script passed bash syntax and five mocked command scenarios (standalone with/without native package, full apply with/without lock package, missing desktop package). QML review was static only; no live lock, login, full CI or system greeter installation was exercised. The privileged boot greeter install remains unchanged. Keep the 67.5% estimate pending substantive acceptance.
+
 Update these categories after each substantive batch using the same rubric. Avoid claiming 1:1 visual parity until actual reference and runtime checks establish it.
