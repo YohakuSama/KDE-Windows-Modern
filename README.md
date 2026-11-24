@@ -716,3 +716,9 @@ For previously imported private Windows resources, refresh the latest icon map w
 ## Desktop integration test package
 
 The CI `Package integration bundle` job publishes `Windows-Modern-integration-<commit>` on pull requests and main. Download it from the successful Actions run, verify the inner ZIP against `SHA256SUMS`, extract it, and run `./install.sh`. It includes the exact commit, pinned login-manager source, matching Fedora 44/45 plugins, and the verified Bibata Modern Ice XCursor artwork. The installer uses the bundled plugin only for its exact distro/Plasma/Qt/CPU key; otherwise it builds locally. No stable tag is issued for an owner test build. Cursor size remains controlled by KDE System Settings. See [cursor credits and behavior](docs/CURSORS.md).
+
+### NixOS full desktop testing (no declarative changes)
+
+Run `bash install-nixos.sh` inside the Plasma desktop as your normal user. Enter **1** for a complete automatic source build and reversible installation, or **2** to uninstall and restore the pre-test desktop. `bash install.sh all --light` selects the light variant on NixOS; dark is the default. The script builds both C++ plugins against the running system's nixpkgs/Plasma ABI, uses a separate task-manager ID and user-level plugin environment, imports the original Windows resources, and refuses to report success with stock fallback applets. It never edits configuration.nix, Home Manager declarations, /nix/store, or the system login manager. Backups are saved under XDG_STATE_HOME and the test's GC root is removed on uninstall. Existing files from before the test are restored, not deleted. KWin may require a fresh login for cached QML or the Qt environment of already running apps.
+
+For an owner-only ZIP with the original resource inputs, run `bash scripts/package.sh --owner`. This does not require CI-built plugins.

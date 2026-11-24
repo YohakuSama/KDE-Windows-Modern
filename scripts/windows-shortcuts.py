@@ -23,13 +23,15 @@ Usage: windows-shortcuts.py apply   [--group shortcuts|apps] [--dry-run]
 """
 import argparse
 import json
+import os
 import pathlib
 import subprocess
 import sys
 
 from gi.repository import Gio, GLib
 
-BACKUP = pathlib.Path.home() / ".local/share/windows-modern/backup/shortcuts.json"
+BACKUP = pathlib.Path(os.environ.get("WM_SHORTCUT_BACKUP",
+    str(pathlib.Path(os.environ.get("XDG_DATA_HOME", pathlib.Path.home() / ".local/share")) / "windows-modern/backup/shortcuts.json")))
 
 MODS = {"Meta": 0x10000000, "Ctrl": 0x04000000, "Alt": 0x08000000, "Shift": 0x02000000}
 KEYS = {"F2": 0x01000031, "Search": 0x01000092, "Up": 0x01000013, "Down": 0x01000015, "Left": 0x01000012, "Right": 0x01000014,
@@ -174,7 +176,7 @@ def restore(group):
 # ── Tray: Win+A opens Quick Settings, Win+N the notifications ────────────
 # Plasma keeps an applet's global shortcut in its own config group
 # ([...][Applets][N][Shortcuts] global=...), read when Plasma Shell starts.
-APPLETSRC = pathlib.Path.home() / ".config/plasma-org.kde.plasma.desktop-appletsrc"
+APPLETSRC = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", pathlib.Path.home() / ".config")) / "plasma-org.kde.plasma.desktop-appletsrc"
 TRAYS = ("org.kde.windowsmodern.systemtray", "org.kde.plasma.systemtray")
 CLOCK = "org.kde.windowsmodern.digitalclock"
 NOTIFICATIONS = "org.kde.plasma.notifications"

@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Exact-path transaction for the reversible NixOS desktop test install."""
+import argparse
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")).absolute()
+DATA = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")).absolute()
+DOMAINS = ["plasma_applet_org.kde.windowsmodern." + n for n in
+           ("startmenu", "systemtray", "digitalclock", "icontasks", "search", "showdesktop", "taskview")]
+DOMAINS.append("plasma_shell_org.kde.windowsmodern.lockscreen")
+LANGUAGES = ("zh_CN", "zh_SG", "zh_Hans")
+CONFIG_NAMES = (
+    "kdeglobals", "kdedefaults", "kwinrc", "kscreenlockerrc", "plasmarc",
+    "plasmashellrc", "plasma-org.kde.plasma.desktop-appletsrc", "kcminputrc",
+    "ksplashrc", "kglobalshortcutsrc", "Kvantum/kvantum.kvconfig",
+    "kvantum.kvconfig", "gtk-3.0/settings.ini", "gtk-4.0/settings.ini",
+    "xsettingsd/xsettingsd.conf", "mimeapps.list", "spectaclerc", "dolphinrc",
+    "kcmicons", "kxkbrc", "environment.d/90-windows-modern-test.conf",
+    "systemd/user/plasma-plasmashell.service.d/90-windows-modern-test.conf",
+)
+APP_IDS = ("org.kde.windowsmodern.startmenu", "org.kde.windowsmodern.showdesktop",
+           "org.kde.windowsmodern.digitalclock", "org.kde.windowsmodern.search",
+           "org.kde.windowsmodern.taskview")
+
+def exists(path):
+    return path.exists() or path.is_symlink()
+
+def validate(path):
+    path = Path(path).absolute()
+    for root in (CONFIG, DATA):
+        if path.is_relative_to(root) and path != root:
+            # Do not descend through a Home Manager or other external symlink.
+            for parent in path.parents:
+                if parent == root:
+                    break
+                if parent.is_symlink():
+                    raise RuntimeError("Refusing to write through managed directory: " + str(parent))
+            return path
+    raise ValueError("Target outside the desktop user's data/config: " + str(path))
+
+def remove(path):
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+def copy(src, dst):
+    if src.is_symlink():
+        dst.symlink_to(os.readlink(src))
+    elif src.is_dir():
+        shutil.copytree(src, dst, symlinks=True)
+    else:
+        shutil.copy2(src, dst)
+
+def replace(src, dst):
+    dst = validate(dst)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".wm-test-", dir=dst.parent) as tmp:
+        stage = Path(tmp)
+        copy(src, stage / "new")
+        previous = stage / "previous"
+        if exists(dst):
+            dst.rename(previous)
+        try:
+            (stage / "new").rename(dst)
+        except BaseException:
+            if exists(previous):
+                previous.rename(dst)
+            raise
+
+def atomic_json(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as out:
+        json.dump(data, out, indent=2, ensure_ascii=False)
+        out.write("\n")
+        name = out.name
+    os.replace(name, path)
+
+def plan(root, state, profile):
+    native = state / "native"
+    result = {}
+    def packages(source, destination):
+        for path in sorted(source.iterdir()):
+            if path.is_dir() or path.suffix == ".colors":
+                result[destination / path.name] = path
+    packages(root / "aurorae", DATA / "aurorae/themes")
+    packages(root / "color-schemes", DATA / "color-schemes")
+    packages(root / "Kvantum", CONFIG / "Kvantum")
+    for kind, dest in (("desktoptheme", "plasma/desktoptheme"),
+                       ("layout-templates", "plasma/layout-templates"),
+                       ("look-and-feel", "plasma/look-and-feel"),
+                       ("windowswitcher", "kwin/tabbox"),
+                       ("kwinscripts", "kwin/scripts")):
+        packages(root / "plasma" / kind, DATA / dest)
+    for name in APP_IDS:
+        result[DATA / "plasma/plasmoids" / name] = root / "plasma/applets" / name
+    packages(native / "wallpapers", DATA / "wallpapers")
+    result[DATA / "windows-modern/native-assets"] = native
+    result[DATA / "sounds/windows-modern"] = native / "sounds/windows-modern"
+    result[DATA / "icons/windows-modern"] = state / "staged-icons"
+    result[DATA / "icons/Bibata-Modern-Ice"] = (profile / "share/icons/Bibata-Modern-Ice").resolve()
+    result[DATA / "plasma/shells/org.kde.plasma.desktop"] = state / "staged-shell"
+    result[DATA / "applications/windowsmodern-screenshot.desktop"] = root / "config/applications/windowsmodern-screenshot.desktop"
+    for name in ("org.kde.haruna.desktop", "org.kde.kwrite.desktop", "io.missioncenter.MissionCenter.desktop"):
+        desktop = profile / "share/applications" / name
+        if not desktop.is_file():
+            raise RuntimeError("Built application launcher missing: " + name)
+        result[DATA / "applications" / name] = desktop.resolve()
+    return result
+
+def snapshot(backup, targets):
+    manifest_path = backup / "manifest.json"
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else {
+        "entries": {}, "absent_parents": []}
+    entries = manifest["entries"]
+    for path in sorted(set(targets), key=str):
+        path = validate(path)
+        key = str(path)
+        if key in entries:
+            continue
+        for parent in path.parents:
+            if parent in (CONFIG, DATA):
+                break
+            if not exists(parent) and str(parent) not in manifest["absent_parents"]:
+                manifest["absent_parents"].append(str(parent))
+        if exists(path):
+            label = str(len(entries))
+            dst = backup / "files" / label
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if exists(dst):
+                remove(dst)
+            copy(path, dst)
+            entries[key] = label
+        else:
+            entries[key] = None
+    atomic_json(manifest_path, manifest)
+
+def restore(backup):
+    manifest = json.loads((backup / "manifest.json").read_text())
+    for key, label in reversed(list(manifest["entries"].items())):
+        path = validate(key)
+        if label is None:
+            remove(path)
+        else:
+            if not label.isdigit():
+                raise ValueError("Invalid backup entry")
+            replace(backup / "files" / label, path)
+    for name in sorted(manifest["absent_parents"], key=lambda s: len(Path(s).parts), reverse=True):
+        path = validate(name)
+        if path.is_dir() and not path.is_symlink():
+            try:
+                path.rmdir()
+            except OSError:
+                pass
+
+def make_staging(root, state):
+    native = state / "native"
+    icons = state / "staged-icons"
+    remove(icons)
+    shutil.copytree(root / "icons/windows-modern", icons, symlinks=True)
+    for asset in (native / "icons").rglob("*.svg"):
+        relative = asset.relative_to(native / "icons")
+        dst = icons / relative
+        for suffix in (".png", ".svgz", ".xpm", ".svg"):
+            remove(dst.with_suffix(suffix))
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(asset, dst)
+
+    shell = state / "staged-shell"
+    remove(shell)
+    shell.mkdir()
+    # Use the running system profile's actual stock shell as the base.
+    candidates = [Path("/run/current-system/sw/share")] + [
+        Path(p) for p in os.environ.get("XDG_DATA_DIRS", "/usr/share").split(":") if p
+    ]
+    stock = next((p / "plasma/shells/org.kde.plasma.desktop" for p in candidates
+                  if (p / "plasma/shells/org.kde.plasma.desktop/metadata.json").is_file()
+                  and (p / "plasma/shells/org.kde.plasma.desktop/contents/lockscreen").is_dir()), None)
+    if stock is None:
+        raise RuntimeError("Active Plasma shell package not found")
+    # Resolve the profile symlink so an updated system profile cannot change
+    # the lockscreen package while a test is running.
+    stock = stock.resolve()
+    shutil.copy2(stock / "metadata.json", shell / "metadata.json")
+    (shell / "contents").mkdir()
+    for src in (stock / "contents").iterdir():
+        if src.name == "lockscreen":
+            continue
+        dst = shell / "contents" / src.name
+        if src.name == "logout":
+            # KPackage refuses symlinks outside the logout package.
+            shutil.copytree(src, dst, symlinks=False)
+        else:
+            dst.symlink_to(src.resolve())
+    lock = shell / "contents/lockscreen"
+    shutil.copytree(root / "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen", lock)
+    shutil.copy2(native / "icons/status/avatar-default.svg", lock / "default-avatar.svg")
+
+def all_targets(mapping):
+    return list(mapping) + [CONFIG / name for name in CONFIG_NAMES] + [
+        DATA / "kxmlgui5/dolphin/dolphinui.rc",
+    ] + [DATA / "locale" / lang / "LC_MESSAGES" / (domain + ".mo")
+         for lang in LANGUAGES for domain in DOMAINS]
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=["install", "restore", "snapshot-current"])
+    parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--state", type=Path, required=True)
+    parser.add_argument("--profile", type=Path, required=True)
+    args = parser.parse_args()
+    backup = args.state / "original"
+    if args.action == "restore":
+        restore(backup)
+        return
+    if args.action == "snapshot-current":
+        manifest = json.loads((backup / "manifest.json").read_text())
+        snapshot(args.state / "before-uninstall", [Path(key) for key in manifest["entries"]])
+        return
+    make_staging(args.root, args.state)
+    mapping = plan(args.root, args.state, args.profile)
+    for dst, src in mapping.items():
+        validate(dst)
+        if not exists(src):
+            raise RuntimeError("Missing installation input: " + str(src))
+    # Store the original pre-test state once. Reinstalls never overwrite it.
+    snapshot(backup, all_targets(mapping))
+    # Make writable local copies of file-level configuration symlinks. The
+    # original link is restored on uninstall; no Nix configuration is edited.
+    for name in CONFIG_NAMES:
+        path = CONFIG / name
+        if path.is_symlink() and path.exists():
+            replace(path.resolve(), path)
+    for dst, src in mapping.items():
+        replace(src, dst)
+    for variant in ("dark", "light"):
+        lock = DATA / "plasma/look-and-feel" / ("org.kde.windowsmodern." + variant) / "contents/lockscreen"
+        if lock.is_dir():
+            shutil.copy2(args.state / "native/icons/status/avatar-default.svg", lock / "default-avatar.svg")
+    # Install the exact translated domains from the repository.
+    subprocess.run([str(args.profile / "bin/python3"), str(args.root / "scripts/install-translations.py"),
+                    "--locale-dir", str(DATA / "locale")], check=True)
+
+if __name__ == "__main__":
+    main()
