@@ -45,6 +45,8 @@ Item {
     property alias hiddenLayout: hiddenItemsView.layout
     property alias plasmoidContainer: container
 
+    function resetQuickSettings() { actionPanel.resetScroll(); }
+
     function focusCurrentPage() {
         if (systemTrayState.activeApplet) {
             container.forceActiveFocus();

@@ -12,6 +12,42 @@ ColumnLayout {
     property string label
     property string tooltipText: ""
     property bool active: false
+    property bool included: true
+    property string orderKey: ""
+    property Item orderView: null
+    property real buttonHeight: -1
+    readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
+    readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
+
+    // A stable three-column grid, with vacant cells in a partial final row.
+    x: orderView && orderIndex >= 0 ? (orderIndex % 3) * (orderView.cellWidth + orderView.columnGap) : 0
+    y: orderView && orderIndex >= 0 ? Math.floor(orderIndex / 3) * orderView.rowStride : 0
+    width: orderView ? orderView.cellWidth : implicitWidth
+    height: orderView ? orderView.rowHeight : implicitHeight
+    visible: included
+    z: reordering ? 10 : 0
+    opacity: reordering ? 0.85 : 1
+    transform: Translate {
+        x: tile.reordering ? tile.orderView.dragOffsetX : 0
+        y: tile.reordering ? tile.orderView.dragOffsetY : 0
+    }
+    TileReorderHandler { hostTile: tile }
+
+    function focusForKeyboard() {
+        if (toggleAvailable)
+            forceActiveFocus(Qt.TabFocusReason);
+        else
+            arrowMA.forceActiveFocus(Qt.TabFocusReason);
+    }
+
+    onActiveFocusChanged: {
+        if (activeFocus && orderView)
+            orderView.ensureVisible(orderKey);
+    }
+    Keys.onPressed: event => {
+        if (orderView && orderView.handleTileKey(orderKey, event.key, event.modifiers))
+            event.accepted = true;
+    }
     property bool toggleAvailable: true
 
     signal clicked
@@ -20,7 +56,6 @@ ColumnLayout {
     signal middleClicked
 
     activeFocusOnTab: toggleAvailable
-    focus: true
 
     Accessible.role: Accessible.CheckBox
     Accessible.name: tile.label
@@ -40,21 +75,33 @@ ColumnLayout {
     Rectangle {
         id: bg
         Layout.fillWidth: true
-        Layout.preferredHeight: width / 2
+        Layout.preferredHeight: tile.buttonHeight > 0 ? tile.buttonHeight : width / 2
         radius: 4
         border.width: 1
-        border.color: tile.activeFocus || arrowMA.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
-        color: {
-            if (active) {
-                const alpha = toggleMA.containsPress || arrowMA.containsPress ? 0.12
-                    : toggleMA.containsMouse || arrowMA.containsMouse ? 0.06 : 0;
-                return Qt.tint(accent, Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, alpha));
-            }
-            if (toggleMA.containsPress || arrowMA.containsPress)
-                return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10);
-            if (toggleMA.containsMouse || arrowMA.containsMouse)
-                return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06);
-            return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.04);
+        border.color: tile.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        color: active ? accent : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.04)
+
+        // Independent hover/press feedback: the chevron opens details and
+        // must not look like a press on the toggle itself.
+        Rectangle {
+            x: 2; y: 2
+            width: Math.max(0, toggleMA.width - 3)
+            height: Math.max(0, bg.height - 4)
+            radius: 3
+            color: Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b,
+                toggleMA.containsPress ? 0.14 : toggleMA.containsMouse ? 0.08 : 0)
+            Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+        }
+        Rectangle {
+            x: toggleMA.width + 1; y: 2
+            width: Math.max(0, arrowMA.width - 3)
+            height: Math.max(0, bg.height - 4)
+            radius: 3
+            border.width: arrowMA.activeFocus ? 1 : 0
+            border.color: tile.fg
+            color: Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b,
+                arrowMA.containsPress ? 0.14 : arrowMA.containsMouse ? 0.08 : 0)
+            Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
         }
 
         Behavior on color {
@@ -100,6 +147,7 @@ ColumnLayout {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             activeFocusOnTab: true
+            onActiveFocusChanged: if (activeFocus && tile.orderView) tile.orderView.ensureVisible(tile.orderKey)
             Accessible.role: Accessible.Button
             Accessible.name: qsTr("%1 details").arg(tile.label)
             Accessible.onPressAction: tile.arrowClicked()
@@ -129,8 +177,7 @@ ColumnLayout {
         }
 
         Kirigami.Icon {
-            anchors.right: parent.right
-            anchors.rightMargin: 8
+            x: bg.width * 0.85 - width / 2
             anchors.verticalCenter: parent.verticalCenter
             width: Kirigami.Units.iconSizes.small
             height: Kirigami.Units.iconSizes.small
