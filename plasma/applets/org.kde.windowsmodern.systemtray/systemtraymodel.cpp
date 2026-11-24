@@ -62,6 +62,11 @@ Plasma::Types::ItemStatus BaseModel::calculateEffectiveStatus(bool canRender, Pl
     bool isDisabledSni = m_settings->isDisabledStatusNotifier(itemId);
     if (!forcedShown && (status == Plasma::Types::ItemStatus::HiddenStatus || isDisabledSni))
         return Plasma::Types::ItemStatus::HiddenStatus;
+    // The clock owns the default notification bell; keep the native
+    // notification applet available in overflow, even when it has jobs.
+    // Explicit user pinning/show-all still takes precedence.
+    if (itemId == QLatin1String("org.kde.plasma.notifications") && !forcedShown)
+        return Plasma::Types::ItemStatus::PassiveStatus;
     // Windows 11: an unpinned icon shows only if it is one of the defaults,
     // or while it needs attention (or has its popup open).
     // (Unknown is what applets report when they never set a status.)

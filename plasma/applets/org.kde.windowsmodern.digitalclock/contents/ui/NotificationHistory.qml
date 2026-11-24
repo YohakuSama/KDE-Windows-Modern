@@ -16,23 +16,15 @@ import org.kde.notificationmanager as NotificationManager
 // or a watcher that only sees notifications received after opening.
 ColumnLayout {
     id: history
-    property bool opened: false
     required property date currentTime
+    required property bool notificationsAvailable
+    required property bool effectiveDnd
     spacing: Kirigami.Units.smallSpacing * 2
 
     Win11Palette { id: palette }
 
     required property var notificationModel
     required property var settings
-
-    function markRead() {
-        if (opened) notificationModel.lastRead = undefined;
-    }
-    onOpenedChanged: {
-        if (!opened) notificationModel.collapseAllGroups();
-        markRead();
-    }
-    Component.onCompleted: markRead()
 
     // Respect automatic/application-driven DND; this button only controls the
     // user's manual setting, like the existing Quick Settings toggle.
@@ -85,8 +77,11 @@ ColumnLayout {
         }
 
         PlasmaComponents.ToolButton {
-            text: i18n("Manual do not disturb")
-            icon.name: history.manualDnd ? "notifications-disabled" : "notifications"
+            text: history.effectiveDnd && !history.manualDnd
+                ? i18n("Do not disturb is active due to a rule or application")
+                : i18n("Manual do not disturb")
+            icon.name: history.effectiveDnd ? "notifications-disabled" : "notifications"
+            enabled: history.notificationsAvailable
             display: PlasmaComponents.AbstractButton.IconOnly
             checkable: true
             checked: history.manualDnd
@@ -106,7 +101,7 @@ ColumnLayout {
         Layout.preferredHeight: Kirigami.Units.gridUnit * 3
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
-        text: i18n("No notifications")
+        text: history.notificationsAvailable ? i18n("No notifications") : i18n("Notification service not available")
         color: palette.textSecondary
         visible: notificationModel.count === 0
     }

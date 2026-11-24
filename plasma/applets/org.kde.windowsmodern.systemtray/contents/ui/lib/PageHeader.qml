@@ -14,40 +14,27 @@ RowLayout {
     signal switchToggled
 
     Layout.fillWidth: true
-    Layout.preferredHeight: 32
+    Layout.preferredHeight: Math.max(32, Kirigami.Units.gridUnit * 2)
     Layout.leftMargin: 10
     Layout.rightMargin: 10
     Layout.bottomMargin: 8
     spacing: 6
 
-    Item {
-        width: 20
-        height: 20
+    PlasmaComponents3.ToolButton {
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 2
+        Layout.preferredHeight: Kirigami.Units.gridUnit * 2
         Layout.alignment: Qt.AlignVCenter
-        Accessible.role: Accessible.Button
-        Accessible.name: qsTr("Back")
-        Accessible.onPressAction: header.back()
-
-        Kirigami.Icon {
-            anchors.centerIn: parent
-            width: 20
-            height: 20
-            source: "go-previous"
-            color: Kirigami.Theme.textColor
-            isMask: true
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: header.back()
-        }
+        text: qsTr("Back")
+        display: PlasmaComponents3.AbstractButton.IconOnly
+        icon.name: Qt.application.layoutDirection === Qt.RightToLeft ? "go-next" : "go-previous"
+        onClicked: header.back()
+        PlasmaComponents3.ToolTip { text: parent.text }
     }
 
     PlasmaComponents3.Label {
         text: header.title
         color: Kirigami.Theme.textColor
-        font.pixelSize: 12
+        font: Kirigami.Theme.defaultFont
         font.weight: Font.DemiBold
         Layout.fillWidth: true
     }
@@ -56,6 +43,7 @@ RowLayout {
         visible: header.showSwitch
         checked: header.switchChecked
         onToggled: header.switchToggled()
+        Accessible.name: header.title
         Layout.alignment: Qt.AlignVCenter
     }
 }

@@ -25,7 +25,7 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.ShadowBackground | PlasmaCore.Types.ConfigurableBackground
 
     toolTipMainText: i18n("Clock")
-    toolTipSubText: ""
+    toolTipSubText: notificationStatusText
 
     readonly property string currentTimeZone: currentClock.timeZone
     readonly property var currentTime: currentClock.dateTime
@@ -35,11 +35,12 @@ PlasmoidItem {
     readonly property alias notificationModel: notificationModel
     readonly property alias notificationSettings: notificationSettings
     readonly property int unreadNotifications: notificationModel.unreadNotificationsCount
+    readonly property bool notificationsAvailable: NotificationManager.Server.valid
     readonly property bool notificationsInhibited: NotificationManager.Server.inhibited
-    readonly property string notificationIcon: !NotificationManager.Server.valid || notificationsInhibited
+    readonly property string notificationIcon: !notificationsAvailable || notificationsInhibited
         ? "notifications-disabled-symbolic"
         : unreadNotifications > 0 ? "notification-active-symbolic" : "notification-inactive-symbolic"
-    readonly property string notificationStatusText: !NotificationManager.Server.valid
+    readonly property string notificationStatusText: !notificationsAvailable
         ? i18n("Notification service not available")
         : notificationsInhibited ? i18n("Do not disturb mode active")
         : unreadNotifications > 0
@@ -68,8 +69,10 @@ PlasmoidItem {
     }
 
     onExpandedChanged: {
-        if (!expanded) {
+        if (expanded) {
+            notificationModel.hideInhibitionSummary();
             notificationModel.lastRead = undefined;
+        } else {
             notificationModel.collapseAllGroups();
         }
     }

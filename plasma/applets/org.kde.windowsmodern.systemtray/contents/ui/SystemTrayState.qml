@@ -40,6 +40,7 @@ QtObject {
     }
     //set when there is an applet selected
     property Item activeApplet
+    property bool changingApplet: false
 
     //allow expanded change only when activated at least once
     //this is to suppress expanded state change during Plasma startup
@@ -56,7 +57,9 @@ QtObject {
         // Applets which prefer to always show their full
         // representation will always be expanded, there's
         // no need to activate them.
+        if (changingApplet || applet === activeApplet) return;
         if (applet && applet.preferredRepresentation == applet.fullRepresentation) return;
+        if (applet && applet.preferredRepresentation) return;
 
         if (visualIndex === undefined) {
             oldVisualIndex = -1
@@ -66,20 +69,20 @@ QtObject {
             newVisualIndex = visualIndex
         }
 
-        const oldApplet = activeApplet
-        if (applet && !applet.preferredRepresentation) {
-            applet.expanded = true;
-        }
-        if (!applet || !applet.preferredRepresentation) {
+        changingApplet = true;
+        const oldApplet = activeApplet;
+        try {
+            // The outgoing native view closes before the new page is shown.
+            // Its expandedChanged handler must not close the new home.
+            if (oldApplet)
+                oldApplet.expanded = false;
+            if (applet)
+                applet.expanded = true;
             activeApplet = applet;
-        }
-
-        if (oldApplet && oldApplet !== applet) {
-            oldApplet.expanded = false
-        }
-
-        if (applet && !applet.preferredRepresentation) {
-            expanded = true
+            if (applet)
+                expanded = true;
+        } finally {
+            changingApplet = false;
         }
     }
 
@@ -90,8 +93,7 @@ QtObject {
             Plasmoid.status = PlasmaCore.Types.PassiveStatus;
             if (activeApplet) {
                 // if not expanded we don't have an active applet anymore
-                activeApplet.expanded = false
-                activeApplet = null
+                setActiveApplet(null)
             }
             overflowMode = false
         }
@@ -122,7 +124,8 @@ QtObject {
         target: systemTrayState.activeApplet
 
         function onExpandedChanged() {
-            if (systemTrayState.activeApplet && !systemTrayState.activeApplet.expanded) {
+            if (!systemTrayState.changingApplet && systemTrayState.activeApplet
+                    && !systemTrayState.activeApplet.expanded) {
                 systemTrayState.expanded = false
             }
         }

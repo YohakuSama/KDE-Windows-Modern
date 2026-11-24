@@ -56,8 +56,9 @@ Item {
 
             NotificationHistory {
                 Layout.fillWidth: true
-                opened: root.expanded
                 currentTime: root.currentTime
+                notificationsAvailable: root.notificationsAvailable
+                effectiveDnd: root.notificationsInhibited
                 notificationModel: root.notificationModel
                 settings: root.notificationSettings
             }
