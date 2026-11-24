@@ -270,7 +270,7 @@ ColumnLayout {
                     orderKey: "airplane"
                     orderView: toggleViewport
                     buttonHeight: Math.round(48 * actionPanel.scale)
-                    included: Plasmoid.configuration.showAirplane
+                    included: Plasmoid.configuration.showAirplane && available
                     visible: included
                 }
                 Components.BatterySaverToggle {

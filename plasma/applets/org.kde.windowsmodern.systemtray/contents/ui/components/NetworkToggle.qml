@@ -24,12 +24,15 @@ Lib.SplitTile {
     }
 
     readonly property bool wifiAvailable: availableDevices.wirelessDeviceAvailable
-    readonly property bool wifiOn: wifiAvailable && enabledConnections.wirelessEnabled
+    readonly property bool wifiAdministrativelyEnabled: wifiAvailable
+        && enabledConnections.wirelessHwEnabled && !PlasmaNM.Configuration.airplaneModeEnabled
+    readonly property bool wifiOn: wifiAvailable && enabledConnections.wirelessHwEnabled
+        && enabledConnections.wirelessEnabled
 
     // Keep the detail arrow available on Ethernet-only systems, but do not
     // present a nonfunctional Wi-Fi toggle or a wired icon as Wi-Fi.
     label: wifiAvailable ? qsTr("Wi-Fi") : qsTr("Network")
-    toggleAvailable: wifiAvailable
+    toggleAvailable: wifiAdministrativelyEnabled
     // The toggle depicts the Wi-Fi radio, not the current signal strength.
     // The native connection list and panel icon still report real strength.
     iconSource: wifiAvailable ? "network-wireless-symbolic"
@@ -40,12 +43,13 @@ Lib.SplitTile {
     active: wifiOn
 
     onClicked: {
-        if (wifiAvailable) {
+        if (wifiAdministrativelyEnabled) {
             handler.enableWireless(!wifiOn);
         }
     }
 
     tooltipText: !wifiAvailable ? qsTr("Network — Wi-Fi unavailable")
+        : !wifiAdministrativelyEnabled ? qsTr("Wi-Fi — Disabled by hardware or airplane mode")
         : wifiOn ? qsTr("Wi-Fi — On") : qsTr("Wi-Fi — Off")
 
     onRightClicked: networkMenu.popup()

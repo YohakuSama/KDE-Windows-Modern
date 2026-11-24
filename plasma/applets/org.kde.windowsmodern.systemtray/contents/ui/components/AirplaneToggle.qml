@@ -9,11 +9,20 @@ Lib.Tile {
         id: handler
     }
 
-    label: qsTr("Airplane")
+    PlasmaNM.AvailableDevices {
+        id: devices
+    }
+
+    readonly property bool available: devices.modemDeviceAvailable || devices.wirelessDeviceAvailable
+        || PlasmaNM.Configuration.airplaneModeEnabled
+
+    label: qsTr("Airplane mode")
     iconSource: "network-flightmode-on-symbolic"
     active: PlasmaNM.Configuration.airplaneModeEnabled
 
     onClicked: {
+        if (!available)
+            return;
         var enable = !PlasmaNM.Configuration.airplaneModeEnabled;
         handler.enableAirplaneMode(enable);
         PlasmaNM.Configuration.airplaneModeEnabled = enable;
