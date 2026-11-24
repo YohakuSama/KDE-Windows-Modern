@@ -141,3 +141,32 @@ python3 scripts/import-windows-assets.py --reuse --catalog docs/native-assets-ca
 ```
 
 On first use provide the original path instead of `--reuse`. The catalog contains only font version, codepoint numbers, MUN group IDs, selected source hashes/sizes, mapping hash and coverage; no artwork, local source path or executable data. It may be reviewed and committed as metadata after verifying it contains no private information. Use a new catalog filename or deliberately remove the old catalog before regenerating; the importer never overwrites an existing catalog. The archive does not need to be committed or attached to each conversation for future mapping review once the catalog is available. Actual rendering and source-file verification still use the private local archive.
+
+## Reuse the indexed resource checkout
+
+The owner resource-only branch `resources/windows11` at `272e06c87be0f548cebb2558392019b941df20d4`
+contains 467 original files, 713 icon groups (including two named blank
+resources), and 5,405 frames. The metadata-only snapshot is
+`docs/windows11-resource-index.json`. All 63 existing numeric MUN mapping
+keys occur in the index. The checked Git tree contains all 6,585 indexed
+original/ICO/PNG paths; listed original and ICO file sizes agree. These are
+metadata checks, not a fresh binary decode or visual review.
+
+Use your existing local indexed checkout, not a fresh extraction:
+
+```sh
+python3 scripts/import-windows-assets.py /path/to/windows11-resource-checkout
+./install.sh icons
+./install.sh themes
+./install.sh sounds
+```
+
+The importer recognizes `resource-manifest.json`, reads the originals from
+`original/Windows`, checks selected sizes and SHA-256 hashes, and uses the
+already exported indexed PNG preview for each mapped MUN group. It does not
+extract all MUN groups again. Original archive/directory input is unchanged.
+Use `--reuse` for mapping updates. Keep this checkout local and outside the
+source tree; main and integration packages do not include Microsoft assets.
+Task View E7C4 and GridView F0E2 are distinct roles; the latter is optional
+pending verification against the supplied font. The supplied directories
+still lack default account-picture files, Store package artwork and cursors.

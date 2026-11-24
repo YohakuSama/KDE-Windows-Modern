@@ -106,7 +106,7 @@
     "e7be": "actions/applications-education",
     "e704": "actions/network-wireless-hotspot status/network-wireless-hotspot status/network-wireless-hotspot-symbolic",
     "e705": "actions/network-vpn-symbolic status/network-vpn status/network-vpn-symbolic",
-    "e7c4": "actions/view-grid actions/view-grid-symbolic",
+    "e7c4": "actions/windows-modern-task-view-symbolic",
     "e77b": "actions/user-identity-symbolic",
     "e8b7": "actions/folder-symbolic",
     "e838": "actions/folder-open-symbolic",
@@ -248,7 +248,8 @@
     "f847": "actions/media-eject actions/media-eject-symbolic",
     "e92f": "status/input-keyboard-virtual-off status/input-keyboard-virtual-off-symbolic",
     "ec49": "status/speedometer status/speedometer-symbolic",
-    "ec4a": "status/battery-profile-performance status/battery-profile-performance-symbolic"
+    "ec4a": "status/battery-profile-performance status/battery-profile-performance-symbolic",
+    "f0e2": "actions/view-grid actions/view-grid-symbolic"
   },
   "wallpapers": [
     [
@@ -436,6 +437,7 @@
     "f847",
     "e92f",
     "ec49",
-    "ec4a"
+    "ec4a",
+    "f0e2"
   ]
 }
