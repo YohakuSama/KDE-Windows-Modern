@@ -26,6 +26,7 @@ ColumnLayout {
     property bool showAllSection: true
     property bool categoryMode: false
     property bool gridMode: false
+    property int contentRightInset: 18
     readonly property bool showCategoryCards: categoryMode && !inCategory
     property var categoryChild: null
     property string categoryTitle: ""
@@ -113,7 +114,7 @@ ColumnLayout {
         Layout.fillHeight: true
         clip: true
         interactive: true
-        readonly property int scrollGutter: 18
+        readonly property int scrollGutter: allAppsPage.contentRightInset
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
         readonly property int columns: allAppsPage.showCategoryCards || allAppsPage.gridMode
             ? (contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2) : 1

@@ -13,10 +13,6 @@ ColumnLayout {
     spacing: 0
     visible: hasApps
 
-    Lib.SectionHeader {
-        text: i18n("Volume Mixer")
-    }
-
     Repeater {
         model: models.sinkInputFilterModel
 

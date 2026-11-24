@@ -15,12 +15,15 @@ PlasmaComponents.Button {
     icon.height: 14
     font.pixelSize: 12
     background: Rectangle {
+        readonly property bool dark: (Kirigami.Theme.backgroundColor.r * 0.299
+            + Kirigami.Theme.backgroundColor.g * 0.587 + Kirigami.Theme.backgroundColor.b * 0.114) < 0.5
         radius: 4
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-            Kirigami.Theme.textColor.b, control.down ? 0.13
-                : control.hovered || control.activeFocus || control.checked || control.attentionActive ? 0.09
-                : control.quiet ? 0 : 0.05)
-        border.width: control.activeFocus ? 1 : 0
-        border.color: Kirigami.Theme.highlightColor
+        color: control.quiet && !control.hovered && !control.activeFocus ? "transparent"
+            : dark ? Qt.rgba(1, 1, 1, control.down ? 0.13
+                : control.hovered || control.activeFocus || control.checked || control.attentionActive ? 0.09 : 0.05)
+            : Qt.rgba(1, 1, 1, control.down ? 0.35 : control.hovered ? 0.95 : 0.75)
+        border.width: control.activeFocus ? 1 : (!dark && !control.quiet ? 1 : 0)
+        border.color: control.activeFocus ? Kirigami.Theme.highlightColor
+            : Qt.rgba(0, 0, 0, 0.08)
     }
 }

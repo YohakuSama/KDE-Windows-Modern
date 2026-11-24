@@ -18,7 +18,7 @@ import "../components"
 ColumnLayout {
     id: pinnedPage
 
-    spacing: 8
+    spacing: 14
 
     property alias favoritesList: favoritesListView
     property int columns: width >= 690 ? 8 : (width >= 430 ? 6 : 4)
@@ -59,6 +59,8 @@ ColumnLayout {
     RowLayout {
         id: headerRow
         Layout.fillWidth: true
+        Layout.leftMargin: 10
+        Layout.rightMargin: 10
         spacing: Kirigami.Units.smallSpacing
 
         PlasmaComponents3.Label {
@@ -98,7 +100,7 @@ ColumnLayout {
         clip: true
         interactive: false
         cellWidth: Math.max(1, Math.floor(width / pinnedPage.columns))
-        cellHeight: 80
+        cellHeight: 84
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
 

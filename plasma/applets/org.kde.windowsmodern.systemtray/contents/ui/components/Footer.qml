@@ -19,9 +19,9 @@ Rectangle {
 
     signal batteryClicked
 
-    // Only a divider: a filled strip would show the popup frame's inset
-    // (Windows 11's strip runs edge to edge, which the theme frame does not allow).
-    color: "transparent"
+    // Subtle footer tint on either scheme, separate from the slider region.
+    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+        Kirigami.Theme.textColor.b, 0.02)
     implicitHeight: Math.round(48 * uiScale)
 
     Rectangle {

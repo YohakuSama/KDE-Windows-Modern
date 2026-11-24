@@ -17,6 +17,9 @@ ColumnLayout {
     property string orderKey: ""
     property Item orderView: null
     property real buttonHeight: -1
+    readonly property real glyphScale: orderView ? orderView.tileScale : 1
+    readonly property color restingColor: ColorType.isDark(Kirigami.Theme.backgroundColor)
+        ? Qt.rgba(1, 1, 1, 0.045) : Qt.rgba(1, 1, 1, 0.65)
     readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
     readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
 
@@ -63,7 +66,7 @@ ColumnLayout {
     readonly property color accent: Kirigami.Theme.highlightColor
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
-    spacing: 4
+    spacing: Math.round(8 * tile.glyphScale)
     Layout.fillWidth: true
     // Width is supplied by the explicitly sized three-column viewport.
     // A zero preferred-width hint is not a valid tile size.
@@ -84,7 +87,7 @@ ColumnLayout {
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10);
             if (ma.containsMouse)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06);
-            return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.04);
+            return tile.restingColor;
         }
 
         Behavior on color {
@@ -119,7 +122,7 @@ ColumnLayout {
 
         Kirigami.Icon {
             anchors.centerIn: parent
-            width: 20
+            width: Math.round(16 * tile.glyphScale)
             height: width
             source: tile.iconSource
             roundToIconSize: false
@@ -133,7 +136,8 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         text: tile.label
         color: Kirigami.Theme.textColor
-        font: Kirigami.Theme.defaultFont
+        font.family: Kirigami.Theme.defaultFont.family
+        font.pixelSize: Math.round(13 * tile.glyphScale)
         maximumLineCount: 1
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter

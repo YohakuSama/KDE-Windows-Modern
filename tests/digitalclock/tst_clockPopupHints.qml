@@ -116,11 +116,32 @@ Item {
             focusState.stop();
             verify(!focusState.running);
         }
-        function test_collapseCalendarDoesNotCollapseWindow() {
+        function test_collapseCalendarTransfersSpaceToHistory() {
+            const total = popup.implicitHeight;
+            const history = findChild(popup, "wmNotificationPanel");
+            const calendar = findChild(popup, "wmCalendarPanel");
+            const previous = calendar.height;
+            const previousHistory = history.height;
             popup.calendarExpanded = false;
-            verify(popup.implicitHeight >= 220);
+            compare(popup.implicitHeight, total);
+            tryVerify(() => calendar.height < previous && history.height > previousHistory);
             popup.calendarExpanded = true;
-            verify(popup.implicitHeight >= 400);
+            compare(popup.implicitHeight, total);
+        }
+
+        function test_standaloneCalendarHasNoNestedHistoryOrFrame() {
+            popup.calendarOnly = true;
+            const history = findChild(popup, "wmNotificationPanel");
+            const calendar = findChild(popup, "wmCalendarPanel");
+            tryCompare(history, "visible", false);
+            compare(calendar.border.width, 0);
+            compare(popup.implicitHeight, popup.expandedCalendarHeight);
+            const total = popup.flyoutTotalHeight;
+            popup.calendarExpanded = false;
+            compare(popup.implicitHeight, popup.collapsedCalendarHeight);
+            compare(popup.flyoutTotalHeight, total);
+            popup.calendarExpanded = true;
+            popup.calendarOnly = false;
         }
     }
 }

@@ -26,7 +26,7 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.ShadowBackground | PlasmaCore.Types.ConfigurableBackground
 
     // Tooltips must not cover the notification/calendar flyout.
-    readonly property bool flyoutOpen: expanded
+    readonly property bool flyoutOpen: flyouts.opened
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry
     readonly property real popupPanelExtent: compactRepresentationItem
         ? (Plasmoid.formFactor === PlasmaCore.Types.Vertical
@@ -36,8 +36,13 @@ PlasmoidItem {
     Plasmoid.status: flyoutOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
 
     function toggleFlyout(previous = flyoutOpen) {
-        expanded = !previous;
+        if (previous)
+            flyouts.close();
+        else
+            flyouts.open();
     }
+
+    function closeFlyout() { flyouts.close(); }
 
     readonly property string currentTimeZone: currentClock.timeZone
     readonly property var currentTime: currentClock.dateTime
@@ -188,17 +193,32 @@ PlasmoidItem {
         root.timeFormatWithSeconds = formats.seconds;
     }
 
-    // Match Plasma's native digital-clock implementation. Do not use the
-    // compact icon as the full representation or create a second window.
-    preferredRepresentation: compactRepresentation
-    compactRepresentation: CompactRepresentation {
-        plasmoidItem: root
+    // Match the existing custom Start/Quick Settings pattern: the actual
+    // flyout state belongs to its native windows, not the shell's generic
+    // expanded applet/tab indicator. Plasmoid activation remains available.
+    preferredRepresentation: compactRep
+    compactRepresentation: compactRep
+    fullRepresentation: compactRep
+
+    Component {
+        id: compactRep
+        CompactRepresentation { plasmoidItem: root }
     }
-    fullRepresentation: ExpandedRepresentation {
+
+    ClockFlyouts {
+        id: flyouts
         clockApplet: root
+        anchorItem: root.compactRepresentationItem
     }
-    activationTogglesExpanded: true
-    hideOnWindowDeactivate: !Plasmoid.configuration.pin
+
+    Connections {
+        target: Plasmoid
+        function onActivated() { root.toggleFlyout(); }
+    }
+
+    // Plasma's default activated handler may still set expanded even
+    // though both representations are compact. Do not retain that state.
+    onExpandedChanged: if (expanded) Qt.callLater(() => { root.expanded = false; })
 
     Connections {
         target: Plasmoid.configuration

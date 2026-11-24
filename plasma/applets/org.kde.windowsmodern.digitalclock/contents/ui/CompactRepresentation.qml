@@ -157,7 +157,7 @@ MouseArea {
 
     Rectangle {
         anchors.fill: parent
-        anchors.margins: 2
+        anchors.margins: 3
         radius: 4
         visible: main.containsMouse || main.activeFocus || main.plasmoidItem.flyoutOpen
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,

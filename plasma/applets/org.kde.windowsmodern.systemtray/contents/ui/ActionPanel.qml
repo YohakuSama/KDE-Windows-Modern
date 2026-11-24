@@ -24,7 +24,14 @@ ColumnLayout {
     readonly property real scale: Plasmoid.configuration.scale / 100
 
     Layout.fillWidth: true
-    spacing: 16 * actionPanel.scale
+    spacing: 0
+    readonly property int edgeInset: Math.round(20 * scale)
+    readonly property int gridTopInset: Math.round(22 * scale)
+    readonly property int gridBottomInset: Math.round(22 * scale)
+    readonly property int sliderInset: Math.round(14 * scale)
+    readonly property int sliderHeight: Math.round(44 * scale)
+    readonly property int sliderGap: Math.round(8 * scale)
+    readonly property int footerHeight: Math.round(48 * scale)
 
     // A pre-map size from the hardware/configuration and tile geometry,
     // not visible children. Qt Layout implicitHeight can be zero while
@@ -32,10 +39,9 @@ ColumnLayout {
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
     readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
-    readonly property int homeHeight: Math.ceil(Math.max(220 * scale,
-        12 * scale + Math.max(64 * scale, toggleViewport.viewportHeight)
-        + (sliderRows > 0 ? (sliderRows * 36 + (sliderRows - 1) * 12 + 14 + 32) * scale : 16 * scale)
-        + 48 * scale))
+    readonly property int homeHeight: Math.ceil(gridTopInset + toggleViewport.viewportHeight + gridBottomInset
+        + (sliderRows > 0 ? 1 + 2 * sliderInset + sliderRows * sliderHeight
+            + (sliderRows - 1) * sliderGap : 0) + footerHeight)
 
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
@@ -51,9 +57,10 @@ ColumnLayout {
     Item {
         id: toggleRow
         Layout.fillWidth: true
-        Layout.leftMargin: Math.round(14 * actionPanel.scale)
-        Layout.rightMargin: Math.round(14 * actionPanel.scale)
-        Layout.topMargin: Math.round(12 * actionPanel.scale)
+        Layout.leftMargin: actionPanel.edgeInset
+        Layout.rightMargin: actionPanel.edgeInset
+        Layout.topMargin: actionPanel.gridTopInset
+        Layout.bottomMargin: actionPanel.gridBottomInset
         implicitHeight: toggleViewport.viewportHeight
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
@@ -65,7 +72,7 @@ ColumnLayout {
             id: captionProbe
             visible: false
             text: "Ag"
-            font: Kirigami.Theme.defaultFont
+            font.pixelSize: Math.round(13 * actionPanel.scale)
         }
 
         Flickable {
@@ -81,14 +88,15 @@ ColumnLayout {
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
             readonly property bool hasMoreRows: rows > 2
-            readonly property real rowGap: Math.round(16 * actionPanel.scale)
-            readonly property real columnGap: Math.round(12 * actionPanel.scale)
+            readonly property real tileScale: actionPanel.scale
+            readonly property real rowGap: Math.round(20 * actionPanel.scale)
+            readonly property real columnGap: Math.round(14 * actionPanel.scale)
             readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
             // Height follows the tallest caption (system font), not the
             // effective visibility or width of a GridLayout parent.
             readonly property real rowHeight: tiles.reduce((largest, tile) =>
                 tile.included ? Math.max(largest, tile.implicitHeight) : largest,
-                Math.round(48 * actionPanel.scale) + 4 + captionProbe.implicitHeight)
+                Math.round(56 * actionPanel.scale) + captionProbe.implicitHeight)
             readonly property real rowStride: rowHeight + rowGap
             readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
@@ -446,20 +454,30 @@ ColumnLayout {
         }
     }
 
-    GridLayout {
-        visible: actionPanel.brightnessShown || actionPanel.volumeShown
+    Rectangle {
+        visible: actionPanel.sliderRows > 0
         Layout.fillWidth: true
-        Layout.leftMargin: 14 * actionPanel.scale
-        Layout.rightMargin: 14 * actionPanel.scale
-        Layout.bottomMargin: 14 * actionPanel.scale
+        Layout.preferredHeight: 1
+        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+            Kirigami.Theme.textColor.b, 0.08)
+    }
+
+    GridLayout {
+        visible: actionPanel.sliderRows > 0
+        Layout.fillWidth: true
+        Layout.leftMargin: actionPanel.edgeInset
+        Layout.rightMargin: actionPanel.edgeInset
+        Layout.topMargin: actionPanel.sliderInset
+        Layout.bottomMargin: actionPanel.sliderInset
         columns: 3
-        rowSpacing: 12 * actionPanel.scale
+        rowSpacing: actionPanel.sliderGap
         columnSpacing: 0
 
         Components.BrightnessSlider {
             id: brightnessSlider
             Layout.fillWidth: true
             Layout.columnSpan: 3
+            Layout.preferredHeight: actionPanel.sliderHeight
             visible: Plasmoid.configuration.showBrightness && brightnessAvailable
             showArrow: true
             panelScreenGeometry: Plasmoid.screenGeometry
@@ -470,7 +488,7 @@ ColumnLayout {
             id: volumeSlider
             Layout.fillWidth: true
             Layout.columnSpan: 3
-            Layout.preferredHeight: Math.round(36 * actionPanel.scale)
+            Layout.preferredHeight: actionPanel.sliderHeight
             visible: Plasmoid.configuration.showVolume && sinkAvailable
             onArrowClicked: actionPanel.requestPage("volume")
         }
@@ -478,7 +496,6 @@ ColumnLayout {
 
     Components.Footer {
         Layout.fillWidth: true
-        Layout.topMargin: -6 * actionPanel.scale
         uiScale: actionPanel.scale
         showBattery: Plasmoid.configuration.showBattery
         onBatteryClicked: actionPanel.requestPage("battery")

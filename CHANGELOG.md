@@ -6,6 +6,12 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Owner 26H2 reference layout pass
+
+- Implement separate native notification and calendar flyout windows with shared dismissal and fixed combined height; retain a combined fallback for small/vertical layouts. Refine light notification card and button surfaces.
+- Restore visible Start view selector text, Recommended descriptions, reference-derived menu proportions and separate header/footer. Keep existing explicit view preferences.
+- Use explicit Quick Settings section metrics and light tile colors; present Sound output devices directly, include master volume and application mixer, and instantiate the real details-page footer. No simulated unsupported controls or new glyph artwork.
+
 ### Start action menu and flyout regression cleanup
 
 - Use consistent compact 16px action glyphs, 32px rows and explicit spacing in the Start footer and context menus. Keep existing actions and avoid preselecting a power action on open.

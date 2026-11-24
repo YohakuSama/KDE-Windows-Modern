@@ -22,6 +22,9 @@ FocusScope {
     id: expandedRoot
     required property var clockApplet
     property bool calendarExpanded: true
+    property bool calendarOnly: false
+    property real historyAnchorY: 0
+    readonly property alias historyAnchor: secondaryAnchor
 
     readonly property var clockTimeLocale: Qt.locale(DateFormat.clockLocaleName(
         Plasmoid.configuration.use24hFormat, Qt.locale().name))
@@ -54,12 +57,12 @@ FocusScope {
 
     // Plasma owns the popup window and transfers these layout hints.
     // Derive hints from the panel's screen, not this hidden view's geometry.
-    readonly property int margin: 2
-    readonly property int sectionGap: 10
+    readonly property int margin: calendarOnly ? 0 : 2
+    readonly property int sectionGap: 12
     readonly property int sectionInset: 12
-    readonly property int calendarHeaderHeight: 44
-    readonly property int focusFooterHeight: 44
-    readonly property int bodyInset: 10
+    readonly property int calendarHeaderHeight: 50
+    readonly property int focusFooterHeight: 48
+    readonly property int bodyInset: 12
     readonly property bool showLargeClock: Plasmoid.configuration.showTimeInNotificationCenter
     readonly property var focusSession: clockApplet.focusSession
     readonly property var panelScreen: clockApplet.popupScreenGeometry
@@ -71,8 +74,14 @@ FocusScope {
     readonly property int configuredWidth: Math.max(240, Number(Plasmoid.configuration.expandedWidth) || 320)
     readonly property int popupWidth: Math.min(configuredWidth, screenWidth >= 100
         ? Math.max(1, Math.floor(screenWidth - 24)) : configuredWidth)
-    readonly property int popupHeight: Math.min(availableScreenHeight,
-        calendarExpanded ? 620 + (showLargeClock ? 52 : 0) : 286)
+    // Collapsing the calendar transfers space to notifications. The total
+    // height must not collapse to the calendar's own height.
+    readonly property int flyoutTotalHeight: Math.min(740, availableScreenHeight)
+    readonly property int collapsedCalendarHeight: calendarHeaderHeight + focusFooterHeight + 1
+    readonly property int expandedCalendarHeight: Math.max(collapsedCalendarHeight,
+        Math.min(452 + (showLargeClock ? 52 : 0), flyoutTotalHeight - sectionGap - 110))
+    readonly property int calendarHeight: calendarExpanded ? expandedCalendarHeight : collapsedCalendarHeight
+    readonly property int popupHeight: calendarOnly ? calendarHeight : flyoutTotalHeight
 
     implicitWidth: popupWidth
     implicitHeight: popupHeight
@@ -85,17 +94,27 @@ FocusScope {
     clip: true
     focus: true
     Keys.onEscapePressed: event => {
-        clockApplet.expanded = false;
+        if (typeof clockApplet.closeFlyout === "function")
+            clockApplet.closeFlyout();
+        else
+            clockApplet.expanded = false;
         event.accepted = true;
     }
 
-    // A native AppletPopup owns one outer background and border. It has
-    // no public NoBackground mode. Avoid nested outlined cards: retain
-    // the two content areas and their gap without extra inner borders.
-    // True independent acrylic surfaces require live window integration.
-    readonly property real calendarBodyBudget: Math.max(0, popupHeight
-        - 2 * margin - sectionGap - history.minimumSectionHeight - 2 * sectionInset
+    // In the standard horizontal taskbar, each section lives in its own
+    // native AppletPopup. The combined variant is a fallback for vertical
+    // panels and very short screens. Both share the same content metrics.
+    readonly property real calendarBodyBudget: Math.max(0, expandedCalendarHeight
         - calendarHeaderHeight - focusFooterHeight - 2 * bodyInset - 2)
+
+    // Anchor for the history window, aligned with the calendar's native
+    // frame edge. This Item is not drawn and never accepts input.
+    Item {
+        id: secondaryAnchor
+        width: expandedRoot.width
+        height: 1
+        y: expandedRoot.historyAnchorY
+    }
 
     ColumnLayout {
         id: mainColumn
@@ -107,6 +126,7 @@ FocusScope {
         Rectangle {
             id: notificationPanel
             objectName: "wmNotificationPanel"
+            visible: !expandedRoot.calendarOnly
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: history.minimumSectionHeight + 2 * expandedRoot.sectionInset
@@ -133,11 +153,13 @@ FocusScope {
             id: calendarPanel
             objectName: "wmCalendarPanel"
             Layout.fillWidth: true
-            Layout.preferredHeight: calendarContent.implicitHeight
+            Layout.fillHeight: expandedRoot.calendarOnly
+            Layout.preferredHeight: expandedRoot.calendarOnly
+                ? expandedRoot.calendarHeight : calendarContent.implicitHeight
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
             radius: 8
-            color: palette.panelTint
+            color: expandedRoot.calendarOnly ? "transparent" : palette.panelTint
             border.width: 0
 
             ColumnLayout {
@@ -189,6 +211,7 @@ FocusScope {
                 ColumnLayout {
                     id: calendarBody
                     Layout.fillWidth: true
+                    Layout.fillHeight: expandedRoot.calendarOnly && visible
                     Layout.leftMargin: expandedRoot.sectionInset
                     Layout.rightMargin: expandedRoot.sectionInset
                     Layout.topMargin: visible ? expandedRoot.bodyInset : 0
@@ -249,7 +272,7 @@ FocusScope {
                         applet: expandedRoot.clockApplet
                         Layout.fillWidth: true
                         focus: expandedRoot.calendarExpanded
-                        dayHeightLimit: Math.max(12, Math.min(36, Math.floor(
+                        dayHeightLimit: Math.max(12, Math.min(40, Math.floor(
                             (expandedRoot.calendarBodyBudget - chromeHeight
                              - (timeRow.visible ? timeRow.implicitHeight + calendarBody.spacing : 0)
                              - (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + calendarBody.spacing : 0)

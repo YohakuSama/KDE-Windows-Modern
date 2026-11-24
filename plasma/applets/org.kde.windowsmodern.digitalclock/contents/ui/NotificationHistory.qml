@@ -21,7 +21,7 @@ ColumnLayout {
     required property bool effectiveDnd
     property var timeLocale: Qt.locale()
     property string timeFormat: "h:mm AP"
-    spacing: 8
+    spacing: 12
     readonly property int minimumSectionHeight: Math.ceil(historyHeader.implicitHeight + spacing + 32)
 
     Win11Palette { id: palette }
@@ -241,6 +241,8 @@ ColumnLayout {
                     implicitHeight: messageContent.implicitHeight + 20
                     radius: 4
                     color: palette.cardTint
+                    border.width: 1
+                    border.color: palette.panelBorder
 
                     ColumnLayout {
                         id: messageContent
@@ -262,7 +264,7 @@ ColumnLayout {
                                         + history.timeLocale.toString(created, history.timeFormat);
                                 }
                                 color: palette.textSecondary
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                             }
 
                             FlyoutButton {
@@ -307,8 +309,8 @@ ColumnLayout {
                             Layout.fillWidth: true
                             text: card.model.body || ""
                             textFormat: Text.StyledText
-                            color: palette.text
-                            font.pixelSize: 12
+                            color: palette.textSecondary
+                            font.pixelSize: 13
                             wrapMode: Text.Wrap
                             maximumLineCount: card.bodyExpanded ? 10 : 2
                             elide: Text.ElideRight

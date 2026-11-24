@@ -164,14 +164,17 @@ Item {
         FocusScope {
             id: rootItem
 
-            readonly property int margin: 28
+            // Reference measured from the owner's 26H2 Start screenshot.
+            readonly property int margin: 32
+            readonly property int homeInset: width >= 600 ? 52 : 28
+            readonly property int homeTrailingInset: Math.max(18, homeInset - 4)
             readonly property rect screen: Plasmoid.screenGeometry
             readonly property bool largeLayout: Plasmoid.configuration.startMenuSize === 2
                 || (Plasmoid.configuration.startMenuSize === 0 && screen.width >= 1440)
             readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
                 && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
-            readonly property int wantedWidth: largeLayout ? 768 : 560
-            readonly property int wantedHeight: largeLayout ? 720 : 640
+            readonly property int wantedWidth: largeLayout ? 816 : 640
+            readonly property int wantedHeight: largeLayout ? 720 : 690
             width: Math.max(1, Math.min(wantedWidth, screen.width > 0 ? screen.width - 2 * margin : wantedWidth))
             height: Math.max(1, Math.min(wantedHeight, screen.height > 0 ? screen.height - 3 * margin : wantedHeight))
             focus: true
@@ -295,14 +298,26 @@ Item {
                 onTabOut: rootItem.focusActivePageResults()
             }
 
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: startSearch.bottom
+                anchors.topMargin: 15
+                height: 1
+                color: Kirigami.Theme.textColor
+                opacity: Theme.headerSeparatorOpacity
+                visible: root.leftColumnState !== 2
+            }
+
             Item {
                 id: pageArea
                 anchors.top: startSearch.bottom
                 anchors.bottom: footer.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.margins: rootItem.margin
-                anchors.topMargin: 22
+                anchors.leftMargin: root.leftColumnState === 2 ? rootItem.margin : rootItem.homeInset
+                anchors.rightMargin: root.leftColumnState === 2 ? rootItem.margin : 4
+                anchors.topMargin: root.leftColumnState === 2 ? 22 : 38
                 anchors.bottomMargin: 0
 
                 AllAppsPage {
@@ -310,6 +325,7 @@ Item {
                     anchors.fill: parent
                     visible: root.leftColumnState !== 2
                     showAllSection: Plasmoid.configuration.showAllSection
+                    contentRightInset: rootItem.homeTrailingInset
                     flatModel: sortedAppsModel
                     categoryModel: nativeCategoryModel
                     categoryMode: Plasmoid.configuration.allAppsViewMode === 2
@@ -342,10 +358,13 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.topMargin: 12
+                                Layout.leftMargin: 10
+                                Layout.rightMargin: 10
                                 visible: rootItem.showRecentSection && recentGrid.count > 0
                                 PlasmaComponents3.Label {
                                     Layout.fillWidth: true
-                                    text: i18n("Recent")
+                                    text: i18n("Recommended")
                                     Accessible.description: i18n("Recently used applications and documents")
                                     font.weight: Font.DemiBold
                                 }
@@ -362,11 +381,13 @@ Item {
                             GridView {
                                 id: recentGrid
                                 Layout.fillWidth: true
+                                Layout.leftMargin: 4
+                                Layout.rightMargin: 4
                                 readonly property int recentColumns: rootItem.largeLayout ? 3 : 2
                                 Layout.preferredHeight: (root.showMoreRecent
                                     ? Math.ceil(count / recentColumns) : Math.min(2, Math.ceil(count / recentColumns))) * cellHeight
                                 cellWidth: Math.max(1, Math.floor(width / recentColumns))
-                                cellHeight: 40
+                                cellHeight: 54
                                 visible: rootItem.showRecentSection && count > 0
                                 model: rootItem.showRecentSection ? recentUsage : null
                                 clip: true
@@ -374,13 +395,16 @@ Item {
                                 interactive: false
                                 boundsBehavior: Flickable.StopAtBounds
                                 currentIndex: -1
-                                delegate: ListItemDelegate { iconSize: Kirigami.Units.iconSizes.smallMedium }
+                                delegate: ListItemDelegate { iconSize: 32; showDescription: true }
                             }
 
                             RowLayout {
                                 Layout.fillWidth: true
                                 visible: Plasmoid.configuration.showAllSection
-                                Layout.bottomMargin: Kirigami.Units.smallSpacing
+                                Layout.topMargin: 12
+                                Layout.leftMargin: 10
+                                Layout.rightMargin: 10
+                                Layout.bottomMargin: 2
                                 spacing: Kirigami.Units.smallSpacing
 
                                 AToolButton {
@@ -400,23 +424,16 @@ Item {
                                     font.weight: Font.DemiBold
                                 }
 
-                                PlasmaComponents3.ComboBox {
+                                StartViewSelector {
                                     id: viewSelector
-                                    Layout.preferredWidth: Math.max(132, implicitWidth)
-                                    Layout.preferredHeight: 30
-                                    model: [i18n("List"), i18n("Grid"), i18n("Category")]
-                                    currentIndex: Plasmoid.configuration.allAppsViewMode
-                                    displayText: i18n("View: %1", currentText)
-                                    background: Rectangle {
-                                        radius: 4
-                                        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                            Kirigami.Theme.textColor.b, viewSelector.hovered || viewSelector.activeFocus ? 0.06 : 0)
-                                    }
-                                    onActivated: index => {
-                                        root.leftColumnState = 1;
+                                    Layout.preferredWidth: Math.max(144, implicitWidth)
+                                    Layout.preferredHeight: 32
+                                    mode: Plasmoid.configuration.allAppsViewMode
+                                    onModeRequested: index => {
                                         allAppsPage.resetCategory();
                                         Plasmoid.configuration.allAppsViewMode = index;
-                                        Qt.callLater(allAppsPage.focusFirstApp);
+                                        // Keep the selected control in view; a mouse
+                                        // selection must not jump down into the grid.
                                     }
                                 }
                             }
@@ -441,7 +458,7 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: 56
+                height: 64
                 color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                Kirigami.Theme.textColor.b, 0.035)
 
@@ -458,8 +475,8 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: 28
-                    anchors.rightMargin: 28
+                    anchors.leftMargin: rootItem.homeInset + 10
+                    anchors.rightMargin: rootItem.homeInset + 10
                     spacing: 8
 
                     PlasmaComponents3.ToolButton {

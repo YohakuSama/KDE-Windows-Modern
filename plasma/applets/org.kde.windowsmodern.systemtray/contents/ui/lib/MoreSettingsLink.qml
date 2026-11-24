@@ -14,7 +14,12 @@ Item {
     implicitWidth: parent ? parent.width : 200
 
     PlasmaComponents3.Label {
-        anchors.centerIn: parent
+        anchors.left: parent.left
+        anchors.leftMargin: 16
+        anchors.right: parent.right
+        anchors.rightMargin: 16
+        anchors.verticalCenter: parent.verticalCenter
+        elide: Text.ElideRight
         text: root.text
         color: ma.containsMouse ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
         opacity: ma.containsMouse ? 1 : 0.6

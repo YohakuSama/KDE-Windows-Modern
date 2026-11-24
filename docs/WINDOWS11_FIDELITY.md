@@ -102,3 +102,7 @@ Compare the project-drawn colored battery and optional percentage against KB5067
 ### Owner visual regression gate
 
 The user has repeatedly reported inaccurate visual geometry despite passing code checks. Do not publish another owner test ZIP merely because a Git tree exists. Before merging a combined fix, check CI on the candidate, compare actual screenshots of the same build and settings, and identify the installed source revision. Keep the 16px tray baseline and separate menu glyph sizes stable; do not globally compensate for transparent margins once asset import has normalized them. Missing authentic system artwork, true dual notification surfaces, and the native clock expanded indicator are open blockers. Record them rather than claiming 1:1.
+
+### 2026-11-25 owner reference set
+
+Use the six owner screenshots described in PANEL_UI_CONTRACT.md as the current reference, including the stable notification stack height in both states and the independent popup surfaces. The native window split is an implementation candidate, not a completed Wayland acceptance. The user should not be asked to repeatedly install partial or unverified size experiments. Compare paired light/dark captures with matching settings; test both popup windows' actual accessibility/window identities and focus/dismissal, then compare Start and Quick Settings proportions. Keep the device-dependent KDE content and saved preferences distinct from the visual target. The missing SysBatt source is still a blocker for full 26H2 battery parity.

@@ -276,6 +276,9 @@ def clock(p, c):
     history = (visible("Notifications", exclude_window=panel_window)
                or visible("通知", exclude_window=panel_window))
     c.check(history is not None, "clock flyout also opens notification history")
+    if header and history:
+        c.check(history.window != header.window,
+                "standard horizontal clock uses two native flyout surfaces")
     # On Wayland popup origins can be relative to the popup itself, but
     # extents still expose a collapsed/blank flyout.
     if header:
