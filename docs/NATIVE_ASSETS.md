@@ -141,3 +141,24 @@ python3 scripts/import-windows-assets.py --reuse --catalog docs/native-assets-ca
 ```
 
 On first use provide the original path instead of `--reuse`. The catalog contains only font version, codepoint numbers, MUN group IDs, selected source hashes/sizes, mapping hash and coverage; no artwork, local source path or executable data. It may be reviewed and committed as metadata after verifying it contains no private information. Use a new catalog filename or deliberately remove the old catalog before regenerating; the importer never overwrites an existing catalog. The archive does not need to be committed or attached to each conversation for future mapping review once the catalog is available. Actual rendering and source-file verification still use the private local archive.
+
+## Export every original icon group for visual matching
+
+The selective importer above creates only mapped theme aliases. For a full
+local review, export the three MUN libraries separately using:
+
+```sh
+python3 scripts/export-windows-icons.py ~/Downloads/Windows-resources.tar.gz --output ~/windows-icon-inventory
+```
+
+A folder containing the three MUN files directly also works. Each resource
+group and language variant gets its own folder containing an ICO with all
+original frame payloads and PNG previews for each decodable frame. The
+`index.json` records library hashes, resource/group IDs, languages,
+dimensions, frame hashes, preview filenames and any decode errors. A
+nonzero exit means at least one resource could not be recovered or decoded.
+Review every matching source visually before mapping; an exported icon is
+not necessarily the correct semantic replacement. Keep original and
+generated artwork local, and share only the reviewed metadata and mappings.
+The previous numeric inventory reported 711 groups; this export also
+includes named groups and separate language variants where present.
