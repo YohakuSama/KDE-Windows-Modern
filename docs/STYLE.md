@@ -941,3 +941,7 @@ windows_modern2/
 ## License
 
 GNU GPL v3
+
+### Shared shell popup frames
+
+`popup-frames.py` and `popup-frame.svg.in` generate the 12 dialog/tooltip variants. Dialogs use 8 logical px radii, opaque normal/solid frames and a consistent tinted translucent variant (dark 78%, light 82% tint opacity). Small tooltips use a 4 px radius and solid fill. All variants share 1 px borders, 12 px shadow margins and matching masks. These are Acrylic-style approximations driven by KWin blur, not the Windows compositor or true Mica. Do not add per-applet duplicate blur overlays. `verify-all.sh` checks generated files against the source.

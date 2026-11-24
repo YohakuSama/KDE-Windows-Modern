@@ -6,6 +6,13 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Materials
+
+- Generate matching dark/light popup frames with consistent geometry, border,
+  blur masks, shadow margins and opaque fallback. Use 8 px dialog and 4 px
+  tooltip corner radii. Preserve native KWin blur; no new compositor plugin.
+- Add a deterministic frame-generation check to the repository health gate.
+
 ### Native Windows resources
 
 - Add a local, repeatable importer for the supplied Windows resource libraries,
