@@ -20,7 +20,7 @@ QtObject {
     readonly property color menuBorder: "#3F3F3F"
     readonly property color hoverBackground: "#33FFFFFF"
 
-    readonly property string fontFamily: "Segoe UI"
+    readonly property string fontFamily: Application.font.family
 
     readonly property int avatarSize: 140
     readonly property int textFieldHeight: 36

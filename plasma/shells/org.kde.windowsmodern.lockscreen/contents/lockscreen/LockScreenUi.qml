@@ -264,7 +264,7 @@ Item {
                 Text {
                     id: timeText
                     text: Qt.formatTime(new Date(), "HH:mm")
-                    font.family: "Segoe UI"
+                    font.family: Kirigami.Theme.defaultFont.family
                     font.weight: Font.DemiBold
                     font.pixelSize: 96
                     color: "#FFFFFF"
@@ -275,7 +275,7 @@ Item {
                 Text {
                     id: dateText
                     text: lockScreenRoot.dateLine(new Date())
-                    font.family: "Segoe UI"
+                    font.family: Kirigami.Theme.defaultFont.family
                     font.weight: Font.Normal
                     font.pixelSize: 24
                     color: "#E0E0E0"
@@ -405,7 +405,7 @@ Item {
 
                     Text {
                         text: model.realName || model.name
-                        font.family: "Segoe UI"
+                        font.family: Kirigami.Theme.defaultFont.family
                         font.pixelSize: 14
                         color: "#FFFFFF"
                         verticalAlignment: Text.AlignVCenter
@@ -478,7 +478,7 @@ Item {
                         Text {
                             text: menuItem.text
                             color: "#FFFFFF"
-                            font.family: "Segoe UI"
+                            font.family: Kirigami.Theme.defaultFont.family
                             font.pixelSize: 14
                             anchors.verticalCenter: parent.verticalCenter
                         }

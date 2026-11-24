@@ -96,7 +96,7 @@ SessionManagementScreen {
             }
             return "";
         }
-        font.family: "Segoe UI"
+        font.family: Kirigami.Theme.defaultFont.family
         font.pixelSize: 32
         font.weight: Font.Normal
         color: "#FFFFFF"
@@ -113,7 +113,7 @@ SessionManagementScreen {
             anchors.centerIn: parent
             visible: sessionManager.customErrorMessage !== ""
             text: sessionManager.customErrorMessage
-            font.family: "Segoe UI"
+            font.family: Kirigami.Theme.defaultFont.family
             font.pixelSize: 14
             font.italic: true
             color: "#A0A0A0"
@@ -150,7 +150,7 @@ SessionManagementScreen {
             echoMode: showPassword ? TextInput.Normal : TextInput.Password
             placeholderText: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:placeholder in text field", "Password")
             placeholderTextColor: "#A0A0A0"
-            font.family: "Segoe UI"
+            font.family: Kirigami.Theme.defaultFont.family
             font.pixelSize: 14
             color: "#FFFFFF"
             focus: true
@@ -222,7 +222,7 @@ SessionManagementScreen {
         textFormat: Text.PlainText
         horizontalAlignment: Text.AlignHCenter
         Layout.fillWidth: true
-        font.family: "Segoe UI"
+        font.family: Kirigami.Theme.defaultFont.family
         font.pixelSize: 12
         color: "#A0A0A0"
 

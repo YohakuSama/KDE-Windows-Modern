@@ -95,7 +95,7 @@ install_everything() {
     info "Windows shortcuts and apps..."
     install_component shortcuts
     install_component apps
-    install_component fonts
+    # Keep the user's KDE fonts; the optional fonts component is explicit opt-in.
 
     echo ""
     info "Done! For the authentic Win11 look, enable floating:"

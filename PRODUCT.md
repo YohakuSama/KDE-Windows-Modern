@@ -9,8 +9,11 @@ and every "should we add X?" question, is judged against it.
 on Linux.** It should look, move, and respond like Windows 11, so your
 muscle memory just works, with KDE Plasma underneath.
 
-It is a **curated** Windows: the best of Windows 11, a few things Windows 10
-did better, and none of the parts that get in the user's way.
+This fork targets **native Windows 11 visual fidelity**: layout, typography,
+iconography, motion and the correct material on each surface. Preserve KDE's
+existing backends and user settings wherever possible. See
+[`docs/WINDOWS11_FIDELITY.md`](docs/WINDOWS11_FIDELITY.md) for the reference
+and acceptance process.
 
 ## Who it is for
 
@@ -27,11 +30,10 @@ did better, and none of the parts that get in the user's way.
    window snapping, notifications and flyouts count as much as colours and
    icons. A Windows user should rarely hit "that's not where it is" or "that
    key does something else".
-2. **Best of Windows 11, a little of Windows 10.** Windows 11 is the baseline.
-   Windows 10 contributes where it was better: today the quick-settings/tray
-   flyout (a Windows 11/10 hybrid) and the lock screen's bottom-left user
-   switcher and error message. Anything else taken from Windows 10 needs a
-   reason.
+2. **Windows 11 is the sole visual baseline.** Replace inherited Windows 10
+   layouts when they differ from the chosen Windows 11 build. Keep existing
+   KDE services, minimize changes, and share visual rules only where semantics
+   match. System fonts remain the default.
 3. **No slop** (see the list below). If a Windows feature exists to sell,
    track, distract, or advertise, it doesn't come along.
 4. **Dark and light are equal.** Every surface ships in both variants. A
@@ -68,34 +70,27 @@ Windows 11 surfaces and behaviours a user reaches for without thinking:
 Not added, even on request, unless this brief changes:
 
 - Widgets board / news and interests feed.
-- "Recommended" (recent files, suggested apps) in Start.
+- Online suggestions, ads or promoted content in Start. Local recent items
+  may be shown in the reference layout and respect privacy settings.
 - Web or Bing results mixed into local search.
 - Copilot or any AI/assistant entry point.
 - Ads, tips, "get started", promoted apps, suggestions.
 - Windows 10 live tiles.
 - A Recycle Bin icon on the desktop (the Trash is in Explorer's sidebar).
 
-## Settled
+## Visual target (work in progress)
 
-- **Tray icons stay separate (Windows 10 style):** network, volume,
-  battery and the rest are individual icons, each opening its own page.
-  Windows 11's single grouped Quick Settings button was considered and
-  not wanted.
-- **Tray overflow chevron:** stays right of the tray icons, next to the
-  clock. Windows 11 puts it on the left; the right side was preferred.
-- **Search and Task View buttons are optional:** both exist as applets
-  (`./install.sh taskbarbuttons`, installed with the other applets) for
-  users who want them, but the Windows Modern panel does not include
-  them; the Windows key and Win+Tab cover both.
-- **Window decoration:** the Aurorae decoration is a deliberate blend of
-  Windows 11 and Windows 10 with **sharp corners**. Rounded corners and
-  window shadows were considered and not wanted.
-- **Lock and login screens look the same in light and dark mode,** as on
-  Windows (white text over the wallpaper); there is no light variant.
-- **Start menu:** feature-complete as far as the product is concerned.
-  Changes are bug fixes and polish only. The Phase 2 ideas in
-  `docs/STARTMENU_PLAN.md` (folders, launch tracking, command palette) are
-  not planned.
+- Start: search at the top, pinned apps in a grid, build-specific All/Recent
+  layout, account and power actions in the footer. Follow Start alignment.
+- Tray: Windows 11 grouped Quick Settings entry, overflow placement,
+  notification/calendar placement and flyout structure.
+- Window decorations: rounded corners and shadow/elevation where the target
+  Windows 11 build uses them.
+- Lock and login: match the selected reference build, using the system font
+  of the applicable session.
+- Existing implementation details are not acceptance criteria. Do not mark
+  parity complete without comparing screenshots and behavior against the
+  reference build at equivalent scaling.
 
 ## Roadmap
 
@@ -106,7 +101,7 @@ Not added, even on request, unless this brief changes:
 | Done | OSD position, Cascadia Mono | KWin script for the OSD; Cascadia Mono via `./install.sh apps`. |
 | Done | Dolphin status bar | Patched rpm (`scripts/fix-dolphin-statusbar.sh`); stock fixes itself from Dolphin 26.12. |
 | Done | Window animations | KDE's defaults match Windows 11; "Everything" only turns off the corner-sliding Show Desktop effect, unless the user set it. |
-| Done | Fonts | `./install.sh fonts`: Segoe UI or Selawik, Cascadia Mono. |
+| Done | Optional fonts | System font settings are preserved by default. Explicit `./install.sh fonts` offers Segoe UI or Selawik, Cascadia Mono. |
 | Done | Snap Layouts | Drag-to-top layout bar (`plasma/kwinscripts/org.kde.windowsmodern.snaplayouts`). The maximize-button hover flyout is not possible with an Aurorae decoration. |
 | Done | Prebuilt C++ plugins | Releases carry the tray and taskbar plugins per Fedora/Plasma/Qt version; a release checkout installs them without a compiler, anything else builds from source. |
 | Done | KDE Store | Every component is its own store item; the global themes depend on them, so a Discover install brings the look. Published with `scripts/store/`. |

@@ -6,6 +6,14 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Changed
+
+- Preserve the user's existing KDE fonts when installing the full theme.
+  Windows-style fonts remain an explicit optional installation. Lock/login
+  text uses the session font rather than a hard-coded Segoe UI family.
+- Document the fork's native Windows 11 visual fidelity target and acceptance
+  criteria.
+
 ### Fixed
 
 - Start menu: follow the Start button by default; use its actual screen position
