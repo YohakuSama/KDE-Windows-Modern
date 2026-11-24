@@ -170,6 +170,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/ListRow.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/FooterButton.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/DetailPage.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/FluentScrollBar.qml
 )
 ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     PATH js
@@ -216,10 +217,52 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/volume/VolumeMixerSection.qml
 )
 
-option(WINDOWSMODERN_TEST_TRAY "Build tray status regression tests" OFF)
+# Include non-QML artwork as resources, retaining its directory in the QRC.
+ecm_target_qml_sources(org.kde.windowsmodern.systemtray
+    PATH icons
+    SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/icons/battery-saver-symbolic.svg
+)
+
+# Reject an incomplete manifest at configure time (also in the NixOS
+# source build, where optional CI tests are disabled). Qt reports the
+# actual files registered with the module, and ECM sets their aliases.
+set(tray_ui_root "${CMAKE_CURRENT_SOURCE_DIR}/contents/ui")
+file(GLOB_RECURSE tray_ui_files CONFIGURE_DEPENDS
+    "${tray_ui_root}/*.qml" "${tray_ui_root}/*.js" "${tray_ui_root}/*.mjs"
+    "${tray_ui_root}/*.svg" "${tray_ui_root}/*.svgz" "${tray_ui_root}/*.png"
+    "${tray_ui_root}/*.webp" "${tray_ui_root}/*.jpg" "${tray_ui_root}/*.jpeg"
+)
+qt6_query_qml_module(org.kde.windowsmodern.systemtray
+    QML_FILES tray_registered_qml
+    RESOURCES tray_registered_resources
+)
+set(tray_registered_files)
+foreach(file IN LISTS tray_registered_qml tray_registered_resources)
+    get_filename_component(absolute "${file}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    list(APPEND tray_registered_files "${absolute}")
+endforeach()
+foreach(file IN LISTS tray_ui_files)
+    file(RELATIVE_PATH expected_alias "${tray_ui_root}" "${file}")
+    if(NOT file IN_LIST tray_registered_files)
+        message(FATAL_ERROR "System tray UI resource not registered: ${expected_alias}")
+    endif()
+    get_source_file_property(actual_alias "${file}" QT_RESOURCE_ALIAS)
+    if(NOT actual_alias STREQUAL expected_alias)
+        message(FATAL_ERROR "System tray QRC alias mismatch: ${expected_alias} -> ${actual_alias}")
+    endif()
+endforeach()
+
+option(WINDOWSMODERN_TEST_TRAY "Build tray status and embedded-resource regression tests" OFF)
 if(WINDOWSMODERN_TEST_TRAY)
     enable_testing()
     add_executable(test_traystatus "${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/systemtray/test_traystatus.cpp")
     target_link_libraries(test_traystatus PRIVATE Plasma::Plasma)
     add_test(NAME tray-status COMMAND test_traystatus)
+
+    add_executable(test_tray_resources "${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/systemtray/test_tray_resources.cpp")
+    target_link_libraries(test_tray_resources PRIVATE Qt6::Core)
+    add_dependencies(test_tray_resources org.kde.windowsmodern.systemtray)
+    add_test(NAME tray-embedded-resources COMMAND test_tray_resources
+        "$<TARGET_FILE:org.kde.windowsmodern.systemtray>" "${tray_ui_root}")
 endif()
