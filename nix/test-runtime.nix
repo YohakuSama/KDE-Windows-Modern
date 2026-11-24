@@ -11,16 +11,27 @@ let
     kglobalaccel knotifications kpackage kiconthemes kjobwidgets kitemmodels
     libplasma plasma-workspace plasma-activities plasma-activities-stats libksysguard
   ];
-  makeApplet = { name, src, id, rename ? false }: pkgs.stdenv.mkDerivation {
+  makeApplet = { name, src, id, rename ? false }:
+    let
+      source = lib.cleanSourceWith {
+        inherit src;
+        filter = path: type:
+          let n = baseNameOf path; in
+          !(n == "build" || lib.hasPrefix "build-" n || n == "wm-build" || n == ".git");
+      };
+      # Nix itself hashes the filtered source path. The identity also changes
+      # if the build recipe, pinned package set or ABI changes. Unchanged
+      # applets get identical derivations across upgrades.
+      identity = builtins.hashString "sha256" (builtins.toJSON {
+        source = toString source;
+        inherit nixpkgsPath plasmaVersion id;
+        recipe = builtins.hashFile "sha256" ./test-runtime.nix;
+      });
+    in pkgs.stdenv.mkDerivation {
     pname = "windows-modern-test-" + name;
-    version = plasmaVersion + "-" + buildToken;
-    wmBuildToken = buildToken;
-    src = lib.cleanSourceWith {
-      inherit src;
-      filter = path: type:
-        let n = baseNameOf path; in
-        !(n == "build" || lib.hasPrefix "build-" n || n == "wm-build" || n == ".git");
-    };
+    version = plasmaVersion + "-" + builtins.substring 0 16 identity;
+    wmBuildToken = identity;
+    src = source;
     nativeBuildInputs = [ pkgs.cmake pkgs.ninja k.extra-cmake-modules k.qttools pkgs.python3 ];
     buildInputs = deps;
     dontUseCmakeConfigure = true;
@@ -42,8 +53,8 @@ let
       PY
     '' + ''
       # A distinct token in the actual ELF, not merely the output symlink.
-      # Each run has new derivations for both applets; shared dependencies
-      # retain normal Nix caching.
+      # The token changes only when this applet's build inputs change.
+      # A changed plugin cannot pass verification with an older ELF.
       cat > wm_build_identity.cpp <<EOF
       extern "C" __attribute__((visibility("default"))) const char *windowsmodern_nixos_build_token() {
           return "$wmBuildToken";
@@ -65,6 +76,7 @@ let
       runHook preInstall
       install -Dm755 wm-build/lib/plasma/applets/${id}.so "$out/${prefix}/plasma/applets/${id}.so"
       printf '%s\n' "$src" > "$out/wm-source-${name}"
+      printf '%s\n' "$wmBuildToken" > "$out/wm-token-${name}"
       runHook postInstall
     '';
   };

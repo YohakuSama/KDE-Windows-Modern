@@ -19,10 +19,15 @@ action="${1:-}"
 variant=dark
 for arg in "$@"; do case "$arg" in --light) variant=light ;; --dark) variant=dark ;; esac; done
 if [ -z "$action" ] || [ "$action" = menu ]; then
-    printf 'Windows Modern · NixOS 完整测试安装\n1. 自动备份、构建、安装\n2. 卸载、恢复原配置、清理测试文件\n'
-    read -r -p '请选择 [1/2]：' action
+    printf 'Windows Modern · NixOS 测试\n1. 初次安装（备份、完整构建、安装）\n2. 增量升级（仅更新变化的组件）\n3. 卸载（恢复原桌面、清理测试文件）\n'
+    read -r -p '请选择 [1/2/3]：' action
 fi
-case "$action" in 1|install|all) action=install ;; 2|uninstall|remove) action=uninstall ;; *) echo "仅支持 1 或 2。"; exit 2 ;; esac
+case "$action" in
+    1|install|all|nixos) action=install ;;
+    2|upgrade|update) action=upgrade ;;
+    3|uninstall|remove) action=uninstall ;;
+    *) echo "请选择 1、2 或 3。" >&2; exit 2 ;;
+esac
 systemctl --user cat "$SERVICE" >/dev/null || { echo "未找到 Plasma 用户服务。" >&2; exit 1; }
 
 # Restore only the variables owned by this test. Migrate older backups once.
@@ -228,15 +233,36 @@ if [ "$action" = uninstall ]; then
 fi
 
 upgrading=0
-if [ -f "$STATE/original/manifest.json" ]; then
+if [ "$action" = upgrade ]; then
+    [ -f "$STATE/original/manifest.json" ] || {
+        echo "没有有效的测试安装记录。请重新运行并选择 1 初次安装。" >&2; exit 1;
+    }
     upgrading=1
     old_profile="$(readlink -f "$STATE/runtime")"
     [ -x "$old_profile/bin/python3" ] || { echo "旧测试运行时缺失，保留备份，停止升级。" >&2; exit 1; }
     echo "增量升级：保留现有任务栏及原始卸载备份。"
     echo "当前运行时：$old_profile"
+elif [ -f "$STATE/original/manifest.json" ]; then
+    echo "已安装测试版，请选择 2 增量升级，或 3 卸载。" >&2
+    exit 1
 fi
 
-for cmd in nix-build nix nix-hash systemctl busctl plasmashell plasma-apply-lookandfeel plasma-apply-wallpaperimage \
+# Validate the extracted source before creating a build or touching the desktop.
+# No legacy nix-hash invocation on a directory or locale-sensitive path.
+for required in nix/test-runtime.nix scripts/nixos-test-state.py scripts/verify-nixos-runtime.py \
+    plasma/applets/org.kde.windowsmodern.systemtray/CMakeLists.txt \
+    plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/main.qml \
+    plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt \
+    plasma/applets/org.kde.windowsmodern.icontasks/contents/ui/main.qml \
+    plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/main.qml \
+    plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/main.qml; do
+    [ -s "$ROOT/$required" ] || {
+        printf '测试包缺少源码：%s\n未修改桌面。请完整解压 ZIP。\n' "$ROOT/$required" >&2
+        exit 1
+    }
+done
+
+for cmd in nix-build nix systemctl busctl plasmashell plasma-apply-lookandfeel plasma-apply-wallpaperimage \
            kwriteconfig6 kreadconfig6 kbuildsycoca6; do
     command -v "$cmd" >/dev/null || { echo "缺少当前 Plasma 系统命令：$cmd" >&2; exit 1; }
 done
@@ -258,10 +284,6 @@ elif command -v git >/dev/null && git -C "$ROOT" rev-parse --is-inside-work-tree
     source_revision="$(git -C "$ROOT" rev-parse HEAD)"
 fi
 printf '源码版本：%s\n构建编号：%s\n' "$source_revision" "$BUILD_TOKEN"
-for applet in systemtray icontasks; do
-    digest="$(nix-hash --type sha256 "$ROOT/plasma/applets/org.kde.windowsmodern.$applet")"
-    printf '%s 源码哈希：%s\n' "$applet" "$digest"
-done
 # Before switching, a failed build or resource import cannot affect the
 # active desktop; remove only this attempt's own GC root and staging.
 trap 'rc=$?; if [ "$rc" -ne 0 ]; then remove_build_dir "$BUILD_DIR" || true; fi' EXIT
@@ -281,7 +303,7 @@ if [ -z "$nixpkgs" ]; then
 fi
 if [ -z "$nixpkgs" ]; then nixpkgs="$(nix-instantiate --find-file nixpkgs 2>/dev/null || true)"; fi
 [ -d "$nixpkgs" ] || { echo "找不到当前系统对应的 nixpkgs。" >&2; exit 1; }
-echo "构建 Plasma $version 的系统托盘、任务栏及完整测试运行时……"
+echo "检查 Plasma $version 构建输入，只构建源码或依赖变化的插件……"
 nix-build "$ROOT/nix/test-runtime.nix" --argstr nixpkgsPath "$nixpkgs" --argstr plasmaVersion "$version" \
     --argstr buildToken "$BUILD_TOKEN" --out-link "$BUILD_DIR/runtime"
 PROFILE="$(readlink -f "$BUILD_DIR/runtime")"
@@ -300,7 +322,11 @@ plugin="$PROFILE/$prefix"
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"
 tasks="$plugin/plasma/applets/org.kde.windowsmodern.icontasks.so"
 [ -s "$tray" ] && [ -s "$tasks" ] || { echo "两个 C++ 插件未完整构建。" >&2; exit 1; }
-"$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" --token "$BUILD_TOKEN" --tray "$tray" --tasks "$tasks"
+tray_token="$(cat "$PROFILE/wm-token-systemtray")"
+tasks_token="$(cat "$PROFILE/wm-token-icontasks")"
+verify_args=(--tray-token "$tray_token" --tasks-token "$tasks_token" --tray "$tray" --tasks "$tasks")
+"$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" "${verify_args[@]}"
+printf '系统托盘源码及 ABI 标识：%s\n任务栏源码及 ABI 标识：%s\n' "$tray_token" "$tasks_token"
 printf '系统托盘构建输入：%s\n任务栏构建输入：%s\n' "$(cat "$PROFILE/wm-source-systemtray")" "$(cat "$PROFILE/wm-source-icontasks")"
 
 # Exact Qt/Plasma library paths must agree with the live shell, not just
@@ -331,7 +357,13 @@ else
     fi
     input="$STATE/resources"
 fi
-WM_NATIVE_RESOURCE_SOURCE="$input" WM_NATIVE_ASSETS_DIR="$STATE/native" bash "$ROOT/scripts/prepare-native-assets.sh"
+# Reuse the imported assets only if the pinned input manifest, mapping and
+# every generated file still match. No repeated import on an ordinary upgrade.
+if "$PYTHON" "$ROOT/scripts/check-nixos-assets.py" "$STATE/native" "$input" "$ROOT/scripts/native-assets-map.json"; then
+    echo "原版图标、壁纸、音效未变化，跳过导入。"
+else
+    WM_NATIVE_RESOURCE_SOURCE="$input" WM_NATIVE_ASSETS_DIR="$STATE/native" bash "$ROOT/scripts/prepare-native-assets.sh"
+fi
 # A successful build/import is not a configuration change. Back up the
 # running desktop after stopping the shell so its final settings are flushed.
 remember_env
@@ -378,10 +410,7 @@ export WM_SHORTCUT_BACKUP="$STATE/shortcut-backup.json"
 kbuildsycoca6 --noincremental >/dev/null
 if [ "$upgrading" -eq 0 ]; then
     plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant" --resetLayout
-else
-    plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant"
-fi
-kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle "$( [ "$variant" = dark ] && echo kvantum-dark || echo kvantum )"
+    kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle "$( [ "$variant" = dark ] && echo kvantum-dark || echo kvantum )"
 kwriteconfig6 --file Kvantum/kvantum.kvconfig --group General --key theme Windows-modern
 kwriteconfig6 --file kdeglobals --group Icons --key Theme windows-modern
 kwriteconfig6 --file kdeglobals --group Sounds --key Theme windows-modern
@@ -404,16 +433,19 @@ fi
 # Keep the system font and user's existing input method.
 "$PYTHON" "$ROOT/scripts/theme/window-frames.py" --apply-local --aurorae-dir "$DATA/aurorae/themes" \
     --kvantum-dir "$CONFIG/Kvantum/Windows-modern" --wallpaper-package "$DATA/wallpapers/Windows-modern"
-busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
-sleep 2
-if [ "$upgrading" -eq 0 ]; then
+    busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
+    sleep 2
     "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group shortcuts
     "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group apps
     stop_shell
     "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" tray-apply
     start_shell
+    bash "$ROOT/scripts/set-wallpaper.sh"
+else
+    # Do not apply global theme defaults or reset wallpaper, shortcuts,
+    # pinned apps, layout or the user's light/dark preference on upgrade.
+    busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 fi
-bash "$ROOT/scripts/set-wallpaper.sh"
 
 # Do not report success with stock fallback applets or a stale C++ plugin.
 layout="$CONFIG/plasma-org.kde.plasma.desktop-appletsrc"
@@ -426,18 +458,18 @@ done
 verified=0
 for attempt in {1..20}; do
     pid="$(systemctl --user show "$SERVICE" -p MainPID --value)"
-    if "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" --token "$BUILD_TOKEN" --tray "$tray" --tasks "$tasks" --pid "$pid" --quiet 2>/dev/null; then
+    if "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" "${verify_args[@]}" --pid "$pid" --quiet 2>/dev/null; then
         verified=1
         break
     fi
     sleep 1
 done
 [ "$verified" -eq 1 ] || {
-    "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" --token "$BUILD_TOKEN" --tray "$tray" --tasks "$tasks" --pid "$pid"
+    "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" "${verify_args[@]}" --pid "$pid"
     echo "Plasma 未加载本次构建，拒绝报告安装成功。" >&2
     false
 }
-"$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" --token "$BUILD_TOKEN" --tray "$tray" --tasks "$tasks" --pid "$pid"
+"$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" "${verify_args[@]}" --pid "$pid"
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" verify-sources --root "$ROOT" --state "$STATE" --profile "$PROFILE"
 if [ "$upgrading" -eq 1 ]; then
     backups="$(dirname "$STATE")/windows-modern-nixos-backups"
@@ -467,4 +499,4 @@ if [ -d "$BUILD_DIR/previous" ] && [ ! -L "$BUILD_DIR/previous" ]; then
 fi
 printf '安装完成，当前运行时：%s\n构建编号：%s\n' "$PROFILE" "$BUILD_TOKEN"
 echo "原版壁纸、锁屏、开始菜单、任务栏及快捷设置已更新。"
-echo "运行同一脚本并选择 2，即可恢复原桌面并清理本次安装。"
+echo "运行同一脚本：1 初次安装，2 增量升级，3 卸载。"

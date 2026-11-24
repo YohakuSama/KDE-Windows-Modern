@@ -159,7 +159,7 @@ def plan(root, state, profile):
                     binary = profile / "bin" / args[0]
                     if binary.is_file():
                         token = args[0]
-                        command = str(binary) + command[len(token):]
+                        command = str(binary.resolve()) + command[len(token):]
                 line = key + "=" + command
             elif line == "DBusActivatable=true":
                 line = "DBusActivatable=false"
@@ -285,7 +285,20 @@ def package_digest(path):
         elif item.is_file():
             h.update(b"F\0" + relative + b"\0")
             h.update(hashlib.sha256(item.read_bytes()).digest())
+        elif item.is_dir():
+            h.update(b"D\0" + relative + b"\0")
     return h.hexdigest()
+
+
+def same_payload(src, dst):
+    if src.is_symlink():
+        return dst.is_symlink() and os.readlink(src) == os.readlink(dst)
+    if dst.is_symlink():
+        return False
+    if src.is_dir():
+        return dst.is_dir() and package_digest(src) == package_digest(dst)
+    return (src.is_file() and dst.is_file()
+            and hashlib.sha256(src.read_bytes()).digest() == hashlib.sha256(dst.read_bytes()).digest())
 
 
 def verify_sources(root):
@@ -347,12 +360,19 @@ def main():
         path = CONFIG / name
         if path.is_symlink() and path.exists():
             replace(path.resolve(), path, writable=True)
+    changed = unchanged = 0
     for dst, src in mapping.items():
+        if args.upgrade_backup is not None and same_payload(src, dst):
+            unchanged += 1
+            continue
         replace(src, dst, writable=True)
+        changed += 1
+    print(f"Payload update: {changed} replaced, {unchanged} unchanged")
     for variant in ("dark", "light"):
         lock = DATA / "plasma/look-and-feel" / ("org.kde.windowsmodern." + variant) / "contents/lockscreen"
-        if lock.is_dir():
-            shutil.copy2(args.state / "native/icons/status/avatar-default.svg", lock / "default-avatar.svg")
+        avatar = args.state / "native/icons/status/avatar-default.svg"
+        if lock.is_dir() and not same_payload(avatar, lock / "default-avatar.svg"):
+            shutil.copy2(avatar, lock / "default-avatar.svg")
     # Install the exact translated domains from the repository.
     subprocess.run([str(args.profile / "bin/python3"), str(args.root / "scripts/install-translations.py"),
                     "--locale-dir", str(DATA / "locale")], check=True)
