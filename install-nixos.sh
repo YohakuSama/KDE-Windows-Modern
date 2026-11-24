@@ -51,11 +51,16 @@ remember_env() {
 restore_env() {
     local source="${1:-$STATE/original-env}"
     [ -f "$source" ] || return 0
-    local key line
+    local key line result=0
     for key in QT_PLUGIN_PATH XDG_DATA_DIRS QML_DISABLE_DISK_CACHE; do
         line="$(grep -m1 "^$key=" "$source" || true)"
-        if [ -n "$line" ]; then systemctl --user set-environment "$line"; else systemctl --user unset-environment "$key"; fi
+        if [ -n "$line" ]; then
+            systemctl --user set-environment "$line" || result=1
+        else
+            systemctl --user unset-environment "$key" || result=1
+        fi
     done
+    return "$result"
 }
 set_profile_env() {
     local plugin="$1" old_qt old_data qt data
@@ -80,7 +85,10 @@ wait_shell() {
     echo "Plasma Shell 启动失败。" >&2
     return 1
 }
-start_shell() { systemctl --user start "$SERVICE"; wait_shell; }
+start_shell() {
+    systemctl --user start "$SERVICE" || return 1
+    wait_shell
+}
 stop_shell() { systemctl --user stop "$SERVICE"; }
 unload_scripts() {
     for id in org.kde.windowsmodern.osd org.kde.windowsmodern.snapkeys org.kde.windowsmodern.snaplayouts; do
@@ -178,7 +186,7 @@ remove_build_dir() {
     [ ! -e "$d" ]
 }
 restore_previous_version() {
-    local d="$1" old oldpython
+    local d="$1" old oldpython result=0
     [ -f "$d/previous-runtime" ] && [ -f "$d/previous-env" ] || return 1
     old="$(cat "$d/previous-runtime")" || return 1
     case "$old" in /nix/store/*) ;; *) return 1 ;; esac
@@ -188,12 +196,15 @@ restore_previous_version() {
     if [ -f "$d/previous/manifest.json" ]; then
         "$oldpython" "$ROOT/scripts/nixos-test-state.py" restore-upgrade --root "$ROOT" --state "$STATE" --profile "$old" --upgrade-backup "$d/previous" || { start_shell || true; return 1; }
     fi
-    ln -sfn "$old" "$STATE/runtime" || return 1
-    systemctl --user daemon-reload || return 1
-    restore_env "$d/previous-env" || return 1
+    # Even if one restoration step fails, attempt to bring the shell back.
+    # Retain the recovery marker and both build roots until every step passes.
+    ln -sfn "$old" "$STATE/runtime" || result=1
+    systemctl --user daemon-reload || result=1
+    restore_env "$d/previous-env" || result=1
     kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null 2>&1 || true
-    start_shell || return 1
+    start_shell || result=1
+    [ "$result" -eq 0 ] || return 1
     rm -f -- "$STATE/pending-build" || return 1
     echo "已恢复升级前的运行时和桌面配置：$old"
 }
@@ -228,7 +239,7 @@ if [ "$action" = uninstall ]; then
         echo "卸载前备份失败，未删除测试文件。" >&2
         exit 1
     fi
-    restore_original || { echo "恢复未完成，已保留全部备份；请重新运行选项 2。" >&2; exit 1; }
+    restore_original || { echo "恢复未完成，已保留全部备份；请重新运行选项 3。" >&2; exit 1; }
     finish_cleanup
     echo "已卸载测试安装，原始桌面配置已恢复。"
     exit 0
@@ -378,8 +389,6 @@ if [ "$upgrading" -eq 1 ]; then
     printf '%s\n' "$old_profile" > "$BUILD_DIR/previous-runtime"
     capture_env "$BUILD_DIR/previous-env"
     upgrade_args=(--upgrade-backup "$BUILD_DIR/previous")
-    printf '%s\n' "$(basename "$BUILD_DIR")" > "$BUILD_DIR/pending-marker"
-    mv -T -- "$BUILD_DIR/pending-marker" "$STATE/pending-build"
 fi
 rollback() {
     local rc="${1:-$?}"
@@ -404,6 +413,16 @@ rollback() {
 trap 'exit 130' INT
 trap 'exit 143' TERM
 trap 'rc=$?; if [ "$rc" -ne 0 ]; then rollback "$rc"; fi' EXIT
+# Publish recovery information only after replacing the pre-build cleanup
+# trap. A failure here must never delete the build named by pending-build.
+if [ "$upgrading" -eq 1 ]; then
+    printf '%s\n' "$(basename "$BUILD_DIR")" > "$BUILD_DIR/pending-marker"
+    mv -T -- "$BUILD_DIR/pending-marker" "$STATE/pending-build"
+else
+    # Keep the recovery interpreter reachable even if the first installation
+    # fails between creating its original manifest and switching the shell.
+    ln -sfn "$PROFILE" "$STATE/runtime"
+fi
 echo "正在自动备份原始桌面配置和将被替换的资源……"
 stop_shell
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" install --root "$ROOT" --state "$STATE" --profile "$PROFILE" "${upgrade_args[@]}"

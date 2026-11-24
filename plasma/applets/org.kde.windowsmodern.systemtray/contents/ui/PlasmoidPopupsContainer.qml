@@ -49,6 +49,16 @@ QQC2.StackView {
 
     onActiveAppletChanged: Qt.callLater(mainStack.showActiveApplet)
 
+    // Native Bluetooth and device pages can create their full item after
+    // activeAppletChanged. Retry on that actual signal, not a polling timer.
+    Connections {
+        target: mainStack.activeApplet
+        function onFullRepresentationItemChanged() {
+            if (!mainStack.themedActive)
+                Qt.callLater(mainStack.showActiveApplet);
+        }
+    }
+
     function showActiveApplet() {
         mainStack.appletHasHeading = false
         mainStack.appletHasFooter = false
@@ -96,9 +106,12 @@ QQC2.StackView {
                 }
             }
 
-            // Native fallback and custom pages are exclusive, never drawn
-            // together during a StackView replacement.
-            ;(mainStack.empty ? mainStack.push : mainStack.replace)(activeApplet.fullRepresentationItem, {
+            // Do not push the same native view twice if its creation and
+            // the applet activation queued the same update.
+            const page = activeApplet.fullRepresentationItem;
+            if (mainStack.currentItem === page)
+                return;
+            const properties = {
                 "width": Qt.binding(() => mainStack.width),
                 "height": Qt.binding(() => mainStack.height),
                 "x": 0,
@@ -106,7 +119,11 @@ QQC2.StackView {
                 "opacity": 1,
                 "KeyNavigation.up": mainStack.KeyNavigation.up,
                 "KeyNavigation.backtab": mainStack.KeyNavigation.backtab
-            }, QQC2.StackView.Immediate)
+            };
+            if (mainStack.empty)
+                mainStack.push(page, properties, QQC2.StackView.Immediate);
+            else
+                mainStack.replace(page, properties, QQC2.StackView.Immediate);
         } else {
             mainStack.clear(QQC2.StackView.Immediate)
         }
