@@ -11,7 +11,7 @@ Item {
     width: 420
     height: 620
 
-    function i18n(text) { return text; }
+    function i18n(text, arg) { return arg === undefined ? text : text.replace("%1", arg); }
     function i18nc(context, text) {
         return context === "@info calendar display locale (translate to a Qt locale name)" ? "zh_CN" : text;
     }
@@ -21,14 +21,17 @@ Item {
 
     ListModel { id: notifications }
     QtObject {
-        id: settings
+        id: mockSettings
         property var notificationsInhibitedUntil
         function save() {}
     }
+    FocusSession { id: focusState; settings: mockSettings }
     QtObject {
         id: clock
         property date currentTime: new Date(2026, 10, 25, 5, 0)
         property string timeFormatWithSeconds: "HH:mm:ss"
+        property string timeFormat: "HH:mm"
+        property var focusSession: focusState
         property bool expanded: true
         readonly property bool flyoutOpen: expanded
         property rect popupScreenGeometry: Qt.rect(0, 0, 1280, 720)
@@ -36,7 +39,7 @@ Item {
         property bool notificationsAvailable: true
         property bool notificationsInhibited: false
         property var notificationModel: notifications
-        property var notificationSettings: settings
+        property var notificationSettings: mockSettings
         property string currentTimeZone: "Local"
         function selectedTimeZonesDeduplicatingExplicitLocalTimeZone() { return []; }
     }
@@ -77,20 +80,37 @@ Item {
             const calendar = findChild(popup, "wmCalendarSection");
             const bar = findChild(popup, "wmNotificationScrollBar");
             const grid = findChild(popup, "wmCalendarDayGrid");
-            verify(content !== null && calendar !== null && bar !== null && grid !== null);
+            const notificationPanel = findChild(popup, "wmNotificationPanel");
+            const calendarPanel = findChild(popup, "wmCalendarPanel");
+            const footer = findChild(popup, "wmFocusFooter");
+            verify(content !== null && calendar !== null && bar !== null && grid !== null
+                && notificationPanel !== null && calendarPanel !== null && footer !== null);
             for (const h of [600, 720, 900]) {
                 clock.popupScreenGeometry = Qt.rect(0, 0, 1280, h);
                 tryVerify(() => {
                     const pos = calendar.mapToItem(popup, 0, 0);
                     const gridPos = grid.mapToItem(popup, 0, 0);
+                    const footerPos = footer.mapToItem(popup, 0, 0);
                     return calendar.height > 150 && pos.y >= 0
-                        && pos.y + calendar.height <= popup.height - 15
+                        && calendarPanel.y >= notificationPanel.y + notificationPanel.height + 8
+                        && pos.y + calendar.height <= footerPos.y
                         && grid.height >= 6 * grid.cellHeight + 5 * grid.spacing - 1
-                        && gridPos.y + grid.height <= popup.height - 15;
+                        && gridPos.y + grid.height <= footerPos.y
+                        && footerPos.y + footer.height <= popup.height - 1;
                 }, 2000);
                 verify(!bar.visible || !bar.indicatorVisible);
             }
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+        }
+        function test_focusSurvivesPopupClosing() {
+            focusState.durationMinutes = 30;
+            focusState.start();
+            verify(focusState.running);
+            clock.expanded = false;
+            verify(focusState.running);
+            clock.expanded = true;
+            focusState.stop();
+            verify(!focusState.running);
         }
         function test_collapseCalendarDoesNotCollapseWindow() {
             popup.calendarExpanded = false;

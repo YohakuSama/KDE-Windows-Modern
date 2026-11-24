@@ -19,6 +19,8 @@ ColumnLayout {
     required property date currentTime
     required property bool notificationsAvailable
     required property bool effectiveDnd
+    property var timeLocale: Qt.locale()
+    property string timeFormat: "h:mm AP"
     spacing: 8
     readonly property int minimumSectionHeight: Math.ceil(historyHeader.implicitHeight + spacing + 32)
 
@@ -69,20 +71,22 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Kirigami.Units.smallSpacing
 
-        Kirigami.Heading {
+        PlasmaComponents.Label {
             Layout.fillWidth: true
             text: i18n("Notifications")
-            level: 2
-            font.weight: Font.DemiBold
+            font.pixelSize: 14
+            font.weight: Font.Medium
             color: palette.text
             elide: Text.ElideRight
         }
 
-        PlasmaComponents.ToolButton {
+        FlyoutButton {
+            Layout.preferredWidth: 28
             text: history.effectiveDnd && !history.manualDnd
                 ? i18n("Do not disturb is active due to a rule or application")
                 : i18n("Manual do not disturb")
-            icon.name: history.effectiveDnd ? "notifications-disabled" : "notifications"
+            icon.name: "notification-disabled-symbolic"
+            highlighted: history.effectiveDnd
             enabled: history.notificationsAvailable
             display: PlasmaComponents.AbstractButton.IconOnly
             checkable: true
@@ -91,7 +95,7 @@ ColumnLayout {
             PlasmaComponents.ToolTip { text: parent.text }
         }
 
-        PlasmaComponents.Button {
+        FlyoutButton {
             text: i18n("Clear all")
             enabled: notificationModel.count > 0
             onClicked: history.clearAll()
@@ -107,6 +111,7 @@ ColumnLayout {
         verticalAlignment: Text.AlignVCenter
         text: history.notificationsAvailable ? i18n("No notifications") : i18n("Notification service not available")
         color: palette.textSecondary
+        font.pixelSize: 12
         visible: notificationModel.count === 0
     }
 
@@ -119,7 +124,7 @@ ColumnLayout {
         Layout.preferredHeight: Math.max(32, contentHeight)
         visible: count > 0
         model: notificationModel
-        spacing: Kirigami.Units.smallSpacing * 2
+        spacing: 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         QQC2.ScrollBar.vertical: FluentScrollBar { objectName: "wmNotificationScrollBar" }
@@ -131,21 +136,22 @@ ColumnLayout {
             verticalStepSize: 120
         }
 
-        delegate: Rectangle {
+        delegate: Item {
             id: card
             required property int index
             required property var model
             readonly property bool isGroup: !!model.isGroup
             readonly property bool inGroup: !!model.isInGroup
             readonly property var notificationId: model.id
-            onNotificationIdChanged: if (replyInput) replyInput.clear()
-            width: list.width - Kirigami.Units.smallSpacing
-            implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
+            property bool bodyExpanded: false
+            onNotificationIdChanged: {
+                if (replyInput) replyInput.clear();
+                bodyExpanded = false;
+            }
+            // Fixed gutter: content height must not control delegate width.
+            width: Math.max(1, list.width - 12)
+            implicitHeight: content.implicitHeight
             height: implicitHeight
-            radius: 8
-            color: palette.surface
-            border.width: 1
-            border.color: palette.surfaceBorder
 
             function submitReply() {
                 const text = replyInput.text;
@@ -173,11 +179,14 @@ ColumnLayout {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: Kirigami.Units.largeSpacing
-                spacing: Kirigami.Units.smallSpacing
+                spacing: 4
 
                 RowLayout {
                     Layout.fillWidth: true
+                    visible: !card.inGroup
+                    Layout.leftMargin: 4
+                    Layout.rightMargin: 4
+                    spacing: 6
 
                     Kirigami.Icon {
                         Layout.preferredWidth: Kirigami.Units.iconSizes.small
@@ -190,19 +199,21 @@ ColumnLayout {
                         text: card.inGroup ? "" : (card.model.applicationName || i18n("Notification"))
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
-                        color: palette.textSecondary
-                        font: Kirigami.Theme.smallFont
+                        color: palette.text
+                        font.pixelSize: 12
                     }
                     PlasmaComponents.Label {
-                        text: card.isGroup ? i18np("%1 notification", "%1 notifications", card.model.groupChildrenCount || 0)
-                            : card.model.created && !isNaN(card.model.created.getTime())
-                                ? Qt.locale().toString(card.model.created, Locale.ShortFormat) : ""
+                        visible: card.isGroup
+                        text: i18np("%1 notification", "%1 notifications", card.model.groupChildrenCount || 0)
                         color: palette.textSecondary
-                        font: Kirigami.Theme.smallFont
+                        font.pixelSize: 11
                         elide: Text.ElideRight
-                        Layout.maximumWidth: Kirigami.Units.gridUnit * 6
+                        Layout.maximumWidth: 96
                     }
-                    PlasmaComponents.ToolButton {
+                    FlyoutButton {
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                        quiet: true
                         visible: card.isGroup
                         text: card.model.isGroupExpanded ? i18n("Show fewer") : i18n("Show more")
                         icon.name: card.model.isGroupExpanded ? "go-up" : "go-down"
@@ -211,7 +222,10 @@ ColumnLayout {
                             !card.model.isGroupExpanded, NotificationManager.Notifications.IsGroupExpandedRole)
                         PlasmaComponents.ToolTip { text: parent.text }
                     }
-                    PlasmaComponents.ToolButton {
+                    FlyoutButton {
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                        quiet: true
                         text: card.isGroup ? i18n("Dismiss group") : i18n("Dismiss notification")
                         icon.name: "window-close"
                         display: PlasmaComponents.AbstractButton.IconOnly
@@ -221,74 +235,135 @@ ColumnLayout {
                     }
                 }
 
-                PlasmaComponents.Label {
+                Rectangle {
                     Layout.fillWidth: true
-                    text: card.model.summary || ""
-                    textFormat: Text.PlainText
-                    font.weight: Font.DemiBold
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
-                    visible: !card.isGroup && text.length > 0
-                }
+                    visible: !card.isGroup
+                    implicitHeight: messageContent.implicitHeight + 20
+                    radius: 4
+                    color: palette.cardTint
 
-                PlasmaComponents.Label {
-                    Layout.fillWidth: true
-                    text: card.model.body || ""
-                    textFormat: Text.StyledText
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 4
-                    elide: Text.ElideRight
-                    visible: !card.isGroup && text.length > 0
-                }
+                    ColumnLayout {
+                        id: messageContent
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.margins: 10
+                        spacing: 4
 
-                Flow {
-                    id: actions
-                    Layout.fillWidth: true
-                    spacing: Kirigami.Units.smallSpacing
-                    visible: !card.isGroup && !card.model.expired && (card.model.hasDefaultAction
-                        || (card.model.actionNames || []).length > 0)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+                            PlasmaComponents.Label {
+                                text: {
+                                    const created = card.model.created;
+                                    if (!created || isNaN(created.getTime())) return "";
+                                    const sameDay = created.toDateString() === history.currentTime.toDateString();
+                                    return (sameDay ? "" : history.timeLocale.toString(created, "yyyy/M/d") + " ")
+                                        + history.timeLocale.toString(created, history.timeFormat);
+                                }
+                                color: palette.textSecondary
+                                font.pixelSize: 11
+                            }
 
-                    PlasmaComponents.Button {
-                        readonly property string actionLabel: card.model.defaultActionLabel || i18n("Open")
-                        text: actionLabel
-                        visible: card.model.hasDefaultAction
-                            && !(card.model.actionLabels || []).includes(actionLabel)
-                        width: Math.min(implicitWidth, actions.width)
-                        onClicked: card.invoke("default")
-                    }
+                            FlyoutButton {
+                                Layout.preferredWidth: 20
+                                Layout.preferredHeight: 20
+                                quiet: true
+                                visible: !!card.model.body
+                                text: card.bodyExpanded ? i18n("Show fewer") : i18n("Show more")
+                                icon.name: card.bodyExpanded ? "go-up-symbolic" : "go-down-symbolic"
+                                display: PlasmaComponents.AbstractButton.IconOnly
+                                onClicked: card.bodyExpanded = !card.bodyExpanded
+                            }
 
-                    Repeater {
-                        model: card.model.actionNames || []
-                        delegate: PlasmaComponents.Button {
-                            required property int index
-                            required property string modelData
-                            text: (card.model.actionLabels || [])[index] || modelData
-                            width: Math.min(implicitWidth, actions.width)
-                            onClicked: card.invoke(modelData)
+                            Item { Layout.fillWidth: true }
+
+                            FlyoutButton {
+                                Layout.preferredWidth: 20
+                                Layout.preferredHeight: 20
+                                quiet: true
+                                visible: card.inGroup && card.model.closable
+                                text: i18n("Dismiss notification")
+                                icon.name: "window-close"
+                                display: PlasmaComponents.AbstractButton.IconOnly
+                                onClicked: history.notificationModel.close(history.notificationModel.index(card.index, 0))
+                            }
                         }
-                    }
-                }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    visible: !card.isGroup && !card.model.expired && !!card.model.hasReplyAction
-                    spacing: Kirigami.Units.smallSpacing
+                        PlasmaComponents.Label {
+                            Layout.fillWidth: true
+                            text: card.model.summary || ""
+                            textFormat: Text.PlainText
+                            font.weight: Font.Medium
+                            font.pixelSize: 13
+                            color: palette.text
+                            wrapMode: Text.Wrap
+                            maximumLineCount: card.bodyExpanded ? 4 : 2
+                            elide: Text.ElideRight
+                            visible: !card.isGroup && text.length > 0
+                        }
 
-                    PlasmaComponents.TextField {
-                        id: replyInput
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        placeholderText: card.model.replyPlaceholderText || i18n("Reply")
-                        Accessible.name: card.model.replyActionLabel || i18n("Reply to notification")
-                        onAccepted: card.submitReply()
-                    }
+                        PlasmaComponents.Label {
+                            Layout.fillWidth: true
+                            text: card.model.body || ""
+                            textFormat: Text.StyledText
+                            color: palette.text
+                            font.pixelSize: 12
+                            wrapMode: Text.Wrap
+                            maximumLineCount: card.bodyExpanded ? 10 : 2
+                            elide: Text.ElideRight
+                            visible: !card.isGroup && text.length > 0
+                        }
 
-                    PlasmaComponents.Button {
-                        text: card.model.replySubmitButtonText || i18n("Send")
-                        icon.name: card.model.replySubmitButtonIconName || "document-send"
-                        enabled: replyInput.text.trim().length > 0
-                        onClicked: card.submitReply()
+                        Flow {
+                            id: actions
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+                            visible: !card.isGroup && !card.model.expired && (card.model.hasDefaultAction
+                                || (card.model.actionNames || []).length > 0)
+
+                            PlasmaComponents.Button {
+                                readonly property string actionLabel: card.model.defaultActionLabel || i18n("Open")
+                                text: actionLabel
+                                visible: card.model.hasDefaultAction
+                                    && !(card.model.actionLabels || []).includes(actionLabel)
+                                width: Math.min(implicitWidth, actions.width)
+                                onClicked: card.invoke("default")
+                            }
+
+                            Repeater {
+                                model: card.model.actionNames || []
+                                delegate: PlasmaComponents.Button {
+                                    required property int index
+                                    required property string modelData
+                                    text: (card.model.actionLabels || [])[index] || modelData
+                                    width: Math.min(implicitWidth, actions.width)
+                                    onClicked: card.invoke(modelData)
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: !card.isGroup && !card.model.expired && !!card.model.hasReplyAction
+                            spacing: Kirigami.Units.smallSpacing
+
+                            PlasmaComponents.TextField {
+                                id: replyInput
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                placeholderText: card.model.replyPlaceholderText || i18n("Reply")
+                                Accessible.name: card.model.replyActionLabel || i18n("Reply to notification")
+                                onAccepted: card.submitReply()
+                            }
+
+                            PlasmaComponents.Button {
+                                text: card.model.replySubmitButtonText || i18n("Send")
+                                icon.name: card.model.replySubmitButtonIconName || "document-send"
+                                enabled: replyInput.text.trim().length > 0
+                                onClicked: card.submitReply()
+                            }
+                        }
                     }
                 }
             }

@@ -30,7 +30,7 @@ ColumnLayout {
     property var calendarLocale: Qt.locale()
     readonly property date today: applet.currentTime
     // Use the same row pitch in the month and zoomed-out views.
-    property real dayHeightLimit: 40
+    property real dayHeightLimit: 36
     readonly property real chromeHeight: Math.ceil(monthNavigation.implicitHeight
         + weekdayMetrics.height + 2 * spacing + 5 * calendarGrid.spacing)
 
@@ -329,7 +329,7 @@ ColumnLayout {
             color: headerButton.enabled ? palette.text : palette.textDisabled
             font {
                 weight: Font.DemiBold
-                pixelSize: 18
+                pixelSize: 14
             }
 
             Accessible.role: headerButton.enabled ? Accessible.Button : Accessible.StaticText
@@ -367,7 +367,7 @@ ColumnLayout {
 
         CalendarNavButton {
             up: true
-            glyphColor: palette.text
+            glyphColor: palette.textSecondary
             hoverColor: palette.hover
             pressedColor: palette.pressed
             onClicked: calendarView.page(-1)
@@ -376,7 +376,7 @@ ColumnLayout {
 
         CalendarNavButton {
             up: false
-            glyphColor: palette.text
+            glyphColor: palette.textSecondary
             hoverColor: palette.hover
             pressedColor: palette.pressed
             onClicked: calendarView.page(1)
@@ -402,7 +402,9 @@ ColumnLayout {
 
         FontMetrics {
             id: weekdayMetrics
-            font: Kirigami.Theme.smallFont
+            font.family: Kirigami.Theme.defaultFont.family
+            font.pixelSize: 12
+            font.weight: Font.DemiBold
         }
 
         ZoomLevel {
@@ -418,10 +420,10 @@ ColumnLayout {
                 }
                 spacing: calendarView.spacing
 
-                // Day-of-week header.
+                // Day-of-week header: match the seven grid columns.
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 0
+                    spacing: calendarView.showWeekNumbers ? 0 : calendarGrid.spacing
 
                     PlasmaComponents.Label {
                         visible: calendarView.showWeekNumbers
@@ -443,8 +445,10 @@ ColumnLayout {
                             verticalAlignment: Text.AlignVCenter
                             textFormat: Text.PlainText
                             text: calendarView.calendarLocale.standaloneDayName((calendarView.firstDayOfWeek + index) % 7, Locale.ShortFormat)
-                            color: palette.textSecondary
-                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                            color: palette.text
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            Layout.preferredWidth: 1
                         }
                     }
                 }

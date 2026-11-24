@@ -119,8 +119,8 @@
       <default>true</default>
     </entry>
     <entry name="showTimeInNotificationCenter" type="Bool">
-      <label>Show the larger clock with seconds above the calendar.</label>
-      <default>true</default>
+      <label>Show the optional larger clock with seconds above the calendar.</label>
+      <default>false</default>
     </entry>
     <entry name="expandedWidth" type="Int">
       <label>Width of the expanded clock popup in pixels.</label>

@@ -25,7 +25,7 @@ Item {
 
     readonly property int columns: 7
     readonly property int rows: 6
-    property real spacing: Kirigami.Units.smallSpacing / 2
+    property real spacing: 2
 
     Layout.preferredHeight: cellHeight * rows + spacing * (rows - 1)
     Layout.minimumHeight: Layout.preferredHeight

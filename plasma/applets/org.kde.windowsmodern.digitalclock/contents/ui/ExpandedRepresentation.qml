@@ -54,19 +54,25 @@ FocusScope {
 
     // Plasma owns the popup window and transfers these layout hints.
     // Derive hints from the panel's screen, not this hidden view's geometry.
-    readonly property int margin: 16
+    readonly property int margin: 2
+    readonly property int sectionGap: 10
+    readonly property int sectionInset: 12
+    readonly property int calendarHeaderHeight: 44
+    readonly property int focusFooterHeight: 44
+    readonly property int bodyInset: 10
+    readonly property bool showLargeClock: Plasmoid.configuration.showTimeInNotificationCenter
+    readonly property var focusSession: clockApplet.focusSession
     readonly property var panelScreen: clockApplet.popupScreenGeometry
     readonly property real screenWidth: Number(panelScreen?.width || 0)
     readonly property real screenHeight: Number(panelScreen?.height || 0)
     readonly property real panelExtent: Math.min(96, Math.max(0, Number(clockApplet.popupPanelExtent) || 48))
     readonly property int availableScreenHeight: screenHeight >= 100
-        ? Math.max(1, Math.floor(screenHeight - panelExtent - 4 * margin)) : 720
+        ? Math.max(1, Math.floor(screenHeight - panelExtent - 32)) : 720
     readonly property int configuredWidth: Math.max(240, Number(Plasmoid.configuration.expandedWidth) || 320)
     readonly property int popupWidth: Math.min(configuredWidth, screenWidth >= 100
-        ? Math.max(1, Math.floor(screenWidth - 4 * margin)) : configuredWidth)
+        ? Math.max(1, Math.floor(screenWidth - 24)) : configuredWidth)
     readonly property int popupHeight: Math.min(availableScreenHeight,
-        calendarExpanded ? Math.max(560, Kirigami.Units.gridUnit * 28)
-                         : Math.max(220, Kirigami.Units.gridUnit * 11))
+        calendarExpanded ? 620 + (showLargeClock ? 52 : 0) : 286)
 
     implicitWidth: popupWidth
     implicitHeight: popupHeight
@@ -83,171 +89,271 @@ FocusScope {
         event.accepted = true;
     }
 
-    // The calendar is fixed in the popup, not nested inside an outer
-    // scroll view. Only notification cards scroll when they exceed their
-    // allocated viewport. The calendar rows adapt to the available height.
+    // Two independently framed sections in the native popup. The native
+    // window retains its compositor-managed blur and placement. Do not
+    // create a second focus-grabbing window to simulate the separation.
+    readonly property real calendarBodyBudget: Math.max(0, popupHeight
+        - 2 * margin - sectionGap - history.minimumSectionHeight - 2 * sectionInset
+        - calendarHeaderHeight - focusFooterHeight - 2 * bodyInset - 2)
+
     ColumnLayout {
         id: mainColumn
         objectName: "wmClockContent"
         anchors.fill: parent
         anchors.margins: expandedRoot.margin
-        spacing: 8
+        spacing: expandedRoot.sectionGap
 
-        NotificationHistory {
-            id: history
+        Rectangle {
+            id: notificationPanel
+            objectName: "wmNotificationPanel"
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.minimumHeight: minimumSectionHeight
-            Layout.preferredHeight: minimumSectionHeight
-            currentTime: expandedRoot.clockApplet.currentTime
-            notificationsAvailable: expandedRoot.clockApplet.notificationsAvailable
-            effectiveDnd: expandedRoot.clockApplet.notificationsInhibited
-            notificationModel: expandedRoot.clockApplet.notificationModel
-            settings: expandedRoot.clockApplet.notificationSettings
+            Layout.minimumHeight: history.minimumSectionHeight + 2 * expandedRoot.sectionInset
+            Layout.preferredHeight: 224
+            radius: 8
+            color: palette.panelTint
+            border.width: 1
+            border.color: palette.panelBorder
+
+            NotificationHistory {
+                id: history
+                anchors.fill: parent
+                anchors.margins: expandedRoot.sectionInset
+                currentTime: expandedRoot.clockApplet.currentTime
+                notificationsAvailable: expandedRoot.clockApplet.notificationsAvailable
+                effectiveDnd: expandedRoot.clockApplet.notificationsInhibited
+                notificationModel: expandedRoot.clockApplet.notificationModel
+                settings: expandedRoot.clockApplet.notificationSettings
+                timeLocale: expandedRoot.clockTimeLocale
+                timeFormat: expandedRoot.clockApplet.timeFormat || "h:mm AP"
+            }
         }
 
         Rectangle {
+            id: calendarPanel
+            objectName: "wmCalendarPanel"
             Layout.fillWidth: true
-            implicitHeight: 1
-            color: palette.surfaceBorder
-        }
-
-
-        // ── Header: large time (with superscript AM/PM) and full date ──
-        ColumnLayout {
-            id: headerColumn
-            Layout.fillWidth: true
-            Layout.fillHeight: false
-            spacing: Kirigami.Units.smallSpacing / 2
-
-            RowLayout {
-                id: timeRow
-                visible: Plasmoid.configuration.showTimeInNotificationCenter
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Kirigami.Units.smallSpacing / 2
-
-                PlasmaComponents.Label {
-                    id: timeHeader
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    textFormat: Text.PlainText
-                    text: {
-                        const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
-                        // Render the AM/PM suffix separately so it can be smaller.
-                        if (fmt.toLowerCase().includes("ap")) {
-                            return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
-                        }
-                        return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt);
-                    }
-                    color: palette.text
-                    font {
-                        family: Kirigami.Theme.defaultFont.family
-                        weight: Font.DemiBold
-                        pixelSize: 40
-                        features: { "tnum": 1 }
-                    }
-                }
-
-                PlasmaComponents.Label {
-                    id: amPmLabel
-                    visible: expandedRoot.clockApplet.timeFormatWithSeconds.toLowerCase().includes("ap")
-                    horizontalAlignment: Text.AlignLeft
-                    verticalAlignment: Text.AlignTop
-                    textFormat: Text.PlainText
-                    text: expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, "AP")
-                    color: palette.text
-                    font {
-                        family: Kirigami.Theme.defaultFont.family
-                        weight: Font.DemiBold
-                        pixelSize: Math.round(timeHeader.font.pixelSize * 0.45)
-                    }
-                    Layout.alignment: Qt.AlignTop
-                    Layout.topMargin: timeHeader.font.pixelSize * 0.12
-                }
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                PlasmaComponents.Label {
-                    id: dateHeader
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignLeft
-                    verticalAlignment: Text.AlignVCenter
-                    textFormat: Text.PlainText
-                    elide: Text.ElideRight
-                    // Windows 11 shows the locale's long date without the year.
-                    objectName: "wmCalendarDateHeading"
-                    text: DateFormat.calendarLongDate(expandedRoot.calendarLocale, expandedRoot.clockApplet.currentTime, Locale.LongFormat)
-                    color: palette.textSecondary
-                    font {
-                        family: Kirigami.Theme.defaultFont.family
-                        pixelSize: 14
-                    }
-                }
-
-                PlasmaComponents.ToolButton {
-                    text: expandedRoot.calendarExpanded ? i18n("Collapse calendar") : i18n("Expand calendar")
-                    icon.name: expandedRoot.calendarExpanded ? "go-up-symbolic" : "go-down-symbolic"
-                    display: PlasmaComponents.AbstractButton.IconOnly
-                    onClicked: expandedRoot.calendarExpanded = !expandedRoot.calendarExpanded
-                    PlasmaComponents.ToolTip { text: parent.text }
-                }
-            }
-        }
-
-        // ── Calendar grid ──
-        CalendarView {
-            id: calendarView
-            objectName: "wmCalendarSection"
-            calendarLocale: expandedRoot.calendarLocale
-            applet: expandedRoot.clockApplet
-            Layout.fillWidth: true
-            Layout.fillHeight: false
-            visible: expandedRoot.calendarExpanded
-            focus: visible
-            // Reserve the real header, notification minimum and optional
-            // sections. No hardcoded scrolling viewport or clipped last row.
-            readonly property real extraHeight:
-                (timeZoneView.visible ? timeZoneView.Layout.preferredHeight : 0)
-                + (agenda.visible ? agenda.implicitHeight + 1 : 0)
-            readonly property int gaps: 3 + (timeZoneView.visible ? 1 : 0) + (agenda.visible ? 2 : 0)
-            dayHeightLimit: Math.max(12, Math.min(40, Math.floor(
-                (mainColumn.height - history.minimumSectionHeight - headerColumn.implicitHeight
-                 - extraHeight - 1 - gaps * mainColumn.spacing - chromeHeight) / 6)))
-        }
-
-        // ── Optional timezone list ──
-        TimeZoneView {
-            id: timeZoneView
-            applet: expandedRoot.clockApplet
-            Layout.fillWidth: true
-            Layout.preferredHeight: visible ? Math.min(84, implicitHeight) : 0
-            Layout.minimumHeight: 0
+            Layout.preferredHeight: calendarContent.implicitHeight
+            Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
-            visible: expandedRoot.calendarExpanded && (Plasmoid.configuration.selectedTimeZones.length > 1 || Plasmoid.configuration.showLocalTimezone)
-        }
+            radius: 8
+            color: palette.panelTint
+            border.width: 1
+            border.color: palette.panelBorder
 
-        Rectangle {
-            Layout.fillWidth: true
-            visible: agenda.visible
-            implicitHeight: 1
-            color: palette.surfaceBorder
-        }
+            ColumnLayout {
+                id: calendarContent
+                anchors.fill: parent
+                spacing: 0
 
-        DayAgenda {
-            id: agenda
-            calendarLocale: expandedRoot.calendarLocale
-            Layout.fillWidth: true
-            visible: expandedRoot.calendarExpanded && calendarView.selectedDayEvents.length > 0
-            date: calendarView.selectedDate
-            events: calendarView.selectedDayEvents
-            // Preserve up to four events when room permits, prioritizing
-            // the calendar's six rows on shorter displays.
-            maximumEvents: Math.max(1, Math.min(4, Math.floor(
-                (mainColumn.height - history.minimumSectionHeight - headerColumn.implicitHeight
-                 - calendarView.chromeHeight - 6 * 24 - 5 * mainColumn.spacing
-                 - (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + mainColumn.spacing : 0)
-                 - 32) / 36)))
+                RowLayout {
+                    id: dateRow
+                    Layout.fillWidth: true
+                    Layout.leftMargin: expandedRoot.sectionInset
+                    Layout.rightMargin: expandedRoot.sectionInset
+                    Layout.preferredHeight: expandedRoot.calendarHeaderHeight
+                    Layout.minimumHeight: Layout.preferredHeight
+                    Layout.maximumHeight: Layout.preferredHeight
+                    spacing: 8
+
+                    PlasmaComponents.Label {
+                        id: dateHeader
+                        objectName: "wmCalendarDateHeading"
+                        Layout.fillWidth: true
+                        verticalAlignment: Text.AlignVCenter
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
+                        text: DateFormat.calendarLongDate(expandedRoot.calendarLocale,
+                            expandedRoot.clockApplet.currentTime, Locale.LongFormat)
+                        color: palette.text
+                        font.pixelSize: 14
+                    }
+
+                    FlyoutButton {
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                        text: expandedRoot.calendarExpanded ? i18n("Collapse calendar") : i18n("Expand calendar")
+                        icon.name: expandedRoot.calendarExpanded ? "go-down-symbolic" : "go-up-symbolic"
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        onClicked: expandedRoot.calendarExpanded = !expandedRoot.calendarExpanded
+                        PlasmaComponents.ToolTip { text: parent.text }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    visible: expandedRoot.calendarExpanded
+                    color: palette.panelBorder
+                }
+
+                ColumnLayout {
+                    id: calendarBody
+                    Layout.fillWidth: true
+                    Layout.leftMargin: expandedRoot.sectionInset
+                    Layout.rightMargin: expandedRoot.sectionInset
+                    Layout.topMargin: visible ? expandedRoot.bodyInset : 0
+                    Layout.bottomMargin: visible ? expandedRoot.bodyInset : 0
+                    visible: expandedRoot.calendarExpanded
+                    spacing: 6
+
+                    RowLayout {
+                        id: timeRow
+                        visible: expandedRoot.showLargeClock
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: Kirigami.Units.smallSpacing / 2
+
+                        PlasmaComponents.Label {
+                            id: timeHeader
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            textFormat: Text.PlainText
+                            text: {
+                                const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
+                                // Render the AM/PM suffix separately so it can be smaller.
+                                if (fmt.toLowerCase().includes("ap")) {
+                                    return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
+                                }
+                                return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt);
+                            }
+                            color: palette.text
+                            font {
+                                family: Kirigami.Theme.defaultFont.family
+                                weight: Font.DemiBold
+                                pixelSize: 32
+                                features: { "tnum": 1 }
+                            }
+                        }
+
+                        PlasmaComponents.Label {
+                            id: amPmLabel
+                            visible: expandedRoot.clockApplet.timeFormatWithSeconds.toLowerCase().includes("ap")
+                            horizontalAlignment: Text.AlignLeft
+                            verticalAlignment: Text.AlignTop
+                            textFormat: Text.PlainText
+                            text: expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, "AP")
+                            color: palette.text
+                            font {
+                                family: Kirigami.Theme.defaultFont.family
+                                weight: Font.DemiBold
+                                pixelSize: Math.round(timeHeader.font.pixelSize * 0.45)
+                            }
+                            Layout.alignment: Qt.AlignTop
+                            Layout.topMargin: timeHeader.font.pixelSize * 0.12
+                        }
+                    }
+
+                    CalendarView {
+                        id: calendarView
+                        objectName: "wmCalendarSection"
+                        calendarLocale: expandedRoot.calendarLocale
+                        applet: expandedRoot.clockApplet
+                        Layout.fillWidth: true
+                        focus: expandedRoot.calendarExpanded
+                        dayHeightLimit: Math.max(12, Math.min(36, Math.floor(
+                            (expandedRoot.calendarBodyBudget - chromeHeight
+                             - (timeRow.visible ? timeRow.implicitHeight + calendarBody.spacing : 0)
+                             - (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + calendarBody.spacing : 0)
+                             - (agenda.visible ? agenda.implicitHeight + calendarBody.spacing : 0)) / 6)))
+                    }
+
+                    TimeZoneView {
+                        id: timeZoneView
+                        applet: expandedRoot.clockApplet
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: visible ? Math.min(84, implicitHeight) : 0
+                        Layout.minimumHeight: 0
+                        Layout.maximumHeight: Layout.preferredHeight
+                        visible: Plasmoid.configuration.selectedTimeZones.length > 1
+                            || Plasmoid.configuration.showLocalTimezone
+                    }
+
+                    DayAgenda {
+                        id: agenda
+                        calendarLocale: expandedRoot.calendarLocale
+                        Layout.fillWidth: true
+                        visible: calendarView.selectedDayEvents.length > 0
+                            && expandedRoot.calendarBodyBudget >= 260
+                        date: calendarView.selectedDate
+                        events: calendarView.selectedDayEvents
+                        maximumEvents: Math.max(1, Math.min(4, Math.floor(
+                            (expandedRoot.calendarBodyBudget - calendarView.chromeHeight - 6 * 24
+                             - (timeRow.visible ? timeRow.implicitHeight + calendarBody.spacing : 0)
+                             - (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + calendarBody.spacing : 0)
+                             - 36) / 36)))
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    color: palette.panelBorder
+                }
+
+                RowLayout {
+                    id: focusRow
+                    objectName: "wmFocusFooter"
+                    Layout.fillWidth: true
+                    Layout.leftMargin: expandedRoot.sectionInset
+                    Layout.rightMargin: expandedRoot.sectionInset
+                    Layout.preferredHeight: expandedRoot.focusFooterHeight
+                    Layout.minimumHeight: Layout.preferredHeight
+                    Layout.maximumHeight: Layout.preferredHeight
+                    spacing: 6
+
+                    FlyoutButton {
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                        enabled: !!expandedRoot.focusSession && !expandedRoot.focusSession.running
+                            && expandedRoot.focusSession.durationMinutes > 5
+                        text: i18n("Decrease focus duration")
+                        icon.name: "list-remove"
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        onClicked: expandedRoot.focusSession.adjust(-5)
+                        PlasmaComponents.ToolTip { text: parent.text }
+                    }
+                    PlasmaComponents.Label {
+                        Layout.preferredWidth: 76
+                        horizontalAlignment: Text.AlignHCenter
+                        textFormat: Text.PlainText
+                        text: expandedRoot.focusSession && expandedRoot.focusSession.running
+                            ? expandedRoot.focusSession.countdown
+                            : i18n("%1 mins", expandedRoot.focusSession ? expandedRoot.focusSession.durationMinutes : 30)
+                        color: palette.text
+                        font.pixelSize: 12
+                        font.features: { "tnum": 1 }
+                    }
+                    FlyoutButton {
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                        enabled: !!expandedRoot.focusSession && !expandedRoot.focusSession.running
+                            && expandedRoot.focusSession.durationMinutes < 240
+                        text: i18n("Increase focus duration")
+                        icon.name: "list-add"
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        onClicked: expandedRoot.focusSession.adjust(5)
+                        PlasmaComponents.ToolTip { text: parent.text }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    FlyoutButton {
+                        objectName: "wmFocusButton"
+                        enabled: !!expandedRoot.focusSession
+                        Layout.preferredHeight: 26
+                        text: expandedRoot.focusSession && expandedRoot.focusSession.running
+                            ? i18n("Stop focus") : i18n("Focus")
+                        icon.name: expandedRoot.focusSession && expandedRoot.focusSession.running
+                            ? "media-playback-stop" : "media-playback-start"
+                        onClicked: {
+                            if (expandedRoot.focusSession.running)
+                                expandedRoot.focusSession.stop();
+                            else
+                                expandedRoot.focusSession.start();
+                        }
+                    }
+                }
+            }
         }
     }
 }

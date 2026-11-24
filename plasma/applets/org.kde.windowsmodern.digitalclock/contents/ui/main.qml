@@ -61,6 +61,12 @@ PlasmoidItem {
 
     NotificationManager.Settings { id: notificationSettings }
 
+    readonly property alias focusSession: focusSessionState
+    FocusSession {
+        id: focusSessionState
+        settings: root.notificationsAvailable ? notificationSettings : null
+    }
+
     NotificationManager.Notifications {
         id: notificationModel
         showExpired: true

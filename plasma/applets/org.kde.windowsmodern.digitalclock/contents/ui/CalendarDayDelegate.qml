@@ -50,7 +50,7 @@ MouseArea {
     Rectangle {
         id: dayBackground
         anchors.centerIn: parent
-        width: Math.min(parent.width, parent.height)
+        width: Math.max(1, Math.min(parent.width, parent.height) - 2)
         height: width
         radius: width / 2
         color: {
@@ -104,7 +104,7 @@ MouseArea {
                 }
                 return palette.textDisabled;
             }
-            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+            font.pixelSize: 13
         }
 
         // Event dots.

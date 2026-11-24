@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Notification center and calendar polish
+
+- Frame history and calendar separately, reduce typography and spacing, default the optional large clock off, and distinguish app headings from message cards and timestamps.
+- Add a functional focus countdown and duration controls, preserving independent notification inhibition settings. Add regression tests for layout separation and focus state.
+
 ### 26H2 shell polish and integration fixes
 
 - Synchronize the login date formatter with the shared clock/lock-screen version to fix the repository health gate.

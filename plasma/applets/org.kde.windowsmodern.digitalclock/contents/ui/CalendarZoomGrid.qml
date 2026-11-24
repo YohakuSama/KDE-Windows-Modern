@@ -110,7 +110,7 @@ Item {
                     textFormat: Text.PlainText
                     text: tile.modelData.text
                     color: tile.textColor
-                    font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+                    font.pixelSize: 13
                 }
 
                 PlasmaComponents.Label {

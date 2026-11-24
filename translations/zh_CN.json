@@ -1,4 +1,9 @@
 {
+  "Focus": "专注",
+  "Stop focus": "结束专注",
+  "%1 mins": "%1 分钟",
+  "Decrease focus duration": "减少专注时长",
+  "Increase focus duration": "增加专注时长",
   "Recent": "最近",
   "Start menu size": "开始菜单大小",
   "Show pinned section": "显示已固定区域",
