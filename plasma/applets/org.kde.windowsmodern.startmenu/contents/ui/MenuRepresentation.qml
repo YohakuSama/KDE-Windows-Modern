@@ -44,12 +44,39 @@ Item {
         readonly property var actionList: (model.actionList !== undefined) ? model.actionList : null
     }
 
-    // This Item's `visible` is only a toggle (flipping it opens or closes the
-    // popup); menuShown is whether the popup is actually open.
+    // The compact representation is the actual Start button in the panel.
+    // Keep this item visible: a hidden toggle item is not a reliable anchor.
+    readonly property Item startButton: parent
     readonly property bool menuShown: root.visible
 
-    onVisibleChanged: {
-        root.visible = !root.visible
+    // Native Plasma positions the popup relative to an Item in the panel's
+    // window, including its real output and work area on Wayland and X11.
+    // Shift only the horizontal anchor when selecting a screen alignment;
+    // never assign global window coordinates to the dialog itself.
+    Item {
+        id: popupAnchor
+        width: main.startButton ? main.startButton.width : 0
+        height: main.startButton ? main.startButton.height : 0
+    }
+
+    function toggleMenu() {
+        if (root.visible) {
+            root.visible = false;
+            return;
+        }
+        if (!startButton || startButton.width <= 0 || startButton.height <= 0)
+            return;
+
+        const horizontal = Plasmoid.location === PlasmaCore.Types.BottomEdge
+                        || Plasmoid.location === PlasmaCore.Types.TopEdge;
+        popupAnchor.x = 0;
+        if (horizontal) {
+            const pos = startButton.mapToGlobal(0, 0);
+            popupAnchor.x = PopupPosition.horizontalAnchorOffset(
+                Plasmoid.configuration.displayPosition, Plasmoid.screenGeometry,
+                { x: pos.x, width: startButton.width });
+        }
+        root.visible = true;
     }
 
     Plasmoid.status: root.visible ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
@@ -58,8 +85,15 @@ Item {
         id: root
 
         objectName: "popupWindow"
-        flags: Qt.WindowStaysOnTopHint
-        location: PlasmaCore.Types.Floating
+        // AppletPopup establishes the Plasma shell popup role before the
+        // window is mapped. Dialog uses visualParent for placement on show
+        // and resize, rather than racing the compositor with x/y writes.
+        type: PlasmaCore.Dialog.AppletPopup
+        flags: Qt.Dialog
+        visualParent: popupAnchor
+        location: Plasmoid.location
+        floating: Kirigami.Units.smallSpacing
+        visible: false
         hideOnWindowDeactivate: true
 
         // Match the panel's popup preference by default, like Quick Settings
@@ -94,25 +128,12 @@ Item {
 
         onVisibleChanged: {
             if (visible) {
-                reposition();
                 reset();
             } else {
                 leftColumnState = 0;
                 sharedContextMenu.close();
                 powerMenu.close();
             }
-        }
-
-        onHeightChanged: if (visible) reposition()
-        onWidthChanged: if (visible) reposition()
-
-        function reposition() {
-            var pos = popupPosition(width, height);
-            x = pos.x; y = pos.y;
-        }
-
-        function toggle() {
-            main.visible = !main.visible
         }
 
         function reset() {
@@ -136,24 +157,6 @@ Item {
 
         function closeMenu() {
             root.visible = false;
-        }
-
-        function popupPosition(width, height) {
-            // The compact representation creates this item as its child.
-            // Use its actual screen geometry, including floating panel offsets.
-            const button = main.parent;
-            const topLeft = button.mapToGlobal(0, 0);
-            const location = Plasmoid.location;
-            const edge = location === PlasmaCore.Types.BottomEdge ? "bottom"
-                       : location === PlasmaCore.Types.TopEdge ? "top"
-                       : location === PlasmaCore.Types.LeftEdge ? "left"
-                       : location === PlasmaCore.Types.RightEdge ? "right"
-                       : "floating";
-            const pos = PopupPosition.position(
-                Plasmoid.configuration.displayPosition, edge, button.screenGeometry,
-                { x: topLeft.x, y: topLeft.y, width: button.width, height: button.height },
-                { width: width, height: height }, Kirigami.Units.smallSpacing);
-            return Qt.point(pos.x, pos.y);
         }
 
         FocusScope {
