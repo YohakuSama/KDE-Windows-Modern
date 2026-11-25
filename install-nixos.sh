@@ -475,7 +475,21 @@ fi
 # user's saved wallpaper rather than replacing it with the bundled image.
 material_args=(--apply-local --aurorae-dir "$DATA/aurorae/themes"
                --kvantum-dir "$CONFIG/Kvantum/Windows-modern")
-if [ ! -f "$DATA/windows-modern/transparency-off" ]; then
+if [ -f "$HOME/.local/share/windows-modern/transparency-off" ] || [ -f "$DATA/windows-modern/transparency-off" ]; then
+    # An upgrade copies fresh theme files. Reapply the existing off choice.
+    for theme in "$CONFIG/Kvantum/Windows-modern/"*.kvconfig; do
+        [ -f "$theme" ] || continue
+        sed -i -E 's/^(blurring|popup_blurring|blur_translucent)=.*/\1=false/' "$theme"
+    done
+    for variant in dark light; do
+        theme="$DATA/plasma/desktoptheme/Windows-modern-$variant"
+        for role in dialogs/background.svg widgets/panel-background.svg; do
+            for folder in "" translucent/; do
+                [ -f "$theme/$folder$role" ] && cp "$theme/solid/$role" "$theme/$folder$role"
+            done
+        done
+    done
+else
     material_args+=(--wallpaper-config "$CONFIG/plasma-org.kde.plasma.desktop-appletsrc")
 fi
 "$PYTHON" "$ROOT/scripts/theme/window-frames.py" "${material_args[@]}"

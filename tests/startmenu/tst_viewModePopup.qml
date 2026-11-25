@@ -27,12 +27,16 @@ Item {
         function test_sameModeAndSelection() {
             menu.openAt(anchor);
             tryCompare(menu, "opened", true);
-            menu.choose(0);
+            const same = menu.contentItem.itemAtIndex(2);
+            verify(same !== null);
+            mouseClick(same, same.width / 2, same.height / 2);
             tryCompare(menu, "opened", false);
             tryCompare(changed, "count", 1);
             menu.openAt(anchor);
             tryCompare(menu, "opened", true);
-            menu.choose(2);
+            const different = menu.contentItem.itemAtIndex(0);
+            verify(different !== null);
+            mouseClick(different, different.width / 2, different.height / 2);
             tryCompare(menu, "opened", false);
             tryCompare(menu, "currentMode", 2);
             compare(changed.count, 2);
