@@ -8,6 +8,8 @@ import "../js/colorType.js" as ColorType
 ColumnLayout {
     id: tile
 
+    Win11Palette { id: fluent }
+
     property string iconSource
     property string label
     property string tooltipText: ""
@@ -77,10 +79,10 @@ ColumnLayout {
         id: bg
         Layout.fillWidth: true
         Layout.preferredHeight: tile.buttonHeight > 0 ? tile.buttonHeight : width / 2
-        radius: 4
+        radius: fluent.controlRadius
         border.width: 1
-        border.color: tile.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
-        color: active ? accent : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.04)
+        border.color: tile.activeFocus ? fluent.text : active ? "transparent" : fluent.controlBorder
+        color: active ? accent : fluent.controlFill
 
         // Independent hover/press feedback: the chevron opens details and
         // must not look like a press on the toggle itself.
@@ -159,7 +161,7 @@ ColumnLayout {
         }
 
         Kirigami.Icon {
-            x: parent.width * 0.38 - width / 2
+            x: toggleMA.x + (toggleMA.width - width) / 2
             anchors.verticalCenter: parent.verticalCenter
             width: 20
             height: width
@@ -172,7 +174,7 @@ ColumnLayout {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            x: parent.width * 0.60
+            x: arrowMA.x
             width: 1
             height: parent.height * 0.5
             visible: toggleMA.containsMouse || arrowMA.containsMouse || arrowMA.activeFocus
@@ -180,7 +182,7 @@ ColumnLayout {
         }
 
         Kirigami.Icon {
-            x: bg.width * 0.68 - width / 2
+            x: arrowMA.x + (arrowMA.width - width) / 2
             anchors.verticalCenter: parent.verticalCenter
             width: Kirigami.Units.iconSizes.small
             height: Kirigami.Units.iconSizes.small

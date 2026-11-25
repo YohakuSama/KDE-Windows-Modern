@@ -6,6 +6,12 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Bluetooth and nested shell surfaces
+
+- Route Bluetooth to the themed detail page; connect and disconnect real BlueZ devices, show pending/error states, retain native pairing and settings, and preserve removable-device fallback.
+- Apply the shared palette to Quick Settings tiles, slider details, Wi-Fi password input and taskbar thumbnail hover; center split-tile glyphs in their own click regions.
+- Give Wi-Fi Cancel/Next actions real keyboard-accessible buttons and reserve a stable thumbnail close-button slot.
+
 ### Shared shell control styling
 
 - Share the Windows 11 shell palette across Start, Quick Settings and the clock, with a repository check for independent package copies.

@@ -6,8 +6,9 @@ import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui" as Tr
 TestCase {
     name: "NativeDeviceRoute"
     Tray.FlyoutRouter { id: router }
-    function test_nativeDevicePages() {
-        compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.bluetooth"}}), "");
+    function test_bluetoothAndNativeDevicePages() {
+        compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.bluetooth"}}), "bluetooth");
+        verify(router.isThemedApplet({plasmoid: {pluginName: "org.kde.plasma.bluetooth"}}));
         compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.devicenotifier"}}), "");
     }
     function test_themedPagesAndFallback() {

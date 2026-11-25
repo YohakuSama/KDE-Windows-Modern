@@ -1,5 +1,4 @@
 import QtQuick
-import org.kde.plasma.components as PlasmaComponents3
 import org.kde.bluezqt as BluezQt
 import org.kde.kcmutils
 import "../lib" as Lib
@@ -37,22 +36,7 @@ Lib.SplitTile {
         return i18n("Bluetooth — On, not connected");
     }
 
-    onRightClicked: btMenu.popup()
-
+    // The chevron already opens the device list; use the existing native settings action.
+    onRightClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
     onMiddleClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
-
-    PlasmaComponents3.Menu {
-        id: btMenu
-
-        PlasmaComponents3.MenuItem {
-            text: i18n("Bluetooth devices")
-            icon.name: "preferences-system-bluetooth"
-            onClicked: tile.arrowClicked()
-        }
-        PlasmaComponents3.MenuItem {
-            text: i18n("Bluetooth settings")
-            icon.name: "configure"
-            onClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
-        }
-    }
 }

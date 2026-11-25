@@ -8,6 +8,8 @@ import "../js/colorType.js" as ColorType
 ColumnLayout {
     id: tile
 
+    Win11Palette { id: fluent }
+
     property string iconSource
     property string label
     property string tooltipText: ""
@@ -72,19 +74,16 @@ ColumnLayout {
         id: bg
         Layout.fillWidth: true
         Layout.preferredHeight: tile.buttonHeight > 0 ? tile.buttonHeight : width / 2
-        radius: 4
+        radius: fluent.controlRadius
         border.width: 1
-        border.color: tile.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        border.color: tile.activeFocus ? fluent.text : active ? "transparent" : fluent.controlBorder
         color: {
             if (active) {
                 const alpha = ma.containsPress ? 0.12 : ma.containsMouse ? 0.06 : 0;
                 return Qt.tint(accent, Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, alpha));
             }
-            if (ma.containsPress)
-                return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10);
-            if (ma.containsMouse)
-                return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06);
-            return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.04);
+            return ma.containsPress ? fluent.controlPressed
+                : ma.containsMouse ? fluent.controlHover : fluent.controlFill;
         }
 
         Behavior on color {

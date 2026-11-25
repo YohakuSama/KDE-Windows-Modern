@@ -25,6 +25,8 @@ import org.kde.plasma.private.mpris as Mpris
 Item {
     id: root
 
+    Win11Palette { id: fluent }
+
     required property var model
     required property int index
     required property /*QModelIndex*/ var submodelIndex
@@ -107,11 +109,12 @@ Item {
     // The preview under the pointer is lit as a whole card, title included,
     // as on Windows 11 (it used to be a box around the thumbnail only, cut
     // off below the title). Declared before contentColumn: stays behind it.
-    PlasmaExtras.Highlight {
+    Rectangle {
         anchors.fill: parent
-        visible: root.thumbnailMode && tileHover.hovered
-        pressed: (hoverHandler.item as MouseArea)?.containsPress ?? false
-        hovered: true
+        radius: fluent.controlRadius
+        visible: root.thumbnailMode
+        color: (hoverHandler.item as MouseArea)?.containsPress ? fluent.controlPressed
+            : tileHover.hovered ? fluent.controlHover : "transparent"
     }
 
     // Make the header clickable if image tooltips are disabled. These overlay
@@ -132,15 +135,15 @@ Item {
         }
     }
 
-    PlasmaExtras.Highlight {
+    Rectangle {
         id: headerHoverHighlight
         x: headerHoverHandler.x
         y: headerHoverHandler.y
         width: headerHoverHandler.width
         height: headerHoverHandler.height
-        visible: (headerHoverHandler.item as MouseArea)?.containsMouse ?? false
-        pressed: (headerHoverHandler.item as MouseArea)?.containsPress ?? false
-        hovered: true
+        radius: fluent.controlRadius
+        color: (headerHoverHandler.item as MouseArea)?.containsPress ? fluent.controlPressed
+            : (headerHoverHandler.item as MouseArea)?.containsMouse ? fluent.controlHover : "transparent"
     }
 
     ColumnLayout {
@@ -267,27 +270,21 @@ Item {
                     }
                 }
 
-                // Win11 close button: collapses to width 0 when idle (title
-                // spans full width); expands + fades in at the far right on
-                // tile hover. Bg transparent by default, red on hover, darker
-                // red on press.
+                // Keep a stable close-button slot so hover never reflows the title.
                 Item {
                     id: closeButton
                     anchors {
                         right: parent.right
                         verticalCenter: parent.verticalCenter
                     }
-                    width: tileHover.hovered ? Kirigami.Units.iconSizes.smallMedium : 0
-                    height: Kirigami.Units.iconSizes.smallMedium
+                    width: 24
+                    height: 24
                     visible: root.thumbnailMode
                     opacity: tileHover.hovered ? 1 : 0
                     enabled: tileHover.hovered
                     clip: true
 
                     Behavior on opacity {
-                        NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutQuad }
-                    }
-                    Behavior on width {
                         NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutQuad }
                     }
 
@@ -310,7 +307,7 @@ Item {
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: Kirigami.Units.smallSpacing
+                        radius: fluent.controlRadius
                         color: closeButton.pressed
                             ? "#9E1B1B"
                             : closeButton.hovered

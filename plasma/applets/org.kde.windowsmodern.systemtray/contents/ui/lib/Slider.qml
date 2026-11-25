@@ -7,6 +7,8 @@ import org.kde.plasma.components as PlasmaComponents3
 Item {
     id: root
 
+    Win11Palette { id: fluent }
+
     property string iconSource
     property int from: 0
     property int to: 100
@@ -100,10 +102,9 @@ Item {
                 width: 20
                 height: 20
                 radius: width / 2
-                color: Kirigami.Theme.backgroundColor
+                color: fluent.menuBackground
                 border.width: 1
-                border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                    Kirigami.Theme.textColor.b, 0.20)
+                border.color: slider.activeFocus ? fluent.accent : fluent.controlBorder
                 Rectangle {
                     anchors.centerIn: parent
                     width: slider.pressed ? 10 : 12
@@ -140,10 +141,11 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                radius: 4
-                color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                    Kirigami.Theme.textColor.b, detailsMouse.containsPress ? 0.10
-                        : detailsMouse.containsMouse || detailsButton.activeFocus ? 0.06 : 0)
+                radius: fluent.controlRadius
+                color: detailsMouse.containsPress ? fluent.controlPressed
+                    : detailsMouse.containsMouse || detailsButton.activeFocus ? fluent.controlHover : "transparent"
+                border.width: detailsButton.activeFocus ? 1 : 0
+                border.color: fluent.accent
             }
 
             Row {

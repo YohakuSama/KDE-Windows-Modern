@@ -1,0 +1,54 @@
+/*
+    SPDX-FileCopyrightText: 2026 Jeysef
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
+
+import QtQuick
+import org.kde.kirigami as Kirigami
+
+// Canonical shell palette. Start and Quick Settings carry checked copies
+// because they are independently installable packages (including qrc).
+QtObject {
+    property color themeBackground: Kirigami.Theme.backgroundColor
+    readonly property bool isDark: {
+        const bg = themeBackground;
+        return (bg.r * 0.299 + bg.g * 0.587 + bg.b * 0.114) < 0.5;
+    }
+
+    readonly property color background:       isDark ? "#202020" : "#F9F9F9"
+    readonly property color surface:          isDark ? "#2C2C2C" : "#FFFFFF"
+    readonly property color surfaceBorder:    isDark ? "#3F3F3F" : "#E5E5E5"
+    // Translucent internal surfaces keep the native popup material visible.
+    readonly property color panelTint: isDark ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.30)
+    readonly property color panelBorder: isDark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.10)
+    readonly property color cardTint: isDark ? Qt.rgba(1, 1, 1, 0.045) : Qt.rgba(1, 1, 1, 0.70)
+    readonly property color text:             isDark ? "#FFFFFF" : "#1E1E1E"
+    readonly property color textSecondary:    isDark ? "#9C9C9C" : "#5A5A5A"
+    readonly property color textDisabled:     isDark ? "#5A5A5A" : "#A0A0A0"
+    // The accent follows System Settings → Colors (Windows Modern's schemes
+    // use Windows' #4CC2FF / #0067C0); text on it is black or white,
+    // as defined by the native selection palette (dark text on light blue in dark).
+    readonly property color accent:           Kirigami.Theme.highlightColor
+    readonly property color accentText: Kirigami.Theme.highlightedTextColor
+    readonly property color hover:            isDark ? "#3F3F3F" : "#E9E9E9"
+    readonly property color pressed:          isDark ? "#4A4A4A" : "#DADADA"
+    // Semantic control roles, distinct from the opaque popup frame. Keep
+    // these translucent so controls also work on the native acrylic frame.
+    readonly property color menuBackground: isDark ? "#2C2C2C" : "#F9F9F9"
+    readonly property color menuBorder: surfaceBorder
+    readonly property color controlFill: isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.70)
+    readonly property color controlHover: isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.06)
+    readonly property color controlPressed: isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.10)
+    readonly property color controlBorder: isDark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.12)
+    readonly property color selectionFill: controlHover
+    readonly property color switchTrack: isDark ? "#333333" : "#E9E9E9"
+    readonly property color switchOutline: isDark ? "#A0A0A0" : "#777777"
+
+    readonly property int menuRadius: 8
+    readonly property int controlRadius: 4
+    readonly property int menuIconSize: 16
+    readonly property int controlHeight: 32
+    readonly property int menuPadding: 4
+    readonly property int rowPadding: 8
+}

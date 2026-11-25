@@ -213,6 +213,7 @@ for pair in \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentScrollBar.qml" \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Win11Palette.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/Win11Palette.qml" \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Win11Palette.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/Win11Palette.qml" \
+    "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Win11Palette.qml plasma/applets/org.kde.windowsmodern.icontasks/contents/ui/Win11Palette.qml" \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml"; do
     # shellcheck disable=SC2086  # two paths on purpose
     cmp -s $pair || SHARED_DRIFT="$SHARED_DRIFT ${pair##* }"

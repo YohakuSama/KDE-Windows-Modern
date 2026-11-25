@@ -10,6 +10,8 @@ import "../lib" as Lib
 Lib.DetailPage {
     id: page
 
+    Lib.Win11Palette { id: fluent }
+
     title: wifiAvailable ? i18n("Wi-Fi") : i18n("Network")
     showSwitch: wifiAvailable
     switchEnabled: wifiAdministrativelyEnabled
@@ -74,10 +76,10 @@ Lib.DetailPage {
         property string password: ""
         property bool showPassword: false
 
-        readonly property color subtleBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06)
-        readonly property color hoverBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
-        readonly property color pressBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
-        readonly property color btnBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.05)
+        readonly property color subtleBg: fluent.selectionFill
+        readonly property color hoverBg: fluent.controlHover
+        readonly property color pressBg: fluent.controlPressed
+        readonly property color btnBg: fluent.controlFill
 
         function statusText() {
             if (connectionState === PlasmaNM.Enums.Activated) {
@@ -153,7 +155,7 @@ Lib.DetailPage {
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 34
+                    Layout.preferredHeight: Math.max(44, networkRow.implicitHeight + 10)
 
                     MouseArea {
                         id: headerMA
@@ -171,6 +173,7 @@ Lib.DetailPage {
                     }
 
                     RowLayout {
+                        id: networkRow
                         anchors.fill: parent
                         anchors.leftMargin: 12
                         anchors.rightMargin: 12
@@ -297,6 +300,26 @@ Lib.DetailPage {
                             TextField {
                                 id: pwField
                                 Layout.fillWidth: true
+                                rightPadding: 30
+                                leftPadding: 10
+                                Layout.minimumHeight: fluent.controlHeight
+                                color: fluent.text
+                                placeholderTextColor: fluent.textSecondary
+                                background: Rectangle {
+                                    radius: fluent.controlRadius
+                                    color: fluent.controlFill
+                                    border.width: 1
+                                    border.color: fluent.controlBorder
+                                    Rectangle {
+                                        anchors.bottom: parent.bottom
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.margins: 2
+                                        height: pwField.activeFocus ? 2 : 1
+                                        radius: 1
+                                        color: pwField.activeFocus ? fluent.accent : fluent.switchOutline
+                                    }
+                                }
                                 echoMode: delegate.showPassword ? TextInput.Normal : TextInput.Password
                                 text: delegate.password
                                 onTextEdited: delegate.password = text
@@ -341,64 +364,15 @@ Lib.DetailPage {
 
                                 Item { Layout.fillWidth: true }
 
-                                // Cancel
-                                Item {
-                                    Layout.preferredWidth: 80
-                                    Layout.preferredHeight: 30
-
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        radius: 4
-                                        color: cancelBtnMA.containsPress ? delegate.pressBg
-                                             : cancelBtnMA.containsMouse ? delegate.hoverBg
-                                             : delegate.btnBg
-                                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
-
-                                        PlasmaComponents3.Label {
-                                            anchors.centerIn: parent
-                                            text: i18n("Cancel")
-                                            color: Kirigami.Theme.textColor
-                                            font: Kirigami.Theme.defaultFont
-                                        }
-
-                                        MouseArea {
-                                            id: cancelBtnMA
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: { delegate.phase = "idle"; delegate.password = ""; delegate.showPassword = false; }
-                                        }
-                                    }
+                                Lib.FluentButton {
+                                    text: i18n("Cancel")
+                                    onClicked: { delegate.phase = "idle"; delegate.password = ""; delegate.showPassword = false; }
                                 }
-
-                                // Next (primary)
-                                Item {
-                                    Layout.preferredWidth: 80
-                                    Layout.preferredHeight: 30
-
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        radius: 4
-                                        color: nextBtnMA.containsPress ? Qt.darker(Kirigami.Theme.highlightColor, 1.1)
-                                             : Kirigami.Theme.highlightColor
-                                        opacity: pwField.acceptableInput ? 1 : 0.4
-                                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
-
-                                        PlasmaComponents3.Label {
-                                            anchors.centerIn: parent
-                                            text: i18n("Next")
-                                            color: Kirigami.Theme.highlightedTextColor
-                                            font: Kirigami.Theme.defaultFont
-                                        }
-
-                                        MouseArea {
-                                            id: nextBtnMA
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: if (pwField.acceptableInput) delegate.doNext()
-                                        }
-                                    }
+                                Lib.FluentButton {
+                                    primary: true
+                                    enabled: pwField.acceptableInput
+                                    text: i18n("Next")
+                                    onClicked: delegate.doNext()
                                 }
                             }
                         }

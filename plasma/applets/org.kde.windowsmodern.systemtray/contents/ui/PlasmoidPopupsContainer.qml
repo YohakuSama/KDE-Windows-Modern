@@ -49,7 +49,7 @@ QQC2.StackView {
 
     onActiveAppletChanged: Qt.callLater(mainStack.showActiveApplet)
 
-    // Native Bluetooth and device pages can create their full item after
+    // Native device and third-party pages can create their full item after
     // activeAppletChanged. Retry on that actual signal, not a polling timer.
     Connections {
         target: mainStack.activeApplet
@@ -167,6 +167,7 @@ QQC2.StackView {
 
     readonly property var themedPages: ({
         "network":         networkPageComp,
+        "bluetooth":       bluetoothPageComp,
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
         "brightness":      brightnessPageComp,
@@ -177,6 +178,13 @@ QQC2.StackView {
     Component {
         id: networkPageComp
         Components.NetworkPage {
+            onBack: systemTrayState.setActiveApplet(null)
+        }
+    }
+    Component {
+        id: bluetoothPageComp
+        Components.BluetoothPage {
+            nativeApplet: mainStack.activeApplet
             onBack: systemTrayState.setActiveApplet(null)
         }
     }

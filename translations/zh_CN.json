@@ -1,4 +1,7 @@
 {
+  "Connecting": "正在连接",
+  "Disconnecting": "正在断开连接",
+  "Connection failed": "连接失败",
   "Windows default (20 px)": "Windows 默认大小（20 px）",
   "@item:inlistbox Icon size\u0004Windows default (20 px)": "Windows 默认大小（20 px）",
   "Focus": "专注",
