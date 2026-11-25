@@ -114,8 +114,8 @@ Rectangle {
             id: otherActions
             model: row.actions ?? null
             delegate: PlasmaComponents3.Button {
-                objectName: "wmDeviceOtherAction"
                 required property var model
+                objectName: "wmDeviceOtherAction_" + model.Name
                 Layout.fillWidth: true
                 visible: row.expanded && row.canOperate && model.Name !== row.defaultName
                 enabled: row.canOperate
