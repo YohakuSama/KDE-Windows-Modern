@@ -81,10 +81,13 @@ Loader {
     LayoutMirroring.enabled: Application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
 
-    active: !blockingUpdates && rootIndex !== undefined && ((parentTask && parentTask.containsMouse) || Window.visibility !== Window.Hidden)
-    // The small launcher label must be ready before the native tooltip
-    // maps; keep the more expensive live thumbnail loading asynchronous.
-    asynchronous: isWin
+    active: !blockingUpdates && rootIndex !== undefined && !!parentTask
+        && parentTask.mainItem === toolTipDelegate
+        && (parentTask.containsMouse || parentTask.toolTipOpen
+            || parentTask.tasksRoot.toolTipOpenedByClick === parentTask)
+    // Lay out the frame before the native popup maps. The PipeWire
+    // thumbnail itself remains asynchronous inside ToolTipInstance.
+    asynchronous: false
 
     sourceComponent: !isWin ? launcherToolTip : isGroup ? groupToolTip : singleTooltip
 
