@@ -9,11 +9,11 @@ QTabBar {
     qproperty-drawBase: 0;
 }
 QTabBar::tab {
-    min-width: 132px;
-    max-width: 230px;
-    min-height: 24px;
-    padding: 4px 10px;
-    margin: 4px 1px 0px;
+    min-width: 180px;
+    max-width: 232px;
+    min-height: 30px;
+    padding: 2px 10px;
+    margin: 3px 1px 0px;
     border: none;
     border-top-left-radius: 7px;
     border-top-right-radius: 7px;
@@ -27,6 +27,13 @@ QTabBar::tab:selected {
     font-weight: 600;
 }
 QTabBar::tab:!selected:hover { background: palette(midlight); }
+QTabBar::close-button {
+    subcontrol-position: right;
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+}
+QTabBar::close-button:hover { background: palette(midlight); border-radius: 3px; }
 QToolButton {
     color: palette(window-text);
     border: none;

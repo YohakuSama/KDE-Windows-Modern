@@ -100,3 +100,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+### Windows Terminal application artwork
+
+The generic terminal and Konsole application aliases use the original `res/terminal/Terminal.svg` from Microsoft's open-source Windows Terminal project, revision `43c7ec76a2eb64dac184358fbad25040c9f4a24f` (https://github.com/microsoft/terminal/blob/43c7ec76a2eb64dac184358fbad25040c9f4a24f/res/terminal/Terminal.svg). MIT license; copyright Microsoft Corporation. The complete MIT license notice above also applies to this artwork. The theme remains a KDE theme and does not provide Microsoft's Windows Terminal executable.

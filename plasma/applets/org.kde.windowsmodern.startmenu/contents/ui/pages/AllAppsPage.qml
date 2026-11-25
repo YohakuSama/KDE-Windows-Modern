@@ -84,6 +84,10 @@ Item {
         scroller.forceLayout();
         scroller.positionViewAtBeginning();
         scroller.forceLayout();
+        // GridView selects row zero when its formerly empty model becomes
+        // populated. Clear that automatic selection after layout, not before.
+        scroller.currentIndex = -1;
+        alphabeticalView.currentIndex = -1;
         const beginning = scroller.contentY;
         const header = scroller.headerItem;
         const desired = header && anchor.headerBottom !== null

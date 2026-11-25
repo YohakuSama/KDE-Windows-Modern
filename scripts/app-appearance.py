@@ -43,6 +43,7 @@ def settings():
         ("dolphinrc", "MainWindow", "State", MISSING),
         (str(STATE / "dolphinstaterc"), "MainWindow", "State", MISSING),
         ("konsolerc", "Desktop Entry", "DefaultProfile", "WindowsModern.profile"),
+        ("konsolerc", "KonsoleWindow", "ShowWindowTitleOnTitleBar", "false"),
         ("konsolerc", "MainWindow", "MenuBar", "Disabled"),
         ("konsolerc", "MainWindow", "ToolBarsMovable", "Disabled"),
         ("konsolerc", "MainWindow", "State", MISSING),

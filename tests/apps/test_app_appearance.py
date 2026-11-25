@@ -63,6 +63,14 @@ class AppAppearanceTest(unittest.TestCase):
         css = (ROOT / "config/konsole/WindowsModern-tabs.css").read_text()
         profile = (ROOT / "config/konsole/WindowsModern.profile").read_text()
         self.assertIn("ColorScheme=Campbell", profile)
+        self.assertIn("Icon=windows-terminal", profile)
+        self.assertIn("min-height: 30px;", css)
+        self.assertIn("QTabBar::close-button", css)
+        terminal_icons = ROOT / "icons/windows-modern/apps"
+        original = (terminal_icons / "windows-terminal.svg").read_bytes()
+        ET.fromstring(original)
+        for alias in ("konsole", "org.kde.konsole", "utilities-terminal", "terminal", "Terminal"):
+            self.assertEqual(original, (terminal_icons / (alias + ".svg")).read_bytes())
         self.assertIn("BoldIntense=false", profile)
         self.assertIn("background: #0C0C0C;", css)
         self.assertIn("QTabWidget::tab-bar { alignment: left; }", css)

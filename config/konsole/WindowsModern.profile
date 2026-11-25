@@ -1,6 +1,6 @@
 [General]
 Name=Windows Modern
-Icon=utilities-terminal
+Icon=windows-terminal
 LocalTabTitleFormat=%n
 RemoteTabTitleFormat=(%u) %H
 ShowTerminalSizeHint=false

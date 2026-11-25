@@ -6,6 +6,9 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Open the Start menu's More recommendations in a dedicated list page, preserving the home scroll position and shared search/footer. Avoid Qt's automatic initial selection when changing views.
+- Use the original open-source Windows Terminal app artwork for terminal aliases; map tab add/close to Windows 11 Fluent glyphs and tune Konsole tab geometry while retaining native window controls.
+
 - Calibrate Quick Settings dark surfaces, footer and slider against the original Windows reference. Honor the active wallpaper package's explicit Light/Dark accent when KDE wallpaper accent mode is enabled; preserve manual/system palette accents otherwise.
 
 - Balance the outer tray-group hover padding using the actual Wi-Fi and battery/percentage content widths, including mirrored and vertical layouts, without changing the inner icon pitch.
