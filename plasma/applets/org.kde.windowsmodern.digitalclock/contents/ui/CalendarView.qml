@@ -31,10 +31,10 @@ ColumnLayout {
     property var calendarLocale: Qt.locale()
     // The applet updates every second while open. The month model needs
     // only the day; a clock tick must not recreate its 42 delegates.
-    readonly property date today: {
-        const now = applet.currentTime;
-        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    }
+    readonly property int todayKey: applet.currentTime.getFullYear() * 10000
+        + (applet.currentTime.getMonth() + 1) * 100 + applet.currentTime.getDate()
+    readonly property date today: new Date(Math.floor(todayKey / 10000),
+        Math.floor(todayKey / 100) % 100 - 1, todayKey % 100)
     // Use the same row pitch in the month and zoomed-out views.
     property real dayHeightLimit: 36
     readonly property real chromeHeight: Math.ceil(Math.max(28, monthNavigation.implicitHeight)
