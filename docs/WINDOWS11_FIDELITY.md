@@ -89,9 +89,9 @@ The panel measurements in this branch are in logical pixels. The 28 px task icon
 | Win+A and devices | Bluetooth uses BluezQt and the Bluedevil device page. Removable storage uses KDE's Disks & Devices applet. Per-display sliders use PowerDevil model roles. Cast launches an installed GNOME Network Displays service. Accessibility opens the installed KDE module. | Exercise pairing, failure, disconnection, USB busy/eject, external display hotplug, wireless projection and audio route changes. |
 | Start, notification history, calendar, clock and OSD | Qt interaction tests cover the Start view, calendar and scrolling. The packaged live tests drive the shell through real input. | Compare Chinese and English in each theme at 150%. Check focus, touchpad movement, text clipping and notification delivery in a running session. |
 | Alt+Tab, Task View, snap, lock screen and window frames | The switcher suite loads the KWin layout. Window material tests exercise light and dark frame generation. | Compare window lifecycle, snap placement, gestures, lock-screen focus, shadows, animations and GPU blur in KWin. |
-| NixOS lifecycle | Source builds target the installed Plasma version. The owner ZIP includes the runtime resources and desktop test suites. The uninstall dispatcher has an isolated routing test. | Install, upgrade and restore on the target generation. Verify the running plugin identity after each change. |
+| NixOS lifecycle | Source builds target the installed Plasma version. The owner ZIP includes the runtime resources; desktop test suites stay in the checkout. The uninstall dispatcher has an isolated routing test. | Install, upgrade and restore on the target generation. Verify the running plugin identity after each change. |
 
-No matched native screenshot set or target hardware session was supplied for this review. The live rows remain open. The owner ZIP contains the tests under `tests/`. The lock-screen test uses a separate testing greeter.
+No matched native screenshot set or target hardware session was supplied for this review. The live rows remain open. The desktop tests remain in the repository checkout under `tests/`. The lock-screen test uses a separate testing greeter.
 
 Implementation references: [KDE Bluedevil](https://github.com/KDE/bluedevil/tree/Plasma/6.8/src/applet), [KDE Disks & Devices](https://github.com/KDE/plasma-workspace/tree/Plasma/6.8/applets/devicenotifier), [PowerDevil display controls](https://github.com/KDE/powerdevil/tree/Plasma/6.8/applets/brightness), [GNOME Network Displays](https://gitlab.gnome.org/GNOME/gnome-network-displays).
 
@@ -187,11 +187,12 @@ limited-network reference; do not resize weaker states independently.
 The volume family retains its full-level calibration. No change to
 battery or application-icon dimensions is made by this follow-up.
 
-The private owner bundle is distinct from the smaller public integration
-artifact. Its package mode rejects archives smaller than 90,000,000 bytes,
-checks the source SHA, pinned native resource revision, essential theme,
-installation, local-build and artwork entries, and ZIP CRC integrity before
-adding the package to its private manifest. Reject development tests, CI,
+The private owner bundle is distinct from the public integration artifact.
+Its package mode verifies exact mapped resource membership and hashes, source
+SHA, pinned native resource revision, essential theme, installation,
+local-build and artwork entries, and ZIP CRC integrity before adding the
+package to its private manifest. Compressed byte count is not a completeness
+criterion; never retain unused Windows files merely to reach a size target. Reject development tests, CI,
 internal reports, historical screenshots and repository-only tools in the
 owner ZIP. Keep those in the source checkout. Do not add filler or publish
 the private resource bundle to the public Actions artifacts.

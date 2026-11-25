@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
-from native_assets_index import IndexedResources
+from native_assets_index import IndexedResources, mapped_original_names
 
 
 def sha(content):
@@ -74,3 +74,12 @@ class IndexedSourceTests(unittest.TestCase):
     def test_missing_group(self):
         with self.assertRaisesRegex(ValueError, 'Missing indexed group'):
             self.index().preview('imageres.dll.mun', 89)
+
+
+    def test_indexed_inputs_do_not_require_mun_binaries(self):
+        mapping = {'libraries': {'i': 'imageres.dll.mun'},
+                   'wallpapers': [['id', 'name', 'Web/a.jpg', None]],
+                   'sounds': {'Notify': 'notification'}, 'icons': {}}
+        expected = {'Fonts/SegoeIcons.ttf', 'Web/a.jpg', 'Media/Notify.wav'}
+        self.assertEqual(mapped_original_names(mapping), expected)
+        self.assertEqual(mapped_original_names(mapping, indexed=False), expected | {self.name})
