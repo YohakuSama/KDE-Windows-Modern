@@ -25,7 +25,7 @@ public:
     explicit BaseModel(QPointer<SystemTraySettings> settings, QObject *parent = nullptr);
     QHash<int, QByteArray> roleNames() const override;
 private Q_SLOTS: void onConfigurationChanged();
-protected: Plasma::Types::ItemStatus calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId) const;
+protected: Plasma::Types::ItemStatus calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId, bool nativeCapture = false) const;
 private: QPointer<SystemTraySettings> m_settings; bool m_showAllItems; QStringList m_shownItems; QStringList m_hiddenItems;
 };
 

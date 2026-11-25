@@ -85,6 +85,30 @@ int main(int argc, char **argv)
     check(fcitx, Status::ActiveStatus, true, false, true, Status::PassiveStatus);
     Q_ASSERT(WindowsTray::systemOrder(fcitx) == WindowsTray::systemOrder(QStringLiteral("org.kde.plasma.keyboardlayout")));
     Q_ASSERT(WindowsTray::systemOrder(fcitx) < WindowsTray::systemOrder(QStringLiteral("org.kde.plasma.networkmanagement")));
+    const QString mic = QStringLiteral("org.kde.plasma.volume_microphone");
+    const QString portal = QStringLiteral("xdg-desktop-portal-kde");
+    const QString record = QStringLiteral("media-record");
+    const QString hardware = QStringLiteral("Hardware");
+    auto capture = [](const QString &exe, const QString &id, const QString &cat,
+                      const QString &icon, bool expected) {
+        if (WindowsTray::nativeCaptureIndicator(exe, id, cat, icon) != expected)
+            qFatal() << "Incorrect native capture classification" << exe << id << cat << icon;
+    };
+    capture(QStringLiteral("plasmashell"), mic, hardware, {}, true);
+    capture(QStringLiteral(".plasmashell-wrapped"), mic, hardware, {}, true);
+    capture(QStringLiteral("plasmashell"), mic, QStringLiteral("ApplicationStatus"), {}, false);
+    capture(portal, QStringLiteral("sharing"), {}, record, true);
+    capture(QStringLiteral(".xdg-desktop-portal-kde-wrapped"), QStringLiteral("sharing"), {}, QStringLiteral("krfb"), true);
+    capture(portal, QStringLiteral("sharing"), {}, QStringLiteral("configure"), false);
+    capture(QStringLiteral("example-app"), mic, hardware, record, false);
+    for (bool pinned : {false, true}) {
+        for (bool hidden : {false, true}) {
+            if (WindowsTray::effectiveStatus(mic, Status::ActiveStatus, true, pinned, hidden, true) != Status::ActiveStatus
+                || WindowsTray::effectiveStatus(mic, Status::PassiveStatus, true, pinned, hidden, true) != Status::HiddenStatus
+                || WindowsTray::effectiveStatus(mic, Status::ActiveStatus, false, pinned, hidden, true) != Status::HiddenStatus)
+                qFatal("Incorrect live capture indicator visibility");
+        }
+    }
     const QString camera = QStringLiteral("org.kde.plasma.cameraindicator");
     check(camera, Status::ActiveStatus, true, false, true, Status::ActiveStatus);
     check(camera, Status::PassiveStatus, true, true, false, Status::HiddenStatus);

@@ -39,6 +39,7 @@ public:
     QString iconThemePath() const;
     QString id() const;
     QString processName();
+    bool isNativeCapture() const;
     bool itemIsMenu() const;
     QString overlayIconName() const;
     QString status() const;
@@ -89,6 +90,7 @@ private:
     QString m_iconThemeAppName;
     QString m_id;
     QString m_processName;
+    QString m_ownerExecutable;
     bool m_itemIsMenu;
     QString m_overlayIconName;
     QString m_status;

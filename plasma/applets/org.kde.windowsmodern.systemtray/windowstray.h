@@ -33,6 +33,22 @@ inline bool privacyIndicator(const QString &itemId)
     return itemId == QLatin1String("org.kde.plasma.cameraindicator");
 }
 
+// Native capture indicators are classified by the existing SNI owner
+// executable and role, not by arbitrary application artwork alone.
+inline bool nativeCaptureIndicator(const QString &executable, const QString &itemId,
+                                   const QString &category, const QString &iconName)
+{
+    const bool plasma = executable == QLatin1String("plasmashell")
+        || executable == QLatin1String(".plasmashell-wrapped");
+    if (plasma && category == QLatin1String("Hardware")
+        && itemId.endsWith(QLatin1String("_microphone"))) {
+        return true;
+    }
+    const bool portal = executable == QLatin1String("xdg-desktop-portal-kde")
+        || executable == QLatin1String(".xdg-desktop-portal-kde-wrapped");
+    return portal && (iconName == QLatin1String("media-record") || iconName == QLatin1String("krfb"));
+}
+
 // Fcitx registers the stable StatusNotifierItem Id "Fcitx".
 inline bool inputMethodIndicator(const QString &itemId)
 {
@@ -90,12 +106,13 @@ inline bool shownByDefault(const QString &itemId)
         || itemId == QLatin1String("org.kde.plasma.cameraindicator"); // privacy: camera in use
 }
 inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::Types::ItemStatus status,
-                                                bool eligible, bool pinned, bool hiddenByUser)
+                                                bool eligible, bool pinned, bool hiddenByUser,
+                                                bool nativeCapture = false)
 {
     using Status = Plasma::Types::ItemStatus;
     // Do not bury the live privacy indicator in overflow, even if an
     // older saved configuration forced it there. Do not show an idle one.
-    if (privacyIndicator(itemId)) {
+    if (privacyIndicator(itemId) || nativeCapture) {
         return eligible && (status == Status::ActiveStatus || status == Status::NeedsAttentionStatus
                             || status == Status::RequiresAttentionStatus)
             ? Status::ActiveStatus : Status::HiddenStatus;

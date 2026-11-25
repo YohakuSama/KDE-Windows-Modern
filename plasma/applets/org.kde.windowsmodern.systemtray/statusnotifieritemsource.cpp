@@ -7,6 +7,7 @@
 
 #include "statusnotifieritemsource.h"
 #include "systemtraytypes.h"
+#include "windowstray.h"
 
 #include "debug.h"
 
@@ -112,6 +113,9 @@ StatusNotifierItemSource::StatusNotifierItemSource(const QString &notifierItemId
 
     auto pid = QDBusConnection::sessionBus().interface()->servicePid(service);
     if (pid.isValid()) {
+        // Reuse the SNI service PID already obtained here; no polling or
+        // additional D-Bus lookup on each model data() request.
+        m_ownerExecutable = QFileInfo(QFile::symLinkTarget(u"/proc/%1/exe"_s.arg(pid.value()))).fileName();
         const QString flatpakInfoPath = u"/proc/"_s + QString::number(pid.value()) + u"/root/.flatpak-info"_s;
         const QSettings flatpakInfo(flatpakInfoPath, QSettings::IniFormat);
         const auto instance = flatpakInfo.value(u"Instance/instance-id"_s).toString();
@@ -169,6 +173,11 @@ QString StatusNotifierItemSource::iconThemePath() const
 QString StatusNotifierItemSource::id() const
 {
     return m_id;
+}
+
+bool StatusNotifierItemSource::isNativeCapture() const
+{
+    return WindowsTray::nativeCaptureIndicator(m_ownerExecutable, m_id, m_category, m_iconName);
 }
 
 QString StatusNotifierItemSource::processName()

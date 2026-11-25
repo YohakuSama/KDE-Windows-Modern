@@ -272,3 +272,28 @@ rather than MixVolumes (F4C3); the existing output routing is unchanged.
 The screenshot proportions are design targets, not published Microsoft
 control metrics or live Plasma acceptance. The existing actual-QML pointer
 and wheel test also checks symmetric slot and groove bounds.
+
+### Retired development branches
+
+Keep the current main tree as the implementation baseline. The earlier
+Fluent shell integration (1b511ca) and full local MUN exporter
+(81db564) are retained in Git ancestry for future inspection,
+not installed as parallel components. Their old popup, slider, sign-in,
+style, packaging and CI implementations must not replace newer main code.
+The resource reference branch already preserves the complete indexed
+library; the current mapped runtime branch and existing shell inspector
+remain the resource workflows. Do not add a second PE parser or duplicate
+full-export tooling to the installable theme.
+
+Restore the native microphone and desktop-portal capture indicator
+classification from the earlier Fluent branch using the current visibility
+policy. Reuse the existing SNI owner PID and native status updates, including
+NixOS executable wrapper names. Only active or attention-state capture items
+are shown; unrelated applications with matching artwork are not promoted.
+No new monitor, polling, service, workflow or runtime dependency. The existing
+tray status test covers the classification and active/idle visibility rules;
+real microphone and screen-sharing acceptance remains a desktop test.
+
+The history merge is an explicit retirement of older alternative source
+trees, not a claim that all of their individual changes were replayed or
+that all visuals were validated. Preserve the two resource branches.

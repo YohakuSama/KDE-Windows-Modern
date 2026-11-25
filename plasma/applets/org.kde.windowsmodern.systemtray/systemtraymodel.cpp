@@ -55,10 +55,10 @@ void BaseModel::onConfigurationChanged() {
     Q_EMIT dataChanged(index(0, 0), index(rowCount() - 1, 0), {static_cast<int>(BaseModel::BaseRole::EffectiveStatus)});
 }
 
-Plasma::Types::ItemStatus BaseModel::calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId) const {
+Plasma::Types::ItemStatus BaseModel::calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId, bool nativeCapture) const {
     const bool pinned = m_showAllItems || m_shownItems.contains(itemId);
     const bool disabled = m_settings && m_settings->isDisabledStatusNotifier(itemId);
-    return WindowsTray::effectiveStatus(itemId, status, canRender && !disabled, pinned, m_hiddenItems.contains(itemId));
+    return WindowsTray::effectiveStatus(itemId, status, canRender && !disabled, pinned, m_hiddenItems.contains(itemId), nativeCapture);
 }
 
 static QString plasmoidCategoryForMetadata(const KPluginMetaData &metadata) {
@@ -206,7 +206,7 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const {
         case BaseRole::CanRender: return true;
         case BaseRole::Category: { QVariant cat = sniData->category(); return cat.isNull() ? QStringLiteral("UnknownCategory") : cat; }
         case BaseRole::Status: return extractStatus(sniData);
-        case BaseRole::EffectiveStatus: return calculateEffectiveStatus(true, extractStatus(sniData), itemId);
+        case BaseRole::EffectiveStatus: return calculateEffectiveStatus(true, extractStatus(sniData), itemId, sniData->isNativeCapture());
         default: return {};
         }
     }
