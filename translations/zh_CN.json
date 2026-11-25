@@ -511,4 +511,12 @@
   "(or scan your smartcard)": "（或扫描你的智能卡）"
 ,
   "%1 devices connected": "已连接 %1 台设备"
+,
+  "%1 until fully charged": "距离充满还需 %1",
+  "%1 remaining": "剩余 %1",
+  "%1 battery health": "%1 电池健康度",
+  "Unmute": "取消静音",
+  "Mute": "静音",
+  "Test sound": "测试声音",
+  "Audio settings": "音频设置"
 }

@@ -43,30 +43,17 @@ Lib.Page {
                     color: Kirigami.Theme.textColor
                 }
 
-                RowLayout {
+                Lib.Slider {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 36
-                    spacing: 12
-
-                    Kirigami.Icon {
-                        Layout.preferredWidth: 22
-                        Layout.preferredHeight: 22
-                        Layout.alignment: Qt.AlignVCenter
-                        source: "brightness-high-symbolic"
-                        isMask: true
-                        color: Kirigami.Theme.textColor
-                    }
-
-                    PlasmaComponents3.Slider {
-                        Accessible.name: display.label
-                        Layout.fillWidth: true
-                        from: 0
-                        to: display.maxBrightness
-                        value: display.brightness
-                        stepSize: Math.max(1, Math.floor(display.maxBrightness / 100))
-
-                        onMoved: sbControl.setBrightness(display.displayName, value)
-                    }
+                    Layout.leftMargin: 12
+                    Layout.rightMargin: 12
+                    sliderAccessibleName: display.label || i18n("Display %1", display.index + 1)
+                    iconSource: "brightness-high-symbolic"
+                    from: 0
+                    to: display.maxBrightness
+                    value: display.brightness
+                    stepSize: Math.max(1, Math.floor(display.maxBrightness / 100))
+                    onMoved: v => sbControl.setBrightness(display.displayName, v)
                 }
             }
         }
@@ -85,13 +72,14 @@ Lib.Page {
             ColumnLayout {
                 Layout.fillWidth: true
                 PlasmaComponents3.Label { text: i18n("Keyboard Backlight") }
-                PlasmaComponents3.Slider {
+                Lib.Slider {
                     Layout.fillWidth: true
+                    sliderAccessibleName: i18n("Keyboard Backlight")
                     from: 0
                     to: keyboardControl.brightnessMax
                     value: keyboardControl.brightness
                     stepSize: 1
-                    onMoved: keyboardControl.brightness = value
+                    onMoved: v => keyboardControl.brightness = v
                 }
             }
         }

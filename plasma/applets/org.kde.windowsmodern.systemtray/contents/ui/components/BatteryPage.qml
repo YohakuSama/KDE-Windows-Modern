@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents3
-import org.kde.plasma.plasma5support as Plasma5Support
+import org.kde.coreaddons as KCoreAddons
 import org.kde.plasma.private.battery
 import org.kde.plasma.private.batterymonitor
 import org.kde.kirigami as Kirigami
@@ -38,45 +38,20 @@ Lib.Page {
         : batteryControl.state === BatteryControlModel.Discharging ? i18n("Discharging")
         : batteryControl.pluggedIn ? i18n("Plugged in") : i18n("Battery status unknown")
 
-    property string timeLeft: ""
-    property string health: "--"
+    readonly property string timeLeft: {
+        const remaining = batteryControl.smoothedRemainingMsec;
+        if (!hasBattery || !(remaining > 0)) return "";
+        const duration = KCoreAddons.Format.formatDuration(remaining, KCoreAddons.FormatTypes.HideSeconds);
+        if (isCharging) return i18n("%1 until fully charged", duration);
+        if (batteryControl.state === BatteryControlModel.Discharging)
+            return i18n("%1 remaining", duration);
+        return "";
+    }
     readonly property bool blockSleep: inhibitionControl.isManuallyInhibited
 
     InhibitionControl {
         id: inhibitionControl
         isSilent: true
-    }
-
-    Plasma5Support.DataSource {
-        id: healthSrc
-        engine: "executable"
-        connectedSources: []
-        interval: 60000
-        onNewData: function (sourceName, data) {
-            var output = (data["stdout"] || "").trim();
-            var h = parseFloat(output);
-            if (!isNaN(h))
-                page.health = (h > 100 ? 100 : h).toFixed(0) + "%";
-        }
-        function get(cmd) {
-            connectSource(cmd);
-        }
-    }
-
-    Component.onCompleted: {
-        page._updateTime();
-        healthSrc.get("upower -i $(upower -e | grep battery | head -n 1) | awk '/capacity/ {print $2}' | tr -d ' %' | tr ',' '.'");
-    }
-
-    function _updateTime() {
-        const remaining = batteryControl.remainingMsec;
-        if (remaining && remaining > 0) {
-            const h = Math.floor(remaining / 3600000);
-            const m = Math.floor((remaining % 3600000) / 60000);
-            page.timeLeft = h + "h " + m + "m";
-        } else {
-            page.timeLeft = "";
-        }
     }
 
     function _toggleBlockSleep() {
@@ -127,9 +102,11 @@ Lib.Page {
 
             PlasmaComponents3.Label {
                 visible: page.timeLeft.length > 0 && !page.isFull
+                Layout.maximumWidth: Math.max(0, parent.width * 0.5)
                 text: page.timeLeft
-                font.pixelSize: 10
-                opacity: 0.5
+                wrapMode: Text.WordWrap
+                font.pixelSize: 12
+                opacity: 0.75
                 color: Kirigami.Theme.textColor
             }
         }
@@ -150,36 +127,30 @@ Lib.Page {
             }
         }
 
-        RowLayout {
-            Layout.fillWidth: true
-            visible: page.health !== "--"
-
-            PlasmaComponents3.Label {
-                text: i18n("Battery health")
-                font.pixelSize: 9
-                opacity: 0.5
-                color: Kirigami.Theme.textColor
-            }
-
-            Item {
+        // Use KDE's live battery roles rather than a subprocess querying the
+        // first UPower device, which may be a peripheral or the wrong battery.
+        Repeater {
+            id: healthRows
+            model: batteryControl
+            delegate: RowLayout {
+                required property var model
+                readonly property real capacity: Number(model.Capacity)
                 Layout.fillWidth: true
-            }
+                visible: model.IsPowerSupply && capacity > 0 && capacity <= 100
 
-            PlasmaComponents3.Label {
-                text: page.health
-                font.pixelSize: 9
-                font.weight: Font.DemiBold
-                color: {
-                    var h = parseFloat(page.health);
-                    if (isNaN(h))
-                        return Kirigami.Theme.textColor;
-                    if (h >= 90)
-                        return "#4ade80";
-                    if (h >= 70)
-                        return "#a3e635";
-                    if (h >= 50)
-                        return "#facc15";
-                    return "#f87171";
+                PlasmaComponents3.Label {
+                    Layout.fillWidth: true
+                    text: healthRows.count > 1 && model.PrettyName
+                        ? i18n("%1 battery health", model.PrettyName) : i18n("Battery health")
+                    textFormat: Text.PlainText
+                    elide: Text.ElideRight
+                    font.pixelSize: 12
+                    opacity: 0.75
+                }
+                PlasmaComponents3.Label {
+                    text: i18n("%1%", Math.round(capacity))
+                    font.pixelSize: 12
+                    color: Kirigami.Theme.textColor
                 }
             }
         }
@@ -213,6 +184,7 @@ Lib.Page {
         }
 
         Lib.SectionHeader {
+            visible: powerProfiles.profiles.length > 0
             text: i18n("Power Profiles")
         }
 
@@ -252,6 +224,7 @@ Lib.Page {
         }
 
         Rectangle {
+            visible: page.hasBattery || powerProfiles.profiles.length > 0
             Layout.fillWidth: true
             Layout.topMargin: 2
             Layout.bottomMargin: 2
@@ -292,6 +265,6 @@ Lib.Page {
 
     footer: Lib.MoreSettingsLink {
         text: i18n("Power settings")
-        onClicked: Qt.openUrlExternally("systemsettings://kcm_powerdevilprofilesconfig")
+        onClicked: KCMLauncher.openSystemSettings("kcm_powerdevilprofilesconfig")
     }
 }

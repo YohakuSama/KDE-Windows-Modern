@@ -6,6 +6,9 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Use live KDE battery time and health data, remove the UPower polling subprocess, and open the native power settings module directly.
+- Correct audio device selection states and microphone icons; keep input switching from playing feedback on a sink index. Reuse the same slider for brightness details and app volume, preserve two-line captions and reduce visible tile rows on small work areas.
+
 ### Fixed tray reference baseline
 
 - Restore the 16px tray canvas, chevron and bell while retaining original optical-normalized assets, normal hit targets and the separate wider battery cell. Avoid the previous double enlargement of imported glyphs. Guard standard sizes at 100–200% output scales.
