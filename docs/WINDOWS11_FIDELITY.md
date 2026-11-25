@@ -253,3 +253,21 @@ publish a partially built final ZIP. Public packaging leaves prior verified
 owner packages alone. The resource checker uses the existing index schema
 consumed by the native asset importer. Its synthetic fixture checks do not
 prove that a full pinned resource checkout was downloaded and packaged.
+
+### Quick Settings grid and slider alignment, owner reference
+
+In the marked reference, the usable slider groove is centered between the
+outer edges of the three-column tile grid: both insets are approximately
+36 logical px when normalized to the existing 312px content width. In the
+owner's current capture the insets are about 30px and 43px. Equal lengths
+alone are not sufficient. Use the actual grid margins for both slider rows,
+with equal 27px end slots and an 18px thumb at the normal UI scale. Scale
+these metrics with the existing optional panel UI scale, not display DPI.
+Keep the brightness details slot inert and accessible only when present.
+Remove the extra divider above the sliders and move the row separation into
+the slider block, matching the owner's pictured reference proportions. The
+right-hand output button uses the existing Speakers (E7F5) resource mapping
+rather than MixVolumes (F4C3); the existing output routing is unchanged.
+The screenshot proportions are design targets, not published Microsoft
+control metrics or live Plasma acceptance. The existing actual-QML pointer
+and wheel test also checks symmetric slot and groove bounds.

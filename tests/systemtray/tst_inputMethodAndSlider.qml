@@ -55,6 +55,40 @@ Item {
             verify(a.height >= 34 && b.height >= 34);
         }
 
+        function test_symmetricHomeRowGeometry() {
+            const rows = [brightness, volume];
+            try {
+                for (const factor of [0.75, 1, 1.25, 1.5, 2]) {
+                    for (const row of rows) {
+                        row.controlScale = factor;
+                        row.iconSize = Math.round(20 * factor);
+                        const leading = findChild(row, "wmFluentSliderLeadingSlot");
+                        const groove = findChild(row, "wmFluentSliderGroove");
+                        const details = findChild(row, "wmFluentSliderDetailsSlot");
+                        verify(leading && groove && details);
+                        const inset = row.alignedSideWidth + row.thumbExtent / 2;
+                        tryVerify(() => {
+                            const left = groove.mapToItem(row, 0, 0).x;
+                            const right = row.width - left - groove.width;
+                            return Math.abs(left - inset) <= 1 && Math.abs(right - inset) <= 1
+                                && Math.abs(leading.mapToItem(row, 0, 0).x) <= 1
+                                && Math.abs(details.mapToItem(row, details.width, 0).x - row.width) <= 1;
+                        });
+                    }
+                    const a = findChild(brightness, "wmFluentSliderGroove");
+                    const b = findChild(volume, "wmFluentSliderGroove");
+                    compare(a.width, b.width);
+                    compare(a.mapToItem(brightness, 0, 0).x, b.mapToItem(volume, 0, 0).x);
+                }
+                verify(!findChild(brightness, "wmFluentSliderDetailsSlot").enabled);
+            } finally {
+                for (const row of rows) {
+                    row.controlScale = 1;
+                    row.iconSize = 20;
+                }
+            }
+        }
+
         function test_soundOutputGlyphHasFallback() {
             const nativeGlyph = findChild(volume, "wmNativeSoundOutputGlyph");
             const fallbackGlyph = findChild(volume, "wmFallbackSoundOutputGlyph");

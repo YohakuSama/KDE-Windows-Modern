@@ -19,18 +19,26 @@ Item {
     property int iconSize: 20
     readonly property bool pressed: slider.pressed
     property string sliderAccessibleName: ""
-    readonly property int trackGap: 8
-    readonly property int thumbExtent: 18
+    // Home rows use balanced side slots. Qt applies output DPI once;
+    // controlScale is only the user's optional Quick Settings UI scale.
+    property real controlScale: 1
+    readonly property int trackGap: reserveDetailsSpace ? 0 : Math.round(8 * controlScale)
+    readonly property int thumbExtent: Math.max(12, Math.round(18 * controlScale))
+    readonly property int trackThickness: Math.max(2, Math.round(4 * controlScale))
+    readonly property int alignedSideWidth: Math.max(iconSize, Math.round(27 * controlScale))
+    readonly property int leadingWidth: reserveDetailsSpace ? alignedSideWidth : iconSize
+    readonly property int detailsWidth: reserveDetailsSpace ? alignedSideWidth
+        : Math.round((soundOutputDetails || detailsIconSource.length > 0 ? 32 : 24) * controlScale)
     property bool showArrow: false
     // Home rows reserve the same output slot so both tracks end at
     // the same x coordinate. Other detail-page sliders stay full-width.
     property bool reserveDetailsSpace: false
     property bool soundOutputDetails: false
-    // Use the locally imported MixVolumes glyph when available; preserve
-    // the independent compatibility drawing for installations without it.
+    // The supplied reference uses Speakers (Segoe Fluent Icons E7F5).
+    // Reuse the existing native import mapping and theme fallback.
     readonly property url nativeSoundOutputAsset: soundOutputDetails
         ? StandardPaths.locate(StandardPaths.GenericDataLocation,
-            "icons/windows-modern/actions/wm-sound-output-symbolic.svg", StandardPaths.LocateFile)
+            "icons/windows-modern/apps/preferences-desktop-sound-symbolic.svg", StandardPaths.LocateFile)
         : ""
     property string detailsIconSource: ""
     property string detailsAccessibleName: ""
@@ -64,15 +72,25 @@ Item {
         columns: 3
         columnSpacing: root.trackGap
 
-        Kirigami.Icon {
+        Item {
+            objectName: "wmFluentSliderLeadingSlot"
             visible: root.iconSource.length > 0
-            Layout.preferredWidth: root.iconSize
-            Layout.preferredHeight: root.iconSize
+            Layout.minimumWidth: root.leadingWidth
+            Layout.preferredWidth: root.leadingWidth
+            Layout.maximumWidth: root.leadingWidth
+            Layout.preferredHeight: Math.max(root.iconSize, Math.round(32 * root.controlScale))
             Layout.alignment: Qt.AlignVCenter
-            source: root.iconSource
-            roundToIconSize: false
-            isMask: true
-            color: Kirigami.Theme.textColor
+            Kirigami.Icon {
+                objectName: "wmFluentSliderLeadingGlyph"
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.iconSize
+                height: width
+                source: root.iconSource
+                roundToIconSize: false
+                isMask: true
+                color: Kirigami.Theme.textColor
+            }
 
             MouseArea {
                 anchors.fill: parent
@@ -117,20 +135,21 @@ Item {
             // Fluent track and thumb; the native control retains keyboard,
             // mouse, accessibility, wheel and value semantics.
             background: Item {
+                objectName: "wmFluentSliderGroove"
                 x: slider.leftPadding + root.thumbExtent / 2
                 y: (slider.height - height) / 2
                 width: Math.max(0, slider.availableWidth - root.thumbExtent)
-                height: 4
+                height: root.trackThickness
                 Rectangle {
                     anchors.fill: parent
-                    radius: 2
+                    radius: height / 2
                     color: ColorType.trackFill(root.dark)
                 }
                 Rectangle {
                     width: parent.width * slider.position
                     height: parent.height
                     x: slider.mirrored ? parent.width - width : 0
-                    radius: 2
+                    radius: height / 2
                     color: root.accent
                 }
             }
@@ -146,7 +165,7 @@ Item {
                 border.color: root.dark ? "#454545" : "#D6D6D6"
                 Rectangle {
                     anchors.centerIn: parent
-                    width: slider.pressed ? 10 : 12
+                    width: Math.max(6, Math.round((slider.pressed ? 10 : 12) * root.controlScale))
                     height: width
                     radius: width / 2
                     color: root.accent
@@ -164,13 +183,17 @@ Item {
 
         Item {
             id: detailsButton
+            objectName: "wmFluentSliderDetailsSlot"
             visible: root.showArrow || root.reserveDetailsSpace
             enabled: root.showArrow
             opacity: root.showArrow ? 1 : 0
-            Layout.preferredWidth: root.reserveDetailsSpace || root.soundOutputDetails || root.detailsIconSource.length > 0 ? 32 : 24
-            Layout.preferredHeight: 32
+            Layout.minimumWidth: root.detailsWidth
+            Layout.preferredWidth: root.detailsWidth
+            Layout.maximumWidth: root.detailsWidth
+            Layout.preferredHeight: Math.round(32 * root.controlScale)
             Layout.alignment: Qt.AlignVCenter
             activeFocusOnTab: root.showArrow
+            Accessible.ignored: !root.showArrow
             Accessible.role: Accessible.Button
             Accessible.name: root.detailsAccessibleName || i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "More")
             Accessible.onPressAction: root.arrowClicked()
@@ -188,11 +211,12 @@ Item {
 
             Row {
                 anchors.centerIn: parent
-                spacing: 2
+                spacing: Math.round(2 * root.controlScale)
+                readonly property int glyphExtent: Math.max(8, Math.round((root.reserveDetailsSpace ? 16 : 18) * root.controlScale))
                 Kirigami.Icon {
                     visible: !root.soundOutputDetails && root.detailsIconSource.length > 0
-                    width: 18
-                    height: 18
+                    width: parent.glyphExtent
+                    height: parent.glyphExtent
                     source: root.detailsIconSource
                     roundToIconSize: false
                     isMask: true
@@ -201,62 +225,28 @@ Item {
                 Kirigami.Icon {
                     objectName: "wmNativeSoundOutputGlyph"
                     visible: root.soundOutputDetails && String(root.nativeSoundOutputAsset).length > 0
-                    width: 18
-                    height: 18
+                    width: parent.glyphExtent
+                    height: parent.glyphExtent
                     source: root.nativeSoundOutputAsset
                     roundToIconSize: false
                     isMask: true
                     color: Kirigami.Theme.textColor
                 }
-                Canvas {
-                    id: outputGlyph
+                Kirigami.Icon {
                     objectName: "wmFallbackSoundOutputGlyph"
                     visible: root.soundOutputDetails && String(root.nativeSoundOutputAsset).length === 0
-                    width: 18
-                    height: 18
-                    property color glyphColor: Kirigami.Theme.textColor
-                    onGlyphColorChanged: requestPaint()
-                    onWidthChanged: requestPaint()
-                    onHeightChanged: requestPaint()
-                    onPaint: {
-                        const c = getContext("2d");
-                        c.reset();
-                        c.clearRect(0, 0, width, height);
-                        c.scale(width / 20, height / 20);
-                        c.strokeStyle = glyphColor;
-                        c.fillStyle = glyphColor;
-                        c.lineWidth = 1.35;
-                        c.lineCap = "round";
-                        c.lineJoin = "round";
-                        c.beginPath();
-                        c.moveTo(1.8, 5);
-                        c.lineTo(6, 5);
-                        c.moveTo(10, 5);
-                        c.lineTo(18, 5);
-                        c.moveTo(2, 13);
-                        c.lineTo(7, 13);
-                        c.stroke();
-                        c.beginPath();
-                        c.arc(8, 5, 2, 0, Math.PI * 2);
-                        c.stroke();
-                        c.beginPath();
-                        c.moveTo(8.5, 11.2);
-                        c.lineTo(11, 11.2);
-                        c.lineTo(14.1, 8.6);
-                        c.lineTo(14.1, 17.4);
-                        c.lineTo(11, 14.8);
-                        c.lineTo(8.5, 14.8);
-                        c.closePath();
-                        c.fill();
-                        c.beginPath();
-                        c.moveTo(16, 10.4);
-                        c.quadraticCurveTo(18, 13, 16, 15.6);
-                        c.stroke();
-                    }
+                    width: parent.glyphExtent
+                    height: parent.glyphExtent
+                    source: "preferences-desktop-sound-symbolic"
+                    fallback: "audio-card"
+                    roundToIconSize: false
+                    isMask: true
+                    color: Kirigami.Theme.textColor
                 }
                 Kirigami.Icon {
-                    width: 12
-                    height: 18
+                    objectName: "wmFluentSliderDetailsChevron"
+                    width: Math.max(6, Math.round((root.reserveDetailsSpace ? 8 : 12) * root.controlScale))
+                    height: parent.glyphExtent
                     source: "go-next-symbolic"
                     roundToIconSize: false
                     isMask: true

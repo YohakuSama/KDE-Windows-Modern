@@ -31,10 +31,12 @@ ColumnLayout {
     property real frameInset: 0
     readonly property int edgeInset: Math.round(24 * uiScale)
     readonly property int contentInset: Math.max(0, edgeInset - Math.round(frameInset))
-    readonly property int gridBottomGap: Math.round(14 * uiScale)
-    readonly property int sliderInset: Math.round(16 * uiScale)
-    readonly property int sliderHorizontalInset: Math.max(0, Math.round(18 * uiScale) - Math.round(frameInset))
-    readonly property int sliderGap: Math.round(12 * uiScale)
+    // The grid, slider rows and footer use one outer content edge.
+    // Keep the extra right-hand pager in the gutter, outside that edge.
+    readonly property int gridBottomGap: Math.round(8 * uiScale)
+    readonly property int sliderTopInset: Math.round(8 * uiScale)
+    readonly property int sliderBottomInset: Math.round(16 * uiScale)
+    readonly property int sliderGap: Math.round(24 * uiScale)
     readonly property int sliderHeight: Math.max(36, Math.round(36 * uiScale))
     readonly property int footerHeight: Math.max(24, Math.round(48 * uiScale) - Math.round(frameInset))
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
@@ -48,7 +50,7 @@ ColumnLayout {
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
     readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
-    readonly property int sliderBlockHeight: sliderRows > 0 ? 1 + 2 * sliderInset
+    readonly property int sliderBlockHeight: sliderRows > 0 ? sliderTopInset + sliderBottomInset
         + sliderRows * sliderHeight + (sliderRows - 1) * sliderGap : 0
     readonly property int nominalFixedHeight: edgeInset + gridBottomGap + sliderBlockHeight
         + Math.max(24, Math.round(48 * uiScale))
@@ -482,31 +484,23 @@ ColumnLayout {
         }
     }
 
-    Rectangle {
-        objectName: "wmQuickSettingsSliderDivider"
+    ColumnLayout {
+        id: sliderRows
+        objectName: "wmQuickSettingsSliderRows"
         visible: actionPanel.sliderRows > 0
         Layout.fillWidth: true
-        Layout.leftMargin: -actionPanel.frameInset + 1
-        Layout.rightMargin: -actionPanel.frameInset + 1
-        Layout.preferredHeight: 1
-        color: ColorType.divider(actionPanel.dark)
-    }
-
-    GridLayout {
-        visible: actionPanel.sliderRows > 0
-        Layout.fillWidth: true
-        Layout.leftMargin: actionPanel.sliderHorizontalInset
-        Layout.rightMargin: actionPanel.sliderHorizontalInset
-        Layout.topMargin: actionPanel.sliderInset
-        Layout.bottomMargin: actionPanel.sliderInset
-        columns: 3
-        rowSpacing: actionPanel.sliderGap
-        columnSpacing: 0
+        // Bind to the actual grid margins, not a separate set of guesses.
+        Layout.leftMargin: toggleRow.Layout.leftMargin
+        Layout.rightMargin: toggleRow.Layout.rightMargin
+        Layout.topMargin: actionPanel.sliderTopInset
+        Layout.bottomMargin: actionPanel.sliderBottomInset
+        spacing: actionPanel.sliderGap
 
         Components.BrightnessSlider {
             id: brightnessSlider
             Layout.fillWidth: true
-            Layout.columnSpan: 3
+            controlScale: actionPanel.uiScale
+            iconSize: Math.round(20 * controlScale)
             visible: Plasmoid.configuration.showBrightness && brightnessAvailable
             showArrow: false
             reserveDetailsSpace: true
@@ -519,7 +513,8 @@ ColumnLayout {
         Components.VolumeSlider {
             id: volumeSlider
             Layout.fillWidth: true
-            Layout.columnSpan: 3
+            controlScale: actionPanel.uiScale
+            iconSize: Math.round(20 * controlScale)
             Layout.preferredHeight: actionPanel.sliderHeight
             implicitHeight: actionPanel.sliderHeight
             visible: Plasmoid.configuration.showVolume && sinkAvailable
