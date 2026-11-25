@@ -26,6 +26,7 @@ QTabBar::tab:!selected:hover {
     background: #3b3b3b;
 }
 QToolButton {
+    color: #cccccc;
     border: 0;
     border-radius: 4px;
     padding: 4px;

@@ -195,6 +195,12 @@ else
     fail "settings backup test failed — run: tests/backup/test.sh"
 fi
 
+if python3 -m unittest discover -s tests/apps -v >/dev/null 2>&1; then
+    pass "Explorer/Terminal appearance and restore tests"
+else
+    fail "app appearance tests failed — run: python3 -m unittest discover -s tests/apps -v"
+fi
+
 # ── Shared code copies ──────────────────────────────────────────────
 # The lock screen is its own package, so it carries a copy of the clock's
 # date formatting; the two must not drift apart. Likewise the Search and

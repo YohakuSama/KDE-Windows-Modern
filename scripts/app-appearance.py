@@ -34,7 +34,6 @@ def settings():
         ("konsolerc", "MainWindow", "MenuBar", "Disabled"),
         ("konsolerc", "MainWindow", "ToolBarsMovable", "Disabled"),
         ("konsolerc", "MainWindow", "State", MISSING),
-        ("konsolestaterc", "MainWindow", "State", MISSING),
         ("konsolerc", "TabBar", "TabBarVisibility", "AlwaysShowTabBar"),
         ("konsolerc", "TabBar", "TabBarPosition", "Top"),
         ("konsolerc", "TabBar", "NewTabButton", "true"),
@@ -85,6 +84,10 @@ def apply():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(new)
     for file, group, key, value in settings():
+        if file == "konsolerc":
+            required = ("konsole/WindowsModern.profile", "konsole/WindowsModern-tabs.css")
+            if any(relative not in state["files"] for relative in required):
+                continue
         if (CONFIG / file).is_symlink():
             print("Keeping managed app config:", file)
             continue

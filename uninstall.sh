@@ -320,7 +320,11 @@ uninstall_component() {
             python3 "$SRC_DIR/scripts/app-appearance.py" restore
             ui="$HOME/.local/share/kxmlgui5/dolphin/dolphinui.rc"
             if [ -f "$backup_dir/dolphinui.rc.ours" ]; then
-                rm_path "$ui"
+                # Older releases owned the unmodified Up-button-only XML.
+                # Leave any layout the user edited after installation intact.
+                if [ -f "$ui" ] && [ "$(git hash-object "$ui" 2>/dev/null || true)" = "5dfeecc37067f7c8a7bcbc0aa229f7b0e36728c2" ]; then
+                    rm_path "$ui"
+                fi
                 rm -f "$backup_dir/dolphinui.rc.ours"
             fi
             if busctl --user status org.kde.kglobalaccel &>/dev/null; then

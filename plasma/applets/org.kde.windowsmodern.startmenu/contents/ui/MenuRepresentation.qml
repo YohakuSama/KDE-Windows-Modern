@@ -438,6 +438,7 @@ Item {
                                                 Kirigami.Theme.textColor.b, 0.12)
                                         }
                                         component ModeItem: MenuItem {
+                                            id: modeItem
                                             required property int mode
                                             implicitHeight: 36
                                             leftPadding: 32
@@ -449,15 +450,15 @@ Item {
                                                 width: 13
                                                 height: 13
                                                 source: "emblem-ok-symbolic"
-                                                visible: Plasmoid.configuration.allAppsViewMode === mode
+                                                visible: Plasmoid.configuration.allAppsViewMode === modeItem.mode
                                             }
                                             contentItem: PlasmaComponents3.Label {
-                                                text: parent.text
+                                                text: modeItem.text
                                                 verticalAlignment: Text.AlignVCenter
                                             }
                                             background: Rectangle {
                                                 radius: 4
-                                                color: parent.highlighted
+                                                color: modeItem.highlighted
                                                     ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                                         Kirigami.Theme.textColor.b, 0.08) : "transparent"
                                             }
