@@ -32,7 +32,7 @@ from evdev import ecodes as e  # noqa: E402
 from PIL import Image  # noqa: E402
 
 from e2e import a11y  # noqa: E402
-from e2e.session import Checks, screenshot  # noqa: E402
+from e2e.session import Checks, screenshot, popup_bounds  # noqa: E402
 from e2e.taskbar import active_window, task_buttons  # noqa: E402
 from e2e.testwindow import TestWindow, place  # noqa: E402
 from e2e.vinput import VirtualInput  # noqa: E402
@@ -106,39 +106,29 @@ def shortcut(vi, out, c):
 
 CARD_MARGIN = 4     # frame margin and card padding, each 4 logical px
 CLOSE_SIZE = 32     # independent hit target; visible X is about 12px
-TOOLTIP_GAP = 12    # native popup margin
 
 
 
 def preview_popup(vi, button, out):
-    """Hover a task button until its preview popup shows; return the popup's (left, top, right, bottom).
+    """Measure the actual preview rectangle, at 100% on a single display.
 
-    The popup is found in a screenshot: its bottom margin, just above the
-    panel, is one flat colour; walk along it to the sides and up its edge.
+    Reuse the Start/Search screenshot-difference helper: a hardcoded
+    scanline above the panel is unreliable when the tooltip gap changes.
     """
+    closed = out / "preview-closed.png"
+    opened = out / "preview.png"
+    for shot in (closed, opened):
+        shot.unlink(missing_ok=True)
+    vi.move_to(960, 300)
+    time.sleep(0.8)
+    screenshot(closed)
     x, y = button.centre
     vi.move_to(x, y)
     vi.move_to(x + 2, y + 1, steps=3)
     time.sleep(1.6)
-    shot = out / "preview.png"
-    screenshot(shot)
-    im = Image.open(shot).convert("RGB")
-    shot.unlink()
-    row = button.rect[1] - TOOLTIP_GAP - 3 * CARD_MARGIN  # inside preview after its panel gap
-    bg = im.getpixel((x, row))
-    same = lambda p: all(abs(a - b) <= 3 for a, b in zip(p, bg))  # noqa: E731
-    left, right = x, x
-    while left > 0 and same(im.getpixel((left - 1, row))):
-        left -= 1
-    while right < im.width - 1 and same(im.getpixel((right + 1, row))):
-        right += 1
-    top = row
-    while top > 0 and same(im.getpixel((left + 4, top - 1))):
-        top -= 1
-    bottom = row
-    while bottom + 1 < im.height and same(im.getpixel((x, bottom + 1))):
-        bottom += 1
-    return left, top, right, bottom
+    screenshot(opened)
+    left, top, width, height = popup_bounds(closed, opened, minimum_fraction=0.06)
+    return left, top, left + width - 1, top + height - 1
 
 
 def preview(vi, out, c):
@@ -200,6 +190,17 @@ def preview(vi, out, c):
                 rh = max(y for x, y in red) - min(y for x, y in red) + 1
                 c.check(26 <= rw <= 34 and 26 <= rh <= 34,
                         f"red close target is approximately 32px ({rw}x{rh}, at 100% scale)")
+                # Count only bright pixels inside the red surface, not
+                # the title, and measure the painted X rather than its canvas.
+                x0, y0 = min(x for x, y in red), min(y for x, y in red)
+                ink = [(x, y) for y in range(y0 + 4, y0 + rh - 4)
+                       for x in range(x0 + 4, x0 + rw - 4)
+                       if min(patch.getpixel((x, y))) > 175]
+                if c.check(bool(ink), "close glyph remains visible on red"):
+                    iw = max(x for x, y in ink) - min(x for x, y in ink) + 1
+                    ih = max(y for x, y in ink) - min(y for x, y in ink) + 1
+                    c.check(9 <= iw <= 15 and 9 <= ih <= 15,
+                            f"painted close glyph is approximately 12px ({iw}x{ih})")
         vi.click()
         try:
             second.proc.wait(timeout=4)
