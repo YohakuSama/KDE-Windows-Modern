@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 import sys
 
 from PIL import Image
@@ -23,6 +24,55 @@ def png():
 
 
 class ShellAssetTests(unittest.TestCase):
+    def test_battery_font_exports_every_verified_state_as_svg(self):
+        class NameRecord:
+            nameID = 1
+            def toUnicode(self):
+                return "SysBatt Fluent Icons"
+
+        class Glyph:
+            def draw(self, pen):
+                pen.moveTo((0, 0))
+                pen.lineTo((1000, 0))
+                pen.lineTo((1000, 1500))
+                pen.closePath()
+
+        class FakeFont:
+            def __init__(self, codes):
+                self.codes = codes
+                self.name = SimpleNamespace(names=[NameRecord()])
+                self.head = SimpleNamespace(unitsPerEm=2048)
+                self.hhea = SimpleNamespace(ascent=1900)
+                self.hmtx = {f"glyph-{code:x}": (2560, 0) for code in codes}
+            def __enter__(self):
+                return self
+            def __exit__(self, *_args):
+                return False
+            def __getitem__(self, key):
+                return {"name": self.name, "head": self.head,
+                        "hhea": self.hhea, "hmtx": self.hmtx}[key]
+            def getBestCmap(self):
+                return {code: f"glyph-{code:x}" for code in self.codes}
+            def getGlyphSet(self):
+                return {f"glyph-{code:x}": Glyph() for code in self.codes}
+
+        with patch.object(assets, "TTFont", return_value=FakeFont(assets.BATTERY_CODES)):
+            exported = list(assets.battery_artwork(b"font-bytes"))
+        self.assertEqual(len(exported), len(assets.BATTERY_CODES))
+        by_path = {name: (svg, code) for name, svg, code in exported}
+        for code in assets.BATTERY_CODES:
+            name = f"battery/{code:04x}.svg"
+            self.assertIn(name, by_path)
+            svg, label = by_path[name]
+            self.assertIn(b'viewBox="0 0 2560 2048"', svg)
+            self.assertIn(b'<path fill="#ffffff"', svg)
+            self.assertEqual(label, f"U+{code:04X}")
+
+        missing = set(assets.BATTERY_CODES) - {0xf8d0}
+        with patch.object(assets, "TTFont", return_value=FakeFont(missing)):
+            with self.assertRaisesRegex(ValueError, "Missing SysBatt glyphs"):
+                list(assets.battery_artwork(b"font-bytes"))
+
     def test_search_selects_highest_scale_and_preserves_original(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
