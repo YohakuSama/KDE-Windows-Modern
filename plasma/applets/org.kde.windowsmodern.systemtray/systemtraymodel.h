@@ -25,7 +25,7 @@ public:
     explicit BaseModel(QPointer<SystemTraySettings> settings, QObject *parent = nullptr);
     QHash<int, QByteArray> roleNames() const override;
 private Q_SLOTS: void onConfigurationChanged();
-protected: Plasma::Types::ItemStatus calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId) const;
+protected: Plasma::Types::ItemStatus calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId, bool activeJobs = false, bool recording = false) const;
 private: QPointer<SystemTraySettings> m_settings; bool m_showAllItems; QStringList m_shownItems; QStringList m_hiddenItems;
 };
 
@@ -37,12 +37,14 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QHash<int, QByteArray> roleNames() const override;
+    void setActiveJobs(bool active);
 public Q_SLOTS: void addApplet(Plasma::Applet *applet); void removeApplet(Plasma::Applet *applet);
 private Q_SLOTS: void appendRow(const KPluginMetaData &pluginMetaData); void removeRow(const QString &pluginId);
 private: struct Item { KPluginMetaData pluginMetaData; Plasma::Applet *applet = nullptr; };
     int indexOfPluginId(const QString &pluginId) const;
     QPointer<PlasmoidRegistry> m_plasmoidRegistry;
     QList<Item> m_items;
+    bool m_activeJobs = false;
 };
 
 class StatusNotifierModel : public BaseModel {

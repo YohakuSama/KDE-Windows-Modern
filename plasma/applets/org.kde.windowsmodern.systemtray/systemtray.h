@@ -43,6 +43,7 @@ public:
     bool accessibilityAvailable() const;
     bool castAvailable() const;
     Q_INVOKABLE void openCast();
+    Q_INVOKABLE void setActiveNotificationJobs(bool active);
 
     void restoreContents(KConfigGroup &group) override;
 

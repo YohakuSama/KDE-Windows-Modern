@@ -55,10 +55,10 @@ void BaseModel::onConfigurationChanged() {
     Q_EMIT dataChanged(index(0, 0), index(rowCount() - 1, 0), {static_cast<int>(BaseModel::BaseRole::EffectiveStatus)});
 }
 
-Plasma::Types::ItemStatus BaseModel::calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId) const {
+Plasma::Types::ItemStatus BaseModel::calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId, bool activeJobs, bool recording) const {
     const bool pinned = m_showAllItems || m_shownItems.contains(itemId);
     const bool disabled = m_settings && m_settings->isDisabledStatusNotifier(itemId);
-    return WindowsTray::effectiveStatus(itemId, status, canRender && !disabled, pinned, m_hiddenItems.contains(itemId));
+    return WindowsTray::effectiveStatus(itemId, status, canRender && !disabled, pinned, m_hiddenItems.contains(itemId), activeJobs, recording);
 }
 
 static QString plasmoidCategoryForMetadata(const KPluginMetaData &metadata) {
@@ -74,6 +74,16 @@ PlasmoidModel::PlasmoidModel(const QPointer<SystemTraySettings> &settings, const
     for (const auto &info : appletMetaDataList) {
         if (!info.isValid() || info.value(u"X-Plasma-NotificationAreaCategory").isEmpty()) continue;
         appendRow(info);
+    }
+}
+
+void PlasmoidModel::setActiveJobs(bool active)
+{
+    if (m_activeJobs == active) return;
+    m_activeJobs = active;
+    const int row = indexOfPluginId(QStringLiteral("org.kde.plasma.notifications"));
+    if (row >= 0) {
+        Q_EMIT dataChanged(index(row, 0), index(row, 0), {static_cast<int>(BaseRole::EffectiveStatus)});
     }
 }
 
@@ -97,7 +107,7 @@ QVariant PlasmoidModel::data(const QModelIndex &index, int role) const {
         case BaseRole::CanRender: return applet != nullptr;
         case BaseRole::Category: return plasmoidCategoryForMetadata(meta);
         case BaseRole::Status: return status;
-        case BaseRole::EffectiveStatus: return calculateEffectiveStatus(applet != nullptr, status, meta.pluginId());
+        case BaseRole::EffectiveStatus: return calculateEffectiveStatus(applet != nullptr, status, meta.pluginId(), m_activeJobs);
         default: return {};
         }
     }
@@ -206,7 +216,12 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const {
         case BaseRole::CanRender: return true;
         case BaseRole::Category: { QVariant cat = sniData->category(); return cat.isNull() ? QStringLiteral("UnknownCategory") : cat; }
         case BaseRole::Status: return extractStatus(sniData);
-        case BaseRole::EffectiveStatus: return calculateEffectiveStatus(true, extractStatus(sniData), itemId);
+        case BaseRole::EffectiveStatus: {
+            // plasma-pa creates this Hardware SNI only during microphone capture.
+            const bool recording = itemId.endsWith(u"_microphone") && sniData->category() == u"Hardware"
+                && sniData->processName() == u"plasmashell";
+            return calculateEffectiveStatus(true, extractStatus(sniData), itemId, false, recording);
+        }
         default: return {};
         }
     }

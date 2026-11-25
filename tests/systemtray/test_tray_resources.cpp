@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Unlike source-based QML tests, inspect the real compiled applet's QRC.
-#include <QCoreApplication>
+#include <QGuiApplication>
+#include <QQmlComponent>
+#include <QQmlEngine>
 #include <QDebug>
 #include <QDir>
 #include <QDirIterator>
@@ -10,7 +12,7 @@
 
 int main(int argc, char **argv)
 {
-    QCoreApplication app(argc, argv);
+    QGuiApplication app(argc, argv);
     if (argc != 3) {
         qCritical() << "Usage: test_tray_resources PLUGIN SOURCE_UI_DIR";
         return 2;
@@ -48,6 +50,15 @@ int main(int argc, char **argv)
                                  QStringLiteral("icons/battery-saver-symbolic.svg")}) {
         if (!QFile::exists(prefix + required)) {
             qCritical().noquote() << "Required tray resource missing:" << prefix + required;
+            failed = true;
+        }
+    }
+    QQmlEngine engine;
+    for (const QString &entry : {QStringLiteral("ExpandedRepresentation.qml"), QStringLiteral("main.qml")}) {
+        const QUrl url(QStringLiteral("qrc") + prefix + entry);
+        QQmlComponent component(&engine, url, QQmlComponent::PreferSynchronous);
+        if (!component.isReady()) {
+            qCritical().noquote() << url << component.errorString();
             failed = true;
         }
     }

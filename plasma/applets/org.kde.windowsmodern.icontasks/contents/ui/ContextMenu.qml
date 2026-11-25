@@ -109,14 +109,15 @@ PlasmaExtras.Menu {
             });
         }
 
-        // We always have actions category.
-        sections = sections.filter(section => section.actions.length > 0);
+
 
         sections.push({
             title: i18nc("@title:group for section of menu items", "Actions"),
             group: "actions",
             actions: backend.jumpListActions(launcherUrl, menu)
         });
+
+        sections = sections.filter(section => section.actions.length > 0);
 
         // C++ can override section heading by returning a QString as first action
         sections.forEach((section) => {
@@ -274,7 +275,7 @@ PlasmaExtras.Menu {
     PlasmaExtras.MenuItem {
         id: startNewInstanceItem
         visible: menu.get(TaskManager.AbstractTasksModel.CanLaunchNewInstance)
-        text: i18nc("action:inmenu", "Open New Window")
+        text: (menu.visualParent as Task)?.appName || i18n("Open new window")
         icon: "window-new"
 
         onClicked: tasksModel.requestNewInstance(menu.modelIndex)
@@ -506,7 +507,7 @@ PlasmaExtras.Menu {
 
         enabled: menu.visualParent && menu.get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon).toString() !== ""
 
-        text: i18nc("action:inmenu", "&Pin to Task Manager")
+        text: i18n("Pin to taskbar")
         icon: "window-pin"
 
         function doesBelongToCurrentActivity(): bool {
@@ -522,7 +523,7 @@ PlasmaExtras.Menu {
     PlasmaExtras.MenuItem {
         id: showLauncherInActivitiesItem
 
-        text: i18nc("action:inmenu", "&Pin to Task Manager")
+        text: i18n("Pin to taskbar")
         icon: "window-pin"
 
         visible: menu.visualParent
@@ -604,7 +605,7 @@ PlasmaExtras.Menu {
                 && !launcherToggleAction.visible
                 && activityInfo.numberOfRunningActivities < 2)
 
-        text: i18nc("action:inmenu", "Unpin from Task Manager")
+        text: i18n("Unpin from taskbar")
         icon: "window-unpin"
 
         onClicked: {
@@ -784,7 +785,7 @@ PlasmaExtras.Menu {
 
         enabled: menu.visualParent && menu.get(TaskManager.AbstractTasksModel.IsClosable)
 
-        text: menu.get(TaskManager.AbstractTasksModel.IsGroupParent) ? i18nc("@action:inmenu", "&Close All") : i18nc("@action:inmenu", "&Close")
+        text: menu.get(TaskManager.AbstractTasksModel.IsGroupParent) ? i18n("Close all windows") : i18n("Close window")
         icon: "window-close"
 
         onClicked: {

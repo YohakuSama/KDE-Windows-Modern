@@ -204,7 +204,8 @@ AbstractItem {
         Kirigami.Icon {
             roundToIconSize: false
             isMask: true
-            source: plasmoidContainer.panelGlyph("network-bluetooth-symbolic")
+            source: plasmoidContainer.panelGlyph(BluezQt.Manager.connectedDevices.length > 0
+                ? "network-bluetooth-activated-symbolic" : "network-bluetooth-symbolic")
             color: Kirigami.Theme.textColor
         }
     }

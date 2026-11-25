@@ -8,6 +8,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import org.kde.notificationmanager as NotificationManager
 import QtQuick.Layouts
 
 import org.kde.draganddrop as DnD
@@ -66,8 +67,8 @@ ContainmentItem {
         // Instantiators create the plasmoiditems: ensure this is done after
         // this containmentitem actually  exists so they can be immediately parented properly
         // set active and not the model, as this will cause an assert deep in Qt
-        activeInstantiator.active = true;
-        hiddenInstantiator.active = true;
+        appletConnections.active = true;
+        Plasmoid.setActiveNotificationJobs(jobHistory.activeJobsCount > 0);
     }
 
     Connections {
@@ -97,28 +98,19 @@ ContainmentItem {
         Component.onCompleted: sourceModel = Plasmoid.systemTrayModel // avoid unnecessary binding, it causes loops
     }
 
-    Instantiator {
-        id: hiddenInstantiator
-        // It's important that those are inactive at creation time
-        // to not create plasmoiditems too soon
-        active: false
-        model: hiddenModel
-        delegate: Connections {
-            required property QtObject applet
-            required property int row
-            target: applet
-            function onExpandedChanged(expanded: bool) {
-                if (expanded) {
-                    systemTrayState.setActiveApplet(applet, row)
-                }
-            }
-        }
+    NotificationManager.Settings { id: notificationSettings }
+    NotificationManager.Notifications {
+        id: jobHistory
+        showNotifications: false
+        showJobs: notificationSettings.jobsInNotifications
+        onActiveJobsCountChanged: Plasmoid.setActiveNotificationJobs(activeJobsCount > 0)
     }
 
+    // Keep global-shortcut listeners alive even when a routed applet has no icon.
     Instantiator {
-        id: activeInstantiator
+        id: appletConnections
         active: false
-        model:activeModel
+        model: Plasmoid.systemTrayModel
         delegate: Connections {
             required property QtObject applet
             required property int row

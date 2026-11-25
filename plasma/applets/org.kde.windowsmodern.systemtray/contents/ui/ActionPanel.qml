@@ -9,6 +9,7 @@ import QtQuick.Layouts
 
 import org.kde.plasma.plasmoid
 import org.kde.kcmutils as KCMUtils
+import org.kde.plasma.private.mpris as Mpris
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 
@@ -20,6 +21,8 @@ ColumnLayout {
     id: actionPanel
 
     signal requestPage(string name)
+
+    Mpris.Mpris2Model { id: players }
 
     readonly property real scale: Plasmoid.configuration.scale / 100
 
@@ -35,7 +38,7 @@ ColumnLayout {
     readonly property int homeHeight: Math.ceil(Math.max(220 * scale,
         12 * scale + Math.max(64 * scale, toggleViewport.viewportHeight)
         + (sliderRows > 0 ? (sliderRows * 36 + (sliderRows - 1) * 12 + 14 + 32) * scale : 16 * scale)
-        + 48 * scale))
+        + (mediaRow.visible ? mediaRow.implicitHeight : 0) + 48 * scale))
 
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
@@ -473,6 +476,40 @@ ColumnLayout {
             Layout.preferredHeight: Math.round(36 * actionPanel.scale)
             visible: Plasmoid.configuration.showVolume && sinkAvailable
             onArrowClicked: actionPanel.requestPage("volume")
+        }
+    }
+
+    RowLayout {
+        id: mediaRow
+        readonly property var player: players.currentPlayer
+        readonly property bool playing: player?.playbackStatus === Mpris.PlaybackStatus.Playing
+        visible: player !== null && !!player?.identity
+        Layout.fillWidth: true
+        Layout.leftMargin: toggleRow.Layout.leftMargin
+        Layout.rightMargin: toggleRow.Layout.rightMargin
+        PlasmaComponents3.Label {
+            Layout.fillWidth: true
+            text: mediaRow.player?.track || mediaRow.player?.identity || ""
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
+        }
+        Lib.FluentIconButton {
+            text: i18n("Previous track")
+            icon.name: "media-skip-backward"
+            enabled: !!mediaRow.player?.canGoPrevious
+            onClicked: mediaRow.player.Previous()
+        }
+        Lib.FluentIconButton {
+            text: mediaRow.playing ? i18n("Pause") : i18n("Play")
+            icon.name: mediaRow.playing ? "media-playback-pause" : "media-playback-start"
+            enabled: mediaRow.playing ? !!mediaRow.player?.canPause : !!mediaRow.player?.canPlay
+            onClicked: mediaRow.playing ? mediaRow.player.Pause() : mediaRow.player.Play()
+        }
+        Lib.FluentIconButton {
+            text: i18n("Next track")
+            icon.name: "media-skip-forward"
+            enabled: !!mediaRow.player?.canGoNext
+            onClicked: mediaRow.player.Next()
         }
     }
 

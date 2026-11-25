@@ -9,7 +9,6 @@ import QtQuick.Layouts
 import org.kde.plasma.private.mpris as Mpris
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
-import org.kde.kcmutils
 import "../lib" as Lib
 
 Lib.Page {
@@ -18,24 +17,8 @@ Lib.Page {
     title: i18n("Media")
     contentFillsHeight: false
 
-    footer: Lib.MoreSettingsLink {
-        text: i18n("More media settings")
-        onClicked: KCMLauncher.openSystemSettings("kcm_keys")
-    }
-
-    Mpris.Mpris2Model {
-        id: mprisModel
-    }
-
-    // The active player (first one that's playing, or first available)
-    readonly property var activePlayer: {
-        for (var i = 0; i < mprisModel.count; i++) {
-            var p = mprisModel.get(i)
-            if (p && p.playbackStatus === Mpris.PlaybackStatus.Playing)
-                return p
-        }
-        return mprisModel.count > 0 ? mprisModel.get(0) : null
-    }
+    Mpris.Mpris2Model { id: mprisModel }
+    readonly property var activePlayer: mprisModel.currentPlayer
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -90,7 +73,7 @@ Lib.Page {
                                 id: artImg
                                 anchors.fill: parent
                                 visible: page.activePlayer && page.activePlayer.artUrl
-                                       && page.activePlayer.artUrl.length > 0
+                                       && page.activePlayer.artUrl.toString().length > 0
                                 source: page.activePlayer ? page.activePlayer.artUrl : ""
                                 fillMode: Image.PreserveAspectCrop
                                 layer.enabled: true
@@ -104,7 +87,7 @@ Lib.Page {
 
                             PlasmaComponents3.Label {
                                 Layout.fillWidth: true
-                                text: page.activePlayer ? (page.activePlayer.title || i18n("Unknown track")) : ""
+                                text: page.activePlayer ? (page.activePlayer.track || i18n("Unknown track")) : ""
                                 color: Kirigami.Theme.textColor
                                 font.pixelSize: 12
                                 font.bold: true
@@ -122,7 +105,7 @@ Lib.Page {
 
                             PlasmaComponents3.Label {
                                 Layout.fillWidth: true
-                                text: page.activePlayer ? page.activePlayer.instanceName : ""
+                                text: page.activePlayer ? page.activePlayer.identity : ""
                                 color: Kirigami.Theme.textColor
                                 opacity: 0.3
                                 font.pixelSize: 9
@@ -157,7 +140,7 @@ Lib.Page {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 enabled: page.activePlayer && page.activePlayer.canGoPrevious
-                                onClicked: page.activePlayer.GoPrevious()
+                                onClicked: page.activePlayer.Previous()
                             }
                         }
 
@@ -217,7 +200,7 @@ Lib.Page {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 enabled: page.activePlayer && page.activePlayer.canGoNext
-                                onClicked: page.activePlayer.GoNext()
+                                onClicked: page.activePlayer.Next()
                             }
                         }
 

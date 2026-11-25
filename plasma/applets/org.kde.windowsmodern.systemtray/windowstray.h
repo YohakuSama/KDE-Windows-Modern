@@ -31,20 +31,17 @@ inline const QList<QString> &tail()
 // headset's, whose scope is "Device").
 inline bool hasSystemBattery()
 {
-    static const bool found = [] {
-        const QDir supplies(QStringLiteral("/sys/class/power_supply"));
-        for (const QString &name : supplies.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-            QFile type(supplies.filePath(name + QStringLiteral("/type")));
-            QFile scope(supplies.filePath(name + QStringLiteral("/scope")));
-            const bool isBattery = type.open(QIODevice::ReadOnly) && type.readAll().trimmed() == "Battery";
-            const bool isPeripheral = scope.open(QIODevice::ReadOnly) && scope.readAll().trimmed() == "Device";
-            if (isBattery && !isPeripheral) {
-                return true;
-            }
+    const QDir supplies(QStringLiteral("/sys/class/power_supply"));
+    for (const QString &name : supplies.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        QFile type(supplies.filePath(name + QStringLiteral("/type")));
+        QFile scope(supplies.filePath(name + QStringLiteral("/scope")));
+        const bool isBattery = type.open(QIODevice::ReadOnly) && type.readAll().trimmed() == "Battery";
+        const bool isPeripheral = scope.open(QIODevice::ReadOnly) && scope.readAll().trimmed() == "Device";
+        if (isBattery && !isPeripheral) {
+            return true;
         }
-        return false;
-    }();
-    return found;
+    }
+    return false;
 }
 
 // Always in the tray on Windows while they exist, even when Plasma marks
@@ -59,18 +56,10 @@ inline bool alwaysShown(const QString &itemId)
         || itemId == QLatin1String("org.kde.plasma.volume");
 }
 
-// Icons that appear in the tray without being pinned. As on Windows 11,
-// other icons (apps, clipboard, brightness...) wait behind
-// the chevron until it needs attention or the user pins it ("Always shown").
-inline bool shownByDefault(const QString &itemId)
-{
-    // The clock owns the visible notification bell. Keep the native
-    // notification applet enabled in overflow for transfer jobs and settings.
-    return tail().contains(itemId)
-        || itemId == QLatin1String("org.kde.plasma.cameraindicator"); // privacy: camera in use
-}
+// Pinning is independent of the default home of each shell function.
 inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::Types::ItemStatus status,
-                                                bool eligible, bool pinned, bool hiddenByUser)
+                                                bool eligible, bool pinned, bool hiddenByUser,
+                                                bool activeJobs = false, bool recording = false)
 {
     using Status = Plasma::Types::ItemStatus;
     if (!eligible || (!pinned && status == Status::HiddenStatus)) {
@@ -79,17 +68,26 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     if (pinned) {
         return Status::ActiveStatus;
     }
-    if (hiddenByUser || itemId == QLatin1String("org.kde.plasma.notifications")) {
+    if (hiddenByUser) {
         return Status::PassiveStatus;
     }
-    const bool dynamicDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
-        || itemId == QLatin1String("org.kde.plasma.devicenotifier");
+    if (itemId == QLatin1String("org.kde.plasma.notifications")) {
+        // Win+N owns history. Native transfer controls only need a row during a job.
+        return activeJobs ? Status::PassiveStatus : Status::HiddenStatus;
+    }
+    if (itemId == QLatin1String("org.kde.plasma.clipboard")
+        || itemId == QLatin1String("org.kde.plasma.brightness")
+        || itemId == QLatin1String("org.kde.plasma.mediacontroller")) {
+        return Status::HiddenStatus;
+    }
+    const bool dynamicDevice = recording || itemId == QLatin1String("org.kde.plasma.cameraindicator")
+        || itemId == QLatin1String("org.kde.plasma.bluetooth") || itemId == QLatin1String("org.kde.plasma.devicenotifier");
     const bool needsAttention = status == Status::NeedsAttentionStatus || status == Status::RequiresAttentionStatus
         || status == Status::AcceptingInputStatus;
-    const bool activeDefault = (status == Status::ActiveStatus || status == Status::UnknownStatus) && shownByDefault(itemId);
+    const bool activeDefault = (status == Status::ActiveStatus || status == Status::UnknownStatus) && tail().contains(itemId);
     if (needsAttention || activeDefault || (dynamicDevice && status == Status::ActiveStatus) || alwaysShown(itemId)) {
         return Status::ActiveStatus;
     }
-    return Status::PassiveStatus;
+    return dynamicDevice ? Status::HiddenStatus : Status::PassiveStatus;
 }
 }

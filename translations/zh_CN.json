@@ -1,4 +1,11 @@
 {
+  "Open new window": "打开新窗口",
+  "Close all windows": "关闭所有窗口",
+  "Close window": "关闭窗口",
+  "Previous track": "上一首",
+  "Next track": "下一首",
+  "Pause": "暂停",
+  "Play": "播放",
   "Safely remove hardware": "安全删除硬件",
   "No removable devices attached": "未连接可移动设备",
   "Device is busy. Do not unplug.": "设备正在使用，请勿拔出。",

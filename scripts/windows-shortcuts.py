@@ -51,6 +51,8 @@ CHANGES = [
     ("shortcuts", "org.kde.spectacle.desktop", "RecordRegion", "", "", ("remove", ["Meta+R"])),
     ("shortcuts", "kwin", "Windows Modern: Maximize or Snap Up", "", "", ("set", ["Meta+Up"])),
     ("shortcuts", "kwin", "Windows Modern: Restore, Minimize or Snap Down", "", "", ("set", ["Meta+Down"])),
+    ("shortcuts", "org.gnome.NetworkDisplays.desktop", "_launch", "Network Displays", "Cast",
+     ("add", ["Meta+K"])),
     ("shortcuts", "kwin", "Overview", "", "", ("add", ["Meta+Tab"])),
     ("shortcuts", "kwin", "MinimizeAll", "", "", ("set", ["Meta+M"])),
     ("shortcuts", "kwin", "minimizeAllOthers", "", "", ("set", ["Meta+Home"])),
@@ -134,6 +136,8 @@ def apply(group, dry_run):
     changes = [c for c in CHANGES if c[0] == group]
     failed = 0
     for _, comp, action, fcomp, faction, change in changes:
+        if comp == "org.gnome.NetworkDisplays.desktop" and Gio.DesktopAppInfo.new(comp) is None:
+            continue
         aid = action_id(comp, action, fcomp, faction)
         if fcomp and not dry_run:
             ga.register(aid)  # a launcher entry for an app or our .desktop

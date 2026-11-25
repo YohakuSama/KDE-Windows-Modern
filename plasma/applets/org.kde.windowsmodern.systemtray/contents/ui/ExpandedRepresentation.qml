@@ -142,7 +142,6 @@ Item {
 
             PlasmaComponents.Label {
                 Layout.fillWidth: true
-                font: Kirigami.Theme.defaultFont
                 font.weight: Font.DemiBold
                 color: fluent.text
                 text: systemTrayState.activeApplet ? systemTrayState.activeApplet.plasmoid.title : i18n("Status and Notifications")

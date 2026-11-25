@@ -56,6 +56,12 @@ bool SystemTray::accessibilityAvailable() const
     return KPluginMetaData::findPluginById(u"plasma/kcms/systemsettings"_s, u"kcm_access"_s).isValid();
 }
 
+void SystemTray::setActiveNotificationJobs(bool active)
+{
+    systemTrayModel();
+    m_plasmoidModel->setActiveJobs(active);
+}
+
 bool SystemTray::castAvailable() const
 {
     return bool(KService::serviceByDesktopName(u"org.gnome.NetworkDisplays"_s));
