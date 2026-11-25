@@ -29,9 +29,11 @@ MouseArea {
     readonly property bool darkTheme: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.textColor)
                                       === Kirigami.ColorUtils.Light
     readonly property real thickness: height
-    readonly property int boxHeight: Math.max(0, Math.min(Math.floor(thickness),
-        Math.max(16, Math.round(thickness * 32 / 48))))
-    readonly property int boxWidth: Math.round(boxHeight * (styleMode === 1 ? 112 : 220) / 32)
+    // Reference at 150%: about 370 x 54 physical px, or 248 x 36 logical px.
+    // Plasma gives an inset cell, not the entire panel thickness.
+    readonly property int boxHeight: Math.max(0, Math.min(Math.floor(thickness), 36,
+        Math.max(16, Math.round(thickness * 36 / 42))))
+    readonly property int boxWidth: Math.round(boxHeight * (styleMode === 1 ? 112 : 248) / 36)
     readonly property int sideMargin: Math.max(0, Math.round((thickness - boxHeight) / 4))
     readonly property int preferredWidth: boxWidth + 2 * sideMargin
 
@@ -59,12 +61,12 @@ MouseArea {
     Rectangle {
         id: pill
         objectName: "wmSearchPill"
-        readonly property color restFill: box.darkTheme ? (box.styleMode === 1 ? "#292929" : "#202020") : "#F3F3F3"
-        readonly property color hoverFill: box.darkTheme ? "#3B3B3B" : "#E5E5E5"
-        readonly property color pressedFill: box.darkTheme ? "#303030" : "#E0E0E0"
-        readonly property color selectedFill: box.styleMode === 1 ? "#0078D4" : restFill
-        readonly property int inset: Math.round(height * 12 / 32)
-        readonly property int iconGap: Math.round(height / 4)
+        readonly property color restFill: box.darkTheme ? (box.styleMode === 1 ? "#292929" : "#3D3D3D") : "#F3F3F3"
+        readonly property color hoverFill: box.darkTheme ? "#494949" : "#E5E5E5"
+        readonly property color pressedFill: box.darkTheme ? "#353535" : "#E0E0E0"
+        readonly property color selectedFill: box.styleMode === 1 ? "#0078D4" : hoverFill
+        readonly property int inset: Math.round(height * 14 / 36)
+        readonly property int iconGap: Math.round(height * 9 / 36)
         readonly property bool mirrored: box.LayoutMirroring.enabled
         readonly property bool showPlaceholder: width >= 2 * inset + magnifier.width + iconGap + 12
             && placeholderLabel.implicitHeight <= height
@@ -79,7 +81,7 @@ MouseArea {
         color: box.selected ? selectedFill : (box.showPressed ? pressedFill : (box.showHovered ? hoverFill : restFill))
         border.width: 1
         border.color: box.selected && box.styleMode === 1 ? selectedFill
-            : box.darkTheme ? "#454545" : "#D5D5D5"
+            : box.darkTheme ? (box.showHovered ? "#555555" : "#4B4B4B") : "#D5D5D5"
         Behavior on color {
             ColorAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
         }
@@ -93,11 +95,11 @@ MouseArea {
             anchors.verticalCenter: parent.verticalCenter
             x: pill.showPlaceholder ? (pill.mirrored ? pill.width - pill.groupLeft - width : pill.groupLeft)
                                     : Math.round((pill.width - width) / 2)
-            width: Math.round(pill.height / 2)
+            width: Math.round(pill.height * 20 / 36)
             height: width
             iconName: box.iconName
             accented: box.styleMode === 1 || !box.selected
-            foreground: box.selected && box.styleMode === 1 ? "#FFFFFF" : Kirigami.Theme.textColor
+            foreground: box.selected && box.styleMode === 1 ? "#FFFFFF" : box.darkTheme ? "#D0D0D0" : "#5D5D5D"
         }
 
         Text {
@@ -111,9 +113,11 @@ MouseArea {
             text: box.styleMode === 1 ? box.text : box.placeholder
             textFormat: Text.PlainText
             elide: Text.ElideRight
-            font: Kirigami.Theme.defaultFont
+            font.family: Kirigami.Theme.defaultFont.family
+            font.pixelSize: Math.max(1, Math.round(pill.height * 16 / 36))
+            font.weight: Font.Medium
             color: box.selected && box.styleMode === 1 ? "#FFFFFF"
-                : box.darkTheme ? "#C5FFFFFF" : "#9E000000"
+                : box.darkTheme ? "#D0D0D0" : "#5D5D5D"
             Accessible.ignored: true
         }
     }
