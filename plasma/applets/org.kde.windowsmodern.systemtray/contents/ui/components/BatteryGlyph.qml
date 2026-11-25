@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Prefer the original Windows 11 26H2 SysBatt Fluent font when it has been
-// imported locally. Keep the verified Windows Segoe glyphs as a fallback.
+// Original Windows shell outline and fill artwork share the same canvas.
 import QtQuick
 import QtCore
 import org.kde.kirigami as Kirigami
@@ -11,75 +10,38 @@ Item {
     property real glyphSize: 18
     property real percent: -1
     property bool charging: false
-    property bool pluggedIn: false
+    property bool pluggedIn: charging
     property bool saver: false
     property color foreground: Kirigami.Theme.textColor
-
-    readonly property string sysBattFontPath: String(StandardPaths.locate(
-        StandardPaths.GenericDataLocation,
-        "windows-modern/native-assets/shell/fonts/Sysbatt.ttf",
-        StandardPaths.LocateFile))
-    readonly property bool hasSysBattFont: sysBattFont.status === FontLoader.Ready
+    readonly property bool known: Number.isFinite(percent) && percent >= 0
     readonly property string visualState: Funcs.batteryVisualState(percent, charging, saver)
     readonly property string iconName: visualState === "unknown" ? "battery-unknown-symbolic"
         : Funcs.batteryIconName(percent, charging, saver)
-    readonly property int level: percent < 0 ? 0 : Math.max(0, Math.min(10, Math.round(percent / 10)))
-    readonly property int outlineCode: saver ? 0xF849
-        : pluggedIn && !charging ? 0xF8E4
-        : charging ? 0xF8DB : 0xF8D0
-    readonly property int fillCode: {
-        if (level <= 0) return 0;
-        if (saver && level >= 3) return 0xF84A + level - 3;
-        if (charging && level >= 3) return 0xF8DC + level - 3;
-        if (pluggedIn && level >= 3) return 0xF8E5 + level - 3;
-        return 0xF8D0 + level;
+    readonly property int level: known ? (percent <= 5 ? 0 : Math.min(10, Math.round(percent / 10))) : 0
+    readonly property string shellState: charging ? "charging" : pluggedIn ? "plugged" : saver ? "saver" : "normal"
+    readonly property int outlineCode: shellState === "charging" ? 0xf8db
+        : shellState === "plugged" ? 0xf8e4 : shellState === "saver" ? 0xf849 : 0xf8d0
+    readonly property int fillCode: level === 0 ? 0
+        : level < 3 || shellState === "normal" ? 0xf8d0 + level
+        : shellState === "charging" ? 0xf8dc + level - 3
+        : shellState === "plugged" ? 0xf8e5 + level - 3 : 0xf84a + level - 3
+    readonly property string outlineSource: shellSource(outlineCode)
+    readonly property string fillSource: fillCode ? shellSource(fillCode) : ""
+    readonly property bool modernAvailable: known && outlineSource.length > 0 && (!fillCode || fillSource.length > 0)
+    readonly property bool darkSurface: Kirigami.ColorUtils.brightnessForColor(foreground) === Kirigami.ColorUtils.Light
+    readonly property color fillColor: charging || pluggedIn ? (darkSurface ? "#9fd89f" : "#107c10")
+        : percent <= 10 ? (darkSurface ? "#d92c2c" : "#c50f1f")
+        : saver ? "#eaa300" : foreground
+
+    function shellSource(code) {
+        return String(StandardPaths.locate(StandardPaths.GenericDataLocation,
+            "windows-modern/shell-assets/battery/" + code.toString(16) + ".svg", StandardPaths.LocateFile));
     }
-    readonly property color fillColor: charging || pluggedIn ? "#4CD964"
-        : percent >= 0 && percent <= 5 ? "#FF4545"
-        : percent >= 0 && percent <= 20 ? "#FF9F1A"
-        : saver ? "#FFD60A" : foreground
 
     implicitWidth: Math.ceil(glyphSize * 1.25)
     implicitHeight: glyphSize
-
-    FontLoader {
-        id: sysBattFont
-        source: root.sysBattFontPath
-    }
-
-    Item {
-        id: sysBattArtwork
-        objectName: "wmBatterySysBattArtwork"
-        anchors.fill: parent
-        visible: root.hasSysBattFont
-
-        Text {
-            objectName: "wmBatterySysBattOutline"
-            anchors.fill: parent
-            text: String.fromCharCode(root.outlineCode)
-            font.family: sysBattFont.name
-            font.pixelSize: root.glyphSize
-            font.weight: Font.Normal
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            color: root.foreground
-            renderType: Text.QtRendering
-        }
-
-        Text {
-            objectName: "wmBatterySysBattFill"
-            anchors.fill: parent
-            text: root.fillCode > 0 ? String.fromCharCode(root.fillCode) : ""
-            font.family: sysBattFont.name
-            font.pixelSize: root.glyphSize
-            font.weight: Font.Normal
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            color: root.fillColor
-            renderType: Text.QtRendering
-        }
-    }
-
+    // Previous genuine Windows 11 import is used only when the new
+    // shell artwork is unavailable. Never resolve an arbitrary theme icon.
     NativeGlyph {
         objectName: "wmBatteryNativeGlyph"
         anchors.centerIn: parent
@@ -87,6 +49,32 @@ Item {
         height: Math.min(root.height, root.glyphSize)
         roleName: root.iconName
         foreground: root.foreground
-        visible: !root.hasSysBattFont
+        opacity: root.modernAvailable ? 0 : 1
+    }
+    Kirigami.Icon {
+        objectName: "wmBatteryShellOutline"
+        anchors.centerIn: parent
+        width: Math.min(root.width, root.height * 1.25)
+        height: Math.min(root.height, root.glyphSize)
+        source: root.outlineSource
+        fallback: ""
+        visible: root.modernAvailable
+        isMask: true
+        color: root.foreground
+        roundToIconSize: false
+        animated: false
+    }
+    Kirigami.Icon {
+        objectName: "wmBatteryShellFill"
+        anchors.centerIn: parent
+        width: Math.min(root.width, root.height * 1.25)
+        height: Math.min(root.height, root.glyphSize)
+        source: root.fillSource
+        fallback: ""
+        visible: root.modernAvailable && root.fillCode !== 0
+        isMask: true
+        color: root.fillColor
+        roundToIconSize: false
+        animated: false
     }
 }
