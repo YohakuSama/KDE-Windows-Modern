@@ -486,8 +486,13 @@ ContainmentItem {
             visualParent: trayPopupAnchor
             location: Plasmoid.location
             floating: PopupGeometry.popupGap()
-            hideOnWindowDeactivate: !Plasmoid.configuration.pin
+            // The native tray coordinates focus with Start/Search and clock.
+            hideOnWindowDeactivate: false
+            property bool wmKeepOnDeactivate: Plasmoid.configuration.pin
             visible: false
+            function closeCoordinatedPopup() {
+                systemTrayState.expanded = false;
+            }
 
             // Dialog owns screen placement and frame margins. Explicit
             // content sizes are supplied by the representation itself.
@@ -502,6 +507,7 @@ ContainmentItem {
                     }
                     trayPopupAnchor.sync();
                     expandedSync.stop();
+                    Plasmoid.prepareShellPopup("tray", dialog);
                     visible = true;
                     geometryProbe.attempts = 0;
                     geometryProbe.restart();
@@ -535,7 +541,9 @@ ContainmentItem {
                 height: implicitHeight
 
                 Keys.onEscapePressed: event => {
-                    systemTrayState.expanded = false
+                    systemTrayState.expanded = false;
+                    Plasmoid.restoreShellPopupFocus();
+                    event.accepted = true;
                 }
 
                 // Being there forces the items to fully load, and they will be reparented in the stack one by one, this item is *never* visible
