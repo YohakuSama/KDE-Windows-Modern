@@ -20,7 +20,8 @@ def make_pri(resource_name, payload):
 
     mapping = bytearray(60)
     struct.pack_into("<H", mapping, 4, 0)
-    struct.pack_into("<HHHHII", mapping, 10, 1, 1, 1, 0, 1, 1)
+    struct.pack_into("<HHH", mapping, 10, 1, 1, 1)
+    struct.pack_into("<II", mapping, 16, 1, 1)
     struct.pack_into("<I", mapping, 28, 0)
     struct.pack_into("<I", mapping, 36, 2)
     struct.pack_into("<HH", mapping, 40, 0, 0)
