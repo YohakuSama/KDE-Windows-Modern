@@ -12,8 +12,7 @@ Item {
     property alias percent: batteryControl.percent
     property alias pluggedIn: batteryControl.pluggedIn
     readonly property bool percentKnown: hasBattery && Number.isFinite(percent) && percent >= 0
-    readonly property bool charging: pluggedIn && (batteryControl.state === BatteryControlModel.Charging
-        || batteryControl.state === BatteryControlModel.FullyCharged)
+    readonly property bool charging: batteryControl.state === BatteryControlModel.Charging
 
     property bool showPercentage: true
     property real glyphSize: 18

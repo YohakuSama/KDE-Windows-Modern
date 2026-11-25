@@ -26,7 +26,7 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.ShadowBackground | PlasmaCore.Types.ConfigurableBackground
 
     // Tooltips must not cover the notification/calendar flyout.
-    readonly property bool flyoutOpen: expanded
+    readonly property bool flyoutOpen: clockDialog.visible
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry
     readonly property real popupPanelExtent: compactRepresentationItem
         ? (Plasmoid.formFactor === PlasmaCore.Types.Vertical
@@ -36,7 +36,7 @@ PlasmoidItem {
     Plasmoid.status: flyoutOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
 
     function toggleFlyout(previous = flyoutOpen) {
-        expanded = !previous;
+        clockDialog.visible = !previous;
     }
 
     readonly property string currentTimeZone: currentClock.timeZone
@@ -188,17 +188,39 @@ PlasmoidItem {
         root.timeFormatWithSeconds = formats.seconds;
     }
 
-    // Match Plasma's native digital-clock implementation. Do not use the
-    // compact icon as the full representation or create a second window.
-    preferredRepresentation: compactRepresentation
-    compactRepresentation: CompactRepresentation {
-        plasmoidItem: root
+    // Same shell-role Dialog used by Start. AppletPopup always draws one
+    // shared frame; Dialog.NoBackground permits a genuinely clear gap.
+    preferredRepresentation: compactRep
+    compactRepresentation: compactRep
+    fullRepresentation: compactRep
+    Component {
+        id: compactRep
+        CompactRepresentation { plasmoidItem: root }
     }
-    fullRepresentation: ExpandedRepresentation {
-        clockApplet: root
+    function closeFlyout() { clockDialog.visible = false; }
+
+    PlasmaCore.Dialog {
+        id: clockDialog
+        objectName: "wmClockSplitPopup"
+        type: PlasmaCore.Dialog.AppletPopup
+        flags: Qt.Dialog
+        visualParent: root.compactRepresentationItem
+        location: Plasmoid.location
+        floating: 8
+        backgroundHints: PlasmaCore.Dialog.NoBackground
+        visible: false
+        hideOnWindowDeactivate: !Plasmoid.configuration.pin
+        mainItem: ExpandedRepresentation {
+            clockApplet: root
+            width: implicitWidth
+            height: implicitHeight
+        }
     }
-    activationTogglesExpanded: true
-    hideOnWindowDeactivate: !Plasmoid.configuration.pin
+    activationTogglesExpanded: false
+    Connections {
+        target: Plasmoid
+        function onActivated() { root.toggleFlyout(); }
+    }
 
     Connections {
         target: Plasmoid.configuration

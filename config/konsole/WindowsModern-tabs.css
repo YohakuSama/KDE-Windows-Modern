@@ -1,0 +1,36 @@
+/* Match the dark terminal's tab strip without changing the global Qt style. */
+QTabWidget::pane {
+    border: 0;
+    background: #0c0c0c;
+}
+QTabBar {
+    background: #2c2c2c;
+}
+QTabBar::tab {
+    min-width: 112px;
+    max-width: 230px;
+    min-height: 30px;
+    padding: 2px 10px;
+    margin: 3px 1px 0px;
+    border: 0;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    color: #cccccc;
+    background: transparent;
+}
+QTabBar::tab:selected {
+    background: #0c0c0c;
+    color: #ffffff;
+}
+QTabBar::tab:!selected:hover {
+    background: #3b3b3b;
+}
+QToolButton {
+    color: #cccccc;
+    border: 0;
+    border-radius: 4px;
+    padding: 4px;
+    background: transparent;
+}
+QToolButton:hover { background: #424242; }
+QToolButton:pressed { background: #515151; }

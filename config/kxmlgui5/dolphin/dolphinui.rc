@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE gui SYSTEM "kpartgui.dtd">
 <!-- Windows Modern: Dolphin's own dolphinui.rc (version 49, Dolphin 26.08)
-     with an Up button after Back/Forward, as in Windows File Explorer.
+     with separate Explorer-inspired navigation and command toolbars.
      If Dolphin ships a newer version, it ignores this copy (no Up button). -->
 <gui name="dolphin" version="49">
     <MenuBar>
@@ -109,17 +109,29 @@
             <Action name="invert_selection" />
         </disable>
     </State>
-    <ToolBar noMerge="1" name="mainToolBar" >
-        <text context="@title:menu">Main Toolbar</text>
+    <ToolBar noMerge="1" name="mainToolBar" position="top" newline="true" iconText="icononly" iconSize="20">
+        <text context="@title:menu">Navigation</text>
         <Action name="go_back" />
         <Action name="go_forward" />
         <Action name="go_up" />
-        <Action name="view_settings" />
+        <Action name="redisplay" />
         <Action name="url_navigators" />
-        <Action name="split_view" />
-        <Action name="split_stash" />
         <Action name="toggle_search" />
+    </ToolBar>
+    <ToolBar noMerge="1" name="wmCommandToolBar" position="top" newline="true" iconText="icontextright" iconSize="20">
+        <text context="@title:menu">Commands</text>
+        <Action name="new_menu" />
+        <Separator />
+        <Action name="edit_cut" />
+        <Action name="edit_copy" />
+        <Action name="edit_paste" />
+        <Action name="renamefile" />
+        <Action name="movetotrash" />
+        <Separator />
+        <Action name="sort" />
+        <Action name="view_mode" />
         <Action name="hamburger_menu" />
+        <Action name="show_information_panel" />
     </ToolBar>
     <ActionProperties scheme="Default">
         <Action priority="0" name="go_back"/>

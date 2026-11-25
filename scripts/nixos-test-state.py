@@ -23,7 +23,7 @@ CONFIG_NAMES = (
     "plasmashellrc", "plasma-org.kde.plasma.desktop-appletsrc", "kcminputrc",
     "ksplashrc", "kglobalshortcutsrc", "Kvantum/kvantum.kvconfig",
     "kvantum.kvconfig", "gtk-3.0/settings.ini", "gtk-4.0/settings.ini",
-    "xsettingsd/xsettingsd.conf", "mimeapps.list", "spectaclerc", "dolphinrc",
+    "xsettingsd/xsettingsd.conf", "mimeapps.list", "spectaclerc", "dolphinrc", "konsolerc", "konsolestaterc",
     "kcmicons", "kxkbrc", "environment.d/90-windows-modern-test.conf",
     "systemd/user/plasma-plasmashell.service.d/90-windows-modern-test.conf",
 )
@@ -271,6 +271,10 @@ def compiled_overrides():
 def all_targets(mapping):
     return list(mapping) + compiled_overrides() + [CONFIG / name for name in CONFIG_NAMES] + [
         DATA / "kxmlgui5/dolphin/dolphinui.rc",
+        DATA / "kxmlgui5/konsole/konsoleui.rc",
+        DATA / "konsole/WindowsModern.profile",
+        DATA / "konsole/WindowsModern-tabs.css",
+        DATA / "windows-modern/backup/app-appearance.json",
     ] + [DATA / "locale" / lang / "LC_MESSAGES" / (domain + ".mo")
          for lang in LANGUAGES for domain in DOMAINS]
 
@@ -337,7 +341,8 @@ def main():
         manifest = json.loads((backup / "manifest.json").read_text())
         snapshot(args.state / "before-uninstall",
                  [Path(key) for key in manifest["entries"]
-                  if Path(key).is_relative_to(CONFIG) or key.endswith("/dolphinui.rc")])
+                  if Path(key).is_relative_to(CONFIG) or key.endswith(("/dolphinui.rc", "/konsoleui.rc",
+                      "/WindowsModern.profile", "/WindowsModern-tabs.css", "/app-appearance.json"))])
         return
     make_staging(args.root, args.state)
     mapping = plan(args.root, args.state, args.profile)

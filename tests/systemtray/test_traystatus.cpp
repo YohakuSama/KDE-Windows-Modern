@@ -19,6 +19,12 @@ int main()
         check(id, Status::PassiveStatus, true, true, false, Status::ActiveStatus);
         check(id, Status::ActiveStatus, false, true, false, Status::HiddenStatus);
     }
+    const QString camera = QStringLiteral("org.kde.plasma.cameraindicator");
+    check(camera, Status::ActiveStatus, true, false, true, Status::ActiveStatus);
+    check(camera, Status::PassiveStatus, true, true, false, Status::HiddenStatus);
+    check(camera, Status::ActiveStatus, false, false, false, Status::HiddenStatus);
+    Q_ASSERT(WindowsTray::systemOrder(QStringLiteral("example.sni")) < WindowsTray::systemOrder(camera));
+    Q_ASSERT(WindowsTray::systemOrder(camera) < WindowsTray::systemOrder(QStringLiteral("org.kde.plasma.keyboardlayout")));
     check(QStringLiteral("example.sni"), Status::ActiveStatus, true, false, false, Status::PassiveStatus);
     check(QStringLiteral("example.sni"), Status::NeedsAttentionStatus, true, false, false, Status::ActiveStatus);
     check(QStringLiteral("example.sni"), Status::HiddenStatus, true, false, false, Status::HiddenStatus);

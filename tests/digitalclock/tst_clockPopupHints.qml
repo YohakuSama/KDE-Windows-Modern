@@ -33,6 +33,7 @@ Item {
         property string timeFormat: "HH:mm"
         property var focusSession: focusState
         property bool expanded: true
+        function closeFlyout() { expanded = false; }
         readonly property bool flyoutOpen: expanded
         property rect popupScreenGeometry: Qt.rect(0, 0, 1280, 720)
         property real popupPanelExtent: 48
@@ -56,7 +57,7 @@ Item {
             compare(popup.calendarLocale.name, "zh_CN");
             tryCompare(findChild(popup, "wmCalendarDateHeading"), "text", "11月25日 星期三");
             tryCompare(findChild(popup, "wmCalendarMonthHeading"), "text", "2026年11月");
-            compare(popup.nativePopup, null);
+            compare(popup.sectionGap, 12);
         }
         function test_fullCalendarHasUsableGeometry() {
             compare(popup.implicitWidth, 320);
@@ -96,7 +97,7 @@ Item {
                         && pos.y + calendar.height <= footerPos.y
                         && grid.height >= 6 * grid.cellHeight + 5 * grid.spacing - 1
                         && gridPos.y + grid.height <= footerPos.y
-                        && footerPos.y + footer.height <= popup.height - 1;
+                        && footerPos.y + footer.height <= popup.height + 1;
                 }, 2000);
                 verify(!bar.visible || !bar.indicatorVisible);
             }

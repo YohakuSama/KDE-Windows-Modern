@@ -451,10 +451,6 @@ kwriteconfig6 --file kwinrc --group Plugins --key minimizeallEnabled true
 kwriteconfig6 --file spectaclerc --group General --key useReleaseToCapture true
 kwriteconfig6 --file spectaclerc --group General --key autoSaveImage true
 kwriteconfig6 --file spectaclerc --group General --key clipboardGroup PostScreenshotCopyImage
-if [ ! -e "$DATA/kxmlgui5/dolphin/dolphinui.rc" ]; then
-    mkdir -p "$DATA/kxmlgui5/dolphin"
-    cp "$ROOT/config/kxmlgui5/dolphin/dolphinui.rc" "$DATA/kxmlgui5/dolphin/"
-fi
 # Keep the system font and user's existing input method.
 "$PYTHON" "$ROOT/scripts/theme/window-frames.py" --apply-local --aurorae-dir "$DATA/aurorae/themes" \
     --kvantum-dir "$CONFIG/Kvantum/Windows-modern" --wallpaper-package "$DATA/wallpapers/Windows-modern"
@@ -471,6 +467,8 @@ else
     # pinned apps, layout or the user's light/dark preference on upgrade.
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 fi
+
+"$PYTHON" "$ROOT/scripts/app-appearance.py" apply
 
 # Do not report success with stock fallback applets or a stale C++ plugin.
 layout="$CONFIG/plasma-org.kde.plasma.desktop-appletsrc"
