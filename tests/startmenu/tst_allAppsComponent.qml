@@ -22,7 +22,7 @@ TestCase {
         page.categoryMode = false;
         tryCompare(page.allAppsList, "columns", 1);
         page.gridMode = true;
-        tryCompare(page.allAppsList, "columns", 4);
+        tryCompare(page.allAppsList, "columns", 6);
         page.flatModel = 12;
         tryCompare(page.allAppsList, "count", 12);
         page.showAllSection = false;

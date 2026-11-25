@@ -19,15 +19,16 @@ ColumnLayout {
 
     spacing: Kirigami.Units.largeSpacing
 
-    property alias allAppsList: allAppsListView
+    readonly property var allAppsList: categoryMode ? allAppsListView : alphabeticalView
     property Component homeHeader: null
     property var flatModel: null
     property var categoryModel: null
     property bool showAllSection: true
     property bool categoryMode: false
     property bool gridMode: false
+    property bool alphabeticalGrouping: true
     readonly property bool showCategoryCards: categoryMode
-    readonly property var activeView: inCategory ? categoryGrid : allAppsListView
+    readonly property var activeView: inCategory ? categoryGrid : allAppsList
     property var categoryChild: null
     property string categoryTitle: ""
     property int categoryRow: 0
@@ -79,10 +80,17 @@ ColumnLayout {
     }
 
     function scrollToAll() {
-        if (allAppsListView.count > 0)
-            allAppsListView.positionViewAtIndex(0, GridView.Beginning);
+        if (allAppsList.count > 0)
+            allAppsList.positionViewAtIndex(0, GridView.Beginning);
         else
-            allAppsListView.positionViewAtBeginning();
+            allAppsList.positionViewAtBeginning();
+    }
+
+    function activateFlatRow(row) {
+        if (flatModel && row >= 0 && row < alphabeticalView.count
+                && typeof flatModel.trigger === "function"
+                && flatModel.trigger(row, "", null))
+            root.closeMenu();
     }
 
     signal backRequested
@@ -96,12 +104,16 @@ ColumnLayout {
     }
 
     function navigateUp() {
-        if (activeView.count > 0)
+        if (activeView === alphabeticalView)
+            alphabeticalView.moveVertical(-1);
+        else if (activeView.count > 0)
             activeView.currentIndex = Math.max(0, activeView.currentIndex - activeView.columns);
     }
 
     function navigateDown() {
-        if (activeView.count > 0)
+        if (activeView === alphabeticalView)
+            alphabeticalView.moveVertical(1);
+        else if (activeView.count > 0)
             activeView.currentIndex = Math.min(activeView.count - 1, activeView.currentIndex < 0 ? 0 : activeView.currentIndex + activeView.columns);
     }
 
@@ -109,28 +121,39 @@ ColumnLayout {
         activeView.activateRow(Math.max(0, activeView.currentIndex));
     }
 
-    // A single native scroller for all three views and the inline home header.
+    // Only the active view owns the Pinned/Recommended/All header. Each
+    // mode has a single vertical scroller; no nested scrolling sections.
+    AlphabeticalAppsView {
+        id: alphabeticalView
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        visible: !allAppsPage.categoryMode
+        sourceModel: allAppsPage.flatModel
+        showApps: !allAppsPage.categoryMode && allAppsPage.showAllSection
+        gridMode: allAppsPage.gridMode
+        alphabeticalGrouping: allAppsPage.alphabeticalGrouping
+        header: !allAppsPage.categoryMode ? allAppsPage.homeHeader : null
+        onApplicationActivated: row => allAppsPage.activateFlatRow(row)
+        onNavigateToHeader: allAppsPage.keyNavUpFromList()
+    }
+
     GridView {
         id: allAppsListView
         Layout.fillWidth: true
         Layout.fillHeight: true
         clip: true
+        visible: allAppsPage.categoryMode
         interactive: !allAppsPage.inCategory
         readonly property int scrollGutter: 18
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
-        readonly property int columns: allAppsPage.showCategoryCards || allAppsPage.gridMode
-            ? (contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2) : 1
+        readonly property int columns: contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2
         cellWidth: Math.max(1, Math.floor(contentColumnWidth / columns))
-        cellHeight: allAppsPage.showCategoryCards ? cellWidth + 16
-            : allAppsPage.gridMode ? 82 : Math.max(34, Math.floor(Kirigami.Units.gridUnit * 1.8) + 2)
+        cellHeight: cellWidth + 24
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
-        model: !allAppsPage.showAllSection ? null
-            : allAppsPage.categoryMode
-                ? allAppsPage.categoryModel
-                : allAppsPage.flatModel
+        model: allAppsPage.categoryMode && allAppsPage.showAllSection ? allAppsPage.categoryModel : null
         function activateRow(row) { allAppsPage.activateRow(row); }
-        header: allAppsPage.homeHeader
+        header: allAppsPage.categoryMode ? allAppsPage.homeHeader : null
 
         PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
         StartWheelHandler {
@@ -138,15 +161,7 @@ ColumnLayout {
             rowHeight: Math.min(40, allAppsListView.cellHeight)
         }
 
-        delegate: allAppsPage.showCategoryCards ? categoryCard : applicationRow
-
-        Component {
-            id: applicationRow
-            ListItemDelegate {
-                gridMode: allAppsPage.gridMode
-                iconSize: allAppsPage.gridMode ? 32 : 24
-            }
-        }
+        delegate: categoryCard
 
         Component {
             id: categoryCard

@@ -315,6 +315,8 @@ Item {
                     categoryModel: nativeCategoryModel
                     categoryMode: Plasmoid.configuration.allAppsViewMode === 2
                     gridMode: Plasmoid.configuration.allAppsViewMode === 1
+                    alphabeticalGrouping: Plasmoid.configuration.allAppsSortMode === 0
+                        || Plasmoid.configuration.allAppsSortMode === 1
                     onKeyNavUpFromList: {
                         root.leftColumnState = 0;
                         allAppsPage.allAppsList.positionViewAtBeginning();
