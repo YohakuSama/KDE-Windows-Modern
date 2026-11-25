@@ -138,6 +138,12 @@ previous import untouched.
 python3 scripts/import-shell-assets.py /path/to/Windows --build 26300
 ```
 
+On NixOS, if Pillow and fontTools are not already available:
+
+```bash
+nix-shell -p python3 python3Packages.pillow python3Packages.fonttools --run 'python3 scripts/import-shell-assets.py /path/to/Windows --build 26300'
+```
+
 Replace the example build number with the actual source build. The
 importer records the declared build, original resource paths, source
 hashes and generated output hashes in a private local manifest. It
