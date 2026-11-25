@@ -42,6 +42,8 @@ RowLayout {
     // ── Search field (fills) ───────────────────────────────────────────
     PlasmaComponents3.TextField {
         id: searchFieldInput
+        objectName: "wmStartSearchInput"
+        Accessible.name: placeholderText
         Layout.fillWidth: true
         focus: true
         placeholderText: i18n("Search for apps, settings, and files")

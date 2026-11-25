@@ -245,6 +245,16 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
+        // Previous layout templates explicitly stored mode 1 even though
+        // the comment said "follow region". Migrate that legacy default
+        // once; later deliberate selections of English AM/PM remain valid.
+        if (!Plasmoid.configuration.regionalClockDefaultsMigrated) {
+            if (Plasmoid.configuration.use24hFormat === 1)
+                Plasmoid.configuration.use24hFormat = 3;
+            if (Plasmoid.configuration.dateFormat === "shortDate")
+                Plasmoid.configuration.dateFormat = "regionalDate";
+            Plasmoid.configuration.regionalClockDefaultsMigrated = true;
+        }
         Plasmoid.configuration.selectedTimeZones =
             DigitalClockPrivate.TimeZoneUtils.sortedTimeZones(Plasmoid.configuration.selectedTimeZones);
 

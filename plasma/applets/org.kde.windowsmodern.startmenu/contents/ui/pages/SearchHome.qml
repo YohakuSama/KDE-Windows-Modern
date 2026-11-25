@@ -36,10 +36,11 @@ Item {
         }
     }
 
-    component EntryButton: QQC2.AbstractButton {
+    component EntryButton: QQC2.Button {
         id: entry
         property var iconSource
         property bool tile: false
+        padding: 0
         hoverEnabled: true
         focusPolicy: Qt.StrongFocus
         Accessible.name: text
@@ -155,7 +156,7 @@ Item {
                         Repeater {
                             id: quickRepeater
                             model: home.quickSearches
-                            delegate: QQC2.AbstractButton {
+                            delegate: QQC2.Button {
                                 id: chip
                                 required property int index
                                 required property var modelData
@@ -164,6 +165,7 @@ Item {
                                 implicitWidth: chipLabel.implicitWidth + 24
                                 implicitHeight: 32
                                 height: implicitHeight
+                                padding: 0
                                 text: modelData.label
                                 hoverEnabled: true
                                 focusPolicy: Qt.StrongFocus
@@ -217,15 +219,16 @@ Item {
                         width: GridView.view.cellWidth
                         height: GridView.view.cellHeight
                         visible: index < 6
+                        id: tileDelegate
                         EntryButton {
                             anchors.fill: parent
                             anchors.margins: 3
-                            objectName: "wmTopApp_" + parent.index
-                            enabled: parent.visible && !parent.model.disabled
+                            objectName: "wmTopApp_" + tileDelegate.index
+                            enabled: tileDelegate.visible && !tileDelegate.model.disabled
                             tile: true
-                            text: parent.model.display || ""
-                            iconSource: parent.model.decoration
-                            onClicked: home.launch(home.topAppsModel, parent.index)
+                            text: tileDelegate.model.display || ""
+                            iconSource: tileDelegate.model.decoration
+                            onClicked: home.launch(home.topAppsModel, tileDelegate.index)
                         }
                     }
                 }

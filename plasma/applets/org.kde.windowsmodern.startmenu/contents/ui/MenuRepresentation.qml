@@ -71,6 +71,12 @@ Item {
             || startButton.width <= 0 || startButton.height <= 0)
             return;
 
+        updatePopupAnchor();
+        root.visible = true;
+    }
+
+    function updatePopupAnchor() {
+        if (!startButton || !popupAnchor.Window.window) return;
         const horizontal = Plasmoid.location === PlasmaCore.Types.BottomEdge
                         || Plasmoid.location === PlasmaCore.Types.TopEdge;
         popupAnchor.x = Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
@@ -84,7 +90,6 @@ Item {
                 { x: pos.x, width: startButton.width }, panelGeometry,
                 rootItem.width + root.margins.left + root.margins.right);
         }
-        root.visible = true;
     }
 
     // Both taskbar Search and Start's own input enter this same surface.
@@ -150,6 +155,7 @@ Item {
             if (visible) {
                 reset();
             } else {
+                searching = false;
                 leftColumnState = 0;
                 modeMenu.close();
                 sharedContextMenu.close();
@@ -198,6 +204,7 @@ Item {
             height: Math.max(1, Math.min(wantedHeight, screen.height > 0
                 ? screen.height - (main.verticalPanel ? 0 : main.panelExtent) - 2 * margin : wantedHeight))
             focus: true
+            onWidthChanged: if (root.visible) main.updatePopupAnchor()
 
             // Note: do NOT auto-redirect to the search field here.
             // onFocusChanged fires when any child calls forceActiveFocus(),
@@ -298,6 +305,8 @@ Item {
                     if (startSearch.searchText.length > 0) root.searching = true;
                     sharedContextMenu?.close();
                     // Explicitly push the query to Milou ResultsView.
+                    if (startSearch.searchText.length === 0)
+                        searchPage.resultsView.singleRunner = "";
                     searchPage.resultsView.queryString = startSearch.searchText;
                     // Reset scroll to top on new query — only when
                     // the search page is active to avoid warnings
@@ -480,7 +489,7 @@ Item {
                 Loader {
                     id: searchHome
                     anchors.fill: parent
-                    active: root.searching && startSearch.searchText.length === 0
+                    active: root.visible && root.searching && startSearch.searchText.length === 0
                     visible: active
                     sourceComponent: SearchHome {
                         suggestedModel: rootItem.showRecentSection ? recentUsage : null

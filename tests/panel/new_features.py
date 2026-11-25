@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Click through the optional Search/Task View buttons and the calendar zoom.
 
-  search    clicking the Search box opens the Start menu
+  search    both Search entrypoints open the shared search home
   taskview  clicking Task View opens KWin's Overview
   calendar  the clock flyout's title zooms out to the year; reopening shows
             today's month again
@@ -64,9 +64,23 @@ def search(vi, out, c):
     click_node(vi, "Search")
     time.sleep(1.2)
     screenshot(out / "search-click.png")
-    c.check(start_menu_open(), "clicking the Search box opens the Start menu")
+    c.check(start_menu_open(), "clicking the Search box opens a search field")
+    c.check(wait_for(lambda: "Quick searches" in texts()), "taskbar Search opens the empty-query search home")
+    c.check("Pinned" not in texts(), "search home does not show the Start page")
     vi.tap(e.KEY_ESC, after=0.6)
     c.check(not start_menu_open(), "Esc closes it")
+    click_node(vi, "Start")
+    c.check(wait_for(lambda: "Pinned" in texts()), "Start opens its normal home")
+    field = next((n for n in a11y.nodes("plasmashell") if n.showing
+                  and n.role in ("entry", "text") and n.rect[2] > 200
+                  and "Search for apps" in n.name), None)
+    c.check(field is not None, "Start exposes its search input")
+    if field:
+        vi.move_to(*field.centre)
+        vi.click()
+        c.check(wait_for(lambda: "Quick searches" in texts()), "Start input opens the same search home")
+        screenshot(out / "start-search-click.png")
+    vi.tap(e.KEY_ESC, after=0.6)
 
 
 def taskview(vi, out, c):

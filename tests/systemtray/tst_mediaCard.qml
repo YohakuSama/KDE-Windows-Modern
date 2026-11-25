@@ -65,6 +65,10 @@ Item {
             fakeState.desktopEntry = "com.microsoft.Edge";
             tryCompare(card, "applicationName", "Microsoft Edge");
             compare(card.applicationIcon, "microsoft-edge");
+            fakeState.identity = "Firefox Nightly Radio";
+            fakeState.desktopEntry = "org.example.radio";
+            tryCompare(card, "applicationName", "Firefox Nightly Radio");
+            compare(card.applicationIcon, "org.example.radio");
             fakeState.identity = "Test player";
             fakeState.desktopEntry = "";
             fakeState.iconName = "audio-x-generic";
