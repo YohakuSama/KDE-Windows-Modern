@@ -29,6 +29,7 @@ QtObject {
             ? (overflow ? overflowOpen : quickSettingsOpen) : wasOpen;
         if (close) {
             expanded = false;
+            Plasmoid.restoreShellPopupFocus();
             return;
         }
         // Close the old native surface before changing the home and its
