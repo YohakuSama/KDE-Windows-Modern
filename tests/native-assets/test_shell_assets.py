@@ -83,6 +83,9 @@ class ShellAssetTests(unittest.TestCase):
             self.assertEqual(data, path.read_bytes())
             with self.assertRaisesRegex(ValueError, "Missing original"):
                 assets.search_artwork(root, root, "light", "off")
+            self.assertIsNone(
+                assets.search_artwork(root, root, "dark", "off", required=False)
+            )
 
     def test_case_insensitive_resource_path(self):
         with tempfile.TemporaryDirectory() as temp:
