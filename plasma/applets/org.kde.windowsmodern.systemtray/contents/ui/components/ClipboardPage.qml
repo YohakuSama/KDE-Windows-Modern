@@ -10,6 +10,7 @@ import "../lib" as Lib
 ColumnLayout {
     id: page
     property var history: nativeHistory
+    property var historyRows: history
     property Component footer: null
     signal back
     signal dismissed
@@ -87,7 +88,8 @@ ColumnLayout {
         clip: true
         spacing: 8
         boundsBehavior: Flickable.StopAtBounds
-        model: page.history
+        visible: count > 0
+        model: page.historyRows
         currentIndex: -1
         PlasmaComponents3.ScrollBar.vertical: Lib.FluentScrollBar {
             scrolling: historyList.moving

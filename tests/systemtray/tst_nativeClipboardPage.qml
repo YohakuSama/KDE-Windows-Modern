@@ -8,9 +8,10 @@ Item {
     width: 360
     height: 480
 
-    ListModel {
-        id: history
-        property int sourceCount: count
+    ListModel { id: fixtureRows }
+    QtObject {
+        id: mockHistory
+        property int sourceCount: fixtureRows.count
         property int starredCount: 0
         property bool starredOnly: false
         property string selectedUuid: ""
@@ -24,7 +25,8 @@ Item {
     Components.ClipboardPage {
         id: clipboard
         anchors.fill: parent
-        history: history
+        history: mockHistory
+        historyRows: fixtureRows
         property int dismissCount: 0
         onDismissed: dismissCount++
     }
@@ -33,10 +35,10 @@ Item {
         name: "NativeClipboardCardActions"
         when: windowShown
         function init() {
-            history.clear();
-            history.selectedUuid = "";
-            history.removedUuid = "";
-            history.clearRequests = 0;
+            fixtureRows.clear();
+            mockHistory.selectedUuid = "";
+            mockHistory.removedUuid = "";
+            mockHistory.clearRequests = 0;
             clipboard.dismissCount = 0;
         }
         function test_emptyAndRealMimeCards() {
@@ -45,8 +47,8 @@ Item {
             const empty = findChild(clipboard, "wmClipboardEmpty");
             tryCompare(clear, "visible", false);
             tryCompare(empty, "visible", true);
-            history.append({uuid:"native-text", display:"Example text", decoration:"", starred:false});
-            history.append({uuid:"native-image", display:"640x480", decoration:"file:///nonexistent-test-image.png", starred:false});
+            fixtureRows.append({uuid:"native-text", display:"Example text", decoration:"", starred:false});
+            fixtureRows.append({uuid:"native-image", display:"640x480", decoration:"file:///nonexistent-test-image.png", starred:false});
             tryCompare(list, "count", 2);
             tryCompare(empty, "visible", false);
             tryCompare(clear, "visible", true);
@@ -57,16 +59,16 @@ Item {
             verify(!textCard.hasImage);
             verify(imageCard.hasImage);
             mouseClick(textCard, 20, 25);
-            compare(history.selectedUuid, "native-text");
+            compare(mockHistory.selectedUuid, "native-text");
             mouseClick(imageCard, 20, 25);
-            compare(history.selectedUuid, "native-image");
+            compare(mockHistory.selectedUuid, "native-image");
             compare(clipboard.dismissCount, 2);
             mouseClick(findChild(textCard, "wmClipboardPin"));
             tryCompare(textCard, "pinned", true);
             mouseClick(findChild(imageCard, "wmClipboardRemove"));
-            compare(history.removedUuid, "native-image");
+            compare(mockHistory.removedUuid, "native-image");
             mouseClick(clear);
-            compare(history.clearRequests, 1);
+            compare(mockHistory.clearRequests, 1);
         }
     }
 }
