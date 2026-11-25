@@ -19,6 +19,26 @@ Item {
 
     FontMetrics { id: metrics; font: Kirigami.Theme.defaultFont }
 
+    // Every source model can change while a menu is open (not just All
+    // Apps). Discard captured row indexes before an action can use them.
+    component ModelGuard: Connections {
+        ignoreUnknownSignals: true
+        function onModelReset() { contextMenu.close(); }
+        function onRowsInserted() { contextMenu.close(); }
+        function onRowsRemoved() { contextMenu.close(); }
+        function onRowsMoved() { contextMenu.close(); }
+        function onLayoutChanged() { contextMenu.close(); }
+        function onDataChanged() { contextMenu.close(); }
+    }
+    ModelGuard {
+        target: contextMenu.opened && typeof contextMenu.context.model === "object"
+            ? contextMenu.context.model : null
+    }
+    ModelGuard {
+        target: contextMenu.opened && contextMenu.context.resolvedModel !== contextMenu.context.model
+            && typeof contextMenu.context.resolvedModel === "object" ? contextMenu.context.resolvedModel : null
+    }
+
     function selectable(index) {
         const action = actions[index];
         return !!action && action.type !== "separator"
@@ -109,7 +129,11 @@ Item {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             keyNavigationEnabled: false
-            QQC2.ScrollBar.vertical: QQC2.ScrollBar { policy: QQC2.ScrollBar.AsNeeded }
+            HoverHandler { id: menuHover }
+            QQC2.ScrollBar.vertical: StartScrollBar {
+                viewportHovered: menuHover.hovered
+                scrolling: list.moving
+            }
             Keys.onPressed: event => {
                 switch (event.key) {
                 case Qt.Key_Up: contextMenu.step(-1); break;

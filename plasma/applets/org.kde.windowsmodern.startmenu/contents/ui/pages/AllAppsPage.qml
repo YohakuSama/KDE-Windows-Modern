@@ -13,15 +13,15 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
 import "../components"
+import "../code/tools.js" as Tools
 
 Item {
     id: allAppsPage
 
     readonly property var allAppsList: categoryMode ? allAppsListView : alphabeticalView
 
-    function lookupAppByDisplayName(displayName) {
-        if (!displayName) return null;
-        const item = alphabeticalView.sourceEntries.find(entry => entry.display === displayName);
+    function lookupAppByUrls(urls) {
+        const item = Tools.findAppByUrls(alphabeticalView.sourceEntries, urls);
         return item ? { row: item.index, favoriteId: item.favoriteId || "",
             url: item.url || "", actionList: item.actionList || null } : null;
     }

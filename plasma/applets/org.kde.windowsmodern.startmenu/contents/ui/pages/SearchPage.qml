@@ -61,7 +61,10 @@ Item {
 
     Connections {
         target: resultsView
-        function onQueryStringChanged() { searchPage.pointerMoved = false; }
+        function onQueryStringChanged() {
+            searchPage.pointerMoved = false;
+            searchPage.collapsedCategories = "";
+        }
     }
 
     function isCollapsed(cat) {
@@ -81,49 +84,78 @@ Item {
         }
         collapsedCategories = parts.join(",")
         resultsView.forceLayout()
+        if (!rowSelectable(resultsView.currentIndex))
+            resultsView.currentIndex = firstSelectable(0, 1);
+    }
+
+    function rowSelectable(row) {
+        if (row < 0 || row >= resultsView.count) return false;
+        const model = resultsView.model;
+        const index = model.index(row, 0);
+        return !isCollapsed(model.data(index, Milou.ResultsModel.CategoryRole))
+            && model.data(index, Milou.ResultsModel.EnabledRole) !== false;
+    }
+
+    function firstSelectable(row, direction) {
+        for (let i = row; i >= 0 && i < resultsView.count; i += direction) {
+            if (rowSelectable(i)) return i;
+        }
+        return -1;
+    }
+
+    function moveSelection(direction) {
+        const current = resultsView.currentIndex;
+        const start = current < 0 ? (direction > 0 ? 0 : resultsView.count - 1) : current + direction;
+        const next = firstSelectable(start, direction);
+        if (next < 0) return false;
+        resultsView.currentIndex = next;
+        resultsView.positionViewAtIndex(next, ListView.Contain);
+        return true;
+    }
+
+    function activateFilter(runner) {
+        if (resultsView.singleRunner === runner) return;
+        const query = resultsView.queryString;
+        resultsView.singleRunner = runner;
+        resultsView.queryString = "";
+        resultsView.queryString = query;
     }
 
     function tryActivate(row, col) {
         if (resultsView.count > 0) {
-            resultsView.currentIndex = Math.max(0, Math.min(row, resultsView.count - 1));
-            resultsView.forceActiveFocus();
+            const start = Math.max(0, Math.min(row, resultsView.count - 1));
+            const next = firstSelectable(start, 1);
+            resultsView.currentIndex = next >= 0 ? next : firstSelectable(start - 1, -1);
+            if (resultsView.currentIndex >= 0) resultsView.forceActiveFocus();
         }
     }
 
-    function navigateUp() {
-        if (resultsView.count > 0) {
-            resultsView.currentIndex = Math.max(0, resultsView.currentIndex - 1);
-        }
-    }
-
-    function navigateDown() {
-        if (resultsView.count > 0) {
-            resultsView.currentIndex = Math.min(resultsView.count - 1, resultsView.currentIndex + 1);
-        }
-    }
+    function navigateUp() { moveSelection(-1); }
+    function navigateDown() { moveSelection(1); }
 
     function activateCurrent() {
-        if (resultsView.count > 0) {
-            resultsView.runCurrentIndex(null);
-            root.closeMenu();
-        }
+        const row = resultsView.currentIndex;
+        if (!rowSelectable(row)) return;
+        // Do not queue an unrelated first result if the custom delegate
+        // is hidden or the query is still changing. Close only on success.
+        if (resultsView.model.run(resultsView.model.index(row, 0)))
+            resultsView.activated();
     }
 
     function activateFirstResult() {
-        if (resultsView.count > 0) {
-            resultsView.currentIndex = 0;
-            resultsView.runCurrentIndex(null);
-        }
+        resultsView.currentIndex = firstSelectable(0, 1);
+        activateCurrent();
     }
 
     // ── Filter pills (rounded chips) ────────────────────────────────────
-    RowLayout {
+    Flow {
         id: filterPillsWrapper
         anchors.top: parent.top
         anchors.topMargin: Kirigami.Units.smallSpacing
         anchors.left: parent.left
         anchors.right: parent.right
         visible: root.searching
+        height: implicitHeight
         spacing: Kirigami.Units.smallSpacing
 
         Repeater {
@@ -137,14 +169,23 @@ Item {
                 { label: i18n("Actions"),  runner: "krunner_powerdevil" }
             ]
             delegate: Rectangle {
+                id: filterPill
                 required property var modelData
 
                 readonly property bool active: resultsView.singleRunner === modelData.runner
 
-                Layout.alignment: Qt.AlignVCenter
-                radius: Kirigami.Units.smallSpacing
-                implicitHeight: Math.floor(Kirigami.Units.gridUnit * 1.4)
-                implicitWidth: pillRow.implicitWidth + Kirigami.Units.largeSpacing * 2
+                radius: 4
+                implicitHeight: Math.max(28, pillLabel.implicitHeight + 8)
+                implicitWidth: pillLabel.implicitWidth + Kirigami.Units.largeSpacing * 2
+                width: Math.max(1, Math.min(implicitWidth, filterPillsWrapper.width))
+                height: implicitHeight
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: modelData.label
+                Accessible.onPressAction: searchPage.activateFilter(modelData.runner)
+                Keys.onReturnPressed: searchPage.activateFilter(modelData.runner)
+                Keys.onEnterPressed: searchPage.activateFilter(modelData.runner)
+                Keys.onSpacePressed: searchPage.activateFilter(modelData.runner)
                 color: active
                        ? Kirigami.Theme.highlightColor
                        : (pillHover.containsMouse
@@ -154,26 +195,25 @@ Item {
                           : Qt.rgba(Kirigami.Theme.textColor.r,
                                     Kirigami.Theme.textColor.g,
                                     Kirigami.Theme.textColor.b, Theme.buttonFlatBackgroundOpacity))
-                border.width: active ? 0 : 1
-                border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                                       Kirigami.Theme.textColor.g,
-                                       Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
+                border.width: active && !activeFocus ? 0 : 1
+                border.color: activeFocus ? Kirigami.Theme.highlightColor
+                    : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                        Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
                 Behavior on color { ColorAnimation { duration: 90 } }
 
-                Row {
-                    id: pillRow
-                    anchors.centerIn: parent
-                    spacing: Kirigami.Units.smallSpacing
-
-                    PlasmaComponents3.Label {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: modelData.label
-                        color: active
-                               ? Kirigami.Theme.highlightedTextColor
-                               : Kirigami.Theme.textColor
-                        font.pointSize: Kirigami.Theme.defaultFont.pointSize - 1
-                        font.weight: active ? Font.DemiBold : Font.Normal
-                    }
+                PlasmaComponents3.Label {
+                    id: pillLabel
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                    textFormat: Text.PlainText
+                    text: filterPill.modelData.label
+                    color: filterPill.active ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
+                    font.pixelSize: 12
+                    font.weight: filterPill.active ? Font.DemiBold : Font.Normal
                 }
 
                 MouseArea {
@@ -181,20 +221,12 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        const q = resultsView.queryString;
-                        resultsView.singleRunner = modelData.runner;
-                        // Force re-query using the current query, not a removed UI id.
-                        resultsView.queryString = "";
-                        resultsView.queryString = q;
-                    }
+                    onClicked: searchPage.activateFilter(filterPill.modelData.runner)
                 }
             }
         }
 
-        // Force left-justification of the pill cluster.
-        Item { Layout.fillWidth: true }
-    }
+     }
 
     // ── Search results (Milou ResultsView with custom delegate) ────────
     Milou.ResultsView {
@@ -207,6 +239,7 @@ Item {
             bottom: parent.bottom
         }
         clip: true
+        highlight: null
         // queryField is left null — we drive queryString explicitly from
         // the shell's search field.  Setting it to a foreign id that
         // isn't in scope here throws a ReferenceError.
@@ -285,7 +318,9 @@ Item {
             id: resultDelegate
 
             width: resultsView.contentColumnWidth
-            implicitHeight: visible ? Math.floor(Kirigami.Units.gridUnit * 1.6) : 0
+            readonly property bool categoryCollapsed: searchPage.isCollapsed(resultDelegate.ListView.section)
+            height: categoryCollapsed ? 0 : Math.floor(Kirigami.Units.gridUnit * 1.6)
+            enabled: model.enabled !== false
 
             required property int index
             required property var model
@@ -343,6 +378,7 @@ Item {
                     maximumLineCount: 1
                     color: Kirigami.Theme.textColor
                     text: resultDelegate.model.subtext || ""
+                    textFormat: Text.PlainText
                     font.pointSize: Kirigami.Theme.defaultFont.pointSize - 2
                     verticalAlignment: Text.AlignVCenter
                     Layout.maximumWidth: resultsView.width * 0.35
@@ -361,7 +397,7 @@ Item {
                         openResultContextMenu(mouse.x, mouse.y)
                         return
                     }
-                    resultsView.runCurrentIndex()
+                    searchPage.activateCurrent()
                 }
                 onEntered: {
                     if (searchPage.trackPointer(resultMouse, mouseX, mouseY)) {
@@ -392,13 +428,9 @@ Item {
                     })
                 }
 
-                var displayName = resultDelegate.model.display || ""
-
-                // Look up the app in the all-apps model so we can offer
-                // the same app-specific actions + pin/unpin as the All
-                // Apps list — making the context menu identical for the
-                // same app regardless of where it's right-clicked.
-                var entry = rootItem.lookupAppByDisplayName(displayName)
+                // Only a stable desktop-file URL may resolve an app's actions.
+                // Localized names can refer to several unrelated results.
+                var entry = rootItem.lookupAppByUrls(resultDelegate.model.urls)
                 var favModel = (typeof kicker !== "undefined" && kicker.globalFavorites)
                                ? kicker.globalFavorites : null
 
@@ -424,15 +456,6 @@ Item {
                         if (acts.length > 0) acts.push({ type: "separator" })
                         acts = acts.concat(appActs)
                     }
-                } else {
-                    // Not found in all-apps (e.g. a file or calculator
-                    // result).  Still offer pin/unpin as a best-effort
-                    // using the display name as the favorite id.
-                    var favActions = Tools.createFavoriteActions(i18n, favModel, displayName)
-                    if (favActions) {
-                        if (acts.length > 0) acts.push({ type: "separator" })
-                        acts = acts.concat(favActions)
-                    }
                 }
 
                 // Always offer an "Open" action so the menu is never empty.
@@ -450,16 +473,35 @@ Item {
             }
 
             // Hide items in collapsed categories
-            visible: !searchPage.isCollapsed(resultDelegate.ListView.section)
+            visible: !categoryCollapsed
         }
 
         Keys.onReturnPressed: searchPage.activateCurrent()
         Keys.onEnterPressed: searchPage.activateCurrent()
 
         Keys.onUpPressed: event => {
-            if (currentIndex <= 0) {
+            event.accepted = true;
+            if (!searchPage.moveSelection(-1)) searchPage.focusSearchRequested();
+        }
+        Keys.onDownPressed: event => {
+            event.accepted = true;
+            searchPage.moveSelection(1);
+        }
+        // The inherited Milou Tab handlers expect its native delegate.
+        // Our custom delegate has no per-action focus, so move by row.
+        Keys.onTabPressed: event => {
+            event.accepted = true;
+            if (!searchPage.moveSelection(1)) searchPage.focusSearchRequested();
+        }
+        Keys.onBacktabPressed: event => {
+            event.accepted = true;
+            if (!searchPage.moveSelection(-1)) searchPage.focusSearchRequested();
+        }
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Home || event.key === Qt.Key_End) {
+                currentIndex = searchPage.firstSelectable(event.key === Qt.Key_Home ? 0 : count - 1,
+                    event.key === Qt.Key_Home ? 1 : -1);
                 event.accepted = true;
-                searchPage.focusSearchRequested();
             }
         }
     }

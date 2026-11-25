@@ -21,6 +21,18 @@ function resolveFavoriteId(favoriteId, url) {
     return "";
 }
 
+// KRunner service matches expose the real desktop-file URL. Display names
+// are localized, non-unique, and are never a valid application identity.
+function findAppByUrls(entries, urls) {
+    if (!urls || !urls.length) return null;
+    const identities = Array.from(urls, url => String(url)).filter(Boolean);
+    const matches = entries.filter(entry => {
+        const identity = String(entry.url || "");
+        return identity && identities.includes(identity);
+    });
+    return matches.length === 1 ? matches[0] : null;
+}
+
 // Build the full context-menu action list for an app: the app's own
 // actions (Run in terminal, Uninstall, …) followed by a pin/unpin
 // favorite action.  Used by both the All Apps list and search results so
