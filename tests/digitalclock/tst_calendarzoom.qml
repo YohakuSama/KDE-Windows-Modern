@@ -132,6 +132,18 @@ Item {
                 }
             }
         }
+        function test_clockTickDoesNotRecreateMonthCells() {
+            const original = root.currentTime;
+            const first = days()[0];
+            const date = view.today.getTime();
+            root.currentTime = new Date(original.getTime() + 1000);
+            wait(50);
+            compare(view.today.getTime(), date);
+            compare(days()[0], first);
+            root.currentTime = new Date(original.getFullYear(), original.getMonth(), original.getDate() + 1);
+            tryVerify(() => view.today.getDate() === original.getDate() + 1);
+            root.currentTime = original;
+        }
         function test_monthView() {
             compare(view.zoom, CalendarView.Zoom.Month);
             compare(headerTitle().text, Qt.locale().standaloneMonthName(10, Locale.LongFormat) + " 2026");

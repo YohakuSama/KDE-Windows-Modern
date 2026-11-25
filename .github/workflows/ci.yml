@@ -23,6 +23,10 @@ jobs:
         run: ./verify-all.sh
       - name: Validate Qt Quick Start menu key handlers
         run: python3 scripts/check-startmenu-keys.py
+      - name: KWin JavaScript regression tests
+        run: |
+          node tests/osd/test-placement.cjs
+          node tests/shortcuts/test-snapkeys.cjs
       - name: NixOS installation and runtime identity tests
         run: |
           bash -n install-nixos.sh
@@ -33,6 +37,8 @@ jobs:
         run: python3 -m unittest discover -s tests/native-assets -v
       - name: Window material tests
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
+      - name: Microsoft Store icon tests
+        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_store_icon.py -v
       - name: Optional Plymouth boot artwork tests
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_boot_frames.py -v
 

@@ -133,6 +133,9 @@ Item {
         Component {
             id: boxComponent
             SearchBox {
+                property bool mirroredLayout: false
+                LayoutMirroring.enabled: mirroredLayout
+                LayoutMirroring.childrenInherit: true
                 height: 48
                 width: preferredWidth
                 iconName: "edit-find-symbolic"
@@ -164,6 +167,50 @@ Item {
             compare(box.boxWidth, data.boxWidth);
             compare(box.sideMargin, data.margin);
             compare(box.preferredWidth, data.boxWidth + 2 * data.margin);
+        }
+
+        function test_compactSearchAndSelection() {
+            const box = makeBox({styleMode: 1, width: 120});
+            compare(box.boxWidth, 112);
+            const pill = findChild(box, "wmSearchPill");
+            box.forceHovered = true;
+            tryCompare(pill, "color", pill.hoverFill);
+            box.selected = true;
+            tryCompare(pill, "color", Qt.color("#0078D4"));
+            box.width = 20;
+            verify(!findChild(box, "wmSearchPlaceholder").visible);
+        }
+
+        function test_boxFitsConstrainedCell_data() {
+            return [
+                {tag: "tiny thickness", width: 100, height: 12},
+                {tag: "narrow panel", width: 20, height: 48},
+                {tag: "zero width", width: 0, height: 48},
+                {tag: "zero height", width: 80, height: 0}
+            ];
+        }
+        function test_boxFitsConstrainedCell(data) {
+            const box = makeBox({width: data.width, height: data.height});
+            const pill = findChild(box, "wmSearchPill");
+            const icon = findChild(box, "searchBoxIcon");
+            const label = findChild(box, "wmSearchPlaceholder");
+            verify(pill && icon && label);
+            verify(pill.width >= 0 && pill.width <= box.width);
+            verify(pill.height >= 0 && pill.height <= box.height);
+            verify(pill.x >= 0 && pill.x + pill.width <= box.width);
+            verify(pill.y >= 0 && pill.y + pill.height <= box.height);
+            verify(icon.x >= 0 && icon.x + icon.width <= pill.width);
+            verify(!label.visible || label.x + label.width <= pill.width);
+        }
+
+        function test_boxMirroredOrder() {
+            const box = makeBox({width: 228, height: 48});
+            const icon = findChild(box, "searchBoxIcon");
+            const label = findChild(box, "wmSearchPlaceholder");
+            verify(label.visible);
+            verify(icon.x + icon.width <= label.x);
+            box.mirroredLayout = true;
+            tryVerify(() => label.x + label.width <= icon.x);
         }
 
         function test_boxClick() {

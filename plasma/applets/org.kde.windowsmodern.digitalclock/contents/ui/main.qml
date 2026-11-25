@@ -30,6 +30,19 @@ PlasmoidItem {
     // Owned by the actual compact representation in the panel window.
     property var panelPopup: null
     readonly property bool flyoutOpen: !!panelPopup && panelPopup.visible
+    // The existing tray plugin already supplies rounded, split-window blur.
+    // The clock is also installable on its own; never require that plugin.
+    readonly property var splitBlurProvider: {
+        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
+        for (const applet of applets) {
+            if (applet && applet.pluginName === "org.kde.windowsmodern.systemtray"
+                    && typeof applet.setSplitPopupBlur === "function")
+                return applet;
+        }
+        return null;
+    }
+    readonly property bool allowSplitAcrylic: (Plasmoid.containmentDisplayHints
+        & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) === 0
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry
     readonly property bool popupVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property var popupPanelWindow: panelPopup && panelPopup.visualParent
@@ -109,8 +122,8 @@ PlasmoidItem {
     // Time format strings, updated by timeFormatCorrection().
     property string timeFormat
     property string timeFormatWithSeconds
-    readonly property var clockTimeLocale: Qt.locale(DateFormat.clockLocaleName(
-        Plasmoid.configuration.use24hFormat, Qt.locale().name))
+    readonly property var clockTimeLocale: Plasmoid.configuration.use24hFormat === 1
+        ? Qt.locale("en_US") : Qt.locale()
 
     // We need Local to be *always* present, even if not displayed, as it's
     // used for formatting and offset calculations.
@@ -121,7 +134,7 @@ PlasmoidItem {
         timeZone: Plasmoid.configuration.lastSelectedTimezone
         // Second-by-second only while seconds are on screen: the flyout's
         // large clock shows them (it showed :00 with minute updates).
-        trackSeconds: (root.flyoutOpen && (Plasmoid.configuration.showTimeInNotificationCenter || root.notificationsInhibited))
+        trackSeconds: (root.flyoutOpen && Plasmoid.configuration.showTimeInNotificationCenter)
             || Plasmoid.configuration.showSeconds === 2
     }
 
@@ -147,7 +160,9 @@ PlasmoidItem {
         }
 
         // If the date differs from the current clock's date, append the day name.
-        if (dateTime.getDay() !== currentClock.dateTime.getDay()) {
+        if (dateTime.getFullYear() !== currentClock.dateTime.getFullYear()
+                || dateTime.getMonth() !== currentClock.dateTime.getMonth()
+                || dateTime.getDate() !== currentClock.dateTime.getDate()) {
             formattedTime += " " + Qt.locale().toString(dateTime, "dddd");
         }
 
@@ -230,6 +245,16 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
+        // Previous layout templates explicitly stored mode 1 even though
+        // the comment said "follow region". Migrate that legacy default
+        // once; later deliberate selections of English AM/PM remain valid.
+        if (!Plasmoid.configuration.regionalClockDefaultsMigrated) {
+            if (Plasmoid.configuration.use24hFormat === 1)
+                Plasmoid.configuration.use24hFormat = 3;
+            if (Plasmoid.configuration.dateFormat === "shortDate")
+                Plasmoid.configuration.dateFormat = "regionalDate";
+            Plasmoid.configuration.regionalClockDefaultsMigrated = true;
+        }
         Plasmoid.configuration.selectedTimeZones =
             DigitalClockPrivate.TimeZoneUtils.sortedTimeZones(Plasmoid.configuration.selectedTimeZones);
 

@@ -20,13 +20,15 @@ PlasmaCore.Window {
     id: bar
 
     property var hovered: null    // { layout, cell } or null
-    property var workArea: Qt.rect(0, 0, 1, 1)
-
-    readonly property int diagramWidth: 72
-    readonly property int diagramHeight: 44
-    readonly property int gap: 10
+    property rect workArea: Qt.rect(0, 0, 1, 1)
+    property rect screenGeometry: Qt.rect(0, 0, 1920, 1080)
+    readonly property var metrics: Layouts.barMetrics(screenGeometry.width - leftPadding - rightPadding,
+        screenGeometry.height - topPadding - bottomPadding)
+    readonly property int diagramWidth: metrics.width
+    readonly property int diagramHeight: metrics.height
+    readonly property int gap: metrics.gap
     readonly property int rowTop: 20
-    readonly property int cellGap: 3
+    readonly property int cellGap: metrics.cellGap
     readonly property int rowWidth: Layouts.layouts.length * diagramWidth + (Layouts.layouts.length - 1) * gap
 
     visible: false
@@ -36,15 +38,19 @@ PlasmaCore.Window {
     height: diagramHeight + topPadding + bottomPadding
 
     function showOn(screen, area) {
+        screenGeometry = screen;
         workArea = area;
-        x = Math.round(screen.x + (screen.width - rowWidth) / 2) - leftPadding;
-        y = screen.y + rowTop - topPadding;
+        if (width > screen.width || height > screen.height || area.width <= 0 || area.height <= 0)
+            return;
+        const centered = Math.round(screen.x + (screen.width - rowWidth) / 2) - leftPadding;
+        x = Math.max(screen.x, Math.min(centered, screen.x + screen.width - width));
+        y = Math.max(screen.y, Math.min(screen.y + rowTop - topPadding, screen.y + screen.height - height));
         visible = true;
     }
 
     // The layout cell under a point in screen coordinates, or null.
     function cellAt(px, py) {
-        return Layouts.cellAt(px - x - leftPadding, py - y - topPadding, diagramWidth, diagramHeight, gap);
+        return Layouts.cellAt(px - x - leftPadding, py - y - topPadding, diagramWidth, diagramHeight, gap, cellGap);
     }
 
     mainItem: Row {
@@ -67,8 +73,8 @@ PlasmaCore.Window {
                             && bar.hovered.layout === diagram.index && bar.hovered.cell === index
                         x: modelData[0] * bar.diagramWidth + bar.cellGap / 2
                         y: modelData[1] * bar.diagramHeight + bar.cellGap / 2
-                        width: modelData[2] * bar.diagramWidth - bar.cellGap
-                        height: modelData[3] * bar.diagramHeight - bar.cellGap
+                        width: Math.max(0, modelData[2] * bar.diagramWidth - bar.cellGap)
+                        height: Math.max(0, modelData[3] * bar.diagramHeight - bar.cellGap)
                         radius: 3
                         color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, 0.10)
                         border.width: 1

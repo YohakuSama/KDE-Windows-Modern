@@ -6,7 +6,21 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
-- Reuse the tray palette in the clock and Start menu, and check packaged copies for drift. Retain calendar delegates across same-day clock updates, avoid tracking hidden seconds, and correct notification links and time-zone formatting.
+- Share the live accent palette across the tray, clock and Start menu. Preserve calendar delegates during same-day updates, enable all week-start choices and correct notification links and time-zone offsets.
+
+- Add the interactive alphabetical index to Start's list and grid modes, with available-letter navigation, category label hover states and category opening animations.
+
+- Open a shared local Search home from the Start field and taskbar search action. Use real recent/popular application models and settings queries, explicit search-role artwork and hover/press states; omit online promotions. Default the clock to the system region's time and date, migrate previously forced default formats once, preserve other explicit formats, and resolve common browser media-source identities and icons from the live MPRIS session.
+
+- Let the taskbar search box shrink within its allocated cell, keep the icon inside narrow cells, and suppress repeated keyboard activation of Search, Task View and Show Desktop. Orient the Show Desktop sliver for vertical panels and avoid toggling out of desktop mode during a drag. Run the existing OSD and snap-key JavaScript tests in CI.
+
+- Reposition existing on-screen displays when their output or screen geometry changes, and stop tracking closed displays. Use KWin's actual maximize state and explicit side/corner actions for windows placed without a native tile.
+
+- Keep Snap Layouts on the cursor's current output, fit its diagrams to narrow screens, reject drops in unpainted cell gaps, and clear stale targets when a window or screen disappears. Fit Alt+Tab to short screens and relayout on height changes. Make preview titles clickable and show a fallback icon instead of blank or stale media artwork.
+
+- Resolve Start search app actions by desktop-file URL, dismiss row-based menus when their source model changes, prevent launching collapsed or disabled results, wrap search filters on narrow panels, and cancel pin reordering outside the grid.
+
+- Reuse the tray's native rounded-region blur for the notification and calendar flyout, keeping an opaque fallback when disabled or unavailable. Share calendar day colors and avoid rebuilding the month grid on each clock tick. Only request second-level clock updates when needed, display agenda times in the configured clock format, and translate weekday settings while keeping the system region default.
 
 - Keep week numbers aligned with local calendar dates through daylight-saving transitions, align weekday columns, and allow keyboard activation of calendar navigation and zoom tiles.
 - Keep the calendar footer visible in short work areas by fitting the grid before optional sections; use consistent notification actions, progress colors and scrolling feedback.

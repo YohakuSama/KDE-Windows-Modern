@@ -102,6 +102,7 @@ MouseArea {
         onVisibleChanged: {
             if (visible) clockGeometryProbe.restart();
             else clockGeometryProbe.stop();
+            if (clockPopupContent) clockPopupContent.scheduleSplitBlur();
         }
         onWidthChanged: if (visible) clockGeometryProbe.restart()
         onHeightChanged: if (visible) clockGeometryProbe.restart()
@@ -118,7 +119,10 @@ MouseArea {
         }
 
         mainItem: ExpandedRepresentation {
+            id: clockPopupContent
             clockApplet: main.plasmoidItem
+            splitBlurProvider: main.plasmoidItem.splitBlurProvider
+            allowSplitAcrylic: main.plasmoidItem.allowSplitAcrylic
             width: implicitWidth
             height: implicitHeight
             focus: true

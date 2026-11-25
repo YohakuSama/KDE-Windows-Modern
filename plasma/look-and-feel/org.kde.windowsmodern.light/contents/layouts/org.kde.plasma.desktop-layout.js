@@ -97,8 +97,7 @@ tasks.writeConfig("launchers", "preferred://filemanager,preferred://browser,appl
     //    custom Windows Modern digital clock; fall back to the upstream clock
     //    if the custom applet is not installed.
     //    autoFontAndSize = true lets the clock follow the system font.
-    //    use24hFormat = 1 lets the clock follow the user's locale/region
-    //    defaults instead of forcing 12- or 24-hour time.
+    //    Keep the installed clock's regional-format defaults.
     //    dateDisplayFormat = 2 forces the date below the time (BelowTime).
     var clock = panel.addWidget(pick("org.kde.windowsmodern.digitalclock", "org.kde.plasma.digitalclock"));
     clock.currentConfigGroup = new Array("Appearance");
@@ -106,7 +105,6 @@ tasks.writeConfig("launchers", "preferred://filemanager,preferred://browser,appl
     clock.writeConfig("showDate", "true");
     clock.writeConfig("dateDisplayFormat", "2");
     clock.writeConfig("showSeconds", "0");
-    clock.writeConfig("use24hFormat", "1");
     clock.writeConfig("expandedWidth", "320");
 
     // 7. Show Desktop — custom Win11-style thin sliver, or fall back to stock.

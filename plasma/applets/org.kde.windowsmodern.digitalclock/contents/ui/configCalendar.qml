@@ -16,6 +16,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.workspace.calendar as PlasmaCalendar
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCMUtils
+import "code/dateformat.js" as DateFormat
 
 KCMUtils.ScrollViewKCM {
     id: calendarPage
@@ -25,6 +26,8 @@ KCMUtils.ScrollViewKCM {
     property alias cfg_showWeekNumbers: showWeekNumbers.checked
     property int cfg_firstDayOfWeek
     property bool unsavedChanges: false
+    readonly property var calendarLocale: Qt.locale(DateFormat.calendarLocaleName(
+        i18nc("@info calendar display locale (translate to a Qt locale name)", "system"), Qt.locale().name))
 
     extraFooterTopPadding: true
 
@@ -62,7 +65,7 @@ KCMUtils.ScrollViewKCM {
             textRole: "text"
             model: [-1, 0, 1, 2, 3, 4, 5, 6].map(day => ({
                 day,
-                text: day === -1 ? i18nc("@item:inlistbox first day of week option", "Use region defaults") : Qt.locale().dayName(day),
+                text: day === -1 ? i18nc("@item:inlistbox first day of week option", "Use region defaults") : calendarPage.calendarLocale.dayName(day),
             }))
             onActivated: index => {
                 cfg_firstDayOfWeek = model[index].day;

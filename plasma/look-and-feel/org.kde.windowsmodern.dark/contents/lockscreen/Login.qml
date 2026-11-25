@@ -111,7 +111,11 @@ SessionManagementScreen {
     // ── Username label ──
     Text {
         Layout.alignment: Qt.AlignHCenter
+        Layout.fillWidth: true
+        Layout.maximumWidth: root.width
         Layout.bottomMargin: 4
+        textFormat: Text.PlainText
+        elide: Text.ElideRight
         text: {
             if (root.showUsernamePrompt) {
                 return i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "User");
@@ -131,13 +135,20 @@ SessionManagementScreen {
     // ── Error message ──
     Item {
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredHeight: 20
+        Layout.fillWidth: true
+        Layout.maximumWidth: root.width
+        Layout.preferredHeight: Math.max(20, errorLabel.implicitHeight)
         Layout.bottomMargin: 0
         visible: root.customErrorMessage !== ""
 
         Text {
+            id: errorLabel
             anchors.centerIn: parent
-            visible: root.customErrorMessage !== ""
+            width: parent.width
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+            maximumLineCount: 3
+            elide: Text.ElideRight
             text: root.customErrorMessage
             font.family: WinStyle.fontFamily
             font.pixelSize: WinStyle.bodyPixelSize

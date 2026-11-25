@@ -13,15 +13,15 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
 import "../components"
+import "../code/tools.js" as Tools
 
 Item {
     id: allAppsPage
 
     readonly property var allAppsList: categoryMode ? allAppsListView : alphabeticalView
 
-    function lookupAppByDisplayName(displayName) {
-        if (!displayName) return null;
-        const item = alphabeticalView.sourceEntries.find(entry => entry.display === displayName);
+    function lookupAppByUrls(urls) {
+        const item = Tools.findAppByUrls(alphabeticalView.sourceEntries, urls);
         return item ? { row: item.index, favoriteId: item.favoriteId || "",
             url: item.url || "", actionList: item.actionList || null } : null;
     }
@@ -43,6 +43,9 @@ Item {
     property string categoryKey: ""
     property int categoryRow: 0
     readonly property bool inCategory: categoryMode && categoryChild !== null
+    readonly property bool letterIndexOpen: !categoryMode && alphabeticalView.letterIndexOpen
+    function closeLetterIndex(restoreFocus) { alphabeticalView.closeLetterIndex(restoreFocus); }
+    onVisibleChanged: if (!visible) closeLetterIndex(false)
 
     function resetCategory() {
         categoryChild = null;
@@ -100,6 +103,9 @@ Item {
     signal keyNavUpFromList
 
     function tryActivate(row) {
+        if (letterIndexOpen) {
+            alphabeticalView.closeLetterIndex(true);
+        }
         if (activeView.count > 0) {
             activeView.currentIndex = Math.min(row, activeView.count - 1);
             activeView.forceActiveFocus();
@@ -107,6 +113,7 @@ Item {
     }
 
     function navigateUp() {
+        if (letterIndexOpen) return;
         if (activeView === alphabeticalView)
             alphabeticalView.moveVertical(-1);
         else if (activeView.count > 0)
@@ -114,6 +121,7 @@ Item {
     }
 
     function navigateDown() {
+        if (letterIndexOpen) return;
         if (activeView === alphabeticalView)
             alphabeticalView.moveVertical(1);
         else if (activeView.count > 0)
@@ -121,6 +129,7 @@ Item {
     }
 
     function activateCurrent() {
+        if (letterIndexOpen) return;
         activeView.activateRow(Math.max(0, activeView.currentIndex));
     }
 
@@ -357,7 +366,25 @@ Item {
                     elide: Text.ElideRight
                     textFormat: Text.PlainText
 
-                    MouseArea { anchors.fill: parent; onClicked: card.openCategory() }
+                    id: categoryLabel
+                    objectName: "wmStartCategoryLabel_" + card.categoryIndex
+                    readonly property bool hovered: categoryLabelMouse.containsMouse
+                    height: 24
+                    verticalAlignment: Text.AlignVCenter
+                    background: Rectangle {
+                        radius: 4
+                        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                            Kirigami.Theme.textColor.b, categoryLabelMouse.containsPress ? 0.12
+                                : categoryLabel.hovered ? 0.07 : 0)
+                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+                    }
+                    MouseArea {
+                        id: categoryLabelMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: card.openCategory()
+                    }
                 }
             }
         }
@@ -428,6 +455,16 @@ Item {
             height: Math.max(1, Math.min(parent.height - 24,
                 84 + Math.max(1, Math.ceil(appCount / appColumns)) * appCellHeight))
             radius: 8
+            opacity: allAppsPage.inCategory ? 1 : 0
+            scale: allAppsPage.inCategory ? 1 : 0.94
+            Behavior on opacity {
+                enabled: allAppsPage.inCategory
+                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+            }
+            Behavior on scale {
+                enabled: allAppsPage.inCategory
+                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+            }
             readonly property bool dark: {
                 const c = Kirigami.Theme.backgroundColor;
                 return (c.r * 0.299 + c.g * 0.587 + c.b * 0.114) < 0.5;

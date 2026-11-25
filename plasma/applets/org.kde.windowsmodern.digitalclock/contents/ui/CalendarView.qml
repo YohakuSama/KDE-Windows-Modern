@@ -21,6 +21,7 @@ ColumnLayout {
     id: calendarView
 
     Win11Palette { id: palette }
+    readonly property alias calendarPalette: palette
 
     // Zoom levels: clicking the header zooms out, picking a tile zooms in.
     enum Zoom { Month, Year, Decade }
@@ -28,7 +29,8 @@ ColumnLayout {
     // The applet root (main.qml): the clock and the popup's expanded state.
     required property var applet
     property var calendarLocale: Qt.locale()
-    // Grid models depend on the local calendar day, not the displayed seconds.
+    // The applet updates every second while open. The month model needs
+    // only the day; a clock tick must not recreate its 42 delegates.
     readonly property int todayKey: applet.currentTime.getFullYear() * 10000
         + (applet.currentTime.getMonth() + 1) * 100 + applet.currentTime.getDate()
     readonly property date today: new Date(Math.floor(todayKey / 10000),

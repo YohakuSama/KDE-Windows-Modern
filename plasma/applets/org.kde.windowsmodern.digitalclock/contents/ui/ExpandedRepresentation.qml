@@ -23,14 +23,52 @@ FocusScope {
     required property var clockApplet
     property bool calendarExpanded: true
 
-    readonly property var clockTimeLocale: Qt.locale(DateFormat.clockLocaleName(
-        Plasmoid.configuration.use24hFormat, Qt.locale().name))
+    readonly property var clockTimeLocale: Plasmoid.configuration.use24hFormat === 1
+        ? Qt.locale("en_US") : Qt.locale()
     // Match the translated UI language without changing LC_TIME.
     readonly property var calendarLocale: Qt.locale(DateFormat.calendarLocaleName(
         i18nc("@info calendar display locale (translate to a Qt locale name)", "system"),
         Qt.locale().name))
 
     Win11Palette { id: palette }
+
+    property var splitBlurProvider: null
+    property bool allowSplitAcrylic: false
+    property bool splitAcrylic: false
+
+    function scheduleSplitBlur() {
+        if (!blurUpdate) return;
+        if (clockApplet && clockApplet.flyoutOpen && splitBlurProvider) {
+            blurUpdate.restart();
+        } else {
+            blurUpdate.stop();
+            splitAcrylic = false;
+        }
+    }
+
+    // Wait for both rectangles to have their final window-local geometry.
+    // Only use translucent paint after the native blur call succeeds.
+    Timer {
+        id: blurUpdate
+        interval: 16
+        onTriggered: {
+            expandedRoot.splitAcrylic = expandedRoot.clockApplet.flyoutOpen
+                && !!expandedRoot.splitBlurProvider
+                && expandedRoot.splitBlurProvider.setSplitPopupBlur(expandedRoot,
+                    notificationPanel, calendarPanel, notificationPanel.radius,
+                    expandedRoot.allowSplitAcrylic);
+        }
+    }
+    onSplitBlurProviderChanged: {
+        if (!splitBlurProvider && splitAcrylic && clockApplet && clockApplet.flyoutOpen)
+            clockApplet.closeFlyout();
+        scheduleSplitBlur();
+    }
+    onAllowSplitAcrylicChanged: scheduleSplitBlur()
+    Connections {
+        target: expandedRoot.clockApplet
+        function onFlyoutOpenChanged() { expandedRoot.scheduleSplitBlur(); }
+    }
 
     // Plasma owns the popup window and transfers these layout hints.
     // Derive hints from the panel's screen, not this hidden view's geometry.
@@ -121,7 +159,11 @@ FocusScope {
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
             radius: 8
-            color: palette.detachedPanel
+            color: expandedRoot.splitAcrylic ? palette.acrylicPanel : palette.detachedPanel
+            onXChanged: expandedRoot.scheduleSplitBlur()
+            onYChanged: expandedRoot.scheduleSplitBlur()
+            onWidthChanged: expandedRoot.scheduleSplitBlur()
+            onHeightChanged: expandedRoot.scheduleSplitBlur()
             border.width: 1
             border.color: palette.surfaceBorder
 
@@ -147,7 +189,11 @@ FocusScope {
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
             radius: 8
-            color: palette.detachedPanel
+            color: expandedRoot.splitAcrylic ? palette.acrylicPanel : palette.detachedPanel
+            onXChanged: expandedRoot.scheduleSplitBlur()
+            onYChanged: expandedRoot.scheduleSplitBlur()
+            onWidthChanged: expandedRoot.scheduleSplitBlur()
+            onHeightChanged: expandedRoot.scheduleSplitBlur()
             border.width: 1
             border.color: palette.surfaceBorder
 
@@ -224,11 +270,11 @@ FocusScope {
                             textFormat: Text.PlainText
                             text: {
                                 const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
-                                // Render the AM/PM suffix separately so it can be smaller.
-                                if (fmt.toLowerCase().includes("ap")) {
-                                    return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
-                                }
-                                return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt);
+                                const full = expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt);
+                                // Removing AP from the FORMAT changes 12-hour conversion.
+                                // Split only the actual formatted suffix; preserve prefixes.
+                                return amPmLabel.visible && full.endsWith(amPmLabel.text)
+                                    ? full.slice(0, -amPmLabel.text.length).trim() : full;
                             }
                             color: palette.text
                             font {
@@ -241,7 +287,8 @@ FocusScope {
 
                         PlasmaComponents.Label {
                             id: amPmLabel
-                            visible: expandedRoot.clockApplet.timeFormatWithSeconds.toLowerCase().includes("ap")
+                            visible: /\s+AP$/i.test(expandedRoot.clockApplet.timeFormatWithSeconds)
+                                && text.length > 0
                             horizontalAlignment: Text.AlignLeft
                             verticalAlignment: Text.AlignTop
                             textFormat: Text.PlainText
@@ -285,6 +332,8 @@ FocusScope {
                     DayAgenda {
                         id: agenda
                         calendarLocale: expandedRoot.calendarLocale
+                        timeLocale: expandedRoot.clockTimeLocale
+                        timeFormat: expandedRoot.clockApplet.timeFormat || "h:mm AP"
                         Layout.fillWidth: true
                         visible: expandedRoot.agendaShown
                         date: calendarView.selectedDate

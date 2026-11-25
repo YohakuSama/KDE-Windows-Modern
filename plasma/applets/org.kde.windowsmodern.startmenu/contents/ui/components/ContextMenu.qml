@@ -14,10 +14,31 @@ Item {
     property var context: ({})
     property var actions: []
     property var pendingAction: null
-    readonly property int rowHeight: 32
+    readonly property int rowHeight: 36
+    readonly property int separatorHeight: 9
     readonly property int gap: 8
 
     FontMetrics { id: metrics; font: Kirigami.Theme.defaultFont }
+
+    // Every source model can change while a menu is open (not just All
+    // Apps). Discard captured row indexes before an action can use them.
+    component ModelGuard: Connections {
+        ignoreUnknownSignals: true
+        function onModelReset() { contextMenu.close(); }
+        function onRowsInserted() { contextMenu.close(); }
+        function onRowsRemoved() { contextMenu.close(); }
+        function onRowsMoved() { contextMenu.close(); }
+        function onLayoutChanged() { contextMenu.close(); }
+        function onDataChanged() { contextMenu.close(); }
+    }
+    ModelGuard {
+        target: contextMenu.opened && typeof contextMenu.context.model === "object"
+            ? contextMenu.context.model : null
+    }
+    ModelGuard {
+        target: contextMenu.opened && contextMenu.context.resolvedModel !== contextMenu.context.model
+            && typeof contextMenu.context.resolvedModel === "object" ? contextMenu.context.resolvedModel : null
+    }
 
     function selectable(index) {
         const action = actions[index];
@@ -50,12 +71,12 @@ Item {
         context = details || ({});
         pendingAction = null;
         let widest = 0;
-        let wantedHeight = 8;
+        let wantedHeight = 12;
         for (const action of actions) {
-            wantedHeight += action.type === "separator" ? 1 : rowHeight;
-            widest = Math.max(widest, metrics.advanceWidth(action.text || ""));
+            wantedHeight += action.type === "separator" ? separatorHeight : rowHeight;
+            widest = Math.max(widest, metrics.advanceWidth(action.text || "") + (action.shortcut ? metrics.advanceWidth(action.shortcut) + 24 : 0));
         }
-        popup.width = Math.min(width - 2 * gap, Math.max(160, Math.min(360, widest + 64)));
+        popup.width = Math.min(width - 2 * gap, Math.max(184, Math.min(400, widest + 72)));
         popup.height = Math.min(height - 2 * gap, wantedHeight);
         popup.x = Math.max(gap, Math.min(localX, width - popup.width - gap));
         const below = localY + 4;
@@ -80,7 +101,7 @@ Item {
         modal: true
         dim: false
         focus: true
-        padding: 4
+        padding: 6
         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
         onOpened: {
             list.currentIndex = -1;
@@ -109,7 +130,11 @@ Item {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             keyNavigationEnabled: false
-            QQC2.ScrollBar.vertical: QQC2.ScrollBar { policy: QQC2.ScrollBar.AsNeeded }
+            HoverHandler { id: menuHover }
+            QQC2.ScrollBar.vertical: StartScrollBar {
+                viewportHovered: menuHover.hovered
+                scrolling: list.moving
+            }
             Keys.onPressed: event => {
                 switch (event.key) {
                 case Qt.Key_Up: contextMenu.step(-1); break;
@@ -128,29 +153,49 @@ Item {
                 required property var modelData
                 readonly property bool separator: modelData.type === "separator"
                 width: list.width
-                height: separator ? 1 : contextMenu.rowHeight
+                height: separator ? contextMenu.separatorHeight : contextMenu.rowHeight
+                leftPadding: 12
+                rightPadding: 12
                 enabled: contextMenu.selectable(index)
                 focusPolicy: Qt.NoFocus
                 text: modelData.text || ""
                 background: Rectangle {
-                    radius: row.separator ? 0 : 4
+                    radius: 4
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                        Kirigami.Theme.textColor.b, row.separator ? 0.10
-                            : row.hovered || (row.ListView.isCurrentItem && list.activeFocus) ? 0.08 : 0)
+                        Kirigami.Theme.textColor.b, row.separator ? 0
+                            : row.down ? 0.12 : row.hovered || (row.ListView.isCurrentItem && list.activeFocus) ? 0.08 : 0)
+                }
+                Rectangle {
+                    visible: row.separator
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 6
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 1
+                    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10)
                 }
                 contentItem: RowLayout {
                     visible: !row.separator
-                    spacing: 8
+                    spacing: 12
                     Kirigami.Icon {
-                        Layout.preferredWidth: 16
-                        Layout.preferredHeight: 16
+                        Layout.preferredWidth: 20
+                        Layout.preferredHeight: 20
                         source: row.modelData.icon || ""
                     }
                     QQC2.Label {
                         Layout.fillWidth: true
                         text: row.text
+                        font.pixelSize: 13
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
+                    }
+                    QQC2.Label {
+                        visible: !!row.modelData.shortcut
+                        text: row.modelData.shortcut || ""
+                        opacity: 0.65
+                        font.pixelSize: 12
+                        textFormat: Text.PlainText
                     }
                 }
                 onClicked: contextMenu.activate(index)

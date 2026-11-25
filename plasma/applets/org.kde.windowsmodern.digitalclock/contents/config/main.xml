@@ -25,7 +25,7 @@
     </entry>
     <entry name="dateFormat" type="string">
       <label>The date format to display. Options are: shortDate (Windows year/month/day), regionalDate, longDate, isoDate or custom.</label>
-      <default>shortDate</default>
+      <default>regionalDate</default>
     </entry>
     <entry name="customDateFormat" type="string">
       <label>Custom date format string.</label>
@@ -88,8 +88,12 @@
       <default>false</default>
     </entry>
     <entry name="use24hFormat" type="UInt">
-      <label>Clock time style: 0 = 12 hour, 1 = Windows 12-hour default with English AM/PM, 2 = 24 hour with leading zero, 3 = regional default.</label>
-      <default>1</default>
+      <label>Clock time style: 0 = 12 hour, 1 = explicit English AM/PM, 2 = 24 hour with leading zero, 3 = regional default.</label>
+      <default>3</default>
+    </entry>
+    <entry name="regionalClockDefaultsMigrated" type="Bool">
+      <label>Whether legacy forced clock defaults were migrated to the system region.</label>
+      <default>false</default>
     </entry>
     <entry name="firstDayOfWeek" type="Int">
       <label>Force the calendar to use a specific week day as first day of a week. -1 means follow user locale, 0 is Sunday, 1 is Monday, etc.</label>

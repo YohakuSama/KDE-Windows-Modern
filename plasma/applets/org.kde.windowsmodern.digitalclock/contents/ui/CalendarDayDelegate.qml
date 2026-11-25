@@ -22,7 +22,7 @@ MouseArea {
     required property PlasmaCalendar.DaysModel daysModel
     required property int eventsRevision
 
-    Win11Palette { id: palette }
+    required property var colors
 
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
@@ -55,17 +55,17 @@ MouseArea {
         radius: width / 2
         color: {
             if (dayData.isToday) {
-                return palette.accent;
+                return dayDelegate.colors.accent;
             } else if (dayDelegate.containsPress) {
-                return palette.pressed;
+                return dayDelegate.colors.pressed;
             } else if (dayDelegate.containsMouse) {
-                return palette.hover;
+                return dayDelegate.colors.hover;
             }
             return "transparent";
         }
         // The picked day: an accent ring, as Windows 11 draws it (it was a
         // surface-coloured fill, invisible in dark mode).
-        border.color: dayData.isSelected && !dayData.isToday ? palette.accent : "transparent"
+        border.color: dayData.isSelected && !dayData.isToday ? dayDelegate.colors.accent : "transparent"
         border.width: 2
 
         Behavior on color {
@@ -98,11 +98,11 @@ MouseArea {
             text: dayData.day
             color: {
                 if (dayData.isToday) {
-                    return palette.accentText;
+                    return dayDelegate.colors.accentText;
                 } else if (dayData.isCurrentMonth) {
-                    return palette.text;
+                    return dayDelegate.colors.text;
                 }
-                return palette.textDisabled;
+                return dayDelegate.colors.textDisabled;
             }
             font.pixelSize: Math.max(8, Math.min(13, Math.floor(dayDelegate.height * (dayDelegate.hasEvents ? 0.52 : 0.68))))
         }
@@ -121,7 +121,7 @@ MouseArea {
                     width: 4
                     height: 4
                     radius: 2
-                    color: dayDelegate.dayEvents[index].eventColor || palette.accent
+                    color: dayDelegate.dayEvents[index].eventColor || dayDelegate.colors.accent
                 }
             }
         }
