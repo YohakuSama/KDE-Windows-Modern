@@ -22,7 +22,7 @@ The newer taskbar assets are stored outside those MUN files and are now
 identified by their original paths:
 
 - SysBatt Fluent Icons font, converted locally into 38 battery state SVGs.
-- Search activation/idle PNGs for light and dark taskbars.
+- Search activation/idle PNGs for light taskbars and the activation PNG for dark taskbars. If the source build has no dark idle image, the applet uses the verified Segoe E721 glyph for that state.
 - Task View light/dark SVGs embedded in Windows.UI.SettingsAppThreshold.pri.
 
 Import them from an authorized Windows 11 26H2 installation with
