@@ -6,6 +6,13 @@ import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/po
 TestCase {
     name: "StartMenuPopupPosition"
 
+    function test_screenGeometryDuringPanelCreation() {
+        compare(PopupPosition.screenGeometryOrEmpty(undefined), Qt.rect(0, 0, 0, 0));
+        compare(PopupPosition.screenGeometryOrEmpty(null), Qt.rect(0, 0, 0, 0));
+        compare(PopupPosition.screenGeometryOrEmpty({x: 0, y: 0, width: -1, height: 720}), Qt.rect(0, 0, 0, 0));
+        compare(PopupPosition.screenGeometryOrEmpty(Qt.rect(-1920, 0, 1920, 1080)), Qt.rect(-1920, 0, 1920, 1080));
+    }
+
     function test_horizontalAnchorOffset_data() {
         return [
             {tag: "left bottom", mode: 0, screen: {x: 0, width: 1536}, button: {x: 0, width: 48}, expected: 0},

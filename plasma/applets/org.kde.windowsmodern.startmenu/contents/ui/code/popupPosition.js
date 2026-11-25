@@ -32,3 +32,13 @@ function horizontalAnchorOffset(mode, screen, button) {
         return 0;
     return Math.round(screen.x + screen.width / 2 - buttonCenter);
 }
+
+// The native applet can have no screen while its panel is being created.
+// Avoid assigning undefined to a QRectF during that lifecycle transition.
+function screenGeometryOrEmpty(screen) {
+    if (!screen || !Number.isFinite(screen.x) || !Number.isFinite(screen.y)
+            || !Number.isFinite(screen.width) || !Number.isFinite(screen.height)
+            || screen.width <= 0 || screen.height <= 0)
+        return Qt.rect(0, 0, 0, 0);
+    return Qt.rect(screen.x, screen.y, screen.width, screen.height);
+}

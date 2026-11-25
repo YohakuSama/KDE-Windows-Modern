@@ -32,11 +32,20 @@ FocusScope {
 
     // Preserve the native Plasma full representation. Its default margin
     // is zero on docked panels; change only this applet's popup window.
-    readonly property var nativePopup: {
+    property var nativePopup: null
+
+    // Window.window is an attached property that can change while the
+    // native popup is reparenting its content. Resolve it outside the
+    // current binding evaluation before applying margin/border changes.
+    function syncNativePopup() {
         const win = expandedRoot.Window.window;
-        return win && win.objectName === "popupWindow" && "margin" in win
+        const popup = win && win.objectName === "popupWindow" && "margin" in win
             && "removeBorderStrategy" in win ? win : null;
+        if (expandedRoot.nativePopup !== popup)
+            expandedRoot.nativePopup = popup;
     }
+    Window.onWindowChanged: Qt.callLater(expandedRoot.syncNativePopup)
+    Component.onCompleted: Qt.callLater(expandedRoot.syncNativePopup)
     Binding {
         target: expandedRoot.nativePopup
         property: "margin"

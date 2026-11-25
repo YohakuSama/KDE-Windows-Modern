@@ -73,7 +73,7 @@ Item {
         if (horizontal) {
             const pos = startButton.mapToGlobal(0, 0);
             popupAnchor.x = PopupPosition.horizontalAnchorOffset(
-                Plasmoid.configuration.displayPosition, Plasmoid.screenGeometry,
+                Plasmoid.configuration.displayPosition, rootItem.screen,
                 { x: pos.x, width: startButton.width });
         }
         root.visible = true;
@@ -165,7 +165,7 @@ Item {
             id: rootItem
 
             readonly property int margin: 28
-            readonly property rect screen: Plasmoid.screenGeometry
+            readonly property rect screen: PopupPosition.screenGeometryOrEmpty(Plasmoid.screenGeometry)
             readonly property bool largeLayout: Plasmoid.configuration.startMenuSize === 2
                 || (Plasmoid.configuration.startMenuSize === 0 && screen.width >= 1440)
             readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
@@ -400,18 +400,14 @@ Item {
                                     font.weight: Font.DemiBold
                                 }
 
-                                PlasmaComponents3.ComboBox {
+                                FluentViewSelector {
                                     id: viewSelector
                                     Layout.preferredWidth: Math.max(132, implicitWidth)
-                                    Layout.preferredHeight: 30
-                                    model: [i18n("List"), i18n("Grid"), i18n("Category")]
+                                    Layout.maximumWidth: Math.max(132, rootItem.width / 2)
+                                    Layout.preferredHeight: implicitHeight
+                                    choices: [i18n("List"), i18n("Grid"), i18n("Category")]
                                     currentIndex: Plasmoid.configuration.allAppsViewMode
-                                    displayText: i18n("View: %1", currentText)
-                                    background: Rectangle {
-                                        radius: 4
-                                        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                            Kirigami.Theme.textColor.b, viewSelector.hovered || viewSelector.activeFocus ? 0.06 : 0)
-                                    }
+                                    labelFormat: i18n("View: %1")
                                     onActivated: index => {
                                         root.leftColumnState = 1;
                                         allAppsPage.resetCategory();

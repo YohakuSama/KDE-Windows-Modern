@@ -98,3 +98,9 @@ Implementation references: [KDE Bluedevil](https://github.com/KDE/bluedevil/tree
 ### Modern battery and grouped hover follow-up
 
 Compare the project-drawn colored battery and optional percentage against KB5067036 and the owner's screenshot at 150%. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The visual asset is recreated, not extracted from Windows.
+
+### Compiled shell and popup lifecycle regression checks
+
+The duplicate assignment in the compiled tray header was fixed by removing the whole-font binding where a grouped font weight is set. The current C++ resource test resolves both the real embedded ExpandedRepresentation and main components before packaging. The Start view selector now measures translated labels independently of selection and uses shared Fluent surfaces; the Start screen rectangle tolerates the early no-output state. The clock applies native popup properties after the window attachment has settled instead of binding directly during reparenting.
+
+The Fedora 45 nested Wayland capture on run 45522344005 reached Weston and KWin but KWin quit before screenshots because the Weston Pixman parent did not provide a compatible DMA-BUF render device. KWin 6.8's Wayland backend only advertises OpenGL compositing when the parent exposes linux-dmabuf and a compatible render device (see https://github.com/KDE/kwin/blob/v6.8.2/src/backends/wayland/wayland_backend.cpp). This is a capture-environment failure, not desktop acceptance. Do not suppress the capture gate or represent component checks as live visual proof.

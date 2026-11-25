@@ -6,6 +6,12 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Popup lifecycle and Start view control
+
+- Remove the inherited Start view selector's width feedback path by using a measured Fluent ComboBox with native selection behavior and a matching popup. Guard undefined screen geometry during panel initialization.
+- Defer clock native-popup attachment updates until window reparenting settles. Add selector, screen geometry and popup attach/detach tests.
+- Record the nested Wayland render-device blocker separately from the passing compiled tray component checks.
+
 ### Removable devices and battery resource location
 
 - Use the existing device-notifier model for a themed device list and its real default/secondary actions; disable commands while busy or after removal, display native messages, and preserve native fallback if the model is unavailable.

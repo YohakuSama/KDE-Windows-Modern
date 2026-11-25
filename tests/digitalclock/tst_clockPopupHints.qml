@@ -3,6 +3,7 @@
 // mocked. This checks component creation and layout, not Wayland mapping.
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui"
 
@@ -17,6 +18,16 @@ Item {
     }
     function i18np(singular, plural, n) {
         return (n === 1 ? singular : plural).replace("%1", n);
+    }
+
+    Window {
+        id: mockNativePopup
+        objectName: "popupWindow"
+        property int margin: 0
+        property int removeBorderStrategy: 0
+        visible: false
+        width: 420
+        height: 620
     }
 
     ListModel { id: notifications }
@@ -57,6 +68,16 @@ Item {
             tryCompare(findChild(popup, "wmCalendarDateHeading"), "text", "11月25日 星期三");
             tryCompare(findChild(popup, "wmCalendarMonthHeading"), "text", "2026年11月");
             compare(popup.nativePopup, null);
+        }
+        function test_nativePopupAttachDetach() {
+            try {
+                popup.parent = mockNativePopup.contentItem;
+                tryCompare(popup, "nativePopup", mockNativePopup);
+                tryCompare(mockNativePopup, "margin", 8);
+            } finally {
+                popup.parent = root;
+                tryCompare(popup, "nativePopup", null);
+            }
         }
         function test_fullCalendarHasUsableGeometry() {
             compare(popup.implicitWidth, 320);
