@@ -208,6 +208,8 @@ Item {
                 required property var modelData
                 readonly property int categoryIndex: index
                 readonly property string categoryName: modelData.label
+                scale: cardHover.hovered ? 1.025 : 1
+                Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
                 readonly property var childModel: modelData.entries
                 readonly property int appCount: childModel.length
 
@@ -236,6 +238,7 @@ Item {
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, cardHover.hovered
                             || (card.GridView.isCurrentItem && allAppsListView.activeFocus) ? 0.09 : 0.04)
+                    Behavior on color { ColorAnimation { duration: 130 } }
 
                     HoverHandler { id: cardHover }
 
@@ -285,6 +288,7 @@ Item {
                                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                         Kirigami.Theme.textColor.b, slotMouse.containsPress ? 0.12
                                             : slot.hovered ? 0.07 : 0)
+                                    Behavior on color { ColorAnimation { duration: 100 } }
                                 }
 
                                 Kirigami.Icon {
@@ -344,6 +348,9 @@ Item {
                 }
 
                 PlasmaComponents3.Label {
+                    id: categoryLabel
+                    objectName: "wmStartCategoryLabel"
+                    readonly property bool hovered: categoryLabelMouse.containsMouse
                     anchors.top: surface.bottom
                     anchors.topMargin: 6
                     anchors.left: parent.left
@@ -352,12 +359,24 @@ Item {
                     anchors.rightMargin: 4
                     horizontalAlignment: Text.AlignHCenter
                     text: card.categoryName
+                    color: hovered ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
                     font.pixelSize: 12
+                    font.weight: hovered ? Font.DemiBold : Font.Normal
+                    scale: hovered ? 1.04 : 1
+                    transformOrigin: Item.Center
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                     maximumLineCount: 1
                     elide: Text.ElideRight
                     textFormat: Text.PlainText
 
-                    MouseArea { anchors.fill: parent; onClicked: card.openCategory() }
+                    MouseArea {
+                        id: categoryLabelMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: card.openCategory()
+                    }
                 }
             }
         }
@@ -407,8 +426,12 @@ Item {
         parent: allAppsListView
         anchors.fill: parent
         z: 100
-        visible: allAppsPage.inCategory
+        visible: allAppsPage.inCategory || opacity > 0.001
+        opacity: allAppsPage.inCategory ? 1 : 0
+        scale: allAppsPage.inCategory ? 1 : 0.97
         objectName: "wmStartCategoryOverlay"
+        Behavior on opacity { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 190; easing.type: Easing.OutBack } }
 
         MouseArea {
             anchors.fill: parent

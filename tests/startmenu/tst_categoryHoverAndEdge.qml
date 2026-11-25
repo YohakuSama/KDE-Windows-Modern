@@ -46,6 +46,19 @@ Item {
             tryCompare(slot, "hovered", true);
             mouseClick(slot, slot.width / 2, slot.height / 2);
             tryCompare(catalog, "launchedSourceRow", slot.entry.index);
+
+            const categoryLabel = findChild(page, "wmStartCategoryLabel");
+            verify(categoryLabel);
+            mouseMove(categoryLabel, categoryLabel.width / 2, categoryLabel.height / 2);
+            tryCompare(categoryLabel, "hovered", true);
+            mouseClick(categoryLabel, categoryLabel.width / 2, categoryLabel.height / 2);
+            tryCompare(page, "inCategory", true);
+            const overlay = findChild(page, "wmStartCategoryOverlay");
+            verify(overlay);
+            tryCompare(overlay, "opacity", 1);
+            page.backToCategories();
+            tryCompare(page, "inCategory", false);
+
             let contextRow = -1;
             page.appContextMenuRequested.connect((entry, x, y) => { contextRow = entry.index; });
             mouseClick(slot, slot.width / 2, slot.height / 2, Qt.RightButton);
