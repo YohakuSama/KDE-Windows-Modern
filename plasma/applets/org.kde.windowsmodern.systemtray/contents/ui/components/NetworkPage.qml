@@ -59,6 +59,7 @@ Lib.DetailPage {
     listView.delegate: Item {
         id: delegate
         // Reserve the WinUI scrollbar's 16px overlay region.
+        x: 8
         width: Math.max(1, listView.width - 16)
         height: container.height + 2
 
@@ -69,7 +70,7 @@ Lib.DetailPage {
              SecurityType === PlasmaNM.Enums.SAE)
 
         property int connectionState: ConnectionState
-        property bool expanded: false
+        property bool expanded: connectionState === PlasmaNM.Enums.Activated
         property string phase: "idle"
         property string password: ""
         property bool showPassword: false
@@ -153,7 +154,7 @@ Lib.DetailPage {
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 34
+                    Layout.preferredHeight: delegate.statusText().length > 0 ? 48 : 38
 
                     MouseArea {
                         id: headerMA
@@ -174,11 +175,13 @@ Lib.DetailPage {
                         anchors.fill: parent
                         anchors.leftMargin: 12
                         anchors.rightMargin: 12
-                        spacing: 8
+                        spacing: 12
 
                         Kirigami.Icon {
-                            width: 20
-                            height: 20
+                            Layout.preferredWidth: 24
+                            Layout.preferredHeight: 24
+                            Layout.alignment: Qt.AlignVCenter
+                            roundToIconSize: false
                             source: model.ConnectionIcon
                             color: Kirigami.Theme.textColor
                         }
@@ -208,7 +211,7 @@ Lib.DetailPage {
                             visible: connectionState === PlasmaNM.Enums.Activated
                             Layout.preferredWidth: 20
                             Layout.preferredHeight: 20
-                            source: "help-about"
+                            source: "dialog-information"
                             color: Kirigami.Theme.textColor
                             opacity: infoMA.containsMouse ? 1 : 0.6
                             isMask: true

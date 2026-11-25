@@ -106,7 +106,9 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     // Hide redundant delegates, not the native applets/backends. The
     // notification applet still presents real desktop toast notifications.
     if (itemId == QLatin1String("org.kde.plasma.notifications")
-        || itemId == QLatin1String("org.kde.plasma.brightness")) {
+        || itemId == QLatin1String("org.kde.plasma.brightness")
+        || itemId == QLatin1String("org.kde.plasma.userswitcher")
+        || itemId == QLatin1String("org.kde.plasma.mediacontroller")) {
         return Status::HiddenStatus;
     }
     if (itemId == QLatin1String("org.kde.plasma.battery")) {
@@ -129,11 +131,14 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     if (pinned) {
         return Status::ActiveStatus;
     }
+    const bool dynamicDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
+        || itemId == QLatin1String("org.kde.plasma.devicenotifier");
+    if (dynamicDevice && (status == Status::PassiveStatus || status == Status::UnknownStatus)) {
+        return Status::HiddenStatus;
+    }
     if (hiddenByUser) {
         return Status::PassiveStatus;
     }
-    const bool dynamicDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
-        || itemId == QLatin1String("org.kde.plasma.devicenotifier");
     const bool needsAttention = status == Status::NeedsAttentionStatus || status == Status::RequiresAttentionStatus
         || status == Status::AcceptingInputStatus;
     const bool activeDefault = (status == Status::ActiveStatus || status == Status::UnknownStatus) && shownByDefault(itemId);
