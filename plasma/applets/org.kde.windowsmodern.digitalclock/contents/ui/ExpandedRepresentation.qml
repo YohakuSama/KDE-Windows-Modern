@@ -45,12 +45,13 @@ FocusScope {
     readonly property var panelScreen: clockApplet.popupScreenGeometry
     readonly property real screenWidth: Number(panelScreen?.width || 0)
     readonly property real screenHeight: Number(panelScreen?.height || 0)
-    readonly property real panelExtent: Math.min(96, Math.max(0, Number(clockApplet.popupPanelExtent) || 48))
+    readonly property bool verticalPanel: clockApplet.popupVerticalPanel === true
+    readonly property real panelExtent: Math.max(0, Number(clockApplet.popupPanelExtent) || 48)
     readonly property int availableScreenHeight: screenHeight >= 100
-        ? Math.max(1, Math.floor(screenHeight - panelExtent - 32)) : 720
+        ? Math.max(1, Math.floor(screenHeight - (verticalPanel ? 0 : panelExtent) - 32)) : 720
     readonly property int configuredWidth: Math.max(240, Number(Plasmoid.configuration.expandedWidth) || 320)
     readonly property int popupWidth: Math.min(configuredWidth, screenWidth >= 100
-        ? Math.max(1, Math.floor(screenWidth - 24)) : configuredWidth)
+        ? Math.max(1, Math.floor(screenWidth - (verticalPanel ? panelExtent : 0) - 24)) : configuredWidth)
     readonly property int notificationMinimum: history.minimumSectionHeight + 2 * sectionInset
     // Reserve a usable calendar and then let notification history grow into
     // the remaining space. Only the history list scrolls, never both cards.

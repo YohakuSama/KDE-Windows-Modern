@@ -10,17 +10,17 @@
 
 // Flat buttons / chips ("All apps", "Back", filter pills, shutdown split)
 var buttonFlatBackgroundOpacity = 0.06;
-var buttonFlatHoverOpacity      = 0.12;
+var buttonFlatHoverOpacity      = 0.08;
 
 // Raised / hover-filled controls (legacy AToolButton hover, list items)
-var buttonHoverOpacity          = 0.15;
+var buttonHoverOpacity          = 0.08;
 
 // Borders and dividers
-var buttonBorderOpacity         = 0.15;
-var buttonDividerOpacity        = 0.20;
+var buttonBorderOpacity         = 0.08;
+var buttonDividerOpacity        = 0.10;
 var fieldBorderOpacity          = 0.12;
-var popupBorderOpacity          = 0.20;
-var separatorOpacity            = 0.12;
+var popupBorderOpacity          = 0.10;
+var separatorOpacity            = 0.09;
 var headerSeparatorOpacity      = 0.08;
 
 // Icons and text that are de-emphasized
@@ -41,3 +41,11 @@ var menuTranslucencyOpaque      = 2;
 // Convenience constants for fully visible / fully hidden states
 var opacityFull   = 1.0;
 var opacityHidden = 0.0;
+
+// Use the same neutral surfaces as the shell popup frames.
+function isDark(color) {
+    const rgb = [color.r, color.g, color.b].map(v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] <= 0.179;
+}
+function menuSurface(bg) { return isDark(bg) ? "#2C2C2C" : "#F9F9F9"; }
+function menuBorder(bg) { return isDark(bg) ? "#383838" : "#DCDCDC"; }

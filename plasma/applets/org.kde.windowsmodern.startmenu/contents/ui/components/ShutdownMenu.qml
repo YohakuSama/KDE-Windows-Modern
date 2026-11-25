@@ -74,7 +74,7 @@ Item {
         width: panelWidth
         height: powerColumn.implicitHeight + 8
         radius: 8
-        color: Kirigami.Theme.backgroundColor.hslLightness < 0.5 ? "#2C2C2C" : "#F9F9F9"
+        color: Theme.menuSurface(Kirigami.Theme.backgroundColor)
         border.width: 1
         border.color: Qt.rgba(Kirigami.Theme.textColor.r,
                                Kirigami.Theme.textColor.g,
@@ -212,8 +212,11 @@ Item {
     }
 
     // ── Positioning logic ──────────────────────────────────────────────
+    onWidthChanged: if (popup.visible) close()
+    onHeightChanged: if (popup.visible) close()
+
     function open() {
-        if (!root.visualParent) return
+        if (!root.visualParent || !root.visualParent.visible) return
 
         // Lay out only the active menu's visible rows before measuring.
         popup.visible = true;

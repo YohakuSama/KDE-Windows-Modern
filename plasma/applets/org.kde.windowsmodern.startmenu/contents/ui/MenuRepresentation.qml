@@ -40,6 +40,17 @@ Item {
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
     readonly property bool menuShown: root.visible
+    readonly property var panelWindow: startButton ? startButton.Window.window : null
+    readonly property rect panelGeometry: panelWindow
+        ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
+    readonly property bool verticalPanel: Plasmoid.location === PlasmaCore.Types.LeftEdge
+        || Plasmoid.location === PlasmaCore.Types.RightEdge
+    readonly property real panelExtent: Math.max(0, verticalPanel
+        ? (panelGeometry.width || startButton?.width || 0)
+        : (panelGeometry.height || startButton?.height || 0))
+    // Legacy Dialog does not track every panel move while mapped. Dismiss
+    // safely during reconfiguration; the next open uses the new anchor.
+    onPanelGeometryChanged: if (root.visible) root.closeMenu()
 
     // Native Plasma positions the popup relative to an Item in the panel's
     // window, including its real output and work area on Wayland and X11.
@@ -70,7 +81,8 @@ Item {
             const pos = startButton.mapToGlobal(0, 0);
             popupAnchor.x = PopupPosition.horizontalAnchorOffset(
                 Plasmoid.configuration.displayPosition, Plasmoid.screenGeometry,
-                { x: pos.x, width: startButton.width });
+                { x: pos.x, width: startButton.width }, panelGeometry,
+                rootItem.width + root.margins.left + root.margins.right);
         }
         root.visible = true;
     }
@@ -171,8 +183,10 @@ Item {
                 && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
             readonly property int wantedWidth: largeLayout ? 768 : 560
             readonly property int wantedHeight: largeLayout ? 720 : 640
-            width: Math.max(1, Math.min(wantedWidth, screen.width > 0 ? screen.width - 2 * margin : wantedWidth))
-            height: Math.max(1, Math.min(wantedHeight, screen.height > 0 ? screen.height - 3 * margin : wantedHeight))
+            width: Math.max(1, Math.min(wantedWidth, screen.width > 0
+                ? screen.width - (main.verticalPanel ? main.panelExtent : 0) - 2 * margin : wantedWidth))
+            height: Math.max(1, Math.min(wantedHeight, screen.height > 0
+                ? screen.height - (main.verticalPanel ? 0 : main.panelExtent) - 2 * margin : wantedHeight))
             focus: true
 
             // Note: do NOT auto-redirect to the search field here.

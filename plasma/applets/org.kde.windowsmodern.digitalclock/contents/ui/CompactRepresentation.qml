@@ -34,6 +34,10 @@ MouseArea {
     required property var plasmoidItem
 
     readonly property real panelHeight: parent ? parent.height : height
+    readonly property var panelWindow: main.Window.window
+    readonly property rect panelGeometry: panelWindow
+        ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
+    onPanelGeometryChanged: if (clockDialog.visible) clockDialog.visible = false
     readonly property bool showBell: NotificationPresentation.showBell(
         Plasmoid.configuration.showNotificationButton,
         Plasmoid.formFactor !== PlasmaCore.Types.Vertical,

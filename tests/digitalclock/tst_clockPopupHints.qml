@@ -37,6 +37,7 @@ Item {
         readonly property bool flyoutOpen: expanded
         property rect popupScreenGeometry: Qt.rect(0, 0, 1280, 720)
         property real popupPanelExtent: 48
+        property bool popupVerticalPanel: false
         property bool notificationsAvailable: true
         property bool notificationsInhibited: false
         property var notificationModel: notifications
@@ -58,6 +59,17 @@ Item {
             tryCompare(findChild(popup, "wmCalendarDateHeading"), "text", "11月25日 星期三");
             tryCompare(findChild(popup, "wmCalendarMonthHeading"), "text", "2026年11月");
             compare(popup.sectionGap, 12);
+        }
+        function test_panelOrientationAndThickness() {
+            clock.popupPanelExtent = 120;
+            compare(popup.availableScreenHeight, 568);
+            clock.popupVerticalPanel = true;
+            compare(popup.availableScreenHeight, 688);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 440, 720);
+            compare(popup.popupWidth, 296);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+            clock.popupPanelExtent = 48;
+            clock.popupVerticalPanel = false;
         }
         function test_fullCalendarHasUsableGeometry() {
             compare(popup.implicitWidth, 320);

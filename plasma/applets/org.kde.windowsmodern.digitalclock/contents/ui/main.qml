@@ -30,9 +30,9 @@ PlasmoidItem {
     property var panelPopup: null
     readonly property bool flyoutOpen: !!panelPopup && panelPopup.visible
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry
+    readonly property bool popupVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property real popupPanelExtent: panelPopup && panelPopup.visualParent
-        ? (Plasmoid.formFactor === PlasmaCore.Types.Vertical
-            ? panelPopup.visualParent.width : panelPopup.visualParent.height) : 48
+        ? (popupVerticalPanel ? panelPopup.visualParent.width : panelPopup.visualParent.height) : 48
     toolTipMainText: flyoutOpen ? "" : i18n("Clock")
     toolTipSubText: flyoutOpen ? "" : notificationStatusText
     Plasmoid.status: flyoutOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus

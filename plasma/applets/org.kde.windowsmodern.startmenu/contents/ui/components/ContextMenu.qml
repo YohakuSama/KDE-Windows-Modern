@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "../code/theme.js" as Theme
 
 Item {
     id: contextMenu
@@ -98,10 +99,9 @@ Item {
         }
         background: Rectangle {
             radius: 8
-            color: Kirigami.Theme.backgroundColor
+            color: Theme.menuSurface(Kirigami.Theme.backgroundColor)
             border.width: 1
-            border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                Kirigami.Theme.textColor.b, 0.10)
+            border.color: Theme.menuBorder(Kirigami.Theme.backgroundColor)
         }
         contentItem: ListView {
             id: list
