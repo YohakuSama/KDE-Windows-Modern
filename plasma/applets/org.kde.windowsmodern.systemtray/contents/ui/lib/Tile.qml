@@ -63,7 +63,7 @@ ColumnLayout {
     Keys.onEnterPressed: tile.clicked()
     Keys.onSpacePressed: tile.clicked()
 
-    readonly property color accent: Kirigami.Theme.highlightColor
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Kirigami.Theme.backgroundColor)
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
     spacing: Math.round(8 * uiScale)

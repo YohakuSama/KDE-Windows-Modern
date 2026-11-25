@@ -3,10 +3,12 @@ import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "../js/colorType.js" as ColorType
 
 RowLayout {
     id: header
 
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Kirigami.Theme.backgroundColor)
     property string title
     property bool showSwitch: false
     property bool switchEnabled: true
@@ -77,7 +79,7 @@ RowLayout {
             radius: 4
             color: "transparent"
             border.width: radioSwitch.activeFocus ? 1 : 0
-            border.color: Kirigami.Theme.highlightColor
+            border.color: header.accent
         }
         contentItem: Item {}
         indicator: Rectangle {
@@ -88,7 +90,7 @@ RowLayout {
             width: 40
             height: 20
             radius: 10
-            color: radioSwitch.checked ? Kirigami.Theme.highlightColor : "transparent"
+            color: radioSwitch.checked ? header.accent : "transparent"
             border.width: radioSwitch.checked ? 0 : 1
             border.color: Qt.rgba(fg.r, fg.g, fg.b, 0.70)
             opacity: radioSwitch.enabled ? 1 : 0.5
@@ -98,7 +100,7 @@ RowLayout {
                 radius: 6
                 anchors.verticalCenter: parent.verticalCenter
                 x: (radioSwitch.checked !== radioSwitch.mirrored) ? parent.width - width - 4 : 4
-                color: radioSwitch.checked ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
+                color: radioSwitch.checked ? ColorType.contrastingForeground(header.accent) : Kirigami.Theme.textColor
                 Behavior on x { NumberAnimation { duration: 120 } }
             }
         }

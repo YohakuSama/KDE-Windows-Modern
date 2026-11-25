@@ -28,6 +28,7 @@ Item {
     property string detailsAccessibleName: ""
     property bool iconClickable: false
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Kirigami.Theme.backgroundColor)
 
     signal moved(int value)
     signal released
@@ -121,7 +122,7 @@ Item {
                     height: parent.height
                     x: slider.mirrored ? parent.width - width : 0
                     radius: 2
-                    color: Kirigami.Theme.highlightColor
+                    color: root.accent
                 }
             }
 
@@ -139,7 +140,7 @@ Item {
                     width: slider.pressed ? 10 : 12
                     height: width
                     radius: width / 2
-                    color: Kirigami.Theme.highlightColor
+                    color: root.accent
                 }
             }
 

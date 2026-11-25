@@ -89,7 +89,7 @@ FocusScope {
     }
     function scheduleRefresh() { refreshTimer.restart(); }
     onSourceModelChanged: scheduleRefresh()
-    onShowAppsChanged: scheduleRefresh()
+    onShowAppsChanged: if (!showApps) currentIndex = -1
     Component.onCompleted: scheduleRefresh()
     Connections {
         target: typeof view.sourceModel === "object" ? view.sourceModel : null

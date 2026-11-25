@@ -38,6 +38,17 @@ Item {
             verify(ColorType.contrastRatio(Qt.rgba(0,103/255,192/255,1), Qt.rgba(1,1,1,1)) >= 4.5);
             verify(ColorType.contrastRatio(Qt.rgba(76/255,194/255,1,1), Qt.rgba(0,0,0,1)) >= 4.5);
         }
+        function test_wallpaperAccentContrast() {
+            for (const surface of [Qt.rgba(32/255, 32/255, 32/255, 1), Qt.rgba(242/255, 242/255, 242/255, 1)]) {
+                const muted = Qt.rgba(56/255, 95/255, 99/255, 1);
+                const accent = ColorType.accentForSurface(muted, surface);
+                verify(ColorType.contrastRatio(accent, surface) >= 2.98);
+                const ink = ColorType.contrastingForeground(accent) === "#FFFFFF"
+                    ? Qt.rgba(1,1,1,1) : Qt.rgba(0,0,0,1);
+                verify(ColorType.contrastRatio(ink, accent) >= 4.5);
+                verify(accent.b >= accent.g && accent.g >= accent.r);
+            }
+        }
         function test_equalSplitGeometryAndTargets() {
             const surface = findChild(split, "wmQuickTileSurface");
             const glyph = findChild(split, "wmQuickTileGlyph");

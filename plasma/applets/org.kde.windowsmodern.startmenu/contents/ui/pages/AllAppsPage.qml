@@ -18,6 +18,13 @@ Item {
     id: allAppsPage
 
     readonly property var allAppsList: categoryMode ? allAppsListView : alphabeticalView
+
+    function lookupAppByDisplayName(displayName) {
+        if (!displayName) return null;
+        const item = alphabeticalView.sourceEntries.find(entry => entry.display === displayName);
+        return item ? { row: item.index, favoriteId: item.favoriteId || "",
+            url: item.url || "", actionList: item.actionList || null } : null;
+    }
     property Component homeHeader: null
     property var flatModel: null
     property var categoryModel: null

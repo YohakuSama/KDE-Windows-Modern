@@ -36,16 +36,6 @@ import "code/popupPosition.js" as PopupPosition
 Item {
     id: main
 
-    // One row of sortedAppsModel, exposed by name for lookupAppByDisplayName().
-    component AppLookupEntry: Item {
-        required property int index
-        required property var model
-        readonly property string displayName: (model.display !== undefined) ? model.display : ""
-        readonly property string favoriteId: (model.favoriteId !== undefined) ? model.favoriteId : ""
-        readonly property var url: (model.url !== undefined) ? model.url : ""
-        readonly property var actionList: (model.actionList !== undefined) ? model.actionList : null
-    }
-
     // The compact representation is the actual Start button in the panel.
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
@@ -705,48 +695,10 @@ Item {
                 }
             }
 
-            // App lookup for search-result context menus: given a display
-            // name, find the matching row in sortedAppsModel so the menu can
-            // offer the same actions (and trigger them on the right row) as
-            // the All Apps list.
-            //
-            // Scans the helper Repeater's live delegates on demand rather than
-            // caching: when the proxy re-sorts it rebinds model data onto the
-            // existing delegates, so any cache keyed at creation time goes
-            // stale. One linear scan per right-click is negligible.
-            // Returns { row, favoriteId, url, actionList } or null.
+            // Reuse the existing alphabetical snapshot. A second hidden
+            // Repeater used to allocate one visual Item for every app.
             function lookupAppByDisplayName(displayName) {
-                if (!displayName) return null;
-                for (let i = 0; i < appLookupRepeater.count; ++i) {
-                    const item = appLookupRepeater.itemAt(i) as AppLookupEntry;
-                    if (item && item.displayName === displayName) {
-                        return {
-                            row: item.index,
-                            favoriteId: item.favoriteId,
-                            url: item.url,
-                            actionList: item.actionList
-                        };
-                    }
-                }
-                return null;
-            }
-
-            // Off-screen helper that exposes sortedAppsModel's roles by name
-            // (QAbstractItemModel roleNames() aren't reachable from QML). A
-            // Repeater, not a ListView: it instantiates ALL delegates, while a
-            // ListView only creates the ones near its viewport.
-            Column {
-                x: -9999
-                y: -9999
-                width: 0
-                height: 0
-                visible: true
-
-                Repeater {
-                    id: appLookupRepeater
-                    model: sortedAppsModel
-                    delegate: AppLookupEntry {}
-                }
+                return allAppsPage.lookupAppByDisplayName(displayName);
             }
 
             // ── Single global keyboard handler ─────────────────────────────

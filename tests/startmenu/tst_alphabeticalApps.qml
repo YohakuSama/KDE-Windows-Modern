@@ -77,6 +77,17 @@ Item {
             view.sourceModel = apps;
             tryCompare(view, "count", 5);
         }
+        function test_visibilityDoesNotRebuildSnapshot() {
+            tryCompare(view, "count", 5);
+            const snapshot = view.sourceEntries;
+            view.showApps = false;
+            tryCompare(view, "count", 0);
+            wait(20);
+            verify(view.sourceEntries === snapshot);
+            view.showApps = true;
+            tryCompare(view, "count", 5);
+            verify(view.sourceEntries === snapshot);
+        }
         function test_nonAlphabeticalSortRemainsAvailable() {
             view.alphabeticalGrouping = false;
             compare(view.visualRows.length, 1);
