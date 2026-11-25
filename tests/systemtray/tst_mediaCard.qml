@@ -5,10 +5,11 @@ import org.kde.plasma.private.mpris as Mpris
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
 
 Item {
+    id: fixture
     width: 400
     height: 220
     QtObject {
-        id: fakePlayer
+        id: fakeState
         property string identity: "Test player"
         property string iconName: "audio-x-generic"
         property string track: "Test track"
@@ -21,17 +22,32 @@ Item {
         property bool canPause: true
         property int previousCount: 0
         property int nextCount: 0
-        function Previous() { previousCount++; }
-        function Next() { nextCount++; }
-        function Play() { playbackStatus = Mpris.PlaybackStatus.Playing; }
-        function Pause() { playbackStatus = Mpris.PlaybackStatus.Paused; }
     }
+    // Native MPRIS exposes capitalized C++ invokables. QML-declared
+    // methods cannot begin with a capital, so use a JS adapter around
+    // reactive QtObject properties rather than an invalid QML mock.
+    readonly property var mockPlayer: ({
+        get identity() { return fakeState.identity; },
+        get iconName() { return fakeState.iconName; },
+        get track() { return fakeState.track; },
+        get artist() { return fakeState.artist; },
+        get artUrl() { return fakeState.artUrl; },
+        get playbackStatus() { return fakeState.playbackStatus; },
+        get canGoNext() { return fakeState.canGoNext; },
+        get canGoPrevious() { return fakeState.canGoPrevious; },
+        get canPlay() { return fakeState.canPlay; },
+        get canPause() { return fakeState.canPause; },
+        Previous: function() { fakeState.previousCount++; },
+        Next: function() { fakeState.nextCount++; },
+        Play: function() { fakeState.playbackStatus = Mpris.PlaybackStatus.Playing; },
+        Pause: function() { fakeState.playbackStatus = Mpris.PlaybackStatus.Paused; }
+    })
     Components.MediaCard {
         id: card
         width: implicitWidth
         height: implicitHeight
         anchors.centerIn: parent
-        player: fakePlayer
+        player: fixture.mockPlayer
     }
     TestCase {
         name: "WindowsMediaCard"
@@ -46,18 +62,18 @@ Item {
             const next = findChild(card, "wmMediaNext");
             verify(previous && play && next);
             mouseClick(previous);
-            compare(fakePlayer.previousCount, 1);
+            compare(fakeState.previousCount, 1);
             mouseClick(play);
-            verify(card.playing);
+            tryCompare(card, "playing", true);
             mouseClick(play);
-            verify(!card.playing);
+            tryCompare(card, "playing", false);
             mouseClick(next);
-            compare(fakePlayer.nextCount, 1);
-            fakePlayer.canGoNext = false;
-            verify(!next.enabled);
+            compare(fakeState.nextCount, 1);
+            fakeState.canGoNext = false;
+            tryCompare(next, "enabled", false);
             card.player = null;
             verify(!card.hasSession);
-            card.player = fakePlayer;
+            card.player = fixture.mockPlayer;
         }
     }
 }
