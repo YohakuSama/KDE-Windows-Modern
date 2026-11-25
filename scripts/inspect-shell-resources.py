@@ -197,11 +197,13 @@ def scan(source, output):
     if output.is_relative_to(source):
         raise ValueError("Choose a separate output directory")
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
-    records, issues = [], []
+    records, issues, shell_assets = [], [], []
     for path in sorted(source.rglob("*")):
         suffix = path.suffix.lower()
         module = path.name.lower() in MODULES
-        if path.is_symlink() or not path.is_file() or not (module or suffix in SHELL_DATA | {".otf", ".ttf", ".ttc"}):
+        search_asset = SEARCH_ICONS.get(path.name.casefold())
+        if path.is_symlink() or not path.is_file() or not (
+                module or suffix in SHELL_DATA | {".otf", ".ttf", ".ttc"} or search_asset):
             continue
         name = path.relative_to(source).as_posix()
         data = path.read_bytes()
@@ -232,15 +234,39 @@ def scan(source, output):
                             record["embedded_fonts"].append(candidate)
                         except (ValueError, KeyError, TTLibError, struct.error):
                             continue  # Image data can start with a font signature.
+            elif suffix == ".pri":
+                record["format"] = "pri"
+                if path.name.casefold() == "windows.ui.settingsappthreshold.pri":
+                    extracted = embedded_resources(data, TASK_VIEW_RESOURCES)
+                    for source_name, relative, role, raw in zip(
+                            TASK_VIEW_RESOURCES,
+                            ("shell/taskview/taskview-light.svg", "shell/taskview/taskview-dark.svg"),
+                            ("taskview-light", "taskview-dark"),
+                            extracted):
+                        if raw is not None:
+                            write_shell_asset(output, shell_assets, role, name, relative, raw, "svg")
+            elif search_asset:
+                relative = "shell/" + search_asset
+                role = Path(search_asset).stem
+                write_shell_asset(output, shell_assets, role, name, relative, data, "png")
             elif suffix in SHELL_DATA:
                 record["format"] = suffix[1:]
                 term = "SysBatt Fluent Icons"
                 record["contains_family_string"] = any(term.encode(enc) in data for enc in ("utf-8", "utf-16le"))
             else:
                 note_font(data, record, output)
+                if record.get("shell_font"):
+                    shell_assets.append({
+                        "role": "sysbatt-font",
+                        "source": name,
+                        "output": record["shell_font"],
+                        "bytes": len(data),
+                        "sha256": digest(data),
+                        "format": "ttf",
+                    })
         except (ValueError, KeyError, TTLibError, struct.error) as exc:
             issues.append({"path": name, "error": str(exc)})
-    (output / "inventory.json").write_text(json.dumps({"files": records, "issues": issues}, ensure_ascii=False, indent=2) + "\n")
+    (output / "inventory.json").write_text(json.dumps({"files": records, "issues": issues, "shell_assets": shell_assets}, ensure_ascii=False, indent=2) + "\n")
     return issues
 
 
@@ -248,7 +274,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path, help="new private output directory")
+    parser.add_argument("--install", action="store_true",
+                        help="install recognized original shell assets into the current user's native asset directory")
     args = parser.parse_args()
     findings = scan(args.source, args.output)
     print(f"Inventory: {args.output / 'inventory.json'} ({len(findings)} issues)")
+    if args.install and not findings:
+        install_shell_assets(args.output)
     raise SystemExit(bool(findings))
