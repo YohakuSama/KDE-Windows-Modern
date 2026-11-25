@@ -103,6 +103,43 @@ Item {
             }
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
         }
+        function test_notificationPanelAdaptsAndHidesClearAll() {
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 900);
+            const panel = findChild(popup, "wmNotificationPanel");
+            const calendar = findChild(popup, "wmCalendarPanel");
+            const clear = findChild(popup, "wmClearNotifications");
+            const dnd = findChild(popup, "wmDoNotDisturbBanner");
+            const empty = findChild(popup, "wmEmptyNotifications");
+            verify(panel && calendar && clear && dnd && empty);
+            notifications.clear();
+            clock.notificationsInhibited = false;
+            tryCompare(clear, "visible", false);
+            tryCompare(empty, "visible", true);
+            tryCompare(dnd, "visible", false);
+            tryCompare(panel, "height", 124);
+            const emptyHeight = panel.height;
+            const calendarHeight = calendar.height;
+            notifications.append({applicationName:"System", summary:"A real notification layout",
+                body:"An example message which takes up more space than the empty state.", closable:true,
+                isGroup:false, isInGroup:false, expired:false});
+            tryCompare(clear, "visible", true);
+            tryCompare(empty, "visible", false);
+            tryVerify(() => panel.height > emptyHeight);
+            compare(calendar.height, calendarHeight);
+            for (let i = 0; i < 15; ++i)
+                notifications.append({applicationName:"System", summary:"Notification "+i,
+                    body:"A longer body.", closable:true, isGroup:false, isInGroup:false, expired:false});
+            tryVerify(() => popup.height <= popup.availableScreenHeight && panel.height > emptyHeight);
+            notifications.clear();
+            tryCompare(panel, "height", emptyHeight);
+            tryCompare(clear, "visible", false);
+            clock.notificationsInhibited = true;
+            tryCompare(dnd, "visible", true);
+            tryVerify(() => panel.height > emptyHeight);
+            tryCompare(clear, "visible", false);
+            clock.notificationsInhibited = false;
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+        }
         function test_focusSurvivesPopupClosing() {
             focusState.durationMinutes = 30;
             focusState.start();

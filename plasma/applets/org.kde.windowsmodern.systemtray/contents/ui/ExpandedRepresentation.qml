@@ -33,8 +33,10 @@ Item {
     readonly property int availableHeight: screenRect.height >= 100
         ? Math.max(1, Math.floor(Math.min(screenRect.height * 0.92,
             screenRect.height - Math.min(96, root.vertical ? root.width : root.height) - 24))) : 720
-    readonly property int popupWidth: Math.min(availableWidth,
+    readonly property bool quickHome: !systemTrayState.activeApplet && !systemTrayState.overflowMode
+    readonly property int popupWidth: Math.max(1, Math.min(availableWidth,
         Math.round((overflowHome ? 216 : 360) * uiScale))
+        - (quickHome && !separatedMedia ? Math.round(dialog.margins.left + dialog.margins.right) : 0))
     readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
         * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
         + Math.round(16 * uiScale)
@@ -42,7 +44,7 @@ Item {
     readonly property int mediaGap: Math.round(12 * uiScale)
     readonly property int mediaHeight: Math.round(178 * uiScale)
     readonly property bool separatedMedia: !systemTrayState.activeApplet && !systemTrayState.overflowMode
-        && mediaCard.hasSession && availableHeight >= actionPanel.homeHeight + mediaGap + mediaHeight
+        && mediaCard.hasSession && availableHeight >= actionPanel.nominalHomeHeight + mediaGap + mediaHeight
     readonly property int popupHeight: Math.min(availableHeight,
         systemTrayState.activeApplet ? Math.max(360, Kirigami.Units.gridUnit * 24)
         : overflowHome ? overflowHeight
@@ -56,6 +58,36 @@ Item {
     Layout.minimumHeight: popupHeight
     Layout.preferredHeight: popupHeight
     Layout.maximumHeight: popupHeight
+
+    // The native Dialog suppresses its rectangular blur when NoBackground
+    // is selected. Enable only the two rounded card regions after layout.
+    property bool splitAcrylic: false
+    readonly property bool allowSplitAcrylic: (Plasmoid.containmentDisplayHints
+        & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) === 0
+
+    function scheduleSplitBlur() {
+        if (separatedMedia && dialog.visible) splitBlurTimer.restart();
+        else {
+            splitBlurTimer.stop();
+            splitAcrylic = false;
+        }
+    }
+    Timer {
+        id: splitBlurTimer
+        interval: 16
+        onTriggered: {
+            if (!popup.separatedMedia || !dialog.visible) {
+                popup.splitAcrylic = false;
+                return;
+            }
+            popup.splitAcrylic = Plasmoid.setSplitPopupBlur(popup, mediaCard, settingsCard,
+                mediaCard.radius, popup.allowSplitAcrylic);
+        }
+    }
+    onSeparatedMediaChanged: scheduleSplitBlur()
+    onAllowSplitAcrylicChanged: scheduleSplitBlur()
+    onWidthChanged: scheduleSplitBlur()
+    onHeightChanged: scheduleSplitBlur()
 
     property alias hiddenLayout: hiddenItemsView.layout
     property alias plasmoidContainer: container
@@ -288,13 +320,23 @@ Item {
                 Layout.bottomMargin: popup.mediaGap
                 uiScale: popup.uiScale
                 player: mediaModel.currentPlayer
+                acrylic: popup.splitAcrylic
                 visible: popup.separatedMedia
+                onXChanged: popup.scheduleSplitBlur()
+                onYChanged: popup.scheduleSplitBlur()
+                onWidthChanged: popup.scheduleSplitBlur()
+                onHeightChanged: popup.scheduleSplitBlur()
             }
 
             Item {
+                id: settingsCard
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredHeight: actionPanel.homeHeight
+                onXChanged: popup.scheduleSplitBlur()
+                onYChanged: popup.scheduleSplitBlur()
+                onWidthChanged: popup.scheduleSplitBlur()
+                onHeightChanged: popup.scheduleSplitBlur()
                 visible: !systemTrayState.overflowMode
                 Rectangle {
                     anchors.fill: parent
@@ -307,6 +349,7 @@ Item {
                 ActionPanel {
                     id: actionPanel
                     anchors.fill: parent
+                    frameInset: popup.separatedMedia ? 0 : Math.max(0, dialog.margins.left)
                     onVisibleChanged: {
                         if (visible && dialog.visible && !systemTrayState.activeApplet)
                             forceActiveFocus();

@@ -464,5 +464,11 @@
   "Games": "游戏",
   "Entertainment": "娱乐",
   "Other": "其他",
-  "New": "新"
+  "New": "新",
+  "Energy saver": "节能模式",
+  "No new notifications": "没有新通知",
+  "Do not disturb is on": "免打扰已开启",
+  "Only notifications allowed by your priority settings appear as banners.": "仅显示优先级设置允许的通知横幅。",
+  "Transfer progress": "传输进度",
+  "Resume": "继续"
 }

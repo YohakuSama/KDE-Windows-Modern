@@ -81,13 +81,11 @@ inline bool alwaysShown(const QString &itemId)
         || itemId == QLatin1String("org.kde.plasma.volume");
 }
 
-// Icons that appear in the tray without being pinned. As on Windows 11,
-// other icons (apps, clipboard, brightness...) wait behind
-// the chevron until it needs attention or the user pins it ("Always shown").
+// Icons that appear in the tray without being pinned. Core controls
+// have exactly one visible entry; auxiliary apps can live in overflow.
 inline bool shownByDefault(const QString &itemId)
 {
-    // The clock owns the visible notification bell. Keep the native
-    // notification applet enabled in overflow for transfer jobs and settings.
+    // The clock owns notification history, and Quick Settings owns brightness.
     return inputMethodIndicator(itemId) || tail().contains(itemId)
         || itemId == QLatin1String("org.kde.plasma.cameraindicator"); // privacy: camera in use
 }
@@ -102,13 +100,36 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
                             || status == Status::RequiresAttentionStatus)
             ? Status::ActiveStatus : Status::HiddenStatus;
     }
-    if (!eligible || (!pinned && status == Status::HiddenStatus)) {
+    if (!eligible) {
+        return Status::HiddenStatus;
+    }
+    // Hide redundant delegates, not the native applets/backends. The
+    // notification applet still presents real desktop toast notifications.
+    if (itemId == QLatin1String("org.kde.plasma.notifications")
+        || itemId == QLatin1String("org.kde.plasma.brightness")) {
+        return Status::HiddenStatus;
+    }
+    if (itemId == QLatin1String("org.kde.plasma.battery")) {
+        return hasSystemBattery() ? Status::ActiveStatus : Status::HiddenStatus;
+    }
+    if (alwaysShown(itemId)) {
+        return Status::ActiveStatus;
+    }
+    if (!pinned && status == Status::HiddenStatus) {
+        return Status::HiddenStatus;
+    }
+    const bool optionalIdle = itemId == QLatin1String("org.kde.plasma.userswitcher")
+        || itemId == QLatin1String("org.kde.plasma.weather")
+        || itemId == QLatin1String("org.kde.plasma.keyboardindicator");
+    if (optionalIdle && !pinned && !hiddenByUser
+        && status != Status::NeedsAttentionStatus && status != Status::RequiresAttentionStatus
+        && status != Status::AcceptingInputStatus) {
         return Status::HiddenStatus;
     }
     if (pinned) {
         return Status::ActiveStatus;
     }
-    if (hiddenByUser || itemId == QLatin1String("org.kde.plasma.notifications")) {
+    if (hiddenByUser) {
         return Status::PassiveStatus;
     }
     const bool dynamicDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")

@@ -15,6 +15,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import "components" as Components
 import "lib" as Lib
 import "js/quickSettingsOrder.js" as Order
+import "js/colorType.js" as ColorType
 
 ColumnLayout {
     id: actionPanel
@@ -23,8 +24,21 @@ ColumnLayout {
 
     readonly property real scale: Plasmoid.configuration.scale / 100
 
+    // Outer spacing includes the native KSVG dialog frame when present.
+    // The separated media window has no native frame and supplies the
+    // same total spacing itself.
+    property real frameInset: 0
+    readonly property int edgeInset: Math.round(24 * scale)
+    readonly property int contentInset: Math.max(0, edgeInset - Math.round(frameInset))
+    readonly property int gridBottomGap: Math.round(14 * scale)
+    readonly property int sliderInset: Math.round(16 * scale)
+    readonly property int sliderGap: Math.round(12 * scale)
+    readonly property int sliderHeight: Math.round(36 * scale)
+    readonly property int footerHeight: Math.max(24, Math.round(48 * scale) - Math.round(frameInset))
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+
     Layout.fillWidth: true
-    spacing: 16 * actionPanel.scale
+    spacing: 0
 
     // A pre-map size from the hardware/configuration and tile geometry,
     // not visible children. Qt Layout implicitHeight can be zero while
@@ -32,10 +46,12 @@ ColumnLayout {
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
     readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
-    readonly property int homeHeight: Math.ceil(Math.max(220 * scale,
-        12 * scale + Math.max(64 * scale, toggleViewport.viewportHeight)
-        + (sliderRows > 0 ? (sliderRows * 36 + (sliderRows - 1) * 12 + 14 + 32) * scale : 16 * scale)
-        + 48 * scale))
+    readonly property int nominalHomeHeight: Math.ceil(Math.max(220 * scale,
+        edgeInset + Math.max(64 * scale, toggleViewport.viewportHeight) + gridBottomGap
+        + (sliderRows > 0 ? 1 + 2 * sliderInset + sliderRows * sliderHeight
+            + (sliderRows - 1) * sliderGap : 0)
+        + Math.round(48 * scale)))
+    readonly property int homeHeight: Math.max(1, nominalHomeHeight - 2 * Math.round(frameInset))
 
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
@@ -51,29 +67,21 @@ ColumnLayout {
     Item {
         id: toggleRow
         Layout.fillWidth: true
-        Layout.leftMargin: Math.round(14 * actionPanel.scale)
-        Layout.rightMargin: Math.round(14 * actionPanel.scale)
-        Layout.topMargin: Math.round(12 * actionPanel.scale)
-        implicitHeight: toggleViewport.viewportHeight
+        objectName: "wmQuickSettingsTileRow"
+        Layout.leftMargin: actionPanel.contentInset
+        Layout.rightMargin: actionPanel.contentInset
+        Layout.topMargin: actionPanel.contentInset
+        Layout.bottomMargin: actionPanel.gridBottomGap
+        implicitHeight: Math.max(Math.round(64 * actionPanel.scale), toggleViewport.viewportHeight)
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
         Layout.maximumHeight: implicitHeight
 
-        // Measure the caption independently of visibility. QQuickLayout
-        // can report zero implicit size before its window becomes visible.
-        PlasmaComponents3.Label {
-            id: captionProbe
-            visible: false
-            text: "Ag"
-            font: Kirigami.Theme.defaultFont
-        }
-
         Flickable {
             id: toggleViewport
             anchors.fill: parent
-            anchors.rightMargin: hasMoreRows ? Math.round(16 * actionPanel.scale) : 0
             objectName: "wmQuickSettingsGridViewport"
-            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile, castTile, accessibilityTile]
+            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, micTile, hotspotTile, castTile, accessibilityTile]
             readonly property var knownKeys: tiles.map(tile => tile.orderKey)
             readonly property var availableKeys: tiles.filter(tile => tile.included).map(tile => tile.orderKey)
             readonly property var order: Order.normalizeOrder(
@@ -81,14 +89,13 @@ ColumnLayout {
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
             readonly property bool hasMoreRows: rows > 2
-            readonly property real rowGap: Math.round(16 * actionPanel.scale)
-            readonly property real columnGap: Math.round(12 * actionPanel.scale)
+            readonly property real rowGap: Math.round(12 * actionPanel.scale)
+            readonly property real columnGap: Math.round(14 * actionPanel.scale)
             readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
-            // Height follows the tallest caption (system font), not the
-            // effective visibility or width of a GridLayout parent.
-            readonly property real rowHeight: tiles.reduce((largest, tile) =>
-                tile.included ? Math.max(largest, tile.implicitHeight) : largest,
-                Math.round(48 * actionPanel.scale) + 4 + captionProbe.implicitHeight)
+            // Two caption lines are reserved for every tile, keeping
+            // the second row aligned even for a long device name.
+            readonly property real rowHeight: Math.round(48 * actionPanel.scale)
+                + Math.round(8 * actionPanel.scale) + Math.round(30 * actionPanel.scale)
             readonly property real rowStride: rowHeight + rowGap
             readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
@@ -129,12 +136,28 @@ ColumnLayout {
                 contentY = Order.clampOffset(offset, maxOffset);
             }
 
+            function settleRows() {
+                if (dragKey !== "" || moving || flicking) return;
+                const next = Order.snapOffset(contentY, rowStride, maxOffset);
+                if (Math.abs(next - contentY) > 0.5) setOffsetImmediately(next);
+            }
             function page(direction) {
-                setOffsetImmediately(contentY + direction * height);
+                showPage(Math.max(0, Math.min(pageCount - 1, currentPage + direction)));
             }
 
             function showPage(index) {
-                setOffsetImmediately(pageCount > 1 ? index * maxOffset / (pageCount - 1) : 0);
+                setOffsetImmediately(Order.snapOffset(pageCount > 1
+                    ? index * maxOffset / (pageCount - 1) : 0, rowStride, maxOffset));
+            }
+
+            // WheelHandler can move contentY without emitting movementEnded.
+            // Settle after the last delta, without interfering with drag/reorder.
+            onContentYChanged: if (ready && dragKey === "") rowSettle.restart()
+            onMovementEnded: settleRows()
+            Timer {
+                id: rowSettle
+                interval: 120
+                onTriggered: toggleViewport.settleRows()
             }
 
             // The same native wheel event filter used by Plasma Kickoff.
@@ -300,7 +323,7 @@ ColumnLayout {
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showBatterySaver && available
                     visible: included
-                    onArrowClicked: actionPanel.requestPage("battery")
+                    onRightClicked: actionPanel.requestPage("battery")
                 }
                 Components.NightLightToggle {
                     id: nightLightTile
@@ -316,14 +339,6 @@ ColumnLayout {
                     orderView: toggleViewport
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showColorScheme
-                    visible: included
-                }
-                Components.DndToggle {
-                    id: dndTile
-                    orderKey: "dnd"
-                    orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
-                    included: Plasmoid.configuration.showDnd
                     visible: included
                 }
                 Components.MicMuteToggle {
@@ -389,10 +404,12 @@ ColumnLayout {
             id: pageControls
             objectName: "wmQuickSettingsPageControls"
             visible: toggleViewport.hasMoreRows
-            width: Math.round(16 * actionPanel.scale)
-            anchors.right: parent.right
+            // Use the existing right gutter, not part of a tile column.
+            width: Math.round(14 * actionPanel.scale)
+            anchors.left: parent.right
+            anchors.leftMargin: Math.round(1 * actionPanel.scale)
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+            spacing: Math.round(2 * actionPanel.scale)
 
             Repeater {
                 model: toggleViewport.pageCount
@@ -409,11 +426,11 @@ ColumnLayout {
                     Keys.onSpacePressed: toggleViewport.showPage(index)
                     Rectangle {
                         anchors.centerIn: parent
-                        width: Math.round((toggleViewport.currentPage === pageDot.index ? 6 : 4) * actionPanel.scale)
+                        width: Math.round((toggleViewport.currentPage === pageDot.index ? 5 : 3) * actionPanel.scale)
                         height: width
                         radius: width / 2
-                        color: Kirigami.Theme.textColor
-                        opacity: toggleViewport.currentPage === pageDot.index || pageDot.activeFocus ? 0.9 : 0.4
+                        color: actionPanel.dark ? "#CCCCCC" : "#737373"
+                        opacity: toggleViewport.currentPage === pageDot.index || pageDot.activeFocus ? 1 : 0.55
                     }
                     MouseArea { anchors.fill: parent; onClicked: toggleViewport.showPage(pageDot.index) }
                 }
@@ -431,29 +448,55 @@ ColumnLayout {
                 Accessible.onPressAction: navigate()
                 Keys.onReturnPressed: navigate()
                 Keys.onSpacePressed: navigate()
-                Kirigami.Icon {
+                Canvas {
+                    id: pageTriangle
                     anchors.centerIn: parent
-                    width: Math.round(12 * actionPanel.scale)
+                    width: Math.max(8, Math.round(10 * actionPanel.scale))
                     height: width
-                    source: pageArrow.atEnd ? "go-up" : "go-down"
-                    isMask: true
-                    color: Kirigami.Theme.textColor
-                    roundToIconSize: false
-                    opacity: pageArrow.activeFocus ? 1 : 0.7
+                    readonly property bool up: pageArrow.atEnd
+                    readonly property color ink: actionPanel.dark ? "#CCCCCC" : "#737373"
+                    onUpChanged: requestPaint()
+                    onInkChanged: requestPaint()
+                    onWidthChanged: requestPaint()
+                    onHeightChanged: requestPaint()
+                    Component.onCompleted: requestPaint()
+                    onPaint: {
+                        const c = getContext("2d");
+                        c.reset();
+                        c.clearRect(0, 0, width, height);
+                        c.fillStyle = ink;
+                        c.beginPath();
+                        c.moveTo(width * 0.13, height * (up ? 0.70 : 0.30));
+                        c.lineTo(width * 0.87, height * (up ? 0.70 : 0.30));
+                        c.lineTo(width * 0.50, height * (up ? 0.26 : 0.74));
+                        c.closePath();
+                        c.fill();
+                    }
                 }
                 MouseArea { anchors.fill: parent; onClicked: pageArrow.navigate() }
             }
         }
     }
 
-    GridLayout {
-        visible: actionPanel.brightnessShown || actionPanel.volumeShown
+    Rectangle {
+        objectName: "wmQuickSettingsSliderDivider"
+        visible: actionPanel.sliderRows > 0
         Layout.fillWidth: true
-        Layout.leftMargin: 14 * actionPanel.scale
-        Layout.rightMargin: 14 * actionPanel.scale
-        Layout.bottomMargin: 14 * actionPanel.scale
+        Layout.leftMargin: -actionPanel.frameInset + 1
+        Layout.rightMargin: -actionPanel.frameInset + 1
+        Layout.preferredHeight: 1
+        color: ColorType.divider(actionPanel.dark)
+    }
+
+    GridLayout {
+        visible: actionPanel.sliderRows > 0
+        Layout.fillWidth: true
+        Layout.leftMargin: actionPanel.contentInset
+        Layout.rightMargin: actionPanel.contentInset
+        Layout.topMargin: actionPanel.sliderInset
+        Layout.bottomMargin: actionPanel.sliderInset
         columns: 3
-        rowSpacing: 12 * actionPanel.scale
+        rowSpacing: actionPanel.sliderGap
         columnSpacing: 0
 
         Components.BrightnessSlider {
@@ -481,7 +524,10 @@ ColumnLayout {
 
     Components.Footer {
         Layout.fillWidth: true
-        Layout.topMargin: -6 * actionPanel.scale
+        Layout.preferredHeight: actionPanel.footerHeight
+        Layout.minimumHeight: actionPanel.footerHeight
+        Layout.maximumHeight: actionPanel.footerHeight
+        frameInset: actionPanel.frameInset
         uiScale: actionPanel.scale
         showBattery: Plasmoid.configuration.showBattery
         onBatteryClicked: actionPanel.requestPage("battery")

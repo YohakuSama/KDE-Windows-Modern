@@ -18,6 +18,8 @@
 
 #include <QGuiApplication>
 #include <QMenu>
+#include <QPainterPath>
+#include <QRegion>
 #include <QMetaMethod>
 #include <QMetaObject>
 #include <QPointer>
@@ -40,6 +42,7 @@
 #include <KActionCollection>
 #include <KSharedConfig>
 #include <KWindowSystem>
+#include <KWindowEffects>
 
 using namespace Qt::StringLiterals;
 
@@ -70,6 +73,38 @@ void SystemTray::openCast()
     auto *job = new KIO::ApplicationLauncherJob(service);
     job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
     job->start();
+}
+
+bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
+                                   qreal radius, bool enabled)
+{
+    auto *window = content ? content->window() : nullptr;
+    if (!window || !window->isVisible()) {
+        return false;
+    }
+    // Honor the actual compositor/user setting. Never advertise an
+    // acrylic surface when blur is unavailable or disabled.
+    KConfig config(QStringLiteral("kwinrc"), KConfig::NoGlobals);
+    enabled = enabled && KConfigGroup(&config, QStringLiteral("Plugins")).readEntry("blurEnabled", true)
+        && KWindowEffects::isEffectAvailable(KWindowEffects::BlurBehind);
+    QRegion mask;
+    if (enabled) {
+        for (auto *item : {first, second}) {
+            if (!item || item->window() != window || !item->isVisible()
+                || item->width() <= 0 || item->height() <= 0) {
+                enabled = false;
+                break;
+            }
+            QPainterPath path;
+            path.addRoundedRect(item->mapRectToScene(item->boundingRect()), radius, radius);
+            mask |= QRegion(path.toFillPolygon().toPolygon(), Qt::WindingFill);
+        }
+    }
+    // An empty QRegion means whole-window blur in KWindowEffects.
+    // Explicitly disable in that case so the desktop gap stays clear.
+    enabled = enabled && !mask.isEmpty();
+    KWindowEffects::enableBlurBehind(window, enabled, enabled ? mask : QRegion());
+    return enabled;
 }
 
 SystemTray::~SystemTray()

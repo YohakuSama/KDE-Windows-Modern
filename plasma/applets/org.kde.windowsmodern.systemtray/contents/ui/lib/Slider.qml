@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "../js/colorType.js" as ColorType
 
 Item {
     id: root
@@ -22,6 +23,7 @@ Item {
     property string detailsIconSource: ""
     property string detailsAccessibleName: ""
     property bool iconClickable: false
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
     signal moved(int value)
     signal released
@@ -87,8 +89,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: 2
-                    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                        Kirigami.Theme.textColor.b, 0.38)
+                    color: root.dark ? "#A0A0A0" : "#888888"
                 }
                 Rectangle {
                     width: parent.width * slider.position
@@ -105,10 +106,9 @@ Item {
                 width: 20
                 height: 20
                 radius: width / 2
-                color: Kirigami.Theme.backgroundColor
+                color: root.dark ? "#383838" : "#FFFFFF"
                 border.width: 1
-                border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                    Kirigami.Theme.textColor.b, 0.20)
+                border.color: root.dark ? "#4B4B4B" : "#D6D6D6"
                 Rectangle {
                     anchors.centerIn: parent
                     width: slider.pressed ? 10 : 12

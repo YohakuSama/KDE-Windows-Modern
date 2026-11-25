@@ -43,6 +43,8 @@ public:
     bool accessibilityAvailable() const;
     bool castAvailable() const;
     Q_INVOKABLE void openCast();
+    Q_INVOKABLE bool setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
+                                      qreal radius, bool enabled);
 
     void restoreContents(KConfigGroup &group) override;
 

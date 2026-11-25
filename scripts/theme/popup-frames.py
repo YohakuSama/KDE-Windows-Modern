@@ -13,11 +13,20 @@ POSITIONS = ("center", "top", "bottom", "left", "right", "topleft",
 
 
 def render(template, mode, role, variant):
-    r = 8 if role == "dialogs/background.svg" else 4
-    acrylic = role == "dialogs/background.svg" and variant == "translucent"
-    fill = ("#202020" if acrylic else "#2C2C2C") if mode == "dark" else "#F9F9F9"
-    opacity = ("0.78" if mode == "dark" else "0.82") if acrylic else "1"
-    border = "#3F3F3F" if mode == "dark" else "#E5E5E5"
+    dialog = role == "dialogs/background.svg"
+    r = 8 if dialog else 4
+    acrylic = dialog and variant == "translucent"
+    # Light shell values sampled from the Windows reference. The same
+    # neutral tint is used by the opaque fallback and acrylic variant.
+    # Keep tooltip geometry and material separate.
+    if dialog:
+        fill = "#202020" if mode == "dark" else "#F2F2F2"
+        opacity = ("0.86" if mode == "dark" else "0.90") if acrylic else "1"
+        border = "#3C3C3C" if mode == "dark" else "#DCDCDC"
+    else:
+        fill = "#2C2C2C" if mode == "dark" else "#F9F9F9"
+        opacity = "1"
+        border = "#3F3F3F" if mode == "dark" else "#E5E5E5"
     a, b, far = 4+r, 4+r+48, 4+2*r+48
     sr, send = r+12, 2*(r+12)+48
     values = dict(R=r, I=r-1, A=a, B=b, FAR=far, SR=sr,

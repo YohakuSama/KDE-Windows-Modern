@@ -392,12 +392,16 @@ ContainmentItem {
 
             onVisibleChanged: {
                 if (!visible) {
-                    if (expandedRepresentation) expandedRepresentation.resetQuickSettings();
+                    if (expandedRepresentation) {
+                        expandedRepresentation.resetQuickSettings();
+                        expandedRepresentation.scheduleSplitBlur();
+                    }
                     expandedSync.restart();
                 } else {
                     expandedSync.stop();
                     dialog.requestActivate();
                     Qt.callLater(expandedRepresentation.focusCurrentPage);
+                    Qt.callLater(expandedRepresentation.scheduleSplitBlur);
                 }
             }
             mainItem: ExpandedRepresentation {

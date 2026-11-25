@@ -31,8 +31,9 @@ ColumnLayout {
     readonly property date today: applet.currentTime
     // Use the same row pitch in the month and zoomed-out views.
     property real dayHeightLimit: 36
-    readonly property real chromeHeight: Math.ceil(monthNavigation.implicitHeight
+    readonly property real chromeHeight: Math.ceil(Math.max(28, monthNavigation.implicitHeight)
         + weekdayMetrics.height + 2 * spacing + 5 * calendarGrid.spacing)
+    readonly property int naturalHeight: Math.ceil(chromeHeight + 6 * zoomHost.dayCellHeight)
 
     // Year/month currently displayed by the calendar (0-based month).
     property int displayedYear: today.getFullYear()

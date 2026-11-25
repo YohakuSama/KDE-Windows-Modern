@@ -51,8 +51,22 @@ FocusScope {
     readonly property int configuredWidth: Math.max(240, Number(Plasmoid.configuration.expandedWidth) || 320)
     readonly property int popupWidth: Math.min(configuredWidth, screenWidth >= 100
         ? Math.max(1, Math.floor(screenWidth - 24)) : configuredWidth)
+    readonly property int notificationMinimum: history.minimumSectionHeight + 2 * sectionInset
+    // Reserve a usable calendar and then let notification history grow into
+    // the remaining space. Only the history list scrolls, never both cards.
+    readonly property int calendarFixedHeight: calendarHeaderHeight + focusFooterHeight + 1
+        + (calendarExpanded ? 1 + 2 * bodyInset : 0)
+    readonly property int optionalCalendarHeight: (calendarExpanded && showLargeClock ? 44 + calendarBody.spacing : 0)
+        + (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + calendarBody.spacing : 0)
+        + (agenda.visible ? agenda.implicitHeight + calendarBody.spacing : 0)
+    readonly property int calendarPanelHeight: Math.max(calendarFixedHeight, Math.min(
+        Math.max(calendarFixedHeight, availableScreenHeight - sectionGap - notificationMinimum),
+        Math.ceil(calendarFixedHeight + (calendarExpanded ? calendarView.naturalHeight + optionalCalendarHeight : 0))))
+    readonly property int notificationPanelHeight: Math.max(1, Math.min(
+        Math.max(1, availableScreenHeight - sectionGap - calendarPanelHeight),
+        history.preferredSectionHeight + 2 * sectionInset))
     readonly property int popupHeight: Math.min(availableScreenHeight,
-        calendarExpanded ? 620 + (showLargeClock ? 52 : 0) : 286)
+        notificationPanelHeight + sectionGap + calendarPanelHeight + 2 * margin)
 
     implicitWidth: popupWidth
     implicitHeight: popupHeight
@@ -70,9 +84,8 @@ FocusScope {
     }
 
     // Two independent surfaces on one transparent shell-role window.
-    readonly property real calendarBodyBudget: Math.max(0, popupHeight
-        - 2 * margin - sectionGap - history.minimumSectionHeight - 2 * sectionInset
-        - calendarHeaderHeight - focusFooterHeight - 2 * bodyInset - 2)
+    readonly property real calendarBodyBudget: Math.max(0, availableScreenHeight
+        - 2 * margin - sectionGap - notificationMinimum - calendarFixedHeight)
 
     ColumnLayout {
         id: mainColumn
@@ -85,9 +98,9 @@ FocusScope {
             id: notificationPanel
             objectName: "wmNotificationPanel"
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.minimumHeight: history.minimumSectionHeight + 2 * expandedRoot.sectionInset
-            Layout.preferredHeight: 224
+            Layout.preferredHeight: expandedRoot.notificationPanelHeight
+            Layout.minimumHeight: Layout.preferredHeight
+            Layout.maximumHeight: Layout.preferredHeight
             radius: 8
             color: palette.detachedPanel
             border.width: 1
@@ -111,7 +124,7 @@ FocusScope {
             id: calendarPanel
             objectName: "wmCalendarPanel"
             Layout.fillWidth: true
-            Layout.preferredHeight: calendarContent.implicitHeight
+            Layout.preferredHeight: expandedRoot.calendarPanelHeight
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
             radius: 8
@@ -177,6 +190,9 @@ FocusScope {
 
                     RowLayout {
                         id: timeRow
+                        Layout.preferredHeight: 44
+                        Layout.minimumHeight: Layout.preferredHeight
+                        Layout.maximumHeight: Layout.preferredHeight
                         visible: expandedRoot.showLargeClock
                         Layout.alignment: Qt.AlignHCenter
                         spacing: Kirigami.Units.smallSpacing / 2
@@ -230,9 +246,10 @@ FocusScope {
                         focus: expandedRoot.calendarExpanded
                         dayHeightLimit: Math.max(12, Math.min(36, Math.floor(
                             (expandedRoot.calendarBodyBudget - chromeHeight
-                             - (timeRow.visible ? timeRow.implicitHeight + calendarBody.spacing : 0)
-                             - (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + calendarBody.spacing : 0)
-                             - (agenda.visible ? agenda.implicitHeight + calendarBody.spacing : 0)) / 6)))
+                             - expandedRoot.optionalCalendarHeight) / 6)))
+                        Layout.preferredHeight: naturalHeight
+                        Layout.minimumHeight: Layout.preferredHeight
+                        Layout.maximumHeight: Layout.preferredHeight
                     }
 
                     TimeZoneView {

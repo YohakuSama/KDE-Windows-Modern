@@ -433,6 +433,11 @@ start_shell
 
 export WM_SHORTCUT_BACKUP="$STATE/shortcut-backup.json"
 kbuildsycoca6 --noincremental >/dev/null
+# The shell popup supplies its bottom/top/side edge slide hint. Preserve
+# explicit user animation settings, including reduced-motion preferences.
+if [ -z "$(kreadconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled)" ]; then
+    kwriteconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled true
+fi
 if [ "$upgrading" -eq 0 ]; then
     plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant" --resetLayout
     kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle "$( [ "$variant" = dark ] && echo kvantum-dark || echo kvantum )"
@@ -466,6 +471,12 @@ else
     # Do not apply global theme defaults or reset wallpaper, shortcuts,
     # pinned apps, layout or the user's light/dark preference on upgrade.
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
+fi
+
+# Opt into Plasma's native wallpaper accent on a fresh/unspecified mode.
+# An explicit existing manual mode remains the user's choice.
+if [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
+    kwriteconfig6 --notify --file kdeglobals --group General --key accentColorFromWallpaper --type bool true
 fi
 
 "$PYTHON" "$ROOT/scripts/app-appearance.py" apply
