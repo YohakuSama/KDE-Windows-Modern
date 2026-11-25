@@ -55,7 +55,8 @@ ColumnLayout {
                         elide: Text.ElideRight
                     }
 
-                    PlasmaComponents3.Slider {
+                    Lib.FluentSlider {
+                        Accessible.name: (model.Client && model.Client.name) || model.Name || i18n("Unknown application")
                         Layout.preferredWidth: 110
                         from: 0
                         to: 65536

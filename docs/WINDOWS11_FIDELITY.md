@@ -110,3 +110,7 @@ Screenshot feedback (owner, 2026-11-25): Start appeared nearly flush with the pa
 ### Taskbar menu and Qt Widgets
 
 Ordinary task right-click uses the existing native QMenu with application actions and real pin/close states. Shift+right-click retains KDE window management, activities, and panel editing; this is a compatibility route, not a claim to reproduce the Windows extended system menu exactly. Kvantum light/dark menu and input padding now match each other and transient grooves/tree connector lines are removed. Native QMenu and SVG-based controls are still subject to Qt/Kvantum geometry and require desktop screenshots; do not label them pixel-matched.
+
+### Quick Settings slider input
+
+Owner reported that the brightness and volume controls only responded to wheel input. The old Plasma slider's overridden background/handle had explicit drawing geometry but no implicit dimensions, so its inherited implicit-height calculation could collapse the interactive control while painting children outside that area. The shared native Qt template now has an explicit 32 logical-pixel implicit height, full-row layout height and one wheel route. The detail pages use the same track. Tests drive mouse clicks and drags, not just value formulas. Hardware-backed runtime confirmation is still required.

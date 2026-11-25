@@ -57,7 +57,7 @@ Lib.Page {
                         color: Kirigami.Theme.textColor
                     }
 
-                    PlasmaComponents3.Slider {
+                    Lib.FluentSlider {
                         Accessible.name: display.label
                         Layout.fillWidth: true
                         from: 0
@@ -85,7 +85,8 @@ Lib.Page {
             ColumnLayout {
                 Layout.fillWidth: true
                 PlasmaComponents3.Label { text: i18n("Keyboard Backlight") }
-                PlasmaComponents3.Slider {
+                Lib.FluentSlider {
+                    Accessible.name: i18n("Keyboard Backlight")
                     Layout.fillWidth: true
                     from: 0
                     to: keyboardControl.brightnessMax

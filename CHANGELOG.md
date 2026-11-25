@@ -6,6 +6,12 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Quick Settings slider input regression
+
+- Give the shared native Qt slider a nonzero implicit size and full-row input height, restoring track clicks and live thumb dragging. Preserve keyboard, touch and accessibility semantics, and use one row wheel handler instead of competing wheel paths.
+- Align brightness and volume track endpoints with equal detail-button slots. Reuse the same track in display brightness, keyboard backlight and volume mixer pages.
+- Add real mouse press/move/release, track-click, wheel, keyboard and disabled/backend-update regression tests.
+
 ### Taskbar jump list and native controls
 
 - Keep application actions, valid pin/unpin operations and window closing in the ordinary task menu. Shift+right-click exposes native KDE window/desktop/activity and panel configuration operations; keep native QMenu dispatch and accessibility.

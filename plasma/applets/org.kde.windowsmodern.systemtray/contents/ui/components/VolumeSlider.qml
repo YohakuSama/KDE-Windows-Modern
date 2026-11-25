@@ -11,6 +11,7 @@ Lib.Slider {
     property var sink: Vol.PreferredDevice.sink
     readonly property bool sinkAvailable: sink && !(sink.name === "auto_null")
 
+    sliderAccessibleName: i18n("Volume")
     iconSource: Funcs.volIconName(sinkAvailable ? sink.volume : 0, sinkAvailable ? sink.muted : true)
     showArrow: true
     detailsIconSource: "multimedia-volume-control"

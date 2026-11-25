@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.components as PlasmaComponents3
 
 Item {
     id: root
@@ -19,6 +18,7 @@ Item {
     property bool showArrow: false
     property string detailsIconSource: ""
     property string detailsAccessibleName: ""
+    property string sliderAccessibleName: ""
     property bool iconClickable: false
 
     signal moved(int value)
@@ -64,57 +64,23 @@ Item {
             }
         }
 
-        PlasmaComponents3.Slider {
+        FluentSlider {
             id: slider
+            objectName: "wmQuickSettingSlider"
             Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: 24
+            Layout.preferredHeight: implicitHeight
             from: root.from
             to: root.to
             value: root.value
             stepSize: root.stepSize
-            leftPadding: 0
-            rightPadding: 0
+            Accessible.name: root.sliderAccessibleName
+            // The row's wheel handler below is the only wheel path. Mouse,
+            // touch, keyboard and accessibility remain native Qt Slider.
+            wheelEnabled: false
 
-            // Fluent track and thumb; the native control retains keyboard,
-            // mouse, accessibility, wheel and value semantics.
-            background: Item {
-                x: slider.leftPadding + 10
-                y: (slider.height - height) / 2
-                width: Math.max(0, slider.availableWidth - 20)
-                height: 4
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 2
-                    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                        Kirigami.Theme.textColor.b, 0.38)
-                }
-                Rectangle {
-                    width: parent.width * slider.position
-                    height: parent.height
-                    x: slider.mirrored ? parent.width - width : 0
-                    radius: 2
-                    color: Kirigami.Theme.highlightColor
-                }
-            }
-
-            handle: Rectangle {
-                x: slider.leftPadding + slider.visualPosition * Math.max(0, slider.availableWidth - width)
-                y: (slider.height - height) / 2
-                width: 20
-                height: 20
-                radius: width / 2
-                color: fluent.menuBackground
-                border.width: 1
-                border.color: slider.activeFocus ? fluent.accent : fluent.controlBorder
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: slider.pressed ? 10 : 12
-                    height: width
-                    radius: width / 2
-                    color: Kirigami.Theme.highlightColor
-                }
-            }
-
-            onMoved: root.moved(value)
+            onMoved: root.moved(Math.round(value))
             onPressedChanged: {
                 if (!slider.pressed)
                     root.released();
@@ -128,7 +94,9 @@ Item {
         Item {
             id: detailsButton
             visible: root.showArrow
-            Layout.preferredWidth: root.detailsIconSource.length > 0 ? 36 : 24
+            // Reserve the same trailing width on both rows so their
+            // tracks begin and end at identical horizontal positions.
+            Layout.preferredWidth: 36
             Layout.preferredHeight: 32
             Layout.alignment: Qt.AlignVCenter
             activeFocusOnTab: visible
@@ -149,7 +117,9 @@ Item {
             }
 
             Row {
-                anchors.centerIn: parent
+                anchors.right: parent.right
+                anchors.rightMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 2
                 Kirigami.Icon {
                     visible: root.detailsIconSource.length > 0
@@ -181,17 +151,30 @@ Item {
     }
 
     WheelHandler {
-        target: slider
+        target: null
+        enabled: root.enabled && !slider.pressed
         orientation: Qt.Vertical
         acceptedButtons: Qt.NoButton
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        property real remainder: 0
         onWheel: function (wheel) {
             const delta = wheel.angleDelta.y;
-            if (delta > 0)
+            if (!delta)
+                return;
+            if (remainder * delta < 0)
+                remainder = 0;
+            remainder += delta;
+            const oldValue = slider.value;
+            while (remainder >= 120) {
+                remainder -= 120;
                 slider.increase();
-            else if (delta < 0)
+            }
+            while (remainder <= -120) {
+                remainder += 120;
                 slider.decrease();
-            slider.moved();
+            }
+            if (oldValue !== slider.value)
+                slider.moved();
         }
     }
 }

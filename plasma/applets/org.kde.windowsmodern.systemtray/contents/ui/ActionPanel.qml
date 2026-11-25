@@ -463,6 +463,7 @@ ColumnLayout {
             id: brightnessSlider
             Layout.fillWidth: true
             Layout.columnSpan: 3
+            Layout.preferredHeight: Math.round(36 * actionPanel.scale)
             visible: Plasmoid.configuration.showBrightness && brightnessAvailable
             showArrow: true
             panelScreenGeometry: Plasmoid.screenGeometry

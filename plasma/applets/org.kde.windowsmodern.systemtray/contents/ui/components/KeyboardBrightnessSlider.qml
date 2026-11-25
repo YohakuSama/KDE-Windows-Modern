@@ -9,6 +9,7 @@ Lib.Slider {
     property int kbMax: 1
     property bool available: false
 
+    sliderAccessibleName: i18n("Keyboard Backlight")
     iconSource: "keyboard-brightness"
 
     from: 0
