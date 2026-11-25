@@ -22,7 +22,8 @@ Item {
     readonly property int outlineCode: shellState === "charging" ? 0xf8db
         : shellState === "plugged" ? 0xf8e4 : shellState === "saver" ? 0xf849 : 0xf8d0
     readonly property int fillCode: level === 0 ? 0
-        : level < 3 || shellState === "normal" ? 0xf8d0 + level
+        : shellState === "normal" ? 0xf8d0 + level
+        : level < 3 ? 0
         : shellState === "charging" ? 0xf8dc + level - 3
         : shellState === "plugged" ? 0xf8e5 + level - 3 : 0xf84a + level - 3
     readonly property string outlineSource: shellSource(outlineCode)

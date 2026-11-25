@@ -37,8 +37,19 @@ Item {
             glyph.saver = true;
             compare(glyph.outlineCode, 0xf849);
             compare(glyph.fillCode, 0xf84f);
+            glyph.saver = false;
             glyph.percent = 20;
             compare(glyph.fillCode, 0xf8d2);
+            glyph.charging = true;
+            compare(glyph.fillCode, 0);
+            glyph.charging = false;
+            glyph.pluggedIn = true;
+            compare(glyph.fillCode, 0);
+            glyph.pluggedIn = false;
+            glyph.saver = true;
+            compare(glyph.fillCode, 0);
+            glyph.percent = 30;
+            compare(glyph.fillCode, 0xf84a);
             glyph.percent = 5;
             compare(glyph.fillCode, 0);
         }
