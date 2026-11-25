@@ -23,6 +23,35 @@ python3 scripts/import-windows-assets.py --reuse --catalog windows-resource-cata
 
 Verify exact source artwork before adding mappings. Account pictures and Microsoft Store packaged app assets may be outside the three MUN libraries. Check the actual archive first. If absent, request the precise original assets (and their originating Windows build), not a substitute SVG.
 
+## Reviewed reference-branch coverage
+
+The `resources/windows11` branch is the existing source of truth. Do not
+download a second copy of these MUN resources or copy the entire reference
+branch into the runtime package.
+
+| Module | Indexed groups | Currently mapped groups | Not yet mapped |
+| --- | ---: | ---: | ---: |
+| `imageres.dll.mun` | 369 | 56 | 313 |
+| `shell32.dll.mun` | 335 | 4 | 331 |
+| `imagesp1.dll.mun` | 9 | 1 | 8 |
+| **Total** | **713** | **61** | **652** |
+
+The reviewed reference commit `272e06c87be0f548cebb2558392019b941df20d4`
+contains 5,405 original icon frames and 467 original files. The current
+mapping has 263 source entries: 61 MUN group references and 202 Segoe
+Fluent Icons glyph references. These are source mappings, not 263 distinct
+visuals or a claim that all 713 groups are relevant to the current desktop.
+The runtime branch deliberately stages only the selected mapped previews,
+not the complete archive.
+
+The reference snapshot contains the three MUN modules above and the
+`SegoeIcons.ttf` extraction font. It does not contain a `SystemApps`
+tree, a PRI resource index, `Sysbatt.ttf`, `AXPIcons.ttf`, the
+`StartMenu/Assets/SearchIcons` state PNGs, or the
+`Windows.UI.SettingsAppThreshold.pri` Task View SVGs. Its manifest also
+does not record a Windows build number. Do not label this snapshot as a
+verified Windows 11 26H2 resource set.
+
 ## Runtime assets and NixOS
 
 NixOS uses the reversible desktop installer and builds the tray, taskbar and
