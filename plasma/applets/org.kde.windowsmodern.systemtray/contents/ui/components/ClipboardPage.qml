@@ -14,16 +14,129 @@ ColumnLayout {
     property Component footer: null
     signal back()
     signal itemSelected()
+    signal closeRequested()
+    property string activeTab: "clipboard"
 
+    Keys.onEscapePressed: page.closeRequested()
     Clipboard.HistoryModel { id: historyModel }
 
-    Lib.PageHeader {
-        title: i18n("Clipboard")
-        showAction: historyModel.count > 0
-            && (historyModel.starredCount === undefined || historyModel.count > historyModel.starredCount)
-        actionText: i18n("Clear all")
-        onActionTriggered: historyModel.clearHistory()
-        onBack: page.back()
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.leftMargin: 16
+        Layout.rightMargin: 12
+        Layout.topMargin: 8
+        Layout.preferredHeight: 40
+        PlasmaComponents3.Label {
+            Layout.fillWidth: true
+            text: i18n("Emoji and more")
+            font.weight: Font.DemiBold
+        }
+        PlasmaComponents3.ToolButton {
+            Layout.preferredWidth: 32
+            Layout.preferredHeight: 32
+            display: PlasmaComponents3.AbstractButton.IconOnly
+            text: i18n("Close")
+            icon.name: "window-close-symbolic"
+            icon.width: 18
+            icon.height: 18
+            onClicked: page.closeRequested()
+        }
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.leftMargin: 12
+        Layout.rightMargin: 12
+        Layout.preferredHeight: 44
+        spacing: 4
+        Repeater {
+            model: picker.status === Loader.Ready ? [
+                {key: "emoji", label: i18n("Emoji"), icon: "preferences-desktop-emoticons", glyph: ""},
+                {key: "kaomoji", label: i18n("Kaomoji"), icon: "", glyph: ";-)"},
+                {key: "symbols", label: i18n("Symbols"), icon: "", glyph: "Ω+"},
+                {key: "clipboard", label: i18n("Clipboard"), icon: "edit-paste", glyph: ""}
+            ] : [{key: "clipboard", label: i18n("Clipboard"), icon: "edit-paste", glyph: ""}]
+            delegate: QQC2.ToolButton {
+                id: tab
+                required property var modelData
+                readonly property bool selected: page.activeTab === modelData.key
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                text: modelData.label
+                onClicked: page.activeTab = modelData.key
+                contentItem: Item {
+                    Kirigami.Icon {
+                        anchors.centerIn: parent
+                        width: 22
+                        height: 22
+                        visible: tab.modelData.glyph === ""
+                        source: tab.modelData.icon
+                        color: Kirigami.Theme.textColor
+                        isMask: true
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        visible: tab.modelData.glyph !== ""
+                        text: tab.modelData.glyph
+                        color: Kirigami.Theme.textColor
+                        font.pixelSize: 17
+                    }
+                }
+                background: Rectangle {
+                    radius: 4
+                    readonly property color fg: Kirigami.Theme.textColor
+                    color: tab.hovered || tab.activeFocus ? Qt.rgba(fg.r, fg.g, fg.b, 0.08) : "transparent"
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        width: 18
+                        height: 3
+                        radius: 1.5
+                        visible: tab.selected
+                        color: Kirigami.Theme.highlightColor
+                    }
+                }
+                QQC2.ToolTip.text: text
+                QQC2.ToolTip.visible: hovered
+            }
+        }
+    }
+
+    RowLayout {
+        visible: page.activeTab === "clipboard"
+        Layout.fillWidth: true
+        Layout.leftMargin: 16
+        Layout.rightMargin: 16
+        Layout.topMargin: 8
+        Layout.bottomMargin: 8
+        Layout.preferredHeight: 32
+        PlasmaComponents3.Label {
+            Layout.fillWidth: true
+            text: i18n("Clipboard")
+            font.weight: Font.DemiBold
+        }
+        PlasmaComponents3.Button {
+            visible: historyModel.count > 0
+                && (historyModel.starredCount === undefined || historyModel.count > historyModel.starredCount)
+            text: i18n("Clear all")
+            Layout.preferredHeight: 30
+            onClicked: historyModel.clearHistory()
+        }
+    }
+
+    // Load optional KDE emoji data in isolation; missing modules never
+    // disable clipboard history or leave a dead tab.
+    Loader {
+        id: picker
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        visible: page.activeTab !== "clipboard" && status === Loader.Ready
+        source: "EmojiPicker.qml"
+        onLoaded: item.mode = Qt.binding(() => page.activeTab)
+    }
+    Connections {
+        target: picker.item
+        function onPicked() { page.itemSelected() }
     }
 
     ListView {
@@ -34,7 +147,7 @@ ColumnLayout {
         Layout.rightMargin: 12
         Layout.bottomMargin: 12
         model: historyModel
-        visible: count > 0
+        visible: page.activeTab === "clipboard" && count > 0
         spacing: 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -161,7 +274,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.margins: 20
-        visible: historyModel.count === 0
+        visible: page.activeTab === "clipboard" && historyModel.count === 0
         text: i18n("Clipboard is empty")
         opacity: 0.75
         wrapMode: Text.WordWrap

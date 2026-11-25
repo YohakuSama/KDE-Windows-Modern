@@ -488,5 +488,19 @@
   "Desktop session: %1": "桌面会话：%1",
   "On-screen keyboard": "屏幕键盘",
   "Username": "用户名",
-  "Network properties": "网络属性"
+  "Network properties": "网络属性",
+  "Emoji and more": "表情符号和更多",
+  "Emoji": "表情符号",
+  "Kaomoji": "颜文字",
+  "Symbols": "符号",
+  "Search emoji": "搜索表情符号",
+  "No matching emoji found": "没有匹配的表情符号",
+  "No results": "没有结果",
+  "Happy": "开心",
+  "Sad": "伤心",
+  "Love": "爱",
+  "Punctuation": "标点符号",
+  "Currency": "货币",
+  "Mathematics": "数学",
+  "Arrows": "箭头"
 }
