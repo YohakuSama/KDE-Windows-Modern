@@ -622,5 +622,8 @@
   "Type the name of a command to run": "输入要运行的命令名称",
   "Run": "运行",
   "Run service is unavailable": "运行服务不可用",
-  "Command execution is blocked by system policy": "系统策略禁止执行此命令"
+  "Command execution is blocked by system policy": "系统策略禁止执行此命令",
+  "Safely remove hardware": "安全移除硬件",
+  "No removable devices attached": "没有连接可移动设备",
+  "Device is busy. Do not unplug.": "设备正在使用，请勿拔出。"
 }

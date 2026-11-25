@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Add a themed removable-device flyout backed by the already-loaded KDE Device Notifier model. Preserve native eject/unmount actions and disable operations while a device is busy or has been removed.
+
 - Share the live accent palette across the tray, clock and Start menu. Preserve calendar delegates during same-day updates, enable all week-start choices and correct notification links and time-zone offsets.
 
 - Add the interactive alphabetical index to Start's list and grid modes, with available-letter navigation, category label hover states and category opening animations.

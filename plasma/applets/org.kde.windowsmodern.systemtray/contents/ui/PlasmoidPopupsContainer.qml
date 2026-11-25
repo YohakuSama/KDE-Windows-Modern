@@ -184,7 +184,8 @@ QQC2.StackView {
         "battery":         batteryPageComp,
         "brightness":      brightnessPageComp,
         "clipboard":       clipboardPageComp,
-        "mediacontroller": mediaControllerPageComp
+        "mediacontroller": mediaControllerPageComp,
+        "devices":          devicesPageComp
     })
 
     Component {
@@ -226,6 +227,14 @@ QQC2.StackView {
             onCloseRequested: systemTrayState.expanded = false
         }
     }
+    Component {
+        id: devicesPageComp
+        Components.DevicesPage {
+            nativeApplet: mainStack.activeApplet
+            onBack: systemTrayState.setActiveApplet(null)
+        }
+    }
+
     Component {
         id: mediaControllerPageComp
         Components.MediaControllerPage {
