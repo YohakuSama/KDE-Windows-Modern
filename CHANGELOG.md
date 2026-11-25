@@ -6,6 +6,10 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Trim the installable theme payload to the exact mapped Windows resources, cache the pinned compact input set and keep the full reference library for future artwork coverage. Verify file membership and hashes instead of a fixed ZIP size.
+
+- Remove historical showcase screenshots and obsolete development plans from the current checkout. Consolidate installation, native resources and packaging documentation, and correct the fork's project links without changing upstream author attribution.
+
 - Match the measured taskbar search pill, keep notification geometry stable when Do Not Disturb changes, and display Latin AM/PM in uppercase without replacing the regional clock format.
 
 - Prepare version 1.2.2 for the full NixOS owner test snapshot (not a published stable release).

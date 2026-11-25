@@ -19,10 +19,10 @@ from native_assets_index import mapped_resource_entries, verify_reference_index
 DEV_PATHS = (
     "tests", ".github", "plans", "AGENTS.md", "CLAUDE.md",
     ".editorconfig", ".shellcheckrc", "CONTRIBUTING.md", "PRODUCT.md",
-    "verify-all.sh", "docs/PROGRESS.md", "docs/icon-pack",
+    "verify-all.sh", "docs/icon-pack", "docs/screenshots",
     "docs/PANEL_UI_CONTRACT.md", "docs/PLASMA_SYSTEMTRAY_ARCHITECTURE.md",
-    "docs/RELEASE.md", "docs/STARTMENU_PLAN.md", "docs/STYLE.md",
-    "docs/SYSTEMTRAY_ARCHITECTURE.md", "docs/SYSTEMTRAY_DECISION.md",
+    "docs/RELEASE.md", "docs/STYLE.md",
+    "docs/SYSTEMTRAY_ARCHITECTURE.md",
     "docs/WINDOWS11_FIDELITY.md", "docs/NATIVE_COVERAGE.md",
     "docs/windows11-resource-index.json",
     "scripts/ci-build.sh", "scripts/check-qml-syntax.sh",

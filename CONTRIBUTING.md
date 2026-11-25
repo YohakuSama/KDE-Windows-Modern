@@ -17,10 +17,10 @@ checks every change must pass, and the conventions the project follows.
 | `plasma/look-and-feel/`, `plasma/desktoptheme/`, `aurorae/`, `Kvantum/`, `color-schemes/` | Theme assets, always in **dark and light** variants. |
 | `plasma/layout-templates/` | The "Add Panel → Windows Modern Panel" template. |
 | `plasma/windowswitcher/` | The Alt+Tab switcher (a KWin window-switcher layout). |
-| `tests/` | Automated tests and preview tools that run without a Plasma session. |
+| `tests/` | Headless regression tests, previews, and separate live desktop tests. |
 | `plasma/shells/` | Session lock screen (installed as a shell overlay). |
 | `third_party/plasma-login-manager/` | Git submodule for the boot greeter (pinned). |
-| `docs/` | Style spec, architecture notes, decision records, release runbook. |
+| `docs/` | Current UI contracts, architecture references, native asset and release guides. |
 
 ## Checks
 
@@ -28,7 +28,7 @@ Run these before opening a pull request. CI runs the same ones.
 
 ```bash
 ./verify-all.sh            # repository health check — must pass
-./scripts/ci-build.sh      # builds both C++ applets and checks they link
+./scripts/ci-build.sh      # builds the native C++ plugins and checks linking
 ```
 
 `verify-all.sh` checks that every component exists in both variants, that the
@@ -100,9 +100,9 @@ on the files you touched and don't add new warnings.
 
 ### C++ applets
 
-- Both are forks of upstream plasma-desktop code. Keep local changes small and
-  commented so they survive the next upstream rebase; see
-  `docs/SYSTEMTRAY_DECISION.md` for why the tray is a C++ fork.
+- Keep changes to native KDE backends small and documented; see
+  [the current upstream inventory](docs/UPSTREAM.md) and
+  [system tray architecture](docs/SYSTEMTRAY_ARCHITECTURE.md).
 - The QML is compiled into the `.so`. Never install these applets as a
   KPackage (it produces the "dark rectangle" bug); build and install with
   `./install.sh systray` / `./install.sh icontasks`.
@@ -124,6 +124,20 @@ by hand; use:
 ```bash
 COMMIT_MSG="feat(icons): describe your change" ./scripts/commit-icons.sh
 ```
+
+## Native resources and screenshots
+
+Keep the complete Windows reference library separate from the mapped runtime
+resources. See [native resources](docs/NATIVE_ASSETS.md) for the selection,
+pinning and verification workflow. Do not discard an unmapped original from
+the reference library merely because the current theme does not use it.
+
+Capture new desktop images with `bash scripts/capture-screenshots.sh`. They
+go to the ignored `docs/screenshots/` directory. Compare real desktop
+captures against the Windows reference at the same scale, and only use
+reviewed current captures to regenerate installed theme previews with
+`bash scripts/update-previews.sh`. Do not commit historical captures or
+use them to claim current UI parity.
 
 ## Commits and pull requests
 

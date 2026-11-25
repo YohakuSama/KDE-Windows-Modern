@@ -19,14 +19,20 @@ info() { echo -e "${GREEN}==>${RESET} ${BOLD}$*${RESET}"; }
 step() { echo -e "${CYAN}  >>${RESET} $*"; }
 err()  { echo -e "${RED}==>${RESET} $*" >&2; }
 
-CONVERT="$(command -v magick || command -v convert)"
+CONVERT="$(command -v magick || command -v convert || true)"
 [[ -z "$CONVERT" ]] && { err "ImageMagick not found."; exit 1; }
 
-DARK_SRC="$SRC_DIR/View-10.png"
-LIGHT_SRC="$SRC_DIR/View-11.png"
+SHOT_DIR="$SRC_DIR/docs/screenshots"
+DARK_SRC="$SHOT_DIR/View-10.png"
+LIGHT_SRC="$SHOT_DIR/View-11.png"
 
 DARK_DIR="$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/contents/previews"
 LIGHT_DIR="$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.light/contents/previews"
+
+# Refuse to regenerate only one variant if the other current capture is absent.
+for src in "$DARK_SRC" "$LIGHT_SRC"; do
+    [[ -s "$src" ]] || { err "Missing $src — capture both current variants first."; exit 1; }
+done
 
 # ── Dark ───────────────────────────────────────────────────────────
 if [[ -f "$DARK_SRC" ]]; then
