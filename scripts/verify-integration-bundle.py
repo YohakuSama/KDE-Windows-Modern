@@ -6,7 +6,12 @@ from collections import Counter
 import hashlib
 import re
 import sys
+import runpy
+import json
+from pathlib import Path
 from zipfile import ZipFile
+
+STORE = runpy.run_path(str(Path(__file__).with_name("store-artwork.py")))
 
 
 def verify(revision, filename):
@@ -37,6 +42,9 @@ def verify(revision, filename):
             "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/ViewModeMenu.qml",
             "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/ClipboardPage.qml",
             "scripts/theme/window-frames.py", "prebuilt/SHA256SUMS",
+            "bundled-store-artwork/manifest.json",
+            "bundled-store-artwork/Microsoft_Store_logo_dark.svg",
+            "bundled-store-artwork/Microsoft_Store_logo_light.svg",
         )
         missing = [name for name in required if prefix + name not in members]
         if missing:
@@ -57,6 +65,13 @@ def verify(revision, filename):
                     digest.update(chunk)
             if digest.hexdigest() != expected:
                 raise ValueError("Prebuilt plugin checksum mismatch: " + name)
+        artwork_prefix = prefix + "bundled-store-artwork/"
+        artwork = json.loads(bundle.read(artwork_prefix + "manifest.json"))
+        if set(artwork) != set(STORE["SOURCES"]):
+            raise ValueError("Missing reviewed Store variant")
+        for mode, info in artwork.items():
+            name = STORE["SOURCES"][mode][0]
+            STORE["verify_bytes"](mode, bundle.read(artwork_prefix + name), info)
         corrupt = bundle.testzip()
         if corrupt is not None:
             raise ValueError("Corrupt ZIP entry: " + corrupt)

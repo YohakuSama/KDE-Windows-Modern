@@ -1009,3 +1009,35 @@ as the Windows Terminal `showTabsInTitlebar` setting
 ([appearance settings](https://learn.microsoft.com/en-us/windows/terminal/customize-settings/appearance)).
 Konsole has no equivalent configuration. Tab CSS alone does not provide
 that structural feature; full parity requires native application work.
+
+### Windows 11 26H2 reference and Store artwork
+
+Target the owner's current 26H2 screenshots and Microsoft's current shell
+design, not legacy Windows 11 screenshots or Material Design controls.
+The 26H2 enablement release shares its servicing branch with 24H2/25H2;
+the actual feature rollout and user settings affect what appears on screen.
+
+* Quick Settings uses the shared WinUI ControlFill, ControlStroke and
+  AccentFill state rules, including independent continuous split-button
+  hover/press surfaces and dynamic accent contrast. The underlying KDE
+  flyout is a compatibility implementation, not Microsoft's DWM shader.
+* Import the two owner-selected Commons SVG files at their reviewed
+  2025-09-15 revisions. The blue/dark bag is used for light mode; the
+  white/light bag is used for dark mode. Preserve their bytes and source
+  metadata. The light icon theme only overrides the five Discover aliases
+  and inherits the original Windows Modern icon theme.
+* Every full installable bundle includes both verified artwork variants.
+  Installation and NixOS staging reject missing or mismatched variants
+  rather than installing the old compatibility Store art.
+* Visual acceptance still requires side-by-side screenshots from the same
+  display scale, theme mode and Windows feature configuration.
+  The native Konsole titlebar, original account picture, exact shell
+  compositor effects and arbitrary-wallpaper accent extraction are open
+  parity items.
+
+Reference:
+- https://commons.wikimedia.org/wiki/File:Microsoft_Store_logo_dark.svg
+- https://commons.wikimedia.org/wiki/File:Microsoft_Store_logo_light.svg
+- https://learn.microsoft.com/en-us/windows/apps/design/signature-experiences/materials
+- https://learn.microsoft.com/en-us/windows/apps/develop/platform/xaml/xaml-theme-resources
+- https://blogs.windows.com/windows-insider/2026/08/27/releasing-windows-11-version-26h2-to-the-release-preview-channel/

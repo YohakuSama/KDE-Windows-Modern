@@ -50,7 +50,7 @@ store_icons=(icons/windows-modern/apps/discover.svg icons/windows-modern/apps/or
 if cmp -s "${store_icons[0]}" "${store_icons[1]}" \
    && cmp -s "${store_icons[0]}" "${store_icons[2]}" \
    && cmp -s "${store_icons[0]}" "${store_icons[3]}"; then
-    pass "Discover aliases use the same current Store icon"
+    pass "Source compatibility aliases agree; packaged artwork is verified separately"
 else
     fail "Discover icon aliases differ"
 fi
