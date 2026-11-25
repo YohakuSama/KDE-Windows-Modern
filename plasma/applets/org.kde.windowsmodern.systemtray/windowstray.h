@@ -27,6 +27,20 @@ inline const QList<QString> &tail()
     return ids;
 }
 
+// Privacy indicators are distinct from pinned/background applications.
+inline bool privacyIndicator(const QString &itemId)
+{
+    return itemId == QLatin1String("org.kde.plasma.cameraindicator");
+}
+
+// -1: ordinary visible applications/devices; 0: privacy; 1+: fixed core.
+inline int systemOrder(const QString &itemId)
+{
+    if (privacyIndicator(itemId)) return 0;
+    const int index = tail().indexOf(itemId);
+    return index < 0 ? -1 : index + 1;
+}
+
 // True on laptops: the kernel lists a system battery (not a mouse's or a
 // headset's, whose scope is "Device").
 inline bool hasSystemBattery()
@@ -73,6 +87,13 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
                                                 bool eligible, bool pinned, bool hiddenByUser)
 {
     using Status = Plasma::Types::ItemStatus;
+    // Do not bury the live privacy indicator in overflow, even if an
+    // older saved configuration forced it there. Do not show an idle one.
+    if (privacyIndicator(itemId)) {
+        return eligible && (status == Status::ActiveStatus || status == Status::NeedsAttentionStatus
+                            || status == Status::RequiresAttentionStatus)
+            ? Status::ActiveStatus : Status::HiddenStatus;
+    }
     if (!eligible || (!pinned && status == Status::HiddenStatus)) {
         return Status::HiddenStatus;
     }

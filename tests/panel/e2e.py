@@ -224,8 +224,9 @@ def tray_pages(p, c):
 # Windows 11 ends the tray with these, left to right, before the clock.
 TRAY_TAIL = ["Keyboard Layout", "Networks", "Audio Volume", "Power & Battery"]
 # Not Windows tray icons: they wait behind the chevron unless pinned.
-OVERFLOW_BY_DEFAULT = {"Clipboard": "org.kde.plasma.clipboard", "Bluetooth": "org.kde.plasma.bluetooth",
+OVERFLOW_BY_DEFAULT = {"Clipboard": "org.kde.plasma.clipboard",
                        "Brightness & Color": "org.kde.plasma.brightness", "KDE Connect": "org.kde.kdeconnect"}
+DYNAMIC_TRAY = ("Bluetooth", "Disks & Devices", "Device Notifier", "Camera Indicator")
 
 
 def pinned_tray_items():
@@ -259,6 +260,10 @@ def tray_order(p, c):
     c.check(not stray, f"non-Windows icons wait behind the chevron unless pinned (in the row: {stray})")
     if tail and "Show hidden icons" in xs:
         c.check(xs["Show hidden icons"] < xs[tail[0]], "overflow chevron precedes system status icons")
+        for name in DYNAMIC_TRAY:
+            if name in xs:
+                c.check(xs["Show hidden icons"] < xs[name] < xs[tail[0]],
+                        f"{name} between overflow chevron and core system group")
     if tail and "Clock" in xs:
         between = [n for n, x in xs.items() if xs[tail[-1]] < x < xs["Clock"]]
         c.check(not between, f"no extra item between {tail[-1]!r} and the clock (found {between})")
