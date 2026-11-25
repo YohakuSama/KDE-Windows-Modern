@@ -15,8 +15,10 @@ QQC2.ScrollBar {
     stepSize: Math.max(0.01, size * 0.9)
     minimumSize: height > 0 ? Math.min(1, 32 / height) : 0
     readonly property int thumbWidth: pointer.hovered || pressed ? 6 : 2
-    // Keep the input gutter available without painting an idle thumb.
-    readonly property bool indicatorVisible: size < 1 && (pointer.hovered || pressed)
+    property bool viewportHovered: false
+    // The thin panning indicator appears while browsing or scrolling.
+    // Only entering the edge's input region expands the thumb.
+    readonly property bool indicatorVisible: size < 1 && (pointer.hovered || pressed || active || viewportHovered)
 
     HoverHandler { id: pointer }
 
