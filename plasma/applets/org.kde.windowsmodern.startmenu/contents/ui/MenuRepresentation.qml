@@ -156,11 +156,35 @@ Item {
         // Reveal the native editor temporarily for IME composition.
         readonly property bool taskbarSearchHome: searching && taskbarSearchBox && !startSearch.composing
 
-        // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results.
+        // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results, 3 = recommendations.
         // Pinned and All now share the same scrollable home.
         readonly property var pinnedPage: allAppsPage.allAppsList.headerItem?.pinnedSectionItem ?? null
         property int leftColumnState: 0
-        property bool showMoreRecent: false
+        property int recommendationReturnState: 0
+        property real recommendationReturnY: 0
+
+        function openRecommendations() {
+            if (!rootItem.showRecentSection || leftColumnState >= 2) return;
+            recommendationReturnState = leftColumnState;
+            allAppsPage.activeScroller.cancelFlick();
+            recommendationReturnY = allAppsPage.activeScroller.contentY;
+            modeMenu.close();
+            sharedContextMenu.close();
+            leftColumnState = 3;
+            recommendedPage.reset();
+        }
+
+        function closeRecommendations() {
+            if (leftColumnState !== 3) return;
+            leftColumnState = recommendationReturnState;
+            allAppsPage.activeScroller.forceLayout();
+            const header = allAppsPage.activeScroller.headerItem;
+            if (header && header.moreRecommendationsButton && header.moreRecommendationsButton.visible)
+                header.moreRecommendationsButton.forceActiveFocus(Qt.OtherFocusReason);
+            else
+                startSearch.focusSearch();
+            allAppsPage.activeScroller.contentY = recommendationReturnY;
+        }
 
         onSearchingChanged: {
             if (searching) {
@@ -192,7 +216,8 @@ Item {
             startSearch.searchText = "";
             searching = false;
             leftColumnState = 0;
-            showMoreRecent = false;
+            recommendationReturnState = 0;
+            recommendationReturnY = 0;
             // Nothing highlighted until hovered or picked with the arrow keys,
             // as on Windows (a ListView makes its first item current as soon
             // as it has items, so the first pinned app always looked selected).
@@ -374,6 +399,8 @@ Item {
                         startSearch.focusSearch();
                     } else if (root.searching) {
                         root.closeMenu();
+                    } else if (root.leftColumnState === 3) {
+                        root.closeRecommendations();
                     } else if (allAppsPage.letterIndexOpen) {
                         allAppsPage.closeLetterIndex(true);
                     } else if (allAppsPage.inCategory) {
@@ -402,7 +429,7 @@ Item {
                 AllAppsPage {
                     id: allAppsPage
                     anchors.fill: parent
-                    visible: root.leftColumnState !== 2
+                    visible: root.leftColumnState < 2
                     scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     showAllSection: Plasmoid.configuration.showAllSection
                     flatModel: sortedAppsModel
@@ -434,6 +461,7 @@ Item {
                             spacing: 20
                             property alias pinnedSectionItem: pinnedSection
                             property alias viewSelectorItem: viewSelector
+                            property alias moreRecommendationsButton: moreRecommendations
 
                             PinnedPage {
                                 id: pinnedSection
@@ -458,12 +486,14 @@ Item {
                                     font.weight: Font.DemiBold
                                 }
                                 AToolButton {
+                                    id: moreRecommendations
+                                    objectName: "wmStartRecommendationsMore"
                                     visible: recentGrid.count > recentGrid.recentColumns * 2
                                     flat: true
                                     linkStyle: true
-                                    iconName: root.showMoreRecent ? "go-up" : "go-next"
-                                    text: root.showMoreRecent ? i18n("Show less") : i18n("More")
-                                    onClicked: root.showMoreRecent = !root.showMoreRecent
+                                    iconName: "go-next-symbolic"
+                                    text: i18n("More")
+                                    onClicked: root.openRecommendations()
                                 }
                             }
 
@@ -471,8 +501,7 @@ Item {
                                 id: recentGrid
                                 Layout.fillWidth: true
                                 readonly property int recentColumns: 2
-                                Layout.preferredHeight: (root.showMoreRecent
-                                    ? Math.ceil(count / recentColumns) : Math.min(2, Math.ceil(count / recentColumns))) * cellHeight
+                                Layout.preferredHeight: Math.min(2, Math.ceil(count / recentColumns)) * cellHeight
                                 cellWidth: Math.max(1, Math.floor(width / recentColumns))
                                 cellHeight: 48
                                 visible: rootItem.showRecentSection && count > 0
@@ -482,7 +511,14 @@ Item {
                                 interactive: false
                                 boundsBehavior: Flickable.StopAtBounds
                                 currentIndex: -1
-                                delegate: ListItemDelegate { iconSize: 32; showDescription: true }
+                                delegate: ListItemDelegate {
+                                    required property int index
+                                    required property var model
+                                    appData: model
+                                    itemIndex: index
+                                    iconSize: 28
+                                    showDescription: true
+                                }
                             }
 
                             RowLayout {
@@ -528,6 +564,24 @@ Item {
                                 }
                             }
                         }
+                    }
+                }
+
+                RecommendedPage {
+                    id: recommendedPage
+                    anchors.fill: parent
+                    visible: root.leftColumnState === 3
+                    sourceModel: rootItem.showRecentSection ? recentUsage : null
+                    onBackRequested: root.closeRecommendations()
+                    onLaunchRequested: row => {
+                        if (recentUsage.trigger(row, "", null)) root.closeMenu();
+                    }
+                    onContextRequested: function(entry, row, x, y) {
+                        const actions = Tools.buildAppActions(i18n, globalFavorites,
+                            entry.favoriteId || "", entry.url || "", entry.actionList || null);
+                        if (!actions.length) return;
+                        const pos = recommendedPage.mapToItem(sharedContextMenu, x, y);
+                        sharedContextMenu.open(actions, pos.x, pos.y, {model: recentUsage, index: row});
                     }
                 }
 
@@ -786,7 +840,8 @@ Item {
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 const page = root.leftColumnState === 0 ? root.pinnedPage
-                           : root.leftColumnState === 1 ? allAppsPage : searchPage;
+                           : root.leftColumnState === 1 ? allAppsPage
+                           : root.leftColumnState === 3 ? recommendedPage : searchPage;
                 if (!page)
                     return;
                 if (direction < 0)
@@ -807,6 +862,8 @@ Item {
                     root.pinnedPage.tryActivate(Math.max(0, root.pinnedPage.favoritesList.currentIndex));
                 } else if (root.leftColumnState === 1 && allAppsPage.allAppsList.count > 0) {
                     allAppsPage.tryActivate(Math.max(0, allAppsPage.activeView.currentIndex));
+                } else if (root.leftColumnState === 3) {
+                    recommendedPage.focusResults();
                 } else if (root.leftColumnState === 2 && searchPage.resultsView.count > 0) {
                     searchPage.tryActivate(Math.max(0, searchPage.resultsView.currentIndex), 0);
                 } else if (!root.searching) {
@@ -820,6 +877,8 @@ Item {
                     root.pinnedPage?.activateCurrent();
                 } else if (root.leftColumnState === 1) {
                     allAppsPage.activateCurrent();
+                } else if (root.leftColumnState === 3) {
+                    recommendedPage.activateCurrent();
                 } else if (root.leftColumnState === 2) {
                     searchPage.activateCurrent();
                 }
@@ -887,9 +946,11 @@ Item {
                         startSearch.focusSearch();
                     } else if (root.searching) {
                         root.closeMenu();
+                    } else if (root.leftColumnState === 3) {
+                        root.closeRecommendations();
                     } else if (allAppsPage.letterIndexOpen) {
                         allAppsPage.closeLetterIndex(true);
-                    } else if (root.leftColumnState === 1 && allAppsPage.inCategory) {
+                    } else if (allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {
                         root.leftColumnState = 0;

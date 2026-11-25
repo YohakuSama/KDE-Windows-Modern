@@ -47,6 +47,9 @@ Item {
     property int itemIndex: item.appData.index ?? -1
     property int iconSize: Kirigami.Units.iconSizes.smallMedium
     property bool showDescription: false
+    property string descriptionText: String(appData.description || "")
+    property string trailingText: ""
+    property var contextHandler: null
     property bool showInstallBadge: false
     readonly property bool newApplication: showInstallBadge && !!appData.isNewlyInstalled
 
@@ -164,7 +167,8 @@ Item {
             id: textBlock
             x: item.gridMode ? Kirigami.Units.smallSpacing : icon.x + icon.width + Kirigami.Units.largeSpacing
             y: item.gridMode ? icon.y + icon.height + 6 : (parent.height - height) / 2
-            width: Math.max(0, parent.width - x - Kirigami.Units.smallSpacing)
+            width: Math.max(0, parent.width - x - Kirigami.Units.smallSpacing
+                - (trailingLabel.visible ? trailingLabel.width + 16 : 0))
             spacing: Kirigami.Units.smallSpacing / 2
 
             PlasmaComponents3.Label {
@@ -198,9 +202,23 @@ Item {
                 elide: Text.ElideRight
                 color: Kirigami.Theme.disabledTextColor
                 font: Kirigami.Theme.smallFont
-                text: item.appData.description ?? ""
+                text: item.descriptionText
                 textFormat: Text.PlainText
             }
+        }
+        PlasmaComponents3.Label {
+            id: trailingLabel
+            visible: !item.gridMode && item.trailingText.length > 0
+            anchors.right: parent.right
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            width: visible ? Math.min(implicitWidth, parent.width * 0.35) : 0
+            text: item.trailingText
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
+            horizontalAlignment: Text.AlignRight
+            color: Kirigami.Theme.disabledTextColor
+            font: Kirigami.Theme.smallFont
         }
     }
 
@@ -382,6 +400,10 @@ Item {
     function openContextMenu(localX, localY) {
         // A category is a navigation row, not a pinnable application.
         if (item.appData.isParent) return;
+        if (item.contextHandler) {
+            item.contextHandler(item.appData, item.itemIndex, localX, localY);
+            return;
+        }
         var favModel = (typeof kicker !== "undefined" && kicker.globalFavorites)
                        ? kicker.globalFavorites : null
         var favId = item.appData.favoriteId ?? ""

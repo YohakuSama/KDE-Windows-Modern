@@ -51,7 +51,7 @@ Rectangle {
     property alias text: lb.text
     property bool flat: false
     property bool linkStyle: false
-    property alias iconName: icon.source
+    property alias iconName: icon.roleName
     property bool mirror: false
 
     signal clicked
@@ -83,11 +83,12 @@ Rectangle {
             Layout.fillWidth: true
         }
 
-        Kirigami.Icon {
+        NativeGlyph {
             id: icon
-            implicitHeight: Kirigami.Units.gridUnit
-            implicitWidth: implicitHeight
-            smooth: true
+            implicitHeight: 12
+            implicitWidth: 12
+            Layout.preferredWidth: 12
+            Layout.preferredHeight: 12
         }
     }
 
