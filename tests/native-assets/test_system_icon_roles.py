@@ -13,6 +13,12 @@ class SystemIconRolesTests(unittest.TestCase):
         targets = [path for names in MAPPING['icons'].values() for path in names.split()]
         self.assertEqual(len(targets), len(set(targets)))
 
+    def test_sound_output_role_is_not_speaker_volume(self):
+        self.assertEqual(MAPPING['icons']['f4c3'], 'actions/wm-sound-output-symbolic')
+        self.assertIn('f4c3', MAPPING['optional_glyphs'])
+        for code in ('e992', 'e993', 'e994', 'e995'):
+            self.assertNotIn('actions/wm-sound-output-symbolic', MAPPING['icons'][code].split())
+
     def test_documented_power_roles_across_contexts(self):
         expected = {
             'e72e': 'system-lock-screen',

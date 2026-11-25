@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install health check dependencies
-        run: sudo apt-get update && sudo apt-get install -y shellcheck python3-pil
+        run: sudo apt-get update && sudo apt-get install -y shellcheck python3-pil python3-fonttools
       # Same gate scripts/release.sh enforces: required files, light/dark
       # parity, layout drift, metadata, bash -n and shellcheck.
       - name: verify-all.sh
@@ -34,7 +34,7 @@ jobs:
       - name: Reversible application appearance tests
         run: python3 -m unittest discover -s tests/apps -v
       - name: Native resource reader tests
-        run: python3 -m unittest discover -s tests/native-assets -v
+        run: /usr/bin/python3 -m unittest discover -s tests/native-assets -v
       - name: Window material tests
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
       - name: Microsoft Store icon tests

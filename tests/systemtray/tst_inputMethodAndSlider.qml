@@ -55,6 +55,14 @@ Item {
             verify(a.height >= 34 && b.height >= 34);
         }
 
+        function test_soundOutputGlyphHasFallback() {
+            const nativeGlyph = findChild(volume, "wmNativeSoundOutputGlyph");
+            const fallbackGlyph = findChild(volume, "wmFallbackSoundOutputGlyph");
+            verify(nativeGlyph !== null && fallbackGlyph !== null);
+            compare(nativeGlyph.visible, String(volume.nativeSoundOutputAsset).length > 0);
+            compare(fallbackGlyph.visible, !nativeGlyph.visible);
+        }
+
         function test_sliderWithoutLeadingIcon() {
             const track = findChild(brightness, "wmFluentSliderTrack");
             const oldIcon = brightness.iconSource;

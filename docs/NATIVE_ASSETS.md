@@ -208,3 +208,13 @@ not a global highlight override or a duplicate desktop containment. The native
 notification toast and Dolphin file-menu implementation likewise remain
 separate from the Start app menu and the notification history; compare them on
 the target desktop before marking the surfaces complete.
+
+## Local shell resource inspection
+
+The optional `scripts/inspect-shell-resources.py` tool inventories an extracted Windows or SystemApps directory, including numeric and named icon groups, their language-specific frames, and embedded font families. Run it against a private local source and a new private output directory:
+
+```sh
+python3 scripts/inspect-shell-resources.py /path/to/extracted/Windows /path/to/private/shell-inventory
+```
+
+Keep its extracted icons and fonts local. A family-name match is not proof of a usable SysBatt font or a correct battery mapping. The MixVolumes (F4C3) role is optional: it is imported locally when present in the source font, and the sound-output button retains its compatibility drawing when the installed native glyph is unavailable.

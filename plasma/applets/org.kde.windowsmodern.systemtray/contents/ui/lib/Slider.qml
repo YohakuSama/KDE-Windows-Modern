@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Templates as T
+import QtCore
 import QtQuick.Layouts
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
@@ -25,6 +26,12 @@ Item {
     // the same x coordinate. Other detail-page sliders stay full-width.
     property bool reserveDetailsSpace: false
     property bool soundOutputDetails: false
+    // Use the locally imported MixVolumes glyph when available; preserve
+    // the independent compatibility drawing for installations without it.
+    readonly property url nativeSoundOutputAsset: soundOutputDetails
+        ? StandardPaths.locate(StandardPaths.GenericDataLocation,
+            "icons/windows-modern/actions/wm-sound-output-symbolic.svg", StandardPaths.LocateFile)
+        : ""
     property string detailsIconSource: ""
     property string detailsAccessibleName: ""
     property bool iconClickable: false
@@ -191,9 +198,20 @@ Item {
                     isMask: true
                     color: Kirigami.Theme.textColor
                 }
+                Kirigami.Icon {
+                    objectName: "wmNativeSoundOutputGlyph"
+                    visible: root.soundOutputDetails && String(root.nativeSoundOutputAsset).length > 0
+                    width: 18
+                    height: 18
+                    source: root.nativeSoundOutputAsset
+                    roundToIconSize: false
+                    isMask: true
+                    color: Kirigami.Theme.textColor
+                }
                 Canvas {
                     id: outputGlyph
-                    visible: root.soundOutputDetails
+                    objectName: "wmFallbackSoundOutputGlyph"
+                    visible: root.soundOutputDetails && String(root.nativeSoundOutputAsset).length === 0
                     width: 18
                     height: 18
                     property color glyphColor: Kirigami.Theme.textColor
