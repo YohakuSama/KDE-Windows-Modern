@@ -83,14 +83,15 @@ SessionManagementScreen {
             ? userNameInput
             : (passwordField.visible
                 ? passwordField
-                : loginButton));
+                : noPasswordButton));
         nextControl.forceActiveFocus(Qt.TabFocusReason);
     }
 
     function startLogin() {
         const username = showUsernamePrompt ? userNameInput.text : userList.selectedUser;
         const password = passwordField.text;
-        loginButton.forceActiveFocus();
+        if (loginButton.visible) loginButton.forceActiveFocus();
+        else noPasswordButton.forceActiveFocus();
         loginRequest(username, password);
     }
 
@@ -113,7 +114,7 @@ SessionManagementScreen {
         Layout.bottomMargin: 4
         text: {
             if (root.showUsernamePrompt) {
-                return i18nd("plasma_login", "User");
+                return i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "User");
             }
             if (userList.currentItem && userList.currentItem.realName) {
                 return userList.currentItem.realName;
@@ -132,6 +133,7 @@ SessionManagementScreen {
         Layout.alignment: Qt.AlignHCenter
         Layout.preferredHeight: 20
         Layout.bottomMargin: 0
+        visible: root.customErrorMessage !== ""
 
         Text {
             anchors.centerIn: parent
@@ -156,7 +158,7 @@ SessionManagementScreen {
         text: ""
         visible: showUsernamePrompt
         initialFocus: showUsernamePrompt
-        placeholderText: i18nd("plasma_login", "Username")
+        placeholderText: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Username")
 
         onAccepted: {
             if (root.loginScreenUiVisible) {
@@ -245,7 +247,7 @@ SessionManagementScreen {
             anchors.rightMargin: 2
             anchors.verticalCenter: parent.verticalCenter
             layoutMirrored: root.LayoutMirroring.enabled
-            visible: passwordField.text.length > 0 || !root.showUsernamePrompt
+            opacity: passwordField.text.length > 0 ? 1 : 0.65
             onClicked: root.startLogin()
             Keys.onEnterPressed: clicked()
             Keys.onReturnPressed: clicked()
@@ -254,6 +256,7 @@ SessionManagementScreen {
 
     // ── No-password login button ──
     QQC2.Button {
+        id: noPasswordButton
         Layout.alignment: Qt.AlignHCenter
         Layout.preferredWidth: 144
         Layout.preferredHeight: WinStyle.textFieldHeight

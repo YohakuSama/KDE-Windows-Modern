@@ -58,7 +58,7 @@ Lib.DetailPage {
 
     listView.delegate: Item {
         id: delegate
-        // Reserve the WinUI scrollbar's 16px overlay region.
+        // Balanced gutters; the scrollbar overlays the edge.
         x: 8
         width: Math.max(1, listView.width - 16)
         height: container.height + 2
@@ -188,11 +188,13 @@ Lib.DetailPage {
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 0
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 2
 
                             PlasmaComponents3.Label {
                                 Layout.fillWidth: true
                                 text: model.ItemUniqueName
+                                textFormat: Text.PlainText
                                 color: Kirigami.Theme.textColor
                                 font.bold: connectionState === PlasmaNM.Enums.Activated
                                 elide: Text.ElideRight
@@ -207,22 +209,18 @@ Lib.DetailPage {
                             }
                         }
 
-                        Kirigami.Icon {
+                        PlasmaComponents3.ToolButton {
                             visible: connectionState === PlasmaNM.Enums.Activated
-                            Layout.preferredWidth: 20
-                            Layout.preferredHeight: 20
-                            source: "dialog-information"
-                            color: Kirigami.Theme.textColor
-                            opacity: infoMA.containsMouse ? 1 : 0.6
-                            isMask: true
-
-                            MouseArea {
-                                id: infoMA
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
-                            }
+                            Layout.preferredWidth: 30
+                            Layout.preferredHeight: 30
+                            Layout.alignment: Qt.AlignVCenter
+                            text: i18n("Network properties")
+                            display: PlasmaComponents3.AbstractButton.IconOnly
+                            icon.name: "dialog-information"
+                            icon.width: 18
+                            icon.height: 18
+                            onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
+                            PlasmaComponents3.ToolTip { text: parent.text }
                         }
                     }
                 }

@@ -154,9 +154,20 @@ QQC2.StackView {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         visible: mainStack.themedActive && footerLoader.sourceComponent !== null
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.03)
-        implicitHeight: footerLoader.item ? footerLoader.item.implicitHeight + 8 : 0
+        color: "transparent"
+        z: 10
+        implicitHeight: footerLoader.item ? footerLoader.item.implicitHeight + 4 : 0
         height: implicitHeight
+
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            height: 1
+            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
+        }
 
         Loader {
             id: footerLoader

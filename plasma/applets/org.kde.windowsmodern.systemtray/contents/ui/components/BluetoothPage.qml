@@ -42,7 +42,7 @@ Lib.DetailPage {
     listView.spacing: 2
     listView.header: Item {
         width: page.listView.width
-        height: visible ? 44 : 0
+        height: page.radioOn ? 44 : 0
         visible: page.radioOn
         PlasmaComponents3.Button {
             anchors.left: parent.left

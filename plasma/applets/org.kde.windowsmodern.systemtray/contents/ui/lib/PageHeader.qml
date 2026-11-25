@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 
@@ -27,6 +28,7 @@ RowLayout {
     spacing: 8
 
     PlasmaComponents3.ToolButton {
+        objectName: "wmDetailBack"
         Layout.preferredWidth: 36
         Layout.preferredHeight: 36
         Layout.alignment: Qt.AlignVCenter
@@ -40,6 +42,7 @@ RowLayout {
     }
 
     PlasmaComponents3.Label {
+        objectName: "wmDetailTitle"
         text: header.title
         color: Kirigami.Theme.textColor
         font.weight: Font.DemiBold
@@ -50,6 +53,7 @@ RowLayout {
     }
 
     PlasmaComponents3.Button {
+        objectName: "wmDetailAction"
         visible: header.showAction
         text: header.actionText
         Layout.preferredHeight: 30
@@ -57,12 +61,46 @@ RowLayout {
         onClicked: header.actionTriggered()
     }
 
-    PlasmaComponents3.Switch {
+    QQC2.Switch {
+        id: radioSwitch
+        objectName: "wmDetailSwitch"
         visible: header.showSwitch
         enabled: header.switchEnabled
         checked: header.switchChecked
         onToggled: header.switchToggled()
         Accessible.name: header.title
+        Layout.preferredWidth: 44
+        Layout.preferredHeight: 32
         Layout.alignment: Qt.AlignVCenter
+        padding: 0
+        background: Rectangle {
+            radius: 4
+            color: "transparent"
+            border.width: radioSwitch.activeFocus ? 1 : 0
+            border.color: Kirigami.Theme.highlightColor
+        }
+        contentItem: Item {}
+        indicator: Rectangle {
+            objectName: "wmDetailSwitchTrack"
+            readonly property color fg: Kirigami.Theme.textColor
+            x: (radioSwitch.width - width) / 2
+            y: (radioSwitch.height - height) / 2
+            width: 40
+            height: 20
+            radius: 10
+            color: radioSwitch.checked ? Kirigami.Theme.highlightColor : "transparent"
+            border.width: radioSwitch.checked ? 0 : 1
+            border.color: Qt.rgba(fg.r, fg.g, fg.b, 0.70)
+            opacity: radioSwitch.enabled ? 1 : 0.5
+            Rectangle {
+                width: 12
+                height: 12
+                radius: 6
+                anchors.verticalCenter: parent.verticalCenter
+                x: (radioSwitch.checked !== radioSwitch.mirrored) ? parent.width - width - 4 : 4
+                color: radioSwitch.checked ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
+                Behavior on x { NumberAnimation { duration: 120 } }
+            }
+        }
     }
 }

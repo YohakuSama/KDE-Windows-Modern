@@ -482,5 +482,11 @@
   "Connecting": "正在连接",
   "Disconnecting": "正在断开连接",
   "Connection failed": "连接失败",
-  "Sign in": "登录"
+  "Sign in": "登录",
+  "Open clipboard history": "打开剪贴板历史",
+  "Switch keyboard layout": "切换键盘布局",
+  "Desktop session: %1": "桌面会话：%1",
+  "On-screen keyboard": "屏幕键盘",
+  "Username": "用户名",
+  "Network properties": "网络属性"
 }
