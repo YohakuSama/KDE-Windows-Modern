@@ -8,7 +8,7 @@ icons/** -diff
 /docs/screenshots export-ignore
 /plans export-ignore
 /AGENTS.md export-ignore
-/CLAUDE.md export-ignore
+/docs/CONTRIBUTING.md export-ignore
 /tests export-ignore
 /.github export-ignore
 /scripts/release.sh export-ignore

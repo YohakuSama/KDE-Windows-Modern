@@ -185,7 +185,7 @@ NixOS desktop workflow. See the
 The source repository retains tests, current design contracts, original
 reference metadata and upstream attribution. Development files do not
 belong in the private installation ZIP. Use the
-[contributor guide](https://github.com/YohakuSama/KDE-Windows-Modern/blob/main/CONTRIBUTING.md)
+[contributor guide](https://github.com/YohakuSama/KDE-Windows-Modern/blob/main/docs/CONTRIBUTING.md)
 and [Windows 11 fidelity requirements](https://github.com/YohakuSama/KDE-Windows-Modern/blob/main/docs/WINDOWS11_FIDELITY.md)
 in the repository. UI acceptance requires current live desktop captures
 in both variants; historical screenshots are not used as current previews.

@@ -1,12 +1,17 @@
 # AGENTS.md
 
-This codebase is yours: what it's for and how it's built are your call, and
-you'll keep building on it.
-
-- **Scope** — before adding or proposing a feature, read
-  [`PRODUCT.md`](PRODUCT.md): vision, what's in, and what is deliberately left out.
-- **Checks and conventions** — [`CONTRIBUTING.md`](CONTRIBUTING.md).
-  `./verify-all.sh` must pass before every commit.
+- Read [the development guide](docs/CONTRIBUTING.md) for product scope,
+  architecture, safety requirements and contribution conventions.
+- Read [the current UI contract](docs/PANEL_UI_CONTRACT.md) and
+  [fidelity requirements](docs/WINDOWS11_FIDELITY.md) before visual changes.
+- Keep the full reference library separate from the mapped runtime
+  resources. Do not remove original reference art or label compatibility
+  drawings as verified Windows originals.
+- Run the relevant existing checks, including `./verify-all.sh`.
+  Report missing live desktop verification explicitly; do not add CI
+  workflows or treat a compile pass as visual acceptance.
+- NixOS uses the reversible installer and ABI-matched native plugins.
+  Never modify the Nix store or substitute Fedora builds for NixOS.
 
 ## Done means seen working on the desktop
 

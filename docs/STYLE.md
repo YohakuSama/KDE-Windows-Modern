@@ -836,7 +836,7 @@ A custom Windows-logo start menu icon is shipped as
 ## Installation and repository layout
 
 See [README.md](../README.md) for current installation, upgrade and restore
-instructions, [CONTRIBUTING.md](../CONTRIBUTING.md) for source layout,
+instructions, [CONTRIBUTING.md](CONTRIBUTING.md) for source layout,
 [ATTRIBUTION.md](../ATTRIBUTION.md) for source credits and
 [LICENSE](../LICENSE) for licensing.
 

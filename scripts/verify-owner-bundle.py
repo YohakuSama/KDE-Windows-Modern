@@ -20,7 +20,7 @@ from native_assets_index import mapped_resource_entries, verify_reference_index
 DEV_PATHS = (
     "tests", ".github", "plans", "AGENTS.md", "CLAUDE.md",
     ".editorconfig", ".shellcheckrc", ".gitignore", ".gitattributes", ".gitmodules",
-    "CONTRIBUTING.md", "PRODUCT.md",
+    "CONTRIBUTING.md", "PRODUCT.md", "docs/CONTRIBUTING.md",
     "verify-all.sh", "docs/icon-pack", "docs/screenshots",
     "docs/PANEL_UI_CONTRACT.md", "docs/PLASMA_SYSTEMTRAY_ARCHITECTURE.md",
     "docs/RELEASE.md", "docs/STYLE.md",

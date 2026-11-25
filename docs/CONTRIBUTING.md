@@ -1,17 +1,49 @@
-# Contributing to Windows Modern
+# Development guide
 
-Thanks for helping. Before proposing a feature, read
-[`PRODUCT.md`](PRODUCT.md): it says what belongs in the project and what is
-deliberately left out.
+Read this guide from the repository root. It consolidates product scope
+and contributor conventions. For installation and packaging, see
+[README.md](../README.md).
 
-This document covers how the repository is laid out, the
-checks every change must pass, and the conventions the project follows.
+## Scope and acceptance
+
+Windows Modern targets the selected Windows 11 reference build, including
+layout, typography, iconography, materials, animation and interaction.
+Keep KDE and KWin as the platform. Use their native services, real device
+states, existing accessibility mechanisms and actual system actions.
+Normal installation preserves the user's system fonts.
+
+In scope: taskbar, Start/Search, Quick Settings, notification history and
+toasts, calendar, window decorations, icons, cursor, Alt+Tab, Task View,
+window snapping, keyboard shortcuts, lock screen, optional login/boot
+appearance and limited app-specific appearance adjustments.
+
+Out of scope: promotional content, news feeds, advertising, tracking,
+online search results in local search, AI entry points, Windows 10 live
+tiles and nonfunctional controls for Windows-only services. Respect the
+maintainer's explicit future scope changes.
+
+Use verified original Windows assets for the selected UI roles. Keep
+original reference files intact; select only mapped runtime inputs.
+Proprietary resource payloads are for authorized local/private use, not
+public release artifacts. Preserve upstream authors and licensing.
+
+Support both light and dark variants. Reuse existing native mechanisms
+where appropriate, preserve user preferences, make changes reversible,
+and avoid duplicating controls or backends. Do not build as root or
+overwrite Nix store paths. NixOS uses source-built ABI-matched plugins;
+Fedora CI binaries do not establish NixOS support.
+
+[Windows 11 fidelity requirements](WINDOWS11_FIDELITY.md) and
+[the current panel contract](PANEL_UI_CONTRACT.md) define visual and
+interaction acceptance. Actual live comparisons are required for
+visual parity. Missing original artwork and unverified desktop behavior
+remain open tasks.
 
 ## Repository layout
 
 | Path | What lives there |
 |------|------------------|
-| `install.sh`, `uninstall.sh` | Entry points. Each component has its own `scripts/install-<name>.sh`. |
+| `install.sh`, `uninstall.sh`, `install-nixos.sh` | User entry points and the reversible NixOS backend. Conventional component installers are in `scripts/`. |
 | `scripts/install-lib.sh` | Shared helpers (paths, logging, apply/restart). Every installer sources it. |
 | `plasma/applets/` | Applets. `startmenu`, `showdesktop`, `digitalclock` and the optional `search` / `taskview` buttons are pure QML; `systemtray` and `icontasks` are C++ forks of upstream Plasma applets. |
 | `plasma/look-and-feel/`, `plasma/desktoptheme/`, `aurorae/`, `Kvantum/`, `color-schemes/` | Theme assets, always in **dark and light** variants. |
@@ -101,11 +133,12 @@ on the files you touched and don't add new warnings.
 ### C++ applets
 
 - Keep changes to native KDE backends small and documented; see
-  [the current upstream inventory](docs/UPSTREAM.md) and
-  [system tray architecture](docs/SYSTEMTRAY_ARCHITECTURE.md).
-- The QML is compiled into the `.so`. Never install these applets as a
-  KPackage (it produces the "dark rectangle" bug); build and install with
-  `./install.sh systray` / `./install.sh icontasks`.
+  [the current upstream inventory](UPSTREAM.md) and
+  [system tray architecture](SYSTEMTRAY_ARCHITECTURE.md).
+- The QML is compiled into the `.so`. Never install a second full QML
+  KPackage with the same ID. On NixOS, use the normal reversible installer;
+  on conventional distributions use `./install.sh systray` or
+  `./install.sh icontasks`.
 - After a Plasma upgrade, rebuild and run `./scripts/ci-build.sh` — a soname
   bump or removed API shows up there first.
 
@@ -118,17 +151,15 @@ commit.
 
 ### Icon pack
 
-`icons/windows-modern/` is marked `--skip-worktree`. Never stage icon changes
-by hand; use:
-
-```bash
-COMMIT_MSG="feat(icons): describe your change" ./scripts/commit-icons.sh
-```
+The fallback icon theme is tracked in `icons/windows-modern/`. Review and
+stage icon changes normally. Old developer checkouts may have local
+skip-worktree flags; clear those before reviewing icon edits. The flags
+are not shared repository settings. Do not hide new changes from Git.
 
 ## Native resources and screenshots
 
 Keep the complete Windows reference library separate from the mapped runtime
-resources. See [native resources](docs/NATIVE_ASSETS.md) for the selection,
+resources. See [native resources](NATIVE_ASSETS.md) for the selection,
 pinning and verification workflow. Do not discard an unmapped original from
 the reference library merely because the current theme does not use it.
 
@@ -150,12 +181,12 @@ use them to claim current UI parity.
 
 ## Releases
 
-Maintainers follow [`docs/RELEASE.md`](docs/RELEASE.md). `scripts/release.sh`
+Maintainers follow [`docs/RELEASE.md`](RELEASE.md). `scripts/release.sh`
 refuses to publish unless `verify-all.sh` passes and every component version
 matches the release version.
 
 ## License
 
 By contributing you agree that your contributions are licensed under the
-GNU GPL v3 (see [`LICENSE`](LICENSE)). Code forked from KDE keeps its original
+GNU GPL v3 (see [`LICENSE`](../LICENSE)). Code forked from KDE keeps its original
 SPDX headers.
