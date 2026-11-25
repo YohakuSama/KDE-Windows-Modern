@@ -17,7 +17,7 @@ from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.boundsPen import BoundsPen
 
-from native_assets_input import read_assets, source_manifest
+from native_assets_input import read_assets, source_manifest, importer_fingerprint
 from native_assets_index import IndexedResources, mapped_original_names
 
 from native_pe_resources import pe_resources
@@ -266,6 +266,7 @@ def main():
         report=build(stage,data,mapping,indexed)
         report['source_path'] = str(source)  # Local manifest only; never in the catalog.
         report['mapping_sha256'] = hashlib.sha256(mapping_bytes).hexdigest()
+        report['importer_sha256'] = importer_fingerprint()
         (stage/'manifest.json').write_text(json.dumps(report,indent=2)+'\n', encoding='utf-8')
         previous=Path(temp)/'previous'
         if dest.exists():

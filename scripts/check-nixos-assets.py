@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from native_assets_input import importer_fingerprint
+
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -16,6 +19,8 @@ def verify(root, source, mapping):
     manifest = json.loads((root / "manifest.json").read_text())
     if manifest["mapping_sha256"] != digest(mapping):
         raise ValueError("mapping changed")
+    if manifest.get("importer_sha256") != importer_fingerprint():
+        raise ValueError("native resource importer changed")
     if manifest["indexed_source"]["manifest_sha256"] != digest(source / "resource-manifest.json"):
         raise ValueError("Windows resource manifest changed")
     outputs = manifest["outputs"]

@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from native_assets_input import importer_fingerprint
+
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -18,6 +21,8 @@ def verify_import(root, mapping_file):
     manifest = json.loads((root / 'manifest.json').read_text(encoding='utf-8'))
     if manifest.get('mapping_sha256') != hashlib.sha256(mapping_bytes).hexdigest():
         raise ValueError('Local icon mapping is older than the theme checkout')
+    if manifest.get('importer_sha256') != importer_fingerprint():
+        raise ValueError('Local icon importer is older than the theme checkout')
     optional = set(mapping.get('optional_glyphs', []))
     omitted = set(manifest.get('missing_optional_glyphs', []))
     if not omitted <= optional:

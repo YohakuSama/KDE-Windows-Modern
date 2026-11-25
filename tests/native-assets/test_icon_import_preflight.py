@@ -25,6 +25,7 @@ class IconImportPreflightTests(unittest.TestCase):
                                                        'ffff': 'status/optional'},
                                              'optional_glyphs': ['ffff']}))
         self.manifest = {'mapping_sha256': CHECK.digest(self.mapping),
+                         'importer_sha256': CHECK.importer_fingerprint(),
                          'missing_optional_glyphs': ['ffff'],
                          'outputs': {'icons/status/wifi.svg': {
                              'source': 'e701', 'sha256': CHECK.digest(self.icon)}}}
@@ -39,6 +40,12 @@ class IconImportPreflightTests(unittest.TestCase):
     def test_mapping_changed(self):
         self.mapping.write_text('{}')
         with self.assertRaisesRegex(ValueError, 'older'):
+            CHECK.verify_import(self.root, self.mapping)
+
+    def test_importer_changed(self):
+        self.manifest['importer_sha256'] = 'old'
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, 'importer is older'):
             CHECK.verify_import(self.root, self.mapping)
 
     def test_changed_svg(self):

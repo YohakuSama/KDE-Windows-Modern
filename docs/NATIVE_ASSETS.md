@@ -26,7 +26,11 @@ The normal installer uses bundled `native-resources/` when available.
 Otherwise, the staging script fetches only the compact runtime branch,
 checks its exact pin and resource hashes, and stores the verified snapshot
 in `${XDG_CACHE_HOME:-$HOME/.cache}/windows-modern/runtime-resources/<pin>`.
-The private `bash scripts/package.sh --owner` package reuses that cache.
+The private `bash scripts/package.sh --owner` package and NixOS source
+installation share that same verified cache. Bundled inputs are checked
+against the current pin before importing. Old resource directories cannot
+override a newer pin. The generated asset manifest also tracks the
+importer code fingerprint, so changed extraction logic invalidates old SVGs.
 It verifies required files, content hashes and ZIP integrity before writing
 `dist/.owner-manifest`; it never pads the ZIP to a fixed size.
 
@@ -90,8 +94,9 @@ Review the original artwork before adding it to the map.
 ## Current coverage boundaries
 
 - The current reference library lacks an identified 26H2 SysBatt Fluent
-  Icons source. The legacy imported Segoe battery family is not evidence
-  of the newer battery artwork.
+  Icons source. The current BatteryGlyph is a compatibility drawing, not
+  verified original 26H2 artwork. The legacy imported Segoe battery family
+  also does not establish the newer artwork.
 - The newer colored Search activation glyph has not been identified in the
   reviewed library. Use the verified monochrome search role until the
   exact source is available.
