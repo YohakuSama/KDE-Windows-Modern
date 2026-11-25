@@ -6,6 +6,10 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Bind removable-device action delegates to the native ActionsInfo roles and verify the expanded action menu interaction.
+
+- Add a native removable-device flyout that reuses KDE's device model and real action dispatcher.
+
 - Match Windows 11 taskbar context-menu behavior: keep common app actions compact, move advanced window and panel management into Shift+right-click, and apply consistent pin/unpin rules across activities.
 
 - Share Start application, power and view-menu frames, compact glyph geometry and action row sizes. Keep initial mouse-open selection neutral and bound the footer menu to short work areas.
