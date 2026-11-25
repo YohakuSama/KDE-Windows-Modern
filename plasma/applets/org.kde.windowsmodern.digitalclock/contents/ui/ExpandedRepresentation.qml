@@ -30,32 +30,12 @@ FocusScope {
         i18nc("@info calendar display locale (translate to a Qt locale name)", "system"),
         Qt.locale().name))
 
-    // Preserve the native Plasma full representation. Its default margin
-    // is zero on docked panels; change only this applet's popup window.
-    readonly property var nativePopup: {
-        const win = expandedRoot.Window.window;
-        return win && win.objectName === "popupWindow" && "margin" in win
-            && "removeBorderStrategy" in win ? win : null;
-    }
-    Binding {
-        target: expandedRoot.nativePopup
-        property: "margin"
-        value: 8
-        when: expandedRoot.nativePopup !== null
-    }
-    Binding {
-        target: expandedRoot.nativePopup
-        property: "removeBorderStrategy"
-        value: PlasmaCore.AppletPopup.Never
-        when: expandedRoot.nativePopup !== null
-    }
-
     Win11Palette { id: palette }
 
     // Plasma owns the popup window and transfers these layout hints.
     // Derive hints from the panel's screen, not this hidden view's geometry.
-    readonly property int margin: 2
-    readonly property int sectionGap: 10
+    readonly property int margin: 0
+    readonly property int sectionGap: 12
     readonly property int sectionInset: 12
     readonly property int calendarHeaderHeight: 44
     readonly property int focusFooterHeight: 44
@@ -85,13 +65,11 @@ FocusScope {
     clip: true
     focus: true
     Keys.onEscapePressed: event => {
-        clockApplet.expanded = false;
+        clockApplet.closeFlyout();
         event.accepted = true;
     }
 
-    // Two independently framed sections in the native popup. The native
-    // window retains its compositor-managed blur and placement. Do not
-    // create a second focus-grabbing window to simulate the separation.
+    // Two independent surfaces on one transparent shell-role window.
     readonly property real calendarBodyBudget: Math.max(0, popupHeight
         - 2 * margin - sectionGap - history.minimumSectionHeight - 2 * sectionInset
         - calendarHeaderHeight - focusFooterHeight - 2 * bodyInset - 2)
@@ -111,9 +89,9 @@ FocusScope {
             Layout.minimumHeight: history.minimumSectionHeight + 2 * expandedRoot.sectionInset
             Layout.preferredHeight: 224
             radius: 8
-            color: palette.panelTint
+            color: palette.detachedPanel
             border.width: 1
-            border.color: palette.panelBorder
+            border.color: palette.surfaceBorder
 
             NotificationHistory {
                 id: history
@@ -137,9 +115,9 @@ FocusScope {
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
             radius: 8
-            color: palette.panelTint
+            color: palette.detachedPanel
             border.width: 1
-            border.color: palette.panelBorder
+            border.color: palette.surfaceBorder
 
             ColumnLayout {
                 id: calendarContent
