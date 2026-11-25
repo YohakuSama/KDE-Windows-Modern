@@ -318,7 +318,8 @@ Item {
             id: resultDelegate
 
             width: resultsView.contentColumnWidth
-            height: visible ? Math.floor(Kirigami.Units.gridUnit * 1.6) : 0
+            readonly property bool categoryCollapsed: searchPage.isCollapsed(resultDelegate.ListView.section)
+            height: categoryCollapsed ? 0 : Math.floor(Kirigami.Units.gridUnit * 1.6)
             enabled: model.enabled !== false
 
             required property int index
@@ -472,7 +473,7 @@ Item {
             }
 
             // Hide items in collapsed categories
-            visible: !searchPage.isCollapsed(resultDelegate.ListView.section)
+            visible: !categoryCollapsed
         }
 
         Keys.onReturnPressed: searchPage.activateCurrent()
@@ -496,13 +497,12 @@ Item {
             event.accepted = true;
             if (!searchPage.moveSelection(-1)) searchPage.focusSearchRequested();
         }
-        Keys.onHomePressed: event => {
-            event.accepted = true;
-            currentIndex = searchPage.firstSelectable(0, 1);
-        }
-        Keys.onEndPressed: event => {
-            event.accepted = true;
-            currentIndex = searchPage.firstSelectable(count - 1, -1);
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Home || event.key === Qt.Key_End) {
+                currentIndex = searchPage.firstSelectable(event.key === Qt.Key_Home ? 0 : count - 1,
+                    event.key === Qt.Key_Home ? 1 : -1);
+                event.accepted = true;
+            }
         }
     }
 }

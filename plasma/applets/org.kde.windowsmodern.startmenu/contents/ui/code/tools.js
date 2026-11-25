@@ -25,7 +25,7 @@ function resolveFavoriteId(favoriteId, url) {
 // are localized, non-unique, and are never a valid application identity.
 function findAppByUrls(entries, urls) {
     if (!urls || !urls.length) return null;
-    const identities = urls.map(url => String(url)).filter(Boolean);
+    const identities = Array.from(urls, url => String(url)).filter(Boolean);
     const matches = entries.filter(entry => {
         const identity = String(entry.url || "");
         return identity && identities.includes(identity);

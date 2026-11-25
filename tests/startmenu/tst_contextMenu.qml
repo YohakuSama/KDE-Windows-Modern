@@ -8,7 +8,11 @@ Item {
     width: 420
     height: 300
     Start.ContextMenu { id: menu; anchors.fill: parent }
-    ListModel { id: sourceModel; ListElement { title: "First" }; ListElement { title: "Second" } }
+    ListModel {
+        id: sourceModel
+        ListElement { title: "First" }
+        ListElement { title: "Second" }
+    }
     SignalSpy { id: invoked; target: menu; signalName: "actionTriggered" }
     TestCase {
         name: "StartContextMenu"
