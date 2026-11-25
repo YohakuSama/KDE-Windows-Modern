@@ -85,6 +85,16 @@ inline bool hasSystemBattery()
     return found;
 }
 
+// These native applets supply the core controls and desktop toast presenter.
+// Load them regardless of service activation metadata or older saved defaults.
+inline bool persistentApplet(const QString &itemId)
+{
+    return itemId == QLatin1String("org.kde.plasma.networkmanagement")
+        || itemId == QLatin1String("org.kde.plasma.volume")
+        || itemId == QLatin1String("org.kde.plasma.battery")
+        || itemId == QLatin1String("org.kde.plasma.notifications");
+}
+
 // Always in the tray on Windows while they exist, even when Plasma marks
 // them passive (the battery does when full and on the charger). The input
 // language is left out: Windows hides it too when there is only one.

@@ -51,8 +51,11 @@ PlasmoidItem {
         ? (popupVerticalPanel ? popupPanelWindow.width : popupPanelWindow.height)
         : panelPopup && panelPopup.visualParent
             ? (popupVerticalPanel ? panelPopup.visualParent.width : panelPopup.visualParent.height) : 48
-    toolTipMainText: flyoutOpen ? "" : i18n("Clock")
-    toolTipSubText: flyoutOpen ? "" : notificationStatusText
+    toolTipMainText: flyoutOpen ? "" : Qt.locale().toString(currentTime, Locale.LongFormat)
+    toolTipSubText: flyoutOpen ? "" : Qt.locale().toString(currentTime, "ddd") + " "
+        + formatTime(currentTime, false) + " ("
+        + (Plasmoid.configuration.lastSelectedTimezone === "Local" || currentTimeZone === systemClock.timeZone
+            ? i18n("Local time") : currentTimeZone) + ")"
     Plasmoid.status: flyoutOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
 
     function toggleFlyout(previous = flyoutOpen) {

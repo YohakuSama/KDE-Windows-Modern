@@ -20,6 +20,7 @@ import org.kde.plasma.private.battery as BatteryBackend
 import "js/trayMetrics.js" as TrayMetrics
 import "js/popupGeometry.js" as PopupGeometry
 import "components" as Components
+import "components/volume" as Volume
 
 ContainmentItem {
     id: root
@@ -62,6 +63,8 @@ ContainmentItem {
     readonly property int coreNativeRenderSize: TrayMetrics.coreRenderSize(coreItemSize)
     readonly property int systemCellLength: TrayMetrics.coreCellLength(itemSize, coreItemSize, Plasmoid.configuration.iconSpacing)
     BatteryBackend.BatteryControlModel { id: panelBattery }
+    Volume.OutputSink { id: panelAudio }
+    readonly property var panelAudioSink: panelAudio.sink
     TextMetrics {
         id: batteryPercentMetrics
         text: i18n("%1%", 100)

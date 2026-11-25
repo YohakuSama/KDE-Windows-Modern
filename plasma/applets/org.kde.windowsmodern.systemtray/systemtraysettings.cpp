@@ -6,6 +6,7 @@
 
 #include "systemtraysettings.h"
 #include "debug.h"
+#include "windowstray.h"
 
 #include <KConfigLoader>
 
@@ -119,6 +120,18 @@ void SystemTraySettings::loadConfig()
     m_knownItems = config->property(KNOWN_ITEMS_KEY).toStringList();
 
     QStringList extraItems = config->property(EXTRA_ITEMS_KEY).toStringList();
+    // A settings save must not unload the already discovered core applets.
+    // Unknown/missing packages are still handled by registry sanitization.
+    bool repaired = false;
+    for (const QString &id : m_knownItems) {
+        if (WindowsTray::persistentApplet(id) && !extraItems.contains(id)) {
+            extraItems.append(id);
+            repaired = true;
+        }
+    }
+    if (repaired) {
+        writeConfigValue(EXTRA_ITEMS_KEY, extraItems);
+    }
     if (extraItems != m_extraItems) {
         QStringList extraItemsOld = m_extraItems;
         m_extraItems = extraItems;

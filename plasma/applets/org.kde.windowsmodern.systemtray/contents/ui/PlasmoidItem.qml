@@ -16,7 +16,6 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.plasmoid
 import org.kde.plasma.networkmanagement as PlasmaNM
 import org.kde.bluezqt as BluezQt
-import org.kde.plasma.private.volume as Vol
 import "components" as Components
 import "js/funcs.js" as Funcs
 import "js/trayMetrics.js" as TrayMetrics
@@ -29,7 +28,7 @@ AbstractItem {
     text: applet?.Plasmoid.title ?? ""
 
     itemId: applet?.Plasmoid.pluginName ?? ""
-    readonly property var tooltipSink: Vol.PreferredDevice.sink
+    readonly property var tooltipSink: root.panelAudioSink
     readonly property string groupTooltip: {
         switch (itemId) {
         case "org.kde.plasma.volume":
@@ -248,7 +247,7 @@ AbstractItem {
     Component {
         id: volumeGlyph
         PanelStatusGlyph {
-            readonly property var sink: Vol.PreferredDevice.sink
+            readonly property var sink: root.panelAudioSink
             readonly property bool available: !!sink && sink.name !== "auto_null"
             readonly property bool muted: !available || sink.muted || sink.volume <= 0
             source: plasmoidContainer.panelGlyph(Funcs.volIconName(available ? sink.volume : 0, muted))

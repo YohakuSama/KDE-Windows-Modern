@@ -440,8 +440,15 @@ KCMUtils.ScrollViewKCM {
                 QQC2.ComboBox {
                     id: visibilityComboBox
 
+                    readonly property bool fixedCore: listItem.isPlasmoid && [
+                        "org.kde.plasma.networkmanagement", "org.kde.plasma.volume",
+                        "org.kde.plasma.battery", "org.kde.plasma.notifications"
+                    ].includes(listItem.itemId)
                     readonly property string currentVisibility: iconsPage.changedVisibility.has(listItem.itemId) ? iconsPage.changedVisibility.get(listItem.itemId).replace("-sni", "") : originalVisibility
                     readonly property string originalVisibility: {
+                        if (fixedCore) {
+                            return listItem.itemId === "org.kde.plasma.notifications" ? "auto" : "shown";
+                        }
                         if (iconsPage.cfg_showAllItems || iconsPage.cfg_shownItems.indexOf(listItem.itemId) !== -1) {
                             return "shown";
                         } else if (iconsPage.cfg_hiddenItems.indexOf(listItem.itemId) !== -1) {
@@ -455,7 +462,7 @@ KCMUtils.ScrollViewKCM {
 
                     implicitContentWidthPolicy: QQC2.ComboBox.WidestText
 
-                    enabled: !iconsPage.cfg_showAllItems && listItem.itemId
+                    enabled: !fixedCore && !iconsPage.cfg_showAllItems && listItem.itemId
                     textRole: "text"
                     valueRole: "value"
 

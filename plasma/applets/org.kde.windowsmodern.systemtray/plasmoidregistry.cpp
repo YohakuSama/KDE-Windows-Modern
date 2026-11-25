@@ -10,6 +10,7 @@
 
 #include "dbusserviceobserver.h"
 #include "systemtraysettings.h"
+#include "windowstray.h"
 
 #include <KPluginMetaData>
 #include <Plasma/PluginLoader>
@@ -110,18 +111,31 @@ void PlasmoidRegistry::packageUninstalled(const QString &pluginId)
 
 void PlasmoidRegistry::registerPlugin(const KPluginMetaData &pluginMetaData)
 {
-    if (!pluginMetaData.isValid() || pluginMetaData.value(u"X-Plasma-NotificationAreaCategory").isEmpty()) {
+    if (!pluginMetaData.isValid()) {
         return;
     }
 
     const QString &pluginId = pluginMetaData.pluginId();
+    const bool persistent = WindowsTray::persistentApplet(pluginId);
+    if (!persistent && pluginMetaData.value(u"X-Plasma-NotificationAreaCategory").isEmpty()) {
+        return;
+    }
 
     m_systrayApplets[pluginId] = pluginMetaData;
-    m_dbusObserver->registerPlugin(pluginMetaData);
+    if (!persistent) {
+        m_dbusObserver->registerPlugin(pluginMetaData);
+    }
 
     Q_EMIT pluginRegistered(pluginMetaData);
 
-    if (pluginMetaData.isEnabledByDefault()) {
+    if (persistent) {
+        if (!m_settings->isKnownPlugin(pluginId)) {
+            m_settings->addKnownPlugin(pluginId);
+        }
+        if (!m_settings->isEnabledPlugin(pluginId)) {
+            m_settings->addEnabledPlugin(pluginId);
+        }
+    } else if (pluginMetaData.isEnabledByDefault()) {
         const QString &candidate = pluginMetaData.pluginId();
         if (!m_settings->isKnownPlugin(candidate)) {
             m_settings->addKnownPlugin(candidate);

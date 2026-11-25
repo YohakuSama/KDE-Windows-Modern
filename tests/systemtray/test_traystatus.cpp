@@ -59,6 +59,16 @@ int main(int argc, char **argv)
     if (WindowsTray::panelGlyphBounds(full) != QRectF(0, 0, 1, 1)
         || WindowsTray::panelGlyphBounds(QImage()) != QRectF(0, 0, 1, 1))
         qFatal("Incorrect full/empty glyph fallback");
+    for (const auto &id : {QStringLiteral("org.kde.plasma.networkmanagement"),
+                           QStringLiteral("org.kde.plasma.volume"),
+                           QStringLiteral("org.kde.plasma.battery"),
+                           QStringLiteral("org.kde.plasma.notifications")}) {
+        if (!WindowsTray::persistentApplet(id)) qFatal() << "Missing persistent applet" << id;
+    }
+    if (WindowsTray::persistentApplet(QStringLiteral("org.kde.plasma.bluetooth"))
+        || WindowsTray::persistentApplet(QStringLiteral("org.kde.plasma.clipboard"))) {
+        qFatal("Optional applets must remain optional");
+    }
     using Status = Plasma::Types::ItemStatus;
     auto check = [](const QString &id, Status raw, bool eligible, bool pinned, bool hidden, Status expected) {
         const auto actual = WindowsTray::effectiveStatus(id, raw, eligible, pinned, hidden);

@@ -44,6 +44,12 @@ MouseArea {
         Plasmoid.formFactor !== PlasmaCore.Types.Vertical,
         plasmoidItem.notificationsAvailable, plasmoidItem.notificationModel.count,
         plasmoidItem.notificationsInhibited)
+    readonly property string filledDndAsset: String(StandardPaths.locate(StandardPaths.GenericDataLocation,
+        "icons/windows-modern/status/wm-notification-snooze-filled-symbolic.svg", StandardPaths.LocateFile))
+    readonly property string panelNotificationIcon: NotificationPresentation.panelBellIcon(
+        plasmoidItem.notificationIcon, plasmoidItem.notificationsInhibited,
+        Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Dark,
+        filledDndAsset.length > 0)
     property bool wasExpanded: false
     function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
         clockDialog.toggle(previous);
@@ -380,7 +386,7 @@ MouseArea {
             Layout.maximumHeight: Layout.preferredHeight
             text: i18n("Notification center")
             display: PlasmaComponents.AbstractButton.IconOnly
-            icon.name: main.plasmoidItem.notificationIcon
+            icon.name: main.panelNotificationIcon
             // A compact notification glyph, with an independent click target.
             icon.width: main.bellIconSize
             icon.height: main.bellIconSize
@@ -394,7 +400,7 @@ MouseArea {
                     isMask: true
                     color: Kirigami.Theme.textColor
                     source: {
-                        const name = main.plasmoidItem.notificationIcon;
+                        const name = main.panelNotificationIcon;
                         const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
                             "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
                         if (String(file).length > 0) return file;

@@ -20,6 +20,15 @@ TestCase {
     function test_state(row) {
         compare(Policy.showBell(row.configured, row.horizontal, row.available, row.count, row.dnd), row.visible);
     }
+    function test_panelGlyph() {
+        const dnd = "notifications-disabled-symbolic";
+        const filled = "wm-notification-snooze-filled-symbolic";
+        compare(Policy.panelBellIcon(dnd, true, false, true), filled);
+        compare(Policy.panelBellIcon(dnd, true, true, true), dnd);
+        compare(Policy.panelBellIcon(dnd, true, false, false), dnd);
+        compare(Policy.panelBellIcon("notification-active-symbolic", false, false, true),
+                "notification-active-symbolic");
+    }
     function test_transition() {
         compare(Policy.showBell(true, true, true, 0, false), false);
         compare(Policy.showBell(true, true, true, 1, false), true);
