@@ -6,6 +6,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui"
+import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Calendar.js" as Calendar
 
 Item {
     id: root
@@ -104,6 +105,19 @@ Item {
             settle();
         }
 
+        function test_weekDatesFollowCalendarGrid() {
+            for (const year of [2025, 2026]) {
+                for (const month of [2, 9, 10]) {
+                    for (const first of [0, 1, 6]) {
+                        const grid = Calendar.generateMonthGrid(year, month, root.currentTime, root.currentTime, first);
+                        const start = Calendar.firstGridDate(year, month, first);
+                        compare(start.getDay(), first);
+                        for (let row = 0; row < 6; ++row)
+                            compare(Calendar.dateAfterDays(start, row * 7).getTime(), grid[row * 7].date.getTime());
+                    }
+                }
+            }
+        }
         function test_monthView() {
             compare(view.zoom, CalendarView.Zoom.Month);
             compare(headerTitle().text, Qt.locale().standaloneMonthName(10, Locale.LongFormat) + " 2026");

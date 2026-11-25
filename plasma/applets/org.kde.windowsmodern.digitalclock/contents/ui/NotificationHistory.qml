@@ -223,7 +223,12 @@ ColumnLayout {
         spacing: 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: FluentScrollBar { objectName: "wmNotificationScrollBar" }
+        HoverHandler { id: listHover }
+        QQC2.ScrollBar.vertical: FluentScrollBar {
+            objectName: "wmNotificationScrollBar"
+            viewportHovered: listHover.hovered
+            scrolling: list.moving || list.flicking
+        }
         Kirigami.WheelHandler {
             target: list
             filterMouseEvents: true
@@ -353,11 +358,13 @@ ColumnLayout {
                             spacing: 4
                             PlasmaComponents.Label {
                                 text: {
+                                    const updated = card.model.updated;
                                     const created = card.model.created;
-                                    if (!created || isNaN(created.getTime())) return "";
-                                    const sameDay = created.toDateString() === history.currentTime.toDateString();
-                                    return (sameDay ? "" : history.timeLocale.toString(created, "yyyy/M/d") + " ")
-                                        + history.timeLocale.toString(created, history.timeFormat);
+                                    const timestamp = updated && !isNaN(updated.getTime()) ? updated : created;
+                                    if (!timestamp || isNaN(timestamp.getTime())) return "";
+                                    const sameDay = timestamp.toDateString() === history.currentTime.toDateString();
+                                    return (sameDay ? "" : history.timeLocale.toString(timestamp, "yyyy/M/d") + " ")
+                                        + history.timeLocale.toString(timestamp, history.timeFormat);
                                 }
                                 color: palette.textSecondary
                                 font.pixelSize: 11
@@ -416,12 +423,29 @@ ColumnLayout {
                         RowLayout {
                             Layout.fillWidth: true
                             visible: card.runningJob && !card.isGroup
-                            PlasmaComponents.ProgressBar {
+                            QQC2.ProgressBar {
+                                id: transferProgress
                                 Layout.fillWidth: true
+                                Layout.preferredHeight: 4
+                                padding: 0
                                 from: 0
                                 to: 100
                                 value: Math.max(0, Math.min(100, Number(card.model.percentage) || 0))
                                 Accessible.name: i18n("Transfer progress")
+                                background: Rectangle {
+                                    radius: 2
+                                    color: palette.progressTrack
+                                }
+                                contentItem: Item {
+                                    Rectangle {
+                                        anchors.left: transferProgress.mirrored ? undefined : parent.left
+                                        anchors.right: transferProgress.mirrored ? parent.right : undefined
+                                        width: parent.width * transferProgress.position
+                                        height: parent.height
+                                        radius: 2
+                                        color: palette.accent
+                                    }
+                                }
                             }
                             PlasmaComponents.Label {
                                 text: Math.round(Number(card.model.percentage) || 0) + "%"
@@ -460,7 +484,7 @@ ColumnLayout {
                             visible: !card.isGroup && !card.isJob && !card.model.expired && (card.model.hasDefaultAction
                                 || (card.model.actionNames || []).length > 0)
 
-                            PlasmaComponents.Button {
+                            FlyoutButton {
                                 readonly property string actionLabel: card.model.defaultActionLabel || i18n("Open")
                                 text: actionLabel
                                 visible: card.model.hasDefaultAction
@@ -471,7 +495,7 @@ ColumnLayout {
 
                             Repeater {
                                 model: card.model.actionNames || []
-                                delegate: PlasmaComponents.Button {
+                                delegate: FlyoutButton {
                                     required property int index
                                     required property string modelData
                                     text: (card.model.actionLabels || [])[index] || modelData
@@ -495,7 +519,7 @@ ColumnLayout {
                                 onAccepted: card.submitReply()
                             }
 
-                            PlasmaComponents.Button {
+                            FlyoutButton {
                                 text: card.model.replySubmitButtonText || i18n("Send")
                                 icon.name: card.model.replySubmitButtonIconName || "document-send"
                                 enabled: replyInput.text.trim().length > 0

@@ -161,15 +161,7 @@ ColumnLayout {
     }
 
     // First date shown in the 6-week grid.
-    readonly property date gridStartDate: {
-        const firstDayOfMonth = new Date(calendarView.displayedYear, calendarView.displayedMonth, 1);
-        const startDayOfWeek = firstDayOfMonth.getDay();
-        let daysFromPreviousMonth = startDayOfWeek - calendarView.firstDayOfWeek;
-        if (daysFromPreviousMonth < 0) {
-            daysFromPreviousMonth += 7;
-        }
-        return new Date(calendarView.displayedYear, calendarView.displayedMonth, 1 - daysFromPreviousMonth);
-    }
+    readonly property date gridStartDate: Calendar.firstGridDate(displayedYear, displayedMonth, firstDayOfWeek)
 
     spacing: Kirigami.Units.smallSpacing
     focus: true
@@ -326,6 +318,7 @@ ColumnLayout {
             horizontalAlignment: Text.AlignLeft
             verticalAlignment: Text.AlignVCenter
             textFormat: Text.PlainText
+            elide: Text.ElideRight
             text: {
                 switch (calendarView.zoom) {
                 case CalendarView.Zoom.Year:
@@ -343,8 +336,12 @@ ColumnLayout {
                 pixelSize: 14
             }
 
+            activeFocusOnTab: headerButton.enabled
             Accessible.role: headerButton.enabled ? Accessible.Button : Accessible.StaticText
-            Accessible.onPressAction: calendarView.zoomOut()
+            Accessible.onPressAction: if (headerButton.enabled) calendarView.zoomOut()
+            Keys.onReturnPressed: if (headerButton.enabled) calendarView.zoomOut()
+            Keys.onEnterPressed: if (headerButton.enabled) calendarView.zoomOut()
+            Keys.onSpacePressed: if (headerButton.enabled) calendarView.zoomOut()
 
             // Hover/press background around the title text, behind it; the
             // decade level is the last one, so there it is plain text.
@@ -353,7 +350,7 @@ ColumnLayout {
                 z: -1
                 x: -Kirigami.Units.smallSpacing
                 anchors.verticalCenter: parent.verticalCenter
-                width: headerTitle.contentWidth + 2 * Kirigami.Units.smallSpacing
+                width: Math.min(headerTitle.width, headerTitle.contentWidth) + 2 * Kirigami.Units.smallSpacing
                 height: Kirigami.Units.gridUnit * 1.5
                 enabled: calendarView.zoom !== CalendarView.Zoom.Decade
                 hoverEnabled: true
@@ -364,7 +361,7 @@ ColumnLayout {
                     anchors.fill: parent
                     radius: 4
                     color: headerButton.containsPress ? palette.pressed
-                                                      : (headerButton.containsMouse ? palette.hover : "transparent")
+                                                      : (headerButton.containsMouse || headerTitle.activeFocus ? palette.hover : "transparent")
 
                     Behavior on color {
                         ColorAnimation {
@@ -403,7 +400,7 @@ ColumnLayout {
         // zooming to Year/Decade or opening a hidden popup can collapse it.
         readonly property real weekColumnWidth: calendarView.showWeekNumbers
             ? Kirigami.Units.gridUnit * 1.5 : 0
-        readonly property real dayCellSize: Math.max(28,
+        readonly property real dayCellSize: Math.max(1,
             (width - weekColumnWidth - 6 * calendarGrid.spacing) / 7)
         readonly property real dayCellHeight: Math.max(1, Math.min(dayCellSize, calendarView.dayHeightLimit))
         Layout.preferredHeight: Math.ceil(dayCellHeight * 6 + 5 * calendarGrid.spacing
@@ -434,7 +431,7 @@ ColumnLayout {
                 // Day-of-week header: match the seven grid columns.
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: calendarView.showWeekNumbers ? 0 : calendarGrid.spacing
+                    spacing: 0
 
                     PlasmaComponents.Label {
                         visible: calendarView.showWeekNumbers
@@ -447,19 +444,25 @@ ColumnLayout {
                         font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                     }
 
-                    Repeater {
-                        model: 7
-                        delegate: PlasmaComponents.Label {
-                            required property int index
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            textFormat: Text.PlainText
-                            text: calendarView.calendarLocale.standaloneDayName((calendarView.firstDayOfWeek + index) % 7, Locale.ShortFormat)
-                            color: palette.text
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            Layout.preferredWidth: 1
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: calendarGrid.spacing
+                        Repeater {
+                            model: 7
+                            delegate: PlasmaComponents.Label {
+                                required property int index
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                textFormat: Text.PlainText
+                                elide: Text.ElideRight
+                                text: calendarView.calendarLocale.standaloneDayName((calendarView.firstDayOfWeek + index) % 7, Locale.ShortFormat)
+                                color: palette.text
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                            }
                         }
                     }
                 }
@@ -483,7 +486,7 @@ ColumnLayout {
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                                 textFormat: Text.PlainText
-                                text: Calendar.isoWeekNumber(new Date(calendarView.gridStartDate.getTime() + index * 7 * 86400000))
+                                text: Calendar.isoWeekNumber(Calendar.dateAfterDays(calendarView.gridStartDate, index * 7))
                                 color: palette.textSecondary
                                 font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                             }

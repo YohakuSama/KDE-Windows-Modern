@@ -18,23 +18,26 @@ function isoWeekNumber(date) {
     return Math.ceil((((tmp - yearStart) / 86400000) + 1) / 7);
 }
 
+// Calendar days, not 24-hour intervals: a DST transition changes the length
+// of a local day. The grid and week labels must use the same start date.
+function firstGridDate(year, month, firstDayOfWeek) {
+    const first = new Date(year, month, 1);
+    return new Date(year, month, 1 - (first.getDay() - firstDayOfWeek + 7) % 7);
+}
+
+function dateAfterDays(date, days) {
+    const next = new Date(date);
+    next.setDate(next.getDate() + days);
+    return next;
+}
+
 function generateMonthGrid(year, month, today, selectedDate, firstDayOfWeek) {
     // Generate a 7x6 (42 day) grid for a month view, similar to upstream MonthView.
     // year/month are for the month being displayed (month is 0-based).
     // today and selectedDate are JS Date objects.
     // firstDayOfWeek: 0 = Sunday, 1 = Monday, etc.
 
-    const daysInDisplayedMonth = daysInMonth(year, month);
-    const firstDayOfMonth = new Date(year, month, 1);
-    const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
-
-    // Determine how many days from the previous month to show
-    let daysFromPreviousMonth = startDayOfWeek - firstDayOfWeek;
-    if (daysFromPreviousMonth < 0) {
-        daysFromPreviousMonth += 7;
-    }
-
-    const gridStartDate = new Date(year, month, 1 - daysFromPreviousMonth);
+    const gridStartDate = firstGridDate(year, month, firstDayOfWeek);
 
     const result = [];
     for (let i = 0; i < 42; i++) {

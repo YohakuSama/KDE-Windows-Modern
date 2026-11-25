@@ -55,14 +55,33 @@ FocusScope {
     readonly property int notificationMinimum: history.minimumSectionHeight + 2 * sectionInset
     // Reserve a usable calendar and then let notification history grow into
     // the remaining space. Only the history list scrolls, never both cards.
-    readonly property int calendarFixedHeight: calendarHeaderHeight + focusFooterHeight + 1
-        + (calendarExpanded ? 1 + 2 * bodyInset : 0)
-    readonly property int optionalCalendarHeight: (calendarExpanded && showLargeClock ? 44 + calendarBody.spacing : 0)
-        + (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + calendarBody.spacing : 0)
-        + (agenda.visible ? agenda.implicitHeight + calendarBody.spacing : 0)
+    readonly property int collapsedCalendarHeight: calendarHeaderHeight + focusFooterHeight + 1
+    readonly property real expandedBodyBudget: Math.max(0, availableScreenHeight
+        - 2 * margin - sectionGap - notificationMinimum - collapsedCalendarHeight - 1 - 2 * bodyInset)
+    readonly property bool calendarCanExpand: expandedBodyBudget >= calendarView.chromeHeight + 6 * 12
+    readonly property bool calendarBodyShown: calendarExpanded && calendarCanExpand
+    readonly property int calendarFixedHeight: collapsedCalendarHeight
+        + (calendarBodyShown ? 1 + 2 * bodyInset : 0)
+    // Reserve calendar rows before optional sections. Do not use effective
+    // visibility (which is false while the popup is hidden) for size hints.
+    readonly property bool largeClockShown: calendarBodyShown && showLargeClock
+        && expandedBodyBudget >= calendarView.chromeHeight + 6 * 18 + 44 + calendarBody.spacing
+    readonly property int zoneHeight: Math.min(84, timeZoneView.implicitHeight)
+    readonly property bool zonesShown: calendarBodyShown
+        && (Plasmoid.configuration.selectedTimeZones.length > 1 || Plasmoid.configuration.showLocalTimezone)
+        && expandedBodyBudget >= calendarView.chromeHeight + 6 * 18
+            + (largeClockShown ? 44 + calendarBody.spacing : 0) + zoneHeight + calendarBody.spacing
+    readonly property bool agendaShown: calendarBodyShown && calendarView.selectedDayEvents.length > 0
+        && expandedBodyBudget >= 260
+        && expandedBodyBudget >= calendarView.chromeHeight + 6 * 18
+            + (largeClockShown ? 44 + calendarBody.spacing : 0)
+            + (zonesShown ? zoneHeight + calendarBody.spacing : 0) + agenda.implicitHeight + calendarBody.spacing
+    readonly property int optionalCalendarHeight: (largeClockShown ? 44 + calendarBody.spacing : 0)
+        + (zonesShown ? zoneHeight + calendarBody.spacing : 0)
+        + (agendaShown ? agenda.implicitHeight + calendarBody.spacing : 0)
     readonly property int calendarPanelHeight: Math.max(calendarFixedHeight, Math.min(
         Math.max(calendarFixedHeight, availableScreenHeight - sectionGap - notificationMinimum),
-        Math.ceil(calendarFixedHeight + (calendarExpanded ? calendarView.naturalHeight + optionalCalendarHeight : 0))))
+        Math.ceil(calendarFixedHeight + (calendarBodyShown ? calendarView.naturalHeight + optionalCalendarHeight : 0))))
     readonly property int notificationPanelHeight: Math.max(1, Math.min(
         Math.max(1, availableScreenHeight - sectionGap - calendarPanelHeight),
         history.preferredSectionHeight + 2 * sectionInset))
@@ -85,8 +104,7 @@ FocusScope {
     }
 
     // Two independent surfaces on one transparent shell-role window.
-    readonly property real calendarBodyBudget: Math.max(0, availableScreenHeight
-        - 2 * margin - sectionGap - notificationMinimum - calendarFixedHeight)
+    readonly property real calendarBodyBudget: expandedBodyBudget
 
     ColumnLayout {
         id: mainColumn
@@ -164,8 +182,9 @@ FocusScope {
                     FlyoutButton {
                         Layout.preferredWidth: 24
                         Layout.preferredHeight: 24
-                        text: expandedRoot.calendarExpanded ? i18n("Collapse calendar") : i18n("Expand calendar")
-                        icon.name: expandedRoot.calendarExpanded ? "go-down-symbolic" : "go-up-symbolic"
+                        enabled: expandedRoot.calendarCanExpand
+                        text: expandedRoot.calendarBodyShown ? i18n("Collapse calendar") : i18n("Expand calendar")
+                        icon.name: expandedRoot.calendarBodyShown ? "go-down-symbolic" : "go-up-symbolic"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: expandedRoot.calendarExpanded = !expandedRoot.calendarExpanded
                         PlasmaComponents.ToolTip { text: parent.text }
@@ -175,7 +194,7 @@ FocusScope {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 1
-                    visible: expandedRoot.calendarExpanded
+                    visible: expandedRoot.calendarBodyShown
                     color: palette.panelBorder
                 }
 
@@ -186,7 +205,7 @@ FocusScope {
                     Layout.rightMargin: expandedRoot.sectionInset
                     Layout.topMargin: visible ? expandedRoot.bodyInset : 0
                     Layout.bottomMargin: visible ? expandedRoot.bodyInset : 0
-                    visible: expandedRoot.calendarExpanded
+                    visible: expandedRoot.calendarBodyShown
                     spacing: 6
 
                     RowLayout {
@@ -194,7 +213,7 @@ FocusScope {
                         Layout.preferredHeight: 44
                         Layout.minimumHeight: Layout.preferredHeight
                         Layout.maximumHeight: Layout.preferredHeight
-                        visible: expandedRoot.showLargeClock
+                        visible: expandedRoot.largeClockShown
                         Layout.alignment: Qt.AlignHCenter
                         spacing: Kirigami.Units.smallSpacing / 2
 
@@ -244,7 +263,7 @@ FocusScope {
                         calendarLocale: expandedRoot.calendarLocale
                         applet: expandedRoot.clockApplet
                         Layout.fillWidth: true
-                        focus: expandedRoot.calendarExpanded
+                        focus: expandedRoot.calendarBodyShown
                         dayHeightLimit: Math.max(12, Math.min(36, Math.floor(
                             (expandedRoot.calendarBodyBudget - chromeHeight
                              - expandedRoot.optionalCalendarHeight) / 6)))
@@ -257,25 +276,23 @@ FocusScope {
                         id: timeZoneView
                         applet: expandedRoot.clockApplet
                         Layout.fillWidth: true
-                        Layout.preferredHeight: visible ? Math.min(84, implicitHeight) : 0
+                        Layout.preferredHeight: expandedRoot.zonesShown ? expandedRoot.zoneHeight : 0
                         Layout.minimumHeight: 0
                         Layout.maximumHeight: Layout.preferredHeight
-                        visible: Plasmoid.configuration.selectedTimeZones.length > 1
-                            || Plasmoid.configuration.showLocalTimezone
+                        visible: expandedRoot.zonesShown
                     }
 
                     DayAgenda {
                         id: agenda
                         calendarLocale: expandedRoot.calendarLocale
                         Layout.fillWidth: true
-                        visible: calendarView.selectedDayEvents.length > 0
-                            && expandedRoot.calendarBodyBudget >= 260
+                        visible: expandedRoot.agendaShown
                         date: calendarView.selectedDate
                         events: calendarView.selectedDayEvents
                         maximumEvents: Math.max(1, Math.min(4, Math.floor(
                             (expandedRoot.calendarBodyBudget - calendarView.chromeHeight - 6 * 24
-                             - (timeRow.visible ? timeRow.implicitHeight + calendarBody.spacing : 0)
-                             - (timeZoneView.visible ? timeZoneView.Layout.preferredHeight + calendarBody.spacing : 0)
+                             - (expandedRoot.largeClockShown ? 44 + calendarBody.spacing : 0)
+                             - (expandedRoot.zonesShown ? expandedRoot.zoneHeight + calendarBody.spacing : 0)
                              - 36) / 36)))
                     }
                 }

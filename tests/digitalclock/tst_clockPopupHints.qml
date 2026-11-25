@@ -115,6 +115,14 @@ Item {
             }
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
         }
+        function test_shortScreenDoesNotClipCalendarFooter() {
+            const footer = findChild(popup, "wmFocusFooter");
+            clock.popupScreenGeometry = Qt.rect(0, 0, 800, 360);
+            tryCompare(popup, "calendarCanExpand", false);
+            tryVerify(() => footer.mapToItem(popup, 0, 0).y + footer.height <= popup.height + 1);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+            tryCompare(popup, "calendarBodyShown", true);
+        }
         function test_notificationPanelAdaptsAndHidesClearAll() {
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 900);
             const panel = findChild(popup, "wmNotificationPanel");

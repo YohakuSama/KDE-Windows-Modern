@@ -18,6 +18,7 @@ QtObject {
     // Translucent internal surfaces keep the native popup material visible.
     readonly property color detachedPanel: isDark ? "#202020" : "#F2F2F2"
     readonly property color panelTint: isDark ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.30)
+    readonly property color progressTrack: isDark ? "#929292" : "#767676"
     readonly property color panelBorder: isDark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.10)
     readonly property color cardTint: isDark ? Qt.rgba(1, 1, 1, 0.045) : Qt.rgba(1, 1, 1, 0.70)
     readonly property color text:             isDark ? "#FFFFFF" : "#1E1E1E"
