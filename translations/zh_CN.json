@@ -613,5 +613,9 @@
   "@option:check completes sentence: New tasks appear\u0004To the right": "右侧",
   "@option:check completes sentence: New tasks appear\u0004To the left": "左侧",
   "@option:check completes sentence: New tasks appear\u0004On the top": "顶部",
-  "Button to change keyboard layout\u0004Switch layout": "切换键盘布局"
+  "Button to change keyboard layout\u0004Switch layout": "切换键盘布局",
+  "Open letter index": "打开字母索引",
+  "Choose a letter to jump to its apps": "选择字母跳转到对应应用",
+  "Jump to %1": "跳转到 %1",
+  "Other alphabets": "其他文字"
 }
