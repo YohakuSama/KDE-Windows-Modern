@@ -23,6 +23,7 @@ SessionManagementScreen {
 
     readonly property alias mainPasswordBox: passwordBox
     property bool lockScreenUiVisible: false
+    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(140, width * 0.6, height * 0.25)))
     property alias showPassword: passwordBox.showPassword
 
     showUserList: true
@@ -57,8 +58,9 @@ SessionManagementScreen {
     // Always show a user image or the Windows default account avatar.
     AccountAvatar {
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredWidth: 140
-        Layout.preferredHeight: 140
+        size: sessionManager.avatarSize
+        Layout.preferredWidth: size
+        Layout.preferredHeight: size
         Layout.bottomMargin: 16
         source: sessionManager.userListModel && sessionManager.userListModel.count > 0
             ? sessionManager.userListModel.get(0).icon : ""
@@ -67,7 +69,11 @@ SessionManagementScreen {
     // ── Username ──
     Text {
         Layout.alignment: Qt.AlignHCenter
+        Layout.fillWidth: true
+        Layout.maximumWidth: sessionManager.width
         Layout.bottomMargin: 4
+        textFormat: Text.PlainText
+        elide: Text.ElideRight
         text: {
             if (sessionManager.userListModel && sessionManager.userListModel.count > 0) {
                 const item = sessionManager.userListModel.get(0);
@@ -86,12 +92,20 @@ SessionManagementScreen {
     // Error text participates in layout only when present.
     Item {
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredHeight: 20
+        Layout.fillWidth: true
+        Layout.maximumWidth: sessionManager.width
+        Layout.preferredHeight: Math.max(20, errorLabel.implicitHeight)
         Layout.bottomMargin: 0
         visible: sessionManager.customErrorMessage !== ""
 
         Text {
+            id: errorLabel
             anchors.centerIn: parent
+            width: parent.width
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+            maximumLineCount: 3
+            elide: Text.ElideRight
             visible: sessionManager.customErrorMessage !== ""
             text: sessionManager.customErrorMessage
             font.family: Kirigami.Theme.defaultFont.family
@@ -243,8 +257,12 @@ SessionManagementScreen {
         visible: authenticator.authenticatorTypes & kind
         text: label
         textFormat: Text.PlainText
+        wrapMode: Text.Wrap
+        maximumLineCount: 3
+        elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter
         Layout.fillWidth: true
+        Layout.maximumWidth: sessionManager.width
         font.family: Kirigami.Theme.defaultFont.family
         font.pixelSize: 12
         color: "#A0A0A0"

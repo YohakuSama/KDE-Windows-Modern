@@ -15,6 +15,7 @@ SessionManagementScreen {
     id: screen
     focus: true
     showUserList: true
+    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(140, width * 0.6, height * 0.25)))
     actionItems: [ Item { visible: false } ]
 
     Component.onCompleted: {
@@ -28,8 +29,9 @@ SessionManagementScreen {
 
     AccountAvatar {
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredWidth: 140
-        Layout.preferredHeight: 140
+        size: screen.avatarSize
+        Layout.preferredWidth: size
+        Layout.preferredHeight: size
         Layout.bottomMargin: 16
         source: screen.userListModel && screen.userListModel.count > 0
             ? screen.userListModel.get(0).icon : ""
@@ -37,7 +39,11 @@ SessionManagementScreen {
 
     Text {
         Layout.alignment: Qt.AlignHCenter
+        Layout.fillWidth: true
+        Layout.maximumWidth: screen.width
         Layout.bottomMargin: 4
+        textFormat: Text.PlainText
+        elide: Text.ElideRight
         text: {
             if (!screen.userListModel || screen.userListModel.count === 0) return "";
             const user = screen.userListModel.get(0);
@@ -53,7 +59,7 @@ SessionManagementScreen {
         focus: true
         text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in")
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredWidth: 144
+        Layout.preferredWidth: Math.min(144, screen.width)
         Layout.preferredHeight: 42
         background: Rectangle {
             radius: 4

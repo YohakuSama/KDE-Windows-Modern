@@ -464,54 +464,25 @@ Item {
                     radius: 6
                 }
 
-                delegate: MenuItem {
-                    id: menuItem
-                    width: parent.width
-                    height: 36
-
-                    contentItem: Row {
-                        spacing: Kirigami.Units.smallSpacing
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 12
-
-                        Kirigami.Icon {
-                            source: menuItem.icon.name
-                            width: 16; height: 16
-                            color: "#FFFFFF"
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: menuItem.text
-                            color: "#FFFFFF"
-                            font.family: Kirigami.Theme.defaultFont.family
-                            font.pixelSize: 14
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    background: Rectangle {
-                        radius: 4
-                        color: menuItem.highlighted ? "#33FFFFFF" : "transparent"
-                    }
-                }
-
-                MenuItem {
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
                     text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sleep")
                     icon.name: "system-suspend"
                     onTriggered: root.suspendToRam()
-                    visible: root.suspendToRamSupported
+                    actionAvailable: root.suspendToRamSupported
                 }
-                MenuItem {
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
                     text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down")
                     icon.name: "system-shutdown"
-                    visible: sessionManagement.canShutdown
+                    actionAvailable: sessionManagement.canShutdown
                     onTriggered: sessionManagement.requestShutdown()
                 }
-                MenuItem {
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
                     text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Restart")
                     icon.name: "system-reboot"
-                    visible: sessionManagement.canReboot
+                    actionAvailable: sessionManagement.canReboot
                     onTriggered: sessionManagement.requestReboot()
                 }
             }

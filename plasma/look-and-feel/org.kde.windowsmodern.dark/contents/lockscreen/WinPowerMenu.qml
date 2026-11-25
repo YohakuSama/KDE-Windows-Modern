@@ -13,6 +13,7 @@ QQC2.Menu {
     id: root
 
     width: WinStyle.powerMenuWidth
+    padding: 4
 
     background: Rectangle {
         color: WinStyle.menuBackground
@@ -21,57 +22,27 @@ QQC2.Menu {
         radius: 6
     }
 
-    delegate: QQC2.MenuItem {
-        id: menuItem
-        width: root.width
-        height: WinStyle.powerMenuItemHeight
-
-        contentItem: Row {
-            spacing: Kirigami.Units.smallSpacing
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            anchors.leftMargin: 12
-
-            Kirigami.Icon {
-                source: menuItem.icon.name
-                width: 16
-                height: 16
-                color: WinStyle.foregroundColor
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-                text: menuItem.text
-                color: WinStyle.foregroundColor
-                font.family: WinStyle.fontFamily
-                font.pixelSize: WinStyle.bodyPixelSize
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-
-        background: Rectangle {
-            color: menuItem.highlighted ? WinStyle.hoverBackground : "transparent"
-        }
-    }
-
-    QQC2.MenuItem {
+    FluentPowerMenuItem {
+        width: root.availableWidth
         text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sleep")
         icon.name: "system-suspend"
         onTriggered: PlasmaLogin.SessionManagement.suspend()
-        visible: PlasmaLogin.SessionManagement.canSuspend
+        actionAvailable: PlasmaLogin.SessionManagement.canSuspend
     }
 
-    QQC2.MenuItem {
+    FluentPowerMenuItem {
+        width: root.availableWidth
         text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down")
         icon.name: "system-shutdown"
         onTriggered: PlasmaLogin.SessionManagement.requestShutdown(PlasmaLogin.SessionManagement.ConfirmationMode.Skip)
-        visible: PlasmaLogin.SessionManagement.canShutdown
+        actionAvailable: PlasmaLogin.SessionManagement.canShutdown
     }
 
-    QQC2.MenuItem {
+    FluentPowerMenuItem {
+        width: root.availableWidth
         text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Restart")
         icon.name: "system-reboot"
         onTriggered: PlasmaLogin.SessionManagement.requestReboot(PlasmaLogin.SessionManagement.ConfirmationMode.Skip)
-        visible: PlasmaLogin.SessionManagement.canReboot
+        actionAvailable: PlasmaLogin.SessionManagement.canReboot
     }
 }
