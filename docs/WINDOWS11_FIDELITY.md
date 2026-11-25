@@ -59,7 +59,7 @@ Development and live acceptance are separate gates. Finish the scoped code/desig
 
 The [native resource importer](NATIVE_ASSETS.md) takes an explicit owner-provided archive. It generates the local canonical assets and a SHA-256 source manifest; the installer overlays only the mapped roles on the existing theme. Do not commit generated files or substitute unrelated Windows glyphs for KDE-only actions.
 
-Shell popup frames are generated from one geometry template (see `scripts/theme/popup-frames.py`). Normal and explicit solid variants use opaque fallback colors; the translucent selector uses a consistent Acrylic-style tint with the same 8 px mask and edges. Tooltips use a distinct 4 px solid frame. Native KWin blur remains responsible for background sampling. Exact DWM noise, tint calibration, true wallpaper-tinted Mica and live compositor validation remain outstanding.
+Shell popup frames are generated from one geometry template (see `scripts/theme/popup-frames.py`). Normal and explicit solid variants use opaque fallback colors; the translucent selector uses a consistent Acrylic-style tint with the same 8 px mask and edges. Tooltips use a distinct 4 px solid frame. Native KWin blur remains responsible for background sampling. The clock's two detached cards reuse the tray's optional native rounded-region blur helper on the same panel; without that helper, when the panel prefers opaque surfaces, or when KWin blur is disabled, both cards remain solid. No additional shader or required applet dependency is installed. Exact DWM noise, tint calibration, true wallpaper-tinted Mica and live compositor validation remain outstanding.
 
 ### Native material implementation boundary
 

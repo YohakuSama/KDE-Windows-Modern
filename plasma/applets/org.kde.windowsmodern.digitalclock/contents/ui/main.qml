@@ -134,7 +134,8 @@ PlasmoidItem {
         timeZone: Plasmoid.configuration.lastSelectedTimezone
         // Second-by-second only while seconds are on screen: the flyout's
         // large clock shows them (it showed :00 with minute updates).
-        trackSeconds: root.flyoutOpen || Plasmoid.configuration.showSeconds === 2
+        trackSeconds: (root.flyoutOpen && Plasmoid.configuration.showTimeInNotificationCenter)
+            || Plasmoid.configuration.showSeconds === 2
     }
 
     PlasmaClock.Clock {

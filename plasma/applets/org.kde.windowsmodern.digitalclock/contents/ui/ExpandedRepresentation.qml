@@ -331,6 +331,8 @@ FocusScope {
                     DayAgenda {
                         id: agenda
                         calendarLocale: expandedRoot.calendarLocale
+                        timeLocale: expandedRoot.clockTimeLocale
+                        timeFormat: expandedRoot.clockApplet.timeFormat || "h:mm AP"
                         Layout.fillWidth: true
                         visible: expandedRoot.agendaShown
                         date: calendarView.selectedDate
