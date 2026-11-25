@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install health check dependencies
-        run: sudo apt-get update && sudo apt-get install -y shellcheck python3-pil
+        run: sudo apt-get update && sudo apt-get install -y shellcheck python3-pil python3-fonttools
       # Same gate scripts/release.sh enforces: required files, light/dark
       # parity, layout drift, metadata, bash -n and shellcheck.
       - name: verify-all.sh
@@ -28,7 +28,7 @@ jobs:
           bash -n install-nixos.sh
           python3 -m unittest discover -s tests/nixos -v
       - name: Native resource reader tests
-        run: python3 -m unittest discover -s tests/native-assets -v
+        run: /usr/bin/python3 -m unittest discover -s tests/native-assets -v
       - name: Window material tests
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
 
@@ -75,7 +75,9 @@ jobs:
       - name: Capture the compiled applets in a nested Wayland desktop
         if: matrix.fedora == '45'
         run: |
-          dnf install -y --setopt=install_weak_deps=False plasma-desktop /usr/bin/kwin_wayland /usr/bin/kscreen-doctor /usr/bin/Xvfb xorg-x11-xauth /usr/bin/import /usr/bin/dbus-run-session /usr/bin/busctl mesa-dri-drivers shadow-utils util-linux
+          dnf install -y --setopt=install_weak_deps=False plasma-desktop /usr/bin/weston kactivitymanagerd /usr/bin/kwin_wayland /usr/bin/kscreen-doctor /usr/bin/Xvfb xorg-x11-xauth /usr/bin/import /usr/bin/dbus-run-session /usr/bin/busctl mesa-dri-drivers shadow-utils util-linux
+          mkdir -p /run/dbus
+          dbus-daemon --system --fork --nopidfile
           useradd --create-home desktop-test
           install -d -o desktop-test -g desktop-test "$RUNNER_TEMP/desktop-captures"
           runuser -u desktop-test -- env WM_DISPOSABLE_DESKTOP=1 xvfb-run -a -s '-screen 0 1920x1080x24' dbus-run-session -- bash tests/panel/nested-wayland.sh "$RUNNER_TEMP/build" "$RUNNER_TEMP/desktop-captures"

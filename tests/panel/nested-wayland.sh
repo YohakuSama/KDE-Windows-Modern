@@ -24,24 +24,37 @@ ln -s "$src/icons" "$XDG_DATA_HOME/icons"
 ln -s "$src/wallpaper" "$XDG_DATA_HOME/wallpapers"
 shell_pid=""
 kwin_pid=""
+host_pid=""
 finish() {
     local rc=$?
     if ((rc)); then
-        for log in "$out/kwin.log" "$out/plasma.log"; do
+        for log in "$out/host.log" "$out/kwin.log" "$out/plasma.log"; do
             [[ -f "$log" ]] && tail -45 "$log" >&2
         done
     fi
     if [[ -n "$shell_pid" ]]; then kill "$shell_pid" 2>/dev/null || true; fi
     if [[ -n "$kwin_pid" ]]; then kill "$kwin_pid" 2>/dev/null || true; fi
+    if [[ -n "$host_pid" ]]; then kill "$host_pid" 2>/dev/null || true; fi
 }
 trap finish EXIT
+export QT_FORCE_STDERR_LOGGING=1
+# Nested KWin 6.8 needs DRI3 on an X11 parent. Weston supplies a wl_shm
+# parent on Xvfb, allowing KWin's Wayland backend to use software rendering.
+weston --no-config --backend=x11 --renderer=pixman --shell=kiosk-shell.so --width=1920 --height=1080 --socket=wm-host --idle-time=0 >"$out/host.log" 2>&1 &
+host_pid=$!
+for _ in {1..100}; do
+    [[ -S "$XDG_RUNTIME_DIR/wm-host" ]] && break
+    kill -0 "$host_pid"
+    sleep 0.2
+done
+[[ -S "$XDG_RUNTIME_DIR/wm-host" ]]
 # The distro binary may carry CAP_SYS_NICE, outside the CI capability set.
 # Execute the same bytes as an ordinary user without requesting that capability.
 install -m 0755 "$(command -v kwin_wayland)" "$work/kwin_wayland"
-"$work/kwin_wayland" --x11-display "$DISPLAY" --width 1920 --height 1080 --socket "$WAYLAND_DISPLAY" --no-lockscreen >"$out/kwin.log" 2>&1 &
+"$work/kwin_wayland" --wayland-display wm-host --fullscreen --width 1920 --height 1080 --socket "$WAYLAND_DISPLAY" --no-lockscreen >"$out/kwin.log" 2>&1 &
 kwin_pid=$!
 export QT_QPA_PLATFORM=wayland
-dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY QT_QPA_PLATFORM QT_PLUGIN_PATH XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME
+dbus-update-activation-environment QT_FORCE_STDERR_LOGGING DISPLAY WAYLAND_DISPLAY QT_QPA_PLATFORM QT_PLUGIN_PATH XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME
 for _ in {1..100}; do
     [[ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]] && break
     kill -0 "$kwin_pid"
