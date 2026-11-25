@@ -960,3 +960,11 @@ Known Quick Settings details use the existing themed pages over KDE backends. Na
 ### KDE application navigation icon coverage
 
 Plasma 6.8 System Settings category metadata and KCM metadata, and the four shipped System Monitor pages, are the source of the native icon role aliases. The existing resource importer maps standard and symbolic names in the installed application/category directories from the owner's pinned Segoe Fluent glyphs. The glyph presence was verified against the exact pinned font blob. `office-chart-line` uses Microsoft's MIT-licensed Fluent Data Line artwork as a semantic compatibility icon; it is not the Windows Task Manager binary asset. Real application identities and owner-created System Monitor pages remain unchanged. Native Qt Quick delegate layout and contrast are a separate acceptance item; icon mapping is not a claim of complete application redesign.
+
+### Native QWidget context-menu material
+
+The stock desktop/file-manager context menu remains a real KDE QMenu. Its light/dark Kvantum surfaces now use matching 8-pixel corner slices, a continuous one-pixel border, and consistent 98% surface opacity to prevent strong wallpaper tint and corner seams. Row padding is increased without replacing or enabling any native QAction. This is a material pass, not a claim that the desktop action order is the Windows 11 compact layout. The latter requires a containment-actions implementation that forwards the real folder-model actions.
+
+### Runtime regression fixes for panel popups and footer
+
+The clock popup is owned by its actual compact representation, with an explicit mapped panel anchor and an eight logical pixel gap. It refuses to open without a valid panel window rather than appearing at desktop origin. Start uses the same edge gap. Quick Settings uses a Qt Quick Slider template with full-row input height, longer equal tracks, and backend readback suspended during an active drag. Tests exercise real click, press/move/release, and wheel events on both rows. The default Start avatar is locally drawn to match the neutral reference (not the imported green glyph); custom user photos remain supported. An initial footer migration enables the previously hidden shortcuts once. Power/account menus use neutral hover, 16px icons and 36px rows with Lock in the power menu.

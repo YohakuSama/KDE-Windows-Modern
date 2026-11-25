@@ -12,7 +12,9 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtQuick.Controls
+import QtCore
 import Qt5Compat.GraphicalEffects
 
 import org.kde.plasma.plasmoid
@@ -64,12 +66,16 @@ Item {
             root.visible = false;
             return;
         }
-        if (!startButton || startButton.width <= 0 || startButton.height <= 0)
+        if (!startButton || !popupAnchor.Window.window || !popupAnchor.visible
+            || startButton.width <= 0 || startButton.height <= 0)
             return;
 
         const horizontal = Plasmoid.location === PlasmaCore.Types.BottomEdge
                         || Plasmoid.location === PlasmaCore.Types.TopEdge;
-        popupAnchor.x = 0;
+        popupAnchor.x = Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
+            : Plasmoid.location === PlasmaCore.Types.RightEdge ? -8 : 0;
+        popupAnchor.y = Plasmoid.location === PlasmaCore.Types.BottomEdge ? -8
+            : Plasmoid.location === PlasmaCore.Types.TopEdge ? 8 : 0;
         if (horizontal) {
             const pos = startButton.mapToGlobal(0, 0);
             popupAnchor.x = PopupPosition.horizontalAnchorOffset(
@@ -92,7 +98,7 @@ Item {
         flags: Qt.Dialog
         visualParent: popupAnchor
         location: Plasmoid.location
-        floating: Kirigami.Units.smallSpacing
+        floating: 8
         visible: false
         hideOnWindowDeactivate: true
 
@@ -192,7 +198,10 @@ Item {
                 }
 
                 function exec(cmd) {
+                    if (typeof cmd !== "string" || !cmd.length)
+                        return false;
                     connectSource(cmd);
+                    return true;
                 }
             }
 
@@ -316,6 +325,7 @@ Item {
                     id: allAppsPage
                     anchors.fill: parent
                     visible: root.leftColumnState !== 2
+                    scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     showAllSection: Plasmoid.configuration.showAllSection
                     flatModel: sortedAppsModel
                     categoryModel: nativeCategoryModel
@@ -324,6 +334,15 @@ Item {
                     gridMode: Plasmoid.configuration.allAppsViewMode === 1
                     alphabeticalGrouping: Plasmoid.configuration.allAppsSortMode === 0
                         || Plasmoid.configuration.allAppsSortMode === 1
+                    onAppContextMenuRequested: function(entry, x, y) {
+                        const actions = Tools.buildAppActions(i18n, globalFavorites,
+                            entry.favoriteId || "", entry.url || "", entry.actionList || null);
+                        if (!actions.length) return;
+                        const pos = allAppsPage.mapToItem(sharedContextMenu, x, y);
+                        sharedContextMenu.open(actions, pos.x, pos.y, {
+                            model: sortedAppsModel, index: entry.index
+                        });
+                    }
                     onKeyNavUpFromList: {
                         root.leftColumnState = 0;
                         allAppsPage.allAppsList.positionViewAtBeginning();
@@ -487,6 +506,7 @@ Item {
                     id: searchPage
                     anchors.fill: parent
                     visible: root.leftColumnState === 2
+                    scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     onFocusSearchRequested: startSearch.focusSearch()
                     onContextMenuRequested: function(actions, x, y, context) {
                         var pos = searchPage.mapToItem(sharedContextMenu, x, y);
@@ -538,8 +558,8 @@ Item {
                             spacing: Kirigami.Units.smallSpacing
                             Item {
                                 id: avatarArea
-                                Layout.preferredWidth: 24
-                                Layout.preferredHeight: 24
+                                Layout.preferredWidth: 36
+                                Layout.preferredHeight: 36
                                 Layout.alignment: Qt.AlignVCenter
                                 Image {
                                     id: userAvatar
@@ -559,7 +579,10 @@ Item {
                                 }
                                 Image {
                                     anchors.fill: parent
-                                    source: Qt.resolvedUrl("default-account.svg")
+                                    source: {
+                                        // The imported green account glyph is not Windows' default Start avatar.
+                                        return Qt.resolvedUrl("default-account.svg");
+                                    }
                                     fillMode: Image.PreserveAspectFit
                                     visible: userAvatar.status !== Image.Ready
                                 }
@@ -580,7 +603,8 @@ Item {
                     SystemLocationsRow {
                         id: systemLocations
                         visible: Plasmoid.configuration.showRightColumn
-                        Layout.fillWidth: visible
+                        Layout.fillWidth: false
+                        Layout.preferredWidth: visible ? Math.min(implicitWidth, Math.floor(rootItem.width * 0.58)) : 0
                         Layout.maximumWidth: implicitWidth
                         Layout.minimumWidth: 0
                         executable: commandSource

@@ -40,6 +40,30 @@ Item {
             verify(!session.running);
             compare(dnd.notificationsInhibitedUntil, undefined);
         }
+        function test_unavailableBackend() {
+            session.settings = null;
+            verify(!session.canStart);
+            verify(!session.start());
+            verify(!session.running);
+            session.settings = dnd;
+        }
+        function test_extendAndRestoreShortManualDnd() {
+            const now = Date.now();
+            const previous = new Date(now + 300000);
+            dnd.notificationsInhibitedUntil = previous;
+            verify(session.start(now));
+            compare(dnd.notificationsInhibitedUntil.getTime(), session.endTime);
+            session.stop(now + 1000);
+            compare(dnd.notificationsInhibitedUntil.getTime(), previous.getTime());
+        }
+        function test_expiryDoesNotRestoreExpiredManualDnd() {
+            const now = Date.now();
+            dnd.notificationsInhibitedUntil = new Date(now + 300000);
+            session.start(now);
+            session.tick(now + 1800000);
+            verify(!session.running);
+            compare(dnd.notificationsInhibitedUntil, undefined);
+        }
         function test_preserveManualDnd() {
             const now = Date.now();
             const manual = new Date(now + 86400000);

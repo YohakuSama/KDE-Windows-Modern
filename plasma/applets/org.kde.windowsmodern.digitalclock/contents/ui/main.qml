@@ -26,17 +26,19 @@ PlasmoidItem {
     Plasmoid.backgroundHints: PlasmaCore.Types.ShadowBackground | PlasmaCore.Types.ConfigurableBackground
 
     // Tooltips must not cover the notification/calendar flyout.
-    readonly property bool flyoutOpen: clockDialog.visible
+    // Owned by the actual compact representation in the panel window.
+    property var panelPopup: null
+    readonly property bool flyoutOpen: !!panelPopup && panelPopup.visible
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry
-    readonly property real popupPanelExtent: compactRepresentationItem
+    readonly property real popupPanelExtent: panelPopup && panelPopup.visualParent
         ? (Plasmoid.formFactor === PlasmaCore.Types.Vertical
-            ? compactRepresentationItem.width : compactRepresentationItem.height) : 48
+            ? panelPopup.visualParent.width : panelPopup.visualParent.height) : 48
     toolTipMainText: flyoutOpen ? "" : i18n("Clock")
     toolTipSubText: flyoutOpen ? "" : notificationStatusText
     Plasmoid.status: flyoutOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
 
     function toggleFlyout(previous = flyoutOpen) {
-        clockDialog.visible = !previous;
+        if (panelPopup) panelPopup.toggle(previous);
     }
 
     readonly property string currentTimeZone: currentClock.timeZone
@@ -83,8 +85,8 @@ PlasmoidItem {
         ignoreBlacklistDuringInhibition: true
         blacklistedDesktopEntries: notificationSettings.historyBlacklistedApplications
         blacklistedNotifyRcNames: notificationSettings.historyBlacklistedServices
-        popupBlacklistedDesktopEntries: notificationSettings.popupBlacklistedApplications
-        popupBlacklistedNotifyRcNames: notificationSettings.popupBlacklistedServices
+        // Popup filtering belongs to KDE's native toast presenter.
+        // Notifications exposes history blacklist roles on Plasma 6.6–6.8.
         urgencies: NotificationManager.Notifications.CriticalUrgency
                  | NotificationManager.Notifications.NormalUrgency
                  | (notificationSettings.lowPriorityHistory ? NotificationManager.Notifications.LowUrgency : 0)
@@ -201,25 +203,7 @@ PlasmoidItem {
         id: compactRep
         CompactRepresentation { plasmoidItem: root }
     }
-    function closeFlyout() { clockDialog.visible = false; }
-
-    PlasmaCore.Dialog {
-        id: clockDialog
-        objectName: "wmClockSplitPopup"
-        type: PlasmaCore.Dialog.AppletPopup
-        flags: Qt.Dialog
-        visualParent: root.compactRepresentationItem
-        location: Plasmoid.location
-        floating: 8
-        backgroundHints: PlasmaCore.Dialog.NoBackground
-        visible: false
-        hideOnWindowDeactivate: !Plasmoid.configuration.pin
-        mainItem: ExpandedRepresentation {
-            clockApplet: root
-            width: implicitWidth
-            height: implicitHeight
-        }
-    }
+    function closeFlyout() { if (panelPopup) panelPopup.visible = false; }
     activationTogglesExpanded: false
     Connections {
         target: Plasmoid

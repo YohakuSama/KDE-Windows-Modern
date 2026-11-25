@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Windows keyboard shortcuts for KDE Plasma, applied through kglobalaccel.
 
-Keys KDE already maps like Windows (Win+E, Win+I, Win+L, Win+D, Win+V, Win+.,
+Keys KDE already maps like Windows (Win+E, Win+I, Win+L, Win+D, Win+.,
 Win+P, Win+Shift+S, Win+Left/Right, Win+1..9) are left alone. This moves the
 rest to where Windows has them:
 
@@ -10,6 +10,7 @@ rest to where Windows has them:
   Win+R               Run (KRunner), not screen recording
   Win+M, Win+Home     minimize all / all others
   Win+A / Win+N       Quick Settings / notifications (tray, see "tray" below)
+  Win+V               native KDE Klipper clipboard history
   Win+PrtSc           full screenshot saved silently; Alt+PrtSc active window
   Ctrl+Shift+Esc      Mission Center (group "apps")
 
@@ -19,6 +20,7 @@ The previous keys of every touched action are saved once to
 Usage: windows-shortcuts.py apply   [--group shortcuts|apps] [--dry-run]
        windows-shortcuts.py restore [--group shortcuts|apps]
        windows-shortcuts.py tray-apply | tray-restore   (Plasma Shell must be stopped)
+       windows-shortcuts.py clipboard-apply [--dry-run]
        windows-shortcuts.py show
 """
 import argparse
@@ -27,6 +29,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import time
 
 from gi.repository import Gio, GLib
 
@@ -104,6 +107,12 @@ class GlobalAccel:
         else:
             self._call("setForeignShortcutKeys", "(asa(ai))", (aid, seqs))
 
+    def actions(self, component):
+        return self._call("allActionsForComponent", "(as)", ([component, "", "", ""],)).unpack()[0]
+
+    def key_owner(self, value):
+        return self._call("actionList", "((ai))", (([value, 0, 0, 0],),)).unpack()[0]
+
     def register(self, aid):
         self._call("doRegister", "(as)", (aid,))
 
@@ -126,6 +135,82 @@ def wanted(current, change):
 
 def load_backup():
     return json.loads(BACKUP.read_text()) if BACKUP.exists() else {}
+
+
+CLIPBOARD_COMPONENTS = ("plasmashell", "klipper")
+CLIPBOARD_ACTION = "show-on-mouse-pos"
+
+
+def clipboard_target(ga):
+    for component in CLIPBOARD_COMPONENTS:
+        for aid in ga.actions(component):
+            if len(aid) == 4 and aid[:2] == [component, CLIPBOARD_ACTION]:
+                return aid
+    return None
+
+
+def save_backup(backup):
+    BACKUP.parent.mkdir(parents=True, exist_ok=True)
+    temporary = BACKUP.with_suffix(".tmp")
+    temporary.write_text(json.dumps(backup, indent=1))
+    temporary.replace(BACKUP)
+
+
+def bind_clipboard(ga, aid, dry_run=False):
+    """Bind only the registered native action; never create a fake shortcut."""
+    key = parse("Meta+V")
+    current = ga.keys(aid)
+    if key in current:
+        print("  Win+V: native Klipper history already bound")
+        return 0
+    owner = ga.key_owner(key)
+    if owner and owner[:2] != aid[:2]:
+        print(f"  Win+V is already used by {owner[0]} :: {owner[1]}; keeping the existing binding", file=sys.stderr)
+        return 1
+    if dry_run:
+        print("  Win+V: would add native Klipper history binding")
+        return 0
+    backup = load_backup()
+    backup.setdefault(f"{aid[0]}|{aid[1]}", current)
+    save_backup(backup)
+    expected = current + [key]
+    ga.set_keys(aid, expected)
+    if sorted(ga.keys(aid)) != sorted(expected):
+        ga.set_keys(aid, current)
+        print("  Win+V: native Klipper binding failed verification", file=sys.stderr)
+        return 1
+    print("  Win+V: native KDE clipboard history bound and verified")
+    return 0
+
+
+def clipboard_apply(dry_run=False):
+    ga = GlobalAccel()
+    # Plasma starts Klipper asynchronously when loading the native clipboard
+    # applet. Do not register an invented action when that backend is absent.
+    for attempt in range(20):
+        service = subprocess.run(["busctl", "--user", "status", "org.kde.klipper"],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        aid = clipboard_target(ga) if service.returncode == 0 else None
+        if aid:
+            return bind_clipboard(ga, aid, dry_run)
+        if attempt < 19:
+            time.sleep(0.5)
+    print("  Native Klipper service or its clipboard history action is unavailable", file=sys.stderr)
+    return 1
+
+
+def restore_clipboard(ga, backup):
+    for component in CLIPBOARD_COMPONENTS:
+        name = f"{component}|{CLIPBOARD_ACTION}"
+        if name not in backup:
+            continue
+        aid = [component, CLIPBOARD_ACTION, "", ""]
+        ga.set_keys(aid, backup[name])
+        if sorted(ga.keys(aid)) != sorted(backup[name]):
+            print("  Could not restore the original clipboard shortcut", file=sys.stderr)
+            return 1
+        backup.pop(name)
+    return 0
 
 
 def apply(group, dry_run):
@@ -158,6 +243,8 @@ def apply(group, dry_run):
 def restore(group):
     ga = GlobalAccel()
     backup = load_backup()
+    if group == "shortcuts" and restore_clipboard(ga, backup):
+        return 1
     # Reverse order: our actions give their keys up before the original
     # owners take them back.
     for _, comp, action, fcomp, faction, _change in reversed([c for c in CHANGES if c[0] == group]):
@@ -280,7 +367,7 @@ def show():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("command", choices=["apply", "restore", "tray-apply", "tray-restore", "show"])
+    ap.add_argument("command", choices=["apply", "restore", "tray-apply", "tray-restore", "clipboard-apply", "show"])
     ap.add_argument("--group", choices=["shortcuts", "apps"], default="shortcuts")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
@@ -289,6 +376,8 @@ def main():
     if args.command == "tray-restore":
         return tray_restore()
     try:
+        if args.command == "clipboard-apply":
+            return clipboard_apply(args.dry_run)
         if args.command == "apply":
             return apply(args.group, args.dry_run)
         if args.command == "restore":

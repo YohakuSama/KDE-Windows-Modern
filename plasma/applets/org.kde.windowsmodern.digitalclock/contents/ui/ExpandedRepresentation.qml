@@ -296,10 +296,14 @@ FocusScope {
                     Layout.maximumHeight: Layout.preferredHeight
                     spacing: 6
 
+                    readonly property bool running: !!expandedRoot.focusSession && expandedRoot.focusSession.running
+
                     FlyoutButton {
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                        enabled: !!expandedRoot.focusSession && !expandedRoot.focusSession.running
+                        objectName: "wmFocusDecrease"
+                        visible: !focusRow.running
+                        Layout.preferredWidth: 26
+                        Layout.preferredHeight: 26
+                        enabled: !!expandedRoot.focusSession && expandedRoot.focusSession.canStart
                             && expandedRoot.focusSession.durationMinutes > 5
                         text: i18n("Decrease focus duration")
                         icon.name: "list-remove"
@@ -308,20 +312,22 @@ FocusScope {
                         PlasmaComponents.ToolTip { text: parent.text }
                     }
                     PlasmaComponents.Label {
+                        objectName: "wmFocusDuration"
+                        visible: !focusRow.running
                         Layout.preferredWidth: 76
                         horizontalAlignment: Text.AlignHCenter
                         textFormat: Text.PlainText
-                        text: expandedRoot.focusSession && expandedRoot.focusSession.running
-                            ? expandedRoot.focusSession.countdown
-                            : i18n("%1 mins", expandedRoot.focusSession ? expandedRoot.focusSession.durationMinutes : 30)
+                        text: i18n("%1 mins", expandedRoot.focusSession ? expandedRoot.focusSession.durationMinutes : 30)
                         color: palette.text
-                        font.pixelSize: 12
+                        font.pixelSize: 13
                         font.features: { "tnum": 1 }
                     }
                     FlyoutButton {
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                        enabled: !!expandedRoot.focusSession && !expandedRoot.focusSession.running
+                        objectName: "wmFocusIncrease"
+                        visible: !focusRow.running
+                        Layout.preferredWidth: 26
+                        Layout.preferredHeight: 26
+                        enabled: !!expandedRoot.focusSession && expandedRoot.focusSession.canStart
                             && expandedRoot.focusSession.durationMinutes < 240
                         text: i18n("Increase focus duration")
                         icon.name: "list-add"
@@ -330,18 +336,32 @@ FocusScope {
                         PlasmaComponents.ToolTip { text: parent.text }
                     }
 
-                    Item { Layout.fillWidth: true }
+                    PlasmaComponents.Label {
+                        objectName: "wmFocusRunningLabel"
+                        visible: focusRow.running
+                        Layout.fillWidth: true
+                        text: i18n("Focusing")
+                        color: palette.text
+                        font.pixelSize: 14
+                        Accessible.description: expandedRoot.focusSession ? expandedRoot.focusSession.countdown : ""
+                        HoverHandler { id: focusRemainingHover }
+                        PlasmaComponents.ToolTip {
+                            visible: focusRemainingHover.hovered && focusRow.running
+                            text: expandedRoot.focusSession ? expandedRoot.focusSession.countdown : ""
+                        }
+                    }
+
+                    Item { Layout.fillWidth: !focusRow.running; visible: !focusRow.running }
 
                     FlyoutButton {
                         objectName: "wmFocusButton"
-                        enabled: !!expandedRoot.focusSession
+                        enabled: !!expandedRoot.focusSession && (focusRow.running || expandedRoot.focusSession.canStart)
                         Layout.preferredHeight: 26
-                        text: expandedRoot.focusSession && expandedRoot.focusSession.running
-                            ? i18n("Stop focus") : i18n("Focus")
-                        icon.name: expandedRoot.focusSession && expandedRoot.focusSession.running
-                            ? "media-playback-stop" : "media-playback-start"
+                        text: focusRow.running ? i18n("End session") : i18n("Focus")
+                        icon.name: focusRow.running ? "media-playback-stop" : "media-playback-start"
+                        Accessible.description: !enabled ? i18n("Notification service not available") : text
                         onClicked: {
-                            if (expandedRoot.focusSession.running)
+                            if (focusRow.running)
                                 expandedRoot.focusSession.stop();
                             else
                                 expandedRoot.focusSession.start();

@@ -473,6 +473,10 @@ else
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 fi
 
+# Install just the new native clipboard binding on both fresh installs and
+# upgrades, without resetting the user's other shortcuts.
+"$PYTHON" "$ROOT/scripts/windows-shortcuts.py" clipboard-apply
+
 # Opt into Plasma's native wallpaper accent on a fresh/unspecified mode.
 # An explicit existing manual mode remains the user's choice.
 if [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
@@ -505,6 +509,10 @@ done
 }
 "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" "${verify_args[@]}" --pid "$pid"
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" verify-sources --root "$ROOT" --state "$STATE" --profile "$PROFILE"
+# A correctly mapped ELF may still fail to instantiate its QML entrypoint.
+# Inspect only this new shell PID in this boot, never a previous installation.
+journalctl --user -b -u "$SERVICE" "_PID=$pid" --no-pager -o cat |
+    "$PYTHON" "$ROOT/scripts/check-applet-load-log.py"
 if [ "$upgrading" -eq 1 ]; then
     backups="$(dirname "$STATE")/windows-modern-nixos-backups"
     mkdir -p "$backups"

@@ -60,7 +60,11 @@ jobs:
             kf6-kjobwidgets-devel kf6-kcmutils-devel kf6-knotifications-devel \
             plasma-activities-devel plasma-activities-stats-devel \
             libplasma-devel plasma-workspace-devel libksysguard-devel \
-            kf6-kirigami python3 /usr/lib64/qt6/qml/org/kde/notificationmanager/qmldir
+            kf6-kirigami python3 plasma-nm plasma-pa powerdevil bluedevil plasma-desktop \
+            /usr/lib64/qt6/qml/org/kde/plasma/plasma5support/qmldir \
+            /usr/lib64/qt6/qml/org/kde/notificationmanager/qmldir \
+            /usr/lib64/qt6/qml/org/kde/milou/qmldir \
+            /usr/lib64/qt6/qml/Qt5Compat/GraphicalEffects/qmldir
       - name: Test task icon optical geometry
         run: |
           g++ -std=c++20 tests/panel/test_panelicon.cpp $(pkg-config --cflags --libs Qt6Gui) -o /tmp/wm-panelicon-test

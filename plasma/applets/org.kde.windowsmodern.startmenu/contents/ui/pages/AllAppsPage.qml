@@ -26,6 +26,9 @@ Item {
     property bool categoryMode: false
     property bool gridMode: false
     property bool alphabeticalGrouping: true
+    property int scrollbarEdgeOffset: 0
+    signal appContextMenuRequested(var entry, real x, real y)
+    HoverHandler { id: homeViewportHover; enabled: !allAppsPage.inCategory }
     readonly property bool showCategoryCards: categoryMode
     readonly property var activeView: inCategory ? categoryGrid : allAppsList
     property var categoryChild: null
@@ -124,6 +127,7 @@ Item {
         showApps: !allAppsPage.categoryMode && allAppsPage.showAllSection
         gridMode: allAppsPage.gridMode
         alphabeticalGrouping: allAppsPage.alphabeticalGrouping
+        scrollbarEdgeOffset: allAppsPage.scrollbarEdgeOffset
         header: !allAppsPage.categoryMode ? allAppsPage.homeHeader : null
         onApplicationActivated: row => allAppsPage.activateFlatRow(row)
         onNavigateToHeader: allAppsPage.keyNavUpFromList()
@@ -157,7 +161,7 @@ Item {
         clip: true
         visible: allAppsPage.categoryMode
         interactive: !allAppsPage.inCategory
-        readonly property int scrollGutter: 18
+        readonly property int scrollGutter: allAppsPage.scrollbarEdgeOffset > 0 ? 0 : 18
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
         readonly property int columns: contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2
         cellWidth: Math.max(1, Math.floor(contentColumnWidth / columns))
@@ -168,7 +172,18 @@ Item {
         function activateRow(row) { allAppsPage.activateRow(row); }
         header: allAppsPage.categoryMode ? allAppsPage.homeHeader : null
 
-        PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
+        PlasmaComponents3.ScrollBar.vertical: StartScrollBar {
+            objectName: "wmStartCategoryScrollBar"
+            parent: allAppsPage
+            anchors.top: allAppsListView.top
+            anchors.bottom: allAppsListView.bottom
+            anchors.right: allAppsListView.right
+            anchors.rightMargin: -allAppsPage.scrollbarEdgeOffset
+            visible: allAppsListView.visible && !allAppsPage.inCategory && size < 1
+            viewportHovered: homeViewportHover.hovered
+            scrolling: allAppsListView.moving
+            z: 5
+        }
         StartWheelHandler {
             view: allAppsListView
             rowHeight: Math.min(40, allAppsListView.cellHeight)
@@ -237,6 +252,33 @@ Item {
                                 height: width
                                 readonly property bool cluster: index === 3 && card.appCount > 4
                                 readonly property bool hasApp: index < card.appCount
+                                readonly property var entry: hasApp ? card.childModel[index] : null
+                                readonly property string appName: cluster ? card.categoryName
+                                    : entry ? String(entry.name || entry.display || "") : ""
+                                readonly property bool hovered: slotMouse.containsMouse
+                                objectName: "wmStartCategorySlot_" + card.categoryIndex + "_" + index
+                                Accessible.role: Accessible.Button
+                                Accessible.name: appName
+                                Accessible.ignored: !hasApp
+                                Accessible.onPressAction: activate()
+
+                                function activate() {
+                                    if (!hasApp) return;
+                                    if (cluster)
+                                        card.openCategory();
+                                    else
+                                        allAppsPage.activateFlatRow(entry.index);
+                                }
+
+                                Rectangle {
+                                    objectName: "wmStartCategorySlotHover"
+                                    anchors.fill: parent
+                                    anchors.margins: 2
+                                    radius: 6
+                                    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                        Kirigami.Theme.textColor.b, slotMouse.containsPress ? 0.12
+                                            : slot.hovered ? 0.07 : 0)
+                                }
 
                                 Kirigami.Icon {
                                     anchors.centerIn: parent
@@ -265,14 +307,27 @@ Item {
                                 }
 
                                 MouseArea {
+                                    id: slotMouse
                                     anchors.fill: parent
                                     enabled: slot.hasApp
-                                    onClicked: {
-                                        if (slot.cluster)
-                                            card.openCategory();
-                                        else
-                                            allAppsPage.activateFlatRow(card.childModel[slot.index].index);
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    onClicked: mouse => {
+                                        if (mouse.button === Qt.RightButton) {
+                                            if (!slot.cluster) {
+                                                const pos = slot.mapToItem(allAppsPage, mouse.x, mouse.y);
+                                                allAppsPage.appContextMenuRequested(slot.entry, pos.x, pos.y);
+                                            }
+                                        } else {
+                                            slot.activate();
+                                        }
                                     }
+                                }
+                                PlasmaComponents3.ToolTip {
+                                    visible: slot.hasApp && slot.hovered && !slotMouse.containsPress
+                                    text: slot.appName
+                                    delay: Kirigami.Units.toolTipDelay
                                 }
                             }
                         }
@@ -434,7 +489,7 @@ Item {
                         iconSize: 32
                         showInstallBadge: true
                     }
-                    PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
+                    PlasmaComponents3.ScrollBar.vertical: StartScrollBar { scrolling: categoryGrid.moving }
                     StartWheelHandler {
                         view: categoryGrid
                         rowHeight: categoryGrid.cellHeight

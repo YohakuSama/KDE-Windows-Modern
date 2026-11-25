@@ -331,6 +331,32 @@ ContainmentItem {
             onTriggered: if (!dialog.visible) systemTrayState.expanded = false;
         }
 
+        // Dialog's default property is its single QQuickItem mainItem.
+        // Nonvisual helpers belong to the owning item, not that property.
+        Connections {
+            target: systemTrayState
+            function onExpandedChanged() { dialog.openForState(); }
+        }
+        Timer {
+            id: geometryProbe
+            interval: 180
+            repeat: true
+            property int attempts: 0
+            onTriggered: {
+                if (!dialog.visible) { stop(); return; }
+                attempts++;
+                const ok = Math.abs(dialog.width - dialog.wantedWidth) <= 2
+                    && Math.abs(dialog.height - dialog.wantedHeight) <= 2
+                    && expandedRepresentation.height >= expandedRepresentation.popupHeight - 2;
+                if (ok || attempts >= 3) {
+                    console.info("WM_POPUP tray", ok ? "OK" : "SIZE_MISMATCH",
+                        dialog.width, dialog.height, expandedRepresentation.width,
+                        expandedRepresentation.height, "expected", dialog.wantedWidth, dialog.wantedHeight);
+                    stop();
+                }
+            }
+        }
+
         // One shell-role popup, with independent card surfaces when a
         // media session is present. Dialog.NoBackground lets the actual
         // desktop remain visible between cards; no second focus window.
@@ -359,30 +385,6 @@ ContainmentItem {
                     geometryProbe.restart();
                 } else {
                     visible = false;
-                }
-            }
-
-            Connections {
-                target: systemTrayState
-                function onExpandedChanged() { dialog.openForState(); }
-            }
-            Timer {
-                id: geometryProbe
-                interval: 180
-                repeat: true
-                property int attempts: 0
-                onTriggered: {
-                    if (!dialog.visible) { stop(); return; }
-                    attempts++;
-                    const ok = Math.abs(dialog.width - dialog.wantedWidth) <= 2
-                        && Math.abs(dialog.height - dialog.wantedHeight) <= 2
-                        && expandedRepresentation.height >= expandedRepresentation.popupHeight - 2;
-                    if (ok || attempts >= 3) {
-                        console.info("WM_POPUP tray", ok ? "OK" : "SIZE_MISMATCH",
-                            dialog.width, dialog.height, expandedRepresentation.width,
-                            expandedRepresentation.height, "expected", dialog.wantedWidth, dialog.wantedHeight);
-                        stop();
-                    }
                 }
             }
 

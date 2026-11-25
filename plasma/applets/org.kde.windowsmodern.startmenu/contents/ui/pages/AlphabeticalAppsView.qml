@@ -17,7 +17,9 @@ FocusScope {
     property bool alphabeticalGrouping: true
     property Component header: null
     readonly property var headerItem: rowsView.headerItem
-    readonly property int scrollGutter: 18
+    property int scrollbarEdgeOffset: 0
+    readonly property int scrollGutter: scrollbarEdgeOffset > 0 ? 0 : 18
+    HoverHandler { id: alphabeticalViewportHover }
     readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
     readonly property int columns: !gridMode ? 1 : contentColumnWidth >= 430 ? 6 : contentColumnWidth >= 320 ? 4 : 3
     readonly property int cellWidth: Math.max(1, Math.floor(contentColumnWidth / columns))
@@ -178,7 +180,18 @@ FocusScope {
             }
         }
 
-        PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
+        PlasmaComponents3.ScrollBar.vertical: StartScrollBar {
+            objectName: "wmStartAlphabeticalScrollBar"
+            parent: view
+            anchors.top: rowsView.top
+            anchors.bottom: rowsView.bottom
+            anchors.right: rowsView.right
+            anchors.rightMargin: -view.scrollbarEdgeOffset
+            visible: rowsView.visible && size < 1
+            viewportHovered: alphabeticalViewportHover.hovered
+            scrolling: rowsView.moving
+            z: 5
+        }
         StartWheelHandler { view: rowsView; rowHeight: Math.min(40, view.cellHeight) }
     }
 
