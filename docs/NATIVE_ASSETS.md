@@ -161,14 +161,15 @@ library. The importer and rendering are not evidence that the original
 
 ## Current coverage boundaries
 
-- The 26H2 SysBatt font, colored Search state images and two-tone Task View
-  SVGs are now identified by their Windows source paths above, but are not
-  present in the reviewed MUN resource branch. BatteryGlyph still uses the
-  older imported Segoe level/charging/saver family until the private 26H2
-  font is imported and verified. Do not draw a replacement.
-- Search currently uses the genuine imported Segoe E721 role when no
-  verified colored state image is installed. Task View uses E7C4 until both
-  original PRI SVG variants are imported. Do not use KDE/Breeze fallbacks.
+- The 26H2 SysBatt font, Search state PNGs and two-tone Task View SVGs
+  are outside the reviewed MUN branch. The private importer converts the
+  original SysBatt glyphs to SVG, preserves the Search PNGs and extracts
+  both Task View variants from the Settings PRI. Until those files are
+  imported locally, BatteryGlyph uses the older verified Windows Segoe
+  battery family, Search uses Segoe E721 and Task View uses E7C4.
+- If the source build has no dark idle Search PNG, the applet uses the
+  verified Segoe E721 glyph for that one state. Do not use KDE/Breeze
+  fallbacks or draw replacement artwork.
 - The original indexed account portraits are absent. The existing group 88
   mapping provides a default image; actual user portraits take precedence.
 - Native Plasma desktop selection, notification toast behavior and
