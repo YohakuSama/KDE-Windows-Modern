@@ -15,6 +15,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: windows-modern-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   changes:
     name: Classify changed files
@@ -265,6 +269,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Download and package plugins
-        run: echo "Release packaging is handled by scripts/release.sh"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: plugins-*
+          path: plugins
+      - name: Merge checksums and upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir out
+          cat plugins/*/SHA256SUMS > out/SHA256SUMS
+          cp plugins/*/*.tar.gz out/
+          for _ in $(seq 30); do
+            gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1 && break
+            sleep 20
+          done
+          gh release upload "${GITHUB_REF_NAME}" out/* --clobber --repo "${GITHUB_REPOSITORY}"
