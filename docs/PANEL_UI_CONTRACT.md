@@ -25,9 +25,11 @@ Current implementation values are provisional until verified on the desktop.
 
 ## Start and Search
 
-- Both views use the same anchored outer geometry: 560x640 or 768x720
-  logical size, clamped to the work area. Search must not enlarge the
-  popup or move its anchor.
+- Start keeps its 560x640 or 768x720 logical content size. Search uses a
+  wider 688x640 or 896x720 logical content size, clamped to the same work
+  area. Both use the same frame, height and vertical placement. Search home
+  and results keep one stable Search size; entering or leaving Search may
+  change the width. Narrow screens may clamp both to the same width.
 - Preserve real Kicker/Milou actions, configurable Pinned/Recent/All,
   category/list/grid views, alphabetical navigation, user preferences,
   app previews and the footer. No dummy Windows services or promotions.

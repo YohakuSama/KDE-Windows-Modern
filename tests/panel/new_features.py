@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Click through the optional Search/Task View buttons and the calendar zoom.
 
-  search    both Search entrypoints and typing retain the same on-screen
-            popup rectangle; run on one display with a static desktop
+  search    Search is wider than Start at the same height; both Search
+            entrypoints and query changes retain the Search rectangle.
+            Run on one display with a static desktop
   taskview  clicking Task View opens KWin's Overview
   calendar  the clock flyout's title zooms out to the year; reopening shows
             today's month again
@@ -106,12 +107,12 @@ def search(vi, out, c):
         return path
 
     baseline = shot("search-geometry-closed")
-    expected = None
-    expected_field = None
+    expected = {}
+    with Image.open(baseline) as img:
+        screen_width = img.width
 
-    def capture(name):
-        nonlocal expected, expected_field
-        field = search_field()
+    def capture(name, searching=False):
+        field = search_field(searching)
         if field is None:
             raise RuntimeError("Shared search field is not showing")
         window = next((n for n in a11y.nodes("plasmashell")
@@ -122,14 +123,27 @@ def search(vi, out, c):
         local = (field.rect[0] - window.rect[0], field.rect[1] - window.rect[1],
                  field.rect[2], field.rect[3])
         print(f"        {name}: physical popup={rect}; logical field={local}")
-        if expected is None:
-            expected, expected_field = rect, local
+        if searching not in expected:
+            expected[searching] = (rect, local)
         else:
-            # Tolerate only minor raster rounding/rounded-corner differences.
-            c.check(max(abs(a - b) for a, b in zip(expected, rect)) <= 3,
-                    f"screen position and outer size unchanged ({expected} -> {rect})")
+            # Compare geometry within each mode, not Start against Search.
+            expected_rect, expected_field = expected[searching]
+            c.check(max(abs(a - b) for a, b in zip(expected_rect, rect)) <= 3,
+                    f"mode position and outer size unchanged ({expected_rect} -> {rect})")
             c.check(max(abs(a - b) for a, b in zip(expected_field, local)) <= 1,
-                    f"search field geometry unchanged ({expected_field} -> {local})")
+                    f"mode search field geometry unchanged ({expected_field} -> {local})")
+        if searching and False in expected:
+            start_rect, _ = expected[False]
+            scale = rect[2] / window.rect[2]
+            # On exceptionally narrow outputs the shared work-area clamp may
+            # limit both surfaces to the same width.
+            room_for_wider = screen_width - start_rect[2] > 56 * scale + 3
+            c.check(rect[2] > start_rect[2] + 3 if room_for_wider
+                    else rect[2] >= start_rect[2] - 3,
+                    f"Search wider than Start when space permits ({start_rect[2]} -> {rect[2]})")
+            c.check(abs(rect[1] - start_rect[1]) <= 3
+                    and abs(rect[3] - start_rect[3]) <= 3,
+                    f"same vertical position and height ({start_rect} -> {rect})")
         return rect, local, window.rect
 
     def click_button(node):
@@ -152,23 +166,23 @@ def search(vi, out, c):
         vi.click()
         if not c.check(wait_for(lambda: search_field(True) is not None), "Start input opens search"):
             return
-        capture("start-search-click")
+        capture("start-search-click", searching=True)
         vi.type_text("test")
         if not c.check(wait_for(lambda: search_field(True) is not None
                                 and search_field(True).text() == "test"), "search accepts typed query"):
             return
-        capture("start-search-results")
+        capture("start-search-results", searching=True)
         vi.tap(e.KEY_ESC, after=0.5)
         if c.check(wait_for(lambda: search_field(True) is not None
                             and search_field(True).text() == ""), "Escape clears query"):
-            capture("start-search-cleared")
+            capture("start-search-cleared", searching=True)
         vi.tap(e.KEY_ESC, after=0.6)
         if not c.check(not start_menu_open(), "Escape closes search"):
             return
         click_button(search_button)
-        if not c.check(wait_for(lambda: search_field(True) is not None), "taskbar Search opens same surface"):
+        if not c.check(wait_for(lambda: search_field(True) is not None), "taskbar Search opens wider Search surface"):
             return
-        capture("search-click")
+        capture("search-click", searching=True)
         vi.tap(e.KEY_ESC, after=0.6)
         if not c.check(not start_menu_open(), "taskbar search closes"):
             return
@@ -179,7 +193,7 @@ def search(vi, out, c):
         vi.type_text("test")
         if c.check(wait_for(lambda: search_field(True) is not None
                             and search_field(True).text() == "test"), "Meta typing enters search"):
-            capture("start-meta-search")
+            capture("start-meta-search", searching=True)
     finally:
         if start_menu_open():
             vi.tap(e.KEY_ESC, after=0.3)

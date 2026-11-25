@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .import "popupGeometry.js" as Geometry
-// One outer surface for Start, empty search and populated search.
-// Size preference and available logical screen geometry are the only inputs.
-// Never feed query length, search mode, or content implicit size into this.
-function surfaceSize(mode, screen, panelExtent, vertical, margin) {
+// Share the window, frame and height, not the Start/Search width.
+// Search home and results have the same wider size, independent of the query.
+// Clamp both modes to the same available logical screen geometry.
+function surfaceSize(mode, screen, panelExtent, vertical, margin, searching) {
     const large = mode === 2 || (mode === 0 && screen.width >= 1440);
-    const wantedWidth = large ? 768 : 560;
+    const startWidth = large ? 768 : 560;
+    const searchWidth = large ? 896 : 688;
+    const wantedWidth = searching ? searchWidth : startWidth;
     const wantedHeight = large ? 720 : 640;
     const panel = Math.max(0, Number(panelExtent) || 0);
     const inset = 2 * Math.max(0, Number(margin) || 0);

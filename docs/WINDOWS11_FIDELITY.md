@@ -197,23 +197,24 @@ internal reports, historical screenshots and repository-only tools in the
 owner ZIP. Keep those in the source checkout. Do not add filler or publish
 the private resource bundle to the public Actions artifacts.
 
-### Start and Search must retain one surface
+### Start and Search use distinct widths at the same height
 
-The owner observed Start expanding from its home rectangle when clicking the
-search field. Remove the search-specific 776 x 690 logical size: both empty
-and populated Search use the existing Start size preference (560 x 640 small,
-768 x 720 large), subject only to the shared screen/work-area clamp. Preserve
-the same anchor and frame; do not reset the outer geometry on query or page
-changes. The inner page is responsible for scrolling and responsive content.
-These sizes preserve the existing Start design, not a new Microsoft measurement.
+The owner clarified that Search is wider than Start and must have the same
+height. Keep the existing Start size preference (560 x 640 small, 768 x 720
+large). Use a wider Search content size (688 x 640 small, 896 x 720 large),
+subject to the same screen/work-area clamp. Preserve the common frame and
+vertical placement; recompute the horizontal anchor using the actual width.
+Search home and search results share one size regardless of query changes.
+The 128 logical-pixel width increment is an implementation target, not a
+measured Windows dimension; matched live reference calibration remains open.
 
 The existing live panel scenario `tests/panel/new_features.py OUT_DIR search`
-now measures the photographed outer rectangle and search-field geometry for
-Start, input click, typed results, query clearing, direct taskbar Search, and
-Meta typing. Run on a single active display with a static contrasting desktop
-at each required DPI/theme. The screenshot comparison checks relative equality,
-not the absolute Windows margin or material. Headless geometry tests are not
-live acceptance. No new CI workflow is introduced.
+measures the photographed rectangle and search-field geometry for Start,
+input click, typed results, query clearing, direct taskbar Search, and Meta
+typing. It checks equal height and vertical position, greater Search width
+when space permits, and stable geometry within each mode. Run on a single
+active display with a static contrasting desktop at each required DPI/theme.
+Headless geometry tests are not live acceptance. No new CI workflow is introduced.
 
 ### Owner task preview and launcher tooltip reference
 

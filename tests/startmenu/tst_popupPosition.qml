@@ -7,24 +7,30 @@ import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/po
 TestCase {
     name: "StartMenuPopupPosition"
 
-    function test_sharedSurfaceSize_data() {
+    function test_distinctSurfaceWidths_data() {
         return [
-            {tag: "small", mode: 1, w: 1920, h: 1080, panel: 48, vertical: false, ew: 560, eh: 640},
-            {tag: "large", mode: 2, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, eh: 720},
-            {tag: "auto 100 percent", mode: 0, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, eh: 720},
-            {tag: "auto 150 percent", mode: 0, w: 1280, h: 720, panel: 48, vertical: false, ew: 560, eh: 616},
-            {tag: "auto 200 percent", mode: 0, w: 960, h: 540, panel: 48, vertical: false, ew: 560, eh: 436},
-            {tag: "side panel", mode: 2, w: 800, h: 720, panel: 48, vertical: true, ew: 696, eh: 664},
-            {tag: "small display", mode: 1, w: 480, h: 360, panel: 48, vertical: false, ew: 424, eh: 256},
-            {tag: "unmapped output", mode: 0, w: 0, h: 0, panel: 0, vertical: false, ew: 560, eh: 640}
+            {tag: "small", mode: 1, w: 1920, h: 1080, panel: 48, vertical: false, ew: 560, sw: 688, eh: 640},
+            {tag: "large", mode: 2, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, sw: 896, eh: 720},
+            {tag: "auto 100 percent", mode: 0, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, sw: 896, eh: 720},
+            {tag: "auto 125 percent", mode: 0, w: 1536, h: 864, panel: 48, vertical: false, ew: 768, sw: 896, eh: 720},
+            {tag: "auto 150 percent", mode: 0, w: 1280, h: 720, panel: 48, vertical: false, ew: 560, sw: 688, eh: 616},
+            {tag: "auto 200 percent", mode: 0, w: 960, h: 540, panel: 48, vertical: false, ew: 560, sw: 688, eh: 436},
+            {tag: "partially clamped", mode: 1, w: 700, h: 720, panel: 48, vertical: false, ew: 560, sw: 644, eh: 616},
+            {tag: "side panel", mode: 2, w: 800, h: 720, panel: 48, vertical: true, ew: 696, sw: 696, eh: 664},
+            {tag: "small display", mode: 1, w: 480, h: 360, panel: 48, vertical: false, ew: 424, sw: 424, eh: 256},
+            {tag: "unmapped output", mode: 0, w: 0, h: 0, panel: 0, vertical: false, ew: 560, sw: 688, eh: 640}
         ];
     }
 
-    function test_sharedSurfaceSize(data) {
+    function test_distinctSurfaceWidths(data) {
         const screen = {x: 0, y: 0, width: data.w, height: data.h};
-        const size = PopupPosition.surfaceSize(data.mode, screen, data.panel, data.vertical, 28);
-        compare(size.width, data.ew);
-        compare(size.height, data.eh);
+        const start = PopupPosition.surfaceSize(data.mode, screen, data.panel, data.vertical, 28, false);
+        const search = PopupPosition.surfaceSize(data.mode, screen, data.panel, data.vertical, 28, true);
+        compare(start.width, data.ew);
+        compare(search.width, data.sw);
+        compare(start.height, data.eh);
+        compare(search.height, start.height);
+        verify(search.width >= start.width);
     }
 
     function test_horizontalAnchorOffset_data() {

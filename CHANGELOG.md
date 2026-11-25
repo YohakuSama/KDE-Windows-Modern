@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Keep the existing Start menu size while making Search 128 logical pixels wider at the same height; resolve Search geometry before opening, keep query results stable, and update the regression and live capture contracts.
+
 - Keep the Quick Settings volume row visible while the audio service or output device is unavailable; disable only its track, and recover the real default output from the native device model when KDE's preferred output is unset.
 
 - Remove the duplicate Claude instruction entry and consolidate product scope and contribution guidance under docs; keep Codex's AGENTS.md, current installer entry points, and license notices.

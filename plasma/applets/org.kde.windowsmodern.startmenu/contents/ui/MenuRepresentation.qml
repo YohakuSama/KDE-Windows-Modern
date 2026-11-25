@@ -65,7 +65,7 @@ Item {
         height: main.startButton ? main.startButton.height : 0
     }
 
-    function toggleMenu() {
+    function toggleMenu(searchMode) {
         if (root.visible) {
             root.visible = false;
             return;
@@ -74,6 +74,8 @@ Item {
             || startButton.width <= 0 || startButton.height <= 0)
             return;
 
+        // Resolve the requested mode and its size before mapping the popup.
+        root.reset(!!searchMode);
         updatePopupAnchor();
         root.visible = true;
     }
@@ -99,9 +101,9 @@ Item {
         }
     }
 
-    // Both taskbar Search and Start's own input enter this same surface.
+    // Both Search entrypoints use the same wider search layout.
     function openSearch() {
-        if (!root.visible) toggleMenu();
+        if (!root.visible) toggleMenu(true);
         if (!root.visible) return;
         root.searching = true;
         root.requestActivate();
@@ -160,9 +162,7 @@ Item {
         }
 
         onVisibleChanged: {
-            if (visible) {
-                reset();
-            } else {
+            if (!visible) {
                 searching = false;
                 leftColumnState = 0;
                 modeMenu.close();
@@ -171,7 +171,7 @@ Item {
             }
         }
 
-        function reset() {
+        function reset(searchMode) {
             startSearch.searchText = "";
             searching = false;
             leftColumnState = 0;
@@ -189,6 +189,7 @@ Item {
             allAppsPage.allAppsList.positionViewAtBeginning();
             // Reset the search filter pills to "All".
             searchPage.resultsView.singleRunner = "";
+            searching = !!searchMode;
             // Defer focus until the dialog has finished laying out.
             Qt.callLater(startSearch.focusSearch);
         }
@@ -203,13 +204,13 @@ Item {
             readonly property int margin: 28
             readonly property rect screen: Plasmoid.screenGeometry
             readonly property var surfaceSize: PopupPosition.surfaceSize(
-                Plasmoid.configuration.startMenuSize, screen, main.panelExtent, main.verticalPanel, margin)
+                Plasmoid.configuration.startMenuSize, screen, main.panelExtent, main.verticalPanel, margin, root.searching)
             readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
                 && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
             objectName: "wmStartSearchSurface"
-            // The existing Start size is authoritative for both pages.
-            // Explicit equal layout limits also prevent the native dialog
-            // from sizing itself to search results or the hidden footer.
+            // Keep a fixed height and a mode-specific width. Explicit layout
+            // limits prevent result contents or the hidden footer from resizing
+            // the dialog. Width changes only when entering or leaving Search.
             implicitWidth: surfaceSize.width
             implicitHeight: surfaceSize.height
             width: surfaceSize.width
