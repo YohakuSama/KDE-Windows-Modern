@@ -196,7 +196,10 @@ FloatingToolTipArea {
     onToolTipVisibleChanged: toolTipVisible => {
         task.toolTipOpen = toolTipVisible;
         if (!toolTipVisible) {
-            tasksRoot.toolTipOpenedByClick = null;
+            if (tasksRoot.toolTipOpenedByClick === task)
+                tasksRoot.toolTipOpenedByClick = null;
+            if (tasksRoot.toolTipAreaItem === task)
+                tasksRoot.toolTipAreaItem = null;
         } else {
             tasksRoot.toolTipAreaItem = task;
         }
@@ -211,8 +214,9 @@ FloatingToolTipArea {
             if (task.Window.active) {
                 task.forceActiveFocus(Qt.MouseFocusReason);
             }
-            task.updateMainItemBindings();
-        } else {
+            // Bind the shared delegate only on aboutToShow, not on
+            // entering an unrelated task while another popup is visible.
+        } else if (tasksRoot.toolTipOpenedByClick === task) {
             tasksRoot.toolTipOpenedByClick = null;
         }
     }
@@ -360,15 +364,16 @@ FloatingToolTipArea {
         }
     }
 
-    // Will also be called in activateTaskAtIndex(index)
+    // Bind the actual requested owner for hover and keyboard/group activation.
     function updateMainItemBindings(): void {
-        if (!mainItem || (mainItem.parentTask === this && mainItem.rootIndex?.row === index)
-            || (tasksRoot.toolTipOpenedByClick === null && !active)
-            || (tasksRoot.toolTipOpenedByClick !== null && tasksRoot.toolTipOpenedByClick !== this)) {
+        if (!mainItem || !active
+            || (mainItem.parentTask === this && mainItem.rootIndex?.row === index)) {
             return;
         }
 
-        mainItem.blockingUpdates = (mainItem.isGroup !== model.IsGroupParent); // BUG 464597 Force unload the previous component
+        // Apply all role bindings before constructing a new card. A
+        // partially rebound delegate could briefly use another window ID.
+        mainItem.blockingUpdates = true;
 
         mainItem.parentTask = this;
         mainItem.rootIndex = tasksModel.makeModelIndex(index, -1);
@@ -393,7 +398,6 @@ FloatingToolTipArea {
         mainItem.smartLauncherCount = Qt.binding(() => mainItem.smartLauncherCountVisible ? (smartLauncherItem?.count ?? 0) : 0);
 
         mainItem.blockingUpdates = false;
-        tasksRoot.toolTipAreaItem = this;
     }
 
     Connections {

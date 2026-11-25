@@ -181,32 +181,50 @@ fi
 info "Building full GitHub release bundle..."
 FULL_VER="$(get_version "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.json")"
 [[ -z "$FULL_VER" ]] && FULL_VER="1.0.0"
+build_revision="$(git -C "$SRC_DIR" rev-parse HEAD)"
+build_short="$(git -C "$SRC_DIR" rev-parse --short "$build_revision")"
 FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}.zip"
 if [[ "$INTEGRATION" -eq 1 ]]; then
-    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-integration-$(git -C "$SRC_DIR" rev-parse --short HEAD).zip"
+    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-integration-$build_short.zip"
 elif [[ "$OWNER" -eq 1 ]]; then
-    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-owner-$(git -C "$SRC_DIR" rev-parse --short HEAD).zip"
+    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-owner-$build_short.zip"
 fi
 if [[ -n "$(git -C "$SRC_DIR" status --porcelain --untracked-files=no)" ]]; then
+    if [[ "$OWNER" -eq 1 ]]; then
+        err "Owner bundle requires a clean committed checkout."
+        exit 1
+    fi
     warn "Working tree has uncommitted changes — the full bundle is built from HEAD and will not include them."
+fi
+if [[ "$OWNER" -eq 1 ]]; then
+    # Construct and verify on the same filesystem, then publish by rename.
+    # A resource fetch, submodule or validation failure must never leave
+    # a partial ZIP under a final owner filename.
+    owner_out="$FULL_OUT"
+    owner_work="$(mktemp -d "$DIST_DIR/.owner-build.XXXXXXXX")"
+    trap 'rm -rf -- "$owner_work"' EXIT
+    FULL_OUT="$owner_work/$(basename "$owner_out")"
 fi
 rm -f "$FULL_OUT"
 archive_paths=(.)
 if [[ "$OWNER" -eq 1 ]]; then
-    # The owner archive is an installable theme, not a developer checkout.
-    # Reuse the verifier's exclusion policy so the packager and gate agree.
+    # Keep the parallel theme-only package policy. The tests stay in Git.
     exclusions="$(python3 "$SCRIPT_DIR/verify-owner-bundle.py" --archive-excludes)"
     mapfile -t owner_excludes <<< "$exclusions"
     archive_paths+=("${owner_excludes[@]}")
 fi
 git -C "$SRC_DIR" archive --format=zip --prefix="KDE-Windows-Modern-${FULL_VER}/" \
-    -o "$FULL_OUT" HEAD -- "${archive_paths[@]}"
+    -o "$FULL_OUT" "$build_revision" -- "${archive_paths[@]}"
 # `git archive` leaves submodules out, so the greeter could not be built
 # from the bundle (#15). Add the login manager source at the commit HEAD pins.
 PLM_REL="third_party/plasma-login-manager"
-PLM_PIN="$(git -C "$SRC_DIR" ls-tree HEAD "$PLM_REL" | awk '{print $3}')"
+PLM_PIN="$(git -C "$SRC_DIR" ls-tree "$build_revision" "$PLM_REL" | awk '{print $3}')"
 if [[ -n "$PLM_PIN" ]] && git -C "$SRC_DIR/$PLM_REL" cat-file -e "${PLM_PIN}^{commit}" 2>/dev/null; then
-    PLM_ZIP="$(mktemp --suffix=.zip)"
+    if [[ "$OWNER" -eq 1 ]]; then
+        PLM_ZIP="$owner_work/login-manager.zip"
+    else
+        PLM_ZIP="$(mktemp --suffix=.zip)"
+    fi
     git -C "$SRC_DIR/$PLM_REL" archive --format=zip \
         --prefix="KDE-Windows-Modern-${FULL_VER}/${PLM_REL}/" -o "$PLM_ZIP" "$PLM_PIN"
     python3 -I - "$FULL_OUT" "$PLM_ZIP" <<'PYEOF'
@@ -247,34 +265,38 @@ if [[ "$INTEGRATION" -eq 1 ]]; then
     trap - EXIT
 fi
 if [[ "$OWNER" -eq 1 ]]; then
-    stage="$(mktemp -d)"
-    trap 'rm -rf "$stage"' EXIT
+    stage="$owner_work/stage"
     prefix="KDE-Windows-Modern-${FULL_VER}"
     mkdir -p "$stage/$prefix"
     bash "$SCRIPT_DIR/stage-native-resources.sh" "$stage/$prefix/native-resources"
     # A source-build test archive never tries to download stale release binaries.
-    git -C "$SRC_DIR" rev-parse HEAD > "$stage/$prefix/INTEGRATION-BUILD"
+    printf '%s\n' "$build_revision" > "$stage/$prefix/INTEGRATION-BUILD"
     (cd "$stage" && zip -qry "$FULL_OUT" "$prefix/native-resources" "$prefix/INTEGRATION-BUILD")
     rm -rf "$stage"
-    trap - EXIT
 fi
 # The full archive is self-contained for offline Store icon installation.
 python3 "$SCRIPT_DIR/store-artwork.py" prepare "$DIST_DIR/.store-artwork" --bundled "$SRC_DIR/bundled-store-artwork"
-store_stage="$(mktemp -d)"
+if [[ "$OWNER" -eq 1 ]]; then
+    store_stage="$owner_work/store"
+else
+    store_stage="$(mktemp -d)"
+fi
 mkdir -p "$store_stage/KDE-Windows-Modern-${FULL_VER}"
 cp -a "$DIST_DIR/.store-artwork" "$store_stage/KDE-Windows-Modern-${FULL_VER}/bundled-store-artwork"
 (cd "$store_stage" && zip -qry "$FULL_OUT" "KDE-Windows-Modern-${FULL_VER}/bundled-store-artwork")
 rm -rf "$store_stage"
 if [[ "$OWNER" -eq 1 ]]; then
     # Never report a stripped integration archive as a full owner package.
-    if ! python3 "$SCRIPT_DIR/verify-owner-bundle.py" "$(git -C "$SRC_DIR" rev-parse HEAD)" "$FULL_OUT"; then
+    if ! python3 "$SCRIPT_DIR/verify-owner-bundle.py" "$build_revision" "$FULL_OUT"; then
         rm -f "$FULL_OUT"
         err "Owner bundle failed completeness or 90 MB minimum-size verification."
         exit 1
     fi
 fi
-echo "$FULL_OUT" >> "$MANIFEST"
-step "built $(basename "$FULL_OUT")  (full bundle from $(git -C "$SRC_DIR" rev-parse --short HEAD))"
+if [[ "$OWNER" -eq 0 ]]; then
+    echo "$FULL_OUT" >> "$MANIFEST"
+    step "built $(basename "$FULL_OUT")  (full bundle from ${build_revision:0:7})"
+fi
 
 # ── Prune stale artifacts ──────────────────────────────────────────
 # Anything in dist/ a full run did not build (renamed/removed components,
@@ -283,6 +305,7 @@ step "built $(basename "$FULL_OUT")  (full bundle from $(git -C "$SRC_DIR" rev-p
 if [[ "$FULL_BUILD" -eq 1 ]]; then
     for stale in "$DIST_DIR"/*.zip; do
         [[ -e "$stale" ]] || continue
+        [[ "$(basename "$stale")" != *-owner-*.zip ]] || continue
         if ! grep -qxF "$stale" "$MANIFEST"; then
             warn "Removing stale artifact: $(basename "$stale")"
             rm -f "$stale"
@@ -307,6 +330,17 @@ done
 if [[ "$VERSION_MISMATCH" -ne 0 ]]; then
     err "Bump the component metadata (or the look-and-feel Version) so they agree, then re-run."
     exit 1
+fi
+
+if [[ "$OWNER" -eq 1 ]]; then
+    if [[ "$(git -C "$SRC_DIR" rev-parse HEAD)" != "$build_revision" ||
+          -n "$(git -C "$SRC_DIR" status --porcelain --untracked-files=no)" ]]; then
+        err "Checkout changed during owner package build; no ZIP published."
+        exit 1
+    fi
+    mv -f -- "$FULL_OUT" "$owner_out"
+    echo "$owner_out" >> "$MANIFEST"
+    step "built $(basename "$owner_out")  (full bundle from ${build_revision:0:7})"
 fi
 
 echo ""

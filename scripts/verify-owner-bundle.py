@@ -3,12 +3,15 @@
 """Fail closed on incomplete, stale, corrupt or undersized private test ZIPs."""
 from collections import Counter
 from pathlib import Path, PurePosixPath
+import hashlib
 import json
 import re
 import sys
 from zipfile import ZipFile
 
 MIN_BYTES = 90_000_000  # The owner requires at least 90 MB, measured on disk.
+
+
 # Keep installation, upgrade, rollback, runtime checks, licence and artwork.
 # Exclude only known development material; upstream build sources stay intact.
 DEV_PATHS = (
@@ -42,6 +45,67 @@ def is_development_file(name):
             or (len(parts) == 1 and re.fullmatch(r"View-.*\.png", name))
             or (parts[0] == "plasma" and "tests" in parts[1:-1])
             or any(p in (".git", "__pycache__", "wm-build") for p in parts))
+
+
+def verify_resource_index(z, prefix, index, required_originals):
+    """Check the same indexed file fields consumed by the native importer.
+
+    The staging script includes Web, Media, SystemResources, SegoeIcons.ttf
+    and the whole png tree, not every original from the reference archive.
+    """
+    expected = {}
+
+    def add(path, digest, size=None):
+        parts = PurePosixPath(path).parts
+        if (not parts or PurePosixPath(path).is_absolute() or ".." in parts
+                or not re.fullmatch(r"[0-9a-f]{64}", digest)):
+            raise ValueError("Invalid indexed resource: " + path)
+        old = expected.get(path)
+        entry = (digest, size)
+        if old is not None and old != entry:
+            raise ValueError("Conflicting indexed resource: " + path)
+        expected[path] = entry
+
+    for entry in index["original_files"]:
+        path = entry["path"]
+        if (path.startswith(("original/Windows/Web/", "original/Windows/Media/",
+                             "original/Windows/SystemResources/"))
+                or path == "original/Windows/Fonts/SegoeIcons.ttf"):
+            add(path, entry["sha256"], entry["size_bytes"])
+    if not set(required_originals).issubset(expected):
+        raise ValueError("Required originals missing from resource index")
+
+    png_count = 0
+    for group in index["groups"]:
+        previews = set()
+        for frame in group["frames"]:
+            path = frame.get("png")
+            if path:
+                if not path.startswith("png/"):
+                    raise ValueError("Unexpected indexed PNG: " + path)
+                add(path, frame["png_sha256"])
+                previews.add(path)
+                png_count += 1
+        if group.get("preview_png") and group["preview_png"] not in previews:
+            raise ValueError("Group preview missing from indexed frames")
+    if not png_count:
+        raise ValueError("Resource index contains no PNG frames")
+
+    for path, (digest, size) in expected.items():
+        name = prefix + path
+        try:
+            info = z.getinfo(name)
+        except KeyError as exc:
+            raise ValueError("Missing indexed resource: " + path) from exc
+        if info.is_dir() or (size is not None and info.file_size != size):
+            raise ValueError("Indexed resource size mismatch: " + path)
+        hash_value = hashlib.sha256()
+        with z.open(info) as stream:
+            while chunk := stream.read(1024 * 1024):
+                hash_value.update(chunk)
+        if hash_value.hexdigest() != digest:
+            raise ValueError("Indexed resource hash mismatch: " + path)
+    return len(expected)
 
 
 def verify(revision, filename, min_bytes=MIN_BYTES):
@@ -92,14 +156,18 @@ def verify(revision, filename, min_bytes=MIN_BYTES):
         match = re.search(r"^pin=([0-9a-f]{40})$", stage, re.M)
         if not match or z.read(prefix + native + "RESOURCE-COMMIT").decode().strip() != match[1]:
             raise ValueError("Resource revision differs from reviewed pin")
-        json.loads(z.read(prefix + native + "resource-manifest.json"))
+        index = json.loads(z.read(prefix + native + "resource-manifest.json"))
+        required_originals = [name[len(native):] for name in required
+                              if name.startswith(native + "original/")]
+        checked_resources = verify_resource_index(z, prefix + native, index, required_originals)
         for directory in ("png/", "original/Windows/Media/"):
             if not any(n.startswith(prefix + native + directory) for n in members):
                 raise ValueError("Missing resource directory: " + directory)
         corrupt = z.testzip()
         if corrupt is not None:
             raise ValueError("Corrupt ZIP member: " + corrupt)
-    print(f"Verified private owner ZIP: {filename.stat().st_size:,} bytes, {revision}")
+    print(f"Verified private owner ZIP: {filename.stat().st_size:,} bytes, {revision}, "
+          f"{checked_resources} indexed resources")
 
 
 if __name__ == "__main__":
