@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath
 import hashlib
 import json
 import re
+import runpy
 import sys
 from zipfile import ZipFile
 
@@ -18,7 +19,8 @@ from native_assets_index import mapped_resource_entries, verify_reference_index
 # Exclude only known development material; upstream build sources stay intact.
 DEV_PATHS = (
     "tests", ".github", "plans", "AGENTS.md", "CLAUDE.md",
-    ".editorconfig", ".shellcheckrc", "CONTRIBUTING.md", "PRODUCT.md",
+    ".editorconfig", ".shellcheckrc", ".gitignore", ".gitattributes", ".gitmodules",
+    "CONTRIBUTING.md", "PRODUCT.md",
     "verify-all.sh", "docs/icon-pack", "docs/screenshots",
     "docs/PANEL_UI_CONTRACT.md", "docs/PLASMA_SYSTEMTRAY_ARCHITECTURE.md",
     "docs/RELEASE.md", "docs/STYLE.md",
@@ -32,6 +34,12 @@ DEV_PATHS = (
     "scripts/package.sh", "scripts/release.sh", "scripts/store",
     "scripts/update-plm.sh", "scripts/update-previews.sh",
     "scripts/verify-integration-bundle.py", "scripts/verify-owner-bundle.py",
+    "plasma/applets/org.kde.windowsmodern.icontasks/dev.sh",
+    "plasma/applets/org.kde.windowsmodern.icontasks/verify.sh",
+    "plasma/applets/org.kde.windowsmodern.icontasks/Messages.sh",
+    "plasma/applets/org.kde.windowsmodern.startmenu/dev.sh",
+    "plasma/applets/org.kde.windowsmodern.systemtray/dev.sh",
+    "plasma/applets/org.kde.windowsmodern.systemtray/verify.sh",
 )
 
 
@@ -95,6 +103,27 @@ def verify(revision, filename):
             "scripts/import-windows-assets.py", "scripts/native-assets-map.json",
             "scripts/native_assets_index.py", "scripts/native_assets_input.py",
             "scripts/stage-native-resources.sh",
+            "scripts/native_pe_resources.py",
+            "scripts/nixos-test-state.py",
+            "scripts/check-nixos-assets.py",
+            "scripts/check-native-icon-import.py",
+            "scripts/check-native-wallpaper.py",
+            "scripts/check-startmenu-keys.py",
+            "scripts/check-applet-load-log.py",
+            "scripts/install-translations.py",
+            "scripts/windows-shortcuts.py",
+            "scripts/desktop-contextmenu.py",
+            "scripts/app-appearance.py",
+            "scripts/store-artwork.py",
+            "scripts/set-wallpaper.sh",
+            "scripts/theme/window-frames.py",
+            "translations/zh_CN.json",
+            "config/kxmlgui5/dolphin/dolphinui.rc",
+            "config/kxmlgui5/konsole/sessionui.rc",
+            "nix/plymouth-theme.nix",
+            "scripts/theme/boot-frames.py",
+            "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/main.qml",
+            "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/main.qml",
             "scripts/install-icons.sh", "scripts/install-themes.sh",
             "scripts/install-sounds.sh", "scripts/verify-nixos-runtime.py",
             "plasma/applets/org.kde.windowsmodern.systemtray/systemtray.cpp",
@@ -102,6 +131,8 @@ def verify(revision, filename):
             "plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt",
             "plasma/containmentactions/org.kde.windowsmodern.contextmenu/CMakeLists.txt",
             "bundled-store-artwork/manifest.json",
+            "bundled-store-artwork/Microsoft_Store_logo_dark.svg",
+            "bundled-store-artwork/Microsoft_Store_logo_light.svg",
             native + "RESOURCE-COMMIT", native + "resource-manifest.json",
             native + "original/Windows/Web/Wallpaper/Windows/img0.jpg",
             native + "original/Windows/Web/Wallpaper/Windows/img19.jpg",
@@ -124,6 +155,14 @@ def verify(revision, filename):
         for directory in ("png/", "original/Windows/Media/"):
             if not any(n.startswith(prefix + native + directory) for n in members):
                 raise ValueError("Missing resource directory: " + directory)
+        store = runpy.run_path(str(Path(__file__).with_name("store-artwork.py")))
+        artwork_prefix = prefix + "bundled-store-artwork/"
+        artwork = json.loads(z.read(artwork_prefix + "manifest.json"))
+        if set(artwork) != set(store["SOURCES"]):
+            raise ValueError("Missing reviewed Store variant")
+        for mode, info in artwork.items():
+            name = store["SOURCES"][mode][0]
+            store["verify_bytes"](mode, z.read(artwork_prefix + name), info)
         corrupt = z.testzip()
         if corrupt is not None:
             raise ValueError("Corrupt ZIP member: " + corrupt)

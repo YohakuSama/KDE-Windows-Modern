@@ -72,7 +72,9 @@ class OwnerBundleTests(unittest.TestCase):
 
     def test_development_payload_rejected(self):
         for name in ("tests/run-qml-tests.sh", "plasma/applets/demo/tests/test.cpp",
-                     "docs/WINDOWS11_FIDELITY.md", "scripts/ci-build.sh", "View-1.png"):
+                     "docs/WINDOWS11_FIDELITY.md", "scripts/ci-build.sh", "View-1.png",
+                     ".gitmodules", "plasma/applets/org.kde.windowsmodern.systemtray/dev.sh",
+                     "plasma/applets/org.kde.windowsmodern.icontasks/verify.sh"):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temp:
                 path = Path(temp) / "owner.zip"
                 with ZipFile(path, "w") as z:

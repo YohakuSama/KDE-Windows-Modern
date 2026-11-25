@@ -34,7 +34,7 @@ if [ ! -f "${PLM_DIR}/CMakeLists.txt" ]; then
         err "The Plasma Login Manager source is missing (${PLM_DIR} is empty)."
         err "This copy has no git submodules: GitHub's \"Download ZIP\" leaves them out."
         err "Use the release bundle (KDE-Windows-Modern-<version>.zip on the Releases page),"
-        err "or clone with:  git clone --recursive https://github.com/Jeysef/KDE-Windows-Modern.git"
+        err "or clone with:  git clone --recursive https://github.com/YohakuSama/KDE-Windows-Modern.git"
         exit 1
     fi
 fi

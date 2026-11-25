@@ -12,6 +12,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 STORE = runpy.run_path(str(Path(__file__).with_name("store-artwork.py")))
+THEME_POLICY = runpy.run_path(str(Path(__file__).with_name("verify-owner-bundle.py")))
 
 
 def verify(revision, filename):
@@ -32,9 +33,9 @@ def verify(revision, filename):
         if len(roots) != 1:
             raise ValueError("Archive must contain a single top-level directory")
         prefix = next(iter(roots)) + "/"
-        excluded = ("docs/PROGRESS.md", "docs/icon-pack/00-inventory.md")
-        if any(prefix + name in members for name in excluded):
-            raise ValueError("Historical development files leaked into installable archive")
+        for name in members:
+            if THEME_POLICY["is_development_file"](name[len(prefix):]):
+                raise ValueError("Development payload in integration ZIP: " + name)
         required = (
             "INTEGRATION-BUILD", "install.sh", "install-nixos.sh",
             "config/kxmlgui5/dolphin/dolphinui.rc",

@@ -48,8 +48,8 @@ bash install.sh upgrade
 bash install.sh uninstall
 ```
 
-The installer builds native plugins against the running NixOS Plasma/Qt
-version. It verifies plugin identities, preserves the existing layout on
+The installer builds the tray, taskbar and desktop context-menu plugins
+against the running NixOS Plasma/Qt version. It verifies plugin identities, preserves the existing layout on
 upgrade, and retains the original uninstall baseline. A failed upgrade
 attempts to restore the previous runtime. It does not edit
 `configuration.nix`, Home Manager or `/nix/store`, and does not replace the
@@ -57,7 +57,7 @@ system login manager. A new login may be required for KWin or Qt changes.
 
 ### Build the complete private theme ZIP
 
-From a fresh source checkout:
+To clone and package the current source (run from the desired parent directory):
 
 ```bash
 nix-shell -p git zip unzip python3 curl gnutar xz --run '
@@ -77,8 +77,9 @@ after successful packaging.
 
 This source-build package includes theme components, original mapped
 resources, installation and rollback dependencies, and user documentation.
-It excludes development tests, CI, reference screenshots, build caches,
-unused fonts, complete MUN files and unused icon frames. The runtime resource
+All full installable ZIPs exclude developer scripts, CI, development tests,
+reference screenshots and build caches. The private package additionally
+excludes unused fonts, complete MUN files and unused icon frames. The runtime resource
 cache is reused by pin; size alone does not determine completeness.
 
 ### Packages are different
