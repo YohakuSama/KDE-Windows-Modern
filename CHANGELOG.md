@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Open a shared local Search home from the Start field and taskbar search action. Use real recent/popular application models and settings queries, explicit search-role artwork and hover/press states; omit online promotions. Default the clock to the system region's time and date, preserve explicit user formats, and resolve common browser media-source identities and icons from the live MPRIS session.
+
 - Let the taskbar search box shrink within its allocated cell, keep the icon inside narrow cells, and suppress repeated keyboard activation of Search, Task View and Show Desktop. Orient the Show Desktop sliver for vertical panels and avoid toggling out of desktop mode during a drag. Run the existing OSD and snap-key JavaScript tests in CI.
 
 - Reposition existing on-screen displays when their output or screen geometry changes, and stop tracking closed displays. Use KWin's actual maximize state and explicit side/corner actions for windows placed without a native tile.

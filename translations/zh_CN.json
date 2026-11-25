@@ -508,15 +508,20 @@
   "Unlocking failed": "解锁失败",
   "Caps Lock is on": "大写锁定已开启",
   "(or scan your fingerprint on the reader)": "（或扫描你的指纹）",
-  "(or scan your smartcard)": "（或扫描你的智能卡）"
-,
-  "%1 devices connected": "已连接 %1 台设备"
-,
+  "(or scan your smartcard)": "（或扫描你的智能卡）",
+  "%1 devices connected": "已连接 %1 台设备",
   "%1 until fully charged": "距离充满还需 %1",
   "%1 remaining": "剩余 %1",
   "%1 battery health": "%1 电池健康度",
   "Unmute": "取消静音",
   "Mute": "静音",
   "Test sound": "测试声音",
-  "Audio settings": "音频设置"
+  "Audio settings": "音频设置",
+  "Suggested": "建议",
+  "Quick searches": "快捷搜索",
+  "Top apps": "常用应用",
+  "Color settings": "颜色设置",
+  "Search settings": "搜索设置",
+  "Colors": "颜色",
+  "Windows numeric date": "Windows 数字日期"
 }

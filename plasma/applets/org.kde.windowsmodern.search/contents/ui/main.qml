@@ -31,6 +31,16 @@ PlasmoidItem {
     readonly property bool horizontal: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
 
     function openSearch(): void {
+        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
+        for (const applet of applets) {
+            if (!applet || applet.pluginName !== "org.kde.windowsmodern.startmenu") continue;
+            const action = applet.internalAction("windowsModernSearch");
+            if (action && action.enabled) {
+                action.trigger();
+                return;
+            }
+        }
+        // A different launcher or an older Start version remains usable.
         DBus.SessionBus.asyncCall({
             service: "org.kde.plasmashell",
             path: "/PlasmaShell",
@@ -79,7 +89,7 @@ PlasmoidItem {
     TaskbarButton {
         anchors.fill: parent
         visible: !root.showBox
-        iconName: "edit-find-symbolic"
+        iconName: searchBox.iconSource
         text: i18nc("@action:button taskbar button", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")
         onTriggered: root.openSearch()

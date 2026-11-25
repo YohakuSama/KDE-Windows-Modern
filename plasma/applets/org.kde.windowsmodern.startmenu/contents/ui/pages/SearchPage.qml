@@ -272,7 +272,9 @@ Item {
         section.delegate: Rectangle {
             width: resultsView.contentColumnWidth
             height: headerRow.implicitHeight + Kirigami.Units.smallSpacing
-            color: "transparent"
+            radius: 4
+            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                Kirigami.Theme.textColor.b, headerMouse.containsPress ? 0.12 : headerMouse.containsMouse ? 0.07 : 0)
 
             readonly property string category: section
 
@@ -307,7 +309,9 @@ Item {
             }
 
             MouseArea {
+                id: headerMouse
                 anchors.fill: parent
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: searchPage.toggleCollapsed(section)
             }

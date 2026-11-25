@@ -82,6 +82,20 @@ TestCase {
         compare(DateFormat.clockFormats(3, "h:mm AP").time, "h:mm AP");
     }
 
+    function test_regionalTime_data() {
+        return ["en_US", "en_GB", "zh_CN", "zh_TW", "de_DE", "ja_JP"].map(n => ({tag: n, locale: n}));
+    }
+    function test_regionalTime(data) {
+        const loc = Qt.locale(data.locale);
+        const pattern = loc.timeFormat(Locale.ShortFormat);
+        const formats = DateFormat.clockFormats(3, pattern);
+        const sample = new Date(2026, 10, 25, 19, 17, 9);
+        compare(formats.time, pattern);
+        compare(loc.toString(sample, formats.time), loc.toString(sample, Locale.ShortFormat));
+        verify(loc.toString(sample, formats.seconds).length >= loc.toString(sample, formats.time).length);
+        compare(DateFormat.clockLocaleName(3, data.locale), data.locale);
+    }
+
     function test_shortDateFullYear_patterns() {
         compare(DateFormat.shortDateFullYear("dd.MM.yy"), "dd.MM.yyyy");
         compare(DateFormat.shortDateFullYear("yy-MM-dd"), "yyyy-MM-dd");

@@ -87,6 +87,15 @@ Item {
         root.visible = true;
     }
 
+    // Both taskbar Search and Start's own input enter this same surface.
+    function openSearch() {
+        if (!root.visible) toggleMenu();
+        if (!root.visible) return;
+        root.searching = true;
+        root.requestActivate();
+        Qt.callLater(startSearch.focusSearch);
+    }
+
     Plasmoid.status: root.visible ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
 
     PlasmaCore.Dialog {
@@ -116,7 +125,7 @@ Item {
                 : PlasmaCore.Dialog.StandardBackground;
         }
 
-        property bool searching: startSearch.searchText !== ""
+        property bool searching: false
 
         // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results.
         // Pinned and All now share the same scrollable home.
@@ -150,6 +159,7 @@ Item {
 
         function reset() {
             startSearch.searchText = "";
+            searching = false;
             leftColumnState = 0;
             showMoreRecent = false;
             // Nothing highlighted until hovered or picked with the arrow keys,
@@ -181,8 +191,8 @@ Item {
                 || (Plasmoid.configuration.startMenuSize === 0 && screen.width >= 1440)
             readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
                 && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
-            readonly property int wantedWidth: largeLayout ? 768 : 560
-            readonly property int wantedHeight: largeLayout ? 720 : 640
+            readonly property int wantedWidth: root.searching ? 776 : (largeLayout ? 768 : 560)
+            readonly property int wantedHeight: root.searching ? 690 : (largeLayout ? 720 : 640)
             width: Math.max(1, Math.min(wantedWidth, screen.width > 0
                 ? screen.width - (main.verticalPanel ? main.panelExtent : 0) - 2 * margin : wantedWidth))
             height: Math.max(1, Math.min(wantedHeight, screen.height > 0
@@ -282,7 +292,10 @@ Item {
                 anchors.margins: rootItem.margin
                 anchors.topMargin: 16
 
+                searchMode: root.searching
+                onSearchRequested: root.searching = true
                 onSearchTextChanged: {
+                    if (startSearch.searchText.length > 0) root.searching = true;
                     sharedContextMenu?.close();
                     // Explicitly push the query to Milou ResultsView.
                     searchPage.resultsView.queryString = startSearch.searchText;
@@ -306,7 +319,10 @@ Item {
                     } else if (powerMenu.opened) {
                         powerMenu.close();
                     } else if (startSearch.searchText !== "") {
-                        root.reset();
+                        startSearch.searchText = "";
+                        startSearch.focusSearch();
+                    } else if (root.searching) {
+                        root.closeMenu();
                     } else if (allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {
@@ -328,7 +344,7 @@ Item {
                 anchors.right: parent.right
                 anchors.margins: rootItem.margin
                 anchors.topMargin: 22
-                anchors.bottomMargin: 0
+                anchors.bottomMargin: root.searching ? 12 : 0
 
                 AllAppsPage {
                     id: allAppsPage
@@ -461,10 +477,28 @@ Item {
                     }
                 }
 
+                Loader {
+                    id: searchHome
+                    anchors.fill: parent
+                    active: root.searching && startSearch.searchText.length === 0
+                    visible: active
+                    sourceComponent: SearchHome {
+                        suggestedModel: rootItem.showRecentSection ? recentUsage : null
+                        topAppsModel: Plasmoid.configuration.showRecentSection
+                            && Plasmoid.configuration.showRecentApps ? categoryPopularity : null
+                        onSearchRequested: query => {
+                            searchPage.resultsView.singleRunner = "krunner_systemsettings";
+                            startSearch.searchText = query;
+                            startSearch.focusSearch();
+                        }
+                        onApplicationActivated: root.closeMenu()
+                    }
+                }
+
                 SearchPage {
                     id: searchPage
                     anchors.fill: parent
-                    visible: root.leftColumnState === 2
+                    visible: root.searching && startSearch.searchText.length > 0
                     scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     onFocusSearchRequested: startSearch.focusSearch()
                     onContextMenuRequested: function(actions, x, y, context) {
@@ -479,7 +513,8 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: 56
+                visible: !root.searching
+                height: visible ? 56 : 0
                 color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                Kirigami.Theme.textColor.b, 0.035)
 
@@ -675,6 +710,10 @@ Item {
             }
 
             function navigateFromSearch(direction) {
+                if (searchHome.active) {
+                    if (searchHome.item) searchHome.item.focusFirst();
+                    return;
+                }
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 const page = root.leftColumnState === 0 ? root.pinnedPage
@@ -689,6 +728,10 @@ Item {
             }
 
             function focusActivePageResults() {
+                if (searchHome.active) {
+                    if (searchHome.item) searchHome.item.focusFirst();
+                    return;
+                }
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 if (root.leftColumnState === 0) {
@@ -697,12 +740,13 @@ Item {
                     allAppsPage.tryActivate(Math.max(0, allAppsPage.activeView.currentIndex));
                 } else if (root.leftColumnState === 2 && searchPage.resultsView.count > 0) {
                     searchPage.tryActivate(Math.max(0, searchPage.resultsView.currentIndex), 0);
-                } else {
+                } else if (!root.searching) {
                     accountButton.forceActiveFocus();
                 }
             }
 
             function activateCurrentItem() {
+                if (searchHome.active) return;
                 if (root.leftColumnState === 0) {
                     root.pinnedPage?.activateCurrent();
                 } else if (root.leftColumnState === 1) {
@@ -769,8 +813,11 @@ Item {
                     event.accepted = true;
                     if (powerMenu.opened) {
                         powerMenu.close();
+                    } else if (root.searching && startSearch.searchText.length > 0) {
+                        startSearch.searchText = "";
+                        startSearch.focusSearch();
                     } else if (root.searching) {
-                        root.reset();
+                        root.closeMenu();
                     } else if (root.leftColumnState === 1 && allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {

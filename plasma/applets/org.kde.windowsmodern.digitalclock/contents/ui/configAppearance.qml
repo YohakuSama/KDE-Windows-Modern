@@ -20,6 +20,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.config as KConfig
 import org.kde.kcmutils as KCMUtils
 import org.kde.kirigami as Kirigami
+import "code/dateformat.js" as DateFormat
 
 KCMUtils.SimpleKCM {
     id: appearancePage
@@ -38,7 +39,7 @@ KCMUtils.SimpleKCM {
     property alias cfg_showSeconds: showSecondsComboBox.currentIndex
 
     property alias cfg_showDate: showDate.checked
-    property string cfg_dateFormat: "shortDate"
+    property string cfg_dateFormat: "regionalDate"
     property alias cfg_customDateFormat: customDateFormat.text
     property alias cfg_use24hFormat: use24hFormat.currentIndex
     property alias cfg_dateDisplayFormat: dateDisplayFormat.currentIndex
@@ -204,14 +205,14 @@ KCMUtils.SimpleKCM {
                         formatter(d) { return Qt.formatDate(d, Qt.locale(), Locale.LongFormat); }
                     },
                     {
-                        label: i18nc("@item:inlistbox date display option, e.g. all numeric", "Short date"),
+                        label: i18nc("@item:inlistbox date display option, e.g. all numeric", "Windows numeric date"),
                         name: "shortDate",
                         formatter(d) { return Qt.formatDate(d, "yyyy/M/d"); }
                     },
                     {
                         label: i18nc("@item:inlistbox date display option", "Regional short date"),
                         name: "regionalDate",
-                        formatter(d) { return Qt.formatDate(d, Qt.locale(), Locale.ShortFormat); }
+                        formatter(d) { return Qt.locale().toString(d, DateFormat.shortDateFullYear(Qt.locale().dateFormat(Locale.ShortFormat))); }
                     },
                     {
                         label: i18nc("@item:inlistbox date display option, yyyy-mm-dd", "ISO date"),

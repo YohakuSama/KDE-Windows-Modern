@@ -20,6 +20,8 @@ RowLayout {
     height: implicitHeight
 
     property alias searchText: searchFieldInput.text
+    property bool searchMode: false
+    signal searchRequested
 
     signal searchFocusResults
     signal searchNavUp
@@ -43,6 +45,11 @@ RowLayout {
         Layout.fillWidth: true
         focus: true
         placeholderText: i18n("Search for apps, settings, and files")
+        hoverEnabled: true
+        TapHandler {
+            gesturePolicy: TapHandler.DragThreshold
+            onTapped: searchBox.searchRequested()
+        }
         Layout.preferredHeight: 32
         topPadding: 4
         bottomPadding: 4
@@ -50,8 +57,11 @@ RowLayout {
         font.pixelSize: 14
 
         background: Rectangle {
-            color: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Dark
-                ? Qt.rgba(0, 0, 0, 0.22) : Qt.rgba(1, 1, 1, 0.68)
+            readonly property bool dark: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Dark
+            color: dark
+                ? (searchFieldInput.hovered && !searchBox.searchMode ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.22))
+                : (searchFieldInput.hovered && !searchBox.searchMode ? Qt.rgba(1, 1, 1, 0.9) : Qt.rgba(1, 1, 1, 0.68))
+            Behavior on color { ColorAnimation { duration: 100 } }
             radius: height / 2
             border.width: 1
             border.color: Qt.rgba(Kirigami.Theme.textColor.r,
@@ -97,13 +107,13 @@ RowLayout {
             searchBox.searchActivateFirstResult();
         }
 
-        Kirigami.Icon {
-            source: "search"
+        SearchGlyph {
             anchors.left: searchFieldInput.left
             anchors.verticalCenter: searchFieldInput.verticalCenter
-            anchors.leftMargin: Kirigami.Units.smallSpacing * 2
-            height: Kirigami.Units.iconSizes.small
+            anchors.leftMargin: 12
+            height: 18
             width: height
+            accented: true
         }
     }
 

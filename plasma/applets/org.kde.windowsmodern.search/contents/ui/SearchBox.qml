@@ -33,6 +33,7 @@ MouseArea {
     property string text
     property string description
     property string placeholder
+    readonly property alias iconSource: magnifier.resolvedSource
 
     // Preview/test hooks: draw a state without a pointer.
     property bool forceHovered: false
@@ -82,11 +83,11 @@ MouseArea {
 
         // WinUI ControlFillColor{Default,Secondary,Tertiary} and
         // ControlStrokeColorDefault, dark / light.
-        readonly property color restFill: box.darkTheme ? Qt.rgba(1, 1, 1, 0x0F / 255) : Qt.rgba(1, 1, 1, 0xB3 / 255)
-        readonly property color hoverFill: box.darkTheme ? Qt.rgba(1, 1, 1, 0x15 / 255)
-                                                         : Qt.rgba(0xF9 / 255, 0xF9 / 255, 0xF9 / 255, 0x80 / 255)
-        readonly property color pressedFill: box.darkTheme ? Qt.rgba(1, 1, 1, 0x08 / 255)
-                                                           : Qt.rgba(0xF9 / 255, 0xF9 / 255, 0xF9 / 255, 0x4D / 255)
+        // Owner's Windows 11 reference: quiet outlined rest, visibly
+        // filled hover and a reduced fill on press.
+        readonly property color restFill: box.darkTheme ? Qt.rgba(1, 1, 1, 0.02) : Qt.rgba(1, 1, 1, 0.55)
+        readonly property color hoverFill: box.darkTheme ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(1, 1, 1, 0.9)
+        readonly property color pressedFill: box.darkTheme ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(1, 1, 1, 0.68)
 
         objectName: "wmSearchPill"
         readonly property int inset: Math.round(height * 12 / 32)
@@ -106,7 +107,7 @@ MouseArea {
             ColorAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
         }
 
-        Kirigami.Icon {
+        SearchGlyph {
             id: magnifier
             objectName: "searchBoxIcon"
 
@@ -114,12 +115,8 @@ MouseArea {
             x: pill.showPlaceholder ? (pill.mirrored ? pill.width - pill.inset - width : pill.inset)
                                     : Math.round((pill.width - width) / 2)
             width: Math.round(pill.height / 2)
-            roundToIconSize: false
             height: width
-            source: box.iconName
-            fallback: "edit-find"
-            isMask: true
-            color: Kirigami.Theme.textColor
+            iconName: box.iconName
         }
 
         Text {
