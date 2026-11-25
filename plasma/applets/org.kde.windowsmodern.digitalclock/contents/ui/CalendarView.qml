@@ -370,7 +370,7 @@ ColumnLayout {
             glyphColor: palette.textSecondary
             hoverColor: palette.hover
             pressedColor: palette.pressed
-            onClicked: calendarView.page(-1)
+            onActivated: calendarView.page(-1)
             Accessible.name: i18n("Previous")
         }
 
@@ -379,7 +379,7 @@ ColumnLayout {
             glyphColor: palette.textSecondary
             hoverColor: palette.hover
             pressedColor: palette.pressed
-            onClicked: calendarView.page(1)
+            onActivated: calendarView.page(1)
             Accessible.name: i18n("Next")
         }
     }

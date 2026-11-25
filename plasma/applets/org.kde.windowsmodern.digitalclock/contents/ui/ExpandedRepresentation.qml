@@ -49,7 +49,7 @@ FocusScope {
     Binding {
         target: expandedRoot.nativePopup
         property: "margin"
-        value: 8
+        value: 12
         when: expandedRoot.nativePopup !== null
     }
     Binding {
@@ -98,9 +98,8 @@ FocusScope {
         event.accepted = true;
     }
 
-    // Two independently framed sections in the native popup. The native
-    // window retains its compositor-managed blur and placement. Do not
-    // create a second focus-grabbing window to simulate the separation.
+    // Two inset content sections share the native popup frame and blur.
+    // Avoid nested outlines or a second focus-grabbing window.
     readonly property real calendarBodyBudget: Math.max(0, popupHeight
         - 2 * margin - sectionGap - history.minimumSectionHeight - 2 * sectionInset
         - calendarHeaderHeight - focusFooterHeight - 2 * bodyInset - 2)
@@ -119,10 +118,11 @@ FocusScope {
             Layout.fillHeight: true
             Layout.minimumHeight: history.minimumSectionHeight + 2 * expandedRoot.sectionInset
             Layout.preferredHeight: 224
+            // The native popup already owns the outline, shadow and blur.
+            // Do not draw a second heavy frame inside it.
             radius: 8
             color: palette.panelTint
-            border.width: 1
-            border.color: palette.panelBorder
+            border.width: 0
 
             NotificationHistory {
                 id: history
@@ -145,10 +145,11 @@ FocusScope {
             Layout.preferredHeight: calendarContent.implicitHeight
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
+            // The native popup already owns the outline, shadow and blur.
+            // Do not draw a second heavy frame inside it.
             radius: 8
             color: palette.panelTint
-            border.width: 1
-            border.color: palette.panelBorder
+            border.width: 0
 
             ColumnLayout {
                 id: calendarContent
@@ -181,6 +182,7 @@ FocusScope {
                     FlyoutButton {
                         Layout.preferredWidth: 24
                         Layout.preferredHeight: 24
+                        quiet: true
                         text: expandedRoot.calendarExpanded ? i18n("Collapse calendar") : i18n("Expand calendar")
                         icon.name: expandedRoot.calendarExpanded ? "go-down-symbolic" : "go-up-symbolic"
                         display: PlasmaComponents.AbstractButton.IconOnly
@@ -193,7 +195,7 @@ FocusScope {
                     Layout.fillWidth: true
                     implicitHeight: 1
                     visible: expandedRoot.calendarExpanded
-                    color: palette.panelBorder
+                    color: Qt.rgba(palette.text.r, palette.text.g, palette.text.b, 0.07)
                 }
 
                 ColumnLayout {
@@ -296,7 +298,7 @@ FocusScope {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 1
-                    color: palette.panelBorder
+                    color: Qt.rgba(palette.text.r, palette.text.g, palette.text.b, 0.07)
                 }
 
                 RowLayout {
@@ -315,6 +317,7 @@ FocusScope {
                         Layout.preferredHeight: 24
                         enabled: !!expandedRoot.focusSession && !expandedRoot.focusSession.running
                             && expandedRoot.focusSession.durationMinutes > 5
+                        quiet: true
                         text: i18n("Decrease focus duration")
                         icon.name: "list-remove"
                         display: PlasmaComponents.AbstractButton.IconOnly
@@ -337,6 +340,7 @@ FocusScope {
                         Layout.preferredHeight: 24
                         enabled: !!expandedRoot.focusSession && !expandedRoot.focusSession.running
                             && expandedRoot.focusSession.durationMinutes < 240
+                        quiet: true
                         text: i18n("Increase focus duration")
                         icon.name: "list-add"
                         display: PlasmaComponents.AbstractButton.IconOnly

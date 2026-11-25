@@ -34,6 +34,12 @@ Item {
             selector.currentIndex = 2;
             tryCompare(selector, "displayText", "视图：按类别分组");
             verify(selector.implicitWidth > 0);
+            const label = findChild(selector, "wmViewSelectorText");
+            verify(label !== null && label.visible);
+            tryVerify(() => label.width >= label.implicitWidth);
+            selector.labelFormat = "%1";
+            tryCompare(label, "text", "按类别分组");
+            tryVerify(() => label.width >= label.implicitWidth);
         }
 
         function test_popup() {

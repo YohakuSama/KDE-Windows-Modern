@@ -73,7 +73,7 @@ Item {
             try {
                 popup.parent = mockNativePopup.contentItem;
                 tryCompare(popup, "nativePopup", mockNativePopup);
-                tryCompare(mockNativePopup, "margin", 8);
+                tryCompare(mockNativePopup, "margin", 12);
             } finally {
                 popup.parent = root;
                 tryCompare(popup, "nativePopup", null);
@@ -95,6 +95,13 @@ Item {
                 if (result !== null) return result;
             }
             return null;
+        }
+        function test_singleFrameAndQuietButtons() {
+            const notificationPanel = findChild(popup, "wmNotificationPanel");
+            const calendarPanel = findChild(popup, "wmCalendarPanel");
+            verify(notificationPanel !== null && calendarPanel !== null);
+            compare(notificationPanel.border.width, 0);
+            compare(calendarPanel.border.width, 0);
         }
         function test_calendarFitsWithoutOuterScroll() {
             const content = findChild(popup, "wmClockContent");

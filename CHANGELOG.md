@@ -6,6 +6,12 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Screenshot feedback: Start and calendar chrome
+
+- Use a fixed 12 logical-pixel native popup gap for Start and the clock. Keep Start's view label visible using the selected choice and independent translated label metrics.
+- Remove duplicate internal notification/calendar outlines, soften dividers, and use quiet icon-only/disabled notification controls without always-on boxes. Preserve native shadow, blur and placement.
+- Use small stroked month navigation chevrons with keyboard activation; add screenshot-derived layout regression checks.
+
 ### Popup lifecycle and Start view control
 
 - Remove the inherited Start view selector's width feedback path by using a measured Fluent ComboBox with native selection behavior and a matching popup. Guard undefined screen geometry during panel initialization.

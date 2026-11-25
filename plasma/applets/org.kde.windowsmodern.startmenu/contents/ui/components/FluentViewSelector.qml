@@ -28,7 +28,7 @@ QQC2.ComboBox {
 
     model: choices
     font: Kirigami.Theme.defaultFont
-    displayText: labelFormat.replace("%1", currentText)
+    displayText: labelFormat.replace("%1", choices[currentIndex] ?? choices[0] ?? "")
     implicitWidth: Math.ceil(widestLabel) + 42
     implicitHeight: Math.max(fluent.controlHeight, Math.ceil(metrics.height) + 12)
     leftPadding: mirrored ? 28 : 10
@@ -38,10 +38,12 @@ QQC2.ComboBox {
     hoverEnabled: true
 
     contentItem: Text {
+        objectName: "wmViewSelectorText"
         text: control.displayText
         font: control.font
         textFormat: Text.PlainText
         color: control.enabled ? fluent.text : fluent.textDisabled
+        horizontalAlignment: Text.AlignLeft
         elide: Text.ElideRight
         verticalAlignment: Text.AlignVCenter
     }
@@ -61,9 +63,9 @@ QQC2.ComboBox {
     background: Rectangle {
         radius: fluent.controlRadius
         color: control.down ? fluent.controlPressed
-            : control.hovered || control.activeFocus ? fluent.controlHover : fluent.controlFill
-        border.width: 1
-        border.color: control.activeFocus ? fluent.accent : fluent.controlBorder
+            : control.hovered || control.visualFocus ? fluent.controlHover : "transparent"
+        border.width: control.visualFocus ? 1 : 0
+        border.color: fluent.accent
     }
 
     delegate: QQC2.ItemDelegate {

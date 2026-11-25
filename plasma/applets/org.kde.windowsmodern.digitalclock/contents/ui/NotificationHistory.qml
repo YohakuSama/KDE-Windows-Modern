@@ -82,6 +82,7 @@ ColumnLayout {
 
         FlyoutButton {
             Layout.preferredWidth: 28
+            quiet: true
             text: history.effectiveDnd && !history.manualDnd
                 ? i18n("Do not disturb is active due to a rule or application")
                 : i18n("Manual do not disturb")
@@ -96,6 +97,7 @@ ColumnLayout {
         }
 
         FlyoutButton {
+            quiet: true
             text: i18n("Clear all")
             enabled: notificationModel.count > 0
             onClicked: history.clearAll()

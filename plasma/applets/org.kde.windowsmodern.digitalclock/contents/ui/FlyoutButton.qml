@@ -18,11 +18,11 @@ PlasmaComponents.Button {
     font: Kirigami.Theme.defaultFont
     background: Rectangle {
         radius: fluent.controlRadius
-        color: control.down ? fluent.controlPressed
-            : control.hovered || control.activeFocus || control.checked || control.attentionActive ? fluent.controlHover
+        color: !control.enabled ? "transparent"
+            : control.down ? fluent.controlPressed
+            : control.hovered || control.visualFocus || control.checked || control.attentionActive ? fluent.controlHover
             : control.quiet ? "transparent" : fluent.controlFill
-        border.width: control.activeFocus || !control.quiet ? 1 : 0
-        border.color: control.activeFocus ? fluent.accent : fluent.controlBorder
-        opacity: control.enabled ? 1 : 0.45
+        border.width: control.enabled && (control.visualFocus || !control.quiet) ? 1 : 0
+        border.color: control.visualFocus ? fluent.accent : fluent.controlBorder
     }
 }

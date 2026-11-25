@@ -10,11 +10,12 @@ import QtQuick
 
 import org.kde.kirigami as Kirigami
 
-// Small Windows-11-style triangular button used for month navigation.
+// Compact stroke chevron; retain the 28px target and actual calendar action.
 MouseArea {
     id: root
 
     property bool up: true
+    signal activated()
 
     property color glyphColor: "#FFFFFF"
     property color hoverColor: "#3F3F3F"
@@ -27,12 +28,18 @@ MouseArea {
 
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
+    activeFocusOnTab: true
+    Accessible.role: Accessible.Button
+    Accessible.onPressAction: root.activated()
+    onClicked: root.activated()
+    Keys.onReturnPressed: root.activated()
+    Keys.onSpacePressed: root.activated()
 
     Rectangle {
         anchors.fill: parent
         radius: 4
         color: root.containsPress ? root.pressedColor
-                                  : (root.containsMouse ? root.hoverColor : "transparent")
+                                  : (root.containsMouse || root.activeFocus ? root.hoverColor : "transparent")
 
         Behavior on color {
             ColorAnimation {
@@ -45,8 +52,8 @@ MouseArea {
     Canvas {
         id: glyph
         anchors.centerIn: parent
-        width: 8
-        height: 6
+        width: 12
+        height: 8
 
         Connections {
             target: root
@@ -57,13 +64,15 @@ MouseArea {
         onPaint: {
             const ctx = getContext("2d");
             ctx.reset();
-            ctx.fillStyle = root.glyphColor;
+            ctx.strokeStyle = root.glyphColor;
+            ctx.lineWidth = 1.4;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
             ctx.beginPath();
-            ctx.moveTo(0, root.up ? 5 : 1);
-            ctx.lineTo(4, root.up ? 0 : 6);
-            ctx.lineTo(8, root.up ? 5 : 1);
-            ctx.closePath();
-            ctx.fill();
+            ctx.moveTo(2, root.up ? 6 : 2);
+            ctx.lineTo(6, root.up ? 2 : 6);
+            ctx.lineTo(10, root.up ? 6 : 2);
+            ctx.stroke();
         }
     }
 }

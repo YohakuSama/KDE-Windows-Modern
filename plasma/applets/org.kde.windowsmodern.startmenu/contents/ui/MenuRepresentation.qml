@@ -48,6 +48,8 @@ Item {
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
     readonly property bool menuShown: root.visible
+    // Logical pixels; let Qt apply the output scale exactly once.
+    readonly property int popupGap: 12
 
     // Native Plasma positions the popup relative to an Item in the panel's
     // window, including its real output and work area on Wayland and X11.
@@ -92,7 +94,7 @@ Item {
         flags: Qt.Dialog
         visualParent: popupAnchor
         location: Plasmoid.location
-        floating: Kirigami.Units.smallSpacing
+        floating: main.popupGap
         visible: false
         hideOnWindowDeactivate: true
 
@@ -402,12 +404,13 @@ Item {
 
                                 FluentViewSelector {
                                     id: viewSelector
-                                    Layout.preferredWidth: Math.max(132, implicitWidth)
-                                    Layout.maximumWidth: Math.max(132, rootItem.width / 2)
+                                    Layout.minimumWidth: Math.min(implicitWidth, Math.max(1, rootItem.width / 2))
+                                    Layout.preferredWidth: implicitWidth
+                                    Layout.maximumWidth: Math.max(Layout.minimumWidth, rootItem.width / 2)
                                     Layout.preferredHeight: implicitHeight
                                     choices: [i18n("List"), i18n("Grid"), i18n("Category")]
-                                    currentIndex: Plasmoid.configuration.allAppsViewMode
-                                    labelFormat: i18n("View: %1")
+                                    currentIndex: Math.max(0, Math.min(2, Number(Plasmoid.configuration.allAppsViewMode) || 0))
+                                    Accessible.name: i18n("View: %1", displayText)
                                     onActivated: index => {
                                         root.leftColumnState = 1;
                                         allAppsPage.resetCategory();
@@ -439,14 +442,14 @@ Item {
                 anchors.right: parent.right
                 height: 56
                 color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, 0.035)
+                               Kirigami.Theme.textColor.b, 0.025)
 
                 Rectangle {
                     anchors.top: parent.top
                     width: parent.width
                     height: 1
                     color: Kirigami.Theme.textColor
-                    opacity: Theme.separatorOpacity
+                    opacity: 0.08
                 }
 
                 RowLayout {
