@@ -147,9 +147,10 @@ ColumnLayout {
                     Layout.fillHeight: true
 
                     Image {
+                        id: thumbnail
                         objectName: "wmClipboardImage"
                         anchors.fill: parent
-                        visible: entry.hasImage
+                        visible: entry.hasImage && status !== Image.Error
                         source: entry.previewUrl
                         fillMode: Image.PreserveAspectFit
                         horizontalAlignment: Image.AlignLeft
@@ -163,8 +164,8 @@ ColumnLayout {
                     PlasmaComponents3.Label {
                         objectName: "wmClipboardText"
                         anchors.fill: parent
-                        visible: !entry.hasImage
-                        text: entry.displayText
+                        visible: !entry.hasImage || thumbnail.status === Image.Error
+                        text: entry.displayText || (entry.hasImage ? i18n("Image preview unavailable") : "")
                         textFormat: Text.PlainText
                         wrapMode: Text.Wrap
                         maximumLineCount: 3

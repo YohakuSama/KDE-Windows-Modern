@@ -48,7 +48,7 @@ Item {
             tryCompare(clear, "visible", false);
             tryCompare(empty, "visible", true);
             fixtureRows.append({uuid:"native-text", display:"Example text", decoration:"", starred:false});
-            fixtureRows.append({uuid:"native-image", display:"640x480", decoration:"file:///nonexistent-test-image.png", starred:false});
+            fixtureRows.append({uuid:"native-image", display:"640x480", decoration:String(Qt.resolvedUrl("fixtures/clipboard-preview.svg")), starred:false});
             tryCompare(list, "count", 2);
             tryCompare(empty, "visible", false);
             tryCompare(clear, "visible", true);
@@ -58,6 +58,10 @@ Item {
             compare(textCard.displayText, "Example text");
             verify(!textCard.hasImage);
             verify(imageCard.hasImage);
+            const image = findChild(imageCard, "wmClipboardImage");
+            verify(image);
+            tryCompare(image, "status", Image.Ready);
+            verify(image.sourceSize.width > 0 && image.sourceSize.height > 0);
             mouseClick(textCard, 20, 25);
             compare(mockHistory.selectedUuid, "native-text");
             mouseClick(imageCard, 20, 25);

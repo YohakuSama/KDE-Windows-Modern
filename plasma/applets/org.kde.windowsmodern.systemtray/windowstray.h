@@ -106,7 +106,8 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     // Hide redundant delegates, not the native applets/backends. The
     // notification applet still presents real desktop toast notifications.
     if (itemId == QLatin1String("org.kde.plasma.notifications")
-        || itemId == QLatin1String("org.kde.plasma.brightness")) {
+        || itemId == QLatin1String("org.kde.plasma.brightness")
+        || itemId == QLatin1String("org.kde.plasma.userswitcher")) {
         return Status::HiddenStatus;
     }
     if (itemId == QLatin1String("org.kde.plasma.battery")) {
@@ -118,17 +119,17 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     if (!pinned && status == Status::HiddenStatus) {
         return Status::HiddenStatus;
     }
-    // Passive native device applets are not overflow decorations. Keep
-    // their backends loaded; show them when used or explicitly configured.
+    // Passive device and empty clipboard applets are not decorations.
+    // This also overrides stale forced-overflow entries from old configs.
+    // Their backends stay loaded; configured placement applies when active.
     const bool idleDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
         || itemId == QLatin1String("org.kde.plasma.devicenotifier")
         || itemId == QLatin1String("org.kde.plasma.clipboard");
-    if (idleDevice && !pinned && !hiddenByUser
-        && (status == Status::PassiveStatus || status == Status::UnknownStatus)) {
+    if (idleDevice && (status == Status::PassiveStatus
+        || status == Status::UnknownStatus || status == Status::HiddenStatus)) {
         return Status::HiddenStatus;
     }
-    const bool optionalIdle = itemId == QLatin1String("org.kde.plasma.userswitcher")
-        || itemId == QLatin1String("org.kde.plasma.weather")
+    const bool optionalIdle = itemId == QLatin1String("org.kde.plasma.weather")
         || itemId == QLatin1String("org.kde.plasma.keyboardindicator");
     if (optionalIdle && !pinned && !hiddenByUser
         && status != Status::NeedsAttentionStatus && status != Status::RequiresAttentionStatus

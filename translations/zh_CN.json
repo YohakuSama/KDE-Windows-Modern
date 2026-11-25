@@ -483,5 +483,6 @@
   "Connection failed": "连接失败",
   "Connecting": "正在连接",
   "Disconnecting": "正在断开连接",
-  "Image": "图片"
+  "Image": "图片",
+  "Image preview unavailable": "图片预览不可用"
 }
