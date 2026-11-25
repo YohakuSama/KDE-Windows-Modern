@@ -26,6 +26,8 @@ Item {
     height: parent.height
 
     property alias resultsView: resultsView
+    property int scrollbarEdgeOffset: 0
+    HoverHandler { id: searchViewportHover }
 
     // Emitted by result delegates when the user right-clicks.  The shell
     // (MenuRepresentation) owns the shared ContextMenu instance and opens
@@ -214,9 +216,19 @@ Item {
 
         onActivated: root.closeMenu()
 
-        readonly property int scrollGutter: 18
+        readonly property int scrollGutter: searchPage.scrollbarEdgeOffset > 0 ? 0 : 18
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
-        PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
+        PlasmaComponents3.ScrollBar.vertical: StartScrollBar {
+            objectName: "wmStartSearchScrollBar"
+            parent: searchPage
+            anchors.top: resultsView.top
+            anchors.bottom: resultsView.bottom
+            anchors.right: resultsView.right
+            anchors.rightMargin: -searchPage.scrollbarEdgeOffset
+            visible: resultsView.visible && size < 1
+            viewportHovered: searchViewportHover.hovered
+            z: 5
+        }
         StartWheelHandler {
             view: resultsView
             rowHeight: Math.floor(Kirigami.Units.gridUnit * 1.6)

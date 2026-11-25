@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
+import QtCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
@@ -18,7 +19,26 @@ Item {
     implicitHeight: 40
     implicitWidth: visibleLocations.length * 36
 
+    function resolveFolder(key) {
+        switch (key) {
+        case "documents": return StandardPaths.writableLocation(StandardPaths.DocumentsLocation);
+        case "downloads": return StandardPaths.writableLocation(StandardPaths.DownloadLocation);
+        case "music": return StandardPaths.writableLocation(StandardPaths.MusicLocation);
+        case "pictures": return StandardPaths.writableLocation(StandardPaths.PicturesLocation);
+        case "videos": return StandardPaths.writableLocation(StandardPaths.MoviesLocation);
+        case "home": return StandardPaths.writableLocation(StandardPaths.HomeLocation);
+        default: return "";
+        }
+    }
+
+    function launch(location) {
+        return Locations.invoke(location, key => resolveFolder(key),
+            url => Qt.openUrlExternally(url),
+            command => !!executable && executable.exec(command) === true);
+    }
+
     Flickable {
+        id: locationsView
         anchors.fill: parent
         contentWidth: Math.max(width, buttons.implicitWidth)
         contentHeight: height
@@ -40,6 +60,16 @@ Item {
                     text: modelData.text
                     display: PlasmaComponents3.AbstractButton.IconOnly
                     padding: 0
+                    enabled: modelData.folder ? String(placesRow.resolveFolder(modelData.folder)).length > 0
+                        : !!placesRow.executable && !!modelData.command
+                    onActiveFocusChanged: {
+                        if (!activeFocus) return;
+                        const left = mapToItem(locationsView.contentItem, 0, 0).x;
+                        if (left < locationsView.contentX)
+                            locationsView.contentX = left;
+                        else if (left + width > locationsView.contentX + locationsView.width)
+                            locationsView.contentX = Math.max(0, left + width - locationsView.width);
+                    }
                     contentItem: Item {
                         Kirigami.Icon {
                             anchors.centerIn: parent
@@ -59,10 +89,8 @@ Item {
                     }
                     PlasmaComponents3.ToolTip { text: shortcut.text }
                     onClicked: {
-                        if (placesRow.executable && modelData.command) {
-                            placesRow.executable.exec(modelData.command);
+                        if (placesRow.launch(modelData))
                             placesRow.shortcutInvoked();
-                        }
                     }
                 }
             }

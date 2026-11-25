@@ -5,6 +5,30 @@ import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/fo
 
 TestCase {
     name: "StartFooterLocations"
+    function test_everyShortcutHasRealDispatch() {
+        const entries = Locations.locations(s => s);
+        for (const location of entries) {
+            let folder = "";
+            let opened = "";
+            let command = "";
+            const result = Locations.invoke(location,
+                key => { folder = key; return "file:///home/test/" + key; },
+                url => { opened = url; return true; },
+                cmd => { command = cmd; return true; });
+            verify(result, location.key);
+            if (location.folder) {
+                compare(folder, location.folder);
+                compare(opened, "file:///home/test/" + location.folder);
+                compare(command, "");
+            } else {
+                compare(command, location.command);
+                compare(opened, "");
+            }
+        }
+        verify(!Locations.invoke(entries[0], () => "", () => true, () => true));
+        verify(!Locations.invoke(entries[0], () => "file:///x", () => false, () => true));
+        verify(!Locations.invoke(entries[8], () => "", () => true, () => false));
+    }
     function test_referenceOrderAndMigration() {
         const expected = ["documents", "downloads", "music", "pictures", "videos",
                           "network", "home", "thispc", "settings"];

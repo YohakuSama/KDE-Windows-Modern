@@ -73,14 +73,13 @@ Item {
         id: hoverBackground
         anchors.fill: parent
         radius: Kirigami.Units.smallSpacing
-        color: Kirigami.Theme.hoverColor
+        color: Kirigami.Theme.textColor
         opacity: {
-            if (item._dragging) return Theme.opacityHidden;
-            if (mouseArea.containsMouse) return Theme.opacityFull;
-            if (item.hostView && item.hostView.activeFocus
-                && item.currentApp)
-                return Theme.listItemCurrentOpacity;
-            return Theme.opacityHidden;
+            if (item._dragging) return 0;
+            if (mouseArea.containsPress) return 0.12;
+            if (mouseArea.containsMouse) return 0.07;
+            if (item.hostView && item.hostView.activeFocus && item.currentApp) return 0.08;
+            return 0;
         }
         Behavior on opacity { NumberAnimation { duration: 90 } }
     }
@@ -259,7 +258,8 @@ Item {
             _pressX = -1;
             _pressY = -1;
 
-            // Normal click handling.
+            // Releasing outside the tile is a cancel, not an application launch.
+            if (mouse.x < 0 || mouse.y < 0 || mouse.x >= width || mouse.y >= height) return;
             var view = item.hostView;
             if (view) view.forceActiveFocus();
             if (mouse.button === Qt.RightButton) {
@@ -363,6 +363,12 @@ Item {
         }
     }
 
+    PlasmaComponents3.ToolTip {
+        visible: mouseArea.containsMouse && !mouseArea.containsPress && !item._dragging
+        text: item.appData.name || item.appData.display || ""
+        delay: Kirigami.Units.toolTipDelay
+    }
+
     function launchApp() {
         var view = item.hostView
         if (view && typeof view.activateRow === "function") {
@@ -370,8 +376,8 @@ Item {
             return;
         }
         if (view && view.model && typeof view.model.trigger === "function") {
-            view.model.trigger(item.itemIndex, "", null);
-            root.closeMenu();
+            if (view.model.trigger(item.itemIndex, "", null))
+                root.closeMenu();
         }
     }
 
