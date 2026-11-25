@@ -317,6 +317,7 @@ uninstall_component() {
             elif [ -f "$backup_dir/mimeapps.list.none" ]; then
                 rm -f "$HOME/.config/mimeapps.list" "$backup_dir/mimeapps.list.none"
             fi
+            python3 "$SRC_DIR/scripts/app-appearance.py" restore
             ui="$HOME/.local/share/kxmlgui5/dolphin/dolphinui.rc"
             if [ -f "$backup_dir/dolphinui.rc.ours" ]; then
                 rm_path "$ui"

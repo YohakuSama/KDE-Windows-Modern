@@ -19,6 +19,7 @@ def blob(content):
 
 FILES = {
     "kxmlgui5/dolphin/dolphinui.rc": "config/kxmlgui5/dolphin/dolphinui.rc",
+    "kxmlgui5/konsole/konsoleui.rc": "config/kxmlgui5/konsole/konsoleui.rc",
     "konsole/WindowsModern.profile": "config/konsole/WindowsModern.profile",
     "konsole/WindowsModern-tabs.css": "config/konsole/WindowsModern-tabs.css",
 }
@@ -32,7 +33,8 @@ def settings():
         ("konsolerc", "Desktop Entry", "DefaultProfile", "WindowsModern.profile"),
         ("konsolerc", "MainWindow", "MenuBar", "Disabled"),
         ("konsolerc", "MainWindow", "ToolBarsMovable", "Disabled"),
-        ("konsolerc", "MainWindow Toolbar mainToolBar", "Hidden", "true"),
+        ("konsolerc", "MainWindow", "State", MISSING),
+        ("konsolestaterc", "MainWindow", "State", MISSING),
         ("konsolerc", "TabBar", "TabBarVisibility", "AlwaysShowTabBar"),
         ("konsolerc", "TabBar", "TabBarPosition", "Top"),
         ("konsolerc", "TabBar", "NewTabButton", "true"),
@@ -89,6 +91,8 @@ def apply():
         name = "/".join((file, group, key))
         old = read(file, group, key)
         record = state["keys"].get(name)
+        if value == MISSING and old == MISSING and record is None:
+            continue
         if record is None:
             record = {"original": old, "applied": value}
             state["keys"][name] = record

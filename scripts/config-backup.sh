@@ -24,9 +24,11 @@ WM_BACKUP_CONFIG=(
     plasma-org.kde.plasma.desktop-appletsrc kcminputrc ksplashrc
     kglobalshortcutsrc Kvantum/kvantum.kvconfig gtk-3.0/settings.ini
     gtk-4.0/settings.ini xsettingsd/xsettingsd.conf mimeapps.list
-    spectaclerc dolphinrc
+    spectaclerc dolphinrc konsolerc konsolestaterc
 )
-WM_BACKUP_DATA=(kxmlgui5/dolphin/dolphinui.rc)
+WM_BACKUP_DATA=(kxmlgui5/dolphin/dolphinui.rc kxmlgui5/konsole/konsoleui.rc
+    konsole/WindowsModern.profile konsole/WindowsModern-tabs.css
+    windows-modern/backup/app-appearance.json)
 
 _wm_config_home() { echo "${XDG_CONFIG_HOME:-$HOME/.config}"; }
 _wm_data_home() { echo "${XDG_DATA_HOME:-$HOME/.local/share}"; }
