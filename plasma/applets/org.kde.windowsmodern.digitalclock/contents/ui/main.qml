@@ -83,8 +83,8 @@ PlasmoidItem {
         ignoreBlacklistDuringInhibition: true
         blacklistedDesktopEntries: notificationSettings.historyBlacklistedApplications
         blacklistedNotifyRcNames: notificationSettings.historyBlacklistedServices
-        popupBlacklistedDesktopEntries: notificationSettings.popupBlacklistedApplications
-        popupBlacklistedNotifyRcNames: notificationSettings.popupBlacklistedServices
+        // Popup filtering belongs to KDE's native toast presenter.
+        // Notifications exposes history blacklist roles on Plasma 6.6–6.8.
         urgencies: NotificationManager.Notifications.CriticalUrgency
                  | NotificationManager.Notifications.NormalUrgency
                  | (notificationSettings.lowPriorityHistory ? NotificationManager.Notifications.LowUrgency : 0)

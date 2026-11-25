@@ -3,6 +3,8 @@
   "@item:inlistbox Icon size\u0004Windows default (20 px)": "Windows 默认大小（20 px）",
   "Focus": "专注",
   "Stop focus": "结束专注",
+  "Focusing": "正在专注",
+  "End session": "结束会话",
   "%1 mins": "%1 分钟",
   "Decrease focus duration": "减少专注时长",
   "Increase focus duration": "增加专注时长",

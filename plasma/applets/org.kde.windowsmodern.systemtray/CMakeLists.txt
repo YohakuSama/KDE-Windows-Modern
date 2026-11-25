@@ -263,7 +263,7 @@ if(WINDOWSMODERN_TEST_TRAY)
     add_test(NAME tray-status COMMAND test_traystatus)
 
     add_executable(test_tray_resources "${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/systemtray/test_tray_resources.cpp")
-    target_link_libraries(test_tray_resources PRIVATE Qt6::Core)
+    target_link_libraries(test_tray_resources PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)
     add_dependencies(test_tray_resources org.kde.windowsmodern.systemtray)
     add_test(NAME tray-embedded-resources COMMAND test_tray_resources
         "$<TARGET_FILE:org.kde.windowsmodern.systemtray>" "${tray_ui_root}")

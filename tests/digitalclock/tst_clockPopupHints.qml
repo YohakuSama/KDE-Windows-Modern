@@ -140,6 +140,37 @@ Item {
             clock.notificationsInhibited = false;
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
         }
+        function test_focusFooterRealActions() {
+            focusState.stop();
+            focusState.durationMinutes = 30;
+            mockSettings.notificationsInhibitedUntil = undefined;
+            const decrease = findChild(popup, "wmFocusDecrease");
+            const increase = findChild(popup, "wmFocusIncrease");
+            const duration = findChild(popup, "wmFocusDuration");
+            const running = findChild(popup, "wmFocusRunningLabel");
+            const button = findChild(popup, "wmFocusButton");
+            verify(decrease && increase && duration && running && button);
+            tryCompare(decrease, "visible", true);
+            tryCompare(increase, "visible", true);
+            tryCompare(running, "visible", false);
+            mouseClick(decrease);
+            tryCompare(focusState, "durationMinutes", 25);
+            mouseClick(increase);
+            tryCompare(focusState, "durationMinutes", 30);
+            mouseClick(button);
+            tryCompare(focusState, "running", true);
+            verify(mockSettings.notificationsInhibitedUntil.getTime() === focusState.endTime);
+            tryCompare(decrease, "visible", false);
+            tryCompare(increase, "visible", false);
+            tryCompare(duration, "visible", false);
+            tryCompare(running, "visible", true);
+            compare(button.text, "End session");
+            mouseClick(button);
+            tryCompare(focusState, "running", false);
+            tryCompare(decrease, "visible", true);
+            tryCompare(running, "visible", false);
+            compare(mockSettings.notificationsInhibitedUntil, undefined);
+        }
         function test_focusSurvivesPopupClosing() {
             focusState.durationMinutes = 30;
             focusState.start();

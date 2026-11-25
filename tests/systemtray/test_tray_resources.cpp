@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Unlike source-based QML tests, inspect the real compiled applet's QRC.
-#include <QCoreApplication>
+#include <QGuiApplication>
+#include <QQmlComponent>
+#include <QQmlEngine>
+#include <QUrl>
 #include <QDebug>
 #include <QDir>
 #include <QDirIterator>
@@ -10,7 +13,12 @@
 
 int main(int argc, char **argv)
 {
-    QCoreApplication app(argc, argv);
+    // Compile the exact embedded entrypoint with real Qt/Plasma types, not
+    // merely its file names. Creating a ContainmentItem needs a live shell.
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) {
+        qputenv("QT_QPA_PLATFORM", "offscreen");
+    }
+    QGuiApplication app(argc, argv);
     if (argc != 3) {
         qCritical() << "Usage: test_tray_resources PLUGIN SOURCE_UI_DIR";
         return 2;
@@ -54,6 +62,15 @@ int main(int argc, char **argv)
     if (!checked) {
         qCritical() << "No source UI resources enumerated";
         return 1;
+    }
+    QQmlEngine engine;
+    const QUrl entry(QStringLiteral("qrc:/qt/qml/plasma/applet/org/kde/windowsmodern/systemtray/main.qml"));
+    QQmlComponent component(&engine, entry, QQmlComponent::PreferSynchronous);
+    if (!component.isReady()) {
+        qCritical().noquote() << "Compiled tray QML entrypoint failed:" << component.errorString();
+        failed = true;
+    } else {
+        qInfo() << "Compiled tray QML entrypoint is ready";
     }
     qInfo() << "Checked" << checked << "resources in the compiled system tray";
     return failed ? 1 : 0;
