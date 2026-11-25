@@ -29,6 +29,9 @@ MouseArea {
     property string iconName
     property string hoverIconName: ""
     property bool iconIsMask: true
+    property bool hoverIconIsMask: true
+    property string selectedIconName: ""
+    property bool selectedIconIsMask: iconIsMask
     property bool selected: false
     // Only a reviewed absolute native resource path is passed by our applets.
     property string fallbackIconName: ""
@@ -36,10 +39,10 @@ MouseArea {
     property string text
     property string description
 
-    readonly property string effectiveIconName: !selected && showHovered && hoverIconName.length > 0
-        ? hoverIconName : iconName
-    readonly property bool effectiveIconIsMask: !selected && showHovered && hoverIconName.length > 0
-        ? true : iconIsMask
+    readonly property string effectiveIconName: selected && selectedIconName.length > 0
+        ? selectedIconName : !selected && showHovered && hoverIconName.length > 0 ? hoverIconName : iconName
+    readonly property bool effectiveIconIsMask: selected && selectedIconName.length > 0
+        ? selectedIconIsMask : !selected && showHovered && hoverIconName.length > 0 ? hoverIconIsMask : iconIsMask
 
     // Preview/test hooks: draw a state without a pointer.
     property bool forceHovered: false

@@ -64,7 +64,7 @@ class AppAppearanceTest(unittest.TestCase):
         profile = (ROOT / "config/konsole/WindowsModern.profile").read_text()
         self.assertIn("ColorScheme=Campbell", profile)
         self.assertIn("Icon=windows-terminal", profile)
-        self.assertIn("min-height: 30px;", css)
+        self.assertIn("min-height: 34px;", css)
         self.assertIn("QTabBar::close-button", css)
         terminal_icons = ROOT / "icons/windows-modern/apps"
         original = (terminal_icons / "windows-terminal.svg").read_bytes()
@@ -73,7 +73,10 @@ class AppAppearanceTest(unittest.TestCase):
             self.assertEqual(original, (terminal_icons / (alias + ".svg")).read_bytes())
         self.assertIn("BoldIntense=false", profile)
         self.assertIn("background: #0C0C0C;", css)
-        self.assertIn("QTabWidget::tab-bar { alignment: left; }", css)
+        self.assertIn("background: #2D2D2D;", css)
+        self.assertIn("background: #3A3A3A;", css)
+        self.assertIn("QTabWidget::tab-bar", css)
+        self.assertIn("alignment: left;", css)
 
     def test_terminal_both_toolbars_are_hidden_and_commands_remain(self):
         main = ET.parse(ROOT / app.FILES["kxmlgui5/konsole/konsoleui.rc"]).getroot()

@@ -40,10 +40,13 @@ PlasmoidItem {
     }
 
     preferredRepresentation: fullRepresentation
-    // E7C4 is the genuine TaskView symbol from the owner's Segoe font.
-    // The newer two-tone shell bitmap has not been identified in the archive.
-    // Do not substitute window-duplicate or draw a pretend native icon.
-    readonly property string taskViewSource: String(StandardPaths.locate(StandardPaths.GenericDataLocation,
+    // Prefer the actual two-tone Windows shell artwork over the older
+    // genuine Windows 11 E7C4 symbol. Never recolor the imported variants.
+    readonly property bool darkSurface: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.textColor)
+        === Kirigami.ColorUtils.Light
+    readonly property string shellTaskViewSource: String(StandardPaths.locate(StandardPaths.GenericDataLocation,
+        "windows-modern/shell-assets/task-view/" + (darkSurface ? "dark" : "light") + ".svg", StandardPaths.LocateFile))
+    readonly property string taskViewSource: shellTaskViewSource || String(StandardPaths.locate(StandardPaths.GenericDataLocation,
         "windows-modern/native-assets/icons/actions/windows-modern-task-view-symbolic.svg", StandardPaths.LocateFile))
     Plasmoid.icon: taskViewSource
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
@@ -65,6 +68,7 @@ PlasmoidItem {
     TaskbarButton {
         anchors.fill: parent
         iconName: root.taskViewSource
+        iconIsMask: root.shellTaskViewSource.length === 0
         text: i18ndc("plasma_applet_org.kde.windowsmodern.taskview", "@action:button taskbar button", "Task View")
         description: i18ndc("plasma_applet_org.kde.windowsmodern.taskview", "@info:tooltip", "Show all windows and desktops")
         onTriggered: root.openTaskView()
