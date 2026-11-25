@@ -46,13 +46,14 @@ FocusScope {
     readonly property int ringWidth: Math.max(2, Math.round(3 * unit))
     readonly property int headerHeight: Math.round(30 * unit)
     readonly property int headerIconSize: Kirigami.Units.iconSizes.small
-    readonly property int thumbnailHeight: Math.round(Math.max(110 * unit,
-        Math.min(220 * unit, screenGeometry.height * 0.17)))
+    readonly property int thumbnailHeight: Math.max(1, Math.round(Math.min(
+        Math.max(110 * unit, Math.min(220 * unit, screenGeometry.height * 0.17)),
+        maxContentHeight - cardPadding * 2 - headerHeight)))
     readonly property int cardHeight: cardPadding * 2 + headerHeight + thumbnailHeight
 
     // Keep even a single ultrawide card within the active screen's work area.
     readonly property int maxContentWidth: Math.max(1, Math.floor(screenGeometry.width * 0.9 - outerPadding * 2))
-    readonly property int maxContentHeight: Math.max(cardHeight, screenGeometry.height * 0.8 - outerPadding * 2)
+    readonly property int maxContentHeight: Math.max(1, Math.floor(screenGeometry.height * 0.8 - outerPadding * 2))
 
     // ── Colours ──
     readonly property color textColor: Kirigami.Theme.textColor
@@ -71,7 +72,7 @@ FocusScope {
 
     width: Math.min(maxContentWidth, count === 0 ? Kirigami.Units.gridUnit * 16
         : Math.max(contentWidth, cardHeight)) + outerPadding * 2
-    height: (count === 0 ? Kirigami.Units.gridUnit * 6 : flick.height) + outerPadding * 2
+    height: Math.min(maxContentHeight, count === 0 ? Kirigami.Units.gridUnit * 6 : flick.height) + outerPadding * 2
 
     function relayout() {
         const newRows = [];
@@ -115,6 +116,7 @@ FocusScope {
         rowOfIndex = newRowOf;
         contentWidth = widest;
         contentHeight = newRows.length > 0 ? newRows.length * cardHeight + (newRows.length - 1) * cardSpacing : 0;
+        flick.contentY = Math.max(0, Math.min(flick.contentY, contentHeight - flick.height));
         ensureCurrentVisible();
     }
 
@@ -150,7 +152,7 @@ FocusScope {
         }
         const current = cards.itemAt(currentIndex);
         const r = rowOfIndex[currentIndex];
-        if (current === null || r === undefined) {
+        if (!current || r === undefined) {
             return;
         }
         const target = rows[(r + step + rows.length) % rows.length];
@@ -159,6 +161,7 @@ FocusScope {
         let bestDistance = Infinity;
         for (const i of target) {
             const card = cards.itemAt(i);
+            if (!card) continue;
             const distance = Math.abs(card.x + card.width / 2 - centre);
             if (distance < bestDistance) {
                 bestDistance = distance;
@@ -169,6 +172,8 @@ FocusScope {
     }
 
     onMaxContentWidthChanged: scheduleRelayout()
+    onMaxContentHeightChanged: scheduleRelayout()
+    onCardHeightChanged: scheduleRelayout()
     onCurrentIndexChanged: ensureCurrentVisible()
 
     Keys.onPressed: event => {
@@ -191,14 +196,14 @@ FocusScope {
 
     Flickable {
         id: flick
-        x: root.outerPadding
+        x: Math.round((root.width - width) / 2)
         y: root.outerPadding
         width: root.contentWidth
         height: Math.min(root.contentHeight, root.maxContentHeight)
         contentWidth: root.contentWidth
         contentHeight: root.contentHeight
         interactive: contentHeight > height
-        clip: interactive
+        clip: true
         boundsBehavior: Flickable.StopAtBounds
 
         Repeater {
@@ -235,6 +240,7 @@ FocusScope {
                 Accessible.name: model.caption ?? ""
                 Accessible.role: Accessible.ListItem
                 Accessible.selected: isCurrent
+                Accessible.onPressAction: root.tabBox.model.activate(card.index)
 
                 Rectangle {
                     anchors.fill: parent
@@ -338,6 +344,7 @@ FocusScope {
 
                         Accessible.role: Accessible.Button
                         Accessible.name: root.closeText
+                        Accessible.onPressAction: if (card.showClose) root.tabBox.model.close(card.index)
                     }
                 }
 
@@ -389,6 +396,10 @@ FocusScope {
     PlasmaComponents3.Label {
         anchors.centerIn: parent
         visible: root.count === 0
+        width: root.maxContentWidth
+        horizontalAlignment: Text.AlignHCenter
+        elide: Text.ElideRight
+        textFormat: Text.PlainText
         text: root.emptyText
         color: root.textColor
     }

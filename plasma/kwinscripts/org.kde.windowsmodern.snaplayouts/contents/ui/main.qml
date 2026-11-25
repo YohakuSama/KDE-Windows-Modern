@@ -29,7 +29,13 @@ Item {
             return;
         }
         win.interactiveMoveResizeStarted.connect(() => {
+            if (snapTimer.win === win) {
+                snapTimer.stop();
+                snapTimer.win = null;
+                snapTimer.rect = null;
+            }
             if (win.move && win.resizeable) {
+                root.resetPicker();
                 root.movingWindow = win;
             }
         });
@@ -45,16 +51,34 @@ Item {
         });
     }
 
+    function resetPicker() {
+        if (target) Workspace.hideOutline();
+        target = null;
+        bar.visible = false;
+    }
+
+    function sameRect(a, b) {
+        return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+    }
+
     function update(win) {
         const cursor = Workspace.cursorPos;
-        const screen = Workspace.clientArea(KWin.FullScreenArea, win);
-        const nearTop = cursor.y - screen.y <= triggerDistance;
-        if (!bar.visible && !nearTop) {
+        const output = Workspace.screenAt(cursor);
+        if (!output) {
+            resetPicker();
             return;
         }
-        if (!bar.visible) {
-            bar.showOn(screen, Workspace.clientArea(KWin.MaximizeArea, win));
-        }
+        const screen = Workspace.clientArea(KWin.FullScreenArea, output, Workspace.currentDesktop);
+        const area = Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop);
+        // The cursor can cross outputs before KWin changes the window's
+        // assigned output. Never keep a target on the previous monitor.
+        if (bar.visible && (!sameRect(bar.screenGeometry, screen) || !sameRect(bar.workArea, area)))
+            resetPicker();
+        const nearTop = cursor.y >= screen.y && cursor.y - screen.y <= triggerDistance
+            && cursor.x >= screen.x && cursor.x < screen.x + screen.width;
+        if (!bar.visible && !nearTop) return;
+        if (!bar.visible) bar.showOn(screen, area);
+        if (!bar.visible) return;
         const hit = bar.cellAt(cursor.x, cursor.y);
         if (hit) {
             const rect = Layouts.cellRect(bar.workArea, Layouts.layouts[hit.layout][hit.cell]);
@@ -75,14 +99,15 @@ Item {
     }
 
     function finish(win) {
-        const chosen = target;
-        target = null;
+        const cursor = Workspace.cursorPos;
+        const hit = bar.visible ? bar.cellAt(cursor.x, cursor.y) : null;
+        const output = Workspace.screenAt(cursor);
+        const chosen = target && hit && hit.layout === target.layout && hit.cell === target.cell
+            && output && sameRect(bar.workArea, Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop))
+            ? target : null;
+        resetPicker();
         movingWindow = null;
-        bar.visible = false;
-        Workspace.hideOutline();
-        if (!chosen) {
-            return;
-        }
+        if (!chosen || win.deleted) return;
         // After KWin has handled the release (it may maximize at the top edge).
         snapTimer.win = win;
         snapTimer.rect = chosen.rect;
@@ -95,7 +120,9 @@ Item {
         property var rect: null
         interval: 50
         onTriggered: {
-            if (!win || win.deleted) {
+            if (!win || win.deleted || win.move || win.resize) {
+                win = null;
+                rect = null;
                 return;
             }
             if (typeof win.setMaximize === "function") {
@@ -103,6 +130,7 @@ Item {
             }
             win.frameGeometry = Qt.rect(rect.x, rect.y, rect.width, rect.height);
             win = null;
+            rect = null;
         }
     }
 
@@ -119,6 +147,20 @@ Item {
         target: Workspace
         function onWindowAdded(win) {
             root.track(win);
+        }
+        function onWindowRemoved(win) {
+            if (root.movingWindow === win) {
+                root.movingWindow = null;
+                root.resetPicker();
+            }
+            if (snapTimer.win === win) {
+                snapTimer.stop();
+                snapTimer.win = null;
+                snapTimer.rect = null;
+            }
+        }
+        function onScreensChanged() {
+            root.resetPicker();
         }
     }
 }
