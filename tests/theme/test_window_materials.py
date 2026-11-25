@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+import configparser
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -22,6 +23,28 @@ def elements(svg):
 
 
 class WindowMaterialTests(unittest.TestCase):
+    def test_shared_kvantum_control_metrics(self):
+        themes = ROOT / 'Kvantum/Windows-modern'
+        configs = []
+        for name in ('Windows-modern.kvconfig', 'Windows-modernDark.kvconfig'):
+            config = configparser.ConfigParser(interpolation=None, strict=False)
+            config.read(themes / name, encoding='utf-8')
+            configs.append(config)
+        expected = {
+            '%General': {'scroll_arrows': 'false', 'transient_scrollbar': 'true',
+                         'transient_groove': 'false', 'scroll_min_extent': '32',
+                         'tree_branch_line': 'false'},
+            'Hacks': {'force_size_grip': 'false'},
+            'TitleBar': {'text.italic': 'false'},
+        }
+        for section in ('LineEdit', 'ComboBox', 'MenuItem'):
+            expected[section] = {'text.margin.top': '4', 'text.margin.bottom': '4',
+                                 'text.margin.left': '8', 'text.margin.right': '8'}
+        for config in configs:
+            for section, keys in expected.items():
+                for key, value in keys.items():
+                    self.assertEqual(config[section][key], value, (section, key))
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')

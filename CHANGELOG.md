@@ -6,6 +6,13 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Taskbar jump list and native controls
+
+- Keep application actions, valid pin/unpin operations and window closing in the ordinary task menu. Shift+right-click exposes native KDE window/desktop/activity and panel configuration operations; keep native QMenu dispatch and accessibility.
+- Prevent invalid or contradictory launcher actions and refresh the correct activity submenu.
+- Align light/dark Kvantum menu rows and input margins; remove persistent transient-scrollbar grooves, forced size grips, tree branch lines and italic internal titles. Keep existing SVG slices and native widget behavior.
+- Add jump-list policy and shared control configuration checks. Runtime menu and widget appearance still require actual Plasma/NixOS verification.
+
 ### Screenshot feedback: Start and calendar chrome
 
 - Use a fixed 12 logical-pixel native popup gap for Start and the clock. Keep Start's view label visible using the selected choice and independent translated label metrics.

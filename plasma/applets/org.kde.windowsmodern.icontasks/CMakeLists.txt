@@ -145,5 +145,6 @@ ecm_target_qml_sources(org.kde.plasma.icontasks
     PATH code
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/code/LayoutMetrics.js
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/code/JumpListPolicy.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/code/TaskTools.js
 )
