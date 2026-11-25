@@ -7,7 +7,7 @@ rest to where Windows has them:
 
   Win+Up / Win+Down   maximize / restore / minimize / quarter-snap (KWin script)
   Win+Tab             Task View (KWin Overview), not window cycling
-  Win+R               Run (KRunner), not screen recording
+  Win+R               Windows Modern Run dialog
   Win+M, Win+Home     minimize all / all others
   Win+A / Win+N       Quick Settings / notifications (tray, see "tray" below)
   Win+V               themed Klipper history, native fallback
@@ -57,7 +57,7 @@ CHANGES = [
     ("shortcuts", "kwin", "Overview", "", "", ("add", ["Meta+Tab"])),
     ("shortcuts", "kwin", "MinimizeAll", "", "", ("set", ["Meta+M"])),
     ("shortcuts", "kwin", "minimizeAllOthers", "", "", ("set", ["Meta+Home"])),
-    ("shortcuts", "org.kde.krunner.desktop", "_launch", "", "", ("add", ["Meta+R"])),
+    ("shortcuts", "org.kde.krunner.desktop", "_launch", "", "", ("remove", ["Meta+R"])),
     ("shortcuts", "org.kde.spectacle.desktop", "ActiveWindowScreenShot", "", "", ("set", ["Alt+Print"])),
     ("shortcuts", "windowsmodern-screenshot.desktop", "_launch", "Screenshot (full screen, saved)",
      "Screenshot (full screen, saved)", ("set", ["Meta+Print"])),

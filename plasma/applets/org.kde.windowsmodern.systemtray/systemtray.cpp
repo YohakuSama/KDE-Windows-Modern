@@ -37,10 +37,13 @@
 #include <Plasma/PluginLoader>
 
 #include <KAcceleratorManager>
+#include <KAuthorized>
 #include <KGlobalAccel>
 #include <KLocalizedString>
 #include <KIO/ApplicationLauncherJob>
+#include <KIO/CommandLauncherJob>
 #include <KNotificationJobUiDelegate>
+#include <KJobUiDelegate>
 #include <KPluginMetaData>
 #include <KService>
 #include <KSycoca>
@@ -106,6 +109,20 @@ void SystemTray::openCast()
     auto *job = new KIO::ApplicationLauncherJob(service);
     job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
     job->start();
+}
+
+bool SystemTray::runCommand(const QString &command)
+{
+    const QString value = command.trimmed();
+    if (value.isEmpty() || value.size() > 4096
+        || !KAuthorized::authorize(QStringLiteral("run_command"))) {
+        return false;
+    }
+
+    auto *job = new KIO::CommandLauncherJob(value, this);
+    job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
+    job->start();
+    return true;
 }
 
 bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,

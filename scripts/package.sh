@@ -56,6 +56,7 @@ COMPONENTS=(
     "wallpaper|$SRC_DIR/wallpaper/Windows-modern|metadata.json|Wallpapers"
     "applet-showdesktop|$SRC_DIR/plasma/applets/org.kde.windowsmodern.showdesktop|metadata.json|Plasma 6 Applets"
     "applet-startmenu|$SRC_DIR/plasma/applets/org.kde.windowsmodern.startmenu|metadata.json|Plasma 6 Applets"
+    "applet-run|$SRC_DIR/plasma/applets/org.kde.windowsmodern.run|metadata.json|Plasma 6 Applets"
     "applet-digitalclock|$SRC_DIR/plasma/applets/org.kde.windowsmodern.digitalclock|metadata.json|Plasma 6 Applets"
     "applet-search|$SRC_DIR/plasma/applets/org.kde.windowsmodern.search|metadata.json|Plasma 6 Applets"
     "applet-taskview|$SRC_DIR/plasma/applets/org.kde.windowsmodern.taskview|metadata.json|Plasma 6 Applets"

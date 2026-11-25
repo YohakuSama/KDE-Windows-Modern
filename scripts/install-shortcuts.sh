@@ -3,7 +3,7 @@
 #  install-shortcuts.sh — Windows keyboard shortcuts and window behaviour
 #
 #  Win+Up/Down (maximize, restore, minimize, quarter snap), Win+Tab Task
-#  View, Win+R Run, Win+M / Win+Home minimize, Win+A Quick Settings,
+#  View, Win+R Windows Modern Run dialog, Win+M / Win+Home minimize, Win+A Quick Settings,
 #  Win+N notifications, Win+PrtSc / Alt+PrtSc screenshots. The previous
 #  keys are backed up; ./uninstall.sh shortcuts restores them.
 #  Also installs the KWin scripts in plasma/kwinscripts/ (Win+Up/Down;

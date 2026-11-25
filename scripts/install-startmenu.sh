@@ -1,32 +1,37 @@
 #!/bin/bash
 # ───────────────────────────────────────────────────────────────────
-#  install-startmenu.sh — Start Menu applet (pure QML)
+#  install-startmenu.sh — Start Menu and Run dialog applets (pure QML)
 # ───────────────────────────────────────────────────────────────────
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
 
-src="$SRC_DIR/plasma/applets/org.kde.windowsmodern.startmenu"
-[ -d "$src" ] || { warn "Start Menu not found — skipping."; exit 0; }
+start_src="$SRC_DIR/plasma/applets/org.kde.windowsmodern.startmenu"
+run_src="$SRC_DIR/plasma/applets/org.kde.windowsmodern.run"
+[ -d "$start_src" ] || { warn "Start Menu not found — skipping."; exit 0; }
 
-info "Installing Start Menu applet..."
-
-# Prefer kpackagetool6 so Plasma registers and can hot-reload the package.
-if command -v kpackagetool6 &>/dev/null; then
-    if grep -q "org.kde.windowsmodern.startmenu" <<< "$(kpackagetool6 --list --type Plasma/Applet 2>/dev/null)"; then
-        step "Upgrading existing package"
-        kpackagetool6 --upgrade "$src" --type Plasma/Applet
+install_applet() {
+    local src="$1" id="$2"
+    [ -d "$src" ] || { warn "$id not found — skipping."; return 0; }
+    if command -v kpackagetool6 &>/dev/null; then
+        if grep -q "$id" <<< "$(kpackagetool6 --list --type Plasma/Applet 2>/dev/null)"; then
+            step "Upgrading $id"
+            kpackagetool6 --upgrade "$src" --type Plasma/Applet
+        else
+            step "Installing $id"
+            kpackagetool6 --install "$src" --type Plasma/Applet
+        fi
     else
-        step "Installing new package"
-        kpackagetool6 --install "$src" --type Plasma/Applet
+        warn "kpackagetool6 not found — falling back to manual copy for $id."
+        ensure_dir "$APPLETS_DIR"
+        rm -rf "${APPLETS_DIR:?}/$id"
+        cp -r "$src" "$APPLETS_DIR/"
     fi
-else
-    warn "kpackagetool6 not found — falling back to manual copy."
-    ensure_dir "$APPLETS_DIR"
-    rm -rf "$APPLETS_DIR/org.kde.windowsmodern.startmenu"
-    cp -r "$src" "$APPLETS_DIR/"
-fi
+}
 
-info "Start Menu installed."
+info "Installing Start Menu and Run dialog applets..."
+install_applet "$start_src" "org.kde.windowsmodern.startmenu"
+install_applet "$run_src" "org.kde.windowsmodern.run"
+info "Start Menu and Run dialog installed."
 
 # Plasma Shell must be restarted for the updated applet to be reloaded in
 # the running session. In batch mode the parent 'all' driver restarts

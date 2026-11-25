@@ -30,6 +30,22 @@ FocusScope {
     readonly property var entries: showApps ? sourceEntries : []
     readonly property int count: entries.length
     readonly property var visualRows: Alphabetical.buildRows(entries, columns, alphabeticalGrouping)
+    property bool letterIndexOpen: false
+    readonly property var letterIndexEntries: {
+        const available = Object.create(null);
+        for (const row of visualRows) {
+            if (row.heading && row.entries.length && available[row.heading] === undefined)
+                available[row.heading] = row.entries[0].index;
+        }
+        const standard = ["#"].concat("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""));
+        const extra = Object.keys(available).filter(label => standard.indexOf(label) < 0)
+            .sort((a, b) => a.localeCompare(b));
+        return standard.concat(extra).map(label => ({
+            label: label,
+            available: available[label] !== undefined,
+            sourceIndex: available[label] !== undefined ? available[label] : -1
+        }));
+    }
     signal applicationActivated(int sourceRow)
     signal navigateToHeader()
 
@@ -89,7 +105,12 @@ FocusScope {
     }
     function scheduleRefresh() { refreshTimer.restart(); }
     onSourceModelChanged: scheduleRefresh()
-    onShowAppsChanged: if (!showApps) currentIndex = -1
+    onShowAppsChanged: if (!showApps) {
+        currentIndex = -1;
+        letterIndexOpen = false;
+    }
+    onAlphabeticalGroupingChanged: if (!alphabeticalGrouping) letterIndexOpen = false
+    onCountChanged: if (!count) letterIndexOpen = false
     Component.onCompleted: scheduleRefresh()
     Connections {
         target: typeof view.sourceModel === "object" ? view.sourceModel : null
@@ -125,6 +146,25 @@ FocusScope {
         currentIndex = Alphabetical.horizontalNeighbor(visualRows, currentIndex, direction);
     }
 
+    function openLetterIndex() {
+        if (!alphabeticalGrouping || !count) return;
+        letterIndexOpen = true;
+    }
+
+    function jumpToLetter(letter) {
+        const entry = letterIndexEntries.find(item => item.label === letter);
+        if (!entry || !entry.available) return false;
+        letterIndexOpen = false;
+        currentIndex = entry.sourceIndex;
+        Qt.callLater(function() {
+            const position = Alphabetical.locate(view.visualRows, entry.sourceIndex);
+            if (position.row >= 0)
+                rowsView.positionViewAtIndex(position.row, ListView.Beginning);
+            rowsView.forceActiveFocus();
+        });
+        return true;
+    }
+
     ListView {
         id: rowsView
         anchors.fill: parent
@@ -150,11 +190,38 @@ FocusScope {
                 height: visible ? view.headingHeight : 0
                 visible: visualRow.modelData.heading.length > 0
                 text: visualRow.modelData.heading
-                color: Kirigami.Theme.textColor
+                readonly property bool hovered: sectionHeadingMouse.containsMouse
+                color: hovered || activeFocus ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
                 font.pixelSize: Math.max(13, Kirigami.Theme.defaultFont.pixelSize)
+                font.weight: hovered || activeFocus ? Font.DemiBold : Font.Medium
+                scale: hovered ? 1.045 : 1
+                transformOrigin: Item.Left
+                Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                 verticalAlignment: Text.AlignVCenter
                 leftPadding: 10
                 textFormat: Text.PlainText
+                activeFocusOnTab: visible && view.alphabeticalGrouping
+                Accessible.role: Accessible.Button
+                Accessible.name: i18n("Open letter index")
+                Accessible.description: i18n("Choose a letter to jump to its apps")
+                Accessible.onPressAction: view.openLetterIndex()
+                Keys.onReturnPressed: view.openLetterIndex()
+                Keys.onEnterPressed: view.openLetterIndex()
+                Keys.onSpacePressed: view.openLetterIndex()
+                MouseArea {
+                    id: sectionHeadingMouse
+                    objectName: "wmStartLetterHeadingHitArea"
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(parent.width, sectionLabel.implicitWidth + sectionLabel.leftPadding + sectionLabel.rightPadding + 6)
+                    height: parent.height
+                    enabled: sectionLabel.visible && view.alphabeticalGrouping
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: view.openLetterIndex()
+                }
             }
 
             Row {
@@ -193,6 +260,19 @@ FocusScope {
             z: 5
         }
         StartWheelHandler { view: rowsView; rowHeight: Math.min(40, view.cellHeight) }
+    }
+
+    LetterIndex {
+        id: letterIndex
+        anchors.fill: parent
+        z: 20
+        opened: view.letterIndexOpen
+        letters: view.letterIndexEntries
+        onLetterActivated: letter => view.jumpToLetter(letter)
+        onBackRequested: {
+            view.letterIndexOpen = false;
+            Qt.callLater(rowsView.forceActiveFocus);
+        }
     }
 
     Keys.onPressed: event => {

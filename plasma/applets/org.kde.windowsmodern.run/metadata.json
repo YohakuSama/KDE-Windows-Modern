@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Windows Modern contributors"
+            }
+        ],
+        "Category": "Utilities",
+        "Description": "Windows 11-style Run dialog for KDE Plasma",
+        "EnabledByDefault": true,
+        "Icon": "system-run",
+        "Id": "org.kde.windowsmodern.run",
+        "License": "GPL-3.0-or-later",
+        "Name": "Windows Modern Run",
+        "Version": "1.2.1",
+        "Website": "https://github.com/YohakuSama/KDE-Windows-Modern"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

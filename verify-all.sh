@@ -105,7 +105,7 @@ fi
 # ── Applets ─────────────────────────────────────────────────────────
 echo ""
 echo " Applets:"
-for applet in showdesktop startmenu digitalclock search taskview systemtray icontasks; do
+for applet in showdesktop startmenu run digitalclock search taskview systemtray icontasks; do
     d="plasma/applets/org.kde.windowsmodern.$applet"
     check_file "$d/metadata.json" "$applet"
 done

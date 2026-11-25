@@ -98,3 +98,8 @@ Implementation references: [KDE Bluedevil](https://github.com/KDE/bluedevil/tree
 ### Modern battery and grouped hover follow-up
 
 Compare the project-drawn colored battery and optional percentage against KB5067036 and the owner's screenshot at 150%. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The visual asset is recreated, not extracted from Windows.
+
+
+## Start letter index and Run dialog
+
+The alphabetical All Apps headings open an animated letter index. Available letters are highlighted, unavailable letters remain dimmed, and selecting one scrolls to its first application. Win+R opens the separate Windows Modern Run dialog. The dialog submits the typed command through the existing system tray's KIO command launcher and respects KDE's `run_command` authorization. The Windows keyboard shortcut installer removes Meta+R from KRunner before the hidden applet registers it. The hidden zero-size applet is loaded on the primary panel only for the global shortcut.

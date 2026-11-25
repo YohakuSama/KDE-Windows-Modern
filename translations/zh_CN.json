@@ -508,15 +508,20 @@
   "Unlocking failed": "解锁失败",
   "Caps Lock is on": "大写锁定已开启",
   "(or scan your fingerprint on the reader)": "（或扫描你的指纹）",
-  "(or scan your smartcard)": "（或扫描你的智能卡）"
-,
-  "%1 devices connected": "已连接 %1 台设备"
-,
+  "(or scan your smartcard)": "（或扫描你的智能卡）",
+  "%1 devices connected": "已连接 %1 台设备",
   "%1 until fully charged": "距离充满还需 %1",
   "%1 remaining": "剩余 %1",
   "%1 battery health": "%1 电池健康度",
   "Unmute": "取消静音",
   "Mute": "静音",
   "Test sound": "测试声音",
-  "Audio settings": "音频设置"
+  "Audio settings": "音频设置",
+  "Open letter index": "打开字母索引",
+  "Choose a letter to jump to its apps": "选择字母跳转到对应应用",
+  "Jump to %1": "跳转到 %1",
+  "Type the name of a command to run": "输入要运行的命令名称",
+  "Run": "运行",
+  "Run service is unavailable": "运行服务不可用",
+  "Command execution is blocked by system policy": "系统策略禁止执行此命令"
 }

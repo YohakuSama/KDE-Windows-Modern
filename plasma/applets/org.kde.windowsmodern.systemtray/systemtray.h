@@ -8,6 +8,7 @@
 
 #include <QAbstractItemModel>
 #include <QPointer>
+#include <QString>
 
 #include <KConfigWatcher>
 
@@ -46,6 +47,7 @@ public:
     Q_INVOKABLE void registerClipboardShortcut();
     Q_INVOKABLE bool setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
                                       qreal radius, bool enabled);
+    Q_INVOKABLE bool runCommand(const QString &command);
 
     void restoreContents(KConfigGroup &group) override;
 

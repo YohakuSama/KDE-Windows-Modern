@@ -92,6 +92,10 @@ clock.writeConfig("expandedWidth", "320");
 
 // 7. Show Desktop — custom Win11-style thin sliver, or fall back to stock.
 var peek = panel.addWidget(pick("org.kde.windowsmodern.showdesktop", "org.kde.plasma.showdesktop"));
+// Hidden zero-size applet: owns the Win+R global shortcut and themed Run dialog.
+if (knownWidgetTypes.indexOf("org.kde.windowsmodern.run") >= 0) {
+    panel.addWidget("org.kde.windowsmodern.run");
+}
 peek.currentConfigGroup = new Array("General");
 peek.writeConfig("size", "6");
 
