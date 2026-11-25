@@ -5,7 +5,7 @@ widgetStyle=kvantum
 ColorScheme=WindowsModernLight
 
 [kdeglobals][Icons]
-Theme=windows-modern
+Theme=windows-modern-light
 
 [plasmarc][Theme]
 name=Windows-modern-light

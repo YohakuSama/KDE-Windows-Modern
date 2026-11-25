@@ -141,6 +141,7 @@ uninstall_component() {
             ;;
         icons)
             rm_path "$ICONS_DIR/windows-modern"
+            rm_path "$ICONS_DIR/windows-modern-light"
             info "Icons uninstalled."
             ;;
         lookfeel)

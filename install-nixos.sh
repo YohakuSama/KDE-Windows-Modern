@@ -383,6 +383,11 @@ if "$PYTHON" "$ROOT/scripts/check-nixos-assets.py" "$STATE/native" "$input" "$RO
 else
     WM_NATIVE_RESOURCE_SOURCE="$input" WM_NATIVE_ASSETS_DIR="$STATE/native" bash "$ROOT/scripts/prepare-native-assets.sh"
 fi
+# Verify both original wallpaper packages, even on the cached-assets path.
+for name in Windows-modern Windows-modern-lock; do
+    "$PYTHON" "$ROOT/scripts/check-native-wallpaper.py" "$STATE/native" "$STATE/native/wallpapers/$name" "$name"
+done
+"$PYTHON" "$ROOT/scripts/store-artwork.py" prepare "$STATE/store-artwork" --bundled "$ROOT/bundled-store-artwork"
 # A successful build/import is not a configuration change. Back up the
 # running desktop after stopping the shell so its final settings are flushed.
 remember_env
@@ -450,7 +455,10 @@ if [ "$upgrading" -eq 0 ]; then
     plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant" --resetLayout
     kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle "$( [ "$variant" = dark ] && echo kvantum-dark || echo kvantum )"
 kwriteconfig6 --file Kvantum/kvantum.kvconfig --group General --key theme Windows-modern
-kwriteconfig6 --file kdeglobals --group Icons --key Theme windows-modern
+icon_theme=windows-modern
+[ "$variant" != light ] || icon_theme=windows-modern-light
+kwriteconfig6 --file kdeglobals --group Icons --key Theme "$icon_theme"
+kwriteconfig6 --file kcmicons --group Icons --key Theme "$icon_theme"
 kwriteconfig6 --file kdeglobals --group Sounds --key Theme windows-modern
 kwriteconfig6 --file kscreenlockerrc --group Greeter --key Theme --delete
 kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key BorderSize Tiny
@@ -475,6 +483,12 @@ kwriteconfig6 --file spectaclerc --group General --key clipboardGroup PostScreen
     start_shell
     bash "$ROOT/scripts/set-wallpaper.sh"
 else
+    # Migrate only our old light-mode icon choice; do not touch custom themes.
+    if [ "$(kreadconfig6 --file kdeglobals --group Icons --key Theme)" = windows-modern ] &&
+       [ "$(kreadconfig6 --file kdeglobals --group General --key ColorScheme)" = WindowsModernLight ]; then
+        kwriteconfig6 --notify --file kdeglobals --group Icons --key Theme windows-modern-light
+        kwriteconfig6 --file kcmicons --group Icons --key Theme windows-modern-light
+    fi
     # Do not apply global theme defaults or reset wallpaper, shortcuts,
     # pinned apps, layout or the user's light/dark preference on upgrade.
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
