@@ -107,8 +107,10 @@ Review the original artwork before adding it to the map.
 
 The reviewed 713-group MUN archive does not contain the following shell
 assets. They belong to packaged SystemApps or a PRI resource index and must
-be imported separately from an authorized Windows 11 26H2 installation
-(build family 26300). Do not substitute a similarly named MUN icon.
+be imported separately from an authorized Windows 11 26H2 installation.
+Record the exact source build reported by that installation; the reference
+branch itself does not establish the build. Do not substitute a similarly
+named MUN icon.
 
 | UI role | Windows source | Import rule |
 | --- | --- | --- |
@@ -147,11 +149,11 @@ in the Settings PRI. The import is atomic; incomplete input leaves the
 previous import untouched.
 
 ```bash
-python3 scripts/import-shell-assets.py /path/to/Windows --build 26300
+python3 scripts/import-shell-assets.py /path/to/Windows --build ACTUAL_BUILD_NUMBER
 ```
 
-Replace the example build number with the actual source build. The
-importer records the declared build, original resource paths, source
+Replace the placeholder with the exact numeric build reported by the
+source Windows installation. The importer records the declared build, original resource paths, source
 hashes and generated output hashes in a private local manifest. It
 does not install or bundle the proprietary font itself. The applets
 read the generated artwork from
