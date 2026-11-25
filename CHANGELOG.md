@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Reposition existing on-screen displays when their output or screen geometry changes, and stop tracking closed displays. Use KWin's actual maximize state and explicit side/corner actions for windows placed without a native tile.
+
 - Keep Snap Layouts on the cursor's current output, fit its diagrams to narrow screens, reject drops in unpainted cell gaps, and clear stale targets when a window or screen disappears. Fit Alt+Tab to short screens and relayout on height changes. Make preview titles clickable and show a fallback icon instead of blank or stale media artwork.
 
 - Resolve Start search app actions by desktop-file URL, dismiss row-based menus when their source model changes, prevent launching collapsed or disabled results, wrap search filters on narrow panels, and cancel pin reordering outside the grid.
