@@ -79,6 +79,19 @@ class AppAppearanceTest(unittest.TestCase):
         app.restore()
         self.assertEqual(self.values[key], "old-qt-toolbar-state")
 
+    def test_explorer_layout_migration(self):
+        key = (str(app.STATE / "dolphinstaterc"), "MainWindow", "State")
+        self.values[key] = "old-dolphin-toolbar-state"
+        app.apply()
+        self.assertNotIn(key, self.values)
+        self.assertEqual(self.values["dolphinrc", "General", "ShowStatusBar"], "FullWidth")
+        root = ET.parse(ROOT / app.FILES["kxmlgui5/dolphin/dolphinui.rc"]).getroot()
+        self.assertGreater(int(root.get("version")), 50)
+        commands = {a.get("name") for a in root.findall("./ToolBar[@name='wmCommandToolBar']/Action")}
+        self.assertTrue({"new_menu", "edit_cut", "edit_copy", "edit_paste", "renamefile", "movetotrash", "sort", "view_mode", "hamburger_menu"} <= commands)
+        app.restore()
+        self.assertEqual(self.values[key], "old-dolphin-toolbar-state")
+
     def test_reference_layout_and_aliases(self):
         root = ET.parse(ROOT / app.FILES["kxmlgui5/dolphin/dolphinui.rc"]).getroot()
         bars = root.findall("ToolBar")

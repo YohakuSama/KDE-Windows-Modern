@@ -124,6 +124,7 @@ Item {
 
         onSearchingChanged: {
             if (searching) {
+                modeMenu.close();
                 allAppsPage.resetCategory();
                 leftColumnState = 2;
                 // Reset scroll position when entering search mode.
@@ -139,6 +140,7 @@ Item {
                 reset();
             } else {
                 leftColumnState = 0;
+                modeMenu.close();
                 sharedContextMenu.close();
                 powerMenu.close();
             }
@@ -444,58 +446,8 @@ Item {
                                         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                             Kirigami.Theme.textColor.b, viewSelector.hovered || viewSelector.activeFocus ? 0.06 : 0)
                                     }
-                                    onClicked: modeMenu.open()
-                                    function choose(index) {
-                                        root.leftColumnState = 1;
-                                        allAppsPage.resetCategory();
-                                        Plasmoid.configuration.allAppsViewMode = index;
-                                        Qt.callLater(allAppsPage.focusFirstApp);
-                                    }
+                                    onClicked: modeMenu.openAt(viewSelector)
 
-                                    Menu {
-                                        id: modeMenu
-                                        x: viewSelector.width - width
-                                        y: viewSelector.height + 4
-                                        width: 148
-                                        padding: 4
-                                        background: Rectangle {
-                                            radius: 8
-                                            color: Kirigami.Theme.backgroundColor
-                                            border.width: 1
-                                            border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                                Kirigami.Theme.textColor.b, 0.12)
-                                        }
-                                        component ModeItem: MenuItem {
-                                            id: modeItem
-                                            required property int mode
-                                            implicitHeight: 36
-                                            leftPadding: 32
-                                            rightPadding: 10
-                                            text: viewSelector.modes[mode]
-                                            indicator: Kirigami.Icon {
-                                                x: 10
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                width: 13
-                                                height: 13
-                                                source: "emblem-ok-symbolic"
-                                                visible: Plasmoid.configuration.allAppsViewMode === modeItem.mode
-                                            }
-                                            contentItem: PlasmaComponents3.Label {
-                                                text: modeItem.text
-                                                verticalAlignment: Text.AlignVCenter
-                                            }
-                                            background: Rectangle {
-                                                radius: 4
-                                                color: modeItem.highlighted
-                                                    ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                                        Kirigami.Theme.textColor.b, 0.08) : "transparent"
-                                            }
-                                            onTriggered: viewSelector.choose(mode)
-                                        }
-                                        ModeItem { mode: 2 }
-                                        ModeItem { mode: 1 }
-                                        ModeItem { mode: 0 }
-                                    }
                                 }
                             }
                         }
@@ -639,6 +591,21 @@ Item {
                         }
                         PlasmaComponents3.ToolTip { text: parent.text }
                     }
+                }
+            }
+
+            // Owned by the stable dialog, never by a disposable ListView header.
+            ViewModeMenu {
+                id: modeMenu
+                parent: rootItem
+                modes: [i18n("List"), i18n("Grid"), i18n("Category")]
+                currentMode: Plasmoid.configuration.allAppsViewMode
+                onModeChosen: index => {
+                    if (index === Plasmoid.configuration.allAppsViewMode) return;
+                    root.leftColumnState = 1;
+                    allAppsPage.resetCategory();
+                    Plasmoid.configuration.allAppsViewMode = index;
+                    Qt.callLater(allAppsPage.focusFirstApp);
                 }
             }
 

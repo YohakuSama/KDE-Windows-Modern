@@ -32,6 +32,13 @@ def settings():
         ("dolphinrc", "General", "EditableUrl", "false"),
         ("dolphinrc", "General", "ShowCloseButtonOnTabs", "true"),
         ("dolphinrc", "General", "ShowZoomSlider", "false"),
+        ("dolphinrc", "General", "ShowStatusBar", "FullWidth"),
+        ("dolphinrc", "General", "TabStyle", "AutoSize"),
+        ("dolphinrc", "General", "OpenNewTabAfterLastTab", "true"),
+        ("dolphinrc", "MainWindow", "MenuBar", "Disabled"),
+        ("dolphinrc", "MainWindow", "ToolBarsMovable", "Disabled"),
+        ("dolphinrc", "MainWindow", "State", MISSING),
+        (str(STATE / "dolphinstaterc"), "MainWindow", "State", MISSING),
         ("konsolerc", "Desktop Entry", "DefaultProfile", "WindowsModern.profile"),
         ("konsolerc", "MainWindow", "MenuBar", "Disabled"),
         ("konsolerc", "MainWindow", "ToolBarsMovable", "Disabled"),
@@ -91,6 +98,11 @@ def apply():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(new)
     for file, group, key, value in settings():
+        if file in ("dolphinrc", str(STATE / "dolphinstaterc")):
+            relative = "kxmlgui5/dolphin/dolphinui.rc"
+            installed = DATA / relative
+            if relative not in state["files"] or not installed.is_file() or installed.read_bytes() != (ROOT / FILES[relative]).read_bytes():
+                continue
         if file == "konsolerc" or file == str(STATE / "konsolestaterc"):
             required = ("konsole/WindowsModern.profile", "konsole/WindowsModern-tabs.css")
             if any(relative not in state["files"] for relative in required):
