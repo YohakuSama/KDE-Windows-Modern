@@ -43,7 +43,7 @@ ColumnLayout {
         Layout.preferredHeight: 40
         PlasmaComponents3.Label {
             Layout.fillWidth: true
-            text: i18n("Emoji and more")
+            text: picker.status === Loader.Ready ? i18n("Emoji and more") : i18n("Clipboard history")
             font.weight: Font.DemiBold
         }
         PlasmaComponents3.ToolButton {
@@ -59,6 +59,7 @@ ColumnLayout {
     }
 
     RowLayout {
+        visible: picker.status === Loader.Ready
         Layout.fillWidth: true
         Layout.leftMargin: 12
         Layout.rightMargin: 12
@@ -127,9 +128,11 @@ ColumnLayout {
         Layout.preferredHeight: 32
         PlasmaComponents3.Label {
             Layout.fillWidth: true
+            visible: picker.status === Loader.Ready
             text: i18n("Clipboard")
             font.weight: Font.DemiBold
         }
+        Item { Layout.fillWidth: true; visible: picker.status !== Loader.Ready }
         PlasmaComponents3.Button {
             objectName: "wmClipboardClearAll"
             visible: page.historyCount > 0
@@ -149,6 +152,7 @@ ColumnLayout {
         visible: page.activeTab !== "clipboard" && status === Loader.Ready
         active: page.emojiPickerEnabled
         source: "EmojiPicker.qml"
+        onStatusChanged: if (status !== Loader.Ready && page.activeTab !== "clipboard") page.activeTab = "clipboard"
         onLoaded: item.mode = Qt.binding(() => page.activeTab)
     }
     Connections {

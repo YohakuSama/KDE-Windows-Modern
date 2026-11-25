@@ -17,7 +17,7 @@ DATA = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")).absol
 APP_STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")).absolute()
 DOMAINS = ["plasma_applet_org.kde.windowsmodern." + n for n in
            ("startmenu", "systemtray", "digitalclock", "icontasks", "search", "showdesktop", "taskview")]
-DOMAINS.append("plasma_shell_org.kde.windowsmodern.lockscreen")
+DOMAINS.extend(("plasma_shell_org.kde.windowsmodern.lockscreen", "plasma_containmentactions_org.kde.windowsmodern.contextmenu"))
 LANGUAGES = ("zh_CN", "zh_SG", "zh_Hans")
 CONFIG_NAMES = (
     "kdeglobals", "kdedefaults", "kwinrc", "kscreenlockerrc", "plasmarc",

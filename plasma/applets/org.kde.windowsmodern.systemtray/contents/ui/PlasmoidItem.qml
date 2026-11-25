@@ -154,10 +154,10 @@ AbstractItem {
         height: parent.height
         active: (plasmoidContainer.groupedQuickSettings
                 && (plasmoidContainer.itemId !== "org.kde.plasma.battery" || root.panelHasBattery))
-            || (plasmoidContainer.inVisibleLayout
-                && (plasmoidContainer.itemId === "org.kde.plasma.devicenotifier"
-                    || (plasmoidContainer.itemId === "org.kde.plasma.bluetooth"
-                        && BluezQt.Manager.bluetoothOperational)))
+            || plasmoidContainer.itemId === "org.kde.plasma.clipboard"
+            || plasmoidContainer.itemId === "org.kde.plasma.devicenotifier"
+            || (plasmoidContainer.itemId === "org.kde.plasma.bluetooth"
+                && BluezQt.Manager.bluetoothOperational)
         sourceComponent: {
             switch (plasmoidContainer.itemId) {
             case "org.kde.plasma.networkmanagement": return networkGlyph;
@@ -165,6 +165,7 @@ AbstractItem {
             case "org.kde.plasma.battery": return batteryGlyph;
             case "org.kde.plasma.bluetooth": return bluetoothGlyph;
             case "org.kde.plasma.devicenotifier": return removableGlyph;
+            case "org.kde.plasma.clipboard": return clipboardGlyph;
             default: return null;
             }
         }
@@ -207,6 +208,16 @@ AbstractItem {
             roundToIconSize: false
             isMask: true
             source: plasmoidContainer.panelGlyph("network-bluetooth-symbolic")
+            color: Kirigami.Theme.textColor
+        }
+    }
+
+    Component {
+        id: clipboardGlyph
+        Kirigami.Icon {
+            roundToIconSize: false
+            isMask: true
+            source: plasmoidContainer.panelGlyph("edit-paste-symbolic")
             color: Kirigami.Theme.textColor
         }
     }

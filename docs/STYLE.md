@@ -968,3 +968,11 @@ The stock desktop/file-manager context menu remains a real KDE QMenu. Its light/
 ### Runtime regression fixes for panel popups and footer
 
 The clock popup is owned by its actual compact representation, with an explicit mapped panel anchor and an eight logical pixel gap. It refuses to open without a valid panel window rather than appearing at desktop origin. Start uses the same edge gap. Quick Settings uses a Qt Quick Slider template with full-row input height, longer equal tracks, and backend readback suspended during an active drag. Tests exercise real click, press/move/release, and wheel events on both rows. The default Start avatar is locally drawn to match the neutral reference (not the imported green glyph); custom user photos remain supported. An initial footer migration enables the previously hidden shortcuts once. Power/account menus use neutral hover, 16px icons and 36px rows with Lock in the power menu.
+
+### Native desktop background context menu
+
+On NixOS, the containment-actions plugin groups the stock KDE desktop actions into a compact Windows-style menu, delegates the real actions and retains additional commands under Show more options. It is a loadable module built against the same Plasma ABI, with a reversible layout configuration and runtime build identity check. The Dolphin file menu is separate and requires its own visual acceptance.
+
+### Native tray and clipboard integration
+
+Center the overflow cells and keep the same native status glyphs in overflow and on the panel. Respect an explicitly pinned clipboard or device, hide passive unpinned entries, keep the native history and optional working emoji categories, and do not display an empty tab strip. Wi-Fi retains the real network model and one generic network settings link. The existing clipboard test now verifies a rendered image fixture.

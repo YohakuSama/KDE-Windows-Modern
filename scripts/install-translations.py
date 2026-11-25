@@ -13,7 +13,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 DOMAINS = tuple("plasma_applet_org.kde.windowsmodern." + name for name in (
     "startmenu", "systemtray", "digitalclock", "icontasks", "search", "showdesktop", "taskview"
-)) + ("plasma_shell_org.kde.windowsmodern.lockscreen",)
+)) + ("plasma_shell_org.kde.windowsmodern.lockscreen", "plasma_containmentactions_org.kde.windowsmodern.contextmenu")
 
 def compile_mo(messages):
     catalog = dict(messages)

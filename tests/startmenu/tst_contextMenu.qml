@@ -24,6 +24,9 @@ Item {
                 {text: "Remove", actionId: "remove", actionArgument: 0}], 10, 10, {index: 7});
             const popup = findChild(menu, "wmStartContextPopup");
             tryCompare(popup, "opened", true);
+            compare(popup.contentItem.currentIndex, -1);
+            keyClick(Qt.Key_Down);
+            compare(popup.contentItem.currentIndex, 0);
             keyClick(Qt.Key_Down);
             keyClick(Qt.Key_Return);
             tryCompare(menu, "opened", false);
@@ -31,6 +34,24 @@ Item {
             compare(invoked.signalArguments[0][0], "remove");
             compare(invoked.signalArguments[0][1], 0);
             compare(invoked.signalArguments[0][2].index, 7);
+        }
+        function test_neutralOpeningAndUpNavigation() {
+            menu.open([{text: "Open", actionId: "open", icon: "document-open-symbolic"},
+                {type: "separator"}, {text: "Remove", actionId: "remove"}], 10, 10, {});
+            const popup = findChild(menu, "wmStartContextPopup");
+            tryCompare(popup, "opened", true);
+            compare(popup.contentItem.currentIndex, -1);
+            tryVerify(() => popup.contentItem.itemAtIndex(0) !== null);
+            const row = popup.contentItem.itemAtIndex(0);
+            compare(row.height, 32);
+            const glyph = findChild(row, "wmStartActionGlyph");
+            verify(glyph);
+            tryCompare(glyph, "width", 16);
+            keyClick(Qt.Key_Up);
+            compare(popup.contentItem.currentIndex, 2);
+            keyClick(Qt.Key_Escape);
+            tryCompare(menu, "opened", false);
+            compare(invoked.count, 0);
         }
         function test_modelChangesDismissCapturedRow() {
             menu.open([{text: "Open", actionId: "open"}], 10, 10, {model: sourceModel, index: 0});

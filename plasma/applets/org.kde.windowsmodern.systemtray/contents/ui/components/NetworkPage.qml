@@ -218,23 +218,7 @@ Lib.DetailPage {
                             }
                         }
 
-                        PlasmaComponents3.ToolButton {
-                            visible: connectionState === PlasmaNM.Enums.Activated
-                            Layout.preferredWidth: 30
-                            Layout.preferredHeight: 30
-                            Layout.alignment: Qt.AlignVCenter
-                            text: i18n("Network properties")
-                            display: PlasmaComponents3.AbstractButton.IconOnly
-                            contentItem: Kirigami.Icon {
-                                source: "document-properties"
-                                width: 18
-                                height: 18
-                                color: Kirigami.Theme.textColor
-                                isMask: true
-                            }
-                            onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
-                            PlasmaComponents3.ToolTip { text: parent.text }
-                        }
+                        // The footer is the single entry to the generic Network settings KCM.
                     }
                 }
 
