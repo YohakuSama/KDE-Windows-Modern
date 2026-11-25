@@ -33,9 +33,9 @@ def _slice(data, offset, length, label):
 
 
 def _toc(data):
-    head = _slice(data, 0, 32, "header")
-    if not (head.startswith(b"mrm_pri") or head.startswith(b"mrm_prif")):
+    if len(data) < 32 or not (data.startswith(b"mrm_pri") or data.startswith(b"mrm_prif")):
         raise ValueError("Not a Windows PRI resource index")
+    head = _slice(data, 0, 32, "header")
     toc_at = _u32(head, 16)
     section_start = _u32(head, 20)
     count = _u16(head, 24)
