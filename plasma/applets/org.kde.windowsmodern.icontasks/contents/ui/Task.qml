@@ -16,6 +16,7 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 import plasma.applet.org.kde.plasma.icontasks as TaskManagerApplet
+import "code/JumpListPolicy.js" as JumpListPolicy
 import org.kde.plasma.plasmoid
 
 import org.kde.taskmanager as TaskManager
@@ -271,7 +272,7 @@ FloatingToolTipArea {
     }
     onAudioIndicatorsEnabledChanged: task.hasAudioStreamChanged()
 
-    Keys.onMenuPressed: event => contextMenuTimer.start()
+    Keys.onMenuPressed: event => task.scheduleContextMenu(event.modifiers)
     Keys.onReturnPressed: event => TaskManagerApplet.TaskTools.activateTask(modelIndex(), model, event.modifiers, task, Plasmoid, tasksRoot, effectWatcher.registered)
     Keys.onEnterPressed: event => Keys.returnPressed(event);
     Keys.onSpacePressed: event => Keys.returnPressed(event);
@@ -301,7 +302,13 @@ FloatingToolTipArea {
     function showContextMenu(args: var): void {
         task.hideImmediately();
         contextMenu = tasksRoot.createContextMenu(task, modelIndex(), args) as ContextMenu;
-        contextMenu.show();
+        if (contextMenu)
+            contextMenu.show();
+    }
+
+    function scheduleContextMenu(modifiers: int): void {
+        contextMenuTimer.advanced = JumpListPolicy.expandedFromModifiers(modifiers, Qt.ShiftModifier);
+        contextMenuTimer.restart();
     }
 
     function updateAudioStreams(args: var): void {
@@ -412,13 +419,18 @@ FloatingToolTipArea {
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
         // No gesturePolicy: WithinBounds (as upstream Plasma 6.8 dropped it).
         // Its exclusive grab closed the context menu the moment it opened.
-        onPressedChanged: if (pressed) contextMenuTimer.start()
+        id: rightMenuTap
+        onPressedChanged: if (pressed) task.scheduleContextMenu(rightMenuTap.point.modifiers)
     }
 
     Timer {
         id: contextMenuTimer
+        property bool advanced: false
         interval: 0
-        onTriggered: menuTapHandler.longPressed()
+        onTriggered: {
+            task.showContextMenu({showAllPlaces: !!task.model.IsLauncher, showAdvanced: advanced});
+            advanced = false;
+        }
     }
 
     TapHandler {

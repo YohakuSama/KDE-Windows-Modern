@@ -15,6 +15,7 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.taskmanager as TaskManager
 import org.kde.plasma.private.mpris as Mpris
 import plasma.applet.org.kde.plasma.icontasks as TaskManagerApplet
+import "code/JumpListPolicy.js" as JumpListPolicy
 
 PlasmaExtras.Menu {
     id: menu
@@ -26,6 +27,16 @@ PlasmaExtras.Menu {
     readonly property var atm: TaskManager.AbstractTasksModel
 
     property bool showAllPlaces: false
+    property bool showAdvanced: false
+    readonly property bool hasWindow: !!visualParent && !get(TaskManager.AbstractTasksModel.IsLauncher) && !get(TaskManager.AbstractTasksModel.IsStartup)
+    readonly property string launcherId: String(get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon) || "")
+    readonly property bool pinnedHere: !!visualParent && launcherId.length > 0
+        && (get(TaskManager.AbstractTasksModel.IsLauncher) || tasksModel.launcherActivities(get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon))
+            .some(activity => activity === activityInfo.currentActivity || activity === activityInfo.nullUuid))
+    readonly property var launcherActions: JumpListPolicy.launcherActions(
+        !!visualParent && launcherId.length > 0, !!get(TaskManager.AbstractTasksModel.IsStartup),
+        Plasmoid.immutability === PlasmaCore.Types.SystemImmutable, pinnedHere,
+        activityInfo.numberOfRunningActivities)
 
     placement: {
         if (Plasmoid.location === PlasmaCore.Types.LeftEdge) {
@@ -39,10 +50,10 @@ PlasmaExtras.Menu {
         }
     }
 
-    minimumWidth: visualParent ? Math.min(visualParent.width, 240) : 0
+    minimumWidth: Math.max(220, (visualParent as Item)?.width || 0)
 
     onStatusChanged: {
-        if (visualParent && get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon).toString() !== "" && status === PlasmaExtras.Menu.Open) {
+        if (visualParent && launcherId.length > 0 && status === PlasmaExtras.Menu.Open) {
             activitiesDesktopsMenu.refresh();
 
         } else if (status === PlasmaExtras.Menu.Closed) {
@@ -60,7 +71,7 @@ PlasmaExtras.Menu {
     }
 
     function showContextMenuWithAllPlaces(): void {
-        (visualParent as Task).showContextMenu({showAllPlaces: true});
+        (visualParent as Task).showContextMenu({showAllPlaces: true, showAdvanced: menu.showAdvanced});
     }
 
     function get(modelProp: int): var {
@@ -109,14 +120,13 @@ PlasmaExtras.Menu {
             });
         }
 
-        // We always have actions category.
-        sections = sections.filter(section => section.actions.length > 0);
-
         sections.push({
             title: i18nc("@title:group for section of menu items", "Actions"),
             group: "actions",
             actions: backend.jumpListActions(launcherUrl, menu)
         });
+
+        sections = sections.filter(section => section.actions.length > 0);
 
         // C++ can override section heading by returning a QString as first action
         sections.forEach((section) => {
@@ -157,7 +167,7 @@ PlasmaExtras.Menu {
         // Add Media Player control actions
         const playerData = mpris2Source.playerForLauncherUrl(launcherUrl, get(TaskManager.AbstractTasksModel.AppPid));
 
-        if (playerData && playerData.canControl && !(get(TaskManager.AbstractTasksModel.WinIdList) !== undefined && get(TaskManager.AbstractTasksModel.WinIdList).length > 1)) {
+        if ((menu.showAdvanced || !menu.hasWindow) && playerData && playerData.canControl && !(get(TaskManager.AbstractTasksModel.WinIdList) !== undefined && get(TaskManager.AbstractTasksModel.WinIdList).length > 1)) {
             const playing = playerData.playbackStatus === Mpris.PlaybackStatus.Playing;
             let menuItem = menu.newMenuItem(menu);
             menuItem.text = i18nc("Play previous track", "Previous Track");
@@ -215,7 +225,7 @@ PlasmaExtras.Menu {
 
             // Technically media controls and audio streams are separate but for the user they're
             // semantically related, don't add a separator in between.
-            if (!(menu.visualParent as Task).hasAudioStream) {
+            if (!menu.showAdvanced || !(menu.visualParent as Task).hasAudioStream) {
                 menu.addMenuItem(newSeparator(menu), startNewInstanceItem);
             }
 
@@ -254,7 +264,7 @@ PlasmaExtras.Menu {
         // is actually playing sound.
         // This way you can unmute, e.g. a telephony app, even after the conversation has ended,
         // so you still have it ringing later on.
-        if ((menu.visualParent as Task).hasAudioStream) {
+        if (menu.showAdvanced && (menu.visualParent as Task).hasAudioStream) {
             const muteItem = menu.newMenuItem(menu);
             muteItem.checkable = true;
             muteItem.checked = Qt.binding(() => {
@@ -274,7 +284,7 @@ PlasmaExtras.Menu {
     PlasmaExtras.MenuItem {
         id: startNewInstanceItem
         visible: menu.get(TaskManager.AbstractTasksModel.CanLaunchNewInstance)
-        text: i18nc("action:inmenu", "Open New Window")
+        text: (menu.visualParent as Task)?.appName || i18n("Open new window")
         icon: "window-new"
 
         onClicked: tasksModel.requestNewInstance(menu.modelIndex)
@@ -283,7 +293,7 @@ PlasmaExtras.Menu {
     PlasmaExtras.MenuItem {
         id: virtualDesktopsMenuItem
 
-        visible: virtualDesktopInfo.numberOfDesktops > 1
+        visible: menu.showAdvanced && virtualDesktopInfo.numberOfDesktops > 1
             && (menu.visualParent && !menu.get(TaskManager.AbstractTasksModel.IsLauncher)
             && !menu.get(TaskManager.AbstractTasksModel.IsStartup)
             && menu.get(TaskManager.AbstractTasksModel.IsVirtualDesktopsChangeable))
@@ -384,7 +394,7 @@ PlasmaExtras.Menu {
      PlasmaExtras.MenuItem {
         id: activitiesDesktopsMenuItem
 
-        visible: activityInfo.numberOfRunningActivities > 1
+        visible: menu.showAdvanced && activityInfo.numberOfRunningActivities > 1
             && (menu.visualParent && !menu.get(TaskManager.AbstractTasksModel.IsLauncher)
             && !menu.get(TaskManager.AbstractTasksModel.IsStartup))
 
@@ -497,22 +507,11 @@ PlasmaExtras.Menu {
     PlasmaExtras.MenuItem {
         id: launcherToggleAction
 
-        visible: menu.visualParent
-            && !menu.get(TaskManager.AbstractTasksModel.IsLauncher)
-            && !menu.get(TaskManager.AbstractTasksModel.IsStartup)
-            && Plasmoid.immutability !== PlasmaCore.Types.SystemImmutable
-            && (activityInfo.numberOfRunningActivities < 2)
-            && !doesBelongToCurrentActivity()
+        visible: menu.launcherActions.pin
+        enabled: visible
 
-        enabled: menu.visualParent && menu.get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon).toString() !== ""
-
-        text: i18nc("action:inmenu", "&Pin to Task Manager")
+        text: i18n("Pin to taskbar")
         icon: "window-pin"
-
-        function doesBelongToCurrentActivity(): bool {
-            return tasksModel.launcherActivities(menu.get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon))
-                .some(activity => activity === activityInfo.currentActivity || activity === activityInfo.nullUuid);
-        }
 
         onClicked: {
             tasksModel.requestAddLauncher(menu.get(TaskManager.AbstractTasksModel.LauncherUrl));
@@ -522,19 +521,16 @@ PlasmaExtras.Menu {
     PlasmaExtras.MenuItem {
         id: showLauncherInActivitiesItem
 
-        text: i18nc("action:inmenu", "&Pin to Task Manager")
+        text: i18n("Pin to taskbar")
         icon: "window-pin"
 
-        visible: menu.visualParent
-            && !menu.get(TaskManager.AbstractTasksModel.IsStartup)
-            && Plasmoid.immutability !== PlasmaCore.Types.SystemImmutable
-            && (activityInfo.numberOfRunningActivities >= 2)
+        visible: menu.launcherActions.perActivity
 
         readonly property Connections activitiesLaunchersMenuConnections: Connections {
             target: activityInfo
 
             function onNumberOfRunningActivitiesChanged(): void {
-                activitiesDesktopsMenu.refresh()
+                activitiesLaunchersMenu.refresh()
             }
         }
 
@@ -598,13 +594,10 @@ PlasmaExtras.Menu {
     }
 
     PlasmaExtras.MenuItem {
-        visible: (menu.visualParent
-                && menu.get(TaskManager.AbstractTasksModel.IsStartup) !== true
-                && Plasmoid.immutability !== PlasmaCore.Types.SystemImmutable
-                && !launcherToggleAction.visible
-                && activityInfo.numberOfRunningActivities < 2)
+        visible: menu.launcherActions.unpin
+        enabled: visible
 
-        text: i18nc("action:inmenu", "Unpin from Task Manager")
+        text: i18n("Unpin from taskbar")
         icon: "window-unpin"
 
         onClicked: {
@@ -615,7 +608,7 @@ PlasmaExtras.Menu {
     PlasmaExtras.MenuItem {
         id: moreActionsMenuItem
 
-        visible: (menu.visualParent && !menu.get(TaskManager.AbstractTasksModel.IsLauncher) && !menu.get(TaskManager.AbstractTasksModel.IsStartup))
+        visible: menu.showAdvanced && menu.hasWindow
 
         enabled: visible
 
@@ -746,13 +739,17 @@ PlasmaExtras.Menu {
         }
     }
 
-    PlasmaExtras.MenuItem { separator: true }
+    PlasmaExtras.MenuItem {
+        separator: true
+        visible: configureTaskbarItem.visible || editPanelItem.visible
+    }
 
     PlasmaExtras.MenuItem {
+        id: configureTaskbarItem
         property PlasmaCore.Action configureAction: null
 
         enabled: configureAction && configureAction.enabled
-        visible: configureAction && configureAction.visible
+        visible: menu.showAdvanced && configureAction && configureAction.visible
 
         text: configureAction ? configureAction.text : ""
         icon: configureAction ? configureAction.icon : ""
@@ -763,10 +760,11 @@ PlasmaExtras.Menu {
     }
 
     PlasmaExtras.MenuItem {
+        id: editPanelItem
         property PlasmaCore.Action editModeAction: null
 
         enabled: editModeAction && editModeAction.enabled
-        visible: editModeAction && editModeAction.visible
+        visible: menu.showAdvanced && editModeAction && editModeAction.visible
 
         text: editModeAction ? editModeAction.text : ""
         icon: editModeAction ? editModeAction.icon : ""
@@ -776,7 +774,10 @@ PlasmaExtras.Menu {
         Component.onCompleted: editModeAction = Plasmoid.containment.internalAction("configure")
     }
 
-    PlasmaExtras.MenuItem { separator: true }
+    PlasmaExtras.MenuItem {
+        separator: true
+        visible: closeWindowItem.visible
+    }
 
     PlasmaExtras.MenuItem {
         id: closeWindowItem
@@ -784,7 +785,7 @@ PlasmaExtras.Menu {
 
         enabled: menu.visualParent && menu.get(TaskManager.AbstractTasksModel.IsClosable)
 
-        text: menu.get(TaskManager.AbstractTasksModel.IsGroupParent) ? i18nc("@action:inmenu", "&Close All") : i18nc("@action:inmenu", "&Close")
+        text: menu.get(TaskManager.AbstractTasksModel.IsGroupParent) ? i18n("Close all windows") : i18n("Close window")
         icon: "window-close"
 
         onClicked: {
