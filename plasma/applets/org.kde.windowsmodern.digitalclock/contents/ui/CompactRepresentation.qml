@@ -51,6 +51,10 @@ MouseArea {
         plasmoidItem.notificationIcon, plasmoidItem.notificationsInhibited,
         ColorType.isDark(Kirigami.Theme.backgroundColor),
         filledDndAsset.length > 0)
+    readonly property var popupCoordinator: {
+        const provider = plasmoidItem.splitBlurProvider;
+        return provider && typeof provider.prepareShellPopup === "function" ? provider : null;
+    }
     property bool wasExpanded: false
     function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
         clockDialog.toggle(previous);
@@ -114,7 +118,14 @@ MouseArea {
         floating: PopupGeometry.popupGap()
         backgroundHints: PlasmaCore.Dialog.NoBackground
         visible: false
-        hideOnWindowDeactivate: !Plasmoid.configuration.pin
+        hideOnWindowDeactivate: !main.popupCoordinator && !Plasmoid.configuration.pin
+        property bool wmKeepOnDeactivate: Plasmoid.configuration.pin
+        function closeCoordinatedPopup() { visible = false; }
+        function dismissFromUser() {
+            visible = false;
+            if (main.popupCoordinator)
+                main.popupCoordinator.restoreShellPopupFocus();
+        }
         function applyNotificationSlide() {
             const provider = main.plasmoidItem.splitBlurProvider;
             if (provider && typeof provider.setNotificationPopupSlide === "function")
@@ -137,13 +148,15 @@ MouseArea {
         }
 
         function toggle(previous) {
-            if (previous) { visible = false; return; }
+            if (previous) { dismissFromUser(); return; }
             if (!clockPopupAnchor.Window.window || !clockPopupAnchor.visible
                 || clockPopupAnchor.width <= 0 || clockPopupAnchor.height <= 0) {
                 console.warn("WM_POPUP clock: panel anchor not mapped");
                 return;
             }
             clockPopupAnchor.sync();
+            if (main.popupCoordinator)
+                main.popupCoordinator.prepareShellPopup("clock", clockDialog);
             applyNotificationSlide();
             visible = true;
             requestActivate();
@@ -157,7 +170,7 @@ MouseArea {
             width: implicitWidth
             height: implicitHeight
             focus: true
-            Keys.onEscapePressed: clockDialog.visible = false
+            Keys.onEscapePressed: clockDialog.dismissFromUser()
         }
     }
 
