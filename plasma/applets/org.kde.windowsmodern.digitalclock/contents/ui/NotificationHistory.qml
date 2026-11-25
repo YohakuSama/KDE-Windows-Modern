@@ -29,8 +29,10 @@ ColumnLayout {
     // The parent caps the history height using the available screen area.
     readonly property int headerHeight: 28
     readonly property int emptyHeight: 64
-    readonly property int dndHeight: effectiveDnd ? Math.ceil(24 + 6 + Math.max(30, dndMessage.implicitHeight) + 8 + 22) : 0
-    readonly property int historyChromeHeight: headerHeight + spacing + (effectiveDnd ? dndHeight + spacing : 0)
+    readonly property int dndHeight: Math.ceil(24 + 6 + Math.max(30, dndMessage.implicitHeight) + 8 + 22)
+    // Reserve the same banner budget in both states. DND consumes space inside
+    // the card, not by moving the popup or shrinking the calendar.
+    readonly property int historyChromeHeight: headerHeight + spacing + dndHeight + spacing
     readonly property int minimumSectionHeight: historyChromeHeight + emptyHeight
     readonly property int preferredSectionHeight: historyChromeHeight + (notificationModel.count > 0
         ? Math.max(emptyHeight, Math.ceil(list.contentHeight > 0 ? list.contentHeight : notificationModel.count * 100))
@@ -368,7 +370,7 @@ ColumnLayout {
                                     if (!timestamp || isNaN(timestamp.getTime())) return "";
                                     const sameDay = timestamp.toDateString() === history.todayKey;
                                     return (sameDay ? "" : history.timeLocale.toString(timestamp, DateFormat.shortDateFullYear(history.timeLocale.dateFormat(Locale.ShortFormat))) + " ")
-                                        + history.timeLocale.toString(timestamp, history.timeFormat);
+                                        + DateFormat.formatClockTime(history.timeLocale, timestamp, history.timeFormat);
                                 }
                                 color: palette.textSecondary
                                 font.pixelSize: 11

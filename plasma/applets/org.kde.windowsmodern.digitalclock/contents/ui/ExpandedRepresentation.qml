@@ -270,7 +270,7 @@ FocusScope {
                             textFormat: Text.PlainText
                             text: {
                                 const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
-                                const full = expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt);
+                                const full = DateFormat.formatClockTime(expandedRoot.clockTimeLocale, expandedRoot.clockApplet.currentTime, fmt);
                                 // Removing AP from the FORMAT changes 12-hour conversion.
                                 // Split only the actual formatted suffix; preserve prefixes.
                                 return amPmLabel.visible && full.endsWith(amPmLabel.text)
@@ -292,7 +292,7 @@ FocusScope {
                             horizontalAlignment: Text.AlignLeft
                             verticalAlignment: Text.AlignTop
                             textFormat: Text.PlainText
-                            text: expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, "AP")
+                            text: DateFormat.formatClockTime(expandedRoot.clockTimeLocale, expandedRoot.clockApplet.currentTime, "AP")
                             color: palette.text
                             font {
                                 family: Kirigami.Theme.defaultFont.family

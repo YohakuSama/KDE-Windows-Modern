@@ -153,12 +153,13 @@ Item {
             return box;
         }
 
-        // 220 x 32 in a 48 px taskbar, fully rounded, scaled with the panel.
+        // 248 x 36 reference pill, capped for tall panels and scaled down for small ones.
         function test_boxGeometry_data() {
             return [
-                { tag: "48px panel", thickness: 48, boxHeight: 32, boxWidth: 220, margin: 4 },
-                { tag: "36px panel", thickness: 36, boxHeight: 24, boxWidth: 165, margin: 3 },
-                { tag: "64px panel", thickness: 64, boxHeight: 43, boxWidth: 296, margin: 5 },
+                { tag: "42px inset cell", thickness: 42, boxHeight: 36, boxWidth: 248, margin: 2 },
+                { tag: "48px panel", thickness: 48, boxHeight: 36, boxWidth: 248, margin: 3 },
+                { tag: "36px panel", thickness: 36, boxHeight: 31, boxWidth: 214, margin: 1 },
+                { tag: "64px panel", thickness: 64, boxHeight: 36, boxWidth: 248, margin: 7 },
             ];
         }
         function test_boxGeometry(data) {
@@ -167,6 +168,25 @@ Item {
             compare(box.boxWidth, data.boxWidth);
             compare(box.sideMargin, data.margin);
             compare(box.preferredWidth, data.boxWidth + 2 * data.margin);
+            const pill = findChild(box, "wmSearchPill");
+            const icon = findChild(box, "searchBoxIcon");
+            const label = findChild(box, "wmSearchPlaceholder");
+            compare(pill.radius, data.boxHeight / 2);
+            compare(icon.width, Math.round(data.boxHeight * 20 / 36));
+            compare(label.font.pixelSize, Math.round(data.boxHeight * 16 / 36));
+        }
+
+        function test_fullSearchNeutralStates() {
+            const box = makeBox({height: 42});
+            const pill = findChild(box, "wmSearchPill");
+            compare(pill.restFill, Qt.color(box.darkTheme ? "#3D3D3D" : "#F3F3F3"));
+            box.forceHovered = true;
+            tryCompare(pill, "color", pill.hoverFill);
+            box.forcePressed = true;
+            tryCompare(pill, "color", pill.pressedFill);
+            box.forcePressed = false;
+            box.selected = true;
+            tryCompare(pill, "color", pill.selectedFill);
         }
 
         function test_compactSearchAndSelection() {

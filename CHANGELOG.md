@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Match the measured taskbar search pill, keep notification geometry stable when Do Not Disturb changes, and display Latin AM/PM in uppercase without replacing the regional clock format.
+
 - Prepare version 1.2.2 for the full NixOS owner test snapshot (not a published stable release).
 
 - Bind removable-device action delegates to the native ActionsInfo roles and verify the expanded action menu interaction.

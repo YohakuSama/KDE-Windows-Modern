@@ -169,7 +169,7 @@ Item {
             tryCompare(clear, "visible", false);
             tryCompare(empty, "visible", true);
             tryCompare(dnd, "visible", false);
-            tryCompare(panel, "height", 124);
+            tryVerify(() => panel.height >= 220);
             const emptyHeight = panel.height;
             const calendarHeight = calendar.height;
             notifications.append({applicationName:"System", summary:"A real notification layout",
@@ -179,6 +179,14 @@ Item {
             tryCompare(empty, "visible", false);
             tryVerify(() => panel.height > emptyHeight);
             compare(calendar.height, calendarHeight);
+            const populatedHeight = panel.height;
+            const populatedPopupHeight = popup.height;
+            clock.notificationsInhibited = true;
+            tryCompare(dnd, "visible", true);
+            tryCompare(panel, "height", populatedHeight);
+            compare(popup.height, populatedPopupHeight);
+            clock.notificationsInhibited = false;
+            tryCompare(dnd, "visible", false);
             for (let i = 0; i < 15; ++i)
                 notifications.append({applicationName:"System", summary:"Notification "+i,
                     body:"A longer body.", closable:true, isGroup:false, isInGroup:false, expired:false});
@@ -186,11 +194,16 @@ Item {
             notifications.clear();
             tryCompare(panel, "height", emptyHeight);
             tryCompare(clear, "visible", false);
+            const emptyPopupHeight = popup.height;
             clock.notificationsInhibited = true;
             tryCompare(dnd, "visible", true);
-            tryVerify(() => panel.height > emptyHeight);
+            tryCompare(panel, "height", emptyHeight);
+            compare(calendar.height, calendarHeight);
+            compare(popup.height, emptyPopupHeight);
             tryCompare(clear, "visible", false);
             clock.notificationsInhibited = false;
+            tryCompare(dnd, "visible", false);
+            tryCompare(panel, "height", emptyHeight);
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
         }
         function test_focusFooterRealActions() {

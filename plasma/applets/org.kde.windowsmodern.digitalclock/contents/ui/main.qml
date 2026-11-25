@@ -154,9 +154,9 @@ PlasmoidItem {
     function formatTime(dateTime: date, showSeconds: bool): string {
         let formattedTime;
         if (showSeconds) {
-            formattedTime = root.clockTimeLocale.toString(dateTime, root.timeFormatWithSeconds);
+            formattedTime = DateFormat.formatClockTime(root.clockTimeLocale, dateTime, root.timeFormatWithSeconds);
         } else {
-            formattedTime = root.clockTimeLocale.toString(dateTime, root.timeFormat);
+            formattedTime = DateFormat.formatClockTime(root.clockTimeLocale, dateTime, root.timeFormat);
         }
 
         // If the date differs from the current clock's date, append the day name.
