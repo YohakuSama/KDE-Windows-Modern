@@ -15,8 +15,10 @@ QtObject {
     readonly property color background:       isDark ? "#202020" : "#F9F9F9"
     readonly property color surface:          isDark ? "#2C2C2C" : "#FFFFFF"
     readonly property color surfaceBorder:    isDark ? "#383838" : "#DCDCDC"
-    // Translucent internal surfaces keep the native popup material visible.
+    // Keep the same neutral tint as Quick Settings. Alpha is used only
+    // after the native rounded-region blur is enabled.
     readonly property color detachedPanel: isDark ? "#202020" : "#F2F2F2"
+    readonly property color acrylicPanel: isDark ? "#F2202020" : "#F7F2F2F2"
     readonly property color panelTint: isDark ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.30)
     readonly property color progressTrack: isDark ? "#929292" : "#767676"
     readonly property color panelBorder: isDark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.10)

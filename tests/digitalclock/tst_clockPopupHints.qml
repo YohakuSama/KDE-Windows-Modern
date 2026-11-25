@@ -27,6 +27,18 @@ Item {
     }
     FocusSession { id: focusState; settings: mockSettings }
     QtObject {
+        id: blurBackend
+        property bool supported: true
+        property int calls: 0
+        property bool lastEnabled: false
+        function setSplitPopupBlur(content, first, second, radius, enabled) {
+            calls++;
+            lastEnabled = enabled;
+            return supported && enabled && first.width > 0 && second.width > 0
+                && radius === 8;
+        }
+    }
+    QtObject {
         id: clock
         property date currentTime: new Date(2026, 10, 25, 5, 0)
         property string timeFormatWithSeconds: "HH:mm:ss"
@@ -54,6 +66,27 @@ Item {
     TestCase {
         name: "ClockExpandedRepresentation"
         when: windowShown
+        function test_splitAcrylicUsesExistingBackendOrSolidFallback() {
+            const panel = findChild(popup, "wmNotificationPanel");
+            compare(popup.splitAcrylic, false);
+            compare(panel.color.a, 1);
+            popup.splitBlurProvider = blurBackend;
+            popup.allowSplitAcrylic = true;
+            tryCompare(popup, "splitAcrylic", true);
+            verify(panel.color.a < 1);
+            popup.allowSplitAcrylic = false;
+            tryCompare(popup, "splitAcrylic", false);
+            compare(blurBackend.lastEnabled, false);
+            compare(panel.color.a, 1);
+            blurBackend.supported = false;
+            const calls = blurBackend.calls;
+            popup.allowSplitAcrylic = true;
+            tryVerify(() => blurBackend.calls > calls);
+            compare(popup.splitAcrylic, false);
+            popup.splitBlurProvider = null;
+            popup.allowSplitAcrylic = false;
+            blurBackend.supported = true;
+        }
         function test_chineseCalendarWithIndependentLocale() {
             compare(popup.calendarLocale.name, "zh_CN");
             tryCompare(findChild(popup, "wmCalendarDateHeading"), "text", "11月25日 星期三");

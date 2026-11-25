@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Reuse the tray's native rounded-region blur for the notification and calendar flyout, keeping an opaque fallback when disabled or unavailable. Share calendar day colors and avoid rebuilding the month grid on each clock tick.
+
 - Keep week numbers aligned with local calendar dates through daylight-saving transitions, align weekday columns, and allow keyboard activation of calendar navigation and zoom tiles.
 - Keep the calendar footer visible in short work areas by fitting the grid before optional sections; use consistent notification actions, progress colors and scrolling feedback.
 
