@@ -106,25 +106,31 @@ void FloatingToolTipArea::setMainItem(QQuickItem *mainItem)
         m_mainItem = mainItem;
         Q_EMIT mainItemChanged();
 
-        if (!isValid() && s_dialog && s_dialog->owner() == this) {
+        // A pinned app can acquire/lose a window while its name or
+        // preview is showing. Never keep the old delegate mapped.
+        if (s_dialog && s_dialog->owner() == this) {
             s_dialog->setVisible(false);
+            s_dialog->setMainItem(nullptr);
         }
     }
 }
 
 void FloatingToolTipArea::showToolTip()
 {
+    m_showTimer.stop();
     if (!m_active) {
         return;
     }
 
     Q_EMIT aboutToShow();
+    if (!m_active || !isValid()) return;
 
     FloatingToolTipDialog *dlg = tooltipDialogInstance();
 
     if (!mainItem()) {
         setMainItem(dlg->loadDefaultItem(qmlEngine(this)));
     }
+    if (!mainItem()) return;
 
     dlg->setMainItem(nullptr);
 
@@ -267,8 +273,9 @@ void FloatingToolTipArea::setActive(bool active)
         return;
     }
     m_active = active;
-    if (!active && s_dialog && s_dialog->owner() == this) {
-        s_dialog->dismiss();
+    if (!active) {
+        m_showTimer.stop();
+        if (s_dialog && s_dialog->owner() == this) s_dialog->setVisible(false);
     }
     Q_EMIT activeChanged();
 }
@@ -304,7 +311,7 @@ void FloatingToolTipArea::setMargin(int margin)
 void FloatingToolTipArea::hideToolTip()
 {
     m_showTimer.stop();
-    if (s_dialog) {
+    if (s_dialog && s_dialog->owner() == this) {
         s_dialog->dismiss();
     }
 }
@@ -312,7 +319,7 @@ void FloatingToolTipArea::hideToolTip()
 void FloatingToolTipArea::hideImmediately()
 {
     m_showTimer.stop();
-    if (s_dialog) {
+    if (s_dialog && s_dialog->owner() == this) {
         s_dialog->setVisible(false);
     }
 }
@@ -372,7 +379,7 @@ void FloatingToolTipArea::hoverEnterEvent(QHoverEvent *event)
     Q_UNUSED(event)
     setContainsMouse(true);
 
-    if (!m_tooltipsEnabledGlobally) {
+    if (!m_tooltipsEnabledGlobally || !m_active) {
         return;
     }
 

@@ -176,12 +176,14 @@ function activateTask(index, model, modifiers, task, plasmoid, tasks, windowView
         // Option 2: show tooltips for all child tasks
         // ===========================================
         else if (plasmoid.configuration.groupedTaskVisualization === 1) {
-            if (tasks.toolTipOpenedByClick) {
+            const old = tasks.toolTipOpenedByClick;
+            if (old === task) {
                 task.hideImmediately();
+                tasks.toolTipOpenedByClick = null;
             } else {
+                if (old) old.hideImmediately();
                 tasks.toolTipOpenedByClick = task;
-                task.updateMainItemBindings(); // BUG 452187
-                task.showToolTip();
+                task.showToolTip(); // aboutToShow binds the selected task
             }
         }
 
