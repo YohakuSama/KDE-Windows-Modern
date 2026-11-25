@@ -135,16 +135,16 @@ in the Settings PRI. The import is atomic; incomplete input leaves the
 previous import untouched.
 
 ```bash
-python3 scripts/import-shell-assets.py /path/to/Windows --build 26300
+python3 scripts/import-shell-assets.py /path/to/Windows --build 26300.10075
 ```
 
 On NixOS, if Pillow and fontTools are not already available:
 
 ```bash
-nix-shell -p python3 python3Packages.pillow python3Packages.fonttools --run 'python3 scripts/import-shell-assets.py /path/to/Windows --build 26300'
+nix-shell -p python3 python3Packages.pillow python3Packages.fonttools --run 'python3 scripts/import-shell-assets.py /path/to/Windows --build 26300.10075'
 ```
 
-Replace the example build number with the actual source build. The
+The example is the Windows 11 26H2 build published on 2026-11-19. Replace it with the exact version shown by winver on the source installation. See Microsoft's [Windows 11 release information](https://learn.microsoft.com/windows/release-health/windows11-release-information).
 importer records the declared build, original resource paths, source
 hashes and generated output hashes in a private local manifest. It
 does not install or bundle the proprietary font itself. The applets
