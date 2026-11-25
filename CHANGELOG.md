@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Balance the outer tray-group hover padding using the actual Wi-Fi and battery/percentage content widths, including mirrored and vertical layouts, without changing the inner icon pitch.
+
 - Use the same rounded Quick Settings card and logical geometry for home, Wi-Fi, Bluetooth and other quick detail routes, with the media card independently above the settings card. Register the previously missing native glyph QML resource in the compiled tray module.
 
 - Synchronize the shared session-lock and sign-in controls and their geometry tests; enforce direct original resource lookup for the Start footer and power menu, tray status glyphs, notification button and lock controls. Replace the drawn battery approximation with the verified Windows level and charging glyph family pending the exact newer shell assets.

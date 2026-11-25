@@ -87,22 +87,26 @@ TestCase {
             compare(Metrics.coreCellLength(logical, logical, 2) * scale, 24 * scale);
         }
     }
-    function test_groupLeadingPaddingAndCenter() {
-        compare(Metrics.leadingSystemInset(true, false, false), 6);
-        compare(Metrics.leadingSystemInset(true, true, false), 0);
-        compare(Metrics.leadingSystemInset(false, false, false), 0);
-        compare(Metrics.leadingSystemInset(true, false, true), 0);
-        const inset = Metrics.leadingSystemInset(true, false, false);
+    function test_groupSymmetricPaddingAndCenter() {
         const cell = Metrics.coreCellLength(16, 16, 2);
-        const firstCenter = inset + cell / 2;
-        const nextCenter = inset + cell + cell / 2;
-        for (const scale of [1, 1.5, 2]) {
-            compare((nextCenter - firstCenter) * scale, 24 * scale);
-            const rect = Metrics.groupHoverRect({x: 0, y: 3, width: 114, height: 42}, 48, false);
-            compare(rect.height * scale, 40 * scale);
-            compare((rect.y + rect.height / 2) * scale, 24 * scale);
-            compare(rect.width * scale, 110 * scale);
-            compare((firstCenter - rect.x) * scale, 16 * scale);
+        const leading = Metrics.systemEdgeInset(true, false, cell, 16);
+        compare(leading, 6);
+        compare(Metrics.systemEdgeInset(true, true, cell, 16), 0);
+        compare(Metrics.systemEdgeInset(false, false, cell, 16), 0);
+        for (const batteryContent of [16, 20, 46, 60]) {
+            const lastCell = Math.max(cell, batteryContent + 6);
+            const trailing = Metrics.systemEdgeInset(true, false, lastCell, batteryContent);
+            const runWidth = leading + cell * 2 + lastCell + trailing;
+            const firstCenter = leading + cell / 2;
+            const lastCenter = leading + cell * 2 + lastCell / 2;
+            const rect = Metrics.groupHoverRect({x: 0, y: 3, width: runWidth, height: 42}, 48, false);
+            compare(firstCenter - 8 - rect.x, 8);
+            compare(rect.x + rect.width - lastCenter - batteryContent / 2, 8);
+            for (const scale of [1, 1.5, 2]) {
+                compare(rect.height * scale, 40 * scale);
+                compare((rect.y + rect.height / 2) * scale, 24 * scale);
+                compare((leading + cell + cell / 2 - firstCenter) * scale, 24 * scale);
+            }
         }
         const short = Metrics.groupHoverRect({x: 0, y: 0, width: 72, height: 30}, 48, false);
         compare(short.height, 30);

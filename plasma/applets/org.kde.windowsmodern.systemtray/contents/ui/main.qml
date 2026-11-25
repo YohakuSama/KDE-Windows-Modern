@@ -352,16 +352,24 @@ ContainmentItem {
                         readonly property string loadedItemId: item?.itemId || model.itemId || ""
                         readonly property bool systemGroup: TrayMetrics.isQuickSettings(loadedItemId)
                         readonly property bool batteryCell: loadedItemId === "org.kde.plasma.battery"
+                        readonly property int contentLength: batteryCell && !root.vertical
+                            ? root.batteryContentWidth : root.coreItemSize
+                        readonly property int baseSystemCellLength: batteryCell && !root.vertical
+                            ? Math.max(root.systemCellLength, contentLength + 6) : root.systemCellLength
                         leadingSystemInset: {
                             const revision = tasksGrid.delegateRevision;
                             const previous = tasksGrid.itemAtIndex(index - 1);
-                            return TrayMetrics.leadingSystemInset(systemGroup,
-                                !!previous && previous.systemGroup, root.vertical);
+                            return TrayMetrics.systemEdgeInset(systemGroup,
+                                !!previous && previous.systemGroup, baseSystemCellLength, contentLength);
+                        }
+                        trailingSystemInset: {
+                            const revision = tasksGrid.delegateRevision;
+                            const next = tasksGrid.itemAtIndex(index + 1);
+                            return TrayMetrics.systemEdgeInset(systemGroup,
+                                !!next && next.systemGroup, baseSystemCellLength, contentLength);
                         }
                         readonly property int cellLength: systemGroup
-                            ? leadingSystemInset + (batteryCell && !root.vertical
-                                ? Math.max(root.systemCellLength, root.batteryContentWidth + 6)
-                                : root.systemCellLength)
+                            ? leadingSystemInset + baseSystemCellLength + trailingSystemInset
                             : root.trayCellLength
                         readonly property int positionIndex: TrayMetrics.visualIndex(index, trayItems.count,
                             root.vertical, root.reverseLayout)

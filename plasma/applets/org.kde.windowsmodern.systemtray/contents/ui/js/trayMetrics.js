@@ -74,11 +74,13 @@ function cellLength(size, compact, spacing) {
     return Math.max(size + 4, size + extra - opticalInset - (compact ? 8 : 0));
 }
 
-// Measured against the reference as a fraction of its 48 logical-pixel
-// taskbar, not its enlarged screenshot pixels. A run gets a 6px logical
-// leading inset without changing the 24px spacing between glyph centers.
-function leadingSystemInset(systemGroup, previousSystemGroup, vertical) {
-    return systemGroup && !previousSystemGroup && !vertical ? 6 : 0;
+// A contiguous system group has equal optical outer padding. Its first
+// and last cells may contain different widths (Wi-Fi vs. battery + text).
+// Keep the natural internal pitch; only add padding at the outside edges.
+function systemEdgeInset(systemGroup, adjacentSystemGroup, cellLength, contentLength) {
+    if (!systemGroup || adjacentSystemGroup) return 0;
+    const naturalInset = Math.max(0, (cellLength - contentLength) / 2);
+    return Math.max(0, Math.round(10 - naturalInset));
 }
 
 // A 48px taskbar has a centered 40px hover surface. The containment
