@@ -26,6 +26,11 @@ Item {
         if (!applet)
             return "";
         const plugin = applet.plasmoid?.pluginName || applet.Plasmoid?.pluginName || "";
+        // Device notifier exposes its original model on the full view.
+        // If an older/different Plasma build does not expose it, preserve
+        // the complete native page instead of offering an empty substitute.
+        if (plugin === "org.kde.plasma.devicenotifier")
+            return applet.fullRepresentationItem?.model ? "devices" : "";
         return mapping[plugin] || "";
     }
 

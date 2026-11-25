@@ -49,12 +49,13 @@ QQC2.StackView {
 
     onActiveAppletChanged: Qt.callLater(mainStack.showActiveApplet)
 
-    // Native device and third-party pages can create their full item after
+    // Device and third-party pages can create their full item after
     // activeAppletChanged. Retry on that actual signal, not a polling timer.
     Connections {
         target: mainStack.activeApplet
         function onFullRepresentationItemChanged() {
-            if (!mainStack.themedActive)
+            const plugin = mainStack.activeApplet?.plasmoid?.pluginName || mainStack.activeApplet?.Plasmoid?.pluginName;
+            if (plugin === "org.kde.plasma.devicenotifier" || !mainStack.themedActive)
                 Qt.callLater(mainStack.showActiveApplet);
         }
     }
@@ -168,6 +169,7 @@ QQC2.StackView {
     readonly property var themedPages: ({
         "network":         networkPageComp,
         "bluetooth":       bluetoothPageComp,
+        "devices":         devicesPageComp,
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
         "brightness":      brightnessPageComp,
@@ -184,6 +186,13 @@ QQC2.StackView {
     Component {
         id: bluetoothPageComp
         Components.BluetoothPage {
+            nativeApplet: mainStack.activeApplet
+            onBack: systemTrayState.setActiveApplet(null)
+        }
+    }
+    Component {
+        id: devicesPageComp
+        Components.DevicesPage {
             nativeApplet: mainStack.activeApplet
             onBack: systemTrayState.setActiveApplet(null)
         }

@@ -6,6 +6,11 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Removable devices and battery resource location
+
+- Use the existing device-notifier model for a themed device list and its real default/secondary actions; disable commands while busy or after removal, display native messages, and preserve native fallback if the model is unavailable.
+- Add routing and action-state regression tests and Simplified Chinese labels. Record the current SystemTray.dll package path and keep the verified legacy battery artwork unchanged.
+
 ### Consistent nested controls and sign-in surfaces
 
 - Share Fluent icon buttons between tray headers and task preview media controls. Remove the default heading fill on native fallback applet chrome while retaining native device actions.

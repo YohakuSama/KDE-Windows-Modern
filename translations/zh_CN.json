@@ -1,4 +1,7 @@
 {
+  "Safely remove hardware": "安全删除硬件",
+  "No removable devices attached": "未连接可移动设备",
+  "Device is busy. Do not unplug.": "设备正在使用，请勿拔出。",
   "Connecting": "正在连接",
   "Disconnecting": "正在断开连接",
   "Connection failed": "连接失败",

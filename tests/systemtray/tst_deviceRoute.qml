@@ -10,6 +10,8 @@ TestCase {
         compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.bluetooth"}}), "bluetooth");
         verify(router.isThemedApplet({plasmoid: {pluginName: "org.kde.plasma.bluetooth"}}));
         compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.devicenotifier"}}), "");
+        compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.devicenotifier"}, fullRepresentationItem: {}}), "");
+        compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.devicenotifier"}, fullRepresentationItem: {model: {}}}), "devices");
     }
     function test_themedPagesAndFallback() {
         compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.brightness"}}), "brightness");
