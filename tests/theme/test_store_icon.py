@@ -10,6 +10,7 @@ NAMES = (
     "org.kde.discover.svg",
     "plasma-discover.svg",
     "plasmadiscover.svg",
+    "muondiscover.svg",
 )
 
 

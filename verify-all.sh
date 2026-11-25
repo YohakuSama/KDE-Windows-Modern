@@ -46,7 +46,7 @@ done
 check_dir  "Kvantum/Windows-modern"                         "Kvantum theme"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"
 check_file "icons/windows-modern/index.theme"               "Icon pack"
-store_icons=(icons/windows-modern/apps/discover.svg icons/windows-modern/apps/org.kde.discover.svg icons/windows-modern/apps/plasma-discover.svg icons/windows-modern/apps/plasmadiscover.svg)
+store_icons=(icons/windows-modern/apps/discover.svg icons/windows-modern/apps/org.kde.discover.svg icons/windows-modern/apps/plasma-discover.svg icons/windows-modern/apps/plasmadiscover.svg icons/windows-modern/apps/muondiscover.svg)
 if cmp -s "${store_icons[0]}" "${store_icons[1]}" \
    && cmp -s "${store_icons[0]}" "${store_icons[2]}" \
    && cmp -s "${store_icons[0]}" "${store_icons[3]}"; then
