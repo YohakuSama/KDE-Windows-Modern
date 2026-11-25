@@ -354,6 +354,7 @@ Item {
                     id: actionPanel
                     anchors.fill: parent
                     uiScale: popup.uiScale
+                    availableHeight: popup.availableHeight
                     frameInset: popup.separatedMedia ? 0 : Math.max(0, dialog.margins.left)
                     onVisibleChanged: {
                         if (visible && dialog.visible && !systemTrayState.activeApplet)

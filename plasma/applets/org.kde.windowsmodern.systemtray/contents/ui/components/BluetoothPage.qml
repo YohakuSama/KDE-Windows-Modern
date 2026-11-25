@@ -80,14 +80,9 @@ Lib.DetailPage {
         height: 52
         radius: 4
         color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
-            model.Connected, deviceMouse.containsMouse, false)
+            model.Connected, deviceHover.hovered, false)
 
-        MouseArea {
-            id: deviceMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            acceptedButtons: Qt.NoButton
-        }
+        HoverHandler { id: deviceHover }
 
         RowLayout {
             anchors.fill: parent

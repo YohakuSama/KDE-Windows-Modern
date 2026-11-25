@@ -58,6 +58,7 @@ Item {
         columnSpacing: root.trackGap
 
         Kirigami.Icon {
+            visible: root.iconSource.length > 0
             Layout.preferredWidth: root.iconSize
             Layout.preferredHeight: root.iconSize
             Layout.alignment: Qt.AlignVCenter

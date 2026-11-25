@@ -11,6 +11,7 @@ ColumnLayout {
     property var models
     property bool expanded: false
     readonly property bool hasMultiple: models.sinkFilterModel.count > 1
+    onHasMultipleChanged: if (!hasMultiple) expanded = false
 
     spacing: 0
 
@@ -20,7 +21,8 @@ ColumnLayout {
 
     Lib.ListRow {
         Layout.fillWidth: true
-        selected: true
+        selected: models.sinkAvailable
+        enabled: section.hasMultiple
         iconSource: Funcs.volIconName(
             models.sinkAvailable ? models.sink.volume : 0,
             models.sinkAvailable ? models.sink.muted : true

@@ -23,6 +23,7 @@ ColumnLayout {
     signal requestPage(string name)
 
     property real uiScale: Plasmoid.configuration.scale / 100
+    property real availableHeight: Infinity
 
     // Outer spacing includes the native KSVG dialog frame when present.
     // The separated media window has no native frame and supplies the
@@ -34,7 +35,7 @@ ColumnLayout {
     readonly property int sliderInset: Math.round(16 * uiScale)
     readonly property int sliderHorizontalInset: Math.max(0, Math.round(18 * uiScale) - Math.round(frameInset))
     readonly property int sliderGap: Math.round(12 * uiScale)
-    readonly property int sliderHeight: Math.max(28, Math.round(36 * uiScale))
+    readonly property int sliderHeight: Math.max(32, Math.round(36 * uiScale))
     readonly property int footerHeight: Math.max(24, Math.round(48 * uiScale) - Math.round(frameInset))
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
@@ -47,12 +48,13 @@ ColumnLayout {
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
     readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
-    readonly property int nominalHomeHeight: Math.ceil(Math.max(220 * uiScale,
-        edgeInset + Math.max(64 * uiScale, toggleViewport.viewportHeight) + gridBottomGap
-        + (sliderRows > 0 ? 1 + 2 * sliderInset + sliderRows * sliderHeight
-            + (sliderRows - 1) * sliderGap : 0)
-        + Math.round(48 * uiScale)))
-    readonly property int homeHeight: Math.max(1, nominalHomeHeight - 2 * Math.round(frameInset))
+    readonly property int sliderBlockHeight: sliderRows > 0 ? 1 + 2 * sliderInset
+        + sliderRows * sliderHeight + (sliderRows - 1) * sliderGap : 0
+    readonly property int nominalFixedHeight: edgeInset + gridBottomGap + sliderBlockHeight
+        + Math.max(24, Math.round(48 * uiScale))
+    readonly property int gridHeight: Math.max(Math.round(64 * uiScale), toggleViewport.viewportHeight)
+    readonly property int nominalHomeHeight: nominalFixedHeight + gridHeight
+    readonly property int homeHeight: contentInset + gridHeight + gridBottomGap + sliderBlockHeight + footerHeight
 
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
@@ -89,18 +91,19 @@ ColumnLayout {
                 String(Plasmoid.configuration.quickSettingsOrder || "").split(","), knownKeys)
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
-            readonly property bool hasMoreRows: rows > 2
+            readonly property bool hasMoreRows: rows > visibleRows
             readonly property real rowGap: Math.round(12 * actionPanel.uiScale)
             readonly property real columnGap: Math.round(14 * actionPanel.uiScale)
             readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
             // Two caption lines are reserved for every tile, keeping
             // the second row aligned even for a long device name.
-            readonly property real rowHeight: Math.round(48 * actionPanel.uiScale)
-                + Math.round(8 * actionPanel.uiScale) + Math.round(30 * actionPanel.uiScale)
+            readonly property real rowHeight: networkTile.buttonHeight + networkTile.spacing + networkTile.captionHeight
             readonly property real rowStride: rowHeight + rowGap
-            readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
+            readonly property int visibleRows: rows === 0 ? 0 : Math.max(1, Math.min(2, rows,
+                Math.floor((actionPanel.availableHeight - actionPanel.nominalFixedHeight + rowGap) / Math.max(1, rowStride))))
+            readonly property real viewportHeight: Math.max(0, visibleRows * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
-            readonly property int pageCount: Math.max(1, Math.ceil(rows / 2))
+            readonly property int pageCount: Math.max(1, Math.ceil(rows / Math.max(1, visibleRows)))
             readonly property int currentPage: maxOffset > 0 ? Math.round(contentY / maxOffset * (pageCount - 1)) : 0
 
             property string dragKey: ""

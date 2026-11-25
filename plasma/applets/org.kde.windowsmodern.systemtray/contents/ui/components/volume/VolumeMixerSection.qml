@@ -50,26 +50,24 @@ ColumnLayout {
                     PlasmaComponents3.Label {
                         Layout.fillWidth: true
                         text: (model.Client && model.Client.name) || model.Name || i18n("Unknown application")
+                        textFormat: Text.PlainText
                         color: Kirigami.Theme.textColor
                         font.pixelSize: 12
                         elide: Text.ElideRight
                     }
 
-                    PlasmaComponents3.Slider {
+                    Lib.Slider {
                         Layout.preferredWidth: 110
+                        sliderAccessibleName: (model.Client && model.Client.name) || model.Name || i18n("Unknown application")
                         from: 0
                         to: 65536
                         value: model.Volume
                         stepSize: Math.round(65536 / 100)
-                        onMoved: {
-                            model.Volume = value
-                            model.Muted = value === 0
+                        onMoved: v => {
+                            model.Volume = v;
+                            model.Muted = v === 0;
                         }
-                        onPressedChanged: {
-                            if (!pressed) {
-                                section.models.playFeedback(model.DeviceIndex)
-                            }
-                        }
+                        onReleased: section.models.playFeedback(model.DeviceIndex)
                     }
                 }
 

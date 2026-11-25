@@ -67,6 +67,7 @@ Item {
             PlasmaComponents3.Label {
                 Layout.fillWidth: true
                 text: row.text
+                textFormat: Text.PlainText
                 color: Kirigami.Theme.textColor
                 font.pixelSize: 12
                 font.weight: row.selected ? Font.DemiBold : Font.Normal
