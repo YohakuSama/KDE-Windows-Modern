@@ -92,7 +92,7 @@
       <default>false</default>
     </entry>
     <entry name="rightColumnItems" type="StringList">
-      <default>home,documents,pictures,music,downloads,recent,thispc,update,terminal,run</default>
+      <default>documents,downloads,music,pictures,videos,network,home,thispc,settings</default>
     </entry>
 
     <entry name="menuTranslucency" type="Int">

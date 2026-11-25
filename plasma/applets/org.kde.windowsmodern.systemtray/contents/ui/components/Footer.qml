@@ -36,7 +36,9 @@ Rectangle {
         anchors.leftMargin: Math.round(20 * footer.uiScale)
         anchors.verticalCenter: parent.verticalCenter
         visible: footer.showBattery && battery.hasBattery
-        opacity: batteryMouse.containsMouse ? 1 : 0.85
+        glyphSize: Math.round(16 * footer.uiScale)
+        labelPixelSize: Math.round(12 * footer.uiScale)
+        opacity: 1
 
         Accessible.role: Accessible.Button
         Accessible.name: battery.percentKnown ? i18n("Battery %1%", battery.percent) : i18n("Battery level unknown")

@@ -14,6 +14,7 @@ import QtQuick.Controls
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 import org.kde.iconthemes as KIconThemes
+import "code/footerLocations.js" as Locations
 
 KCM.SimpleKCM {
     id: configGeneral
@@ -24,6 +25,7 @@ KCM.SimpleKCM {
     // Keep the persisted 0/2/3 values; legacy 1 maps to centered at panel.
     property int cfg_displayPosition: Plasmoid.configuration.displayPosition
     property alias cfg_showRightColumn: showRightColumn.checked
+    property var cfg_rightColumnItems: Locations.normalize(Plasmoid.configuration.rightColumnItems)
     property alias cfg_allAppsSortMode: allAppsSortMode.currentIndex
     property alias cfg_menuTranslucency: menuTranslucency.currentIndex
     property alias cfg_startMenuSize: startMenuSize.currentIndex
@@ -153,6 +155,22 @@ KCM.SimpleKCM {
         CheckBox {
             id: showRightColumn
             Kirigami.FormData.label: i18n("Show folder shortcuts in footer")
+        }
+
+        ColumnLayout {
+            Kirigami.FormData.label: i18n("Folder shortcuts")
+            enabled: showRightColumn.checked
+            spacing: 0
+            Repeater {
+                model: Locations.locations(i18n)
+                delegate: CheckBox {
+                    required property var modelData
+                    text: modelData.text
+                    checked: configGeneral.cfg_rightColumnItems.indexOf(modelData.key) >= 0
+                    onToggled: configGeneral.cfg_rightColumnItems =
+                        Locations.toggle(configGeneral.cfg_rightColumnItems, modelData.key, checked)
+                }
+            }
         }
 
         CheckBox {

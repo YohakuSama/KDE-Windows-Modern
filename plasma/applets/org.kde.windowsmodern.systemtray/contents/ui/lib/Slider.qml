@@ -15,6 +15,10 @@ Item {
     property int iconSize: 20
     property bool pressed: false
     property bool showArrow: false
+    // Home rows reserve the same output slot so both tracks end at
+    // the same x coordinate. Other detail-page sliders stay full-width.
+    property bool reserveDetailsSpace: false
+    property bool soundOutputDetails: false
     property string detailsIconSource: ""
     property string detailsAccessibleName: ""
     property bool iconClickable: false
@@ -64,6 +68,7 @@ Item {
 
         PlasmaComponents3.Slider {
             id: slider
+            objectName: "wmFluentSliderTrack"
             Layout.fillWidth: true
             from: root.from
             to: root.to
@@ -126,11 +131,13 @@ Item {
 
         Item {
             id: detailsButton
-            visible: root.showArrow
-            Layout.preferredWidth: root.detailsIconSource.length > 0 ? 36 : 24
+            visible: root.showArrow || root.reserveDetailsSpace
+            enabled: root.showArrow
+            opacity: root.showArrow ? 1 : 0
+            Layout.preferredWidth: root.reserveDetailsSpace || root.soundOutputDetails || root.detailsIconSource.length > 0 ? 36 : 24
             Layout.preferredHeight: 32
             Layout.alignment: Qt.AlignVCenter
-            activeFocusOnTab: visible
+            activeFocusOnTab: root.showArrow
             Accessible.role: Accessible.Button
             Accessible.name: root.detailsAccessibleName || i18n("More")
             Accessible.onPressAction: root.arrowClicked()
@@ -150,7 +157,7 @@ Item {
                 anchors.centerIn: parent
                 spacing: 2
                 Kirigami.Icon {
-                    visible: root.detailsIconSource.length > 0
+                    visible: !root.soundOutputDetails && root.detailsIconSource.length > 0
                     width: 18
                     height: 18
                     source: root.detailsIconSource
@@ -158,10 +165,55 @@ Item {
                     isMask: true
                     color: Kirigami.Theme.textColor
                 }
+                Canvas {
+                    id: outputGlyph
+                    visible: root.soundOutputDetails
+                    width: 18
+                    height: 18
+                    property color glyphColor: Kirigami.Theme.textColor
+                    onGlyphColorChanged: requestPaint()
+                    onWidthChanged: requestPaint()
+                    onHeightChanged: requestPaint()
+                    onPaint: {
+                        const c = getContext("2d");
+                        c.reset();
+                        c.clearRect(0, 0, width, height);
+                        c.scale(width / 20, height / 20);
+                        c.strokeStyle = glyphColor;
+                        c.fillStyle = glyphColor;
+                        c.lineWidth = 1.35;
+                        c.lineCap = "round";
+                        c.lineJoin = "round";
+                        c.beginPath();
+                        c.moveTo(1.8, 5);
+                        c.lineTo(6, 5);
+                        c.moveTo(10, 5);
+                        c.lineTo(18, 5);
+                        c.moveTo(2, 13);
+                        c.lineTo(7, 13);
+                        c.stroke();
+                        c.beginPath();
+                        c.arc(8, 5, 2, 0, Math.PI * 2);
+                        c.stroke();
+                        c.beginPath();
+                        c.moveTo(8.5, 11.2);
+                        c.lineTo(11, 11.2);
+                        c.lineTo(14.1, 8.6);
+                        c.lineTo(14.1, 17.4);
+                        c.lineTo(11, 14.8);
+                        c.lineTo(8.5, 14.8);
+                        c.closePath();
+                        c.fill();
+                        c.beginPath();
+                        c.moveTo(16, 10.4);
+                        c.quadraticCurveTo(18, 13, 16, 15.6);
+                        c.stroke();
+                    }
+                }
                 Kirigami.Icon {
                     width: 12
                     height: 18
-                    source: "go-next"
+                    source: "go-next-symbolic"
                     roundToIconSize: false
                     isMask: true
                     color: Kirigami.Theme.textColor

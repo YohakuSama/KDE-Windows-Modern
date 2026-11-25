@@ -461,10 +461,12 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.columnSpan: 3
             visible: Plasmoid.configuration.showBrightness && brightnessAvailable
-            showArrow: true
+            showArrow: false
+            reserveDetailsSpace: true
+            Layout.preferredHeight: Math.round(36 * actionPanel.scale)
             panelScreenGeometry: Plasmoid.screenGeometry
             panelScreenIndex: Plasmoid.containment.screen
-            onArrowClicked: actionPanel.requestPage("brightness")
+            onRightClicked: actionPanel.requestPage("brightness")
         }
         Components.VolumeSlider {
             id: volumeSlider
@@ -472,6 +474,7 @@ ColumnLayout {
             Layout.columnSpan: 3
             Layout.preferredHeight: Math.round(36 * actionPanel.scale)
             visible: Plasmoid.configuration.showVolume && sinkAvailable
+            reserveDetailsSpace: true
             onArrowClicked: actionPanel.requestPage("volume")
         }
     }

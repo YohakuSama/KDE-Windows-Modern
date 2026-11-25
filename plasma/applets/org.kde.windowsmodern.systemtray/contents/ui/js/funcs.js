@@ -54,3 +54,17 @@ function batteryVisualState(percent, charging, saver) {
 function batteryFillFraction(percent) {
     return Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) / 100 : 0;
 }
+
+// Read Fcitx's real active input method title/icon, not the desktop locale.
+function inputMethodLabel(id, iconName, tooltip) {
+    if (!/^fcitx5?$/i.test(String(id))) return "";
+    const icon = String(iconName || "");
+    const name = String(tooltip || "");
+    if (/english|英语|英語|英文/i.test(name) ||
+        /(?:^|[-_])keyboard[-_]us(?:$|[-_])/i.test(icon)) return "英";
+    // The Fcitx keyboard fallback is not evidence of a Chinese engine.
+    if (/^input-keyboard(?:-symbolic)?$/i.test(icon)) return "";
+    const metadata = icon + " " + name;
+    if (/rime|pinyin|chewing|cangjie|wubi|zhuyin|bopomofo|shuangpin|chinese|中州韵|中州韻|中文|拼音|五笔|五筆|注音|仓颉|倉頡|双拼|雙拼/i.test(metadata)) return "中";
+    return "";
+}

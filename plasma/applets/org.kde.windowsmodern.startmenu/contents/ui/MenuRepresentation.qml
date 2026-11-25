@@ -346,7 +346,7 @@ Item {
                                 visible: rootItem.showRecentSection && recentGrid.count > 0
                                 PlasmaComponents3.Label {
                                     Layout.fillWidth: true
-                                    text: i18n("Recent")
+                                    text: i18n("Recommended")
                                     Accessible.description: i18n("Recently used applications and documents")
                                     font.weight: Font.DemiBold
                                 }
@@ -363,11 +363,11 @@ Item {
                             GridView {
                                 id: recentGrid
                                 Layout.fillWidth: true
-                                readonly property int recentColumns: rootItem.largeLayout ? 3 : 2
+                                readonly property int recentColumns: 2
                                 Layout.preferredHeight: (root.showMoreRecent
                                     ? Math.ceil(count / recentColumns) : Math.min(2, Math.ceil(count / recentColumns))) * cellHeight
                                 cellWidth: Math.max(1, Math.floor(width / recentColumns))
-                                cellHeight: 40
+                                cellHeight: 48
                                 visible: rootItem.showRecentSection && count > 0
                                 model: rootItem.showRecentSection ? recentUsage : null
                                 clip: true
@@ -375,7 +375,7 @@ Item {
                                 interactive: false
                                 boundsBehavior: Flickable.StopAtBounds
                                 currentIndex: -1
-                                delegate: ListItemDelegate { iconSize: Kirigami.Units.iconSizes.smallMedium }
+                                delegate: ListItemDelegate { iconSize: 32; showDescription: true }
                             }
 
                             RowLayout {

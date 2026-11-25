@@ -33,10 +33,18 @@ inline bool privacyIndicator(const QString &itemId)
     return itemId == QLatin1String("org.kde.plasma.cameraindicator");
 }
 
+// Fcitx registers the stable StatusNotifierItem Id "Fcitx".
+inline bool inputMethodIndicator(const QString &itemId)
+{
+    return itemId.compare(QLatin1String("Fcitx"), Qt::CaseInsensitive) == 0
+        || itemId.compare(QLatin1String("Fcitx5"), Qt::CaseInsensitive) == 0;
+}
+
 // -1: ordinary visible applications/devices; 0: privacy; 1+: fixed core.
 inline int systemOrder(const QString &itemId)
 {
     if (privacyIndicator(itemId)) return 0;
+    if (inputMethodIndicator(itemId)) return 1;
     const int index = tail().indexOf(itemId);
     return index < 0 ? -1 : index + 1;
 }
@@ -80,7 +88,7 @@ inline bool shownByDefault(const QString &itemId)
 {
     // The clock owns the visible notification bell. Keep the native
     // notification applet enabled in overflow for transfer jobs and settings.
-    return tail().contains(itemId)
+    return inputMethodIndicator(itemId) || tail().contains(itemId)
         || itemId == QLatin1String("org.kde.plasma.cameraindicator"); // privacy: camera in use
 }
 inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::Types::ItemStatus status,

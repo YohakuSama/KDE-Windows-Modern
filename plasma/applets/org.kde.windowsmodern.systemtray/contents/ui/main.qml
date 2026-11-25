@@ -331,58 +331,29 @@ ContainmentItem {
             onTriggered: if (!dialog.visible) systemTrayState.expanded = false;
         }
 
-        //Main popup
-        PlasmaCore.AppletPopup {
+        // One shell-role popup, with independent card surfaces when a
+        // media session is present. Dialog.NoBackground lets the actual
+        // desktop remain visible between cards; no second focus window.
+        PlasmaCore.Dialog {
             id: dialog
             objectName: "popupWindow"
+            type: PlasmaCore.Dialog.AppletPopup
+            flags: Qt.Dialog
             visualParent: systemTrayState.overflowMode && expander.visible ? expander : root
-            popupDirection: switch (Plasmoid.location) {
-                case PlasmaCore.Types.TopEdge:
-                    return Qt.BottomEdge
-                case PlasmaCore.Types.LeftEdge:
-                    return Qt.RightEdge
-                case PlasmaCore.Types.RightEdge:
-                    return Qt.LeftEdge
-                default:
-                    return Qt.TopEdge
-            }
-            // Keep a visible gap and native rounded frames on docked panels.
-            margin: Math.max(Math.round(8 * Plasmoid.configuration.scale / 100),
+            location: Plasmoid.location
+            floating: Math.max(Math.round(8 * Plasmoid.configuration.scale / 100),
                 (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets)
                     ? Kirigami.Units.largeSpacing : 0)
-
-            Behavior on margin {
-                NumberAnimation {
-                    // Since the panel animation won't be perfectly in sync,
-                    // using a duration larger than the panel animation results
-                    // in a better-looking animation.
-                    duration: Kirigami.Units.veryLongDuration
-                    easing.type: Easing.OutCubic
-                }
-            }
-
-            floating: Plasmoid.location == PlasmaCore.Desktop
-
-            removeBorderStrategy: PlasmaCore.AppletPopup.AtScreenEdges
-
-
             hideOnWindowDeactivate: !Plasmoid.configuration.pin
-            // Do not attach an appletInterface: AppletPopup would restore
-            // and persist the previously collapsed popupWidth/popupHeight.
-            // Explicitly size the window BEFORE showing it instead.
             visible: false
-            animated: false
 
-            readonly property int wantedWidth: Math.ceil(expandedRepresentation.popupWidth + leftPadding + rightPadding)
-            readonly property int wantedHeight: Math.ceil(expandedRepresentation.popupHeight + topPadding + bottomPadding)
-            function applyGeometry() {
-                width = wantedWidth;
-                height = wantedHeight;
-            }
+            // Dialog owns screen placement and frame margins. Explicit
+            // content sizes are supplied by the representation itself.
+            readonly property int wantedWidth: Math.ceil(expandedRepresentation.popupWidth + margins.left + margins.right)
+            readonly property int wantedHeight: Math.ceil(expandedRepresentation.popupHeight + margins.top + margins.bottom)
             function openForState() {
                 if (systemTrayState.expanded) {
                     expandedSync.stop();
-                    applyGeometry();
                     visible = true;
                     geometryProbe.attempts = 0;
                     geometryProbe.restart();
@@ -390,8 +361,6 @@ ContainmentItem {
                     visible = false;
                 }
             }
-            onWantedWidthChanged: if (visible) Qt.callLater(applyGeometry)
-            onWantedHeightChanged: if (visible) Qt.callLater(applyGeometry)
 
             Connections {
                 target: systemTrayState
@@ -413,13 +382,13 @@ ContainmentItem {
                             dialog.width, dialog.height, expandedRepresentation.width,
                             expandedRepresentation.height, "expected", dialog.wantedWidth, dialog.wantedHeight);
                         stop();
-                    } else {
-                        dialog.applyGeometry();
                     }
                 }
             }
 
-            backgroundHints: (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) ? PlasmaCore.AppletPopup.SolidBackground : PlasmaCore.AppletPopup.StandardBackground
+            backgroundHints: expandedRepresentation.separatedMedia ? PlasmaCore.Dialog.NoBackground
+                : (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersOpaqueBackground)
+                    ? PlasmaCore.Dialog.SolidBackground : PlasmaCore.Dialog.StandardBackground
 
             onVisibleChanged: {
                 if (!visible) {
@@ -433,6 +402,8 @@ ContainmentItem {
             }
             mainItem: ExpandedRepresentation {
                 id: expandedRepresentation
+                width: implicitWidth
+                height: implicitHeight
 
                 Keys.onEscapePressed: event => {
                     systemTrayState.expanded = false

@@ -16,6 +16,7 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
+import org.kde.plasma.private.mpris as Mpris
 
 import "components" as Components
 
@@ -37,9 +38,15 @@ Item {
     readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
         * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
         + Math.round(16 * uiScale)
+    Mpris.Mpris2Model { id: mediaModel }
+    readonly property int mediaGap: Math.round(12 * uiScale)
+    readonly property int mediaHeight: Math.round(178 * uiScale)
+    readonly property bool separatedMedia: !systemTrayState.activeApplet && !systemTrayState.overflowMode
+        && mediaCard.hasSession && availableHeight >= actionPanel.homeHeight + mediaGap + mediaHeight
     readonly property int popupHeight: Math.min(availableHeight,
         systemTrayState.activeApplet ? Math.max(360, Kirigami.Units.gridUnit * 24)
-        : overflowHome ? overflowHeight : actionPanel.homeHeight)
+        : overflowHome ? overflowHeight
+        : actionPanel.homeHeight + (separatedMedia ? mediaGap + mediaHeight : 0))
 
     implicitWidth: popupWidth
     implicitHeight: popupHeight
@@ -272,15 +279,40 @@ Item {
                 }
             }
 
-            ActionPanel {
-                id: actionPanel
+            Components.MediaCard {
+                id: mediaCard
                 Layout.fillWidth: true
+                Layout.preferredHeight: popup.mediaHeight
+                Layout.minimumHeight: popup.mediaHeight
+                Layout.maximumHeight: popup.mediaHeight
+                Layout.bottomMargin: popup.mediaGap
+                uiScale: popup.uiScale
+                player: mediaModel.currentPlayer
+                visible: popup.separatedMedia
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: actionPanel.homeHeight
                 visible: !systemTrayState.overflowMode
-                onVisibleChanged: {
-                    if (visible && dialog.visible && !systemTrayState.activeApplet)
-                        forceActiveFocus();
+                Rectangle {
+                    anchors.fill: parent
+                    visible: popup.separatedMedia
+                    radius: mediaCard.radius
+                    color: mediaCard.surfaceColor
+                    border.width: 1
+                    border.color: mediaCard.outlineColor
                 }
-                onRequestPage: name => popup.activateFlyout(name)
+                ActionPanel {
+                    id: actionPanel
+                    anchors.fill: parent
+                    onVisibleChanged: {
+                        if (visible && dialog.visible && !systemTrayState.activeApplet)
+                            forceActiveFocus();
+                    }
+                    onRequestPage: name => popup.activateFlyout(name)
+                }
             }
         }
 
@@ -290,7 +322,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: systemTrayState.activeApplet
-            Layout.topMargin: mergeHeadings ? 0 : dialog.topPadding
+            Layout.topMargin: mergeHeadings ? 0 : dialog.margins.top
             KeyNavigation.up: pinButton
             KeyNavigation.backtab: pinButton
             onVisibleChanged: if (visible) forceActiveFocus()
