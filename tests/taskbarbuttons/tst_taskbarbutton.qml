@@ -189,6 +189,21 @@ Item {
             tryCompare(pill, "color", pill.selectedFill);
         }
 
+        function test_taskbarQueryMirror() {
+            const box = makeBox({height: 42, selected: true, queryFocused: true});
+            const label = findChild(box, "wmSearchPlaceholder");
+            const caret = findChild(box, "wmTaskbarSearchCaret");
+            compare(label.text, "Search");
+            verify(caret.visible);
+            box.queryText = "测试";
+            box.queryCursor = 2;
+            compare(label.text, "测试");
+            verify(caret.x >= label.x && caret.x <= label.x + label.width);
+            box.selected = false;
+            compare(label.text, "Search");
+            verify(!caret.visible);
+        }
+
         function test_compactSearchAndSelection() {
             const box = makeBox({styleMode: 1, width: 120});
             compare(box.boxWidth, 112);

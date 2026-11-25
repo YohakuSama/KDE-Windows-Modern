@@ -650,5 +650,6 @@
   "@info:tooltip\u0004Open Start and search": "打开搜索",
   "@action:button taskbar button\u0004Task View": "任务视图",
   "@info:tooltip\u0004Task View": "任务视图",
-  "@info:tooltip\u0004Show all windows and desktops": "显示所有窗口和桌面"
+  "@info:tooltip\u0004Show all windows and desktops": "显示所有窗口和桌面",
+  "Search query": "搜索内容"
 }

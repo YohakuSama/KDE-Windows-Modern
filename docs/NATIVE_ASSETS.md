@@ -97,9 +97,11 @@ Review the original artwork before adding it to the map.
   Icons source. The current BatteryGlyph is a compatibility drawing, not
   verified original 26H2 artwork. The legacy imported Segoe battery family
   also does not establish the newer artwork.
-- The newer colored Search activation glyph has not been identified in the
-  reviewed library. Use the verified monochrome search role until the
-  exact source is available.
+- The newer colored Search activation glyph and the newer two-tone taskbar
+  Task View artwork have not been identified in the reviewed resource library.
+  Use only the existing genuine Segoe E721 Search and E7C4 TaskView roles
+  from verified local imports until the exact sources are identified. If the
+  import is unavailable, leave the glyph absent instead of using KDE artwork.
 - The original indexed account portraits are absent. The existing group 88
   mapping provides a default image; actual user portraits take precedence.
 - Native Plasma desktop selection, notification toast behavior and

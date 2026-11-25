@@ -20,6 +20,9 @@ RowLayout {
     height: implicitHeight
 
     property alias searchText: searchFieldInput.text
+    readonly property int cursorPosition: searchFieldInput.cursorPosition
+    readonly property bool editorFocused: searchFieldInput.activeFocus
+    property bool mirrorInPanel: false
     readonly property bool composing: searchFieldInput.inputMethodComposing
     property bool searchMode: false
     signal searchRequested
@@ -44,7 +47,8 @@ RowLayout {
     PlasmaComponents3.TextField {
         id: searchFieldInput
         objectName: "wmStartSearchInput"
-        Accessible.name: searchBox.searchMode ? i18n("Type here to search") : placeholderText
+        Accessible.name: searchBox.mirrorInPanel ? i18n("Search query")
+            : searchBox.searchMode ? i18n("Type here to search") : placeholderText
         Layout.fillWidth: true
         focus: true
         placeholderText: i18n("Search for apps, settings, and files")

@@ -12,6 +12,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtCore
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
@@ -39,7 +40,12 @@ PlasmoidItem {
     }
 
     preferredRepresentation: fullRepresentation
-    Plasmoid.icon: "window-duplicate"
+    // E7C4 is the genuine TaskView symbol from the owner's Segoe font.
+    // The newer two-tone shell bitmap has not been identified in the archive.
+    // Do not substitute window-duplicate or draw a pretend native icon.
+    readonly property string taskViewSource: String(StandardPaths.locate(StandardPaths.GenericDataLocation,
+        "windows-modern/native-assets/icons/actions/windows-modern-task-view-symbolic.svg", StandardPaths.LocateFile))
+    Plasmoid.icon: taskViewSource
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     Plasmoid.onActivated: openTaskView()
 
@@ -53,20 +59,19 @@ PlasmoidItem {
     Layout.maximumHeight: vertical ? width : Number.POSITIVE_INFINITY
     Layout.preferredHeight: Layout.minimumHeight
 
-    // i18nc() is put into the applet's context by Plasma, where qmllint
+    // i18ndc("plasma_applet_org.kde.windowsmodern.taskview", ) is put into the applet's context by Plasma, where qmllint
     // cannot see it.
     // qmllint disable unqualified
     TaskbarButton {
         anchors.fill: parent
-        iconName: "windows-modern-task-view-symbolic"
-        fallbackIconName: "window-duplicate"
-        text: i18nc("@action:button taskbar button", "Task View")
-        description: i18nc("@info:tooltip", "Show all windows and desktops")
+        iconName: root.taskViewSource
+        text: i18ndc("plasma_applet_org.kde.windowsmodern.taskview", "@action:button taskbar button", "Task View")
+        description: i18ndc("plasma_applet_org.kde.windowsmodern.taskview", "@info:tooltip", "Show all windows and desktops")
         onTriggered: root.openTaskView()
 
         PlasmaCore.ToolTipArea {
             anchors.fill: parent
-            mainText: i18nc("@info:tooltip", "Task View")
+            mainText: i18ndc("plasma_applet_org.kde.windowsmodern.taskview", "@info:tooltip", "Task View")
             textFormat: Text.PlainText
         }
     }

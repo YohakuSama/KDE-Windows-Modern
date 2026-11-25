@@ -178,7 +178,10 @@ Item {
 
     PlasmaCore.Action {
         id: searchStateAction
-        enabled: root.dashWindow?.searchShown ?? false
+        enabled: root.dashWindow?.taskbarSearchActive ?? false
+        readonly property string queryText: root.dashWindow?.taskbarQuery ?? ""
+        readonly property int queryCursor: root.dashWindow?.taskbarCursor ?? 0
+        readonly property bool queryFocused: root.dashWindow?.taskbarEditorFocused ?? false
     }
 
     Component.onCompleted: {

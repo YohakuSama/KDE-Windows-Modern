@@ -30,7 +30,8 @@ MouseArea {
     property string hoverIconName: ""
     property bool iconIsMask: true
     property bool selected: false
-    property string fallbackIconName: "unknown"
+    // Only a reviewed absolute native resource path is passed by our applets.
+    property string fallbackIconName: ""
     // Accessible name ("Search"); also what screen readers announce.
     property string text
     property string description
@@ -123,7 +124,8 @@ MouseArea {
         height: button.glyphSize
         roundToIconSize: false
         source: button.effectiveIconName
-        fallback: button.fallbackIconName
+        fallback: ""
+        visible: button.effectiveIconName.length > 0
         isMask: button.effectiveIconIsMask
         color: Kirigami.Theme.textColor
         scale: button.showPressed ? 0.9 : 1

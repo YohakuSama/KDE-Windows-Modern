@@ -21,7 +21,6 @@ import QtQuick.Layouts
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
-import org.kde.plasma.workspace.dbus as DBus
 import org.kde.kirigami as Kirigami
 
 PlasmoidItem {
@@ -35,6 +34,9 @@ PlasmoidItem {
     // A local action communicates popup state without polling or guessing from hover.
     property var searchStateAction: null
     readonly property bool searchSelected: searchStateAction ? searchStateAction.enabled : false
+    readonly property string queryText: searchSelected ? (searchStateAction?.queryText ?? "") : ""
+    readonly property int queryCursor: searchStateAction?.queryCursor ?? 0
+    readonly property bool queryFocused: searchSelected && (searchStateAction?.queryFocused ?? false)
 
     function refreshSearchState(): void {
         const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
@@ -72,13 +74,7 @@ PlasmoidItem {
                 return;
             }
         }
-        // A different launcher or an older Start version remains usable.
-        DBus.SessionBus.asyncCall({
-            service: "org.kde.plasmashell",
-            path: "/PlasmaShell",
-            iface: "org.kde.PlasmaShell",
-            member: "activateLauncherMenu",
-        });
+        console.warn("Windows Modern Search requires the Windows Modern Start applet on the same panel.");
     }
 
     // searchMode (contents/config/main.xml), as Windows' Settings >
@@ -86,7 +82,7 @@ PlasmoidItem {
     readonly property bool showBox: searchMode !== 2 && !vertical
 
     preferredRepresentation: fullRepresentation
-    Plasmoid.icon: "search"
+    Plasmoid.icon: searchBox.iconSource
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     Plasmoid.onActivated: openSearch()
 
@@ -104,7 +100,7 @@ PlasmoidItem {
     Layout.maximumHeight: vertical ? width : Number.POSITIVE_INFINITY
     Layout.preferredHeight: Layout.minimumHeight
 
-    // i18nc() is put into the applet's context by Plasma, where qmllint
+    // i18ndc("plasma_applet_org.kde.windowsmodern.search", ) is put into the applet's context by Plasma, where qmllint
     // cannot see it.
     // qmllint disable unqualified
     SearchBox {
@@ -113,10 +109,13 @@ PlasmoidItem {
         visible: root.showBox
         styleMode: root.searchMode === 1 ? 1 : 0
         selected: root.searchSelected
+        queryText: root.queryText
+        queryCursor: root.queryCursor
+        queryFocused: root.queryFocused
         iconName: "search"
-        text: i18nc("@action:button taskbar search box", "Search")
-        placeholder: i18nc("@info:placeholder taskbar search box", "Search")
-        description: i18nc("@info:tooltip", "Open Start and search")
+        text: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@action:button taskbar search box", "Search")
+        placeholder: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@info:placeholder taskbar search box", "Search")
+        description: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@info:tooltip", "Open Start and search")
         onTriggered: root.openSearch()
     }
 
@@ -127,13 +126,13 @@ PlasmoidItem {
         hoverIconName: searchBox.hoverIconSource
         iconIsMask: searchBox.iconIsMask
         selected: root.searchSelected
-        text: i18nc("@action:button taskbar button", "Search")
-        description: i18nc("@info:tooltip", "Open Start and search")
+        text: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@action:button taskbar button", "Search")
+        description: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@info:tooltip", "Open Start and search")
         onTriggered: root.openSearch()
 
         PlasmaCore.ToolTipArea {
             anchors.fill: parent
-            mainText: i18nc("@info:tooltip", "Search")
+            mainText: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@info:tooltip", "Search")
             textFormat: Text.PlainText
         }
     }

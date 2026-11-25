@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Keep a full taskbar Search query and caret in the taskbar while Start-origin Search retains its popup editor; use explicit applet-domain translations and the original local Windows Search/TaskView glyphs without KDE icon or launcher fallback. The newer shell artwork remains an explicit resource gap.
+
 - Persist the Windows desktop right-click plugin in the NixOS shell defaults across layout resets, choose the desktop palette independent of stale application styles, render mapped original menu icons with matching foregrounds and add missing contextual Search/Task View translations.
 
 - Keep installed native core tray applets and the toast presenter loaded independent of theme, saved defaults and D-Bus activation; share the real default audio output, use the imported filled light-mode snooze glyph, and restore the date/time hover text.

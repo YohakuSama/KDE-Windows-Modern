@@ -43,6 +43,10 @@ Item {
     readonly property Item startButton: parent
     readonly property bool menuShown: root.visible
     readonly property bool searchShown: root.visible && root.searching
+    readonly property bool taskbarSearchActive: searchShown && root.taskbarSearchAnchor !== null
+    readonly property string taskbarQuery: taskbarSearchActive ? startSearch.searchText : ""
+    readonly property int taskbarCursor: startSearch.cursorPosition
+    readonly property bool taskbarEditorFocused: taskbarSearchActive && startSearch.editorFocused
     readonly property var panelWindow: startButton ? startButton.Window.window : null
     readonly property rect panelGeometry: panelWindow
         ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
@@ -146,8 +150,11 @@ Item {
         property bool searching: false
         property var taskbarSearchAnchor: null
         property bool taskbarSearchBox: false
-        readonly property bool taskbarSearchHome: searching && taskbarSearchBox && startSearch.searchText.length === 0
-            && !startSearch.composing
+        // A full taskbar Search keeps the query in its panel box, not a
+        // duplicate popup header. Keep the real editor in the popup window
+        // so Wayland keyboard focus and native search results remain intact.
+        // Reveal the native editor temporarily for IME composition.
+        readonly property bool taskbarSearchHome: searching && taskbarSearchBox && !startSearch.composing
 
         // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results.
         // Pinned and All now share the same scrollable home.
@@ -327,8 +334,9 @@ Item {
                 anchors.margins: rootItem.margin
                 anchors.topMargin: root.taskbarSearchHome ? 0 : 16
                 // Full taskbar search box already supplies the visible prompt.
-                // Keep the same focused editor alive for typing/IME; reveal it
-                // as soon as a query or input-method composition starts.
+                // Keep the same focused editor alive for typing/IME. Only
+                // composition, not committed query text, reveals the editor.
+                mirrorInPanel: root.taskbarSearchHome
                 height: root.taskbarSearchHome ? 0 : implicitHeight
                 opacity: root.taskbarSearchHome ? 0 : 1
                 clip: true

@@ -53,8 +53,27 @@ def search_field(searching=None):
                  and n.role in ("entry", "text") and n.rect[2] > 0), None)
 
 
+def search_result_node():
+    button = start_button()
+    if button is None:
+        return None
+    return next((n for n in a11y.nodes("plasmashell")
+                 if n.showing and n.window != button.window
+                 and n.name in ("All", "全部", "Apps", "应用", "Files", "文件", "Settings", "设置")
+                 and n.rect[2] > 0), None)
+
+
+def taskbar_query(query):
+    button = start_button()
+    if button is None:
+        return None
+    return next((n for n in a11y.nodes("plasmashell")
+                 if n.showing and n.window == button.window and n.name == query
+                 and n.rect[2] > 0), None)
+
+
 def start_menu_open():
-    return search_field() is not None or search_home_node() is not None
+    return search_field() is not None or search_home_node() is not None or search_result_node() is not None
 
 
 def search_home_node():
@@ -123,7 +142,7 @@ def search(vi, out, c):
 
     def capture(name, searching=False, taskbar=False):
         field = search_field(searching)
-        node = field or (search_home_node() if taskbar else None)
+        node = field or ((search_home_node() or search_result_node()) if taskbar else None)
         if node is None:
             raise RuntimeError("Search surface is not showing")
         window = next((n for n in a11y.nodes("plasmashell")
@@ -196,10 +215,11 @@ def search(vi, out, c):
         if not c.check(wait_for(start_menu_open), "taskbar Search opens wider Search surface"):
             return
         capture("search-click", searching=True, taskbar=True)
+        c.check(search_field(True) is None, "full taskbar Search has no duplicate popup header")
         vi.type_text("test")
-        if not c.check(wait_for(lambda: search_field(True) is not None
-                                and search_field(True).text() == "test"), "taskbar Search accepts typed query"):
+        if not c.check(wait_for(lambda: taskbar_query("test") is not None), "taskbar Search mirrors the real typed query"):
             return
+        c.check(search_field(True) is None, "committed query remains in taskbar, not popup header")
         capture("taskbar-search-results", searching=True, taskbar=True)
         vi.tap(e.KEY_ESC, after=0.5)
         vi.tap(e.KEY_ESC, after=0.6)

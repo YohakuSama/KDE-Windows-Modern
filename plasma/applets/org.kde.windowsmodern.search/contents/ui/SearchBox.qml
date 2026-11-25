@@ -20,6 +20,10 @@ MouseArea {
     readonly property alias hoverIconSource: magnifier.accentSource
     readonly property bool iconIsMask: !magnifier.hasColorSource
     property bool selected: false
+    property string queryText: ""
+    property int queryCursor: 0
+    property bool queryFocused: false
+    readonly property bool showQuery: selected && styleMode === 0 && queryText.length > 0
     property bool forceHovered: false
     property bool forcePressed: false
     signal triggered()
@@ -64,7 +68,7 @@ MouseArea {
         readonly property color restFill: box.darkTheme ? (box.styleMode === 1 ? "#292929" : "#3D3D3D") : "#F3F3F3"
         readonly property color hoverFill: box.darkTheme ? "#494949" : "#E5E5E5"
         readonly property color pressedFill: box.darkTheme ? "#353535" : "#E0E0E0"
-        readonly property color selectedFill: box.styleMode === 1 ? "#0078D4" : hoverFill
+        readonly property color selectedFill: box.styleMode === 1 ? "#0078D4" : (box.darkTheme ? "#202020" : "#FFFFFF")
         readonly property int inset: Math.round(height * 14 / 36)
         readonly property int iconGap: Math.round(height * 9 / 36)
         readonly property bool mirrored: box.LayoutMirroring.enabled
@@ -98,7 +102,7 @@ MouseArea {
             width: Math.round(pill.height * 20 / 36)
             height: width
             iconName: box.iconName
-            accented: box.styleMode === 1 || !box.selected
+            accented: box.styleMode === 1 && box.selected || !(box.selected || box.showHovered)
             foreground: box.selected && box.styleMode === 1 ? "#FFFFFF" : box.darkTheme ? "#D0D0D0" : "#5D5D5D"
         }
 
@@ -110,15 +114,34 @@ MouseArea {
             x: pill.mirrored ? (box.styleMode === 1 ? pill.groupLeft : pill.inset) : magnifier.x + magnifier.width + pill.iconGap
             width: box.styleMode === 1 ? pill.labelWidth : Math.max(0, pill.width - 2 * pill.inset - magnifier.width - pill.iconGap)
             horizontalAlignment: Text.AlignLeft
-            text: box.styleMode === 1 ? box.text : box.placeholder
+            text: box.styleMode === 1 ? box.text : box.showQuery ? box.queryText : box.placeholder
             textFormat: Text.PlainText
             elide: Text.ElideRight
             font.family: Kirigami.Theme.defaultFont.family
             font.pixelSize: Math.max(1, Math.round(pill.height * 16 / 36))
             font.weight: Font.Medium
             color: box.selected && box.styleMode === 1 ? "#FFFFFF"
+                : box.showQuery ? (box.darkTheme ? "#FFFFFF" : "#1B1B1B")
                 : box.darkTheme ? "#D0D0D0" : "#5D5D5D"
-            Accessible.ignored: true
+            Accessible.role: Accessible.StaticText
+            Accessible.name: text
+            Accessible.ignored: !box.showQuery
+        }
+        TextMetrics {
+            id: caretMetrics
+            font: placeholderLabel.font
+            text: box.queryText.substring(0, Math.max(0, box.queryCursor))
+        }
+        Rectangle {
+            id: queryCaret
+            objectName: "wmTaskbarSearchCaret"
+            visible: box.selected && box.styleMode === 0 && box.queryFocused && placeholderLabel.visible
+            x: placeholderLabel.x + Math.min(Math.max(0, placeholderLabel.width - 1),
+                Math.round(caretMetrics.advanceWidth))
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1
+            height: Math.round(placeholderLabel.font.pixelSize * 1.05)
+            color: box.darkTheme ? "#D0D0D0" : "#1B1B1B"
         }
     }
 }

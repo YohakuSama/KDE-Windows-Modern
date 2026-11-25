@@ -11,17 +11,18 @@ Kirigami.Icon {
     property bool accented: false
     property color foreground: Kirigami.Theme.textColor
     readonly property string verifiedColorSource: String(StandardPaths.locate(StandardPaths.GenericDataLocation,
-        "icons/windows-modern/actions/search-active.svg", StandardPaths.LocateFile))
+        "windows-modern/native-assets/icons/actions/search-active.svg", StandardPaths.LocateFile))
     readonly property string accentSource: {
         const imported = StandardPaths.locate(StandardPaths.GenericDataLocation,
-            "icons/windows-modern/actions/search.svg", StandardPaths.LocateFile);
-        return String(imported).length > 0 ? String(imported) : "edit-find-symbolic";
+            "windows-modern/native-assets/icons/actions/search.svg", StandardPaths.LocateFile);
+        return String(imported);
     }
     readonly property bool hasColorSource: verifiedColorSource.length > 0
     readonly property string colorSource: hasColorSource ? verifiedColorSource : accentSource
     readonly property string resolvedSource: accented ? accentSource : colorSource
     source: resolvedSource
-    fallback: "edit-find"
+    fallback: ""
+    visible: resolvedSource.length > 0
     isMask: accented || !hasColorSource
     color: foreground
     roundToIconSize: false
