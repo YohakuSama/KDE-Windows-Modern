@@ -28,7 +28,7 @@ PlasmaComponents.Button {
             : control.hovered || control.keyboardFocus ? colors.hover
             : control.quiet ? "transparent" : colors.surface
         border.width: control.quiet && !control.selected && !control.keyboardFocus ? 0 : 1
-        border.color: control.keyboardFocus ? colors.accent : colors.surfaceBorder
+        border.color: control.keyboardFocus || control.selected ? colors.accent : colors.surfaceBorder
         opacity: control.enabled ? 1 : 0.55
     }
 }
