@@ -125,23 +125,6 @@ build, original relative path, SHA-256 and extracted file together in the
 private resource manifest. Never add proprietary Windows files to a public
 release or the public Git history.
 
-Import these shell-only assets from an extracted or mounted Windows
-installation. Use the build number reported by that installation:
-
-\`\`\`bash
-python3 scripts/import-shell-assets.py /path/to/Windows --build 26300
-\`\`\`
-
-The importer verifies the SysBatt family and required glyph coverage, selects
-the highest available Search PNG scale for each light/dark and on/off state,
-extracts both Task View SVGs from the PRI, and writes the original artwork
-plus source/output SHA-256 records to
-\${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/shell-assets.
-The Plasma applets read this private directory directly. The font itself is
-not installed as a desktop text font and no proprietary shell asset enters
-the public ZIP. If the Windows installation reports a different 26H2 build,
-pass that exact number to --build rather than copying the example.
-
 ## Local shell artwork import
 
 The new importer accepts an extracted Windows directory, including the
