@@ -226,8 +226,8 @@ Item {
                 property var favoritesModel: sourceModel ? sourceModel.favoritesModel : null
             }
 
-            // KDE supplies the application categories and their translated names.
-            // Flatten only the nested entries inside each category, not the root.
+            // KDE provides real freedesktop membership. WindowsCategories
+            // maps it to Windows-style buckets instead of exposing KDE labels.
             Kicker.AppsModel {
                 id: nativeCategoryModel
                 flat: true
@@ -242,6 +242,12 @@ Item {
                 function onModelAboutToBeReset() {
                     allAppsPage.resetCategory();
                 }
+            }
+
+            Kicker.RecentUsageModel {
+                id: categoryPopularity
+                shownItems: Kicker.RecentUsageModel.OnlyApps
+                ordering: Kicker.RecentUsageModel.Popular
             }
 
             Kicker.RecentUsageModel {
@@ -313,6 +319,7 @@ Item {
                     showAllSection: Plasmoid.configuration.showAllSection
                     flatModel: sortedAppsModel
                     categoryModel: nativeCategoryModel
+                    categoryUsageModel: categoryPopularity
                     categoryMode: Plasmoid.configuration.allAppsViewMode === 2
                     gridMode: Plasmoid.configuration.allAppsViewMode === 1
                     alphabeticalGrouping: Plasmoid.configuration.allAppsSortMode === 0

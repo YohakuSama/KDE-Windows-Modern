@@ -47,6 +47,8 @@ Item {
     property int itemIndex: item.appData.index ?? -1
     property int iconSize: Kirigami.Units.iconSizes.smallMedium
     property bool showDescription: false
+    property bool showInstallBadge: false
+    readonly property bool newApplication: showInstallBadge && !!appData.isNewlyInstalled
 
     // Opt-in drag-to-reorder.  Only the pinned (favorites) list sets this;
     // the all-apps list is alphabetical and not reorderable.
@@ -169,8 +171,8 @@ Item {
             PlasmaComponents3.Label {
                 width: parent.width
                 horizontalAlignment: item.gridMode ? Text.AlignHCenter : Text.AlignLeft
-                maximumLineCount: item.gridMode ? 2 : 1
-                wrapMode: item.gridMode ? Text.Wrap : Text.NoWrap
+                maximumLineCount: item.gridMode && !item.newApplication ? 2 : 1
+                wrapMode: item.gridMode && !item.newApplication ? Text.Wrap : Text.NoWrap
                 elide: Text.ElideRight
                 color: Kirigami.Theme.textColor
                 font.pixelSize: item.gridMode ? Math.max(12, Kirigami.Theme.smallFont.pixelSize) : Math.max(12, Kirigami.Theme.defaultFont.pixelSize)
@@ -179,7 +181,19 @@ Item {
             }
 
             PlasmaComponents3.Label {
-                visible: item.showDescription && text.length > 0
+                objectName: "wmNewAppBadge"
+                visible: item.newApplication
+                width: parent.width
+                horizontalAlignment: item.gridMode ? Text.AlignHCenter : Text.AlignLeft
+                maximumLineCount: 1
+                color: Kirigami.Theme.highlightColor
+                font.pixelSize: Math.max(11, Kirigami.Theme.smallFont.pixelSize)
+                text: i18n("New")
+                textFormat: Text.PlainText
+            }
+
+            PlasmaComponents3.Label {
+                visible: item.showDescription && !item.newApplication && text.length > 0
                 width: parent.width
                 maximumLineCount: 1
                 elide: Text.ElideRight

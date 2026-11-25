@@ -16,7 +16,7 @@ FocusScope {
     property bool gridMode: false
     property bool alphabeticalGrouping: true
     property Component header: null
-    readonly property alias headerItem: rowsView.headerItem
+    readonly property var headerItem: rowsView.headerItem
     readonly property int scrollGutter: 18
     readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
     readonly property int columns: !gridMode ? 1 : contentColumnWidth >= 430 ? 6 : contentColumnWidth >= 320 ? 4 : 3
@@ -24,7 +24,8 @@ FocusScope {
     readonly property int cellHeight: gridMode ? 84 : Math.max(36, Math.floor(Kirigami.Units.gridUnit * 1.8) + 2)
     readonly property int headingHeight: 36
     property int currentIndex: -1
-    property var entries: []
+    property var sourceEntries: []
+    readonly property var entries: showApps ? sourceEntries : []
     readonly property int count: entries.length
     readonly property var visualRows: Alphabetical.buildRows(entries, columns, alphabeticalGrouping)
     signal applicationActivated(int sourceRow)
@@ -36,14 +37,14 @@ FocusScope {
     function refresh() {
         const source = sourceModel;
         const next = [];
-        if (showApps && source !== null && source !== undefined) {
+        if (source !== null && source !== undefined) {
             const size = typeof source === "number" ? source
                 : typeof source.rowCount === "function" ? source.rowCount()
                 : Number(source.count || 0);
             const roles = ["display", "name", "decoration", "description", "favoriteId",
-                "url", "actionList", "isParent", "disabled"];
+                "url", "actionList", "isParent", "disabled", "isNewlyInstalled"];
             const roleIds = {};
-            if (typeof source.index === "function" && typeof source.data === "function") {
+            if (typeof source.get !== "function" && typeof source.index === "function" && typeof source.data === "function") {
                 for (const role of roles)
                     roleIds[role] = source.KItemModels.KRoleNames.role(role);
             }
@@ -69,8 +70,10 @@ FocusScope {
         }
         const old = currentIndex >= 0 ? entries[currentIndex] : null;
         const identity = old ? String(old.favoriteId || old.url || "") : "";
-        entries = next;
-        if (identity) {
+        sourceEntries = next;
+        if (!showApps) {
+            currentIndex = -1;
+        } else if (identity) {
             currentIndex = next.findIndex(entry => String(entry.favoriteId || entry.url || "") === identity);
         } else if (currentIndex >= count) {
             currentIndex = count - 1;
@@ -169,6 +172,7 @@ FocusScope {
                         height: view.cellHeight
                         gridMode: view.gridMode
                         iconSize: gridMode ? 32 : 24
+                        showInstallBadge: true
                     }
                 }
             }
