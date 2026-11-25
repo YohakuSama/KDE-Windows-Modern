@@ -202,6 +202,7 @@ QQC2.StackView {
         id: clipboardPageComp
         Components.ClipboardPage {
             onBack: systemTrayState.setActiveApplet(null)
+            onItemSelected: systemTrayState.expanded = false
         }
     }
     Component {
