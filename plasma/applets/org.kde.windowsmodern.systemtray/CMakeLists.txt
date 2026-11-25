@@ -159,6 +159,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
 ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     PATH lib
     SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/Win11Palette.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/Tile.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/TileReorderHandler.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/SplitTile.qml

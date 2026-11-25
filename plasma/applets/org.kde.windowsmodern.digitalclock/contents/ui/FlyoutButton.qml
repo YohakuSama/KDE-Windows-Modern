@@ -5,21 +5,22 @@ import org.kde.kirigami as Kirigami
 
 PlasmaComponents.Button {
     id: control
+
+    Win11Palette { id: fluent }
     property bool quiet: false
     property bool attentionActive: false
-    implicitHeight: 28
+    implicitHeight: Math.max(28, implicitContentHeight + topPadding + bottomPadding)
     padding: 6
     leftPadding: 8
     rightPadding: 8
     icon.width: 14
     icon.height: 14
-    font.pixelSize: 12
+    font: Kirigami.Theme.defaultFont
     background: Rectangle {
-        radius: 4
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-            Kirigami.Theme.textColor.b, control.down ? 0.13
-                : control.hovered || control.activeFocus || control.checked || control.attentionActive ? 0.09
-                : control.quiet ? 0 : 0.05)
+        radius: fluent.controlRadius
+        color: control.down ? fluent.controlPressed
+            : control.hovered || control.activeFocus || control.checked || control.attentionActive ? fluent.controlHover
+            : control.quiet ? "transparent" : fluent.controlFill
         border.width: control.activeFocus ? 1 : 0
         border.color: Kirigami.Theme.highlightColor
     }

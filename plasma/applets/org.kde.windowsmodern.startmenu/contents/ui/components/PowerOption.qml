@@ -17,6 +17,8 @@ import "../code/theme.js" as Theme
 Item {
     id: option
 
+    Win11Palette { id: fluent }
+
     property string iconSource
     property string label
     property bool optionEnabled: true
@@ -38,29 +40,28 @@ Item {
     Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
     width: parent ? parent.width : Kirigami.Units.gridUnit * 10
-    height: Math.floor(Kirigami.Units.gridUnit * 1.6)
+    height: Math.max(fluent.controlHeight, Math.ceil(powerRow.implicitHeight) + 12)
 
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1
-        radius: Kirigami.Units.smallSpacing / 2
-        color: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus)
-               ? Kirigami.Theme.hoverColor
-               : "transparent"
-        opacity: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus) ? Theme.opacityFull : Theme.opacityHidden
-        Behavior on opacity { NumberAnimation { duration: 80 } }
+        radius: fluent.controlRadius
+        color: !option.optionEnabled ? "transparent"
+            : hoverArea.containsPress ? fluent.controlPressed
+            : hoverArea.containsMouse || option.activeFocus ? fluent.controlHover : "transparent"
+        Behavior on color { ColorAnimation { duration: 80 } }
     }
 
     RowLayout {
         id: powerRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.leftMargin: Kirigami.Units.smallSpacing
-        spacing: Kirigami.Units.smallSpacing
+        anchors.leftMargin: fluent.rowPadding
+        spacing: fluent.rowPadding
 
         Kirigami.Icon {
-            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-            Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+            Layout.preferredWidth: fluent.menuIconSize
+            Layout.preferredHeight: fluent.menuIconSize
             source: option.iconSource
             fallback: option.iconSource.replace(/-symbolic$/, "")
             isMask: true

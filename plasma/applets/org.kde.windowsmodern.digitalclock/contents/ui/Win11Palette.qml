@@ -7,11 +7,12 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 
-// Windows 11 color tokens from docs/STYLE.md, resolved against the active
-// Kirigami theme so both the dark and light global variants are supported.
+// Canonical shell palette. Start and Quick Settings carry checked copies
+// because they are independently installable packages (including qrc).
 QtObject {
+    property color themeBackground: Kirigami.Theme.backgroundColor
     readonly property bool isDark: {
-        const bg = Kirigami.Theme.backgroundColor;
+        const bg = themeBackground;
         return (bg.r * 0.299 + bg.g * 0.587 + bg.b * 0.114) < 0.5;
     }
 
@@ -32,4 +33,22 @@ QtObject {
     readonly property color accentText: Kirigami.Theme.highlightedTextColor
     readonly property color hover:            isDark ? "#3F3F3F" : "#E9E9E9"
     readonly property color pressed:          isDark ? "#4A4A4A" : "#DADADA"
+    // Semantic control roles, distinct from the opaque popup frame. Keep
+    // these translucent so controls also work on the native acrylic frame.
+    readonly property color menuBackground: isDark ? "#2C2C2C" : "#F9F9F9"
+    readonly property color menuBorder: surfaceBorder
+    readonly property color controlFill: isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.70)
+    readonly property color controlHover: isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.06)
+    readonly property color controlPressed: isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.10)
+    readonly property color controlBorder: isDark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.12)
+    readonly property color selectionFill: controlHover
+    readonly property color switchTrack: isDark ? "#333333" : "#E9E9E9"
+    readonly property color switchOutline: isDark ? "#A0A0A0" : "#777777"
+
+    readonly property int menuRadius: 8
+    readonly property int controlRadius: 4
+    readonly property int menuIconSize: 16
+    readonly property int controlHeight: 32
+    readonly property int menuPadding: 4
+    readonly property int rowPadding: 8
 }

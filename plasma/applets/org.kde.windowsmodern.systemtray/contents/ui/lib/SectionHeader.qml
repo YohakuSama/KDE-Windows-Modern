@@ -10,6 +10,5 @@ PlasmaComponents3.Label {
     Layout.topMargin: 8
     Layout.bottomMargin: 4
     color: Kirigami.Theme.textColor
-    font.pixelSize: 11
     font.weight: Font.DemiBold
 }

@@ -21,6 +21,8 @@ import "../code/footerNavigation.js" as FooterNavigation
 Item {
     id: root
 
+    Win11Palette { id: fluent }
+
     property Item visualParent
     property bool accountMode: false
     readonly property bool opened: popup.visible
@@ -72,23 +74,21 @@ Item {
 
         readonly property real panelWidth: Kirigami.Units.gridUnit * 10
         width: panelWidth
-        height: powerColumn.implicitHeight + Kirigami.Units.smallSpacing
-        radius: Kirigami.Units.smallSpacing
-        color: Kirigami.Theme.backgroundColor
+        height: powerColumn.implicitHeight + 2 * fluent.menuPadding
+        radius: fluent.menuRadius
+        color: fluent.menuBackground
         border.width: 1
-        border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                               Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, Theme.popupBorderOpacity)
+        border.color: fluent.menuBorder
 
         // Soft shadow effect
         layer.enabled: true
 
         Column {
             id: powerColumn
-            width: popup.panelWidth - Kirigami.Units.smallSpacing
+            width: popup.panelWidth - 2 * fluent.menuPadding
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.topMargin: Kirigami.Units.smallSpacing / 2
+            anchors.topMargin: fluent.menuPadding
             spacing: 0
 
             PowerOption {

@@ -17,31 +17,18 @@ import "../code/theme.js" as Theme
 Rectangle {
     id: item
 
+    Win11Palette { id: fluent }
+
     property int buttonHeight: Math.floor(Kirigami.Units.gridUnit * 2)
     implicitHeight: buttonHeight
     implicitWidth: row.implicitWidth + (Kirigami.Units.mediumSpacing * 2)
 
-    border.width: linkStyle ? 0 : 1
-    border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                           Kirigami.Theme.textColor.g,
-                           Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
-
-    radius: Kirigami.Units.smallSpacing
-    color: {
-        var hover = Qt.rgba(Kirigami.Theme.textColor.r,
-                            Kirigami.Theme.textColor.g,
-                            Kirigami.Theme.textColor.b, Theme.buttonHoverOpacity);
-        if (flat) {
-            return (mouseItem.containsMouse || item.activeFocus)
-                   ? Qt.rgba(Kirigami.Theme.textColor.r,
-                              Kirigami.Theme.textColor.g,
-                              Kirigami.Theme.textColor.b, Theme.buttonFlatHoverOpacity)
-                   : linkStyle ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r,
-                              Kirigami.Theme.textColor.g,
-                              Kirigami.Theme.textColor.b, Theme.buttonFlatBackgroundOpacity);
-        }
-        return (mouseItem.containsMouse || item.activeFocus) ? hover : Kirigami.Theme.backgroundColor;
-    }
+    border.width: item.activeFocus || !linkStyle ? 1 : 0
+    border.color: item.activeFocus ? fluent.accent : fluent.controlBorder
+    radius: fluent.controlRadius
+    color: mouseItem.containsPress ? fluent.controlPressed
+        : mouseItem.containsMouse || item.activeFocus ? fluent.controlHover
+        : linkStyle ? "transparent" : fluent.controlFill
 
     Behavior on color { ColorAnimation { duration: 90 } }
 

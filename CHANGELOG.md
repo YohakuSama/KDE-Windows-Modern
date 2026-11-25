@@ -6,6 +6,13 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Shared shell control styling
+
+- Share the Windows 11 shell palette across Start, Quick Settings and the clock, with a repository check for independent package copies.
+- Style Start context and power menus with matching surfaces, row states, logical sizes and font-aware text measurement.
+- Replace inherited detail-page switch and back-button visuals, unify selection indicators, and expose keyboard-accessible rows and settings links without changing the underlying KDE actions.
+- Desktop screenshot and native fallback page acceptance remain pending.
+
 ### Fixed tray reference baseline
 
 - Restore the 16px tray canvas, chevron and bell while retaining original optical-normalized assets, normal hit targets and the separate wider battery cell. Avoid the previous double enlargement of imported glyphs. Guard standard sizes at 100–200% output scales.

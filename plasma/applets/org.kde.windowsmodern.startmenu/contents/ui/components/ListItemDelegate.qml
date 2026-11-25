@@ -23,6 +23,8 @@ import "../code/theme.js" as Theme
 Item {
     id: item
 
+    Win11Palette { id: fluent }
+
     readonly property bool inGrid: !!item.GridView.view
     readonly property var hostView: inGrid ? item.GridView.view : item.ListView.view
     property bool gridMode: false
@@ -63,8 +65,8 @@ Item {
     Rectangle {
         id: hoverBackground
         anchors.fill: parent
-        radius: Kirigami.Units.smallSpacing
-        color: Kirigami.Theme.hoverColor
+        radius: fluent.controlRadius
+        color: mouseArea.containsPress ? fluent.controlPressed : fluent.controlHover
         opacity: {
             if (item._dragging) return Theme.opacityHidden;
             if (mouseArea.containsMouse) return Theme.opacityFull;
