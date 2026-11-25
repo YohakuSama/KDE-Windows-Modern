@@ -46,6 +46,14 @@ done
 check_dir  "Kvantum/Windows-modern"                         "Kvantum theme"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"
 check_file "icons/windows-modern/index.theme"               "Icon pack"
+store_icons=(icons/windows-modern/apps/discover.svg icons/windows-modern/apps/org.kde.discover.svg icons/windows-modern/apps/plasma-discover.svg icons/windows-modern/apps/plasmadiscover.svg)
+if cmp -s "${store_icons[0]}" "${store_icons[1]}" \
+   && cmp -s "${store_icons[0]}" "${store_icons[2]}" \
+   && cmp -s "${store_icons[0]}" "${store_icons[3]}"; then
+    pass "Discover aliases use the same current Store icon"
+else
+    fail "Discover icon aliases differ"
+fi
 if python3 -I scripts/theme/popup-frames.py --check >/dev/null; then
     pass "popup frame generator (dark/light, solid/acrylic, tooltip)"
 else

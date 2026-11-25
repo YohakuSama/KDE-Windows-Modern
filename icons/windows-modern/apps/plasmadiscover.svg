@@ -1,18 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <!-- Windows Modern compatibility artwork, redrawn from the user's reference. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
   <defs>
-    <linearGradient id="bag" x1="0" y1="0" x2="0.85" y2="1">
-      <stop stop-color="#1677b6"/><stop offset="1" stop-color="#183b70"/>
-    </linearGradient>
-    <linearGradient id="side" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#124e88"/><stop offset="1" stop-color="#153363"/>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1.1"/>
+      <feOffset dy="1" result="offset"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".12"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="bag" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F5F8FA"/>
     </linearGradient>
   </defs>
-  <path d="M16 13V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5" fill="none" stroke="#24a8e0" stroke-width="2.8" stroke-linejoin="round"/>
-  <rect x="6" y="11" width="36" height="31" rx="3.8" fill="url(#bag)"/>
-  <path d="M36 11h2.2a3.8 3.8 0 0 1 3.8 3.8v23.4a3.8 3.8 0 0 1-3.8 3.8H36z" fill="url(#side)"/>
-  <path d="M17 19h7v7h-7z" fill="#f25022"/>
-  <path d="M25 19h7v7h-7z" fill="#7fba00"/>
-  <path d="M17 27h7v7h-7z" fill="#00a4ef"/>
-  <path d="M25 27h7v7h-7z" fill="#ffb900"/>
+  <!-- Current white Microsoft Store bag, with a clean cyan handle. -->
+  <path d="M16.5 14V9.8a7.5 7.5 0 0 1 15 0V14"
+        fill="none" stroke="#00A4EF" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M10.1 13.5h27.8l2.2 26.1a3.1 3.1 0 0 1-3.1 3.4H11a3.1 3.1 0 0 1-3.1-3.4z"
+        fill="url(#bag)" stroke="#D9E1E7" stroke-width=".8" filter="url(#shadow)"/>
+  <path d="M10.8 15h26.4" fill="none" stroke="#FFFFFF" stroke-width="1.1" opacity=".95"/>
+  <!-- Four-colour Windows mark. -->
+  <path d="M16.8 19.1h6.8v6.8h-6.8z" fill="#F25022"/>
+  <path d="M24.7 19.1h6.8v6.8h-6.8z" fill="#7FBA00"/>
+  <path d="M16.8 27h6.8v6.8h-6.8z" fill="#00A4EF"/>
+  <path d="M24.7 27h6.8v6.8h-6.8z" fill="#FFB900"/>
 </svg>
