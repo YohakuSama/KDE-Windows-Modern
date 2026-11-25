@@ -14,11 +14,17 @@ import org.kde.breeze.components
 import org.kde.kirigami 2.20 as Kirigami
 
 import org.kde.plasma.login as PlasmaLogin
+import "SignInMetrics.js" as SignInMetrics
 
 SessionManagementScreen {
     id: root
 
     property Item mainPasswordBox: passwordField
+    readonly property int avatarSize: SignInMetrics.avatarSize(width, height)
+    readonly property url accountImage: !showUsernamePrompt && userList.currentItem && userList.currentItem.icon
+        ? userList.currentItem.icon : ""
+    readonly property string accountName: showUsernamePrompt ? userNameInput.text
+        : (userList.currentItem?.realName || userList.currentItem?.name || userList.selectedUser || "")
 
     property bool showUsernamePrompt: !showUserList
     property bool loginScreenUiVisible: false
@@ -32,6 +38,7 @@ SessionManagementScreen {
 
     // Silence the built-in action items layout; we provide our own login UI.
     actionItems: [ Item { visible: false } ]
+    actionItemsVisible: false
 
     // Silence the default top-aligned message; we render errors inline.
     notificationMessage: ""
@@ -94,176 +101,183 @@ SessionManagementScreen {
         loginRequest(username, password);
     }
 
-    // ── Avatar ──
-    WinAvatar {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.bottomMargin: 16
-        size: WinStyle.avatarSize
-        source: {
-            if (!root.showUsernamePrompt && userList.currentItem && userList.currentItem.icon) {
-                return userList.currentItem.icon;
-            }
-            return Qt.resolvedUrl("faces/.face.icon");
+    // Bypass Breeze's prompts layout (anchored below the vertical midpoint)
+    // without replacing its user model, focus and authentication machinery.
+    readonly property Item signInForm: ColumnLayout {
+        id: centeredForm
+        parent: root
+        width: Math.min(root.width, 380)
+        height: implicitHeight
+        anchors.horizontalCenter: root.horizontalCenter
+        y: SignInMetrics.formTop(root.height, height, root.avatarSize)
+        spacing: 8
+        // ── Avatar ──
+        WinAvatar {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.bottomMargin: 10
+            size: root.avatarSize
+            source: root.accountImage
         }
-    }
 
-    // ── Username label ──
-    Text {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.bottomMargin: 4
-        text: {
-            if (root.showUsernamePrompt) {
-                return i18nd("plasma_login", "User");
-            }
-            if (userList.currentItem && userList.currentItem.realName) {
-                return userList.currentItem.realName;
-            }
-            return "";
-        }
-        font.family: WinStyle.fontFamily
-        font.pixelSize: WinStyle.usernamePixelSize
-        font.weight: Font.Normal
-        color: WinStyle.foregroundColor
-        horizontalAlignment: Text.AlignHCenter
-    }
-
-    // ── Error message ──
-    Item {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.preferredHeight: 20
-        Layout.bottomMargin: 0
-
+        // ── Username label ──
         Text {
-            anchors.centerIn: parent
-            visible: root.customErrorMessage !== ""
-            text: root.customErrorMessage
+            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
+            Layout.bottomMargin: 4
+            text: root.showUsernamePrompt ? i18nd("plasma_login", "User") : root.accountName
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
             font.family: WinStyle.fontFamily
-            font.pixelSize: WinStyle.bodyPixelSize
-            font.italic: true
-            color: WinStyle.mutedForegroundColor
+            font.pixelSize: WinStyle.usernamePixelSize
+            font.weight: Font.Normal
+            color: WinStyle.foregroundColor
             horizontalAlignment: Text.AlignHCenter
         }
-    }
 
-    // ── Username input ──
-    WinTextField {
-        id: userNameInput
-        Layout.fillWidth: true
-        Layout.maximumWidth: WinStyle.textFieldMaxWidth
-        Layout.alignment: Qt.AlignHCenter
-        Layout.preferredHeight: WinStyle.textFieldHeight
+        // ── Error message ──
+        Item {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredHeight: root.customErrorMessage.length > 0 ? Math.max(20, errorLabel.implicitHeight) : 0
+            Layout.fillWidth: true
+            visible: root.customErrorMessage.length > 0
 
-        text: ""
-        visible: showUsernamePrompt
-        initialFocus: showUsernamePrompt
-        placeholderText: i18nd("plasma_login", "Username")
-
-        onAccepted: {
-            if (root.loginScreenUiVisible) {
-                passwordField.forceActiveFocusOnTextField();
-            }
-        }
-    }
-
-    // ── Password field + submit button ──
-    Item {
-        Layout.fillWidth: true
-        Layout.preferredHeight: WinStyle.textFieldHeight
-        Layout.maximumWidth: WinStyle.textFieldMaxWidth
-        Layout.alignment: Qt.AlignHCenter
-        visible: root.showUsernamePrompt || (userList.currentItem && userList.currentItem.needsPassword)
-
-        Rectangle {
-            anchors.fill: parent
-            color: WinStyle.panelBackground
-            border.color: WinStyle.textFieldBorderColor
-            radius: WinStyle.textFieldRadius
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: 2
-                height: 2
-                radius: 1
-                color: WinStyle.accentColor
-                visible: passwordField.textField.activeFocus
+            Text {
+                id: errorLabel
+                anchors.fill: parent
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                visible: root.customErrorMessage !== ""
+                text: root.customErrorMessage
+                font.family: WinStyle.fontFamily
+                font.pixelSize: WinStyle.bodyPixelSize
+                color: WinStyle.mutedForegroundColor
+                horizontalAlignment: Text.AlignHCenter
             }
         }
 
+        // ── Username input ──
         WinTextField {
-            id: passwordField
-            anchors.left: parent.left
-            anchors.right: loginButton.left
-            anchors.rightMargin: 4
-            anchors.verticalCenter: parent.verticalCenter
-            height: parent.height
-            drawBackground: false
-            leftPadding: 10
-            rightPadding: 10
+            id: userNameInput
+            Layout.fillWidth: true
+            Layout.maximumWidth: WinStyle.textFieldMaxWidth
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredHeight: WinStyle.textFieldHeight
 
             text: ""
-            placeholderText: i18nd("plasma_login", "Password")
-            echoMode: TextInput.Password
-            initialFocus: !showUsernamePrompt
+            visible: showUsernamePrompt
+            initialFocus: showUsernamePrompt
+            placeholderText: i18nd("plasma_login", "Username")
 
             onAccepted: {
                 if (root.loginScreenUiVisible) {
-                    root.startLogin();
-                }
-            }
-
-            onEscapePressed: {
-                if (mainStack.currentItem) {
-                    mainStack.currentItem.forceActiveFocus();
-                }
-            }
-
-            onKeyPressed: event => {
-                if (event.key === Qt.Key_Left && !text) {
-                    userList.decrementCurrentIndex();
-                    event.accepted = true;
-                }
-                if (event.key === Qt.Key_Right && !text) {
-                    userList.incrementCurrentIndex();
-                    event.accepted = true;
-                }
-            }
-
-            Connections {
-                target: PlasmaLogin.Authenticator
-                function onLoginFailed() {
-                    passwordField.textField.selectAll();
                     passwordField.forceActiveFocusOnTextField();
                 }
             }
         }
 
-        WinLoginButton {
-            id: loginButton
-            anchors.right: parent.right
-            anchors.rightMargin: 2
-            anchors.verticalCenter: parent.verticalCenter
-            layoutMirrored: root.LayoutMirroring.enabled
-            visible: passwordField.text.length > 0 || !root.showUsernamePrompt
-            onClicked: root.startLogin()
-            Keys.onEnterPressed: clicked()
-            Keys.onReturnPressed: clicked()
-        }
-    }
+        // ── Password field + submit button ──
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: WinStyle.textFieldHeight
+            Layout.maximumWidth: WinStyle.textFieldMaxWidth
+            Layout.alignment: Qt.AlignHCenter
+            visible: root.showUsernamePrompt || (userList.currentItem && userList.currentItem.needsPassword)
 
-    // ── No-password login button ──
-    QQC2.Button {
-        Layout.alignment: Qt.AlignHCenter
-        text: i18nd("plasma_login", "Log In")
-        visible: !root.showUsernamePrompt && userList.currentItem && !userList.currentItem.needsPassword
-        onClicked: root.startLogin()
-        flat: true
+            Rectangle {
+                anchors.fill: parent
+                color: WinStyle.panelBackground
+                border.color: WinStyle.textFieldBorderColor
+                radius: WinStyle.textFieldRadius
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.margins: 2
+                    height: 2
+                    radius: 1
+                    color: WinStyle.accentColor
+                    visible: passwordField.textField.activeFocus
+                }
+            }
+
+            WinTextField {
+                id: passwordField
+                anchors.left: parent.left
+                anchors.right: loginButton.left
+                anchors.rightMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                height: parent.height
+                drawBackground: false
+                leftPadding: 10
+                rightPadding: 10
+
+                text: ""
+                placeholderText: i18nd("plasma_login", "Password")
+                echoMode: TextInput.Password
+                initialFocus: !showUsernamePrompt
+
+                onAccepted: {
+                    if (root.loginScreenUiVisible) {
+                        root.startLogin();
+                    }
+                }
+
+                onEscapePressed: {
+                    if (mainStack.currentItem) {
+                        mainStack.currentItem.forceActiveFocus();
+                    }
+                }
+
+                onKeyPressed: event => {
+                    if (event.key === Qt.Key_Left && !text) {
+                        userList.decrementCurrentIndex();
+                        event.accepted = true;
+                    }
+                    if (event.key === Qt.Key_Right && !text) {
+                        userList.incrementCurrentIndex();
+                        event.accepted = true;
+                    }
+                }
+
+                Connections {
+                    target: PlasmaLogin.Authenticator
+                    function onLoginFailed() {
+                        passwordField.textField.selectAll();
+                        passwordField.forceActiveFocusOnTextField();
+                    }
+                }
+            }
+
+            WinLoginButton {
+                id: loginButton
+                anchors.right: parent.right
+                anchors.rightMargin: 2
+                anchors.verticalCenter: parent.verticalCenter
+                layoutMirrored: root.LayoutMirroring.enabled
+                visible: passwordField.text.length > 0 || !root.showUsernamePrompt
+                onClicked: root.startLogin()
+                Keys.onEnterPressed: clicked()
+                Keys.onReturnPressed: clicked()
+            }
+        }
+
+        // ── No-password login button ──
+        QQC2.Button {
+            Layout.alignment: Qt.AlignHCenter
+            text: i18nd("plasma_login", "Log In")
+            visible: !root.showUsernamePrompt && userList.currentItem && !userList.currentItem.needsPassword
+            onClicked: root.startLogin()
+            flat: true
+        }
+
     }
 
     // ── Synchronize state with GreeterState ──
-    Item {
+    readonly property Item stateSynchronizer: Item {
         id: sync
+        parent: root
+        visible: false
 
         readonly property bool isUserList: root.showUserList && !root.showUsernamePrompt
 

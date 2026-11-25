@@ -316,7 +316,7 @@ Item {
             anchors {
                 horizontalCenter: parent.horizontalCenter
                 verticalCenter: parent.verticalCenter
-                verticalCenterOffset: -parent.height * 0.15
+                verticalCenterOffset: 0
             }
             width: Math.min(parent.width * 0.9, 480)
             height: Math.min(parent.height * 0.8, 600)

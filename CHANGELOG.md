@@ -6,6 +6,13 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Centered sign-in and progressive welcome ring
+
+- Replace default sign-in avatar presentation with a shared translucent circular surface and Microsoft's MIT-licensed Fluent System Icons Person glyph (a compatibility asset, not an extracted LogonUI resource); retain custom account images.
+- Center the actual lock and greeter form columns instead of offsetting Breeze's lower-half prompts layout. Share sizing and top-position metrics, remove empty error gaps, and keep authentication and user-model behavior intact.
+- Prevent the task manager from filling the available panel width in newly applied layouts, so the existing expanding spacers can position the Start and application group. Preserve existing user layouts during upgrade.
+- Replace dotted splash animation with a shared continuous variable-sweep arc. Show the welcome view only on actual greeter authentication success, without delaying session startup. Add shared-copy and centered-layout tests.
+
 ### Quick Settings slider input regression
 
 - Give the shared native Qt slider a nonzero implicit size and full-row input height, restoring track clicks and live thumb dragging. Preserve keyboard, touch and accessibility semantics, and use one row wheel handler instead of competing wheel paths.

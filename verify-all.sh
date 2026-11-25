@@ -207,6 +207,12 @@ for pair in \
     "$LOCK/dateformat.js $LOGIN/dateformat.js" \
     "$LOCK/StatusIconButton.qml $LOGIN/StatusIconButton.qml" \
     "$LOCK/FluentPowerMenuItem.qml $LOGIN/FluentPowerMenuItem.qml" \
+    "$LOCK/SignInAvatar.qml $LOGIN/SignInAvatar.qml" \
+    "$LOCK/SignInMetrics.js $LOGIN/SignInMetrics.js" \
+    "$LOCK/SignInProgress.qml $LOGIN/SignInProgress.qml" \
+    "$LOCK/SignInProgress.qml plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash/SignInProgress.qml" \
+    "$LOCK/SignInProgress.qml plasma/look-and-feel/org.kde.windowsmodern.light/contents/splash/SignInProgress.qml" \
+    "$LOCK/account-person.svg $LOGIN/account-person.svg" \
     "$LOCK/NetworkStatusIcon.qml $LOGIN/NetworkStatusIcon.qml" \
     "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml" \

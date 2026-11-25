@@ -22,7 +22,7 @@ QtObject {
 
     readonly property string fontFamily: Application.font.family
 
-    readonly property int avatarSize: 140
+    readonly property int avatarSize: 192
     readonly property int textFieldHeight: 36
     readonly property int textFieldRadius: 4
     readonly property color textFieldBorderColor: "#66FFFFFF"
@@ -35,7 +35,7 @@ QtObject {
 
     readonly property int clockTimePixelSize: 96
     readonly property int clockDatePixelSize: 24
-    readonly property int usernamePixelSize: 32
+    readonly property int usernamePixelSize: 28
     readonly property int bodyPixelSize: 14
     readonly property int userSwitcherNamePixelSize: 20
 }

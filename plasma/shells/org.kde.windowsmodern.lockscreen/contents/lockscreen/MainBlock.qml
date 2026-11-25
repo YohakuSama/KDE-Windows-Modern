@@ -15,11 +15,14 @@ import org.kde.kirigami as Kirigami
 import org.kde.kscreenlocker as ScreenLocker
 
 import org.kde.breeze.components
+import "SignInMetrics.js" as SignInMetrics
 
 SessionManagementScreen {
     id: sessionManager
 
     actionItems: [ Item { visible: false } ]
+    actionItemsVisible: false
+    readonly property int avatarSize: SignInMetrics.avatarSize(width, height)
 
     readonly property alias mainPasswordBox: passwordBox
     property bool lockScreenUiVisible: false
@@ -53,155 +56,180 @@ SessionManagementScreen {
         }
     }
 
-    // Always show a user image or the Windows default account avatar.
-    AccountAvatar {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.preferredWidth: 140
-        Layout.preferredHeight: 140
-        Layout.bottomMargin: 16
-        source: sessionManager.userListModel && sessionManager.userListModel.count > 0
-            ? sessionManager.userListModel.get(0).icon : ""
-    }
-
-    // ── Username ──
-    Text {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.bottomMargin: 4
-        text: {
-            if (sessionManager.userListModel && sessionManager.userListModel.count > 0) {
-                const item = sessionManager.userListModel.get(0);
-                if (item.realName) return item.realName;
-                if (item.name) return item.name;
-            }
-            return "";
+    // Bypass Breeze's prompts layout (anchored below the vertical midpoint)
+    // without replacing its user model, focus and authentication machinery.
+    readonly property Item signInForm: ColumnLayout {
+        id: centeredForm
+        parent: sessionManager
+        width: Math.min(sessionManager.width, 380)
+        height: implicitHeight
+        anchors.horizontalCenter: sessionManager.horizontalCenter
+        y: SignInMetrics.formTop(sessionManager.height, height, sessionManager.avatarSize)
+        spacing: 8
+        // Always show a user image or the Windows default account avatar.
+        AccountAvatar {
+            Layout.alignment: Qt.AlignHCenter
+            size: sessionManager.avatarSize
+            Layout.bottomMargin: 10
+            source: sessionManager.userListModel && sessionManager.userListModel.count > 0
+                ? sessionManager.userListModel.get(0).icon : ""
         }
-        font.family: Kirigami.Theme.defaultFont.family
-        font.pixelSize: 32
-        font.weight: Font.Normal
-        color: "#FFFFFF"
-        horizontalAlignment: Text.AlignHCenter
-    }
 
-    // ── Custom Error Message (Windows 10 style) ──
-    Item {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.preferredHeight: 20
-        Layout.bottomMargin: 0
-
+        // ── Username ──
         Text {
-            anchors.centerIn: parent
-            visible: sessionManager.customErrorMessage !== ""
-            text: sessionManager.customErrorMessage
+            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
+            Layout.bottomMargin: 4
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
+            text: {
+                if (sessionManager.userListModel && sessionManager.userListModel.count > 0) {
+                    const item = sessionManager.userListModel.get(0);
+                    if (item.realName) return item.realName;
+                    if (item.name) return item.name;
+                }
+                return "";
+            }
             font.family: Kirigami.Theme.defaultFont.family
-            font.pixelSize: 14
-            font.italic: true
-            color: "#A0A0A0"
+            font.pixelSize: 28
+            font.weight: Font.Normal
+            color: "#FFFFFF"
             horizontalAlignment: Text.AlignHCenter
-            // Screen readers announce "Unlocking failed" and the like.
-            Accessible.role: Accessible.StaticText
-            Accessible.name: text
-            Accessible.ignored: !visible
         }
-    }
 
-    // ── Password field + submit button ──
-    Item {
-        Layout.fillWidth: true
-        Layout.maximumWidth: 380
-        Layout.alignment: Qt.AlignHCenter
-        implicitHeight: 36
+        // ── Custom Error Message (Windows 10 style) ──
+        Item {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredHeight: sessionManager.customErrorMessage.length > 0 ? Math.max(20, errorLabel.implicitHeight) : 0
+            Layout.fillWidth: true
+            visible: sessionManager.customErrorMessage.length > 0
 
-        Rectangle {
-            id: passwordBorder
-            anchors.fill: parent
-            color: "#40000000"
-            border.color: "#66FFFFFF"
-            radius: 4
+            Text {
+                id: errorLabel
+                anchors.fill: parent
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                visible: sessionManager.customErrorMessage !== ""
+                text: sessionManager.customErrorMessage
+                font.family: Kirigami.Theme.defaultFont.family
+                font.pixelSize: 14
+                color: "#A0A0A0"
+                horizontalAlignment: Text.AlignHCenter
+                // Screen readers announce "Unlocking failed" and the like.
+                Accessible.role: Accessible.StaticText
+                Accessible.name: text
+                Accessible.ignored: !visible
+            }
+        }
+
+        // ── Password field + submit button ──
+        Item {
+            Layout.fillWidth: true
+            Layout.maximumWidth: 380
+            Layout.alignment: Qt.AlignHCenter
+            implicitHeight: 36
 
             Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: 2
-                height: 2
-                radius: 1
-                color: "#4CC2FF"
-                visible: passwordBox.activeFocus
-            }
-        }
-
-        TextField {
-            id: passwordBox
-            anchors.left: parent.left
-            anchors.right: loginButton.left
-            anchors.rightMargin: 4
-            anchors.verticalCenter: parent.verticalCenter
-            height: parent.height
-
-            property bool showPassword: false
-            echoMode: showPassword ? TextInput.Normal : TextInput.Password
-            placeholderText: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:placeholder in text field", "Password")
-            placeholderTextColor: "#A0A0A0"
-            font.family: Kirigami.Theme.defaultFont.family
-            font.pixelSize: 14
-            color: "#FFFFFF"
-            focus: true
-            leftPadding: 8
-            verticalAlignment: TextInput.AlignVCenter
-            cursorVisible: visible && focus
-            activeFocusOnTab: true
-
-            background: Item {}
-
-            onAccepted: {
-                if (sessionManager.lockScreenUiVisible) {
-                    sessionManager.startLogin();
-                }
-            }
-
-            Keys.onPressed: event => {
-                if (event.key === Qt.Key_Left && !text) {
-                    sessionManager.userList.decrementCurrentIndex();
-                    event.accepted = true
-                }
-                if (event.key === Qt.Key_Right && !text) {
-                    sessionManager.userList.incrementCurrentIndex();
-                    event.accepted = true
-                }
-            }
-
-            Connections {
-                target: root
-                function onClearPassword() {
-                    passwordBox.forceActiveFocus()
-                    passwordBox.text = "";
-                }
-                function onNotificationRepeated() {
-                    sessionManager.playHighlightAnimation();
-                }
-            }
-        }
-
-        ToolButton {
-            id: loginButton
-            anchors.right: parent.right
-            anchors.rightMargin: 2
-            anchors.verticalCenter: parent.verticalCenter
-            width: 32
-            height: 32
-
-            icon.name: LayoutMirroring.enabled ? "go-previous" : "go-next"
-            visible: passwordBox.text.length > 0
-            icon.color: hovered ? "#4CC2FF" : "#A0A0A0"
-
-            onClicked: sessionManager.startLogin()
-            Keys.onEnterPressed: clicked()
-            Keys.onReturnPressed: clicked()
-
-            background: Rectangle {
-                color: parent.hovered ? "#33FFFFFF" : "transparent"
+                id: passwordBorder
+                anchors.fill: parent
+                color: "#40000000"
+                border.color: "#66FFFFFF"
                 radius: 4
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.margins: 2
+                    height: 2
+                    radius: 1
+                    color: "#4CC2FF"
+                    visible: passwordBox.activeFocus
+                }
             }
+
+            TextField {
+                id: passwordBox
+                anchors.left: parent.left
+                anchors.right: loginButton.left
+                anchors.rightMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                height: parent.height
+
+                property bool showPassword: false
+                echoMode: showPassword ? TextInput.Normal : TextInput.Password
+                placeholderText: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:placeholder in text field", "Password")
+                placeholderTextColor: "#A0A0A0"
+                font.family: Kirigami.Theme.defaultFont.family
+                font.pixelSize: 14
+                color: "#FFFFFF"
+                focus: true
+                leftPadding: 8
+                verticalAlignment: TextInput.AlignVCenter
+                cursorVisible: visible && focus
+                activeFocusOnTab: true
+
+                background: Item {}
+
+                onAccepted: {
+                    if (sessionManager.lockScreenUiVisible) {
+                        sessionManager.startLogin();
+                    }
+                }
+
+                Keys.onPressed: event => {
+                    if (event.key === Qt.Key_Left && !text) {
+                        sessionManager.userList.decrementCurrentIndex();
+                        event.accepted = true
+                    }
+                    if (event.key === Qt.Key_Right && !text) {
+                        sessionManager.userList.incrementCurrentIndex();
+                        event.accepted = true
+                    }
+                }
+
+                Connections {
+                    target: root
+                    function onClearPassword() {
+                        passwordBox.forceActiveFocus()
+                        passwordBox.text = "";
+                    }
+                    function onNotificationRepeated() {
+                        sessionManager.playHighlightAnimation();
+                    }
+                }
+            }
+
+            ToolButton {
+                id: loginButton
+                anchors.right: parent.right
+                anchors.rightMargin: 2
+                anchors.verticalCenter: parent.verticalCenter
+                width: 32
+                height: 32
+
+                icon.name: LayoutMirroring.enabled ? "go-previous" : "go-next"
+                visible: passwordBox.text.length > 0
+                icon.color: hovered ? "#4CC2FF" : "#A0A0A0"
+
+                onClicked: sessionManager.startLogin()
+                Keys.onEnterPressed: clicked()
+                Keys.onReturnPressed: clicked()
+
+                background: Rectangle {
+                    color: parent.hovered ? "#33FFFFFF" : "transparent"
+                    radius: 4
+                }
+            }
+        }
+
+        FailableLabel {
+            kind: ScreenLocker.Authenticator.Fingerprint
+            label: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:usagetip", "(or scan your fingerprint on the reader)")
+        }
+        FailableLabel {
+            kind: ScreenLocker.Authenticator.Smartcard
+            label: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:usagetip", "(or scan your smartcard)")
         }
     }
 
@@ -243,12 +271,5 @@ SessionManagementScreen {
         }
     }
 
-    FailableLabel {
-        kind: ScreenLocker.Authenticator.Fingerprint
-        label: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:usagetip", "(or scan your fingerprint on the reader)")
-    }
-    FailableLabel {
-        kind: ScreenLocker.Authenticator.Smartcard
-        label: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:usagetip", "(or scan your smartcard)")
-    }
+
 }
