@@ -211,3 +211,25 @@ Meta typing. Run on a single active display with a static contrasting desktop
 at each required DPI/theme. The screenshot comparison checks relative equality,
 not the absolute Windows margin or material. Headless geometry tests are not
 live acceptance. No new CI workflow is introduced.
+
+### Owner task preview and launcher tooltip reference
+
+The taskbar screenshots show a short name-only label for a closed pinned
+application, a live thumbnail for an open window, and a red close-hover
+target. The previous task activation condition excluded launchers entirely.
+Reuse the existing native non-activating tooltip window and its theme frame;
+no separate popup service. Select the name-only delegate for zero windows,
+keep existing grouped/text/thumbnail behavior for actual windows, and scope
+shared-dialog visibility notifications to its current owner.
+
+Use a 32 logical px close hit target, fixed header geometry, 4px radius,
+red hover/darker press, and a 14px normalized icon canvas (about 12.25px
+painted X, from the existing 84/96 optical normalization). The supplied
+crops show a roughly 24px current X and 17px reference X; their exact DPI
+is not established. Do not draw replacement artwork. Keep the original
+close action and group-specific window index. A 12px native popup margin
+and smaller card padding address the overly tight taskbar gap and doubled
+edge inset. These are screenshot-derived targets, not Microsoft-published
+metrics. Extend the existing real-session tests for launcher name, focus,
+red hover surface and targeted window close, at 100% on one output first;
+verify dark/light and fractional scaling visually on the target session.

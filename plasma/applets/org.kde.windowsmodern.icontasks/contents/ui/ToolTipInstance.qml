@@ -109,7 +109,7 @@ Item {
     // off below the title). Declared before contentColumn: stays behind it.
     Rectangle {
         anchors.fill: parent
-        radius: 8
+        radius: 6
         visible: root.thumbnailMode && tileHover.hovered
         color: Qt.alpha(Kirigami.Theme.textColor,
             ((hoverHandler.item as MouseArea)?.containsPress || (headerHoverHandler.item as MouseArea)?.containsPress)
@@ -158,7 +158,7 @@ Item {
             Layout.maximumWidth: toolTipDelegate.tooltipInstanceMaximumWidth
             Layout.alignment: Qt.AlignVCenter
             Layout.margins: root.thumbnailMode ? 0 : Kirigami.Units.gridUnit / 2
-            Layout.minimumHeight: root.thumbnailMode ? Kirigami.Units.iconSizes.smallMedium : 0
+            Layout.minimumHeight: root.thumbnailMode ? toolTipDelegate.closeButtonSize : 0
             spacing: root.thumbnailMode ? Kirigami.Units.smallSpacing : 0
 
             // App icon — shown in thumbnail mode
@@ -187,7 +187,7 @@ Item {
                         right: parent.right
                         verticalCenter: parent.verticalCenter
                         rightMargin: (closeButton.visible ? closeButton.width : (countBadge.visible ? countBadge.width : 0))
-                                    + ((closeButton.visible || countBadge.visible) ? Kirigami.Units.smallSpacing : 0)
+                                    + ((closeButton.visible || countBadge.visible) ? 4 : 0)
                     }
                     spacing: 0
 
@@ -269,66 +269,68 @@ Item {
                     }
                 }
 
-                // Win11 close button: collapses to width 0 when idle (title
-                // spans full width); expands + fades in at the far right on
-                // tile hover. Bg transparent by default, red on hover, darker
-                // red on press.
+                // Separate the click target from the painted X. Keep the
+                // header and title width fixed when the close affordance
+                // fades in, so nothing shifts under the mouse.
                 Item {
                     id: closeButton
+                    objectName: "wmTaskPreviewClose"
                     anchors {
                         right: parent.right
                         verticalCenter: parent.verticalCenter
                     }
-                    width: tileHover.hovered ? Kirigami.Units.iconSizes.smallMedium : 0
-                    height: Kirigami.Units.iconSizes.smallMedium
+                    width: toolTipDelegate.closeButtonSize
+                    height: width
                     visible: root.thumbnailMode
                     opacity: tileHover.hovered ? 1 : 0
-                    enabled: tileHover.hovered
-                    clip: true
-
-                    Behavior on opacity {
-                        NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutQuad }
-                    }
-                    Behavior on width {
-                        NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutQuad }
-                    }
-
+                    enabled: visible && tileHover.hovered
                     property bool hovered: closeMouseArea.containsMouse
                     property bool pressed: closeMouseArea.containsPress
+
+                    function closeWindow() {
+                        if (!enabled || thumbnailSourceItem.winId === undefined) return;
+                        tasks.cancelHighlightWindows();
+                        tasksModel.requestClose(root.submodelIndex);
+                    }
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: i18nc("@info:tooltip Close this window", "Close window")
+                    Accessible.onPressAction: closeWindow()
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: Math.min(83, Kirigami.Units.shortDuration); easing.type: Easing.OutQuad }
+                    }
+
+                    Rectangle {
+                        objectName: "wmTaskPreviewCloseBackground"
+                        anchors.fill: parent
+                        radius: 4
+                        color: closeButton.pressed ? "#9E1B1B"
+                            : closeButton.hovered ? "#C42B1C" : "transparent"
+                        Behavior on color { ColorAnimation { duration: Math.min(83, Kirigami.Units.shortDuration) } }
+                    }
+
+                    Kirigami.Icon {
+                        objectName: "wmTaskPreviewCloseGlyph"
+                        anchors.centerIn: parent
+                        width: toolTipDelegate.closeGlyphCanvas
+                        height: width
+                        // Reuse the same alpha-bound normalizer as task
+                        // icons; do not assume all close SVGs fill their em.
+                        source: backend.normalizedPanelIcon("window-close")
+                        roundToIconSize: false
+                        isMask: true
+                        active: false
+                        color: closeButton.hovered || closeButton.pressed
+                            ? "#FFFFFF" : Kirigami.Theme.textColor
+                    }
 
                     MouseArea {
                         id: closeMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.ArrowCursor
-                        onClicked: {
-                            tasks.cancelHighlightWindows();
-                            tasksModel.requestClose(root.submodelIndex);
-                        }
-                        PlasmaComponents3.ToolTip.text: i18nc("@info:tooltip Close this window", "Close window")
-                        PlasmaComponents3.ToolTip.visible: closeMouseArea.containsMouse
-                        PlasmaComponents3.ToolTip.delay: Kirigami.Units.toolTipDelay
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Kirigami.Units.smallSpacing
-                        color: closeButton.pressed
-                            ? "#9E1B1B"
-                            : closeButton.hovered
-                                ? "#C42B1C"
-                                : "transparent"
-                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
-                    }
-
-                    Kirigami.Icon {
-                        anchors.centerIn: parent
-                        width: Kirigami.Units.iconSizes.small
-                        height: Kirigami.Units.iconSizes.small
-                        source: "window-close"
-                        color: closeButton.hovered || closeButton.pressed
-                            ? "white"
-                            : Kirigami.Theme.textColor
+                        onClicked: closeButton.closeWindow()
                     }
                 }
             }

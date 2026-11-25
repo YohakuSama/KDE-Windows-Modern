@@ -9,7 +9,9 @@ a disposable test window received.
   shortcut  Win+1..9 activates the Nth taskbar entry (Plasma 6.8 moved these
          shortcuts into the task manager; the fork registers them itself).
   preview  Two grouped windows: clicking a window preview activates that
-         window; the close button on a preview closes only its window.
+         window; the close button shows red and closes only its window.
+  launcher  Hover a pinned, non-running application: a name-only tooltip
+         appears without stealing focus (requires an inactive pinned app).
 
 Before each scenario the pointer wiggles in circles: hands off the mouse.
 A scenario that fails is announced and retried once.
@@ -102,8 +104,10 @@ def shortcut(vi, out, c):
         win.close()
 
 
-CARD_MARGIN = 8     # popup edge to card, card edge to its thumbnail/title (cardPadding)
-CLOSE_SIZE = 22     # the close button (iconSizes.smallMedium)
+CARD_MARGIN = 4     # frame margin and card padding, each 4 logical px
+CLOSE_SIZE = 32     # independent hit target; visible X is about 12px
+TOOLTIP_GAP = 12    # native popup margin
+
 
 
 def preview_popup(vi, button, out):
@@ -120,7 +124,7 @@ def preview_popup(vi, button, out):
     screenshot(shot)
     im = Image.open(shot).convert("RGB")
     shot.unlink()
-    row = button.rect[1] - 10                  # inside the popup's bottom margin
+    row = button.rect[1] - TOOLTIP_GAP - 3 * CARD_MARGIN  # inside preview after its panel gap
     bg = im.getpixel((x, row))
     same = lambda p: all(abs(a - b) <= 3 for a, b in zip(p, bg))  # noqa: E731
     left, right = x, x
@@ -132,7 +136,7 @@ def preview_popup(vi, button, out):
     while top > 0 and same(im.getpixel((left + 4, top - 1))):
         top -= 1
     bottom = row
-    while same(im.getpixel((x, bottom + 1))):
+    while bottom + 1 < im.height and same(im.getpixel((x, bottom + 1))):
         bottom += 1
     return left, top, right, bottom
 
@@ -168,7 +172,7 @@ def preview(vi, out, c):
         left, top, right, bottom = preview_popup(vi, button, out)
         # Use the existing detected popup bounds and header dimensions.
         # Clicking the title must activate the same window as its thumbnail.
-        vi.move_to(right - 6 * CARD_MARGIN, top + 2 * CARD_MARGIN + CLOSE_SIZE // 2, steps=8)
+        vi.move_to(right - 2 * CARD_MARGIN - CLOSE_SIZE - 12, top + 2 * CARD_MARGIN + CLOSE_SIZE // 2, steps=8)
         time.sleep(0.5)
         vi.click()
         c.check(second.wait(lambda s: s["active"], 3),
@@ -179,8 +183,23 @@ def preview(vi, out, c):
         left, top, right, bottom = preview_popup(vi, button, out)
         vi.move_to(right - 5 * CARD_MARGIN, bottom - 6 * CARD_MARGIN, steps=8)   # the second card
         time.sleep(0.6)
-        vi.move_to(right - 2 * CARD_MARGIN - CLOSE_SIZE // 2, top + 2 * CARD_MARGIN + CLOSE_SIZE // 2, steps=6)
+        cx = right - 2 * CARD_MARGIN - CLOSE_SIZE // 2
+        cy = top + 2 * CARD_MARGIN + CLOSE_SIZE // 2
+        vi.move_to(cx, cy, steps=6)
         time.sleep(0.5)
+        shot = out / "preview-close-hover.png"
+        shot.unlink(missing_ok=True)
+        screenshot(shot)
+        with Image.open(shot) as im:
+            patch = im.convert("RGB").crop((cx - 20, cy - 20, cx + 20, cy + 20))
+            red = [(x, y) for y in range(patch.height) for x in range(patch.width)
+                   if (lambda rgb: rgb[0] > 130 and rgb[1] < 100 and rgb[2] < 100
+                       and rgb[0] - max(rgb[1:]) > 65)(patch.getpixel((x, y)))]
+            if c.check(bool(red), "close hover paints a red surface"):
+                rw = max(x for x, y in red) - min(x for x, y in red) + 1
+                rh = max(y for x, y in red) - min(y for x, y in red) + 1
+                c.check(26 <= rw <= 34 and 26 <= rh <= 34,
+                        f"red close target is approximately 32px ({rw}x{rh}, at 100% scale)")
         vi.click()
         try:
             second.proc.wait(timeout=4)
@@ -196,7 +215,34 @@ def preview(vi, out, c):
                 win.close()
 
 
-SCENARIOS = {"focus": focus, "shortcut": shortcut, "preview": preview}
+def launcher(vi, out, c):
+    # AT-SPI exposes the native task description (Launch rather than
+    # Activate). Do not launch or close a real application to prepare it.
+    button = next((b for b in task_buttons()
+                   if (b.acc.get_description() or "").startswith(("Launch ", "启动", "运行"))), None)
+    if not c.check(button is not None, "an inactive pinned application is available"):
+        return
+    owner = active_window()
+    try:
+        vi.move_to(*button.centre)
+        time.sleep(1.6)
+        nodes = [n for n in a11y.nodes("plasmashell") if n.showing and n.window != button.window]
+        label = next((n for n in nodes if n.name == button.name and n.role in ("label", "static", "text", "static text")), None)
+        c.check(label is not None, "inactive launcher shows its application name")
+        if label is not None:
+            c.check(label.rect[3] <= 36, f"compact single-line name label ({label.rect})")
+            c.check(not any(n.window == label.window and n.role == "button" for n in nodes),
+                    "launcher tooltip has no window controls")
+        shot = out / "launcher-name-hover.png"
+        shot.unlink(missing_ok=True)
+        screenshot(shot)
+        c.check(active_window() == owner, "name tooltip does not steal keyboard focus")
+    finally:
+        vi.move_to(960, 300)
+        time.sleep(0.6)
+
+
+SCENARIOS = {"focus": focus, "shortcut": shortcut, "preview": preview, "launcher": launcher}
 
 
 def main():
