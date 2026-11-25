@@ -8,27 +8,28 @@ import org.kde.kirigami as Kirigami
 // dynamically generated items, not explicitly declared MenuItems.
 QQC2.MenuItem {
     id: control
-    implicitHeight: Math.max(36, contentItem.implicitHeight + 12)
+    implicitHeight: Math.max(32, contentItem.implicitHeight + 8)
     property bool actionAvailable: true
     visible: actionAvailable
     enabled: actionAvailable
     height: actionAvailable ? implicitHeight : 0
     leftPadding: 8
     rightPadding: 8
-    topPadding: 6
-    bottomPadding: 6
+    topPadding: 4
+    bottomPadding: 4
     font: Kirigami.Theme.defaultFont
 
     contentItem: RowLayout {
         spacing: 8
-        Kirigami.Icon {
+        Item {
             Layout.preferredWidth: 16
             Layout.preferredHeight: 16
-            source: control.icon.name
-            color: "#FFFFFF"
-            isMask: true
-            roundToIconSize: false
-            opacity: control.enabled ? 1 : 0.4
+            NativeGlyph {
+                anchors.fill: parent
+                roleName: control.icon.name
+                foreground: "#FFFFFF"
+                opacity: control.enabled ? 1 : 0.4
+            }
         }
         Text {
             Layout.fillWidth: true

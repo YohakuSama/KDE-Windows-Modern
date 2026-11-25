@@ -46,7 +46,7 @@ MouseArea {
         plasmoidItem.notificationsAvailable, plasmoidItem.notificationModel.count,
         plasmoidItem.notificationsInhibited)
     readonly property string filledDndAsset: String(StandardPaths.locate(StandardPaths.GenericDataLocation,
-        "icons/windows-modern/status/wm-notification-snooze-filled-symbolic.svg", StandardPaths.LocateFile))
+        "windows-modern/native-assets/icons/status/wm-notification-snooze-filled-symbolic.svg", StandardPaths.LocateFile))
     readonly property string panelNotificationIcon: NotificationPresentation.panelBellIcon(
         plasmoidItem.notificationIcon, plasmoidItem.notificationsInhibited,
         ColorType.isDark(Kirigami.Theme.backgroundColor),
@@ -400,15 +400,17 @@ MouseArea {
                     roundToIconSize: false
                     isMask: true
                     color: Kirigami.Theme.textColor
+                    fallback: ""
+                    visible: String(source).length > 0
                     source: {
                         const name = main.panelNotificationIcon;
                         const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
-                            "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
+                            "windows-modern/native-assets/icons/status/" + name + ".svg", StandardPaths.LocateFile);
                         if (String(file).length > 0) return file;
                         const fallback = StandardPaths.locate(StandardPaths.GenericDataLocation,
-                            "icons/windows-modern/status/" + name.replace(/-symbolic$/, "") + ".svg",
+                            "windows-modern/native-assets/icons/status/" + name.replace(/-symbolic$/, "") + ".svg",
                             StandardPaths.LocateFile);
-                        return String(fallback).length > 0 ? fallback : name;
+                        return String(fallback);
                     }
                 }
             }

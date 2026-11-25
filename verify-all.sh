@@ -220,6 +220,10 @@ for pair in \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/dateformat.js $LOCK/dateformat.js" \
     "$LOCK/dateformat.js $LOGIN/dateformat.js" \
     "$LOCK/StatusIconButton.qml $LOGIN/StatusIconButton.qml" \
+    "$LOCK/lockText.js $LOGIN/lockText.js" \
+    "$LOCK/NativeGlyph.qml $LOGIN/NativeGlyph.qml" \
+    "$LOCK/NativeGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/NativeGlyph.qml" \
+    "$LOCK/NativeGlyph.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeGlyph.qml" \
     "$LOCK/DefaultAccountPortrait.qml $LOGIN/DefaultAccountPortrait.qml" \
     "$LOCK/default-avatar.svg $LOGIN/default-avatar.svg" \
     "$LOCK/default-avatar-small.svg $LOGIN/default-avatar-small.svg" \

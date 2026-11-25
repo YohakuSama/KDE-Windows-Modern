@@ -60,17 +60,16 @@ Item {
         anchors.rightMargin: Theme.menuTextInset
         spacing: Theme.menuIconGap
 
-        Kirigami.Icon {
+        Item {
             objectName: "wmStartPowerGlyph"
             Layout.preferredWidth: Theme.menuGlyphSize
             Layout.preferredHeight: Theme.menuGlyphSize
             Layout.alignment: Qt.AlignVCenter
-            roundToIconSize: false
-            source: option.iconSource
-            fallback: option.iconSource.replace(/-symbolic$/, "")
-            isMask: true
-            color: Kirigami.Theme.textColor
-            opacity: option.optionEnabled ? Theme.opacityFull : Theme.disabledIconOpacity
+            NativeGlyph {
+                anchors.fill: parent
+                roleName: option.iconSource
+                opacity: option.optionEnabled ? Theme.opacityFull : Theme.disabledIconOpacity
+            }
         }
 
         PlasmaComponents3.Label {

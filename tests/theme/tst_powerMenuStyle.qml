@@ -35,12 +35,12 @@ Item {
             compare(lockItem.background.radius, 4);
             compare(loginItem.background.radius, 4);
             compare(lockItem.implicitHeight, loginItem.implicitHeight);
-            verify(lockItem.implicitHeight >= 36);
+            verify(lockItem.implicitHeight >= 32);
             lockItem.actionAvailable = false;
             compare(lockItem.height, 0);
             verify(!lockItem.enabled);
             lockItem.actionAvailable = true;
-            verify(lockItem.height >= 36);
+            verify(lockItem.height >= 32);
             verify(lockItem.enabled);
         }
         function test_explicitMenuItemsUseSharedControls() {

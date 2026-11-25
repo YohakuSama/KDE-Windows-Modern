@@ -94,9 +94,9 @@ Review the original artwork before adding it to the map.
 ## Current coverage boundaries
 
 - The current reference library lacks an identified 26H2 SysBatt Fluent
-  Icons source. The current BatteryGlyph is a compatibility drawing, not
-  verified original 26H2 artwork. The legacy imported Segoe battery family
-  also does not establish the newer artwork.
+  Icons source. BatteryGlyph now uses the genuine imported Segoe level,
+  charging and energy-saver glyphs instead of a compatibility drawing.
+  The legacy family is not the latest 26H2 artwork.
 - The newer colored Search activation glyph and the newer two-tone taskbar
   Task View artwork have not been identified in the reviewed resource library.
   Use only the existing genuine Segoe E721 Search and E7C4 TaskView roles

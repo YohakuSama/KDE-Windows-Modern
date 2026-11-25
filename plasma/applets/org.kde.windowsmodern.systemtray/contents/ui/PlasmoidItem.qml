@@ -193,7 +193,7 @@ AbstractItem {
     function panelGlyphFile(name) {
         for (const context of ["status", "actions", "devices"]) {
             const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
-                "icons/windows-modern/" + context + "/" + name + ".svg", StandardPaths.LocateFile);
+                "windows-modern/native-assets/icons/" + context + "/" + name + ".svg", StandardPaths.LocateFile);
             if (String(file).length > 0) return file;
         }
         return "";
@@ -204,7 +204,7 @@ AbstractItem {
         if (String(file).length > 0)
             return file;
         const fallback = panelGlyphFile(name.replace(/-symbolic$/, ""));
-        return String(fallback).length > 0 ? fallback : name;
+        return String(fallback);
     }
 
     Component {

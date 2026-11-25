@@ -21,14 +21,15 @@ QQC2.MenuItem {
 
     contentItem: RowLayout {
         spacing: 8
-        Kirigami.Icon {
+        Item {
             Layout.preferredWidth: 16
             Layout.preferredHeight: 16
-            source: control.icon.name
-            color: "#FFFFFF"
-            isMask: true
-            roundToIconSize: false
-            opacity: control.enabled ? 1 : 0.4
+            NativeGlyph {
+                anchors.fill: parent
+                roleName: control.icon.name
+                foreground: "#FFFFFF"
+                opacity: control.enabled ? 1 : 0.4
+            }
         }
         Text {
             Layout.fillWidth: true

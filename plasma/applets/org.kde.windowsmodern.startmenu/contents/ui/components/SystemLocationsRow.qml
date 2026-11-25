@@ -19,12 +19,6 @@ Item {
     implicitHeight: 40
     implicitWidth: visibleLocations.length * 32
 
-    function shortcutIcon(name) {
-        const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
-            "icons/windows-modern/actions/" + name + ".svg", StandardPaths.LocateFile);
-        return String(file).length > 0 ? file : name;
-    }
-
     function resolveFolder(key) {
         switch (key) {
         case "documents": return StandardPaths.writableLocation(StandardPaths.DocumentsLocation);
@@ -77,14 +71,11 @@ Item {
                             locationsView.contentX = Math.max(0, left + width - locationsView.width);
                     }
                     contentItem: Item {
-                        Kirigami.Icon {
+                        NativeGlyph {
                             anchors.centerIn: parent
                             width: Math.min(16, parent.width)
                             height: width
-                            source: placesRow.shortcutIcon(shortcut.modelData.icon)
-                            isMask: true
-                            color: Kirigami.Theme.textColor
-                            roundToIconSize: false
+                            roleName: shortcut.modelData.icon
                         }
                     }
                     background: Rectangle {

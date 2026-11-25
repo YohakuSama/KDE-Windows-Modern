@@ -22,6 +22,8 @@ Item {
         width: glyph.placement.width
         height: glyph.placement.height
         source: glyph.source
+        fallback: ""
+        visible: String(glyph.source || "").length > 0
         roundToIconSize: false
         isMask: true
         color: Kirigami.Theme.textColor

@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Synchronize the shared session-lock and sign-in controls and their geometry tests; enforce direct original resource lookup for the Start footer and power menu, tray status glyphs, notification button and lock controls. Replace the drawn battery approximation with the verified Windows level and charging glyph family pending the exact newer shell assets.
+
 - Keep a full taskbar Search query and caret in the taskbar while Start-origin Search retains its popup editor; use explicit applet-domain translations and the original local Windows Search/TaskView glyphs without KDE icon or launcher fallback. The newer shell artwork remains an explicit resource gap.
 
 - Persist the Windows desktop right-click plugin in the NixOS shell defaults across layout resets, choose the desktop palette independent of stale application styles, render mapped original menu icons with matching foregrounds and add missing contextual Search/Task View translations.

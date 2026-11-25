@@ -16,10 +16,8 @@ Item {
     TestCase {
         name: "ModernBatteryGlyph"
         when: windowShown
-        function test_stableGeometryAndExactFill() {
-            const body = findChild(glyph, "wmBatteryOutline");
-            const level = findChild(glyph, "wmBatteryLevelFill");
-            verify(body !== null && level !== null);
+        function test_stableGeometryAndNativeStates() {
+            verify(findChild(glyph, "wmBatteryNativeGlyph") !== null);
             glyph.glyphSize = 16;
             compare(glyph.implicitWidth, 20);
             compare(glyph.implicitHeight, 16);
@@ -30,21 +28,18 @@ Item {
             glyph.saver = false;
             glyph.percent = 95;
             compare(glyph.visualState, "normal");
-            compare(glyph.fillFraction, 0.95);
-            verify(level.width < body.width - 2 * level.inset);
+            compare(glyph.iconName, "battery-100-symbolic");
             glyph.charging = true;
-            compare(glyph.visualState, "charging");
-            compare(glyph.fillColor, Qt.rgba(98/255, 184/255, 90/255, 1));
+            compare(glyph.iconName, "battery-100-charging-symbolic");
             glyph.charging = false;
             glyph.saver = true;
             glyph.percent = 20;
-            compare(glyph.visualState, "saver");
-            compare(glyph.fillFraction, 0.2);
+            compare(glyph.iconName, "battery-020-profile-powersave-symbolic");
+            glyph.saver = false;
             glyph.percent = 5;
-            compare(glyph.visualState, "critical");
+            compare(glyph.iconName, "battery-000-symbolic");
             glyph.percent = -1;
-            compare(glyph.visualState, "unknown");
-            verify(!level.visible);
+            compare(glyph.iconName, "battery-unknown-symbolic");
             compare(glyph.implicitWidth, 25);
         }
     }

@@ -686,14 +686,11 @@ Item {
                         Layout.preferredHeight: 36
                         Layout.alignment: Qt.AlignVCenter
                         contentItem: Item {
-                            Kirigami.Icon {
+                            NativeGlyph {
                                 anchors.centerIn: parent
                                 width: 16
                                 height: 16
-                                roundToIconSize: false
-                                isMask: true
-                                color: Kirigami.Theme.textColor
-                                source: "system-shutdown-symbolic"
+                                roleName: "system-shutdown-symbolic"
                             }
                         }
                         onClicked: {
