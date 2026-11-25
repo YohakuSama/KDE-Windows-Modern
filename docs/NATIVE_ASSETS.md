@@ -125,6 +125,32 @@ build, original relative path, SHA-256 and extracted file together in the
 private resource manifest. Never add proprietary Windows files to a public
 release or the public Git history.
 
+## Local shell artwork import
+
+The new importer accepts an extracted Windows directory, including the
+original SystemApps and SystemResources trees. It exports the exact
+SysBatt outline/fill paths, four original Search PNG states at the
+highest available scale, and the two original Task View SVGs embedded
+in the Settings PRI. The import is atomic; incomplete input leaves the
+previous import untouched.
+
+```bash
+python3 scripts/import-shell-assets.py /path/to/Windows --build 26300
+```
+
+Replace the example build number with the actual source build. The
+importer records the declared build, original resource paths, source
+hashes and generated output hashes in a private local manifest. It
+does not install or bundle the proprietary font itself. The applets
+read the generated artwork from
+`${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/shell-assets`.
+Restart Plasma after importing to refresh the resource paths.
+
+The standard owner bundle retains the import code, not this new local
+artwork, until verified resources are available in the private runtime
+library. The importer and rendering are not evidence that the original
+26H2 binaries have already been obtained.
+
 ## Current coverage boundaries
 
 - The 26H2 SysBatt font, colored Search state images and two-tone Task View

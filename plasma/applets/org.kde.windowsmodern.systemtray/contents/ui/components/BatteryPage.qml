@@ -85,7 +85,8 @@ Lib.Page {
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 percent: page.percentKnown ? batteryControl.percent : -1
-                charging: batteryControl.pluggedIn && (page.isCharging || page.isFull)
+                charging: batteryControl.pluggedIn && page.isCharging
+                pluggedIn: batteryControl.pluggedIn
                 saver: powerProfiles.activeProfile === "power-saver"
             }
 

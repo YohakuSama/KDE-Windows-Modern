@@ -124,6 +124,9 @@ PlasmoidItem {
         visible: !root.showBox
         iconName: searchBox.iconSource
         hoverIconName: searchBox.hoverIconSource
+        hoverIconIsMask: searchBox.hoverIconIsMask
+        selectedIconName: searchBox.hoverIconSource
+        selectedIconIsMask: searchBox.hoverIconIsMask
         iconIsMask: searchBox.iconIsMask
         selected: root.searchSelected
         text: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@action:button taskbar button", "Search")
