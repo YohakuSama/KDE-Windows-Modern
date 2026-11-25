@@ -172,6 +172,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/ListRow.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/FooterButton.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/DetailPage.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/NetworkSelection.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/FluentScrollBar.qml
 )
 ecm_target_qml_sources(org.kde.windowsmodern.systemtray

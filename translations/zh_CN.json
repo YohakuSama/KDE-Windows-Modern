@@ -502,5 +502,7 @@
   "Punctuation": "标点符号",
   "Currency": "货币",
   "Mathematics": "数学",
-  "Arrows": "箭头"
+  "Arrows": "箭头",
+  "Show password": "显示密码",
+  "Hide password": "隐藏密码"
 }

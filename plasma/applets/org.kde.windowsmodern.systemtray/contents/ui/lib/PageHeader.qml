@@ -69,7 +69,12 @@ RowLayout {
         visible: header.showSwitch
         enabled: header.switchEnabled
         checked: header.switchChecked
-        onToggled: header.switchToggled()
+        onToggled: {
+            header.switchToggled();
+            // Backend state remains authoritative, including failed radio
+            // requests and hardware airplane-mode restrictions.
+            checked = Qt.binding(() => header.switchChecked);
+        }
         Accessible.name: header.title
         Layout.preferredWidth: 44
         Layout.preferredHeight: 32
