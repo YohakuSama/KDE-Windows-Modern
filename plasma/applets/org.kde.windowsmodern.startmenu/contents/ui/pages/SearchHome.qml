@@ -11,10 +11,12 @@ Item {
     objectName: "wmSearchHome"
     property var suggestedModel: null
     property var topAppsModel: null
+    property bool showQuickSearches: true
     signal searchRequested(string query)
     signal applicationActivated()
     readonly property color ink: Kirigami.Theme.textColor
-    readonly property bool twoColumns: width >= 480
+    readonly property bool twoColumns: width >= 480 && suggestions.count > 0
+        && (showQuickSearches || topApps.count > 0)
     readonly property var quickSearches: [
         { label: i18n("Notification settings"), query: i18n("Notifications") },
         { label: i18n("Sound settings"), query: i18n("Sound") },
@@ -25,7 +27,8 @@ Item {
     ]
 
     function focusFirst() {
-        const first = suggestions.itemAtIndex(0) || quickRepeater.itemAt(0) || topApps.itemAtIndex(0);
+        const first = suggestions.itemAtIndex(0) || (showQuickSearches ? quickRepeater.itemAt(0) : null)
+            || topApps.itemAtIndex(0)?.children[0];
         if (first) first.forceActiveFocus();
     }
 
@@ -93,6 +96,16 @@ Item {
             columnSpacing: 16
             rowSpacing: 18
 
+            Text {
+                visible: suggestions.count === 0 && topApps.count === 0 && !home.showQuickSearches
+                Layout.fillWidth: true
+                text: i18n("Type here to search")
+                color: home.ink
+                opacity: 0.7
+                font.pixelSize: 13
+                wrapMode: Text.Wrap
+            }
+
             ColumnLayout {
                 visible: suggestions.count > 0
                 Layout.alignment: Qt.AlignTop
@@ -133,12 +146,14 @@ Item {
             }
 
             ColumnLayout {
+                visible: home.showQuickSearches || topApps.count > 0
                 Layout.alignment: Qt.AlignTop
                 Layout.fillWidth: true
                 Layout.preferredWidth: home.twoColumns ? Math.floor((viewport.width - 16) * 0.6) : viewport.width
                 Layout.minimumWidth: 0
                 spacing: 12
                 Text {
+                    visible: home.showQuickSearches
                     text: i18n("Quick searches")
                     Accessible.role: Accessible.StaticText
                     Accessible.name: text
@@ -148,6 +163,7 @@ Item {
                 }
                 Rectangle {
                     Layout.fillWidth: true
+                    visible: home.showQuickSearches
                     implicitHeight: chips.implicitHeight + 24
                     radius: 8
                     color: Qt.rgba(home.ink.r, home.ink.g, home.ink.b, 0.045)
@@ -159,7 +175,7 @@ Item {
                         spacing: 8
                         Repeater {
                             id: quickRepeater
-                            model: home.quickSearches
+                            model: home.showQuickSearches ? home.quickSearches : []
                             delegate: QQC2.Button {
                                 id: chip
                                 required property int index

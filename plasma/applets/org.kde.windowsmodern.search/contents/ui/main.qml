@@ -36,6 +36,23 @@ PlasmoidItem {
     property var searchStateAction: null
     readonly property bool searchSelected: searchStateAction ? searchStateAction.enabled : false
 
+    function refreshSearchState(): void {
+        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
+        for (const applet of applets) {
+            if (applet && applet.pluginName === "org.kde.windowsmodern.startmenu") {
+                root.searchStateAction = applet.internalAction("windowsModernSearchSelected");
+                return;
+            }
+        }
+        root.searchStateAction = null;
+    }
+
+    Connections {
+        target: Plasmoid.containment
+        ignoreUnknownSignals: true
+        function onAppletsChanged() { Qt.callLater(root.refreshSearchState); }
+    }
+
     function openSearch(): void {
         const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
         for (const applet of applets) {
@@ -115,6 +132,7 @@ PlasmoidItem {
     // qmllint enable unqualified
 
     Component.onCompleted: {
+        Qt.callLater(root.refreshSearchState);
         // Mode 1 used to mean icon-only. Preserve existing user choices while
         // assigning the new compact icon-and-label mode its own value.
         if (!Plasmoid.configuration.searchModesMigrated) {

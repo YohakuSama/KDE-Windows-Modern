@@ -48,6 +48,12 @@ Item {
             compare(apps.launches, 2);
             compare(launchSpy.count, 2);
         }
+        function test_quickSearchVisibility() {
+            page.showQuickSearches = false;
+            tryVerify(() => !findChild(page, "wmQuickSearch_0"));
+            page.showQuickSearches = true;
+            tryVerify(() => !!findChild(page, "wmQuickSearch_0"));
+        }
         function test_emptyAndNarrow() {
             page.suggestedModel = null;
             page.topAppsModel = null;

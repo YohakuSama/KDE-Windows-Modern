@@ -60,6 +60,16 @@
       <default>false</default>
     </entry>
 
+    <entry name="showSearchSuggestions" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showSearchQuickSearches" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showSearchTopApps" type="Bool">
+      <default>true</default>
+    </entry>
+
     <entry name="showRecentApps" type="Bool">
       <default>true</default>
     </entry>

@@ -493,9 +493,11 @@ Item {
                     active: root.visible && root.searching && startSearch.searchText.length === 0
                     visible: active
                     sourceComponent: SearchHome {
-                        suggestedModel: rootItem.showRecentSection ? recentUsage : null
-                        topAppsModel: Plasmoid.configuration.showRecentSection
+                        suggestedModel: Plasmoid.configuration.showSearchSuggestions
+                            && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) ? recentUsage : null
+                        topAppsModel: Plasmoid.configuration.showSearchTopApps
                             && Plasmoid.configuration.showRecentApps ? categoryPopularity : null
+                        showQuickSearches: Plasmoid.configuration.showSearchQuickSearches
                         onSearchRequested: query => {
                             searchPage.resultsView.singleRunner = "krunner_systemsettings";
                             startSearch.searchText = query;
