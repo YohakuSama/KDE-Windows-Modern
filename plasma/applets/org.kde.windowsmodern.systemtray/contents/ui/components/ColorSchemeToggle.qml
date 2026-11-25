@@ -11,7 +11,7 @@ Lib.Tile {
     readonly property bool darkMode: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
     label: i18n("Dark Mode")
-    iconSource: darkMode ? "weather-clear-night-symbolic" : "weather-clear-symbolic"
+    iconSource: "wm-dark-mode-symbolic"
     active: darkMode
 
     function switchTheme() {

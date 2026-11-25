@@ -10,30 +10,48 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils
 import "../lib" as Lib
 import "." as Components
+import "../js/colorType.js" as ColorType
 
 Rectangle {
     id: footer
 
     property real uiScale: 1
     property bool showBattery: true
+    property real frameInset: 0
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property real outerRadius: Math.round(8 * uiScale)
+    readonly property real sideInset: Math.max(8, Math.round(24 * uiScale) - frameInset)
 
     signal batteryClicked
 
-    // Only a divider: a filled strip would show the popup frame's inset
-    // (Windows 11's strip runs edge to edge, which the theme frame does not allow).
     color: "transparent"
     implicitHeight: Math.round(48 * uiScale)
 
+    // One subtle tint over the native/custom base. Extend it into the
+    // native frame inset without painting over the one-pixel outline.
     Rectangle {
-        anchors { left: parent.left; right: parent.right; top: parent.top }
-        height: 1
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        id: footerSurface
+        objectName: "wmQuickSettingsFooterSurface"
+        x: 1 - footer.frameInset
+        y: 0
+        width: Math.max(0, footer.width + 2 * footer.frameInset - 2)
+        height: Math.max(0, footer.height + footer.frameInset - 1)
+        radius: Math.max(0, footer.outerRadius - 1)
+        topLeftRadius: 0
+        topRightRadius: 0
+        color: ColorType.footerTint(footer.dark)
+        Rectangle {
+            anchors.top: parent.top
+            width: parent.width
+            height: 1
+            color: ColorType.divider(footer.dark)
+        }
     }
 
     Components.Battery {
         id: battery
         anchors.left: parent.left
-        anchors.leftMargin: Math.round(20 * footer.uiScale)
+        anchors.leftMargin: footer.sideInset
         anchors.verticalCenter: parent.verticalCenter
         visible: footer.showBattery && battery.hasBattery
         glyphSize: Math.round(16 * footer.uiScale)
@@ -61,7 +79,7 @@ Rectangle {
     Lib.FooterButton {
         id: settingsBtn
         anchors.right: parent.right
-        anchors.rightMargin: Math.round(20 * footer.uiScale)
+        anchors.rightMargin: footer.sideInset
         anchors.verticalCenter: parent.verticalCenter
         buttonSize: Math.round(18 * footer.uiScale)
         iconSource: "configure"

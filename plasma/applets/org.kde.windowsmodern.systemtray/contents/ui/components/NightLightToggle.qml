@@ -9,13 +9,8 @@ Lib.Tile {
     readonly property bool available: nightLight.available
 
     label: i18n("Night Light")
-    iconSource: {
-        if (!nightLight.available)
-            return "redshift-status-off-symbolic";
-        if (!nightLight.running || nightLight.inhibited)
-            return "redshift-status-off-symbolic";
-        return "redshift-status-on-symbolic";
-    }
+    // The glyph itself stays legible when the feature is off.
+    iconSource: "wm-night-light-symbolic"
     active: nightLight.running && !nightLight.inhibited
 
     onClicked: if (tile.available) NightLightInhibitor.toggleInhibition()

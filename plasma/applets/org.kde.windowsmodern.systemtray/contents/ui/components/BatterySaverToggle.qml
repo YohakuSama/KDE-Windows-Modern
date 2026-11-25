@@ -2,7 +2,7 @@ import QtQuick
 import org.kde.plasma.private.batterymonitor
 import "../lib" as Lib
 
-Lib.SplitTile {
+Lib.Tile {
     id: tile
 
     PowerProfilesControl {
@@ -14,13 +14,14 @@ Lib.SplitTile {
 
     property string previousProfile: ""
     visible: available
-    toggleAvailable: available && powerProfiles.profiles.some(name => name !== "power-saver")
+    readonly property bool toggleAvailable: available && powerProfiles.profiles.some(name => name !== "power-saver")
     label: i18n("Battery Saver")
     // Use the power-saving role, not a low-charge battery indicator.
-    iconSource: "battery-profile-powersave-symbolic"
+    iconSource: "wm-energy-saver-symbolic"
     active: saverOn
 
     onClicked: {
+        if (!toggleAvailable) return;
         if (saverOn) {
             const profile = [previousProfile, powerProfiles.configuredProfile, "balanced", ...powerProfiles.profiles]
                 .find(name => name && name !== "power-saver" && powerProfiles.profiles.includes(name));

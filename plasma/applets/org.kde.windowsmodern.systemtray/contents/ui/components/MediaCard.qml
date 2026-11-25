@@ -6,12 +6,14 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.mpris as Mpris
+import "../js/colorType.js" as ColorType
 
 Rectangle {
     id: card
     objectName: "wmMediaCard"
     property var player: null
     property real uiScale: 1
+    property bool acrylic: false
     readonly property bool playing: !!player && player.playbackStatus === Mpris.PlaybackStatus.Playing
     readonly property bool hasSession: !!player && (playing ||
         player.playbackStatus === Mpris.PlaybackStatus.Paused || String(player.track || "").length > 0)
@@ -23,8 +25,8 @@ Rectangle {
         return c.r * 0.299 + c.g * 0.587 + c.b * 0.114 < 0.5;
     }
     readonly property color foreground: Kirigami.Theme.textColor
-    readonly property color surfaceColor: dark ? "#252A32" : "#F3F3F3"
-    readonly property color outlineColor: dark ? "#41454C" : "#DADADA"
+    readonly property color surfaceColor: ColorType.cardFill(dark, acrylic)
+    readonly property color outlineColor: ColorType.cardBorder(dark)
 
     implicitWidth: Math.round(360 * uiScale)
     implicitHeight: Math.round(178 * uiScale)
