@@ -21,7 +21,7 @@ ColumnLayout {
     spacing: 8
 
     property alias favoritesList: favoritesListView
-    property int columns: width >= 690 ? 8 : (width >= 430 ? 6 : 4)
+    property int columns: width >= 430 ? 6 : (width >= 320 ? 4 : 3)
     readonly property bool showAllPinned: Plasmoid.configuration.showAllPinned
     readonly property int previewRows: Math.max(1, Plasmoid.configuration.numberRows)
 
@@ -98,7 +98,7 @@ ColumnLayout {
         clip: true
         interactive: false
         cellWidth: Math.max(1, Math.floor(width / pinnedPage.columns))
-        cellHeight: 80
+        cellHeight: 84
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
 

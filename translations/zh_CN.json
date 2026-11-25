@@ -447,5 +447,12 @@
   "@info calendar display locale (translate to a Qt locale name)\u0004system": "zh_CN",
   "Windows 12-hour (AM/PM)": "Windows 12 小时制（AM/PM）",
   "@item:inlistbox time display option\u0004Windows 12-hour (AM/PM)": "Windows 12 小时制（AM/PM）",
-  "Show battery percentage": "显示电池百分比"
+  "Show battery percentage": "显示电池百分比",
+  "Videos": "视频",
+  "Personal folder": "个人文件夹",
+  "Folder shortcuts": "文件夹快捷方式",
+  "Previous track": "上一首",
+  "Next track": "下一首",
+  "Play": "播放",
+  "Pause": "暂停"
 }

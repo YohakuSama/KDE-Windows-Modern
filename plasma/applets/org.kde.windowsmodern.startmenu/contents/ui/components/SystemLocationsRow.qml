@@ -1,77 +1,63 @@
-/***************************************************************************
- *   License: GPL-3.0-or-later
- *   Author: Jeysef
- *
- *   Configurable folder/system shortcuts in the Start footer.
- ***************************************************************************/
-
+// SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
-
 import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
-
+import "../code/footerLocations.js" as Locations
 
 Item {
     id: placesRow
-
     property var executable: null
     signal shortcutInvoked
 
-    readonly property var allLocations: [
-        { text: i18n("Home"),          icon: "user-home",             command: 'xdg-open "$HOME"' },
-        { text: i18n("Documents"),      icon: "folder-documents",     command: 'xdg-open "$(xdg-user-dir DOCUMENTS)"' },
-        { text: i18n("Pictures"),       icon: "folder-pictures",      command: 'xdg-open "$(xdg-user-dir PICTURES)"' },
-        { text: i18n("Music"),          icon: "folder-music",         command: 'xdg-open "$(xdg-user-dir MUSIC)"' },
-        { text: i18n("Downloads"),      icon: "folder-download",      command: 'xdg-open "$(xdg-user-dir DOWNLOAD)"' },
-        { text: i18n("Recent Items"),   icon: "document-open-recent", command: "dolphin recentlyused:/files" },
-        { text: i18n("File Manager"),   icon: "system-file-manager",  command: 'xdg-open "$HOME"' },
-        { text: i18n("Software Center"), icon: "system-software-install", command: "plasma-discover" },
-        { text: i18n("Terminal"),       icon: "utilities-terminal",   command: "T=$(kreadconfig6 --file kdeglobals --group General --key TerminalApplication); command -v ${T:-konsole} >/dev/null 2>&1 && exec ${T:-konsole} || exec alacritty" },
-        { text: i18n("Run..."),         icon: "system-run",           command: "krunner" }
-    ]
-
-    readonly property var allKeys: ["home","documents","pictures","music","downloads","recent","thispc","update","terminal","run"]
-
-    readonly property var visibleLocations: {
-        var items = Plasmoid.configuration.rightColumnItems;
-        if (!items || items.length === 0) {
-            return allLocations;
-        }
-        var out = [];
-        for (var i = 0; i < items.length; i++) {
-            var idx = allKeys.indexOf(items[i]);
-            if (idx >= 0) {
-                out.push(allLocations[idx]);
-            }
-        }
-        return out.length > 0 ? out : allLocations;
-    }
-
-    implicitHeight: Kirigami.Units.gridUnit * 2
-    implicitWidth: buttons.implicitWidth
+    readonly property var selectedKeys: Locations.normalize(Plasmoid.configuration.rightColumnItems)
+    readonly property var visibleLocations: Locations.locations(i18n)
+        .filter(location => selectedKeys.indexOf(location.key) >= 0)
+    readonly property int buttonExtent: Math.max(24, Math.min(36,
+        Math.floor(width / Math.max(1, visibleLocations.length))))
+    implicitHeight: 40
+    implicitWidth: visibleLocations.length * 36
 
     Flickable {
         anchors.fill: parent
-        contentWidth: buttons.implicitWidth
+        contentWidth: Math.max(width, buttons.implicitWidth)
         contentHeight: height
         flickableDirection: Flickable.HorizontalFlick
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         Row {
             id: buttons
-            spacing: 0
+            x: Math.max(0, placesRow.width - implicitWidth)
             anchors.verticalCenter: parent.verticalCenter
+            spacing: 0
             Repeater {
                 model: placesRow.visibleLocations
                 delegate: PlasmaComponents3.ToolButton {
+                    id: shortcut
                     required property var modelData
-                    width: Kirigami.Units.gridUnit * 2
-                    height: width
+                    width: placesRow.buttonExtent
+                    height: 36
                     text: modelData.text
-                    icon.name: modelData.icon
                     display: PlasmaComponents3.AbstractButton.IconOnly
-                    PlasmaComponents3.ToolTip { text: parent.text }
+                    padding: 0
+                    contentItem: Item {
+                        Kirigami.Icon {
+                            anchors.centerIn: parent
+                            width: Math.min(18, parent.width)
+                            height: width
+                            source: shortcut.modelData.icon
+                            isMask: true
+                            color: Kirigami.Theme.textColor
+                            roundToIconSize: false
+                        }
+                    }
+                    background: Rectangle {
+                        radius: 4
+                        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                       Kirigami.Theme.textColor.b, shortcut.down ? 0.12
+                                           : shortcut.hovered || shortcut.activeFocus ? 0.07 : 0)
+                    }
+                    PlasmaComponents3.ToolTip { text: shortcut.text }
                     onClicked: {
                         if (placesRow.executable && modelData.command) {
                             placesRow.executable.exec(modelData.command);
