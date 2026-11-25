@@ -91,7 +91,7 @@ def battery_artwork(data):
             yield f"battery/{code:04x}.svg", svg, f"U+{code:04X}"
 
 
-def search_artwork(root, folder, theme, state):
+def search_artwork(root, folder, theme, state, required=True):
     prefix = "SearchIcon" + state.title() + theme.title()
     candidates = []
     for path in folder.iterdir():
@@ -101,7 +101,9 @@ def search_artwork(root, folder, theme, state):
             if scale in (100, 125, 150, 175, 200, 225, 250, 300, 400):
                 candidates.append((scale, path))
     if not candidates:
-        raise ValueError("Missing original Search artwork: " + prefix)
+        if required:
+            raise ValueError("Missing original Search artwork: " + prefix)
+        return None
     best = max(scale for scale, _ in candidates)
     paths = [path for scale, path in candidates if scale == best]
     if len(paths) != 1:
@@ -167,7 +169,12 @@ def collect(source):
         raise ValueError("Original SearchIcons directory not found in Windows")
     for theme in ("light", "dark"):
         for state in ("on", "off"):
-            path, png, scale = search_artwork(root, folder, theme, state)
+            # The light pair is required. Dark variants are optional because
+            # some Windows builds provide only SearchIconOnDark.
+            result = search_artwork(root, folder, theme, state, required=(theme == "light"))
+            if result is None:
+                continue
+            path, png, scale = result
             write(f"search/{theme}-{state}.png", png, path, f"scale-{scale}", png)
 
     pri_path = local_file(root, PRI_PATH)

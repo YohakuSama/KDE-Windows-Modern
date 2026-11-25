@@ -118,7 +118,7 @@ named MUN icon.
 | Battery font fallback location | `SystemResources/Windows.UI.ControlCenter/Assets/Sysbatt.ttf` | Use only if the SystemApps copy is absent. |
 | Search activation, light taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOnLight.scale-100.png` | Preserve the original PNG and its state. |
 | Search idle, light taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOffLight.scale-100.png` | Preserve the original PNG and its state. |
-| Search activation, dark taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOnDark.scale-100.png` | Preserve the original PNG and its state. Confirm the matching off-state filename on the source build before mapping it. |
+| Search activation, dark taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOnDark.scale-100.png` | Import when present. The matching dark idle PNG has not been identified; keep the Segoe E721 fallback for that state unless the source build provides an exact original. |
 | Task View, light/dark variants | `SystemResources/Windows.UI.SettingsAppThreshold/Windows.UI.SettingsAppThreshold.pri` | Extract `Files/SystemSettings/Assets/Taskview_Light.svg` and `Taskview_Dark.svg` from the PRI. The names indicate the taskbar background variant, not the glyph brightness. |
 
 The battery font is named `SysBatt Fluent Icons`. The verified state
@@ -143,8 +143,8 @@ release or the public Git history.
 
 The new importer accepts an extracted Windows directory, including the
 original SystemApps and SystemResources trees. It exports the exact
-SysBatt outline/fill paths, four original Search PNG states at the
-highest available scale, and the two original Task View SVGs embedded
+SysBatt outline/fill paths, the original Search PNG states available in
+the source build at the highest available scale, and the two original Task View SVGs embedded
 in the Settings PRI. The import is atomic; incomplete input leaves the
 previous import untouched.
 
