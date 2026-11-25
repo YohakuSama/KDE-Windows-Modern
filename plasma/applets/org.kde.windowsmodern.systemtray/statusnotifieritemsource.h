@@ -39,6 +39,7 @@ public:
     QString iconThemePath() const;
     QString id() const;
     QString processName();
+    bool isPortalCapture() const;
     bool itemIsMenu() const;
     QString overlayIconName() const;
     QString status() const;
@@ -70,6 +71,7 @@ private:
     void resolveProcessName();
 
     bool m_valid;
+    bool m_fromDesktopPortal = false;
     QString m_servicename;
     QTimer m_refreshTimer;
     KIconLoader *m_customIconLoader;

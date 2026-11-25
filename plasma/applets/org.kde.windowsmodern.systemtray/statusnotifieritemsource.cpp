@@ -112,6 +112,8 @@ StatusNotifierItemSource::StatusNotifierItemSource(const QString &notifierItemId
 
     auto pid = QDBusConnection::sessionBus().interface()->servicePid(service);
     if (pid.isValid()) {
+        const auto executable = QFileInfo(QFile::symLinkTarget(u"/proc/%1/exe"_s.arg(pid.value()))).fileName();
+        m_fromDesktopPortal = executable == u"xdg-desktop-portal-kde" || executable == u".xdg-desktop-portal-kde-wrapped";
         const QString flatpakInfoPath = u"/proc/"_s + QString::number(pid.value()) + u"/root/.flatpak-info"_s;
         const QSettings flatpakInfo(flatpakInfoPath, QSettings::IniFormat);
         const auto instance = flatpakInfo.value(u"Instance/instance-id"_s).toString();
@@ -169,6 +171,11 @@ QString StatusNotifierItemSource::iconThemePath() const
 QString StatusNotifierItemSource::id() const
 {
     return m_id;
+}
+
+bool StatusNotifierItemSource::isPortalCapture() const
+{
+    return m_fromDesktopPortal && (m_iconName == u"media-record" || m_iconName == u"krfb");
 }
 
 QString StatusNotifierItemSource::processName()

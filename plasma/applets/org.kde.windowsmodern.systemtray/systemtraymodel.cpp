@@ -218,9 +218,9 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const {
         case BaseRole::Status: return extractStatus(sniData);
         case BaseRole::EffectiveStatus: {
             // plasma-pa creates this Hardware SNI only during microphone capture.
-            const bool recording = itemId.endsWith(u"_microphone") && sniData->category() == u"Hardware"
+            const bool microphone = itemId.endsWith(u"_microphone") && sniData->category() == u"Hardware"
                 && sniData->processName() == u"plasmashell";
-            return calculateEffectiveStatus(true, extractStatus(sniData), itemId, false, recording);
+            return calculateEffectiveStatus(true, extractStatus(sniData), itemId, false, microphone || sniData->isPortalCapture());
         }
         default: return {};
         }

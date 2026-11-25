@@ -25,13 +25,23 @@ ln -s "$src/wallpaper" "$XDG_DATA_HOME/wallpapers"
 shell_pid=""
 kwin_pid=""
 finish() {
+    local rc=$?
+    if ((rc)); then
+        for log in "$out/kwin.log" "$out/plasma.log"; do
+            [[ -f "$log" ]] && tail -45 "$log" >&2
+        done
+    fi
     if [[ -n "$shell_pid" ]]; then kill "$shell_pid" 2>/dev/null || true; fi
     if [[ -n "$kwin_pid" ]]; then kill "$kwin_pid" 2>/dev/null || true; fi
 }
 trap finish EXIT
-kwin_wayland --x11-display "$DISPLAY" --width 1920 --height 1080 --socket "$WAYLAND_DISPLAY" --no-lockscreen >"$out/kwin.log" 2>&1 &
+# The distro binary may carry CAP_SYS_NICE, outside the CI capability set.
+# Execute the same bytes as an ordinary user without requesting that capability.
+install -m 0755 "$(command -v kwin_wayland)" "$work/kwin_wayland"
+"$work/kwin_wayland" --x11-display "$DISPLAY" --width 1920 --height 1080 --socket "$WAYLAND_DISPLAY" --no-lockscreen >"$out/kwin.log" 2>&1 &
 kwin_pid=$!
 export QT_QPA_PLATFORM=wayland
+dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY QT_QPA_PLATFORM QT_PLUGIN_PATH XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_RUNTIME_DIR XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME
 for _ in {1..100}; do
     [[ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]] && break
     kill -0 "$kwin_pid"
@@ -46,7 +56,7 @@ for _ in {1..100}; do
     sleep 0.2
 done
 for mode in dark light; do
-    plasma-apply-lookandfeel -a "org.kde.windowsmodern.$mode" --resetLayout
+    timeout 60 plasma-apply-lookandfeel -a "org.kde.windowsmodern.$mode" --resetLayout
     [[ $(kreadconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage) == "org.kde.windowsmodern.$mode" ]]
     for _ in {1..100}; do
         if grep -Fq "$build/systemtray/lib/plasma/applets/org.kde.windowsmodern.systemtray.so" "/proc/$shell_pid/maps" &&

@@ -4,6 +4,7 @@ import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
 
 Item {
+    function i18n(message) { return message; }
     width: 360
     height: 240
     ListModel {
