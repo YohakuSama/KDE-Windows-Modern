@@ -13,6 +13,7 @@ Item {
         id: fakeState
         property string identity: "Test player"
         property string iconName: "audio-x-generic"
+        property string desktopEntry: ""
         property string track: "Test track"
         property string artist: "Test artist"
         property string artUrl: ""
@@ -30,6 +31,7 @@ Item {
     readonly property var mockPlayer: ({
         get identity() { return fakeState.identity; },
         get iconName() { return fakeState.iconName; },
+        get desktopEntry() { return fakeState.desktopEntry; },
         get track() { return fakeState.track; },
         get artist() { return fakeState.artist; },
         get artUrl() { return fakeState.artUrl; },
@@ -53,6 +55,25 @@ Item {
     TestCase {
         name: "WindowsMediaCard"
         when: windowShown
+        function test_browserSource() {
+            fakeState.identity = "Mozilla firefox-nightly";
+            fakeState.desktopEntry = "firefox-nightly";
+            fakeState.iconName = "emblem-music-symbolic";
+            tryCompare(card, "applicationName", "Firefox Nightly");
+            compare(card.applicationIcon, "firefox-nightly");
+            fakeState.identity = "Microsoft Edge";
+            fakeState.desktopEntry = "com.microsoft.Edge";
+            tryCompare(card, "applicationName", "Microsoft Edge");
+            compare(card.applicationIcon, "microsoft-edge");
+            fakeState.identity = "Firefox Nightly Radio";
+            fakeState.desktopEntry = "org.example.radio";
+            tryCompare(card, "applicationName", "Firefox Nightly Radio");
+            compare(card.applicationIcon, "org.example.radio");
+            fakeState.identity = "Test player";
+            fakeState.desktopEntry = "";
+            fakeState.iconName = "audio-x-generic";
+            tryCompare(card, "applicationName", "Test player");
+        }
         function test_stateAndControls() {
             verify(card.hasSession);
             compare(card.trackName, "Test track");

@@ -23,8 +23,8 @@ FocusScope {
     required property var clockApplet
     property bool calendarExpanded: true
 
-    readonly property var clockTimeLocale: Qt.locale(DateFormat.clockLocaleName(
-        Plasmoid.configuration.use24hFormat, Qt.locale().name))
+    readonly property var clockTimeLocale: Plasmoid.configuration.use24hFormat === 1
+        ? Qt.locale("en_US") : Qt.locale()
     // Match the translated UI language without changing LC_TIME.
     readonly property var calendarLocale: Qt.locale(DateFormat.calendarLocaleName(
         i18nc("@info calendar display locale (translate to a Qt locale name)", "system"),
@@ -270,11 +270,11 @@ FocusScope {
                             textFormat: Text.PlainText
                             text: {
                                 const fmt = expandedRoot.clockApplet.timeFormatWithSeconds;
-                                // Render the AM/PM suffix separately so it can be smaller.
-                                if (fmt.toLowerCase().includes("ap")) {
-                                    return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt.replace(/\s+AP/i, ""));
-                                }
-                                return expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt);
+                                const full = expandedRoot.clockTimeLocale.toString(expandedRoot.clockApplet.currentTime, fmt);
+                                // Removing AP from the FORMAT changes 12-hour conversion.
+                                // Split only the actual formatted suffix; preserve prefixes.
+                                return amPmLabel.visible && full.endsWith(amPmLabel.text)
+                                    ? full.slice(0, -amPmLabel.text.length).trim() : full;
                             }
                             color: palette.text
                             font {
@@ -287,7 +287,8 @@ FocusScope {
 
                         PlasmaComponents.Label {
                             id: amPmLabel
-                            visible: expandedRoot.clockApplet.timeFormatWithSeconds.toLowerCase().includes("ap")
+                            visible: /\s+AP$/i.test(expandedRoot.clockApplet.timeFormatWithSeconds)
+                                && text.length > 0
                             horizontalAlignment: Text.AlignLeft
                             verticalAlignment: Text.AlignTop
                             textFormat: Text.PlainText

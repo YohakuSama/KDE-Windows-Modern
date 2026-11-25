@@ -12,6 +12,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.notificationmanager as NotificationManager
 import org.kde.kcmutils as KCMUtils
+import "code/dateformat.js" as DateFormat
 
 // Use Plasma's shared notification history, not a second notification server
 // or a watcher that only sees notifications received after opening.
@@ -342,8 +343,10 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: !card.isGroup
                     implicitHeight: messageContent.implicitHeight + 20
-                    radius: 4
+                    radius: 8
                     color: palette.cardTint
+                    border.width: 1
+                    border.color: Qt.rgba(palette.text.r, palette.text.g, palette.text.b, 0.08)
 
                     ColumnLayout {
                         id: messageContent
@@ -363,7 +366,7 @@ ColumnLayout {
                                     const timestamp = updated && !isNaN(updated.getTime()) ? updated : created;
                                     if (!timestamp || isNaN(timestamp.getTime())) return "";
                                     const sameDay = timestamp.toDateString() === history.currentTime.toDateString();
-                                    return (sameDay ? "" : history.timeLocale.toString(timestamp, "yyyy/M/d") + " ")
+                                    return (sameDay ? "" : history.timeLocale.toString(timestamp, DateFormat.shortDateFullYear(history.timeLocale.dateFormat(Locale.ShortFormat))) + " ")
                                         + history.timeLocale.toString(timestamp, history.timeFormat);
                                 }
                                 color: palette.textSecondary
@@ -481,15 +484,17 @@ ColumnLayout {
                             id: actions
                             Layout.fillWidth: true
                             spacing: Kirigami.Units.smallSpacing
-                            visible: !card.isGroup && !card.isJob && !card.model.expired && (card.model.hasDefaultAction
-                                || (card.model.actionNames || []).length > 0)
+                            readonly property bool showDefault: !!card.model.hasDefaultAction
+                                && !(card.model.actionLabels || []).includes(defaultAction.actionLabel)
+                            readonly property int actionCount: (showDefault ? 1 : 0) + (card.model.actionNames || []).length
+                            visible: !card.isGroup && !card.isJob && !card.model.expired && actionCount > 0
 
                             FlyoutButton {
+                                id: defaultAction
                                 readonly property string actionLabel: card.model.defaultActionLabel || i18n("Open")
                                 text: actionLabel
-                                visible: card.model.hasDefaultAction
-                                    && !(card.model.actionLabels || []).includes(actionLabel)
-                                width: Math.min(implicitWidth, actions.width)
+                                visible: actions.showDefault
+                                width: actions.actionCount === 1 ? actions.width : Math.min(implicitWidth, actions.width)
                                 onClicked: card.invoke("default")
                             }
 
@@ -499,7 +504,7 @@ ColumnLayout {
                                     required property int index
                                     required property string modelData
                                     text: (card.model.actionLabels || [])[index] || modelData
-                                    width: Math.min(implicitWidth, actions.width)
+                                    width: actions.actionCount === 1 ? actions.width : Math.min(implicitWidth, actions.width)
                                     onClicked: card.invoke(modelData)
                                 }
                             }

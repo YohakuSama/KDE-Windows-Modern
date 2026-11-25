@@ -189,3 +189,22 @@ The exact resource index is in the `resources/windows11` branch at `272e06c87be0
 ## Battery source fidelity requirement (26H2)
 
 The owner explicitly rejects project-drawn replacement artwork. The shared BatteryGlyph now renders the locally imported original Segoe Fluent Icons glyphs for the charge level, charging and energy saver; it does not construct an outline, fill or bolt. The current pinned resource set includes SegoeIcons.ttf and three MUN libraries, but does not include an identified SysBatt Fluent Icons source or SystemTray.dll. Segoe is a legacy Microsoft fallback, not the current 26H2 battery. Do not call it the redesigned icon or invent glyph paths, fill geometry or approximated color layers. Obtain and review the authentic newer glyph resources and their state mappings from the owner's 26H2 installation before implementing the new artwork. Microsoft documents the modern icon colors and independent Battery Percentage preference at https://blogs.windows.com/windows-insider/2025/02/28/announcing-windows-11-insider-preview-build-27802-canary-channel/ . The taskbar percentage is opt-in for new settings and independent from the Quick Settings footer; existing explicitly saved choices are retained. The tray configuration and battery details control the same setting.
+
+## Search asset and native-shell blockers
+
+The current indexed resources verify Segoe Fluent E721 for monochrome Search.
+The newer blue/green Search activation glyph shown in the owner's screenshot
+has not been identified by resource ID in the indexed input. Both Start and
+Taskbar Search use the imported symbol rather than the old app-search artwork
+or a hand-drawn imitation. An authenticated local colour asset can use the
+single icon-theme role `actions/search-active.svg`; do not distribute it in
+source or claim the colour variant is complete until its exact source is mapped.
+
+The desktop drag rectangle is produced by Plasma Desktop's FolderView.qml
+(`rubberBandObject`), not a Plasma theme SVG. Plasma 6.6.2 and later use
+`SystemPalette.highlight` for that rectangle. Matching Windows' fixed blue
+independently of accent requires an upstream/package-level FolderView change,
+not a global highlight override or a duplicate desktop containment. The native
+notification toast and Dolphin file-menu implementation likewise remain
+separate from the Start app menu and the notification history; compare them on
+the target desktop before marking the surfaces complete.
