@@ -297,7 +297,7 @@
   "Maximize": "最大化",
   "Restore": "还原",
   "Pin to taskbar": "固定到任务栏",
-  "Unpin from taskbar": "取消固定到任务栏",
+  "Unpin from taskbar": "从任务栏取消固定",
   "New Window": "新建窗口",
   "Quit": "退出",
   "Remove": "移除",
@@ -625,5 +625,8 @@
   "Command execution is blocked by system policy": "系统策略禁止执行此命令",
   "View": "查看",
   "Show more options": "显示更多选项",
-  "Clipboard history": "剪贴板历史记录"
+  "Clipboard history": "剪贴板历史记录",
+  "Open new window": "打开新窗口",
+  "Close all windows": "关闭所有窗口",
+  "Close window": "关闭窗口"
 }
