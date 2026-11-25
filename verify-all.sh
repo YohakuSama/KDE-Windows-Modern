@@ -248,6 +248,12 @@ fi
 # ── Theme renders ───────────────────────────────────────────────────
 echo ""
 echo " Theme renders:"
+if python3 scripts/theme/panel-frames.py --check; then
+    pass "taskbar frame geometry and material variants agree"
+else
+    fail "taskbar frame drift — run: python3 scripts/theme/panel-frames.py"
+    FAILED=1
+fi
 set +e; SWITCH_OUT=$(tests/theme/check-switch.py 2>&1); SWITCH_RC=$?; set -e
 case "$SWITCH_RC" in
     0)  pass "switch.svg: no outline around the on-pill (dark + light)" ;;

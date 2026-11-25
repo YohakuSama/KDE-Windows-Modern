@@ -72,8 +72,20 @@ Based on the Win11OS-dark plasma theme by yeyushengfan258, with all
 
 #### Panel background (`widgets/panel-background.svg`)
 
-- **Dark fill `#1C1C1C`** when opaque (Win11 taskbar color); dialog
-  and popup backgrounds (`background.svg`) remain `#2C2C2C`.
+Use distinct Fluent material roles rather than applying a low-opacity blur
+to every surface. Microsoft's [Windows material specification](https://learn.microsoft.com/en-us/windows/apps/design/signature-experiences/materials)
+and [Mica guidelines](https://learn.microsoft.com/en-us/windows/apps/design/style/mica)
+distinguish wallpaper-tinted opaque Mica from live translucent Acrylic.
+
+- The taskbar uses KWin's native compositor blur and a neutral tint, with
+  88% dark or 94% light opacity in its translucent frame and a solid
+  fallback of `#1C1C1C` / `#F3F3F3`. These are calibrated KDE
+  compatibility values, not a claim to reproduce Microsoft's proprietary
+  shell material exactly.
+- All three frame variants use identical geometry and blur masks.
+  Generate/check the translucent copies with `scripts/theme/panel-frames.py`.
+- Popups retain their independent Acrylic-like frame; application window
+  surfaces retain the separate wallpaper-tinted material implementation.
 - **No shadow** — all `shadow-*` elements set to `opacity:0`,
   `shadow-hint-*-margin` rects zeroed (width/height = 0).
 - **48px panel height** supported (Win11 taskbar height) — the SVG
@@ -976,3 +988,24 @@ On NixOS, the containment-actions plugin groups the stock KDE desktop actions in
 ### Native tray and clipboard integration
 
 Center the overflow cells and keep the same native status glyphs in overflow and on the panel. Respect an explicitly pinned clipboard or device, hide passive unpinned entries, keep the native history and optional working emoji categories, and do not display an empty tab strip. Wi-Fi retains the real network model and one generic network settings link. The existing clipboard test now verifies a rendered image fixture.
+
+### Owner wallpaper and sign-in/terminal differences
+
+The original Bloom package is checked against the pinned owner resource bytes
+before installation; default wallpaper application uses Plasma's
+`preserveAspectFit` so it cannot silently zoom/crop the image. Compatibility
+artwork is never installed as the owner's original. The original image
+may letterbox on outputs with different aspect ratios.
+
+A missing account picture uses the official MIT-licensed Microsoft Fluent
+Person silhouette, a translucent large sign-in disc, and a separate compact
+light disc for the user switcher. This is a compatibility fallback;
+the actual Windows user account picture PNG is not in the reviewed resource
+inventory. Personal user images remain supported.
+
+Konsole retains native window controls, its actual Campbell terminal
+profile, and native sessions. Microsoft documents integrated titlebar tabs
+as the Windows Terminal `showTabsInTitlebar` setting
+([appearance settings](https://learn.microsoft.com/en-us/windows/terminal/customize-settings/appearance)).
+Konsole has no equivalent configuration. Tab CSS alone does not provide
+that structural feature; full parity requires native application work.
