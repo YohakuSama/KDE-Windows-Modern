@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
+import org.kde.kitemmodels as KItemModels
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/pages"
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/alphabeticalApps.js" as Alphabetical
 
@@ -14,6 +15,12 @@ Item {
         ListElement { display: "Camera"; favoriteId: "camera.desktop" }
         ListElement { display: "Clock"; favoriteId: "clock.desktop" }
         ListElement { display: "File Explorer"; favoriteId: "files.desktop" }
+    }
+    KItemModels.KSortFilterProxyModel {
+        id: sortedProxy
+        sourceModel: apps
+        sortRoleName: "display"
+        sortOrder: Qt.AscendingOrder
     }
     AlphabeticalAppsView {
         id: view
@@ -61,6 +68,14 @@ Item {
             apps.remove(0);
             tryCompare(view, "count", 5);
             compare(view.currentIndex, 4);
+        }
+        function test_realProxyRoles() {
+            view.sourceModel = sortedProxy;
+            tryVerify(() => view.count === 5 && view.sourceEntries[0].display === "Accessibility");
+            compare(view.sourceEntries[0].favoriteId, "a.desktop");
+            compare(view.visualRows.map(row => row.heading).join(","), "A,C,F");
+            view.sourceModel = apps;
+            tryCompare(view, "count", 5);
         }
         function test_nonAlphabeticalSortRemainsAvailable() {
             view.alphabeticalGrouping = false;

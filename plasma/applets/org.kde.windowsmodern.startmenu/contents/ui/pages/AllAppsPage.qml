@@ -14,10 +14,8 @@ import org.kde.kirigami as Kirigami
 
 import "../components"
 
-ColumnLayout {
+Item {
     id: allAppsPage
-
-    spacing: Kirigami.Units.largeSpacing
 
     readonly property var allAppsList: categoryMode ? allAppsListView : alphabeticalView
     property Component homeHeader: null
@@ -120,8 +118,7 @@ ColumnLayout {
     // mode has a single vertical scroller; no nested scrolling sections.
     AlphabeticalAppsView {
         id: alphabeticalView
-        Layout.fillWidth: true
-        Layout.fillHeight: true
+        anchors.fill: parent
         visible: !allAppsPage.categoryMode
         sourceModel: allAppsPage.flatModel
         showApps: !allAppsPage.categoryMode && allAppsPage.showAllSection
@@ -156,8 +153,7 @@ ColumnLayout {
 
     GridView {
         id: allAppsListView
-        Layout.fillWidth: true
-        Layout.fillHeight: true
+        anchors.fill: parent
         clip: true
         visible: allAppsPage.categoryMode
         interactive: !allAppsPage.inCategory
