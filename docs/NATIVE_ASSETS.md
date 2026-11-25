@@ -77,6 +77,16 @@ metadata-only reference snapshot, and tests. See the current
 [native coverage guide](https://github.com/YohakuSama/KDE-Windows-Modern/blob/main/docs/NATIVE_COVERAGE.md)
 for development checks.
 
+For an unidentified newer icon or embedded font, inspect an authorized local
+Windows extraction into a new private directory:
+
+```bash
+python3 scripts/inspect-shell-resources.py /path/to/Windows /path/to/private/shell-inventory
+```
+
+A matching font family or resource ID does not establish the correct glyph.
+Review the original artwork before adding it to the map.
+
 ## Current coverage boundaries
 
 - The current reference library lacks an identified 26H2 SysBatt Fluent

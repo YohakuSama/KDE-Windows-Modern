@@ -13,7 +13,7 @@ python3 scripts/icon-coverage.py --installed > icon-coverage-installed.json
 
 The second report checks the XDG icon theme and desktop entries, including the paths exported by NixOS. It separates verified native output hashes, mapped but unverified names, bundled artwork, absent theme entries, and absolute icon paths. Static QML literal candidates include some non-icon references. A missing theme entry is not proof of a broken system icon because KDE may inherit Breeze or hicolor. Dynamic QML names, native widget SVGs, scale selection and actual pixmaps need desktop checks. Review the report before sharing. No files are uploaded.
 
-At the current mapping revision there are 869 target paths (386 status, 266 actions, 61 apps, 60 categories, 46 devices, 37 places, 8 mimetypes, 5 emblems). These are mapped names, not a claim of complete application or native artwork coverage. Count paths separately from unique original Windows resources. Do not label an icon native merely because its name is present in the bundled pack.
+Use the generated report and current mapping to count target paths. These are mapped names, not a claim of complete native artwork coverage. Count paths separately from unique original Windows resources. Do not label an icon native merely because its name is present in the bundled pack.
 
 If the local source was already imported, the existing importer can export resource IDs and hashes without uploading binaries:
 
