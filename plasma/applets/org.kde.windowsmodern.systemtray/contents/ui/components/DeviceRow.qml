@@ -116,14 +116,16 @@ Rectangle {
             id: otherActions
             model: row.actions ?? null
             delegate: PlasmaComponents3.Button {
-                required property var model
-                objectName: "wmDeviceOtherAction_" + model.Name
+                required property string Name
+                required property string Text
+                required property string Icon
+                objectName: "wmDeviceOtherAction_" + Name
                 Layout.fillWidth: true
                 visible: row.expanded && row.canOperate
                 enabled: row.canOperate
-                text: model.Text
-                icon.name: model.Icon || ""
-                onClicked: row.triggerAction(model.Name)
+                text: Text
+                icon.name: Icon || ""
+                onClicked: row.triggerAction(Name)
             }
         }
     }

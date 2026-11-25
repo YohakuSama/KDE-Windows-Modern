@@ -54,6 +54,7 @@ Item {
             const more = findChild(row, "wmDeviceMoreActions");
             tryVerify(() => more && more.visible);
             mouseClick(more, more.width / 2, more.height / 2);
+            tryCompare(row, "expanded", true);
             tryVerify(() => {
                 const openButton = findChild(row, "wmDeviceOtherAction_open");
                 return openButton && openButton.visible;
