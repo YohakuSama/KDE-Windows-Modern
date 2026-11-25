@@ -10,6 +10,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 DATA = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
 BACKUP = DATA / "windows-modern/backup/app-appearance.json"
 OLD_DOLPHIN_BLOB = "5dfeecc37067f7c8a7bcbc0aa229f7b0e36728c2"
 MISSING = "__windows_modern_missing_7b6801__"
@@ -20,6 +21,7 @@ def blob(content):
 FILES = {
     "kxmlgui5/dolphin/dolphinui.rc": "config/kxmlgui5/dolphin/dolphinui.rc",
     "kxmlgui5/konsole/konsoleui.rc": "config/kxmlgui5/konsole/konsoleui.rc",
+    "kxmlgui5/konsole/sessionui.rc": "config/kxmlgui5/konsole/sessionui.rc",
     "konsole/WindowsModern.profile": "config/konsole/WindowsModern.profile",
     "konsole/WindowsModern-tabs.css": "config/konsole/WindowsModern-tabs.css",
 }
@@ -34,6 +36,8 @@ def settings():
         ("konsolerc", "MainWindow", "MenuBar", "Disabled"),
         ("konsolerc", "MainWindow", "ToolBarsMovable", "Disabled"),
         ("konsolerc", "MainWindow", "State", MISSING),
+        # KF6 stores QMainWindow state separately, including toolbar visibility.
+        (str(STATE / "konsolestaterc"), "MainWindow", "State", MISSING),
         ("konsolerc", "Main Toolbar", "Hidden", "true"),
         ("konsolerc", "Toolbar mainToolBar", "Hidden", "true"),
         ("konsolerc", "TabBar", "ExpandTabWidth", "false"),
@@ -87,7 +91,7 @@ def apply():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(new)
     for file, group, key, value in settings():
-        if file == "konsolerc":
+        if file == "konsolerc" or file == str(STATE / "konsolestaterc"):
             required = ("konsole/WindowsModern.profile", "konsole/WindowsModern-tabs.css")
             if any(relative not in state["files"] for relative in required):
                 continue

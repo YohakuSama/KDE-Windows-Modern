@@ -27,6 +27,8 @@ jobs:
         run: |
           bash -n install-nixos.sh
           python3 -m unittest discover -s tests/nixos -v
+      - name: Reversible application appearance tests
+        run: python3 -m unittest discover -s tests/apps -v
       - name: Native resource reader tests
         run: python3 -m unittest discover -s tests/native-assets -v
       - name: Window material tests
