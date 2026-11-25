@@ -159,9 +159,12 @@ def install_shell_assets(output):
             relative = Path(asset["output"])
             if relative.is_absolute() or ".." in relative.parts or relative.parts[:1] != ("shell",):
                 raise ValueError("Unsafe shell asset output path")
-            source = (output / relative).resolve(strict=True)
-            if (not source.is_relative_to(output) or source.is_symlink()
-                    or not source.is_file() or digest(source.read_bytes()) != asset["sha256"]):
+            source_path = output.joinpath(*relative.parts)
+            if source_path.is_symlink():
+                raise ValueError("Shell asset source is a symlink: " + str(relative))
+            source = source_path.resolve(strict=True)
+            if (not source.is_relative_to(output) or not source.is_file()
+                    or digest(source.read_bytes()) != asset["sha256"]):
                 raise ValueError("Shell asset hash/path verification failed: " + str(relative))
             target = stage.joinpath(*relative.parts[1:])
             target.parent.mkdir(parents=True, exist_ok=True)
