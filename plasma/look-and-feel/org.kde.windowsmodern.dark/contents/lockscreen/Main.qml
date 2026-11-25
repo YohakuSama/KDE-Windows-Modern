@@ -216,6 +216,8 @@ Item {
             }
             model: PlasmaLogin.UserModel
             uiVisible: loginScreenRoot.uiVisible
+            width: Math.max(0, Math.min(240, parent.width - 2 * anchors.leftMargin))
+            maximumHeight: Math.max(0, Math.min(parent.height * 0.25, footer.y - anchors.bottomMargin))
         }
 
         // ── Footer ──
@@ -238,7 +240,7 @@ Item {
 
             SessionButton {
                 id: sessionButton
-                onSessionChanged: userListComponent.mainPasswordBox.forceActiveFocus();
+                onSessionChanged: mainStack.currentItem?.focusFirstVisibleFormControl();
                 Layout.alignment: Qt.AlignVCenter
             }
 
@@ -257,7 +259,7 @@ Item {
                 target: virtualKeyboardLoader.item
                 // Keep typing going to the password box, not the button.
                 function onClicked() {
-                    userListComponent.mainPasswordBox.forceActiveFocus();
+                    mainStack.currentItem?.focusFirstVisibleFormControl();
                 }
             }
 

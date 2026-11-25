@@ -12,9 +12,11 @@ ListView {
     id: root
 
     property bool uiVisible: false
+    property real maximumHeight: contentHeight
 
     width: 240
-    height: contentHeight
+    height: Math.min(contentHeight, maximumHeight)
+    boundsBehavior: Flickable.StopAtBounds
     clip: true
 
     visible: count > 1 && uiVisible && PlasmaLogin.GreeterState.loginState !== PlasmaLogin.GreeterState.LoginState.UserPrompt
@@ -28,23 +30,19 @@ ListView {
             anchors.fill: parent
             spacing: Kirigami.Units.smallSpacing
 
-            Rectangle {
-                width: WinStyle.userSwitcherAvatarSize
-                height: WinStyle.userSwitcherAvatarSize
-                radius: WinStyle.userSwitcherAvatarSize / 2
-                color: WinStyle.hoverBackground
-                visible: model.icon !== ""
-
-                Image {
-                    anchors.fill: parent
-                    source: model.icon || ""
-                    fillMode: Image.PreserveAspectCrop
-                    clip: true
-                }
+            WinAvatar {
+                id: userAvatar
+                size: WinStyle.userSwitcherAvatarSize
+                width: size
+                height: size
+                source: model.icon || ""
             }
 
             Text {
+                width: Math.max(0, parent.width - userAvatar.width - parent.spacing)
                 text: model.realName || model.name
+                textFormat: Text.PlainText
+                elide: Text.ElideRight
                 font.family: WinStyle.fontFamily
                 font.pixelSize: WinStyle.userSwitcherNamePixelSize
                 font.weight: Font.Light
