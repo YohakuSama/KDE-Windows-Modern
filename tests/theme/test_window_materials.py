@@ -90,6 +90,40 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertIn('text.margin.top=3', items)
                 self.assertIn('text.margin.bottom=3', items)
 
+    def test_qt_control_spacing_matches_both_themes(self):
+        theme = ROOT / 'Kvantum/Windows-modern'
+        for name in ('Windows-modern', 'Windows-modernDark'):
+            with self.subTest(name=name):
+                config = (theme / (name + '.kvconfig')).read_text()
+                def section(name):
+                    return dict(line.split('=', 1) for line in
+                                config.split('[' + name + ']\n', 1)[1].split('\n[', 1)[0].splitlines()
+                                if '=' in line and not line.startswith('#'))
+                general = section('%General')
+                self.assertEqual(general['scroll_min_extent'], '32')
+                self.assertEqual(general['transient_groove'], 'false')
+                self.assertEqual(general['tree_branch_line'], 'false')
+                self.assertEqual(section('Hacks')['force_size_grip'], 'false')
+                self.assertEqual(section('TitleBar')['text.italic'], 'false')
+                for control in ('LineEdit', 'ComboBox'):
+                    values = section(control)
+                    for side, size in (('top', '4'), ('bottom', '4'), ('left', '8'), ('right', '8')):
+                        self.assertEqual(values['text.margin.' + side], size)
+
+    def test_default_taskbar_layout_leaves_room_for_spacers(self):
+        layouts = [
+            'plasma/layout-templates/org.kde.windowsmodern.panel/contents/layout.js',
+            'plasma/look-and-feel/org.kde.windowsmodern.dark/contents/layouts/org.kde.plasma.desktop-layout.js',
+            'plasma/look-and-feel/org.kde.windowsmodern.light/contents/layouts/org.kde.plasma.desktop-layout.js',
+        ]
+        for path in layouts:
+            with self.subTest(path=path):
+                script = (ROOT / path).read_text()
+                self.assertEqual(script.count('tasks.writeConfig("fill", "false");'), 1)
+                self.assertLess(script.index('var spacerLeft'), script.index('var tasks'))
+                self.assertLess(script.index('tasks.writeConfig("fill", "false");'),
+                                script.index('var spacerRight'))
+
     def test_missing_or_invalid_elements_rejected(self):
         with self.assertRaises(ValueError):
             frames.patch_window_svg(SVG.replace('window-normal-inactive', 'other'), '#123456', '#202020')

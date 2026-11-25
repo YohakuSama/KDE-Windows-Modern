@@ -65,6 +65,8 @@ tasks.writeConfig("showOnlyCurrentScreen", "false");
 tasks.writeConfig("showOnlyCurrentDesktop", "false");
 tasks.writeConfig("showOnlyCurrentActivity", "false");
 tasks.writeConfig("groupingStrategy", "1");
+// Let the two expanding spacers position the app group.
+tasks.writeConfig("fill", "false");
 
 // 4. Right expanding spacer — separates the centered Start + tasks group
 //    from the system tray / clock on the far right.
