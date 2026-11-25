@@ -13,6 +13,27 @@ class SystemIconRolesTests(unittest.TestCase):
         targets = [path for names in MAPPING['icons'].values() for path in names.split()]
         self.assertEqual(len(targets), len(set(targets)))
 
+    def test_start_footer_and_snooze_outline_roles(self):
+        expected = {
+            "e8a5": "actions/wm-start-documents-symbolic",
+            "e896": "actions/wm-start-downloads-symbolic",
+            "ec4f": "actions/wm-start-music-symbolic",
+            "e8b9": "actions/wm-start-pictures-symbolic",
+            "e714": "actions/wm-start-videos-symbolic",
+            "ec27": "actions/wm-start-network-symbolic",
+            "ec25": "actions/wm-start-home-symbolic",
+            "ec50": "actions/wm-start-thispc-symbolic",
+            "e713": "actions/wm-start-settings-symbolic"
+        }
+        for code, target in expected.items():
+            self.assertIn(target, MAPPING['icons'][code].split())
+        self.assertIn('status/notifications-disabled-symbolic', MAPPING['icons']['f285'].split())
+        self.assertNotIn('status/notifications-disabled-symbolic', MAPPING['icons']['f2a8'].split())
+        self.assertIn('f285', MAPPING['panel_glyph_groups']['notification'])
+        self.assertEqual(MAPPING['wallpaper_accents'], {
+            'Windows-modern': {'Light': '#0067C0', 'Dark': '#4CC2FF'}
+        })
+
     def test_sound_output_role_is_not_speaker_volume(self):
         self.assertEqual(MAPPING['icons']['f4c3'], 'actions/wm-sound-output-symbolic')
         self.assertIn('f4c3', MAPPING['optional_glyphs'])

@@ -18,6 +18,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.battery as BatteryBackend
 import "js/trayMetrics.js" as TrayMetrics
+import "js/popupGeometry.js" as PopupGeometry
 import "components" as Components
 
 ContainmentItem {
@@ -428,6 +429,32 @@ ContainmentItem {
             }
         }
 
+        // Anchor to the selected tray item, but measure the perpendicular
+        // gap from the actual panel edge, just like Start and the clock.
+        Item {
+            id: trayPopupAnchor
+            readonly property Item target: systemTrayState.overflowMode && expander.visible ? expander
+                : systemTrayState.quickSettingsRoute || !systemTrayState.activeApplet ? quickSettingsAnchor
+                : root.panelAnchorForApplet(systemTrayState.activeApplet) || quickSettingsAnchor
+            parent: target || root
+            width: target ? target.width : 0
+            height: target ? target.height : 0
+
+            function sync() {
+                if (!target || !target.Window.window) return;
+                const edge = Plasmoid.location === PlasmaCore.Types.BottomEdge ? "bottom"
+                    : Plasmoid.location === PlasmaCore.Types.TopEdge ? "top"
+                    : Plasmoid.location === PlasmaCore.Types.LeftEdge ? "left"
+                    : Plasmoid.location === PlasmaCore.Types.RightEdge ? "right" : "";
+                const pos = target.mapToGlobal(0, 0);
+                const offset = PopupGeometry.normalOffset(edge, root.panelGeometry,
+                    {x: pos.x, y: pos.y, width: target.width, height: target.height});
+                x = offset.x;
+                y = offset.y;
+            }
+            onTargetChanged: Qt.callLater(sync)
+        }
+
         // One shell-role popup, with independent card surfaces when a
         // media session is present. Dialog.NoBackground lets the actual
         // desktop remain visible between cards; no second focus window.
@@ -436,13 +463,9 @@ ContainmentItem {
             objectName: "popupWindow"
             type: PlasmaCore.Dialog.AppletPopup
             flags: Qt.Dialog
-            visualParent: systemTrayState.overflowMode && expander.visible ? expander
-                : systemTrayState.quickSettingsRoute || !systemTrayState.activeApplet ? quickSettingsAnchor
-                : root.panelAnchorForApplet(systemTrayState.activeApplet) || quickSettingsAnchor
+            visualParent: trayPopupAnchor
             location: Plasmoid.location
-            floating: Math.max(Math.round(8 * Plasmoid.configuration.scale / 100),
-                (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets)
-                    ? Kirigami.Units.largeSpacing : 0)
+            floating: PopupGeometry.popupGap()
             hideOnWindowDeactivate: !Plasmoid.configuration.pin
             visible: false
 
@@ -457,6 +480,7 @@ ContainmentItem {
                         systemTrayState.expanded = false;
                         return;
                     }
+                    trayPopupAnchor.sync();
                     expandedSync.stop();
                     visible = true;
                     geometryProbe.attempts = 0;

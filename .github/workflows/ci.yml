@@ -39,6 +39,11 @@ jobs:
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
       - name: Microsoft Store icon tests
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_store_icon.py -v
+      - name: Verify both reviewed Microsoft Store SVGs
+        run: |
+          python3 scripts/store-artwork.py prepare "$RUNNER_TEMP/store-artwork"
+          python3 scripts/store-artwork.py verify "$RUNNER_TEMP/store-artwork"
+          cat "$RUNNER_TEMP/store-artwork/manifest.json"
       - name: Optional Plymouth boot artwork tests
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_boot_frames.py -v
 

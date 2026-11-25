@@ -99,7 +99,22 @@ build_one() {
     local outpath="$DIST_DIR/$outname"
 
     rm -f "$outpath"
-    if [[ "$meta" == "colorschemes" ]]; then
+    if [[ "$name" == icons ]]; then
+        # Build both icon modes from verified, unchanged source artwork.
+        local icon_stage
+        icon_stage="$(mktemp -d)"
+        if ! (set -e
+            cp -a "$dir" "$icon_stage/windows-modern"
+            python3 "$SCRIPT_DIR/store-artwork.py" prepare "$DIST_DIR/.store-artwork" --bundled "$SRC_DIR/bundled-store-artwork"
+            python3 "$SCRIPT_DIR/store-artwork.py" apply "$DIST_DIR/.store-artwork" "$icon_stage/windows-modern" "$icon_stage/windows-modern-light"
+            cd "$icon_stage"
+            zip -qr "$outpath" windows-modern windows-modern-light
+        ); then
+            rm -rf "$icon_stage" "$outpath"
+            return 1
+        fi
+        rm -rf "$icon_stage"
+    elif [[ "$meta" == "colorschemes" ]]; then
         # Discover unpacks color schemes straight into color-schemes/, so the
         # .colors files must sit at the top of the zip, not in a folder.
         (cd "$dir" && zip -q "$outpath" ./*.colors)
@@ -238,6 +253,13 @@ if [[ "$OWNER" -eq 1 ]]; then
     rm -rf "$stage"
     trap - EXIT
 fi
+# The full archive is self-contained for offline Store icon installation.
+python3 "$SCRIPT_DIR/store-artwork.py" prepare "$DIST_DIR/.store-artwork" --bundled "$SRC_DIR/bundled-store-artwork"
+store_stage="$(mktemp -d)"
+mkdir -p "$store_stage/KDE-Windows-Modern-${FULL_VER}"
+cp -a "$DIST_DIR/.store-artwork" "$store_stage/KDE-Windows-Modern-${FULL_VER}/bundled-store-artwork"
+(cd "$store_stage" && zip -qry "$FULL_OUT" "KDE-Windows-Modern-${FULL_VER}/bundled-store-artwork")
+rm -rf "$store_stage"
 echo "$FULL_OUT" >> "$MANIFEST"
 step "built $(basename "$FULL_OUT")  (full bundle from $(git -C "$SRC_DIR" rev-parse --short HEAD))"
 

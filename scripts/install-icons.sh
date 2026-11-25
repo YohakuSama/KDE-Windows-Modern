@@ -36,6 +36,11 @@ else
     warn "No local native asset manifest: installing bundled compatibility artwork, not verified Windows originals."
 fi
 
+# Verify both original owner-selected SVGs before touching installed icons.
+store_dir="${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/store-artwork"
+python3 "$PROJECT_DIR/scripts/store-artwork.py" prepare "$store_dir" \
+    --bundled "$PROJECT_DIR/bundled-store-artwork" || exit 1
+
 info "Installing icon pack ($THEME_NAME)..."
 step "Removing old installation"
 rm -rf "$THEME_DIR"
@@ -55,8 +60,14 @@ if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ]; then
     cp -a --remove-destination "$NATIVE_ASSETS_DIR/icons/." "$THEME_DIR/"
 fi
 
+# The light overlay inherits every icon except the Store aliases.
+rm -rf "$ICONS_DIR/windows-modern-light"
+python3 "$PROJECT_DIR/scripts/store-artwork.py" apply "$store_dir" "$THEME_DIR" \
+    "$ICONS_DIR/windows-modern-light" || exit 1
 if command -v gtk-update-icon-cache &>/dev/null; then
-    gtk-update-icon-cache -f "$THEME_DIR" &>/dev/null || true
+    for dir in "$THEME_DIR" "$ICONS_DIR/windows-modern-light"; do
+        gtk-update-icon-cache -f "$dir" &>/dev/null || true
+    done
 fi
 
 info "Icons installed ($THEME_NAME)"
@@ -68,6 +79,10 @@ if is_batch; then
     exit 0
 fi
 if command -v kwriteconfig6 &>/dev/null; then
+    if command -v kreadconfig6 >/dev/null &&
+       [ "$(kreadconfig6 --file kdeglobals --group General --key ColorScheme)" = WindowsModernLight ]; then
+        THEME_NAME=windows-modern-light
+    fi
     step "Applying icon theme ($THEME_NAME)"
     # Plasma 6 stores the theme in kcmicons; kdeglobals is the legacy fallback
     kwriteconfig6 --file kdeglobals --group Icons --key Theme "$THEME_NAME"

@@ -72,8 +72,20 @@ Based on the Win11OS-dark plasma theme by yeyushengfan258, with all
 
 #### Panel background (`widgets/panel-background.svg`)
 
-- **Dark fill `#1C1C1C`** when opaque (Win11 taskbar color); dialog
-  and popup backgrounds (`background.svg`) remain `#2C2C2C`.
+Use distinct Fluent material roles rather than applying a low-opacity blur
+to every surface. Microsoft's [Windows material specification](https://learn.microsoft.com/en-us/windows/apps/design/signature-experiences/materials)
+and [Mica guidelines](https://learn.microsoft.com/en-us/windows/apps/design/style/mica)
+distinguish wallpaper-tinted opaque Mica from live translucent Acrylic.
+
+- The taskbar uses KWin's native compositor blur and a neutral tint, with
+  88% dark or 94% light opacity in its translucent frame and a solid
+  fallback of `#1C1C1C` / `#F3F3F3`. These are calibrated KDE
+  compatibility values, not a claim to reproduce Microsoft's proprietary
+  shell material exactly.
+- All three frame variants use identical geometry and blur masks.
+  Generate/check the translucent copies with `scripts/theme/panel-frames.py`.
+- Popups retain their independent Acrylic-like frame; application window
+  surfaces retain the separate wallpaper-tinted material implementation.
 - **No shadow** — all `shadow-*` elements set to `opacity:0`,
   `shadow-hint-*-margin` rects zeroed (width/height = 0).
 - **48px panel height** supported (Win11 taskbar height) — the SVG
@@ -976,3 +988,56 @@ On NixOS, the containment-actions plugin groups the stock KDE desktop actions in
 ### Native tray and clipboard integration
 
 Center the overflow cells and keep the same native status glyphs in overflow and on the panel. Respect an explicitly pinned clipboard or device, hide passive unpinned entries, keep the native history and optional working emoji categories, and do not display an empty tab strip. Wi-Fi retains the real network model and one generic network settings link. The existing clipboard test now verifies a rendered image fixture.
+
+### Owner wallpaper and sign-in/terminal differences
+
+The original Bloom package is checked against the pinned owner resource bytes
+before installation; default wallpaper application uses Plasma's
+`preserveAspectFit` so it cannot silently zoom/crop the image. Compatibility
+artwork is never installed as the owner's original. The original image
+may letterbox on outputs with different aspect ratios.
+
+A missing account picture uses the official MIT-licensed Microsoft Fluent
+Person silhouette, a translucent large sign-in disc, and a separate compact
+light disc for the user switcher. This is a compatibility fallback;
+the actual Windows user account picture PNG is not in the reviewed resource
+inventory. Personal user images remain supported.
+
+Konsole retains native window controls, its actual Campbell terminal
+profile, and native sessions. Microsoft documents integrated titlebar tabs
+as the Windows Terminal `showTabsInTitlebar` setting
+([appearance settings](https://learn.microsoft.com/en-us/windows/terminal/customize-settings/appearance)).
+Konsole has no equivalent configuration. Tab CSS alone does not provide
+that structural feature; full parity requires native application work.
+
+### Windows 11 26H2 reference and Store artwork
+
+Target the owner's current 26H2 screenshots and Microsoft's current shell
+design, not legacy Windows 11 screenshots or Material Design controls.
+The 26H2 enablement release shares its servicing branch with 24H2/25H2;
+the actual feature rollout and user settings affect what appears on screen.
+
+* Quick Settings uses the shared WinUI ControlFill, ControlStroke and
+  AccentFill state rules, including independent continuous split-button
+  hover/press surfaces and dynamic accent contrast. The underlying KDE
+  flyout is a compatibility implementation, not Microsoft's DWM shader.
+* Import the two owner-selected Commons SVG files at their reviewed
+  2025-09-15 revisions. The blue/dark bag is used for light mode; the
+  white/light bag is used for dark mode. Preserve their bytes and source
+  metadata. The light icon theme only overrides the five Discover aliases
+  and inherits the original Windows Modern icon theme.
+* Every full installable bundle includes both verified artwork variants.
+  Installation and NixOS staging reject missing or mismatched variants
+  rather than installing the old compatibility Store art.
+* Visual acceptance still requires side-by-side screenshots from the same
+  display scale, theme mode and Windows feature configuration.
+  The native Konsole titlebar, original account picture, exact shell
+  compositor effects and arbitrary-wallpaper accent extraction are open
+  parity items.
+
+Reference:
+- https://commons.wikimedia.org/wiki/File:Microsoft_Store_logo_dark.svg
+- https://commons.wikimedia.org/wiki/File:Microsoft_Store_logo_light.svg
+- https://learn.microsoft.com/en-us/windows/apps/design/signature-experiences/materials
+- https://learn.microsoft.com/en-us/windows/apps/develop/platform/xaml/xaml-theme-resources
+- https://blogs.windows.com/windows-insider/2026/08/27/releasing-windows-11-version-26h2-to-the-release-preview-channel/

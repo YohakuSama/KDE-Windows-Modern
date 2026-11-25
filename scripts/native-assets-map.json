@@ -74,7 +74,7 @@
     "e710": "actions/list-add actions/list-add-symbolic",
     "e711": "actions/dialog-cancel actions/dialog-cancel-symbolic",
     "e712": "actions/overflow-menu actions/overflow-menu-symbolic actions/view-more actions/view-more-symbolic",
-    "e713": "actions/configure actions/configure-symbolic apps/preferences-desktop apps/preferences-desktop-symbolic categories/preferences-desktop categories/preferences-desktop-symbolic",
+    "e713": "actions/configure actions/configure-symbolic apps/preferences-desktop apps/preferences-desktop-symbolic categories/preferences-desktop categories/preferences-desktop-symbolic actions/wm-start-settings-symbolic",
     "e718": "actions/window-pin actions/window-pin-symbolic",
     "e77a": "actions/window-unpin actions/window-unpin-symbolic",
     "e721": "actions/search actions/search-icon actions/search-symbolic actions/edit-find apps/search actions/edit-find-symbolic apps/preferences-desktop-search apps/preferences-desktop-search-symbolic categories/preferences-desktop-search categories/preferences-desktop-search-symbolic apps/preferences-system-search apps/preferences-system-search-symbolic categories/preferences-system-search categories/preferences-system-search-symbolic",
@@ -98,7 +98,7 @@
     "e71a": "actions/media-playback-stop actions/media-playback-stop-symbolic",
     "e720": "actions/audio-input-microphone-symbolic status/audio-input-microphone-symbolic devices/audio-input-microphone-symbolic status/microphone-sensitivity-high status/microphone-sensitivity-high-symbolic devices/audio-input-microphone status/audio-input-microphone status/microphone-sensitivity-low status/microphone-sensitivity-low-symbolic status/microphone-sensitivity-medium status/microphone-sensitivity-medium-symbolic actions/audio-input-microphone",
     "e722": "actions/camera-photo-symbolic devices/camera-photo-symbolic",
-    "e714": "actions/camera-video-symbolic devices/camera-video-symbolic",
+    "e714": "actions/camera-video-symbolic devices/camera-video-symbolic actions/wm-start-videos-symbolic",
     "e709": "actions/network-flightmode-on-symbolic status/network-flightmode-on status/network-flightmode-on-symbolic",
     "e706": "actions/brightness-high actions/brightness-high-symbolic status/brightness-high status/brightness-high-symbolic actions/weather-clear-symbolic status/video-display-brightness status/video-display-brightness-symbolic actions/video-display-brightness devices/video-display-brightness devices/video-display-brightness-symbolic",
     "e7be": "actions/applications-education",
@@ -110,7 +110,7 @@
     "e838": "actions/folder-open-symbolic",
     "e7c3": "actions/document-new actions/document-new-symbolic",
     "e8b3": "actions/edit-select-all actions/edit-select-all-symbolic",
-    "e8b9": "actions/insert-image actions/insert-image-symbolic apps/preferences-desktop-wallpaper apps/preferences-desktop-wallpaper-symbolic categories/preferences-desktop-wallpaper categories/preferences-desktop-wallpaper-symbolic",
+    "e8b9": "actions/insert-image actions/insert-image-symbolic apps/preferences-desktop-wallpaper apps/preferences-desktop-wallpaper-symbolic categories/preferences-desktop-wallpaper categories/preferences-desktop-wallpaper-symbolic actions/wm-start-pictures-symbolic",
     "e715": "actions/mail-message-new actions/mail-message-new-symbolic",
     "e724": "actions/document-send actions/document-send-symbolic",
     "e776": "actions/preferences-desktop-accessibility-symbolic actions/preferences-desktop-accessibility apps/preferences-desktop-accessibility apps/preferences-desktop-accessibility-symbolic categories/preferences-desktop-accessibility categories/preferences-desktop-accessibility-symbolic",
@@ -188,7 +188,7 @@
     "f384": "status/network-unavailable status/network-unavailable-symbolic status/network-wireless-disconnected status/network-wireless-disconnected-symbolic status/network-wired-disconnected status/network-wired-disconnected-symbolic status/network-wireless-offline status/network-wireless-offline-symbolic status/network-wired-unavailable status/network-wired-unavailable-symbolic status/network-mobile-available status/network-mobile-available-symbolic status/network-offline status/network-offline-symbolic",
     "f2a3": "actions/notifications actions/notifications-symbolic status/notifications status/notifications-symbolic status/notification-inactive status/notification-inactive-symbolic status/notification-empty status/notification-empty-symbolic apps/preferences-desktop-notification-bell apps/preferences-desktop-notification-bell-symbolic categories/preferences-desktop-notification-bell categories/preferences-desktop-notification-bell-symbolic actions/preferences-desktop-notification-bell actions/preferences-desktop-notification-bell-symbolic apps/preferences-desktop-notification apps/preferences-desktop-notification-symbolic categories/preferences-desktop-notification categories/preferences-desktop-notification-symbolic actions/preferences-desktop-notification actions/preferences-desktop-notification-symbolic apps/preferences-desktop-notifications apps/preferences-desktop-notifications-symbolic categories/preferences-desktop-notifications categories/preferences-desktop-notifications-symbolic actions/preferences-desktop-notifications actions/preferences-desktop-notifications-symbolic apps/preferences-system-notifications apps/preferences-system-notifications-symbolic categories/preferences-system-notifications categories/preferences-system-notifications-symbolic actions/preferences-system-notifications actions/preferences-system-notifications-symbolic",
     "f2a5": "status/notification-active status/notification-active-symbolic",
-    "f2a8": "actions/notifications-disabled actions/notifications-disabled-symbolic status/notifications-disabled status/notifications-disabled-symbolic status/notification-disabled status/notification-disabled-symbolic",
+    "f2a8": "status/wm-notification-snooze-filled-symbolic",
     "e88e": "status/device-notifier status/device-notifier-symbolic devices/drive-removable-media devices/drive-removable-media-symbolic devices/device-notifier status/drive-removable-media-symbolic",
     "f4c3": "actions/wm-sound-output-symbolic",
     "f432": "status/battery-profile-powersave status/battery-profile-powersave-symbolic actions/battery-profile-powersave-symbolic actions/power-saver actions/power-saver-symbolic",
@@ -228,7 +228,7 @@
     "e71c": "actions/view-filter actions/view-filter-symbolic",
     "e723": "actions/mail-attachment actions/mail-attachment-symbolic status/mail-attachment-symbolic",
     "e895": "actions/view-refresh-sync actions/view-refresh-sync-symbolic",
-    "e896": "actions/document-download actions/document-download-symbolic",
+    "e896": "actions/document-download actions/document-download-symbolic actions/wm-start-downloads-symbolic",
     "e898": "actions/document-upload actions/document-upload-symbolic",
     "e97a": "actions/mail-reply-sender actions/mail-reply-sender-symbolic",
     "e8ed": "actions/media-repeat-single actions/media-repeat-single-symbolic",
@@ -260,7 +260,13 @@
     "e8f9": "apps/preferences-desktop-activities apps/preferences-desktop-activities-symbolic categories/preferences-desktop-activities categories/preferences-desktop-activities-symbolic",
     "e83d": "apps/preferences-security apps/preferences-security-symbolic categories/preferences-security categories/preferences-security-symbolic",
     "e703": "actions/network-connect actions/network-connect-symbolic",
-    "e821": "actions/tools actions/tools-symbolic"
+    "e821": "actions/tools actions/tools-symbolic",
+    "e8a5": "actions/wm-start-documents-symbolic",
+    "ec4f": "actions/wm-start-music-symbolic",
+    "ec27": "actions/wm-start-network-symbolic",
+    "ec25": "actions/wm-start-home-symbolic",
+    "ec50": "actions/wm-start-thispc-symbolic",
+    "f285": "actions/notifications-disabled actions/notifications-disabled-symbolic status/notifications-disabled status/notifications-disabled-symbolic status/notification-disabled status/notification-disabled-symbolic"
   },
   "wallpapers": [
     [
@@ -462,7 +468,13 @@
     "e8f9",
     "e83d",
     "e703",
-    "e821"
+    "e821",
+    "e8a5",
+    "ec4f",
+    "ec27",
+    "ec25",
+    "ec50",
+    "f285"
   ],
   "panel_glyph_groups": {
     "wifi": [
@@ -526,6 +538,7 @@
     "notification": [
       "f2a3",
       "f2a5",
+      "f285",
       "f2a8"
     ],
     "batteryUnknownCharging": [
@@ -563,5 +576,11 @@
     "notification",
     "bluetooth",
     "removable"
-  ]
+  ],
+  "wallpaper_accents": {
+    "Windows-modern": {
+      "Light": "#0067C0",
+      "Dark": "#4CC2FF"
+    }
+  }
 }

@@ -340,11 +340,6 @@ Item {
                                         }
                                     }
                                 }
-                                PlasmaComponents3.ToolTip {
-                                    visible: slot.hasApp && slot.hovered && !slotMouse.containsPress
-                                    text: slot.appName
-                                    delay: Kirigami.Units.toolTipDelay
-                                }
                             }
                         }
                     }

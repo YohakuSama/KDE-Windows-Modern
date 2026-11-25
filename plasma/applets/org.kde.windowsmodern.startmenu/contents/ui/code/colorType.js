@@ -63,3 +63,33 @@ function rowFill(dark, selected, hovered, pressed) {
     const ink = dark ? 1 : 0;
     return Qt.rgba(ink, ink, ink, alpha);
 }
+
+// WinUI ControlFill / ControlStroke and AccentFill state brushes.
+// Composite against the actual flyout surface, rather than overlaying
+// the foreground ink on a solid colored block. Keep the user's accent.
+// Source: Microsoft Windows XAML theme resources and Fluent color guidance.
+// The shell-specific backdrop is a reference-calibrated KDE approximation.
+function blendOver(ink, base, opacity) {
+    return Qt.rgba(ink.r * opacity + base.r * (1 - opacity),
+        ink.g * opacity + base.g * (1 - opacity),
+        ink.b * opacity + base.b * (1 - opacity), 1);
+}
+
+function quickTileSurface(dark) {
+    return Qt.color(dark ? "#242424" : "#F2F2F2");
+}
+
+function quickTileFill(dark, active, hovered, pressed, accent) {
+    const base = quickTileSurface(dark);
+    if (active)
+        return blendOver(accent, base, pressed ? 0.8 : hovered ? 0.9 : 1);
+    const ink = dark ? Qt.color("#FFFFFF")
+        : Qt.color(pressed || hovered ? "#F9F9F9" : "#FFFFFF");
+    const alpha = dark ? (pressed ? 0x08 : hovered ? 0x15 : 0x0F)
+        : (pressed ? 0x4D : hovered ? 0x80 : 0xB2);
+    return blendOver(ink, base, alpha / 255);
+}
+
+function quickTileStroke(dark, active) {
+    return active ? "#14FFFFFF" : dark ? "#12FFFFFF" : "#0F000000";
+}

@@ -50,7 +50,7 @@ store_icons=(icons/windows-modern/apps/discover.svg icons/windows-modern/apps/or
 if cmp -s "${store_icons[0]}" "${store_icons[1]}" \
    && cmp -s "${store_icons[0]}" "${store_icons[2]}" \
    && cmp -s "${store_icons[0]}" "${store_icons[3]}"; then
-    pass "Discover aliases use the same current Store icon"
+    pass "Source compatibility aliases agree; packaged artwork is verified separately"
 else
     fail "Discover icon aliases differ"
 fi
@@ -220,6 +220,9 @@ for pair in \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/dateformat.js $LOCK/dateformat.js" \
     "$LOCK/dateformat.js $LOGIN/dateformat.js" \
     "$LOCK/StatusIconButton.qml $LOGIN/StatusIconButton.qml" \
+    "$LOCK/DefaultAccountPortrait.qml $LOGIN/DefaultAccountPortrait.qml" \
+    "$LOCK/default-avatar.svg $LOGIN/default-avatar.svg" \
+    "$LOCK/default-avatar-small.svg $LOGIN/default-avatar-small.svg" \
     "$LOCK/FluentPowerMenuItem.qml $LOGIN/FluentPowerMenuItem.qml" \
     "$LOCK/NetworkStatusIcon.qml $LOGIN/NetworkStatusIcon.qml" \
     "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
@@ -231,7 +234,9 @@ for pair in \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentScrollBar.qml" \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml" \
     "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/colorType.js" \
-    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js"; do
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js" \
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/popupGeometry.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupGeometry.js" \
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/popupGeometry.js plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/popupGeometry.js"; do
     # shellcheck disable=SC2086  # two paths on purpose
     cmp -s $pair || SHARED_DRIFT="$SHARED_DRIFT ${pair##* }"
 done
@@ -245,6 +250,12 @@ fi
 # ── Theme renders ───────────────────────────────────────────────────
 echo ""
 echo " Theme renders:"
+if python3 scripts/theme/panel-frames.py --check; then
+    pass "taskbar frame geometry and material variants agree"
+else
+    fail "taskbar frame drift — run: python3 scripts/theme/panel-frames.py"
+    FAILED=1
+fi
 set +e; SWITCH_OUT=$(tests/theme/check-switch.py 2>&1); SWITCH_RC=$?; set -e
 case "$SWITCH_RC" in
     0)  pass "switch.svg: no outline around the on-pill (dark + light)" ;;

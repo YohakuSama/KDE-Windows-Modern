@@ -12,7 +12,7 @@ Item {
     Image {
         id: personal
         anchors.fill: parent
-        source: avatar.source
+        source: String(avatar.source).endsWith("/faces/.face.icon") ? "" : avatar.source
         asynchronous: true
         fillMode: Image.PreserveAspectCrop
         visible: status === Image.Ready
@@ -25,15 +25,9 @@ Item {
             }
         }
     }
-    // The original mapped Windows default icon is copied into the lock
-    // package by the installer. Never leave a blank circle on load failure.
-    Image {
+    DefaultAccountPortrait {
         anchors.fill: parent
         visible: !personal.visible
-        source: Qt.resolvedUrl("default-avatar.svg")
-        fillMode: Image.PreserveAspectFit
-        smooth: true
-        sourceSize.width: avatar.width
-        sourceSize.height: avatar.height
+        compact: avatar.size <= 48
     }
 }

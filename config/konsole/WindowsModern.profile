@@ -8,6 +8,8 @@ TerminalMargin=8
 
 [Appearance]
 ColorScheme=Campbell
+BoldIntense=false
+AntiAliasFonts=true
 Font=Cascadia Mono,12,-1,5,50,0,0,0,0,0
 
 [Scrolling]

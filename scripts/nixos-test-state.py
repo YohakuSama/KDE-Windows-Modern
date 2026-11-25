@@ -10,6 +10,7 @@ import shutil
 import shlex
 import stat
 import subprocess
+import sys
 import tempfile
 
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")).absolute()
@@ -145,6 +146,7 @@ def plan(root, state, profile):
     result[DATA / "windows-modern/native-assets"] = native
     result[DATA / "sounds/windows-modern"] = native / "sounds/windows-modern"
     result[DATA / "icons/windows-modern"] = state / "staged-icons"
+    result[DATA / "icons/windows-modern-light"] = state / "staged-icons-light"
     result[DATA / "icons/Bibata-Modern-Ice"] = (profile / "share/icons/Bibata-Modern-Ice").resolve()
     result[DATA / "plasma/shells/org.kde.plasma.desktop"] = state / "staged-shell"
     result[DATA / "applications/windowsmodern-screenshot.desktop"] = root / "config/applications/windowsmodern-screenshot.desktop"
@@ -232,6 +234,10 @@ def make_staging(root, state):
             remove(dst.with_suffix(suffix))
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(asset, dst)
+    light_icons = state / "staged-icons-light"
+    remove(light_icons)
+    subprocess.run([sys.executable, str(root / "scripts/store-artwork.py"), "apply",
+                    str(state / "store-artwork"), str(icons), str(light_icons)], check=True)
 
     shell = state / "staged-shell"
     remove(shell)
@@ -263,7 +269,7 @@ def make_staging(root, state):
     lock = shell / "contents/lockscreen"
     shutil.copytree(root / "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen", lock)
     make_writable(lock, files=True)
-    shutil.copy2(native / "icons/status/avatar-default.svg", lock / "default-avatar.svg")
+    # Keep the shipped sign-in portrait, not the unrelated account-control icon.
 
 COMPILED_IDS = ("org.kde.windowsmodern.systemtray", "org.kde.windowsmodern.icontasks")
 
@@ -382,11 +388,7 @@ def main():
         replace(src, dst, writable=True)
         changed += 1
     print(f"Payload update: {changed} replaced, {unchanged} unchanged")
-    for variant in ("dark", "light"):
-        lock = DATA / "plasma/look-and-feel" / ("org.kde.windowsmodern." + variant) / "contents/lockscreen"
-        avatar = args.state / "native/icons/status/avatar-default.svg"
-        if lock.is_dir() and not same_payload(avatar, lock / "default-avatar.svg"):
-            shutil.copy2(avatar, lock / "default-avatar.svg")
+    # Both lock/login packages already contain their appropriate portrait assets.
     # Install the exact translated domains from the repository.
     subprocess.run([str(args.profile / "bin/python3"), str(args.root / "scripts/install-translations.py"),
                     "--locale-dir", str(DATA / "locale")], check=True)

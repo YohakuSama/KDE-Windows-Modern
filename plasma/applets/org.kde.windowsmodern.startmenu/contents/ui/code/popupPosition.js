@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+.import "popupGeometry.js" as Geometry
 // Explicit alignment uses the actual panel span; auto uses the button.
 function horizontalAnchorOffset(mode, screen, button, panel, popupWidth) {
     if (!screen || !button || !Number.isFinite(screen.x)
@@ -21,12 +22,12 @@ function horizontalAnchorOffset(mode, screen, button, panel, popupWidth) {
         center = left + Math.min(right - left, hasPopupWidth ? popupWidth : button.width) / 2;
     else if (mode === 1 || mode === 2)
         center = (left + right) / 2;
-    // Reserve an 8 logical-pixel screen inset wherever the popup fits.
+    // Reserve the shared logical-pixel screen inset wherever the popup fits.
     // The compositor still handles final placement and vertical work areas.
     if (hasPopupWidth) {
         const half = popupWidth / 2;
-        const minCenter = screen.x + 8 + half;
-        const maxCenter = screen.x + screen.width - 8 - half;
+        const minCenter = screen.x + Geometry.popupGap() + half;
+        const maxCenter = screen.x + screen.width - Geometry.popupGap() - half;
         center = minCenter <= maxCenter
             ? Math.max(minCenter, Math.min(maxCenter, center))
             : screen.x + screen.width / 2;

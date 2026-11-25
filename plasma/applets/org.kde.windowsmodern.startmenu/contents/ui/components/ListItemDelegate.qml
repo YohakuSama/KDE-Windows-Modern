@@ -366,12 +366,7 @@ Item {
         }
     }
 
-    PlasmaComponents3.ToolTip {
-        visible: mouseArea.containsMouse && !mouseArea.containsPress && !item._dragging
-        text: item.appData.name || item.appData.display || ""
-        delay: Kirigami.Units.toolTipDelay
-    }
-
+    // Start app tiles already carry their names. No duplicate hover tooltip.
     function launchApp() {
         var view = item.hostView
         if (view && typeof view.activateRow === "function") {
