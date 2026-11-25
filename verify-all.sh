@@ -226,6 +226,8 @@ for pair in \
     "$LOCK/FluentPowerMenuItem.qml $LOGIN/FluentPowerMenuItem.qml" \
     "$LOCK/NetworkStatusIcon.qml $LOGIN/NetworkStatusIcon.qml" \
     "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
+    "$LOGIN/SignInProgress.qml plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash/SignInProgress.qml" \
+    "$LOGIN/SignInProgress.qml plasma/look-and-feel/org.kde.windowsmodern.light/contents/splash/SignInProgress.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml" \

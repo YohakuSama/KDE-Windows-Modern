@@ -24,6 +24,9 @@ Item {
             tryCompare(ring, "width", 36);
             compare(ring.x + ring.width/2, splash.width/2);
             compare(ring.y + ring.height/2, splash.height/2);
+            compare(ring.dotCount, 5);
+            for (let i = 0; i < 5; ++i)
+                verify(findChild(ring, "wmLoadingDot" + i) !== null);
             tryVerify(() => ring.phase > 0);
             splash.stage = 5;
             compare(splash.stage, 5);

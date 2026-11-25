@@ -32,7 +32,10 @@ Item {
             verify(form && avatar && name && ring);
             tryVerify(() => form.height > 0 && form.height <= welcome.height);
             verify(form.width <= welcome.width);
-            verify(avatar.size <= welcome.height * 0.25);
+            verify(avatar.size <= welcome.height * 0.32);
+            compare(ring.dotCount, 5);
+            for (let i = 0; i < 5; ++i)
+                verify(findChild(ring, "wmLoadingDot" + i) !== null);
             compare(name.text, welcome.accountName);
             verify(name.width <= form.width);
             verify(ring.running);

@@ -57,6 +57,11 @@ FocusScope {
                 && expandedRoot.splitBlurProvider.setSplitPopupBlur(expandedRoot,
                     notificationPanel, calendarPanel, notificationPanel.radius,
                     expandedRoot.allowSplitAcrylic);
+            // Plasma can refresh its own edge hint during geometry/theme
+            // updates. Reassert only after the existing split-region work.
+            if (expandedRoot.clockApplet.flyoutOpen && expandedRoot.splitBlurProvider
+                    && typeof expandedRoot.splitBlurProvider.setNotificationPopupSlide === "function")
+                expandedRoot.splitBlurProvider.setNotificationPopupSlide(expandedRoot);
         }
     }
     onSplitBlurProviderChanged: {
@@ -196,6 +201,16 @@ FocusScope {
             onHeightChanged: expandedRoot.scheduleSplitBlur()
             border.width: 1
             border.color: palette.surfaceBorder
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                anchors.topMargin: expandedRoot.calendarHeaderHeight
+                radius: Math.max(0, calendarPanel.radius - 1)
+                topLeftRadius: 0
+                topRightRadius: 0
+                color: palette.calendarBodyTint
+            }
 
             ColumnLayout {
                 id: calendarContent

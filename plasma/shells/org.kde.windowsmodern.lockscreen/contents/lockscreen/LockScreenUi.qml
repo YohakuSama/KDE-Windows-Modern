@@ -215,7 +215,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: "#000000"
-            opacity: lockScreenRoot.loginUiActive ? 0.45 : 0.0
+            opacity: lockScreenRoot.loginUiActive ? 0.30 : 0.0
 
             Behavior on opacity {
                 NumberAnimation {
@@ -316,7 +316,8 @@ Item {
             anchors {
                 horizontalCenter: parent.horizontalCenter
                 verticalCenter: parent.verticalCenter
-                verticalCenterOffset: -parent.height * 0.15
+                verticalCenterOffset: -Math.min(parent.height * 0.10,
+                    Math.max(0, (parent.height - mainStack.height) / 2 - 16))
             }
             width: Math.min(parent.width * 0.9, 480)
             height: Math.min(parent.height * 0.8, 600)
@@ -365,7 +366,7 @@ Item {
             }
         }
 
-        // ── Bottom-left user switcher (Windows 10 style) ──
+        // ── Bottom-left user switcher (real available sessions) ──
         ListView {
             id: userListSwitcher
             anchors {

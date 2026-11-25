@@ -26,12 +26,16 @@ Item {
                                                   && Plasmoid.configuration.customButtonImage.length != 0)
     property MenuRepresentation dashWindow: null
     property real logoScale: 1
-    // All activation routes (including the global Meta shortcut) share
-    // one animation. The menu's window geometry stays independent.
-    function activateStart() {
+    // Pointer release already owns its rebound. Keyboard and accessibility
+    // activation synthesize a single press/release cycle instead.
+    function activateStart(pointerActivation = false) {
         if (!dashWindow) return;
-        pressMotion.stop();
-        releaseMotion.restart();
+        if (!pointerActivation) {
+            pressMotion.stop();
+            releaseMotion.stop();
+            settleMotion.stop();
+            keyboardMotion.restart();
+        }
         dashWindow.toggleMenu();
     }
     NumberAnimation {
@@ -39,7 +43,26 @@ Item {
         target: root
         property: "logoScale"
         to: 0.84
-        duration: Math.min(80, Kirigami.Units.shortDuration)
+        duration: Math.min(83, Kirigami.Units.shortDuration)
+        easing.type: Easing.OutCubic
+    }
+    SequentialAnimation {
+        id: keyboardMotion
+        NumberAnimation {
+            target: root
+            property: "logoScale"
+            to: 0.84
+            duration: Math.min(83, Kirigami.Units.shortDuration)
+            easing.type: Easing.OutCubic
+        }
+        ScriptAction { script: releaseMotion.restart() }
+    }
+    NumberAnimation {
+        id: settleMotion
+        target: root
+        property: "logoScale"
+        to: 1
+        duration: Math.min(167, Kirigami.Units.shortDuration)
         easing.type: Easing.OutCubic
     }
     SequentialAnimation {
@@ -47,22 +70,15 @@ Item {
         NumberAnimation {
             target: root
             property: "logoScale"
-            to: 0.84
-            duration: Math.min(65, Kirigami.Units.shortDuration)
-            easing.type: Easing.OutQuad
-        }
-        NumberAnimation {
-            target: root
-            property: "logoScale"
             to: 1.035
-            duration: Math.min(115, Kirigami.Units.shortDuration)
+            duration: Math.min(167, Kirigami.Units.shortDuration)
             easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: root
             property: "logoScale"
             to: 1
-            duration: Math.min(85, Kirigami.Units.shortDuration)
+            duration: Math.min(83, Kirigami.Units.shortDuration)
             easing.type: Easing.OutQuad
         }
     }
@@ -128,18 +144,22 @@ Item {
         hoverEnabled: true
 
         onPressed: {
+            keyboardMotion.stop();
+            settleMotion.stop();
             releaseMotion.stop();
             pressMotion.restart();
         }
         onCanceled: {
             pressMotion.stop();
-            releaseMotion.restart();
+            releaseMotion.stop();
+            settleMotion.restart();
         }
         onReleased: {
             pressMotion.stop();
-            releaseMotion.restart();
+            if (containsMouse) releaseMotion.restart();
+            else settleMotion.restart();
         }
-        onClicked: root.activateStart()
+        onClicked: root.activateStart(true)
     }
 
     // Register on the native Applet object, not a second launcher or

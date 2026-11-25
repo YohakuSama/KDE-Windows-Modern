@@ -14,21 +14,30 @@ ListView {
     property bool uiVisible: false
     property real maximumHeight: contentHeight
 
-    width: 240
+    width: 180
     height: Math.min(contentHeight, maximumHeight)
+    spacing: 4
     boundsBehavior: Flickable.StopAtBounds
     clip: true
 
     visible: count > 1 && uiVisible && PlasmaLogin.GreeterState.loginState !== PlasmaLogin.GreeterState.LoginState.UserPrompt
 
     delegate: Item {
+        id: accountRow
         width: root.width
         height: WinStyle.userSwitcherItemHeight
-        opacity: ListView.isCurrentItem ? 1.0 : 0.7
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 4
+            color: accountRow.ListView.isCurrentItem ? "#20FFFFFF"
+                : pointer.containsMouse ? "#16FFFFFF" : "transparent"
+        }
 
         Row {
             anchors.fill: parent
-            spacing: Kirigami.Units.smallSpacing
+            anchors.margins: 6
+            spacing: 10
 
             WinAvatar {
                 id: userAvatar
@@ -45,15 +54,17 @@ ListView {
                 elide: Text.ElideRight
                 font.family: WinStyle.fontFamily
                 font.pixelSize: WinStyle.userSwitcherNamePixelSize
-                font.weight: Font.Light
+                font.weight: Font.Normal
                 color: WinStyle.foregroundColor
                 verticalAlignment: Text.AlignVCenter
-                height: WinStyle.userSwitcherItemHeight
+                height: parent.height
             }
         }
 
         MouseArea {
+            id: pointer
             anchors.fill: parent
+            hoverEnabled: true
             onClicked: {
                 root.currentIndex = index;
                 PlasmaLogin.GreeterState.userListIndex = index;

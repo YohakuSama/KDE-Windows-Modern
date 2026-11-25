@@ -23,7 +23,7 @@ SessionManagementScreen {
 
     readonly property alias mainPasswordBox: passwordBox
     property bool lockScreenUiVisible: false
-    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(140, width * 0.6, height * 0.25)))
+    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(160, width * 0.6, height * 0.32)))
     property alias showPassword: passwordBox.showPassword
 
     showUserList: true
@@ -83,7 +83,7 @@ SessionManagementScreen {
             return "";
         }
         font.family: Kirigami.Theme.defaultFont.family
-        font.pixelSize: 32
+        font.pixelSize: 28
         font.weight: Font.Normal
         color: "#FFFFFF"
         horizontalAlignment: Text.AlignHCenter

@@ -10,6 +10,22 @@ spec = importlib.util.spec_from_file_location("boot_frames", ROOT / "scripts/the
 frames = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(frames)
 
+def opaque_components(image):
+    points = {(x, y) for y in range(image.height) for x in range(image.width)
+              if image.getpixel((x, y))[3] >= 128}
+    count = 0
+    while points:
+        pending = [points.pop()]
+        count += 1
+        while pending:
+            x, y = pending.pop()
+            for point in ((x+1, y), (x-1, y), (x, y+1), (x, y-1)):
+                if point in points:
+                    points.remove(point)
+                    pending.append(point)
+    return count
+
+
 class BootFrameTests(unittest.TestCase):
     def test_packaging_and_real_prompt_callbacks(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -24,6 +40,7 @@ class BootFrameTests(unittest.TestCase):
                     self.assertEqual(image.mode, "RGBA")
                     self.assertEqual(image.getpixel((0,0))[3], 0)
                     self.assertGreater(image.getchannel("A").getbbox()[2], 15)
+                    self.assertEqual(opaque_components(image), 5)
                     pixels.append(image.tobytes())
             self.assertGreater(len(set(pixels)), 70)
             descriptor = (dest / "windows-modern.plymouth").read_text()
@@ -34,3 +51,4 @@ class BootFrameTests(unittest.TestCase):
             for callback in ("Refresh", "DisplayPassword", "DisplayQuestion", "DisplayNormal", "Message"):
                 self.assertIn(f"Plymouth.Set{callback}Function(", script)
             self.assertNotIn("readline", script)
+            self.assertIn('Plymouth.GetMode() == "shutdown"', script)

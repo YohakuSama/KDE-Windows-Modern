@@ -48,6 +48,7 @@ public:
     Q_INVOKABLE void registerRunShortcut();
     Q_INVOKABLE QRect runDialogArea(QQuickItem *anchor) const;
     Q_INVOKABLE bool runCommand(const QString &command);
+    Q_INVOKABLE void setNotificationPopupSlide(QQuickItem *content);
     Q_INVOKABLE bool setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
                                       qreal radius, bool enabled);
 
