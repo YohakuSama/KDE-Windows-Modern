@@ -65,3 +65,94 @@ class SystemIconRolesTests(unittest.TestCase):
         self.assertNotIn('wifi', centered)
         self.assertNotIn('wifiLimited', centered)
         self.assertEqual(groups['wifi'], ['e701', 'e872', 'e873', 'e874'])
+
+    def test_settings_and_monitor_sidebar_roles(self):
+        expected = {
+            'e713': [
+                'preferences-desktop'
+            ],
+            'e962': [
+                'preferences-desktop-mouse'
+            ],
+            'e765': [
+                'preferences-desktop-keyboard'
+            ],
+            'e7f5': [
+                'preferences-desktop-sound',
+                'preferences-desktop-multimedia'
+            ],
+            'e7f4': [
+                'preferences-desktop-display'
+            ],
+            'eda2': [
+                'preferences-system-disks'
+            ],
+            'e749': [
+                'preferences-devices-printer'
+            ],
+            'e774': [
+                'preferences-system-network'
+            ],
+            'e771': [
+                'preferences-desktop-theme-global',
+                'preferences-desktop-theme'
+            ],
+            'e8d2': [
+                'preferences-desktop-font'
+            ],
+            'ecaa': [
+                'preferences-desktop-default-applications'
+            ],
+            'e7c4': [
+                'preferences-system-windows'
+            ],
+            'e748': [
+                'preferences-system-login'
+            ],
+            'e721': [
+                'preferences-desktop-search',
+                'preferences-system-search'
+            ],
+            'e77b': [
+                'preferences-desktop-user'
+            ],
+            'e776': [
+                'preferences-desktop-accessibility'
+            ],
+            'e702': [
+                'preferences-system-bluetooth'
+            ],
+            'e8b9': [
+                'preferences-desktop-wallpaper'
+            ],
+            'e786': [
+                'preferences-desktop-animations',
+                'preferences-desktop-effects'
+            ],
+            'e8f9': [
+                'preferences-desktop-activities'
+            ],
+            'f2a3': [
+                'preferences-desktop-notification-bell',
+                'preferences-desktop-notification',
+                'preferences-desktop-notifications',
+                'preferences-system-notifications'
+            ],
+            'e83d': [
+                'preferences-security'
+            ]
+        }
+        for glyph, roles in expected.items():
+            for role in roles:
+                for context in ('apps', 'categories'):
+                    for suffix in ('', '-symbolic'):
+                        with self.subTest(glyph=glyph, role=role, context=context, suffix=suffix):
+                            self.assertIn(f'{context}/{role}{suffix}', MAPPING['icons'][glyph].split())
+        for glyph, path in (
+                ('e703', 'actions/network-connect-symbolic'),
+                ('e71d', 'categories/applications-all-symbolic'),
+                ('ec49', 'actions/speedometer-symbolic'),
+                ('e8fd', 'actions/view-process-system'),
+                ('e821', 'actions/tools-symbolic'),
+                ('e76b', 'actions/go-next-symbolic-rtl')):
+            self.assertIn(path, MAPPING['icons'][glyph].split())
