@@ -102,3 +102,13 @@ Compare the project-drawn colored battery and optional percentage against KB5067
 ### Search home, clock and media source (owner reference, 2026-11-25)
 
 The Search home reuses local Kicker usage models, existing Milou results and native applet actions. Compare both entrypoints, empty-query state, cleared filters, IME/keyboard input, actual recent/popular app launches and settings queries in the running desktop. The reference's promotional items and rewards controls are intentionally omitted. The modern colored Start search magnifier has not been verified in an owner-provided Windows resource set; the explicit local search glyph and scheme accent are a compatibility presentation, not a claim of exact original artwork. Check the region-default clock with 12- and 24-hour locales and real timezone changes; the migration of legacy forced formats is one-time. Check Firefox Nightly and Edge live MPRIS sources, controls and icon availability. No pixel similarity score or live acceptance is asserted without a same-scale screenshot comparison.
+
+## Opt-in nested Wayland capture
+
+The original nested desktop capture from PR #27 is retained in `tests/panel/nested-wayland.sh`. Build with `scripts/ci-build.sh BUILD_ROOT` first. Run the capture only as a separate disposable test user with a fresh Xvfb display and private session bus, for example:
+
+```sh
+WM_DISPOSABLE_DESKTOP=1 xvfb-run -a -s '-screen 0 1920x1080x24' dbus-run-session -- bash tests/panel/nested-wayland.sh BUILD_ROOT CAPTURE_DIR
+```
+
+Requires Weston, KWin, Plasma, KScreen, ImageMagick and a compatible rendering backend. The script checks the actual compiled tray and task-manager plugin mappings and records light/dark captures at 100%, 125%, 150% and 200%. It refuses an existing Plasma session and fails if rendering, scaling or plugin loading fails. This remains an opt-in integration test: the previous hosted runner could not supply a compatible nested rendering device. The normal compile and headless interaction CI does not certify physical desktop capture. Use the target NixOS live tests for the owner's hardware acceptance.
