@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Prepare version 1.2.2 for the full NixOS owner test snapshot (not a published stable release).
+
 - Bind removable-device action delegates to the native ActionsInfo roles and verify the expanded action menu interaction.
 
 - Add a native removable-device flyout that reuses KDE's device model and real action dispatcher.
