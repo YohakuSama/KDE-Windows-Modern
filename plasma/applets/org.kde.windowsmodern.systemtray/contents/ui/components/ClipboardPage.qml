@@ -16,9 +16,20 @@ ColumnLayout {
     signal itemSelected()
     signal closeRequested()
     property string activeTab: "clipboard"
+    property bool emojiPickerEnabled: true
+    // The default is the real shared Klipper history. Tests can substitute
+    // an isolated model and controller without altering the user's history.
+    property Component historySource: Component { Clipboard.HistoryModel {} }
+    readonly property var historyModel: historyLoader.item
+    property var historyController: historyModel
+    readonly property int historyCount: historyModel ? historyModel.count : 0
 
     Keys.onEscapePressed: page.closeRequested()
-    Clipboard.HistoryModel { id: historyModel }
+    Loader {
+        id: historyLoader
+        visible: false
+        sourceComponent: page.historySource
+    }
 
     RowLayout {
         Layout.fillWidth: true
@@ -116,11 +127,12 @@ ColumnLayout {
             font.weight: Font.DemiBold
         }
         PlasmaComponents3.Button {
-            visible: historyModel.count > 0
-                && (historyModel.starredCount === undefined || historyModel.count > historyModel.starredCount)
+            objectName: "wmClipboardClearAll"
+            visible: page.historyCount > 0
+                && (page.historyModel.starredCount === undefined || page.historyCount > page.historyModel.starredCount)
             text: i18n("Clear all")
             Layout.preferredHeight: 30
-            onClicked: historyModel.clearHistory()
+            onClicked: page.historyController.clearHistory()
         }
     }
 
@@ -131,6 +143,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         visible: page.activeTab !== "clipboard" && status === Loader.Ready
+        active: page.emojiPickerEnabled
         source: "EmojiPicker.qml"
         onLoaded: item.mode = Qt.binding(() => page.activeTab)
     }
@@ -141,12 +154,13 @@ ColumnLayout {
 
     ListView {
         id: history
+        objectName: "wmClipboardHistory"
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.leftMargin: 12
         Layout.rightMargin: 12
         Layout.bottomMargin: 12
-        model: historyModel
+        model: page.historyModel
         visible: page.activeTab === "clipboard" && count > 0
         spacing: 8
         clip: true
@@ -155,6 +169,7 @@ ColumnLayout {
 
         delegate: Rectangle {
             id: card
+            objectName: "wmClipboardCard"
             required property var model
             readonly property bool isImage: model.type === 4
             readonly property bool supportsPin: model.starred !== undefined
@@ -170,12 +185,13 @@ ColumnLayout {
 
             function selectItem() {
                 if (!model.uuid) return;
-                historyModel.moveToTop(model.uuid);
+                page.historyController.moveToTop(model.uuid);
                 page.itemSelected();
             }
 
             MouseArea {
                 id: selectArea
+                objectName: "wmClipboardSelect"
                 anchors.fill: parent
                 hoverEnabled: true
                 activeFocusOnTab: true
@@ -191,6 +207,7 @@ ColumnLayout {
 
             Image {
                 id: preview
+                objectName: "wmClipboardPreview"
                 visible: card.isImage
                 anchors.left: parent.left
                 anchors.leftMargin: 8
@@ -207,6 +224,7 @@ ColumnLayout {
             }
 
             PlasmaComponents3.Label {
+                objectName: "wmClipboardText"
                 anchors.left: parent.left
                 anchors.leftMargin: 12
                 anchors.right: actionsColumn.left
@@ -249,7 +267,7 @@ ColumnLayout {
                         QQC2.MenuItem {
                             text: i18n("Delete")
                             icon.name: "edit-delete-symbolic"
-                            onTriggered: historyModel.remove(card.model.uuid)
+                            onTriggered: page.historyController.remove(card.model.uuid)
                         }
                     }
                 }
@@ -257,6 +275,7 @@ ColumnLayout {
                 PlasmaComponents3.ToolButton {
                     width: 32
                     height: 32
+                    objectName: "wmClipboardPin"
                     visible: card.supportsPin
                     text: card.pinned ? i18n("Unpin") : i18n("Pin")
                     display: PlasmaComponents3.AbstractButton.IconOnly
@@ -274,7 +293,8 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.margins: 20
-        visible: page.activeTab === "clipboard" && historyModel.count === 0
+        objectName: "wmClipboardEmpty"
+        visible: page.activeTab === "clipboard" && page.historyCount === 0
         text: i18n("Clipboard is empty")
         opacity: 0.75
         wrapMode: Text.WordWrap

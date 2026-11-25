@@ -72,6 +72,14 @@ int main(int argc, char **argv)
     } else {
         qInfo() << "Compiled tray QML entrypoint is ready";
     }
+    // URL-loaded pages are not resolved merely by compiling main.qml.
+    // Compile the actual QRC component against Plasma's shipped emoji module.
+    QQmlComponent emojiPicker(&engine, QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/org/kde/windowsmodern/systemtray/components/EmojiPicker.qml")),
+                              QQmlComponent::PreferSynchronous);
+    if (!emojiPicker.isReady()) {
+        qCritical().noquote() << "Embedded emoji picker failed:" << emojiPicker.errorString();
+        failed = true;
+    }
     qInfo() << "Checked" << checked << "resources in the compiled system tray";
     return failed ? 1 : 0;
 }

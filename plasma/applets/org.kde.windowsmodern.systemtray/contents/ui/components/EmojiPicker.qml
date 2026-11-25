@@ -57,6 +57,7 @@ ColumnLayout {
 
     QQC2.TextField {
         id: searchField
+        objectName: "wmEmojiSearch"
         Layout.fillWidth: true
         Layout.leftMargin: 16
         Layout.rightMargin: 16
@@ -86,6 +87,7 @@ ColumnLayout {
 
     GridView {
         id: emojiGrid
+        objectName: "wmEmojiGrid"
         visible: picker.mode === "emoji"
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -127,6 +129,7 @@ ColumnLayout {
 
     GridView {
         id: localGrid
+        objectName: "wmSymbolGrid"
         visible: picker.mode === "kaomoji" || picker.mode === "symbols"
         Layout.fillWidth: true
         Layout.fillHeight: true
