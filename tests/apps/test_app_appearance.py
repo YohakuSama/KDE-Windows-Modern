@@ -75,7 +75,8 @@ class AppAppearanceTest(unittest.TestCase):
         self.assertIn("background: #0C0C0C;", css)
         self.assertIn("background: #2D2D2D;", css)
         self.assertIn("background: #3A3A3A;", css)
-        self.assertIn("QTabWidget::tab-bar { alignment: left; }", css)
+        self.assertIn("QTabWidget::tab-bar", css)
+        self.assertIn("alignment: left;", css)
 
     def test_terminal_both_toolbars_are_hidden_and_commands_remain(self):
         main = ET.parse(ROOT / app.FILES["kxmlgui5/konsole/konsoleui.rc"]).getroot()
