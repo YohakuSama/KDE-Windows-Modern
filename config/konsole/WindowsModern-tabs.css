@@ -1,8 +1,5 @@
 /* Windows Terminal dark tab strip, constrained to Konsole's native tab widget.
  * KWin still owns the outer titlebar and window controls. */
-QWidget {
-    outline: none;
-}
 QTabWidget {
     background: #0C0C0C;
 }
