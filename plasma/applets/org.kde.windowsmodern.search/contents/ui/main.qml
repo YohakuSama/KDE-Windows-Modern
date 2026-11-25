@@ -52,10 +52,12 @@ PlasmoidItem {
     // The icon is a square cell, like the task buttons: as wide as a
     // horizontal panel is thick, as tall as a vertical panel is wide. On
     // the desktop both are 48 px tall.
-    Layout.minimumWidth: showBox ? searchBox.preferredWidth
+    Layout.minimumWidth: showBox ? Math.min(searchBox.preferredWidth, Math.max(1, height))
                                  : (horizontal ? height : (vertical ? 0 : Kirigami.Units.iconSizes.huge))
-    Layout.maximumWidth: (showBox || horizontal) ? Layout.minimumWidth : Number.POSITIVE_INFINITY
-    Layout.preferredWidth: Layout.minimumWidth
+    Layout.maximumWidth: showBox ? searchBox.preferredWidth
+                                 : (horizontal ? Layout.minimumWidth : Number.POSITIVE_INFINITY)
+    Layout.preferredWidth: showBox ? searchBox.preferredWidth : Layout.minimumWidth
+    Layout.fillWidth: showBox && horizontal
     Layout.minimumHeight: vertical ? width : (horizontal ? 0 : Kirigami.Units.iconSizes.huge)
     Layout.maximumHeight: vertical ? width : Number.POSITIVE_INFINITY
     Layout.preferredHeight: Layout.minimumHeight

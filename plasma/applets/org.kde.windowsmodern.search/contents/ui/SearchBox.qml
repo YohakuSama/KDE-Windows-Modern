@@ -48,10 +48,10 @@ MouseArea {
 
     // Everything follows the panel's thickness; 48 px is the reference.
     readonly property real thickness: height
-    readonly property int boxHeight: Math.max(16, Math.round(thickness * 32 / 48))
+    readonly property int boxHeight: Math.max(0, Math.min(Math.floor(thickness), Math.max(16, Math.round(thickness * 32 / 48))))
     readonly property int boxWidth: Math.round(boxHeight * 220 / 32)
     // The gap to the neighbouring buttons on each side.
-    readonly property int sideMargin: Math.round((thickness - boxHeight) / 4)
+    readonly property int sideMargin: Math.max(0, Math.round((thickness - boxHeight) / 4))
     // What the applet asks the panel for.
     readonly property int preferredWidth: boxWidth + 2 * sideMargin
 
@@ -66,7 +66,7 @@ MouseArea {
         case Qt.Key_Enter:
         case Qt.Key_Return:
         case Qt.Key_Select:
-            box.triggered();
+            if (!event.isAutoRepeat) box.triggered();
             event.accepted = true;
             break;
         }
@@ -88,10 +88,14 @@ MouseArea {
         readonly property color pressedFill: box.darkTheme ? Qt.rgba(1, 1, 1, 0x08 / 255)
                                                            : Qt.rgba(0xF9 / 255, 0xF9 / 255, 0xF9 / 255, 0x4D / 255)
 
-        anchors.verticalCenter: parent.verticalCenter
-        x: box.sideMargin
-        width: Math.max(box.boxHeight, box.width - 2 * box.sideMargin)
-        height: box.boxHeight
+        objectName: "wmSearchPill"
+        readonly property int inset: Math.round(height * 12 / 32)
+        readonly property int iconGap: Math.round(height / 4)
+        readonly property bool showPlaceholder: width >= 2 * inset + magnifier.width + iconGap + 12
+            && placeholderLabel.implicitHeight <= height
+        anchors.centerIn: parent
+        width: Math.max(0, Math.min(box.boxWidth, box.width - 2 * box.sideMargin))
+        height: Math.min(box.boxHeight, width)
         radius: height / 2
         color: box.showPressed ? pressedFill : (box.showHovered ? hoverFill : restFill)
         border.width: 1
@@ -106,8 +110,9 @@ MouseArea {
             objectName: "searchBoxIcon"
 
             anchors.verticalCenter: parent.verticalCenter
-            x: Math.round(box.boxHeight * 12 / 32)
-            width: Math.round(box.boxHeight / 2)
+            x: pill.showPlaceholder ? pill.inset : Math.round((pill.width - width) / 2)
+            width: Math.round(pill.height / 2)
+            roundToIconSize: false
             height: width
             source: box.iconName
             fallback: "edit-find"
@@ -116,12 +121,15 @@ MouseArea {
         }
 
         Text {
+            id: placeholderLabel
+            objectName: "wmSearchPlaceholder"
+            visible: pill.showPlaceholder
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: magnifier.right
-            anchors.leftMargin: Math.round(box.boxHeight / 4)
-            anchors.right: parent.right
-            anchors.rightMargin: Math.round(box.boxHeight * 12 / 32)
+            anchors.leftMargin: pill.iconGap
+            width: Math.max(0, pill.width - magnifier.x - magnifier.width - pill.iconGap - pill.inset)
             text: box.placeholder
+            textFormat: Text.PlainText
             elide: Text.ElideRight
             font: Kirigami.Theme.defaultFont
             // WinUI TextFillColorSecondary: #C5FFFFFF / #9E000000.

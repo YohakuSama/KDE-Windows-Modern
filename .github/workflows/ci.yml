@@ -23,6 +23,10 @@ jobs:
         run: ./verify-all.sh
       - name: Validate Qt Quick Start menu key handlers
         run: python3 scripts/check-startmenu-keys.py
+      - name: KWin JavaScript regression tests
+        run: |
+          node tests/osd/test-placement.cjs
+          node tests/shortcuts/test-snapkeys.cjs
       - name: NixOS installation and runtime identity tests
         run: |
           bash -n install-nixos.sh

@@ -166,6 +166,28 @@ Item {
             compare(box.preferredWidth, data.boxWidth + 2 * data.margin);
         }
 
+        function test_boxFitsConstrainedCell_data() {
+            return [
+                {tag: "tiny thickness", width: 100, height: 12},
+                {tag: "narrow panel", width: 20, height: 48},
+                {tag: "zero width", width: 0, height: 48},
+                {tag: "zero height", width: 80, height: 0}
+            ];
+        }
+        function test_boxFitsConstrainedCell(data) {
+            const box = makeBox({width: data.width, height: data.height});
+            const pill = findChild(box, "wmSearchPill");
+            const icon = findChild(box, "searchBoxIcon");
+            const label = findChild(box, "wmSearchPlaceholder");
+            verify(pill && icon && label);
+            verify(pill.width >= 0 && pill.width <= box.width);
+            verify(pill.height >= 0 && pill.height <= box.height);
+            verify(pill.x >= 0 && pill.x + pill.width <= box.width);
+            verify(pill.y >= 0 && pill.y + pill.height <= box.height);
+            verify(icon.x >= 0 && icon.x + icon.width <= pill.width);
+            verify(!label.visible || label.x + label.width <= pill.width);
+        }
+
         function test_boxClick() {
             const box = makeBox();
             mouseClick(box);

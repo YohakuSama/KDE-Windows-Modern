@@ -60,7 +60,7 @@ MouseArea {
         case Qt.Key_Enter:
         case Qt.Key_Return:
         case Qt.Key_Select:
-            button.triggered();
+            if (!event.isAutoRepeat) button.triggered();
             event.accepted = true;
             break;
         }
