@@ -472,5 +472,16 @@
   "Do not disturb is on": "免打扰已开启",
   "Only notifications allowed by your priority settings appear as banners.": "仅显示优先级设置允许的通知横幅。",
   "Transfer progress": "传输进度",
-  "Resume": "继续"
+  "Resume": "继续",
+  "Clipboard history": "剪贴板历史记录",
+  "Pinned items": "已固定的项目",
+  "Unpin": "取消固定",
+  "Pin": "固定",
+  "No Bluetooth adapters available": "没有可用的蓝牙适配器",
+  "Add device": "添加设备",
+  "Paired": "已配对",
+  "Connection failed": "连接失败",
+  "Connecting": "正在连接",
+  "Disconnecting": "正在断开连接",
+  "Image": "图片"
 }

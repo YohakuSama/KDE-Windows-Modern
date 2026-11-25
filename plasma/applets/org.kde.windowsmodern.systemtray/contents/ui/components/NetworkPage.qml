@@ -53,7 +53,7 @@ Lib.DetailPage {
         onTriggered: handler.requestScan()
     }
 
-    listView.model: appletProxyModel
+    listView.model: page.wifiAvailable && !page.wifiOn ? null : appletProxyModel
     listView.spacing: 2
 
     listView.delegate: Item {
@@ -153,7 +153,7 @@ Lib.DetailPage {
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 34
+                    Layout.preferredHeight: delegate.statusText().length ? 48 : 42
 
                     MouseArea {
                         id: headerMA
@@ -172,26 +172,31 @@ Lib.DetailPage {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
+                        anchors.leftMargin: 16
                         anchors.rightMargin: 12
-                        spacing: 8
+                        spacing: 12
 
                         Kirigami.Icon {
-                            width: 20
-                            height: 20
+                            Layout.preferredWidth: 20
+                            Layout.preferredHeight: 20
+                            Layout.alignment: Qt.AlignVCenter
+                            roundToIconSize: false
                             source: model.ConnectionIcon
                             color: Kirigami.Theme.textColor
                         }
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 0
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 2
 
                             PlasmaComponents3.Label {
                                 Layout.fillWidth: true
                                 text: model.ItemUniqueName
+                                textFormat: Text.PlainText
                                 color: Kirigami.Theme.textColor
-                                font.bold: connectionState === PlasmaNM.Enums.Activated
+                                font.pixelSize: 13
+                                font.weight: connectionState === PlasmaNM.Enums.Activated ? Font.DemiBold : Font.Normal
                                 elide: Text.ElideRight
                             }
 
@@ -200,27 +205,11 @@ Lib.DetailPage {
                                 text: delegate.statusText()
                                 color: Kirigami.Theme.textColor
                                 opacity: 0.8
-                                font: Kirigami.Theme.smallFont
+                                font.pixelSize: 11
                             }
                         }
-
-                        Kirigami.Icon {
-                            visible: connectionState === PlasmaNM.Enums.Activated
-                            Layout.preferredWidth: 20
-                            Layout.preferredHeight: 20
-                            source: "help-about"
-                            color: Kirigami.Theme.textColor
-                            opacity: infoMA.containsMouse ? 1 : 0.6
-                            isMask: true
-
-                            MouseArea {
-                                id: infoMA
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
-                            }
-                        }
+                        // The old question-mark opened the same generic KCM
+                        // as the footer. Keep one truthful settings entry.
                     }
                 }
 

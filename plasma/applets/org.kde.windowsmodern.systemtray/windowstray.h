@@ -118,6 +118,15 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     if (!pinned && status == Status::HiddenStatus) {
         return Status::HiddenStatus;
     }
+    // Passive native device applets are not overflow decorations. Keep
+    // their backends loaded; show them when used or explicitly configured.
+    const bool idleDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
+        || itemId == QLatin1String("org.kde.plasma.devicenotifier")
+        || itemId == QLatin1String("org.kde.plasma.clipboard");
+    if (idleDevice && !pinned && !hiddenByUser
+        && (status == Status::PassiveStatus || status == Status::UnknownStatus)) {
+        return Status::HiddenStatus;
+    }
     const bool optionalIdle = itemId == QLatin1String("org.kde.plasma.userswitcher")
         || itemId == QLatin1String("org.kde.plasma.weather")
         || itemId == QLatin1String("org.kde.plasma.keyboardindicator");

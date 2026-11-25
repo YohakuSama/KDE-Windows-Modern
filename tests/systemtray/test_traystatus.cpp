@@ -12,13 +12,17 @@ int main()
         }
     };
     for (const QString &id : {QStringLiteral("org.kde.plasma.bluetooth"), QStringLiteral("org.kde.plasma.devicenotifier")}) {
-        check(id, Status::UnknownStatus, true, false, false, Status::PassiveStatus);
+        check(id, Status::UnknownStatus, true, false, false, Status::HiddenStatus);
         check(id, Status::ActiveStatus, true, false, false, Status::ActiveStatus);
-        check(id, Status::PassiveStatus, true, false, false, Status::PassiveStatus);
+        check(id, Status::PassiveStatus, true, false, false, Status::HiddenStatus);
         check(id, Status::ActiveStatus, true, false, true, Status::PassiveStatus);
         check(id, Status::PassiveStatus, true, true, false, Status::ActiveStatus);
         check(id, Status::ActiveStatus, false, true, false, Status::HiddenStatus);
     }
+    const QString clipboard = QStringLiteral("org.kde.plasma.clipboard");
+    check(clipboard, Status::PassiveStatus, true, false, false, Status::HiddenStatus);
+    check(clipboard, Status::ActiveStatus, true, false, false, Status::PassiveStatus);
+    check(clipboard, Status::PassiveStatus, true, false, true, Status::PassiveStatus);
     const QString fcitx = QStringLiteral("Fcitx");
     check(fcitx, Status::ActiveStatus, true, false, false, Status::ActiveStatus);
     check(fcitx, Status::ActiveStatus, true, false, true, Status::PassiveStatus);

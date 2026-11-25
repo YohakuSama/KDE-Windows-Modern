@@ -186,6 +186,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/NetworkPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/NetworkToggle.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/BluetoothToggle.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/BluetoothPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/VolumePage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/VolumeSlider.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/BatteryPage.qml
