@@ -49,10 +49,11 @@ while symlinking every other directory back to the system shell.
 ## Design (Win11 dark palette)
 
 - **Background**: KDE-configured wallpaper via `WallpaperFader` (same as Breeze).
-- **Dark overlay**: `#000000` @ 0.45 opacity when the unlock UI is visible.
+- **Dark overlay**: `#000000` @ 0.30 opacity when the unlock UI is visible.
 - **Clock**: Centered, upper-middle. Segoe UI DemiBold 96px time, 24px date.
   Visible only when idle; fades out when the unlock prompt appears.
-- **Status icons**: Bottom-right, icon-only (network, volume, battery). Idle only.
+- **Status icons**: Idle network status; unlock footer contains only network, accessibility and power. The accessibility control uses the real virtual-keyboard backend when available.
+- **Account form**: Dedicated screen-relative top placement rather than the native lower-half prompt layout. The bundled lock wallpaper fills the output while preserving its aspect ratio.
 - **Power menu**: `#2C2C2C` fill, `#3F3F3F` border, `#33FFFFFF` item hover.
 - **Password field**: 1px border, `#A0A0A0` idle / `#4CC2FF` focus (dark accent).
 - **Animations**: `Kirigami.Units.veryLongDuration * 2` (~800ms), `InOutQuad`.

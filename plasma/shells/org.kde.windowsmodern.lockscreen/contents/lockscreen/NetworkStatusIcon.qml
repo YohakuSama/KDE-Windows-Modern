@@ -2,6 +2,7 @@
 // Loaded through a Loader: if plasma-nm is missing, only this icon goes.
 import QtQuick
 import org.kde.plasma.networkmanagement as PlasmaNM
+import "lockText.js" as LockText
 
 StatusIconButton {
     PlasmaNM.ConnectionIcon {
@@ -11,5 +12,5 @@ StatusIconButton {
         const name = connection.connectionIcon || "network-unavailable";
         return name.endsWith("-symbolic") ? name : name + "-symbolic";
     }
-    text: i18nd("plasma_shell_org.kde.plasma.desktop", "Network")
+    text: LockText.tr("Network", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Network"), Qt.uiLanguage, Qt.locale().name)
 }

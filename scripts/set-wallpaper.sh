@@ -50,7 +50,7 @@ set_lock() {
             --group org.kde.image --group General --key "$key" "file://$directory/"
     done
     kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper \
-        --group org.kde.image --group General --key FillMode --type int 1
+        --group org.kde.image --group General --key FillMode --type int 2
     kwriteconfig6 --file kscreenlockerrc --group Greeter --key WallpaperPlugin org.kde.image
 }
 
@@ -87,4 +87,4 @@ for _ in 1 2 3 4 5; do
 done
 [ "$applied" = true ] || { echo "Plasma did not apply the verified wallpaper in fit mode." >&2; exit 1; }
 set_lock "$lock"
-echo "Wallpaper applied without cropping: $desktop"
+echo "Desktop wallpaper fitted; lock wallpaper fills the screen without changing source bytes: $desktop"

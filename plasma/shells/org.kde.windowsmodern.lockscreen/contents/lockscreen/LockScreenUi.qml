@@ -12,6 +12,7 @@ import org.kde.plasma.private.keyboardindicator as KeyboardIndicator
 import org.kde.breeze.components
 
 import "dateformat.js" as DateFormat
+import "lockText.js" as LockText
 
 Item {
     id: lockScreenUi
@@ -40,7 +41,7 @@ Item {
         target: authenticator
         function onFailed(kind) {
             if (kind != 0) return;
-            const msg = i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Unlocking failed");
+            const msg = LockText.tr("Unlocking failed", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Unlocking failed"), Qt.uiLanguage, Qt.locale().name);
             lockScreenUi.handleMessage(msg);
             root.clearPassword();
             authenticator.startAuthenticating();
@@ -67,8 +68,10 @@ Item {
             lockScreenUi.handleMessage(authenticator.prompt);
         }
         function onPromptForSecretChanged(msg) {
-            mainBlock.showPassword = false;
-            mainBlock.mainPasswordBox.forceActiveFocus();
+            if (mainBlock) {
+                mainBlock.showPassword = false;
+                mainBlock.mainPasswordBox.forceActiveFocus();
+            }
         }
     }
 
@@ -110,12 +113,12 @@ Item {
         hoverEnabled: true
 
         property bool uiVisible: false
-        property bool blockUI: containsMouse && (mainStack.depth > 1 || mainBlock.mainPasswordBox.text.length > 0)
+        property bool blockUI: containsMouse && (mainStack.depth > 1 || (mainBlock?.mainPasswordBox.text.length ?? 0) > 0)
         // The login UI is shown when woken or while a password is typed.
         // Enter is accepted exactly then (MainBlock.lockScreenUiVisible):
         // accepting it only while uiVisible dropped it silently when the
         // user typed without moving the mouse, or the pointer left.
-        property bool loginUiActive: uiVisible || mainBlock.mainPasswordBox.text.length > 0
+        property bool loginUiActive: uiVisible || (mainBlock?.mainPasswordBox.text.length ?? 0) > 0
         // Typing straight away (keys go to the password field, not to
         // Keys.onPressed below) wakes the UI like the mouse does, which also
         // starts authenticating.
@@ -191,7 +194,7 @@ Item {
             interval: 60000
             onTriggered: {
                 if (!lockScreenRoot.blockUI) {
-                    mainBlock.mainPasswordBox.showPassword = false;
+                    if (mainBlock) mainBlock.mainPasswordBox.showPassword = false;
                     lockScreenRoot.uiVisible = false;
                 }
             }
@@ -306,21 +309,18 @@ Item {
             spacing: Kirigami.Units.mediumSpacing
             visible: !lockScreenRoot.loginUiActive
 
-            // Live network, volume and battery (they used to be fixed icons).
+            // Only the live network indicator on the idle lock view.
             StatusIcons {}
         }
 
-        // ── Main unlock UI ──
+        // Full-height geometry gives the Windows account form an explicit
+        // reference to the screen, independent of Breeze's lower-half prompts.
         StackView {
             id: mainStack
-            anchors {
-                horizontalCenter: parent.horizontalCenter
-                verticalCenter: parent.verticalCenter
-                verticalCenterOffset: -Math.min(parent.height * 0.10,
-                    Math.max(0, (parent.height - mainStack.height) / 2 - 16))
-            }
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
             width: Math.min(parent.width * 0.9, 480)
-            height: Math.min(parent.height * 0.8, 600)
+            height: parent.height
             focus: true
             visible: opacity > 0
             opacity: lockScreenRoot.loginUiActive ? 1.0 : 0.0
@@ -335,7 +335,6 @@ Item {
             initialItem: MainBlock {
                 id: mainBlock
                 lockScreenUiVisible: lockScreenRoot.loginUiActive
-                showUserList: true
                 StackView.onStatusChanged: {
                     if (StackView.status === StackView.Activating) {
                         mainPasswordBox.clear(); mainPasswordBox.focus = true; root.notification = "";
@@ -344,7 +343,7 @@ Item {
                 userListModel: users
                 customErrorMessage: {
                     const parts = [];
-                    if (capsLockState.locked) parts.push(i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Caps Lock is on"));
+                    if (capsLockState.locked) parts.push(LockText.tr("Caps Lock is on", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Caps Lock is on"), Qt.uiLanguage, Qt.locale().name));
                     if (root.notification) parts.push(root.notification);
                     return parts.join(" \u2022 ");
                 }
@@ -418,7 +417,7 @@ Item {
             }
         }
 
-        // ── Footer (keyboard, network, audio, battery, power) - shown when unlocking ──
+        // ── Footer: network, accessibility and power only ──
         RowLayout {
             id: footer
             anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 16 }
@@ -426,27 +425,38 @@ Item {
             visible: lockScreenRoot.loginUiActive
             onVisibleChanged: if (!visible) powerMenu.close()
 
-            StatusIconButton {
-                id: keyboardButton
-                Layout.preferredWidth: 40
-                Layout.preferredHeight: 40
-                Layout.alignment: Qt.AlignVCenter
-                focusPolicy: Qt.TabFocus
-                Accessible.description: i18ndc("plasma_shell_org.kde.windowsmodern.lockscreen", "Button to change keyboard layout", "Switch layout")
-                icon.name: "input-keyboard"
-                PW.KeyboardLayoutSwitcher { id: keyboardLayoutSwitcher; anchors.fill: parent; acceptedButtons: Qt.NoButton }
-                text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Switch keyboard layout")
-                onClicked: keyboardLayoutSwitcher.keyboardLayout.switchToNextLayout()
-                visible: keyboardLayoutSwitcher.hasMultipleKeyboardLayouts
-            }
             Item { Layout.fillWidth: true }
-            StatusIcons {
+            Loader {
+                id: footerNetwork
+                visible: status !== Loader.Error
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
                 Layout.alignment: Qt.AlignVCenter
+                source: "NetworkStatusIcon.qml"
+            }
+            StatusIconButton {
+                visible: footerNetwork.status === Loader.Error
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                icon.name: "network-unavailable-symbolic"
+                text: LockText.tr("Network", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Network"), Qt.uiLanguage, Qt.locale().name)
+                enabled: false
             }
             Loader {
-                source: "VirtualKeyboardButton.qml"
-                visible: status === Loader.Ready && item && item.available
+                id: footerAccessibility
+                visible: status !== Loader.Error
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
                 Layout.alignment: Qt.AlignVCenter
+                source: "VirtualKeyboardButton.qml"
+            }
+            StatusIconButton {
+                visible: footerAccessibility.status === Loader.Error
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                icon.name: "preferences-desktop-accessibility-symbolic"
+                text: LockText.tr("Accessibility", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Accessibility"), Qt.uiLanguage, Qt.locale().name)
+                enabled: false
             }
             Menu {
                 id: powerMenu
@@ -467,21 +477,21 @@ Item {
 
                 FluentPowerMenuItem {
                     width: powerMenu.availableWidth
-                    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sleep")
+                    text: LockText.tr("Sleep", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sleep"), Qt.uiLanguage, Qt.locale().name)
                     icon.name: "system-suspend"
                     onTriggered: root.suspendToRam()
                     actionAvailable: root.suspendToRamSupported
                 }
                 FluentPowerMenuItem {
                     width: powerMenu.availableWidth
-                    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down")
+                    text: LockText.tr("Shut down", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down"), Qt.uiLanguage, Qt.locale().name)
                     icon.name: "system-shutdown"
                     actionAvailable: sessionManagement.canShutdown
                     onTriggered: sessionManagement.requestShutdown()
                 }
                 FluentPowerMenuItem {
                     width: powerMenu.availableWidth
-                    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Restart")
+                    text: LockText.tr("Restart", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Restart"), Qt.uiLanguage, Qt.locale().name)
                     icon.name: "system-reboot"
                     actionAvailable: sessionManagement.canReboot
                     onTriggered: sessionManagement.requestReboot()
@@ -489,13 +499,13 @@ Item {
             }
             StatusIconButton {
                 id: powerButton
-                Layout.preferredWidth: 40
-                Layout.preferredHeight: 40
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
                 Layout.alignment: Qt.AlignVCenter
                 focusPolicy: Qt.TabFocus
                 icon.name: "system-shutdown-symbolic"
-                text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power")
-                visible: root.suspendToRamSupported || sessionManagement.canShutdown || sessionManagement.canReboot
+                text: LockText.tr("Power", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power"), Qt.uiLanguage, Qt.locale().name)
+                enabled: root.suspendToRamSupported || sessionManagement.canShutdown || sessionManagement.canReboot
                 onClicked: powerMenu.opened ? powerMenu.close() : powerMenu.open()
             }
         }

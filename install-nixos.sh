@@ -489,6 +489,16 @@ else
         kwriteconfig6 --notify --file kdeglobals --group Icons --key Theme windows-modern-light
         kwriteconfig6 --file kcmicons --group Icons --key Theme windows-modern-light
     fi
+    # Repair the old Fit default only for the theme-owned lock wallpaper.
+    # Keep the user's custom lock image and other wallpaper choices intact.
+    lock_image="$(kreadconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image)"
+    lock_mode="$(kreadconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key FillMode)"
+    case "$lock_image" in
+        "file://$DATA/wallpapers/Windows-modern-lock/"|"file://$DATA/wallpapers/Windows-modern-lock"|"$DATA/wallpapers/Windows-modern-lock/"|"$DATA/wallpapers/Windows-modern-lock")
+            if [ "$lock_mode" = 1 ]; then
+                kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key FillMode --type int 2
+            fi ;;
+    esac
     # Do not apply global theme defaults or reset wallpaper, shortcuts,
     # pinned apps, layout or the user's light/dark preference on upgrade.
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null

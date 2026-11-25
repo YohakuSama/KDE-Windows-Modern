@@ -1,16 +1,10 @@
-// Network and battery; an unavailable loader must not reserve a gap.
+// Live network status only; no duplicate audio or battery controls.
 import QtQuick
 
 Row {
-    spacing: 4
     Loader {
         source: "NetworkStatusIcon.qml"
         visible: status === Loader.Ready
-        anchors.verticalCenter: parent.verticalCenter
-    }
-    Loader {
-        source: "BatteryStatusIcon.qml"
-        visible: status === Loader.Ready && item && item.available
         anchors.verticalCenter: parent.verticalCenter
     }
 }

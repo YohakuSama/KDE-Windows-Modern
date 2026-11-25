@@ -10,29 +10,30 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents3
 
 import org.kde.breeze.components
+import "lockText.js" as LockText
+import "lockMetrics.js" as LockMetrics
 
-SessionManagementScreen {
+FocusScope {
     id: screen
     focus: true
-    showUserList: true
-    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(160, width * 0.6, height * 0.32)))
-    actionItems: [ Item { visible: false } ]
+    property var userListModel: null
+    readonly property int avatarSize: LockMetrics.avatarSize(width, height)
 
-    Component.onCompleted: {
-        if (userList) {
-            userList.visible = false;
-            userList.opacity = 0;
-            userList.height = 0;
-        }
-        loginButton.forceActiveFocus();
-    }
+    Component.onCompleted: loginButton.forceActiveFocus()
+
+    ColumnLayout {
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: LockMetrics.formTop(screen.height, implicitHeight)
+        width: parent.width
+        spacing: 8
 
     AccountAvatar {
         Layout.alignment: Qt.AlignHCenter
         size: screen.avatarSize
         Layout.preferredWidth: size
         Layout.preferredHeight: size
-        Layout.bottomMargin: 16
+        Layout.bottomMargin: 8
         source: screen.userListModel && screen.userListModel.count > 0
             ? screen.userListModel.get(0).icon : ""
     }
@@ -41,7 +42,7 @@ SessionManagementScreen {
         Layout.alignment: Qt.AlignHCenter
         Layout.fillWidth: true
         Layout.maximumWidth: screen.width
-        Layout.bottomMargin: 4
+        Layout.bottomMargin: 16
         textFormat: Text.PlainText
         elide: Text.ElideRight
         text: {
@@ -50,17 +51,17 @@ SessionManagementScreen {
             return user.realName || user.name || "";
         }
         color: "white"
-        font.pixelSize: 28
+        font.pixelSize: 24
         horizontalAlignment: Text.AlignHCenter
     }
 
     PlasmaComponents3.Button {
         id: loginButton
         focus: true
-        text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in")
+        text: LockText.tr("Sign in", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in"), Qt.uiLanguage, Qt.locale().name)
         Layout.alignment: Qt.AlignHCenter
         Layout.preferredWidth: Math.min(144, screen.width)
-        Layout.preferredHeight: 42
+        Layout.preferredHeight: LockMetrics.passwordHeight
         background: Rectangle {
             radius: 6
             color: loginButton.down ? "#26FFFFFF" : loginButton.hovered ? "#33FFFFFF" : "#20FFFFFF"
@@ -77,5 +78,6 @@ SessionManagementScreen {
         onClicked: Qt.quit();
         Keys.onEnterPressed: clicked()
         Keys.onReturnPressed: clicked()
+    }
     }
 }

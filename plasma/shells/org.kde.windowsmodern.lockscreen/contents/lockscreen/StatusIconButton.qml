@@ -5,12 +5,12 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
 PlasmaComponents3.ToolButton {
-    implicitWidth: 40
-    implicitHeight: 40
-    width: 40
-    height: 40
-    icon.width: 18
-    icon.height: 18
+    implicitWidth: 32
+    implicitHeight: 32
+    width: 32
+    height: 32
+    icon.width: 16
+    icon.height: 16
     icon.color: "#FFFFFF"
     display: AbstractButton.IconOnly
     flat: true

@@ -15,30 +15,23 @@ import org.kde.kirigami as Kirigami
 import org.kde.kscreenlocker as ScreenLocker
 
 import org.kde.breeze.components
+import "lockText.js" as LockText
+import "lockMetrics.js" as LockMetrics
 
-SessionManagementScreen {
+FocusScope {
     id: sessionManager
-
-    actionItems: [ Item { visible: false } ]
+    focus: true
+    property var userListModel: null
 
     readonly property alias mainPasswordBox: passwordBox
     property bool lockScreenUiVisible: false
-    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(160, width * 0.6, height * 0.32)))
+    readonly property int avatarSize: LockMetrics.avatarSize(width, height)
     property alias showPassword: passwordBox.showPassword
 
-    showUserList: true
     property string customErrorMessage: ""
-    notificationMessage: "" // Silence default top-aligned banner
-
-    property int visibleBoundary: mapFromItem(loginButton, 0, 0).y
-    onHeightChanged: visibleBoundary = mapFromItem(loginButton, 0, 0).y + loginButton.height + Kirigami.Units.smallSpacing
+    readonly property int visibleBoundary: Math.round(form.y + passwordPanel.y + passwordPanel.height)
 
     signal passwordResult(string password)
-
-    onUserSelected: {
-        const nextControl = passwordBox;
-        nextControl.forceActiveFocus(Qt.TabFocusReason);
-    }
 
     function startLogin() {
         const password = passwordBox.text;
@@ -47,13 +40,14 @@ SessionManagementScreen {
         passwordResult(password);
     }
 
-    Component.onCompleted: {
-        if (sessionManager.userList) {
-            sessionManager.userList.visible = false;
-            sessionManager.userList.opacity = 0;
-            sessionManager.userList.height = 0;
-        }
-    }
+    // Independent Windows-style layout: no inherited lower-half prompt.
+    ColumnLayout {
+        id: form
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: LockMetrics.formTop(sessionManager.height, implicitHeight)
+        width: parent.width
+        spacing: 8
 
     // Always show a user image or the Windows default account avatar.
     AccountAvatar {
@@ -61,7 +55,7 @@ SessionManagementScreen {
         size: sessionManager.avatarSize
         Layout.preferredWidth: size
         Layout.preferredHeight: size
-        Layout.bottomMargin: 16
+        Layout.bottomMargin: 8
         source: sessionManager.userListModel && sessionManager.userListModel.count > 0
             ? sessionManager.userListModel.get(0).icon : ""
     }
@@ -71,7 +65,7 @@ SessionManagementScreen {
         Layout.alignment: Qt.AlignHCenter
         Layout.fillWidth: true
         Layout.maximumWidth: sessionManager.width
-        Layout.bottomMargin: 4
+        Layout.bottomMargin: 16
         textFormat: Text.PlainText
         elide: Text.ElideRight
         text: {
@@ -83,7 +77,7 @@ SessionManagementScreen {
             return "";
         }
         font.family: Kirigami.Theme.defaultFont.family
-        font.pixelSize: 28
+        font.pixelSize: 24
         font.weight: Font.Normal
         color: "#FFFFFF"
         horizontalAlignment: Text.AlignHCenter
@@ -122,11 +116,12 @@ SessionManagementScreen {
 
     // ── Password field + submit button ──
     Item {
+        id: passwordPanel
         Layout.fillWidth: true
-        Layout.maximumWidth: 280
+        Layout.maximumWidth: LockMetrics.passwordWidth
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredHeight: 42
-        implicitHeight: 42
+        Layout.preferredHeight: LockMetrics.passwordHeight
+        implicitHeight: LockMetrics.passwordHeight
 
         Rectangle {
             id: passwordBorder
@@ -157,7 +152,7 @@ SessionManagementScreen {
 
             property bool showPassword: false
             echoMode: showPassword ? TextInput.Normal : TextInput.Password
-            placeholderText: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Password")
+            placeholderText: LockText.tr("Password", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Password"), Qt.uiLanguage, Qt.locale().name)
             placeholderTextColor: "#A0A0A0"
             font.family: Kirigami.Theme.defaultFont.family
             font.pixelSize: 14
@@ -176,17 +171,6 @@ SessionManagementScreen {
                 }
             }
 
-            Keys.onPressed: event => {
-                if (event.key === Qt.Key_Left && !text) {
-                    sessionManager.userList.decrementCurrentIndex();
-                    event.accepted = true
-                }
-                if (event.key === Qt.Key_Right && !text) {
-                    sessionManager.userList.incrementCurrentIndex();
-                    event.accepted = true
-                }
-            }
-
             Connections {
                 target: root
                 function onClearPassword() {
@@ -195,7 +179,7 @@ SessionManagementScreen {
                     passwordBox.text = "";
                 }
                 function onNotificationRepeated() {
-                    sessionManager.playHighlightAnimation();
+                    errorPulse.restart();
                 }
             }
         }
@@ -204,14 +188,14 @@ SessionManagementScreen {
             id: revealButton
             anchors.right: loginButton.left
             anchors.verticalCenter: parent.verticalCenter
-            width: 32
-            height: 38
+            width: 28
+            height: 26
             visible: passwordBox.text.length > 0
-            text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Show password")
+            text: LockText.tr("Show password", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Show password"), Qt.uiLanguage, Qt.locale().name)
             display: AbstractButton.IconOnly
             icon.name: "view-visible"
-            icon.width: 18
-            icon.height: 18
+            icon.width: 14
+            icon.height: 14
             icon.color: "#FFFFFF"
             onPressedChanged: passwordBox.showPassword = pressed && visible
             onVisibleChanged: if (!visible) passwordBox.showPassword = false
@@ -227,14 +211,14 @@ SessionManagementScreen {
             anchors.right: parent.right
             anchors.rightMargin: 2
             anchors.verticalCenter: parent.verticalCenter
-            width: 38
-            height: 38
+            width: 28
+            height: 26
 
-            text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in")
+            text: LockText.tr("Sign in", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in"), Qt.uiLanguage, Qt.locale().name)
             display: AbstractButton.IconOnly
             icon.name: LayoutMirroring.enabled ? "go-previous" : "go-next"
-            icon.width: 20
-            icon.height: 20
+            icon.width: 14
+            icon.height: 14
             opacity: passwordBox.text.length > 0 ? 1 : 0.65
             icon.color: hovered ? "#FFFFFF" : "#E0E0E0"
 
@@ -247,6 +231,22 @@ SessionManagementScreen {
                 radius: 4
             }
         }
+    }
+
+    FailableLabel {
+        kind: ScreenLocker.Authenticator.Fingerprint
+        label: LockText.tr("(or scan your fingerprint on the reader)", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "(or scan your fingerprint on the reader)"), Qt.uiLanguage, Qt.locale().name)
+    }
+    FailableLabel {
+        kind: ScreenLocker.Authenticator.Smartcard
+        label: LockText.tr("(or scan your smartcard)", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "(or scan your smartcard)"), Qt.uiLanguage, Qt.locale().name)
+    }
+    }
+
+    SequentialAnimation {
+        id: errorPulse
+        NumberAnimation { target: errorLabel; property: "scale"; from: 1; to: 1.06; duration: 100 }
+        NumberAnimation { target: errorLabel; property: "scale"; to: 1; duration: 100 }
     }
 
     component FailableLabel : PlasmaComponents3.Label {
@@ -291,12 +291,4 @@ SessionManagementScreen {
         }
     }
 
-    FailableLabel {
-        kind: ScreenLocker.Authenticator.Fingerprint
-        label: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "(or scan your fingerprint on the reader)")
-    }
-    FailableLabel {
-        kind: ScreenLocker.Authenticator.Smartcard
-        label: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "(or scan your smartcard)")
-    }
 }

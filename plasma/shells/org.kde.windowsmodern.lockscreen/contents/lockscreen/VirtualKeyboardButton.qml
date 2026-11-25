@@ -3,12 +3,13 @@
 // Loaded through a Loader: if the module is missing, only this button goes.
 import QtQuick
 import org.kde.plasma.workspace.keyboardlayout as Keyboards
+import "lockText.js" as LockText
 
 StatusIconButton {
     readonly property bool available: Keyboards.KWinVirtualKeyboard.available
-    visible: available
+    enabled: available
     focusPolicy: Qt.TabFocus
     icon.name: "preferences-desktop-accessibility-symbolic"
-    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "On-screen keyboard")
-    onClicked: Keyboards.KWinVirtualKeyboard.active = !Keyboards.KWinVirtualKeyboard.active
+    text: LockText.tr("Accessibility", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Accessibility"), Qt.uiLanguage, Qt.locale().name)
+    onClicked: if (available) Keyboards.KWinVirtualKeyboard.active = !Keyboards.KWinVirtualKeyboard.active
 }
