@@ -29,6 +29,8 @@ PlasmoidItem {
 
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool horizontal: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
+    readonly property int searchMode: Math.max(0, Math.min(2,
+        Number(Plasmoid.configuration.searchMode) || 0))
 
     function openSearch(): void {
         const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
@@ -51,10 +53,10 @@ PlasmoidItem {
 
     // searchMode (contents/config/main.xml), as Windows' Settings >
     // Taskbar > Search names them: 0 "Search box", 1 "Search icon only".
-    readonly property bool showBox: Plasmoid.configuration.searchMode === 0 && !vertical
+    readonly property bool showBox: searchMode !== 2 && !vertical
 
     preferredRepresentation: fullRepresentation
-    Plasmoid.icon: "edit-find"
+    Plasmoid.icon: "search"
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     Plasmoid.onActivated: openSearch()
 
@@ -79,7 +81,8 @@ PlasmoidItem {
         id: searchBox
         anchors.fill: parent
         visible: root.showBox
-        iconName: "edit-find-symbolic"
+        styleMode: root.searchMode === 1 ? 1 : 0
+        iconName: "search"
         text: i18nc("@action:button taskbar search box", "Search")
         placeholder: i18nc("@info:placeholder taskbar search box", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")
@@ -90,6 +93,8 @@ PlasmoidItem {
         anchors.fill: parent
         visible: !root.showBox
         iconName: searchBox.iconSource
+        hoverIconName: searchBox.hoverIconSource
+        iconIsMask: false
         text: i18nc("@action:button taskbar button", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")
         onTriggered: root.openSearch()
@@ -101,4 +106,14 @@ PlasmoidItem {
         }
     }
     // qmllint enable unqualified
+
+    Component.onCompleted: {
+        // Mode 1 used to mean icon-only. Preserve existing user choices while
+        // assigning the new compact icon-and-label mode its own value.
+        if (!Plasmoid.configuration.searchModesMigrated) {
+            if (Plasmoid.configuration.searchMode === 1)
+                Plasmoid.configuration.searchMode = 2;
+            Plasmoid.configuration.searchModesMigrated = true;
+        }
+    }
 }

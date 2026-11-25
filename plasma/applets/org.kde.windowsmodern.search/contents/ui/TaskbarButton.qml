@@ -27,10 +27,17 @@ MouseArea {
 
     // Resolve the icon through the same theme as the native applets.
     property string iconName
+    property string hoverIconName: ""
+    property bool iconIsMask: true
     property string fallbackIconName: "unknown"
     // Accessible name ("Search"); also what screen readers announce.
     property string text
     property string description
+
+    readonly property string effectiveIconName: showHovered && hoverIconName.length > 0
+        ? hoverIconName : iconName
+    readonly property bool effectiveIconIsMask: showHovered && hoverIconName.length > 0
+        ? true : iconIsMask
 
     // Preview/test hooks: draw a state without a pointer.
     property bool forceHovered: false
@@ -114,10 +121,11 @@ MouseArea {
         width: button.glyphSize
         height: button.glyphSize
         roundToIconSize: false
-        source: button.iconName
+        source: button.effectiveIconName
         fallback: button.fallbackIconName
-        isMask: true
-        color: Kirigami.Theme.textColor
+        isMask: button.effectiveIconIsMask
+        color: button.showHovered && button.hoverIconName.length > 0
+            ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
         scale: button.showPressed ? 0.9 : 1
 
         Behavior on scale {
