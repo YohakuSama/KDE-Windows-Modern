@@ -19,6 +19,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.private.mpris as Mpris
 
 import "components" as Components
+import "js/trayMetrics.js" as TrayMetrics
 
 Item {
     id: popup
@@ -35,12 +36,14 @@ Item {
     // before mapping, without using physical DPI or depending on panel length.
     readonly property real uiScale: Math.max(0.35, Math.min(Plasmoid.configuration.scale / 100,
         availableWidth / 360, availableHeight / 400))
-    readonly property int frameWidth: separatedMedia ? 0 : Math.round(dialog.margins.left + dialog.margins.right)
-    readonly property int frameHeight: separatedMedia ? 0 : Math.round(dialog.margins.top + dialog.margins.bottom)
     readonly property bool quickHome: !systemTrayState.activeApplet && !systemTrayState.overflowMode
-    readonly property int popupWidth: Math.max(1, Math.min(availableWidth,
-        Math.round((overflowHome ? 216 : 360) * uiScale))
-        - frameWidth)
+    // One rounded settings card for home and all themed detail pages. Never
+    // switch between KSVG frame insets and our card when navigating.
+    readonly property bool customCard: quickHome || themedActive
+    readonly property bool quickDetail: themedActive && systemTrayState.quickSettingsRoute
+    readonly property int frameWidth: customCard ? 0 : Math.round(dialog.margins.left + dialog.margins.right)
+    readonly property int frameHeight: customCard ? 0 : Math.round(dialog.margins.top + dialog.margins.bottom)
+    readonly property int popupWidth: TrayMetrics.flyoutWidth(availableWidth, uiScale, overflowHome, frameWidth)
     readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
         * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
         + Math.round(16 * uiScale)
@@ -49,10 +52,11 @@ Item {
     readonly property int mediaHeight: Math.round(178 * uiScale)
     readonly property bool separatedMedia: !systemTrayState.activeApplet && !systemTrayState.overflowMode
         && mediaCard.hasSession && availableHeight >= actionPanel.nominalHomeHeight + mediaGap + mediaHeight
+    readonly property int quickCardHeight: TrayMetrics.quickSettingsHeight(availableHeight, actionPanel.nominalHomeHeight)
     readonly property int popupHeight: Math.max(1, Math.min(availableHeight - frameHeight,
-        systemTrayState.activeApplet ? Math.max(360, Kirigami.Units.gridUnit * 24)
-        : overflowHome ? overflowHeight
-        : actionPanel.homeHeight + (separatedMedia ? mediaGap + mediaHeight : 0)))
+        overflowHome ? overflowHeight
+        : quickHome || quickDetail ? quickCardHeight + (separatedMedia ? mediaGap + mediaHeight : 0)
+        : Math.max(360, Kirigami.Units.gridUnit * 24)))
 
     implicitWidth: popupWidth
     implicitHeight: popupHeight
@@ -70,7 +74,7 @@ Item {
         & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) === 0
 
     function scheduleSplitBlur() {
-        if (separatedMedia && dialog.visible) splitBlurTimer.restart();
+        if (customCard && dialog.visible) splitBlurTimer.restart();
         else {
             splitBlurTimer.stop();
             splitAcrylic = false;
@@ -80,15 +84,19 @@ Item {
         id: splitBlurTimer
         interval: 16
         onTriggered: {
-            if (!popup.separatedMedia || !dialog.visible) {
+            if (!popup.customCard || !dialog.visible) {
                 popup.splitAcrylic = false;
                 return;
             }
-            popup.splitAcrylic = Plasmoid.setSplitPopupBlur(popup, mediaCard, settingsCard,
+            // Reuse the same compositor region helper for one or two
+            // cards. Unioning the settings card with itself is intentional.
+            popup.splitAcrylic = Plasmoid.setSplitPopupBlur(popup,
+                popup.separatedMedia ? mediaCard : settingsSurface, settingsSurface,
                 mediaCard.radius, popup.allowSplitAcrylic);
         }
     }
     onSeparatedMediaChanged: scheduleSplitBlur()
+    onCustomCardChanged: scheduleSplitBlur()
     onAllowSplitAcrylicChanged: scheduleSplitBlur()
     onWidthChanged: scheduleSplitBlur()
     onHeightChanged: scheduleSplitBlur()
@@ -149,6 +157,23 @@ Item {
         Behavior on height {
             NumberAnimation { duration: Kirigami.Units.shortDuration / 2; easing.type: Easing.InOutQuad }
         }
+    }
+
+    Rectangle {
+        id: settingsSurface
+        objectName: "wmSharedQuickSettingsCard"
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: popup.quickHome ? popup.quickCardHeight : popup.popupHeight
+        visible: popup.customCard
+        radius: mediaCard.radius
+        color: mediaCard.surfaceColor
+        border.width: 1
+        border.color: mediaCard.outlineColor
+        z: -1
+        onYChanged: popup.scheduleSplitBlur()
+        onHeightChanged: popup.scheduleSplitBlur()
     }
 
     ColumnLayout {
@@ -336,26 +361,20 @@ Item {
                 id: settingsCard
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.preferredHeight: actionPanel.homeHeight
+                Layout.preferredHeight: popup.quickCardHeight
+                Layout.minimumHeight: popup.quickCardHeight
+                Layout.maximumHeight: popup.quickCardHeight
                 onXChanged: popup.scheduleSplitBlur()
                 onYChanged: popup.scheduleSplitBlur()
                 onWidthChanged: popup.scheduleSplitBlur()
                 onHeightChanged: popup.scheduleSplitBlur()
                 visible: !systemTrayState.overflowMode
-                Rectangle {
-                    anchors.fill: parent
-                    visible: popup.separatedMedia
-                    radius: mediaCard.radius
-                    color: mediaCard.surfaceColor
-                    border.width: 1
-                    border.color: mediaCard.outlineColor
-                }
                 ActionPanel {
                     id: actionPanel
                     anchors.fill: parent
                     uiScale: popup.uiScale
                     availableHeight: popup.availableHeight
-                    frameInset: popup.separatedMedia ? 0 : Math.max(0, dialog.margins.left)
+                    frameInset: 0
                     onVisibleChanged: {
                         if (visible && dialog.visible && !systemTrayState.activeApplet)
                             forceActiveFocus();
@@ -371,7 +390,9 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: systemTrayState.activeApplet
-            Layout.topMargin: mergeHeadings ? 0 : dialog.margins.top
+            Layout.topMargin: popup.themedActive || mergeHeadings ? 0 : dialog.margins.top
+            Layout.minimumWidth: popup.themedActive ? 0 : Kirigami.Units.gridUnit * 12
+            Layout.minimumHeight: popup.themedActive ? 0 : Kirigami.Units.gridUnit * 12
             KeyNavigation.up: pinButton
             KeyNavigation.backtab: pinButton
             onVisibleChanged: if (visible) forceActiveFocus()

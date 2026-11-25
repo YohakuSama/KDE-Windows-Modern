@@ -134,3 +134,13 @@ function anchorRun(runs, point, vertical, mirrored) {
     }
     return runs[!vertical && mirrored ? 0 : runs.length - 1];
 }
+
+
+// All quick settings routes share an outer logical width and card height.
+// Native frame margins are used only by overflow/unsupported applets.
+function flyoutWidth(availableWidth, scale, overflow, frameWidth) {
+    return Math.max(1, Math.min(availableWidth, Math.round((overflow ? 216 : 360) * scale)) - frameWidth);
+}
+function quickSettingsHeight(availableHeight, nominalHeight) {
+    return Math.max(1, Math.min(availableHeight, nominalHeight));
+}

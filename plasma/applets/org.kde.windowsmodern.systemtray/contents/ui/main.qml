@@ -502,7 +502,7 @@ ContainmentItem {
                 }
             }
 
-            backgroundHints: expandedRepresentation.separatedMedia ? PlasmaCore.Dialog.NoBackground
+            backgroundHints: expandedRepresentation.customCard ? PlasmaCore.Dialog.NoBackground
                 : (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersOpaqueBackground)
                     ? PlasmaCore.Dialog.SolidBackground : PlasmaCore.Dialog.StandardBackground
 

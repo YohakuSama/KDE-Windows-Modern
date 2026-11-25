@@ -110,6 +110,16 @@ TestCase {
         compare(vertical.width, 40);
         compare(vertical.x + vertical.width / 2, 24);
     }
+    function test_sharedFlyoutGeometry() {
+        for (const scale of [0.75, 1, 1.25, 1.5, 2]) {
+            const width = Metrics.flyoutWidth(900, scale, false, 0);
+            compare(width, Math.round(360 * scale));
+            const height = Metrics.quickSettingsHeight(700, Math.round(376 * scale));
+            compare(height, Math.min(700, Math.round(376 * scale)));
+        }
+        compare(Metrics.flyoutWidth(280, 1, false, 0), 280);
+        compare(Metrics.quickSettingsHeight(310, 420), 310);
+    }
     function test_systemGroup() {
         verify(Metrics.isQuickSettings("org.kde.plasma.networkmanagement"));
         verify(Metrics.isQuickSettings("org.kde.plasma.volume"));
