@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Remove the duplicate Claude instruction entry and consolidate product scope and contribution guidance under docs; keep Codex's AGENTS.md, current installer entry points, and license notices.
+
 - Apply a single theme-only exclusion policy to full installable ZIPs, verify installer dependencies and Store artwork, and reconcile outdated geometry/feature documentation with current code.
 
 - Reuse a verified resource cache across packaging and NixOS source installs; verify bundled pins and invalidate generated asset caches when the importer changes.
