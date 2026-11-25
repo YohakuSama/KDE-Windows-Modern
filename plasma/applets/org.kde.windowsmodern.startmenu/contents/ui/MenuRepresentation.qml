@@ -118,6 +118,7 @@ Item {
 
         onSearchingChanged: {
             if (searching) {
+                allAppsPage.resetCategory();
                 leftColumnState = 2;
                 // Reset scroll position when entering search mode.
                 searchPage.resultsView.contentY = 0;
@@ -383,40 +384,88 @@ Item {
                                 Layout.bottomMargin: Kirigami.Units.smallSpacing
                                 spacing: Kirigami.Units.smallSpacing
 
-                                AToolButton {
-                                    visible: allAppsPage.inCategory
-                                    text: i18n("Back")
-                                    iconName: "go-previous"
-                                    mirror: true
-                                    flat: true
-                                    onClicked: allAppsPage.backToCategories()
-                                }
-
                                 PlasmaComponents3.Label {
                                     Layout.fillWidth: true
-                                    text: allAppsPage.inCategory ? allAppsPage.categoryTitle : i18n("All")
+                                    text: i18n("All")
                                     textFormat: Text.PlainText
                                     elide: Text.ElideRight
                                     font.weight: Font.DemiBold
                                 }
 
-                                PlasmaComponents3.ComboBox {
+                                PlasmaComponents3.Button {
                                     id: viewSelector
                                     Layout.preferredWidth: Math.max(132, implicitWidth)
                                     Layout.preferredHeight: 30
-                                    model: [i18n("List"), i18n("Grid"), i18n("Category")]
-                                    currentIndex: Plasmoid.configuration.allAppsViewMode
-                                    displayText: i18n("View: %1", currentText)
+                                    readonly property var modes: [i18n("List"), i18n("Grid"), i18n("Category")]
+                                    text: i18n("View: %1", modes[Plasmoid.configuration.allAppsViewMode] || modes[0])
+                                    contentItem: RowLayout {
+                                        spacing: 6
+                                        PlasmaComponents3.Label {
+                                            Layout.fillWidth: true
+                                            text: viewSelector.text
+                                            horizontalAlignment: Text.AlignRight
+                                        }
+                                        Kirigami.Icon {
+                                            Layout.preferredWidth: 12
+                                            Layout.preferredHeight: 12
+                                            source: "go-down-symbolic"
+                                        }
+                                    }
                                     background: Rectangle {
                                         radius: 4
                                         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                             Kirigami.Theme.textColor.b, viewSelector.hovered || viewSelector.activeFocus ? 0.06 : 0)
                                     }
-                                    onActivated: index => {
+                                    onClicked: modeMenu.open()
+                                    function choose(index) {
                                         root.leftColumnState = 1;
                                         allAppsPage.resetCategory();
                                         Plasmoid.configuration.allAppsViewMode = index;
                                         Qt.callLater(allAppsPage.focusFirstApp);
+                                    }
+
+                                    Menu {
+                                        id: modeMenu
+                                        x: viewSelector.width - width
+                                        y: viewSelector.height + 4
+                                        width: 148
+                                        padding: 4
+                                        background: Rectangle {
+                                            radius: 8
+                                            color: Kirigami.Theme.backgroundColor
+                                            border.width: 1
+                                            border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                                Kirigami.Theme.textColor.b, 0.12)
+                                        }
+                                        component ModeItem: MenuItem {
+                                            required property int mode
+                                            implicitHeight: 36
+                                            leftPadding: 32
+                                            rightPadding: 10
+                                            text: viewSelector.modes[mode]
+                                            indicator: Kirigami.Icon {
+                                                x: 10
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                width: 13
+                                                height: 13
+                                                source: "emblem-ok-symbolic"
+                                                visible: Plasmoid.configuration.allAppsViewMode === mode
+                                            }
+                                            contentItem: PlasmaComponents3.Label {
+                                                text: parent.text
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                            background: Rectangle {
+                                                radius: 4
+                                                color: parent.highlighted
+                                                    ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                                        Kirigami.Theme.textColor.b, 0.08) : "transparent"
+                                            }
+                                            onTriggered: viewSelector.choose(mode)
+                                        }
+                                        ModeItem { mode: 2 }
+                                        ModeItem { mode: 1 }
+                                        ModeItem { mode: 0 }
                                     }
                                 }
                             }
@@ -637,7 +686,7 @@ Item {
                 if (root.leftColumnState === 0) {
                     root.pinnedPage.tryActivate(Math.max(0, root.pinnedPage.favoritesList.currentIndex));
                 } else if (root.leftColumnState === 1 && allAppsPage.allAppsList.count > 0) {
-                    allAppsPage.tryActivate(Math.max(0, allAppsPage.allAppsList.currentIndex));
+                    allAppsPage.tryActivate(Math.max(0, allAppsPage.activeView.currentIndex));
                 } else if (root.leftColumnState === 2 && searchPage.resultsView.count > 0) {
                     searchPage.tryActivate(Math.max(0, searchPage.resultsView.currentIndex), 0);
                 } else {
