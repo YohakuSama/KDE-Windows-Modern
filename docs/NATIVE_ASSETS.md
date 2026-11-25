@@ -129,10 +129,12 @@ release or the public Git history.
 
 The new importer accepts an extracted Windows directory, including the
 original SystemApps and SystemResources trees. It exports the exact
-SysBatt outline/fill paths, four original Search PNG states at the
+SysBatt outline/fill paths, the verified Search PNG states at the
 highest available scale, and the two original Task View SVGs embedded
-in the Settings PRI. The import is atomic; incomplete input leaves the
-previous import untouched.
+in the Settings PRI. The dark idle Search PNG is optional when absent
+from the source build; the applet falls back to the verified Segoe E721
+glyph for that state. The import is atomic; incomplete required input
+leaves the previous import untouched.
 
 ```bash
 python3 scripts/import-shell-assets.py /path/to/Windows --build 26300.10075
