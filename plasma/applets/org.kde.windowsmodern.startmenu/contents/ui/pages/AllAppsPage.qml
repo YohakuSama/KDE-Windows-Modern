@@ -181,6 +181,7 @@ Item {
             anchors.rightMargin: -allAppsPage.scrollbarEdgeOffset
             visible: allAppsListView.visible && !allAppsPage.inCategory && size < 1
             viewportHovered: homeViewportHover.hovered
+            scrolling: allAppsListView.moving
             z: 5
         }
         StartWheelHandler {
@@ -488,7 +489,7 @@ Item {
                         iconSize: 32
                         showInstallBadge: true
                     }
-                    PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
+                    PlasmaComponents3.ScrollBar.vertical: StartScrollBar { scrolling: categoryGrid.moving }
                     StartWheelHandler {
                         view: categoryGrid
                         rowHeight: categoryGrid.cellHeight

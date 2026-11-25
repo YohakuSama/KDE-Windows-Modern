@@ -47,6 +47,10 @@ Item {
             tryCompare(bar, "indicatorVisible", true);
             bar.viewportHovered = false;
             tryCompare(bar, "indicatorVisible", false);
+            bar.scrolling = true;
+            tryCompare(bar, "indicatorVisible", true);
+            bar.scrolling = false;
+            tryCompare(bar, "indicatorVisible", false);
         }
         function test_threeRowsPerNotch() {
             mouseWheel(testList, 80, 100, 0, -120);

@@ -227,6 +227,7 @@ Item {
             anchors.rightMargin: -searchPage.scrollbarEdgeOffset
             visible: resultsView.visible && size < 1
             viewportHovered: searchViewportHover.hovered
+            scrolling: resultsView.moving
             z: 5
         }
         StartWheelHandler {

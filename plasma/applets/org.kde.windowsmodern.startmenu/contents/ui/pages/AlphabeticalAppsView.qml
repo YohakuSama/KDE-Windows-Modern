@@ -189,6 +189,7 @@ FocusScope {
             anchors.rightMargin: -view.scrollbarEdgeOffset
             visible: rowsView.visible && size < 1
             viewportHovered: alphabeticalViewportHover.hovered
+            scrolling: rowsView.moving
             z: 5
         }
         StartWheelHandler { view: rowsView; rowHeight: Math.min(40, view.cellHeight) }
