@@ -98,3 +98,7 @@ Implementation references: [KDE Bluedevil](https://github.com/KDE/bluedevil/tree
 ### Modern battery and grouped hover follow-up
 
 Compare the project-drawn colored battery and optional percentage against KB5067036 and the owner's screenshot at 150%. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The visual asset is recreated, not extracted from Windows.
+
+### Search home, clock and media source (owner reference, 2026-11-25)
+
+The Search home reuses local Kicker usage models, existing Milou results and native applet actions. Compare both entrypoints, empty-query state, cleared filters, IME/keyboard input, actual recent/popular app launches and settings queries in the running desktop. The reference's promotional items and rewards controls are intentionally omitted. The modern colored Start search magnifier has not been verified in an owner-provided Windows resource set; the explicit local search glyph and scheme accent are a compatibility presentation, not a claim of exact original artwork. Check the region-default clock with 12- and 24-hour locales and real timezone changes; the migration of legacy forced formats is one-time. Check Firefox Nightly and Edge live MPRIS sources, controls and icon availability. No pixel similarity score or live acceptance is asserted without a same-scale screenshot comparison.

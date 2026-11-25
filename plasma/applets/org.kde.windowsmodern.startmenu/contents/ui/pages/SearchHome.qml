@@ -102,6 +102,8 @@ Item {
                 spacing: 8
                 Text {
                     text: i18n("Suggested")
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: text
                     color: home.ink
                     font.pixelSize: 14
                     font.weight: Font.DemiBold
@@ -138,6 +140,8 @@ Item {
                 spacing: 12
                 Text {
                     text: i18n("Quick searches")
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: text
                     color: home.ink
                     font.pixelSize: 14
                     font.weight: Font.DemiBold
@@ -196,6 +200,8 @@ Item {
                     visible: topApps.count > 0
                     Layout.topMargin: 8
                     text: i18n("Top apps")
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: text
                     color: home.ink
                     font.pixelSize: 14
                     font.weight: Font.DemiBold
