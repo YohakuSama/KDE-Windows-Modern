@@ -43,6 +43,8 @@ Item {
     property string detailsIconSource: ""
     property string detailsAccessibleName: ""
     property bool iconClickable: false
+    // Keep the details action usable even when there is no audio output.
+    property bool trackEnabled: true
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
     readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
 
@@ -117,6 +119,8 @@ Item {
             snapMode: T.Slider.SnapAlways
             focusPolicy: Qt.StrongFocus
             wheelEnabled: false
+            enabled: root.trackEnabled
+            opacity: enabled ? 1 : 0.45
             hoverEnabled: true
             leftPadding: 0
             rightPadding: 0
@@ -265,6 +269,7 @@ Item {
     }
 
     WheelHandler {
+        enabled: root.trackEnabled
         target: null
         orientation: Qt.Vertical
         acceptedButtons: Qt.NoButton

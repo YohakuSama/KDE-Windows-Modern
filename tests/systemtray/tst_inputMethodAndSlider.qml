@@ -107,6 +107,26 @@ Item {
             tryCompare(track, "width", before);
         }
 
+        function test_unavailableVolumeTrackKeepsDetails() {
+            const control = findChild(volume, "wmFluentSliderTrack");
+            const details = findChild(volume, "wmFluentSliderDetailsSlot");
+            volume.value = 35;
+            tryCompare(control, "value", 35);
+            try {
+                volume.trackEnabled = false;
+                tryCompare(control, "enabled", false);
+                verify(volume.visible && details.visible && details.enabled);
+                mouseClick(control, Math.round(control.width * 0.8), Math.round(control.height / 2));
+                mouseWheel(control, Math.round(control.width / 2), Math.round(control.height / 2), 0, 120);
+                compare(volume.value, 35);
+            } finally {
+                volume.trackEnabled = true;
+            }
+            tryCompare(control, "enabled", true);
+            mouseClick(control, Math.round(control.width * 0.8), Math.round(control.height / 2));
+            tryVerify(() => volume.value >= 70);
+        }
+
         function test_realPointerAndWheel_data() {
             return [{tag: "brightness", row: brightness}, {tag: "volume", row: volume}];
         }

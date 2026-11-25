@@ -226,6 +226,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     PATH components/volume
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/volume/VolumeModels.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/volume/OutputSink.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/volume/OutputDeviceSection.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/volume/InputDeviceSection.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/volume/VolumeMixerSection.qml

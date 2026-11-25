@@ -48,7 +48,7 @@ ColumnLayout {
     // not visible children. Qt Layout implicitHeight can be zero while
     // the window is hidden. Reserve a complete first viewport in that case.
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
-    readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
+    readonly property bool volumeShown: Plasmoid.configuration.showVolume
     readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
     readonly property int sliderBlockHeight: sliderRows > 0 ? sliderTopInset + sliderBottomInset
         + sliderRows * sliderHeight + (sliderRows - 1) * sliderGap : 0
@@ -517,7 +517,7 @@ ColumnLayout {
             iconSize: Math.round(20 * controlScale)
             Layout.preferredHeight: actionPanel.sliderHeight
             implicitHeight: actionPanel.sliderHeight
-            visible: Plasmoid.configuration.showVolume && sinkAvailable
+            visible: actionPanel.volumeShown
             reserveDetailsSpace: true
             onArrowClicked: actionPanel.requestPage("volume")
         }

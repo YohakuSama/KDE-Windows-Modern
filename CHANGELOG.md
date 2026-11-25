@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Keep the Quick Settings volume row visible while the audio service or output device is unavailable; disable only its track, and recover the real default output from the native device model when KDE's preferred output is unset.
+
 - Remove the duplicate Claude instruction entry and consolidate product scope and contribution guidance under docs; keep Codex's AGENTS.md, current installer entry points, and license notices.
 
 - Apply a single theme-only exclusion policy to full installable ZIPs, verify installer dependencies and Store artwork, and reconcile outdated geometry/feature documentation with current code.

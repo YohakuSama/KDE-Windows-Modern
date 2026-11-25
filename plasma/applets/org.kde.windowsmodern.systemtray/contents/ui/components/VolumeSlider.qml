@@ -4,12 +4,14 @@ import org.kde.plasma.private.volume as Vol
 import org.kde.kcmutils
 import "../lib" as Lib
 import "../js/funcs.js" as Funcs
+import "volume" as Volume
 
 Lib.Slider {
     id: root
 
-    property var sink: Vol.PreferredDevice.sink
-    readonly property bool sinkAvailable: sink && !(sink.name === "auto_null")
+    Volume.OutputSink { id: output }
+    readonly property var sink: output.sink
+    readonly property bool sinkAvailable: output.available
 
     sliderAccessibleName: i18n("Volume")
     iconSource: Funcs.volIconName(sinkAvailable ? sink.volume : 0, sinkAvailable ? sink.muted : true)
@@ -20,7 +22,7 @@ Lib.Slider {
 
     readonly property int maxVol: sinkAvailable && sink.canRaiseVolume ? 98304 : 65536
 
-    visible: sinkAvailable
+    trackEnabled: sinkAvailable
     from: 0
     to: maxVol
     value: sinkAvailable ? sink.volume : 0
@@ -60,6 +62,7 @@ Lib.Slider {
 
         PlasmaComponents3.MenuItem {
             text: sinkAvailable && sink.muted ? i18n("Unmute") : i18n("Mute")
+            enabled: root.sinkAvailable
             icon.name: sinkAvailable && sink.muted ? "audio-volume-muted" : "audio-volume-high"
             onClicked: {
                 if (sinkAvailable)

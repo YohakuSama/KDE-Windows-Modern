@@ -4,11 +4,12 @@ import org.kde.plasma.private.volume as Vol
 QtObject {
     id: root
 
-    readonly property var sink: Vol.PreferredDevice.sink
-    readonly property bool sinkAvailable: sink && !(sink.name === "auto_null")
+    readonly property var outputSink: OutputSink {}
+    readonly property var sink: outputSink.sink
+    readonly property bool sinkAvailable: outputSink.available
 
     readonly property var sinkFilterModel: Vol.PulseObjectFilterModel {
-        sourceModel: Vol.SinkModel {}
+        sourceModel: root.outputSink.devices
         filterOutInactiveDevices: true
     }
 
