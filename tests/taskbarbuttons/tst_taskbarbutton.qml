@@ -54,6 +54,7 @@ Item {
                 hoverIconName: "hover.png", hoverIconIsMask: false,
                 selectedIconName: "selected.svg", selectedIconIsMask: true
             });
+            mouseMove(root, root.width - 1, root.height - 1);
             compare(button.effectiveIconName, "idle.png");
             compare(button.effectiveIconIsMask, false);
             button.forceHovered = true;

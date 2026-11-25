@@ -12,7 +12,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 from PIL import Image
-from fontTools.ttLib import TTFont
+from fontTools.ttLib import TTFont, TTLibError
 from fontTools.pens.svgPathPen import SVGPathPen
 
 from native_pri_resources import embedded_resources
@@ -129,8 +129,15 @@ def validate_svg(data):
             name = key.rsplit("}", 1)[-1].casefold()
             if name.startswith("on") or (name == "href" and not value.startswith("#")):
                 raise ValueError("External or executable Task View SVG content")
-            if re.search(r"url\s*\(\s*['\"]?(?!#)[^)]", value, re.I):
-                raise ValueError("External Task View SVG reference")
+            for reference in re.findall(r"url\s*\(([^)]*)\)", value, re.I):
+                if not reference.strip().strip("'\"").startswith("#"):
+                    raise ValueError("External Task View SVG reference")
+        if tag == "style":
+            style = element.text or ""
+            if "@import" in style.casefold() or any(
+                    not reference.strip().strip("'\"").startswith("#")
+                    for reference in re.findall(r"url\s*\(([^)]*)\)", style, re.I)):
+                raise ValueError("External Task View SVG stylesheet")
 
 
 def collect(source):
@@ -227,6 +234,6 @@ if __name__ == "__main__":
         parser.error("--build must be a numeric Windows build number")
     try:
         manifest = install(args.source, args.output, args.build)
-    except (OSError, ValueError, ET.ParseError) as exc:
+    except (OSError, ValueError, TTLibError, ET.ParseError) as exc:
         parser.exit(1, f"Shell artwork import failed: {exc}\n")
     print(f"Imported {len(manifest['outputs'])} original shell artwork files from build {args.build}.")
