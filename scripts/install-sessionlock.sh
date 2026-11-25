@@ -79,12 +79,8 @@ done
 # ── 3. Copy our custom lockscreen files into the overlay ──
 step "Copying custom lockscreen files..."
 cp -r "${SHELL_SRC}/contents/lockscreen" "$STAGING_SHELL/contents/"
-# The real lockscreen is the shell overlay, not the look-and-feel login
-# page. Embed the mapped native avatar so it is available even before
-# the greeter has loaded the session icon theme.
-avatar="$NATIVE_ASSETS_DIR/icons/status/avatar-default.svg"
-[ -s "$avatar" ] || avatar="$SRC_DIR/icons/windows-modern/status/avatar-default.svg"
-cp "$avatar" "$STAGING_SHELL/contents/lockscreen/default-avatar.svg"
+# The package carries the sign-in portrait and small user-list glyphs.
+# Do not overwrite them with the unrelated imageres account-control icon.
 
 # Also grab any missing standard lockscreen files from the system shell (qmldir, config.xml)
 for standard_file in qmldir config.xml; do

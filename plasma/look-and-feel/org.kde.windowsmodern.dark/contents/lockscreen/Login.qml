@@ -21,7 +21,7 @@ SessionManagementScreen {
     property Item mainPasswordBox: passwordField
     readonly property int accountAvatarSize: Math.max(1, Math.floor(Math.min(WinStyle.avatarSize, width * 0.6, height * 0.25)))
     readonly property url accountImage: !showUsernamePrompt && userList && userList.currentItem && userList.currentItem.icon
-        ? userList.currentItem.icon : Qt.resolvedUrl("faces/.face.icon")
+        ? userList.currentItem.icon : ""
     readonly property string accountName: showUsernamePrompt ? userNameInput.text
         : (userList && userList.currentItem && userList.currentItem.realName
             ? userList.currentItem.realName : (userList ? userList.selectedUser : ""))

@@ -220,6 +220,9 @@ for pair in \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/dateformat.js $LOCK/dateformat.js" \
     "$LOCK/dateformat.js $LOGIN/dateformat.js" \
     "$LOCK/StatusIconButton.qml $LOGIN/StatusIconButton.qml" \
+    "$LOCK/DefaultAccountPortrait.qml $LOGIN/DefaultAccountPortrait.qml" \
+    "$LOCK/default-avatar.svg $LOGIN/default-avatar.svg" \
+    "$LOCK/default-avatar-small.svg $LOGIN/default-avatar-small.svg" \
     "$LOCK/FluentPowerMenuItem.qml $LOGIN/FluentPowerMenuItem.qml" \
     "$LOCK/NetworkStatusIcon.qml $LOGIN/NetworkStatusIcon.qml" \
     "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
