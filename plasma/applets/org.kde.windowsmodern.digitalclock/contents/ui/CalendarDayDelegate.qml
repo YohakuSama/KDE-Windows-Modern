@@ -104,14 +104,14 @@ MouseArea {
                 }
                 return palette.textDisabled;
             }
-            font.pixelSize: 13
+            font.pixelSize: Math.max(8, Math.min(13, Math.floor(dayDelegate.height * (dayDelegate.hasEvents ? 0.52 : 0.68))))
         }
 
         // Event dots.
         RowLayout {
             id: eventDotsRow
             Layout.alignment: Qt.AlignHCenter
-            visible: dayDelegate.hasEvents
+            visible: dayDelegate.hasEvents && dayDelegate.height >= 22
             spacing: 2
 
             Repeater {

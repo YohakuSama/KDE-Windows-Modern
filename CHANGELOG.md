@@ -6,6 +6,9 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Keep week numbers aligned with local calendar dates through daylight-saving transitions, align weekday columns, and allow keyboard activation of calendar navigation and zoom tiles.
+- Keep the calendar footer visible in short work areas by fitting the grid before optional sections; use consistent notification actions, progress colors and scrolling feedback.
+
 - Use live KDE battery time and health data, remove the UPower polling subprocess, and open the native power settings module directly.
 - Correct audio device selection states and microphone icons; keep input switching from playing feedback on a sink index. Reuse the same slider for brightness details and app volume, preserve two-line captions and reduce visible tile rows on small work areas.
 
