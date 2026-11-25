@@ -72,6 +72,19 @@ jobs:
           for scale in 1 1.25 1.5 2; do
             QT_QPA_PLATFORM=offscreen QT_SCALE_FACTOR="$scale" tests/run-qml-tests.sh || exit 1
           done
+      - name: Capture the compiled applets in a nested Wayland desktop
+        if: matrix.fedora == '45'
+        run: |
+          dnf install -y --setopt=install_weak_deps=False plasma-desktop /usr/bin/kwin_wayland /usr/bin/kscreen-doctor /usr/bin/Xvfb xorg-x11-xauth /usr/bin/import /usr/bin/dbus-run-session /usr/bin/busctl mesa-dri-drivers shadow-utils util-linux
+          useradd --create-home desktop-test
+          install -d -o desktop-test -g desktop-test "$RUNNER_TEMP/desktop-captures"
+          runuser -u desktop-test -- env WM_DISPOSABLE_DESKTOP=1 xvfb-run -a -s '-screen 0 1920x1080x24' dbus-run-session -- bash tests/panel/nested-wayland.sh "$RUNNER_TEMP/build" "$RUNNER_TEMP/desktop-captures"
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.fedora == '45'
+        with:
+          name: plasma-wayland-desktop
+          path: ${{ runner.temp }}/desktop-captures/
+          if-no-files-found: ignore
       # Prebuilt plugins for installs without a compiler: keyed by distro,
       # Plasma and Qt version (scripts/install-lib.sh picks the match).
       - name: Package plugins
