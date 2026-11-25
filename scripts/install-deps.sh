@@ -32,7 +32,7 @@ elif command -v apt-get &>/dev/null; then
           libksysguard-dev)
 else
     warn "Unknown package manager: install Kvantum, Flatpak and the build dependencies"
-    warn "listed in the README (System Tray, Icon Tasks) yourself."
+    warn "listed in plasma/applets/org.kde.windowsmodern.{systemtray,icontasks}/BUILD.md yourself."
     exit 0
 fi
 

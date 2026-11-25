@@ -100,7 +100,9 @@ def mapped_resource_entries(index, mapping):
 
 
 def verify_runtime_directory(root, mapping, pin):
-    if (root / 'RESOURCE-COMMIT').read_text().strip() != pin:
+    if root.is_symlink() or any(p.is_symlink() for p in root.rglob('*')):
+        raise ValueError('Unexpected symlink in runtime resources')
+    if checked_path(root, 'RESOURCE-COMMIT').read_text().strip() != pin:
         raise ValueError('Runtime resource revision mismatch')
     raw = checked_path(root, 'resource-manifest.json').read_bytes()
     verify_reference_index(raw)

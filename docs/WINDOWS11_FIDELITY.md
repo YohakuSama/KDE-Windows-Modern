@@ -77,17 +77,17 @@ Use the Windows 11 scrollable Quick Settings baseline: three full-width columns,
 
 ### Tray geometry and current Plasma compatibility
 
-For a standard 48 logical-pixel panel, the current project uses a 28 px task/Start canvas, a 16 px tray glyph box, 32 px normal tray cells and 24 px grouped network/volume/battery cells. The notification bell uses a 16 px glyph box in a 24 px cell. The 32 px native compact representation host is only a fallback, scaled into the smaller tray box. Preserve the source aspect ratio, state-dependent battery and network artwork, input-language text, user-selectable spacing and mirrored layouts. Qt applies the display scale. At 150%, the task canvas is 42 physical pixels, its 87.5% painted extent is 36.75 physical pixels, and the tray box is 24 physical pixels. These are current implementation targets, not measured Windows shell specifications. Imported artwork and native fallback delegates still require matched live comparison. Default order: overflow, application items, language, network, volume, battery, clock and notification bell, then the 6 px Show Desktop sliver. See [Windows taskbar styling measurements](https://github.com/ramensoftware/windows-11-taskbar-styling-guide#tray-icons-size) and [Microsoft Quick Settings](https://support.microsoft.com/en-us/windows/experience/personalization/customize-the-taskbar-in-windows).
+For a standard 48 logical-pixel panel, the current project uses a 30 px task/Start canvas, a 16 px tray glyph box, 32 px normal tray cells and 24 px grouped network/volume/battery cells. The notification bell uses a 16 px glyph box in a 24 px cell. The 32 px native compact representation host is only a fallback, scaled into the smaller tray box. Preserve the source aspect ratio, state-dependent battery and network artwork, input-language text, user-selectable spacing and mirrored layouts. Qt applies the display scale. At 150%, the task canvas is 45 physical pixels and the tray box is 24 physical pixels; painted bounds depend on the artwork. These are current implementation targets, not measured Windows shell specifications. Imported artwork and native fallback delegates still require matched live comparison. Default order: overflow, application items, language, network, volume, battery, clock and notification bell, then the 6 px Show Desktop sliver. See [Windows taskbar styling measurements](https://github.com/ramensoftware/windows-11-taskbar-styling-guide#tray-icons-size) and [Microsoft Quick Settings](https://support.microsoft.com/en-us/windows/experience/personalization/customize-the-taskbar-in-windows).
 
-### PR 21 desktop acceptance
+### Desktop acceptance
 
-The panel measurements in this branch are in logical pixels. The 28 px task icon canvas and 16 px tray glyph box are provisional project settings. There is no measured 26H2 screenshot in this checkout that establishes it as the Windows default. Leave output scaling to Qt and KWin. Record the Windows build, native resolution, scale, language, theme and input method with each comparison.
+The panel measurements in this branch are in logical pixels. The 30 px task icon canvas and 16 px tray glyph box are provisional project settings. There is no measured 26H2 screenshot in this checkout that establishes it as the Windows default. Leave output scaling to Qt and KWin. Record the Windows build, native resolution, scale, language, theme and input method with each comparison.
 
 | Surface | Runtime and regression coverage | Outstanding desktop evidence |
 | --- | --- | --- |
 | Taskbar and tray | Native applet status and user pin/hide preferences decide visibility. Application artwork retains its aspect ratio. The tray reports effective-status changes to its proxy models. | Measure active glyph bounds, badge placement, drag ordering and context menus on matched displays. |
 | Win+A and devices | Bluetooth uses BluezQt and the Bluedevil device page. Removable storage uses KDE's Disks & Devices applet. Per-display sliders use PowerDevil model roles. Cast launches an installed GNOME Network Displays service. Accessibility opens the installed KDE module. | Exercise pairing, failure, disconnection, USB busy/eject, external display hotplug, wireless projection and audio route changes. |
-| Start, notification history, calendar, clock and OSD | Qt interaction tests cover the Start view, calendar and scrolling. The packaged live tests drive the shell through real input. | Compare Chinese and English in each theme at 150%. Check focus, touchpad movement, text clipping and notification delivery in a running session. |
+| Start, notification history, calendar, clock and OSD | Qt interaction tests cover the Start view, calendar and scrolling. The live tests in the source checkout drive the shell through real input. | Compare Chinese and English in each theme at 150%. Check focus, touchpad movement, text clipping and notification delivery in a running session. |
 | Alt+Tab, Task View, snap, lock screen and window frames | The switcher suite loads the KWin layout. Window material tests exercise light and dark frame generation. | Compare window lifecycle, snap placement, gestures, lock-screen focus, shadows, animations and GPU blur in KWin. |
 | NixOS lifecycle | Source builds target the installed Plasma version. The owner ZIP includes the runtime resources; desktop test suites stay in the checkout. The uninstall dispatcher has an isolated routing test. | Install, upgrade and restore on the target generation. Verify the running plugin identity after each change. |
 
@@ -97,7 +97,7 @@ Implementation references: [KDE Bluedevil](https://github.com/KDE/bluedevil/tree
 
 ### Modern battery and grouped hover follow-up
 
-Compare the project-drawn colored battery and optional percentage against KB5067036 and the owner's screenshot at 150%. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The visual asset is recreated, not extracted from Windows.
+The current QML battery is a compatibility drawing. Replacing it with reviewed original 26H2 artwork remains an open requirement. Compare the actual states and optional percentage against the matching Windows reference. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The visual asset is recreated, not extracted from Windows.
 
 ### Search home, clock and media source (owner reference, 2026-11-25)
 
@@ -249,7 +249,7 @@ existing focus/preview/launcher scenarios are the live acceptance route.
 Private owner archives are assembled under a temporary directory inside
 `dist`, checked before publication, then renamed to the final filename.
 A failed resource fetch, dirty or changing checkout, missing submodule,
-undersized archive, incomplete indexed resource or hash mismatch must not
+incomplete archive, missing indexed resource or hash mismatch must not
 publish a partially built final ZIP. Public packaging leaves prior verified
 owner packages alone. The resource checker uses the existing index schema
 consumed by the native asset importer. Its synthetic fixture checks do not

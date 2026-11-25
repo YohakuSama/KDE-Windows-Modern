@@ -206,13 +206,10 @@ if [[ "$OWNER" -eq 1 ]]; then
     FULL_OUT="$owner_work/$(basename "$owner_out")"
 fi
 rm -f "$FULL_OUT"
-archive_paths=(.)
-if [[ "$OWNER" -eq 1 ]]; then
-    # Keep the parallel theme-only package policy. The tests stay in Git.
-    exclusions="$(python3 "$SCRIPT_DIR/verify-owner-bundle.py" --archive-excludes)"
-    mapfile -t owner_excludes <<< "$exclusions"
-    archive_paths+=("${owner_excludes[@]}")
-fi
+# One source policy for all full installable archives.
+exclusions="$(python3 "$SCRIPT_DIR/verify-owner-bundle.py" --archive-excludes)"
+mapfile -t archive_excludes <<< "$exclusions"
+archive_paths=(. "${archive_excludes[@]}")
 git -C "$SRC_DIR" archive --format=zip --prefix="KDE-Windows-Modern-${FULL_VER}/" \
     -o "$FULL_OUT" "$build_revision" -- "${archive_paths[@]}"
 # `git archive` leaves submodules out, so the greeter could not be built

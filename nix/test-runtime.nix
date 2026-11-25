@@ -17,7 +17,8 @@ let
         inherit src;
         filter = path: type:
           let n = baseNameOf path; in
-          !(n == "build" || lib.hasPrefix "build-" n || n == "wm-build" || n == ".git");
+          !(n == "build" || lib.hasPrefix "build-" n || n == "wm-build" || n == ".git"
+            || builtins.elem n [ "dev.sh" "verify.sh" "Messages.sh" "BUILD.md" "tests" ]);
       };
       # Nix itself hashes the filtered source path. The identity also changes
       # if the build recipe, pinned package set or ABI changes. Unchanged

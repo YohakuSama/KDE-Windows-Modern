@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Read selected Windows resources without extracting archive members."""
 import hashlib
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 import stat
 import tarfile
 import zipfile
@@ -78,3 +78,14 @@ def read_assets(source, wanted):
 def source_manifest(data):
     return {name: {'sha256': hashlib.sha256(content).hexdigest(), 'bytes': len(content)}
             for name, content in sorted(data.items())}
+
+
+def importer_fingerprint():
+    """Invalidate generated assets when the actual importer changes."""
+    h = hashlib.sha256()
+    root = Path(__file__).resolve().parent
+    for name in ('import-windows-assets.py', 'native_assets_input.py',
+                 'native_assets_index.py', 'native_pe_resources.py'):
+        h.update(name.encode() + b'\0')
+        h.update(hashlib.sha256((root / name).read_bytes()).digest())
+    return h.hexdigest()

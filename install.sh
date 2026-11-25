@@ -31,34 +31,9 @@ source "$SCRIPT_DIR/scripts/config-backup.sh"
 FAILED_COMPONENTS=()
 WM_TRANSLATIONS_INSTALLED=0
 
-is_nixos() {
-    [ -r /etc/os-release ] && grep -Eq '^ID="?nixos"?$' /etc/os-release
-}
-
-# The mutable /usr plugin installer is incompatible with NixOS.
-nixos_full_install_unavailable() {
-    err "Full plugin/layout installation is not yet supported on NixOS."
-    err "Use bash ./install.sh preview --dark (or --light) for user-space testing."
-    err "Preview preserves the existing task manager and system tray."
-}
-
 install_component() {
     local name="$1"
     local script="$SCRIPT_DIR/scripts/install-${name}.sh"
-    if is_nixos; then
-        case "$name" in
-            systray|icontasks|greeter)
-                nixos_full_install_unavailable
-                return 1
-                ;;
-            lookfeel)
-                if ! is_batch; then
-                    nixos_full_install_unavailable
-                    return 1
-                fi
-                ;;
-        esac
-    fi
     if [ -x "$script" ]; then
         # Install the applet-domain catalogs before any applet reloads.
         if [ "$name" != deps ] && [ "$WM_TRANSLATIONS_INSTALLED" -eq 0 ]; then
@@ -87,10 +62,6 @@ install_component() {
 # Phase C: apply once (KWin tweaks, theme+layout reset, Kvantum engine, restart)
 install_everything() {
     local variant="${1:-}"
-    if is_nixos; then
-        nixos_full_install_unavailable
-        return 1
-    fi
 
     # Resolve variant: flag > interactive prompt > dark default
     if [ -z "$variant" ]; then
@@ -168,10 +139,6 @@ install_everything() {
 
 # ── Install all applets as a batch (menu 6) ─────────────────────────
 install_all_applets() {
-    if is_nixos; then
-        nixos_full_install_unavailable
-        return 1
-    fi
     export WM_BATCH=1
     info "Installing all applets..."
     install_component showdesk

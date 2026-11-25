@@ -370,11 +370,11 @@ PY
 # paths and hash verification are shared with the normal importer.
 if [ -f "$ROOT/native-resources/resource-manifest.json" ]; then
     input="$ROOT/native-resources"
+    bash "$ROOT/scripts/stage-native-resources.sh" --verify "$input"
 else
-    if [ ! -f "$STATE/resources/resource-manifest.json" ]; then
-        bash "$ROOT/scripts/stage-native-resources.sh" "$STATE/resources"
-    fi
-    input="$STATE/resources"
+    # Share the same verified pinned cache with the packager. An earlier
+    # resource directory in STATE must not override a newer resource pin.
+    input="$(bash "$ROOT/scripts/stage-native-resources.sh" --resolve)"
 fi
 # Reuse the imported assets only if the pinned input manifest, mapping and
 # every generated file still match. No repeated import on an ordinary upgrade.

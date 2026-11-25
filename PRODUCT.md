@@ -97,21 +97,22 @@ Not added, even on request, unless this brief changes:
   parity complete without comparing screenshots and behavior against the
   reference build at equivalent scaling.
 
-## Roadmap
+## Current scope and acceptance
 
-| Status | Item | Notes |
-|--------|------|-------|
-| Done | Windows 11 Alt+Tab switcher | `plasma/windowswitcher/`, selected by both global themes. |
-| Done | Windows shortcuts, cursor, everyday apps | `./install.sh shortcuts` / `apps`; Win10OS cursors (fetched from upstream, GPL-3.0). Win+X (power-user menu) is not mapped. |
-| Done | OSD position, Cascadia Mono | KWin script for the OSD; Cascadia Mono via `./install.sh apps`. |
-| Done | Dolphin status bar | Patched rpm (`scripts/fix-dolphin-statusbar.sh`); stock fixes itself from Dolphin 26.12. |
-| Done | Window animations | KDE's defaults match Windows 11; "Everything" only turns off the corner-sliding Show Desktop effect, unless the user set it. |
-| Done | Optional fonts | System font settings are preserved by default. Explicit `./install.sh fonts` offers Segoe UI or Selawik, Cascadia Mono. |
-| Done | Snap Layouts | Drag-to-top layout bar (`plasma/kwinscripts/org.kde.windowsmodern.snaplayouts`). The maximize-button hover flyout is not possible with an Aurorae decoration. |
-| Done | Prebuilt C++ plugins | Releases carry the tray and taskbar plugins per Fedora/Plasma/Qt version; a release checkout installs them without a compiler, anything else builds from source. |
-| Done | KDE Store | Every component is its own store item; the global themes depend on them, so a Discover install brings the look. Published with `scripts/store/`. |
-| Integrating | Quick Settings | Separate overflow and grouped system icons, toggles and sliders, Windows 11 footer. Live validation pending. |
-| Integrating | Notifications in the clock flyout | Shared KDE notification history above the calendar, Win+N, dismiss, clear, actions and manual DND. Native tray applet retains jobs and advanced functions. Live validation and exact reference layout pending. |
+Use the current implementation and [fidelity acceptance matrix](docs/WINDOWS11_FIDELITY.md)
+to judge completion. Build success does not establish visual parity.
+
+- Current components cover Start/Search, taskbar, Alt+Tab, Quick Settings,
+  clipboard, notifications, calendar, desktop context menu, keyboard
+  shortcuts, snap layouts and session lock.
+- System fonts are preserved by default. Optional fonts, Plymouth and the
+  patched login manager are separate. Bibata Modern Ice is a cursor
+  approximation, not the original Microsoft cursor.
+- NixOS uses reversible ABI-matched native builds, not Fedora binaries.
+- The complete development reference library and compact runtime resource
+  set have different purposes. Private packages are distinct from public
+  integration artifacts. Upstream KDE Store listings are not evidence of
+  publication by this fork.
 
 ## How to judge a new idea
 

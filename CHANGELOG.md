@@ -6,6 +6,10 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Apply a single theme-only exclusion policy to full installable ZIPs, verify installer dependencies and Store artwork, and reconcile outdated geometry/feature documentation with current code.
+
+- Reuse a verified resource cache across packaging and NixOS source installs; verify bundled pins and invalidate generated asset caches when the importer changes.
+
 - Trim the installable theme payload to the exact mapped Windows resources, cache the pinned compact input set and keep the full reference library for future artwork coverage. Verify file membership and hashes instead of a fixed ZIP size.
 
 - Remove historical showcase screenshots and obsolete development plans from the current checkout. Consolidate installation, native resources and packaging documentation, and correct the fork's project links without changing upstream author attribution.

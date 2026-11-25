@@ -8,9 +8,7 @@ source="${WM_NATIVE_RESOURCE_SOURCE:-}"
 [ "$EUID" -ne 0 ] || { echo "Import resources as the desktop user." >&2; exit 1; }
 if [ -z "$source" ] && [ -f "$root/native-resources/resource-manifest.json" ]; then
     source="$root/native-resources"
-fi
-if [ -z "$source" ] && [ -f "$data/resource-input/resource-manifest.json" ]; then
-    source="$data/resource-input"
+    bash "$root/scripts/stage-native-resources.sh" --verify "$source"
 fi
 verify_output() {
     python3 "$root/scripts/check-native-icon-import.py" "$output" "$root/scripts/native-assets-map.json" &&
@@ -26,8 +24,7 @@ if [ -f "$output/manifest.json" ] && [ -z "${WM_NATIVE_RESOURCE_SOURCE:-}" ]; th
     fi
 fi
 if [ -z "$source" ]; then
-    bash "$root/scripts/stage-native-resources.sh" "$data/resource-input"
-    source="$data/resource-input"
+    source="$(bash "$root/scripts/stage-native-resources.sh" --resolve)"
 fi
 python3 "$root/scripts/import-windows-assets.py" "$source" --output "$output"
 verify_output
