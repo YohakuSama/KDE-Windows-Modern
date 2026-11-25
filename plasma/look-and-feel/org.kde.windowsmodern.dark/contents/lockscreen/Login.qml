@@ -19,6 +19,12 @@ SessionManagementScreen {
     id: root
 
     property Item mainPasswordBox: passwordField
+    readonly property int accountAvatarSize: Math.max(1, Math.floor(Math.min(WinStyle.avatarSize, width * 0.6, height * 0.25)))
+    readonly property url accountImage: !showUsernamePrompt && userList && userList.currentItem && userList.currentItem.icon
+        ? userList.currentItem.icon : Qt.resolvedUrl("faces/.face.icon")
+    readonly property string accountName: showUsernamePrompt ? userNameInput.text
+        : (userList && userList.currentItem && userList.currentItem.realName
+            ? userList.currentItem.realName : (userList ? userList.selectedUser : ""))
 
     property bool showUsernamePrompt: !showUserList
     property bool loginScreenUiVisible: false
@@ -99,13 +105,8 @@ SessionManagementScreen {
     WinAvatar {
         Layout.alignment: Qt.AlignHCenter
         Layout.bottomMargin: 16
-        size: WinStyle.avatarSize
-        source: {
-            if (!root.showUsernamePrompt && userList.currentItem && userList.currentItem.icon) {
-                return userList.currentItem.icon;
-            }
-            return Qt.resolvedUrl("faces/.face.icon");
-        }
+        size: root.accountAvatarSize
+        source: root.accountImage
     }
 
     // ── Username label ──

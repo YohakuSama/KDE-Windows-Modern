@@ -26,6 +26,9 @@ Item {
     Kirigami.Theme.inherit: false
 
     property string notificationMessage
+    property bool loginSucceeded: false
+    property string welcomeName: ""
+    property url welcomeImage: ""
 
     LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
@@ -107,8 +110,9 @@ Item {
 
             focus: true
             hoverEnabled: true
+            enabled: !root.loginSucceeded
 
-            opacity: loginScreenRoot.uiVisible ? 1 : 0
+            opacity: loginScreenRoot.uiVisible && !root.loginSucceeded ? 1 : 0
             Behavior on opacity {
                 OpacityAnimator {
                     duration: Kirigami.Units.longDuration
@@ -205,6 +209,18 @@ Item {
             }
         }
 
+        // Show only after the real authenticator reports success. The
+        // backend owns session startup and is never delayed by this view.
+        SignInWelcome {
+            anchors.centerIn: parent
+            width: mainStack.width
+            height: mainStack.height
+            visible: root.loginSucceeded && loginScreenRoot.uiVisible
+            accountName: root.welcomeName
+            accountImage: root.welcomeImage
+            message: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Welcome")
+        }
+
         // ── Bottom-left user switcher ──
         WinUserSwitcher {
             id: userListSwitcher
@@ -215,7 +231,7 @@ Item {
                 bottomMargin: Kirigami.Units.largeSpacing
             }
             model: PlasmaLogin.UserModel
-            uiVisible: loginScreenRoot.uiVisible
+            uiVisible: loginScreenRoot.uiVisible && !root.loginSucceeded
             width: Math.max(0, Math.min(240, parent.width - 2 * anchors.leftMargin))
             maximumHeight: Math.max(0, Math.min(parent.height * 0.25, footer.y - anchors.bottomMargin))
         }
@@ -228,7 +244,8 @@ Item {
             anchors.right: parent.right
             anchors.margins: 16
             spacing: 8
-            opacity: loginScreenRoot.uiVisible ? 1 : 0
+            enabled: !root.loginSucceeded
+            opacity: loginScreenRoot.uiVisible && !root.loginSucceeded ? 1 : 0
 
             Behavior on opacity {
                 OpacityAnimator {
@@ -283,6 +300,8 @@ Item {
     // The session comes from GreeterState.sessionIndex (set by SessionButton).
     function handleLoginRequest(username, password) {
         root.notificationMessage = "";
+        root.welcomeName = mainStack.currentItem?.accountName || username;
+        root.welcomeImage = mainStack.currentItem?.accountImage || "";
         PlasmaLogin.GreeterState.handleLoginRequest(username, password);
     }
 
@@ -299,14 +318,12 @@ Item {
         function onLoginFailed() {
             notificationMessage = i18nd("plasma_login", "Login Failed");
             notificationResetTimer.start();
-            footer.enabled = true;
-            mainStack.enabled = true;
+            root.loginSucceeded = false;
             rejectPasswordAnimation.start();
         }
 
         function onLoginSucceeded() {
-            mainStack.opacity = 0;
-            footer.opacity = 0;
+            root.loginSucceeded = true;
         }
     }
 
