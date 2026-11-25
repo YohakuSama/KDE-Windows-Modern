@@ -91,17 +91,50 @@ python3 scripts/inspect-shell-resources.py /path/to/Windows /path/to/private/she
 A matching font family or resource ID does not establish the correct glyph.
 Review the original artwork before adding it to the map.
 
+## Windows 11 26H2 shell-only artwork
+
+The reviewed 713-group MUN archive does not contain the following shell
+assets. They belong to packaged SystemApps or a PRI resource index and must
+be imported separately from an authorized Windows 11 26H2 installation
+(build family 26300). Do not substitute a similarly named MUN icon.
+
+| UI role | Windows source | Import rule |
+| --- | --- | --- |
+| New battery outline/fill states | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/SystemTray/Assets/Sysbatt.ttf` | Keep as a private applet asset and load it locally. Glyph roles are documented below. |
+| Battery font fallback location | `SystemResources/Windows.UI.ControlCenter/Assets/Sysbatt.ttf` | Use only if the SystemApps copy is absent. |
+| Search activation, light taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOnLight.scale-100.png` | Preserve the original PNG and its state. |
+| Search idle, light taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOffLight.scale-100.png` | Preserve the original PNG and its state. |
+| Search activation, dark taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOnDark.scale-100.png` | Preserve the original PNG and its state. Confirm the matching off-state filename on the source build before mapping it. |
+| Task View, light/dark variants | `SystemResources/Windows.UI.SettingsAppThreshold/Windows.UI.SettingsAppThreshold.pri` | Extract `Files/SystemSettings/Assets/Taskview_Light.svg` and `Taskview_Dark.svg` from the PRI. The names indicate the taskbar background variant, not the glyph brightness. |
+
+The battery font is named `SysBatt Fluent Icons`. The verified state
+codepoints include outline U+F8D0 (discharging), U+F8DB (charging),
+U+F8E4 (plugged in), and U+F849 (energy saver). Fill levels use
+U+F8D1–U+F8DA for discharging, U+F8DC–U+F8E3 for charging, and
+U+F8E5–U+F8EC for plugged-in states. These codepoints do not supply the
+font file; the original `Sysbatt.ttf` is still required.
+
+`SystemTray/Assets/AXPIcons.ttf` is a separate AXP Fluent Icons font used
+for additional tray/input-method glyphs. Do not treat it as the SysBatt
+battery font or install either proprietary font as the desktop text font.
+
+The original MUN reference archive has no indexed entries for these
+SystemApps/PRI assets. Their absence from the 713 MUN groups is expected,
+not evidence that the Windows installation lacks them. Keep the source
+build, original relative path, SHA-256 and extracted file together in the
+private resource manifest. Never add proprietary Windows files to a public
+release or the public Git history.
+
 ## Current coverage boundaries
 
-- The current reference library lacks an identified 26H2 SysBatt Fluent
-  Icons source. BatteryGlyph now uses the genuine imported Segoe level,
-  charging and energy-saver glyphs instead of a compatibility drawing.
-  The legacy family is not the latest 26H2 artwork.
-- The newer colored Search activation glyph and the newer two-tone taskbar
-  Task View artwork have not been identified in the reviewed resource library.
-  Use only the existing genuine Segoe E721 Search and E7C4 TaskView roles
-  from verified local imports until the exact sources are identified. If the
-  import is unavailable, leave the glyph absent instead of using KDE artwork.
+- The 26H2 SysBatt font, colored Search state images and two-tone Task View
+  SVGs are now identified by their Windows source paths above, but are not
+  present in the reviewed MUN resource branch. BatteryGlyph still uses the
+  older imported Segoe level/charging/saver family until the private 26H2
+  font is imported and verified. Do not draw a replacement.
+- Search currently uses the genuine imported Segoe E721 role when no
+  verified colored state image is installed. Task View uses E7C4 until both
+  original PRI SVG variants are imported. Do not use KDE/Breeze fallbacks.
 - The original indexed account portraits are absent. The existing group 88
   mapping provides a default image; actual user portraits take precedence.
 - Native Plasma desktop selection, notification toast behavior and
