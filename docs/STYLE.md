@@ -1,8 +1,11 @@
 # Windows Modern — Style Specification
 
-This document describes the visual style, color palette, and layout
-decisions for the Windows Modern KDE Plasma theme. It serves as a
-reference for maintaining consistency across all components.
+This document records the visual style, color palette and layout of the
+theme. For current Windows 11 requirements, use
+[WINDOWS11_FIDELITY.md](WINDOWS11_FIDELITY.md) and
+[PANEL_UI_CONTRACT.md](PANEL_UI_CONTRACT.md) where older descriptions differ.
+Actual component code and matched-scale desktop verification determine
+implementation status. [README.md](../README.md) is the installation guide.
 
 ---
 

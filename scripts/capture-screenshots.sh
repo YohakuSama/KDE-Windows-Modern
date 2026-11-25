@@ -1,6 +1,6 @@
 #!/bin/bash
 # ───────────────────────────────────────────────────────────────────
-#  capture-screenshots.sh — guided screenshot capture for the README
+#  capture-screenshots.sh — guided screenshot capture for current desktop review
 #
 #  Walks you through each desktop state that showcases the theme,
 #  waits for you to set it up, then captures and optimizes the shot.
@@ -16,6 +16,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SHOT_DIR="$SRC_DIR/docs/screenshots"
 
 BOLD="\033[1m"; GREEN="\033[32m"; YELLOW="\033[33m"; RED="\033[31m"; CYAN="\033[36m"; RESET="\033[0m"
 info()  { echo -e "${GREEN}==>${RESET} ${BOLD}$*${RESET}"; }
@@ -38,7 +39,7 @@ SHOTS=(
     "10|View-10.png|Start Menu + windows (dark)|DARK theme. Open 2-3 windows behind the menu, then open the Windows Modern Start Menu on top. This composite shows the panel, window decorations, wallpaper, and start menu all at once — the richest showcase shot."
     "11|View-11.png|Start Menu + windows (light)|LIGHT theme. Open 2-3 windows behind the menu, then open the Windows Modern Start Menu on top. This composite shows the panel, window decorations, wallpaper, and start menu all at once — the richest showcase shot."
     "12|View-12.png|Start Menu — All Apps (dark)|DARK theme. Open the Start Menu and switch to the All Apps page. Shows the dark variant of the menu."
-    "13|View-13.png|Icon taskbar thumbnail preview (dark)|DARK theme. Hover an icon on the icons-only taskbar (Windows Modern Icon Tasks applet) so the Win11-style wide thumbnail tooltip with the per-tile close button appears. (A light variant exists but is not yet captured.)"
+    "13|View-13.png|Icon taskbar thumbnail preview (dark)|DARK theme. Hover an icon on the icons-only taskbar (Windows Modern Icon Tasks applet) so the Win11-style wide thumbnail tooltip with the per-tile close button appears."
     "14|View-14.png|Icon taskbar thumbnail preview (light)|LIGHT theme. Open two windows of one app and hover its taskbar icon so both window previews show."
     "15|View-15.png|Clock flyout with agenda (dark)|DARK theme. Click the clock, then click a holiday in this month (a day with a dot) so its events show under the calendar."
     "16|View-16.png|Clock flyout with agenda (light)|LIGHT theme. Click the clock, then click a holiday in this month (a day with a dot) so its events show under the calendar."
@@ -82,7 +83,7 @@ capture_one() {
         s|skip)  warn "Skipping shot ${num}."; return 0 ;;
     esac
 
-    local outpath="$SRC_DIR/$file"
+    local outpath="$SHOT_DIR/$file"
 
     # Resolve leftmost screen geometry (captured once, reused).
     local geom ox oy gw gh
@@ -126,7 +127,7 @@ capture_one() {
 # ── Main ───────────────────────────────────────────────────────────
 
 # Pre-flight
-if [[ "$XDG_SESSION_TYPE" != "wayland" ]]; then
+if [[ "${XDG_SESSION_TYPE:-}" != "wayland" ]]; then
     warn "Session is not Wayland (detected: ${XDG_SESSION_TYPE:-unknown}). Spectacle should still work."
 fi
 command -v spectacle >/dev/null || { err "spectacle not found."; exit 1; }
@@ -136,6 +137,8 @@ if [[ "${1:-}" == "--list" ]]; then
     list_shots
     exit 0
 fi
+
+mkdir -p "$SHOT_DIR"
 
 # Filter to specific shot numbers if given.
 if [[ $# -gt 0 ]] && [[ "$1" != "--all" ]]; then
@@ -163,9 +166,8 @@ echo ""
 info "Done! Captured files:"
 for s in "${SHOTS[@]}"; do
     IFS='|' read -r num file _ _ <<< "$s"
-    [[ -f "$SRC_DIR/$file" ]] && echo "    $file"
+    [[ -f "$SHOT_DIR/$file" ]] && echo "    $SHOT_DIR/$file"
 done
 echo ""
-echo -e "  ${BOLD}Next:${RESET} Review the images, then commit:"
-echo -e "  git add View-*.png && git commit -m 'docs: update README screenshots'"
-echo -e "  ./scripts/update-previews.sh   # regenerate global theme previews"
+echo -e "  ${BOLD}Next:${RESET} Review current captures in $SHOT_DIR (not tracked by Git)."
+echo -e "  ./scripts/update-previews.sh   # regenerate installed global theme previews"

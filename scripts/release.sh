@@ -15,7 +15,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-REPO_SLUG="Jeysef/KDE-Windows-Modern"
+REPO_SLUG="YohakuSama/KDE-Windows-Modern"
 
 BOLD="\033[1m"; GREEN="\033[32m"; YELLOW="\033[33m"; RED="\033[31m"; CYAN="\033[36m"; RESET="\033[0m"
 info()  { echo -e "${GREEN}==>${RESET} ${BOLD}$*${RESET}"; }
@@ -100,26 +100,15 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
     exit 0
 fi
 
-# ── 4. Ensure GitHub repo + remote ─────────────────────────────────
-if ! git remote get-url origin >/dev/null 2>&1; then
-    info "No 'origin' remote — creating GitHub repo ${REPO_SLUG}..."
-    # Create without --push so we can force HTTPS (SSH may auth as the
-    # wrong account if multiple SSH keys are present).
-    gh repo create "$REPO_SLUG" --public --source=. --remote=origin
-    git remote set-url origin "https://github.com/${REPO_SLUG}.git"
-    gh auth setup-git
-    git push -u origin main
-    step "repo created, HTTPS remote configured, main pushed"
-else
-    # Ensure HTTPS so gh token is used (not an SSH key from another account).
-    cur_url="$(git remote get-url origin)"
-    if [[ "$cur_url" == git@github.com:* ]]; then
-        warn "origin is SSH — switching to HTTPS for gh token auth..."
-        git remote set-url origin "https://github.com/${REPO_SLUG}.git"
-        gh auth setup-git
-    fi
-    step "origin remote present"
-fi
+# ── 4. Verify the configured destination ───────────────────────────
+# Never create another repository or rewrite the maintainer's Git remotes.
+# Reject a checkout pointing at upstream or multiple push destinations.
+origin_url="$(git remote get-url --push --all origin)" || { err "Configure origin for $REPO_SLUG."; exit 1; }
+case "$origin_url" in
+    "https://github.com/$REPO_SLUG"|"https://github.com/$REPO_SLUG.git"|"git@github.com:$REPO_SLUG"|"git@github.com:$REPO_SLUG.git"|"ssh://git@github.com/$REPO_SLUG"|"ssh://git@github.com/$REPO_SLUG.git") ;;
+    *) err "origin push URL does not match $REPO_SLUG."; exit 1 ;;
+esac
+step "release destination verified"
 
 # ── 5. Tag (reuse if already created locally) ──────────────────────
 if git rev-parse "$TAG" >/dev/null 2>&1; then
@@ -144,22 +133,21 @@ CHANGES="$(awk -v v="$VERSION" '
     on { print }' CHANGELOG.md)"
 
 NOTES="$(cat <<EOF
-Windows 11's look and feel for KDE Plasma 6, with a few Windows 10
-touches: Start menu, taskbar, system tray with Quick Settings, window
-decorations, themes, icons, cursors, shortcuts and Snap Layouts.
+Windows 11-style desktop theme and shell components for KDE Plasma 6:
+Start, Search, taskbar, Quick Settings, notifications, window decorations,
+icons, shortcuts and Snap Layouts.
 
 ### Install
 
-Download and extract the full bundle \`.zip\` (or clone the \`${TAG}\` tag), then:
+Extract the public theme ZIP (or clone the \`${TAG}\` tag) and run
+\`bash install.sh\` as the desktop user. On NixOS select 1 for first install,
+2 for upgrade or 3 to restore. The installer builds native plugins for the
+running Plasma ABI where matching binaries are unavailable.
 
-\`\`\`bash
-./install.sh        # menu; Enter installs everything
-\`\`\`
-
-On the Fedora versions CI builds for, the System Tray and taskbar plugins
-come prebuilt (attached below, checksum-verified), so no compiler is
-needed; elsewhere they are built from source. See the README for single
-components.
+This public archive does not contain the owner's original Windows resource
+payload. See README.md and docs/NATIVE_ASSETS.md for local resource imports
+and the distinct private owner package. No private resource ZIP is uploaded
+by this release script.
 
 ### Changes
 

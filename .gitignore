@@ -30,3 +30,9 @@ __pycache__/
 /Windows-resources*.tar
 /Windows/
 /native-assets/
+
+# Local screenshots and generated coverage reports (never theme payload)
+/docs/screenshots/
+/icon-coverage-source.json
+/icon-coverage-installed.json
+/windows-resource-catalog.json

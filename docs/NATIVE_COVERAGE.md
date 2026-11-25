@@ -13,7 +13,7 @@ python3 scripts/icon-coverage.py --installed > icon-coverage-installed.json
 
 The second report checks the XDG icon theme and desktop entries, including the paths exported by NixOS. It separates verified native output hashes, mapped but unverified names, bundled artwork, absent theme entries, and absolute icon paths. Static QML literal candidates include some non-icon references. A missing theme entry is not proof of a broken system icon because KDE may inherit Breeze or hicolor. Dynamic QML names, native widget SVGs, scale selection and actual pixmaps need desktop checks. Review the report before sharing. No files are uploaded.
 
-The current map has 583 target paths: 260 status, 226 actions, 40 devices, 37 places, 8 MIME, 7 apps and 5 emblems. The seven app targets are not comprehensive app icon coverage. Count paths separately from unique original Windows resources. Do not label an icon native merely because its name is present in the bundled pack.
+At the current mapping revision there are 869 target paths (386 status, 266 actions, 61 apps, 60 categories, 46 devices, 37 places, 8 mimetypes, 5 emblems). These are mapped names, not a claim of complete application or native artwork coverage. Count paths separately from unique original Windows resources. Do not label an icon native merely because its name is present in the bundled pack.
 
 If the local source was already imported, the existing importer can export resource IDs and hashes without uploading binaries:
 
@@ -23,17 +23,23 @@ python3 scripts/import-windows-assets.py --reuse --catalog windows-resource-cata
 
 Verify exact source artwork before adding mappings. Account pictures and Microsoft Store packaged app assets may be outside the three MUN libraries. Check the actual archive first. If absent, request the precise original assets (and their originating Windows build), not a substitute SVG.
 
-## NixOS is a separate platform
+## Runtime assets and NixOS
 
-Fedora 44/45 builds are distro-specific ABI checks and prebuilt plugin packages; they are not universal Linux binaries. The existing installer assumes conventional writable /usr paths and dnf, pacman or apt. It must not overwrite the Nix store or remove a stock Plasma package on NixOS. The two C++ plugins need Nix derivations using the owner's pinned nixpkgs Plasma/Qt versions, and the login-manager replacement needs its own declarative system integration. Keep the stock lock/login configuration usable until verified. User-level theme and resource auditing is separate from these system changes. No NixOS runtime acceptance is claimed.
+NixOS uses the reversible desktop installer and builds the tray, taskbar and
+desktop context-menu plugins against its own Plasma/Qt ABI. The Fedora 44/45
+CI builds are ABI-specific checks, not NixOS binaries. The installer does not
+modify the Nix store, configuration.nix, Home Manager or the system greeter.
+See the [installation instructions](../README.md).
 
-The indexed resource branch is now the review reference. The metadata-only
-snapshot is `docs/windows11-resource-index.json`; do not equate a group ID
-existing with a verified semantic match. Search/Task View now consume icon
-names rather than inline drawings. Native palette and hotspot state must
-reflect the actual KDE service; missing hardware does not get a dummy tile.
-Default account-picture and Store artwork still require visual verification
-of the actual original, not a guessed MUN ID. NixOS live tests remain open.
+The complete reference branch `resources/windows11` stays available for
+unmapped artwork. The pinned `resources/theme-runtime` branch is the
+smaller exact input set for installation. The metadata-only snapshot is
+`docs/windows11-resource-index.json`. A group ID alone does not establish
+its meaning; inspect the real image, compare state families, update the map,
+then review and pin the runtime selection.
+
+Native palette, icon states and input behavior need verification on the
+target desktop. Do not claim full coverage based on source checks alone.
 
 ## System action review
 
