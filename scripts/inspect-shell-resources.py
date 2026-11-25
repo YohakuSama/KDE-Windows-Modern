@@ -6,30 +6,16 @@ import hashlib
 import io
 import json
 from pathlib import Path
-import shutil
 import struct
-import tempfile
-import xml.etree.ElementTree as ET
 
 from fontTools.ttLib import TTCollection, TTFont, TTLibError
 from native_pe_resources import pe_resources
-from native_pri_resources import embedded_resources
 
 SHELL_MODULES = {"systemtray.dll", "taskbar.view.dll"}
 MODULES = {name + suffix for name in SHELL_MODULES for suffix in ("", ".mui", ".mun")}
 MODULES.update({"imageres.dll.mun", "imagesp1.dll.mun", "shell32.dll.mun"})
 FONT_SIGNATURES = (b"\0\1\0\0", b"OTTO", b"ttcf", b"wOFF", b"wOF2")
 SHELL_DATA = {".pri", ".xbf", ".xaml"}
-SEARCH_ICONS = {
-    "searchicononlight.scale-100.png": "search/search-on-light.png",
-    "searchiconofflight.scale-100.png": "search/search-off-light.png",
-    "searchiconondark.scale-100.png": "search/search-on-dark.png",
-    "searchiconoffdark.scale-100.png": "search/search-off-dark.png",
-}
-TASK_VIEW_RESOURCES = (
-    "Files/SystemSettings/Assets/Taskview_Light.svg",
-    "Files/SystemSettings/Assets/Taskview_Dark.svg",
-)
 
 
 def digest(blob):
@@ -85,111 +71,13 @@ def icon_group(resources, key):
 def note_font(blob, target, output):
     faces = font_info(blob)
     target["faces"] = faces
-    sysbatt = any(
-        "codepoints" in face and
-        any(name.casefold().strip() == "sysbatt fluent icons" for name in face["families"])
-        for face in faces
-    )
-    if sysbatt:
-        dest = output / "shell" / "fonts" / "Sysbatt.ttf"
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(blob)
-        target["original_font"] = dest.relative_to(output).as_posix()
-        target["shell_font"] = "shell/fonts/Sysbatt.ttf"
-    elif any("codepoints" in face for face in faces):
+    if any("codepoints" in face for face in faces):
         folder = output / "fonts"
         folder.mkdir(exist_ok=True)
         ext = {b"ttcf": ".ttc", b"OTTO": ".otf", b"wOF2": ".woff2", b"wOFF": ".woff"}.get(blob[:4], ".ttf")
         dest = folder / (digest(blob) + ext)
         dest.write_bytes(blob)
         target["original_font"] = dest.relative_to(output).as_posix()
-
-
-def write_shell_asset(output, assets, role, source, relative, content, kind):
-    if not content:
-        return
-    if kind == "png":
-        if (len(content) < 33 or content[:8] != b"\x89PNG\r\n\x1a\n"
-                or content[12:16] != b"IHDR" or struct.unpack_from(">I", content, 8)[0] != 13):
-            raise ValueError("Invalid original PNG shell asset: " + source)
-        width, height = struct.unpack_from(">II", content, 16)
-        if not (1 <= width <= 4096 and 1 <= height <= 4096):
-            raise ValueError("Invalid PNG dimensions: " + source)
-    elif kind == "svg":
-        try:
-            root = ET.fromstring(content)
-        except ET.ParseError as exc:
-            raise ValueError("Invalid original SVG shell asset: " + source) from exc
-        if root.tag.rsplit("}", 1)[-1].lower() != "svg":
-            raise ValueError("Expected an SVG root element: " + source)
-    else:
-        raise ValueError("Unknown shell asset type: " + kind)
-
-    dest = output / relative
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(content)
-    assets.append({
-        "role": role,
-        "source": source,
-        "output": relative,
-        "bytes": len(content),
-        "sha256": digest(content),
-        "format": kind,
-    })
-
-
-def install_shell_assets(output):
-    output = output.resolve(strict=True)
-    inventory = json.loads((output / "inventory.json").read_text(encoding="utf-8"))
-    assets = inventory.get("shell_assets", [])
-    if not assets:
-        raise ValueError("No recognized Windows 11 shell assets were extracted")
-
-    import os
-    data_home = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
-    data_home = data_home.expanduser().resolve()
-    parent = data_home / "windows-modern" / "native-assets"
-    destination = parent / "shell"
-    parent.mkdir(parents=True, exist_ok=True)
-    stage = Path(tempfile.mkdtemp(prefix=".shell-assets-", dir=parent))
-    backup = None
-    try:
-        installed = []
-        for asset in assets:
-            relative = Path(asset["output"])
-            if relative.is_absolute() or ".." in relative.parts or relative.parts[:1] != ("shell",):
-                raise ValueError("Unsafe shell asset output path")
-            source_path = output.joinpath(*relative.parts)
-            if source_path.is_symlink():
-                raise ValueError("Shell asset source is a symlink: " + str(relative))
-            source = source_path.resolve(strict=True)
-            if (not source.is_relative_to(output) or not source.is_file()
-                    or digest(source.read_bytes()) != asset["sha256"]):
-                raise ValueError("Shell asset hash/path verification failed: " + str(relative))
-            target = stage.joinpath(*relative.parts[1:])
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, target)
-            installed.append({**asset, "installed": target.relative_to(stage).as_posix()})
-        (stage / "manifest.json").write_text(
-            json.dumps({"assets": installed}, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
-        if destination.exists():
-            backup = parent / ".shell-assets-backup"
-            if backup.exists():
-                shutil.rmtree(backup)
-            destination.rename(backup)
-        stage.rename(destination)
-        if backup is not None:
-            shutil.rmtree(backup)
-    except Exception:
-        if backup is not None and backup.exists() and not destination.exists():
-            backup.rename(destination)
-        raise
-    finally:
-        if stage.exists():
-            shutil.rmtree(stage)
-    print("Installed verified Windows shell assets into " + str(destination))
 
 
 def scan(source, output):
@@ -200,13 +88,11 @@ def scan(source, output):
     if output.is_relative_to(source):
         raise ValueError("Choose a separate output directory")
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
-    records, issues, shell_assets = [], [], []
+    records, issues = [], []
     for path in sorted(source.rglob("*")):
         suffix = path.suffix.lower()
         module = path.name.lower() in MODULES
-        search_asset = SEARCH_ICONS.get(path.name.casefold())
-        if path.is_symlink() or not path.is_file() or not (
-                module or suffix in SHELL_DATA | {".otf", ".ttf", ".ttc"} or search_asset):
+        if path.is_symlink() or not path.is_file() or not (module or suffix in SHELL_DATA | {".otf", ".ttf", ".ttc"}):
             continue
         name = path.relative_to(source).as_posix()
         data = path.read_bytes()
@@ -237,39 +123,15 @@ def scan(source, output):
                             record["embedded_fonts"].append(candidate)
                         except (ValueError, KeyError, TTLibError, struct.error):
                             continue  # Image data can start with a font signature.
-            elif suffix == ".pri":
-                record["format"] = "pri"
-                if path.name.casefold() == "windows.ui.settingsappthreshold.pri":
-                    extracted = embedded_resources(data, TASK_VIEW_RESOURCES)
-                    for source_name, relative, role, raw in zip(
-                            TASK_VIEW_RESOURCES,
-                            ("shell/taskview/taskview-light.svg", "shell/taskview/taskview-dark.svg"),
-                            ("taskview-light", "taskview-dark"),
-                            extracted):
-                        if raw is not None:
-                            write_shell_asset(output, shell_assets, role, name, relative, raw, "svg")
-            elif search_asset:
-                relative = "shell/" + search_asset
-                role = Path(search_asset).stem
-                write_shell_asset(output, shell_assets, role, name, relative, data, "png")
             elif suffix in SHELL_DATA:
                 record["format"] = suffix[1:]
                 term = "SysBatt Fluent Icons"
                 record["contains_family_string"] = any(term.encode(enc) in data for enc in ("utf-8", "utf-16le"))
             else:
                 note_font(data, record, output)
-                if record.get("shell_font"):
-                    shell_assets.append({
-                        "role": "sysbatt-font",
-                        "source": name,
-                        "output": record["shell_font"],
-                        "bytes": len(data),
-                        "sha256": digest(data),
-                        "format": "ttf",
-                    })
         except (ValueError, KeyError, TTLibError, struct.error) as exc:
             issues.append({"path": name, "error": str(exc)})
-    (output / "inventory.json").write_text(json.dumps({"files": records, "issues": issues, "shell_assets": shell_assets}, ensure_ascii=False, indent=2) + "\n")
+    (output / "inventory.json").write_text(json.dumps({"files": records, "issues": issues}, ensure_ascii=False, indent=2) + "\n")
     return issues
 
 
@@ -277,11 +139,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path, help="new private output directory")
-    parser.add_argument("--install", action="store_true",
-                        help="install recognized original shell assets into the current user's native asset directory")
     args = parser.parse_args()
     findings = scan(args.source, args.output)
     print(f"Inventory: {args.output / 'inventory.json'} ({len(findings)} issues)")
-    if args.install and not findings:
-        install_shell_assets(args.output)
     raise SystemExit(bool(findings))
