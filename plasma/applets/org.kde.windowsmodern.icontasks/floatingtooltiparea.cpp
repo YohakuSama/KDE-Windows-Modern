@@ -51,6 +51,7 @@ FloatingToolTipArea::~FloatingToolTipArea()
 {
     if (s_dialog && s_dialog->owner() == this) {
         s_dialog->setVisible(false);
+        s_dialog->setOwner(nullptr);
     }
 
     if (m_usingDialog) {
@@ -145,10 +146,21 @@ void FloatingToolTipArea::showToolTip()
         mainItem()->setVisible(true);
     }
 
+    // The dialog is shared by all tasks. A tooltip changing from an
+    // open window to a launcher must notify only the old and new owners,
+    // not every task that has ever displayed it.
+    auto *previous = qobject_cast<FloatingToolTipArea *>(dlg->owner());
+    const bool changingOwner = previous != this;
+    if (changingOwner) {
+        if (previous) {
+            disconnect(dlg, &FloatingToolTipDialog::visibleChanged, previous, &FloatingToolTipArea::toolTipVisibleChanged);
+            if (dlg->isVisible()) Q_EMIT previous->toolTipVisibleChanged(false);
+        }
+        dlg->setOwner(this);
+    }
     connect(dlg, &FloatingToolTipDialog::visibleChanged, this, &FloatingToolTipArea::toolTipVisibleChanged, Qt::UniqueConnection);
 
     dlg->setHideTimeout(m_timeout);
-    dlg->setOwner(this);
     dlg->setVisualParent(this);
     dlg->setMainItem(mainItem());
     dlg->setInteractive(m_interactive);
@@ -179,7 +191,9 @@ void FloatingToolTipArea::showToolTip()
         break;
     }
 
+    const bool alreadyVisible = dlg->isVisible();
     dlg->setVisible(true);
+    if (changingOwner && alreadyVisible) Q_EMIT toolTipVisibleChanged(true);
     dlg->keepalive();
 }
 
@@ -253,7 +267,7 @@ void FloatingToolTipArea::setActive(bool active)
         return;
     }
     m_active = active;
-    if (!active && s_dialog) {
+    if (!active && s_dialog && s_dialog->owner() == this) {
         s_dialog->dismiss();
     }
     Q_EMIT activeChanged();

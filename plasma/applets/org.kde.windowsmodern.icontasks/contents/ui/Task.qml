@@ -80,11 +80,17 @@ FloatingToolTipArea {
         || (task.contextMenu && task.contextMenu.status === PlasmaExtras.Menu.Open)
         || (!!tasksRoot.groupDialog && tasksRoot.groupDialog.visualParent === task)
 
-    active: !inPopup && !tasksRoot.groupDialog && task.contextMenu?.status !== PlasmaExtras.Menu.Open && model.IsWindow
-    interactive: model.IsWindow || mainItem.playerData
+    readonly property bool hasWindowPreview: !!model.IsWindow || !!model.IsGroupParent
+    // An inactive pinned application still has a name tooltip. It does
+    // not own a window preview or an interactive close button.
+    active: !inPopup && !tasksRoot.groupDialog && task.contextMenu?.status !== PlasmaExtras.Menu.Open
+        && (hasWindowPreview || !!model.IsLauncher)
+    interactive: hasWindowPreview
     location: Plasmoid.location
-    margin: (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets) ? Kirigami.Units.largeSpacing : 0
-    mainItem: !Plasmoid.configuration.showToolTips || !model.IsWindow ? pinnedAppToolTipDelegate : openWindowToolTipDelegate
+    // Keep an independent gap above the task hit target, in logical px.
+    margin: 12
+    mainItem: !Plasmoid.configuration.showToolTips || !hasWindowPreview ? pinnedAppToolTipDelegate : openWindowToolTipDelegate
+    onAboutToShow: updateMainItemBindings()
 
     onXChanged: {
         if (!completed) {
@@ -356,7 +362,7 @@ FloatingToolTipArea {
 
     // Will also be called in activateTaskAtIndex(index)
     function updateMainItemBindings(): void {
-        if ((mainItem.parentTask === this && mainItem.rootIndex.row === index)
+        if (!mainItem || (mainItem.parentTask === this && mainItem.rootIndex?.row === index)
             || (tasksRoot.toolTipOpenedByClick === null && !active)
             || (tasksRoot.toolTipOpenedByClick !== null && tasksRoot.toolTipOpenedByClick !== this)) {
             return;
@@ -369,7 +375,7 @@ FloatingToolTipArea {
 
         mainItem.appName = Qt.binding(() => model.AppName);
         mainItem.pidParent = Qt.binding(() => model.AppPid);
-        mainItem.windows = Qt.binding(() => model.WinIdList);
+        mainItem.windows = Qt.binding(() => model.WinIdList ?? []);
         mainItem.isGroup = Qt.binding(() => model.IsGroupParent);
         mainItem.icon = Qt.binding(() => model.decoration);
         mainItem.launcherUrl = Qt.binding(() => model.LauncherUrlWithoutIcon);

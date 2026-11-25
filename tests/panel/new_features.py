@@ -22,11 +22,11 @@ import time
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from evdev import ecodes as e  # noqa: E402
-from PIL import Image, ImageChops  # noqa: E402
+from PIL import Image  # noqa: E402
 import json  # noqa: E402
 
 from e2e import a11y  # noqa: E402
-from e2e.session import Checks, screenshot  # noqa: E402
+from e2e.session import Checks, screenshot, popup_bounds  # noqa: E402
 from e2e.vinput import VirtualInput  # noqa: E402
 
 
@@ -55,46 +55,6 @@ def search_field(searching=None):
 def start_menu_open():
     return search_field() is not None
 
-
-def _longest_span(values):
-    threshold = max(10, max(values, default=0) * 0.25)
-    spans = []
-    start = None
-    for i, value in enumerate([*values, 0]):
-        if value >= threshold:
-            if start is None:
-                start = i
-        elif start is not None:
-            spans.append((start, i))
-            start = None
-    if not spans:
-        raise RuntimeError("No stable popup edge detected in screenshot")
-    return max(spans, key=lambda span: span[1] - span[0])
-
-
-def popup_bounds(closed_path, opened_path):
-    """Physical screenshot bounds, independent of Wayland client coordinates.
-
-    Compare with a static closed desktop. Ignore small taskbar/cursor changes
-    using the longest substantial changed row and column spans. Fail instead
-    of reporting an invented location when contrast is insufficient.
-    """
-    with Image.open(closed_path) as a, Image.open(opened_path) as b:
-        if a.size != b.size:
-            raise RuntimeError("Display geometry changed during capture")
-        diff = ImageChops.difference(a.convert("RGB"), b.convert("RGB"))
-        red, green, blue = diff.split()
-        mask = ImageChops.lighter(ImageChops.lighter(red, green), blue).point(
-            lambda v: 255 if v > 12 else 0)
-        width, height = mask.size
-        top, bottom = _longest_span(list(mask.resize((1, height), Image.Resampling.BOX).getdata()))
-        middle = mask.crop((0, top, width, bottom))
-        left, right = _longest_span(list(middle.resize((width, 1), Image.Resampling.BOX).getdata()))
-        if right - left < width * 0.15 or bottom - top < height * 0.15:
-            raise RuntimeError("Popup capture is inconclusive; use a static, contrasting desktop")
-        if right - left >= width * 0.98 or bottom - top >= height * 0.98:
-            raise RuntimeError("Background changed or capture has no reliable popup boundary")
-        return (left, top, right - left, bottom - top)
 
 
 def overview_active():

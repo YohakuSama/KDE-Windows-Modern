@@ -32,7 +32,7 @@ Loader {
     property bool isGroup
 
     property /*list<WId> where WId = int|string*/ var windows: []
-    readonly property bool isWin: windows.length > 0
+    readonly property bool isWin: !!windows && windows.length > 0
 
     property /*QIcon*/ var icon
     property url launcherUrl
@@ -61,7 +61,11 @@ Loader {
     readonly property int thumbnailHeight: Kirigami.Units.gridUnit * 7
     readonly property int thumbnailMaximumWidth: Math.round(thumbnailHeight * 16 / 9)
     readonly property int thumbnailMinimumWidth: Kirigami.Units.gridUnit * 6   // room for a short title
-    readonly property int cardPadding: Kirigami.Units.smallSpacing * 2
+    readonly property int cardPadding: 4
+    readonly property int closeButtonSize: 32
+    // normalizedPanelIcon paints 84/96 of its canvas. A 14px canvas
+    // therefore produces about 12.25px of visible cross at 100% DPI.
+    readonly property int closeGlyphCanvas: 14
     // Widest card; also the width of text-only tooltips (no thumbnails)
     readonly property int tooltipInstanceMaximumWidth: Plasmoid.configuration.showToolTips
         ? thumbnailMaximumWidth + 2 * cardPadding
@@ -78,9 +82,38 @@ Loader {
     LayoutMirroring.childrenInherit: true
 
     active: !blockingUpdates && rootIndex !== undefined && ((parentTask && parentTask.containsMouse) || Window.visibility !== Window.Hidden)
-    asynchronous: true
+    // The small launcher label must be ready before the native tooltip
+    // maps; keep the more expensive live thumbnail loading asynchronous.
+    asynchronous: isWin
 
-    sourceComponent: isGroup ? groupToolTip : singleTooltip
+    sourceComponent: !isWin ? launcherToolTip : isGroup ? groupToolTip : singleTooltip
+
+    Component {
+        id: launcherToolTip
+        Item {
+            objectName: "wmTaskLauncherNameTooltip"
+            implicitWidth: Math.min(240, launcherName.implicitWidth) + 12
+            implicitHeight: Math.max(18, launcherName.implicitHeight) + 6
+
+            PlasmaComponents3.Label {
+                id: launcherName
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                anchors.topMargin: 3
+                anchors.bottomMargin: 3
+                text: toolTipDelegate.display || toolTipDelegate.appName || toolTipDelegate.genericName
+                font.pixelSize: 12
+                textFormat: Text.PlainText
+                wrapMode: Text.NoWrap
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+                color: Kirigami.Theme.textColor
+                Accessible.role: Accessible.StaticText
+                Accessible.name: text
+            }
+        }
+    }
 
     Component {
         id: singleTooltip
