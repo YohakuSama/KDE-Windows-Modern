@@ -15,7 +15,7 @@ Lib.Tile {
     property string previousProfile: ""
     visible: available
     readonly property bool toggleAvailable: available && powerProfiles.profiles.some(name => name !== "power-saver")
-    label: i18n("Battery Saver")
+    label: i18n("Energy saver")
     // Use the power-saving role, not a low-charge battery indicator.
     iconSource: "wm-energy-saver-symbolic"
     active: saverOn

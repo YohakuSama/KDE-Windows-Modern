@@ -416,15 +416,22 @@ kwin_reconfigure() {
         2>/dev/null || warn "Could not reach KWin — changes apply at next login."
 }
 
-# Window animations: KDE's defaults already match Windows 11 (scale on
-# open/close, squash into the taskbar on minimize, maximize, slide between
-# desktops). Except Show Desktop: KDE slides every window to the screen
-# corners (windowaperture); Windows just gets them out of the way. Turned
-# off only if the user never set it.
+# Plasma Dialog already publishes the appropriate KWindowEffects slide
+# hint for the panel edge. Use KWin's native effect, including on Wayland,
+# rather than moving shell-role windows from QML. Honor explicit user
+# choices (including disabled animations).
 post_kwin_effects() {
     command -v kreadconfig6 &>/dev/null || return 0
+    local changed=0
     if [ -z "$(kreadconfig6 --file kwinrc --group Plugins --key windowapertureEnabled)" ]; then
         kwriteconfig6 --file kwinrc --group Plugins --key windowapertureEnabled false
+        changed=1
+    fi
+    if [ -z "$(kreadconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled)" ]; then
+        kwriteconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled true
+        changed=1
+    fi
+    if [ "$changed" -eq 1 ]; then
         kwin_reconfigure
     fi
 }

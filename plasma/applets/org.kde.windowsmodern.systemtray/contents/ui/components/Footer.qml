@@ -19,7 +19,7 @@ Rectangle {
     property bool showBattery: true
     property real frameInset: 0
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    readonly property real outerRadius: Math.round(8 * uiScale)
+    readonly property real outerRadius: frameInset > 0 ? frameInset : Math.round(8 * uiScale)
     readonly property real sideInset: Math.max(8, Math.round(24 * uiScale) - frameInset)
 
     signal batteryClicked
@@ -79,9 +79,9 @@ Rectangle {
     Lib.FooterButton {
         id: settingsBtn
         anchors.right: parent.right
-        anchors.rightMargin: footer.sideInset
+        anchors.rightMargin: Math.max(0, footer.sideInset - (settingsBtn.hitSize - settingsBtn.buttonSize) / 2)
         anchors.verticalCenter: parent.verticalCenter
-        buttonSize: Math.round(18 * footer.uiScale)
+        buttonSize: Math.round(16 * footer.uiScale)
         iconSource: "configure"
         tooltipText: i18n("All settings")
         Accessible.role: Accessible.Button

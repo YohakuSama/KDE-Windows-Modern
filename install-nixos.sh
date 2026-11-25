@@ -433,6 +433,11 @@ start_shell
 
 export WM_SHORTCUT_BACKUP="$STATE/shortcut-backup.json"
 kbuildsycoca6 --noincremental >/dev/null
+# The shell popup supplies its bottom/top/side edge slide hint. Preserve
+# explicit user animation settings, including reduced-motion preferences.
+if [ -z "$(kreadconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled)" ]; then
+    kwriteconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled true
+fi
 if [ "$upgrading" -eq 0 ]; then
     plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant" --resetLayout
     kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle "$( [ "$variant" = dark ] && echo kvantum-dark || echo kvantum )"
