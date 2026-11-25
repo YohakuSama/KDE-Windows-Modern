@@ -30,6 +30,19 @@ PlasmoidItem {
     // Owned by the actual compact representation in the panel window.
     property var panelPopup: null
     readonly property bool flyoutOpen: !!panelPopup && panelPopup.visible
+    // The existing tray plugin already supplies rounded, split-window blur.
+    // The clock is also installable on its own; never require that plugin.
+    readonly property var splitBlurProvider: {
+        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
+        for (const applet of applets) {
+            if (applet && applet.pluginName === "org.kde.windowsmodern.systemtray"
+                    && typeof applet.setSplitPopupBlur === "function")
+                return applet;
+        }
+        return null;
+    }
+    readonly property bool allowSplitAcrylic: (Plasmoid.containmentDisplayHints
+        & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) === 0
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry
     readonly property bool popupVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property var popupPanelWindow: panelPopup && panelPopup.visualParent
@@ -121,7 +134,8 @@ PlasmoidItem {
         timeZone: Plasmoid.configuration.lastSelectedTimezone
         // Second-by-second only while seconds are on screen: the flyout's
         // large clock shows them (it showed :00 with minute updates).
-        trackSeconds: root.flyoutOpen || Plasmoid.configuration.showSeconds === 2
+        trackSeconds: (root.flyoutOpen && Plasmoid.configuration.showTimeInNotificationCenter)
+            || Plasmoid.configuration.showSeconds === 2
     }
 
     PlasmaClock.Clock {

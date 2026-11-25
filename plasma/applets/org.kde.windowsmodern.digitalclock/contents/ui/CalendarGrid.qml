@@ -59,6 +59,7 @@ Item {
                 height: calendarGrid.cellHeight
 
                 calendarController: calendarGrid.calendarController
+                colors: calendarGrid.calendarController.calendarPalette
                 dayData: modelData
                 daysModel: calendarGrid.calendarController.calendarBackend.daysModel
                 eventsRevision: calendarGrid.calendarController.eventsRevision

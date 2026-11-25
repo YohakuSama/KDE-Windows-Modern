@@ -32,6 +32,44 @@ FocusScope {
 
     Win11Palette { id: palette }
 
+    property var splitBlurProvider: null
+    property bool allowSplitAcrylic: false
+    property bool splitAcrylic: false
+
+    function scheduleSplitBlur() {
+        if (!blurUpdate) return;
+        if (clockApplet && clockApplet.flyoutOpen && splitBlurProvider) {
+            blurUpdate.restart();
+        } else {
+            blurUpdate.stop();
+            splitAcrylic = false;
+        }
+    }
+
+    // Wait for both rectangles to have their final window-local geometry.
+    // Only use translucent paint after the native blur call succeeds.
+    Timer {
+        id: blurUpdate
+        interval: 16
+        onTriggered: {
+            expandedRoot.splitAcrylic = expandedRoot.clockApplet.flyoutOpen
+                && !!expandedRoot.splitBlurProvider
+                && expandedRoot.splitBlurProvider.setSplitPopupBlur(expandedRoot,
+                    notificationPanel, calendarPanel, notificationPanel.radius,
+                    expandedRoot.allowSplitAcrylic);
+        }
+    }
+    onSplitBlurProviderChanged: {
+        if (!splitBlurProvider && splitAcrylic && clockApplet && clockApplet.flyoutOpen)
+            clockApplet.closeFlyout();
+        scheduleSplitBlur();
+    }
+    onAllowSplitAcrylicChanged: scheduleSplitBlur()
+    Connections {
+        target: expandedRoot.clockApplet
+        function onFlyoutOpenChanged() { expandedRoot.scheduleSplitBlur(); }
+    }
+
     // Plasma owns the popup window and transfers these layout hints.
     // Derive hints from the panel's screen, not this hidden view's geometry.
     readonly property int margin: 0
@@ -121,7 +159,11 @@ FocusScope {
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
             radius: 8
-            color: palette.detachedPanel
+            color: expandedRoot.splitAcrylic ? palette.acrylicPanel : palette.detachedPanel
+            onXChanged: expandedRoot.scheduleSplitBlur()
+            onYChanged: expandedRoot.scheduleSplitBlur()
+            onWidthChanged: expandedRoot.scheduleSplitBlur()
+            onHeightChanged: expandedRoot.scheduleSplitBlur()
             border.width: 1
             border.color: palette.surfaceBorder
 
@@ -147,7 +189,11 @@ FocusScope {
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
             radius: 8
-            color: palette.detachedPanel
+            color: expandedRoot.splitAcrylic ? palette.acrylicPanel : palette.detachedPanel
+            onXChanged: expandedRoot.scheduleSplitBlur()
+            onYChanged: expandedRoot.scheduleSplitBlur()
+            onWidthChanged: expandedRoot.scheduleSplitBlur()
+            onHeightChanged: expandedRoot.scheduleSplitBlur()
             border.width: 1
             border.color: palette.surfaceBorder
 
@@ -285,6 +331,8 @@ FocusScope {
                     DayAgenda {
                         id: agenda
                         calendarLocale: expandedRoot.calendarLocale
+                        timeLocale: expandedRoot.clockTimeLocale
+                        timeFormat: expandedRoot.clockApplet.timeFormat || "h:mm AP"
                         Layout.fillWidth: true
                         visible: expandedRoot.agendaShown
                         date: calendarView.selectedDate
