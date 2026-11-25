@@ -167,12 +167,20 @@ QQC2.StackView {
 
     readonly property var themedPages: ({
         "network":         networkPageComp,
+        "bluetooth":       bluetoothPageComp,
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
         "brightness":      brightnessPageComp,
         "clipboard":       clipboardPageComp,
         "mediacontroller": mediaControllerPageComp
     })
+
+    Component {
+        id: bluetoothPageComp
+        Components.BluetoothPage {
+            onBack: systemTrayState.setActiveApplet(null)
+        }
+    }
 
     Component {
         id: networkPageComp
