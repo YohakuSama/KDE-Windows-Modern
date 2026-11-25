@@ -23,7 +23,13 @@
         "License": "GPL-2.0-or-later",
         "Name": "Show Desktop (Windows Modern)",
         "Version": "1.2.2",
-        "Website": "https://github.com/YohakuSama/KDE-Windows-Modern"
+        "Website": "https://github.com/YohakuSama/KDE-Windows-Modern",
+        "Name[zh_CN]": "显示桌面（Windows Modern）",
+        "Description[zh_CN]": "点击任务栏末端显示桌面",
+        "Name[zh_SG]": "显示桌面（Windows Modern）",
+        "Description[zh_SG]": "点击任务栏末端显示桌面",
+        "Name[zh_Hans]": "显示桌面（Windows Modern）",
+        "Description[zh_Hans]": "点击任务栏末端显示桌面"
     },
     "X-Plasma-API-Minimum-Version": "6.0",
     "X-Plasma-Provides": [

@@ -29,11 +29,13 @@ QtObject {
             ? (overflow ? overflowOpen : quickSettingsOpen) : wasOpen;
         if (close) {
             expanded = false;
+            Plasmoid.restoreShellPopupFocus();
             return;
         }
-        // Reopen cleanly if native deactivation hid the popup before the
-        // deferred expanded-state synchronization.
-        if (expanded && !popupVisible)
+        // Close the old native surface before changing the home and its
+        // visual parent. The newly mapped popup then uses the new anchor.
+        // This also handles a pending native deactivation before its sync.
+        if (expanded)
             expanded = false;
         overflowMode = overflow;
         quickSettingsRoute = !overflow;

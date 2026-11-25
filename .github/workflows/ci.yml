@@ -5,108 +5,234 @@ on:
     branches: [main]
     tags: ["v*"]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Run the complete release-grade validation and package build
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: windows-modern-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  health-check:
-    name: Repository health check
+  changes:
+    name: Classify changed files
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.filter.outputs.full }}
+      qml: ${{ steps.filter.outputs.qml }}
+      digitalclock: ${{ steps.filter.outputs.digitalclock }}
+      systemtray: ${{ steps.filter.outputs.systemtray }}
+      startmenu: ${{ steps.filter.outputs.startmenu }}
+      native_tray: ${{ steps.filter.outputs.native_tray }}
+      native_tasks: ${{ steps.filter.outputs.native_tasks }}
+      native_menu: ${{ steps.filter.outputs.native_menu }}
+      package: ${{ steps.filter.outputs.package }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            full:
+              - '.github/workflows/**'
+              - 'CMakeLists.txt'
+              - 'cmake/**'
+              - 'scripts/ci-build.sh'
+              - 'scripts/package*.sh'
+              - 'scripts/release.sh'
+              - 'install*.sh'
+              - 'verify-all.sh'
+              - 'third_party/**'
+            qml:
+              - 'plasma/**/*.qml'
+              - 'plasma/**/*.js'
+              - 'tests/**/*.qml'
+              - 'tests/**/*.js'
+              - 'tests/run-qml-tests.sh'
+            digitalclock:
+              - 'plasma/applets/org.kde.windowsmodern.digitalclock/**'
+              - 'tests/digitalclock/**'
+            systemtray:
+              - 'plasma/applets/org.kde.windowsmodern.systemtray/contents/**'
+              - 'tests/systemtray/**'
+            startmenu:
+              - 'plasma/applets/org.kde.windowsmodern.startmenu/**'
+              - 'plasma/applets/org.kde.windowsmodern.search/**'
+              - 'tests/startmenu/**'
+            native_tray:
+              - 'plasma/applets/org.kde.windowsmodern.systemtray/*.cpp'
+              - 'plasma/applets/org.kde.windowsmodern.systemtray/*.h'
+              - 'plasma/applets/org.kde.windowsmodern.systemtray/CMakeLists.txt'
+              - 'tests/systemtray/*.cpp'
+            native_tasks:
+              - 'plasma/applets/org.kde.windowsmodern.icontasks/*.cpp'
+              - 'plasma/applets/org.kde.windowsmodern.icontasks/*.h'
+              - 'plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt'
+            native_menu:
+              - 'plasma/containmentactions/org.kde.windowsmodern.contextmenu/**'
+            package:
+              - 'plasma/**'
+              - 'icons/**'
+              - 'cursors/**'
+              - 'aurorae/**'
+              - 'Kvantum/**'
+              - 'color-schemes/**'
+              - 'wallpaper/**'
+              - 'translations/**'
+              - 'scripts/package*.sh'
+              - 'scripts/install-lib.sh'
+              - 'scripts/cursor-assets.sh'
+
+  quick-check:
+    name: Quick source checks
+    needs: changes
+    if: always() && needs.changes.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON metadata and shell syntax
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          for path in pathlib.Path('.').rglob('metadata.json'):
+              if '.git' not in path.parts:
+                  json.loads(path.read_text())
+          PY
+          bash -n install-nixos.sh
+          bash -n scripts/ci-build.sh
+          bash -n scripts/package.sh
+          bash -n scripts/package-plugins.sh
+      - name: Start menu key handlers
+        if: needs.changes.outputs.startmenu == 'true' || needs.changes.outputs.qml == 'true' || needs.changes.outputs.full == 'true'
+        run: python3 scripts/check-startmenu-keys.py
+      - name: Fast KWin regression tests
+        if: needs.changes.outputs.full == 'true' || needs.changes.outputs.qml == 'true'
+        run: |
+          node tests/osd/test-placement.cjs
+          node tests/shortcuts/test-snapkeys.cjs
+
+  full-health:
+    name: Full repository health checks
+    needs: changes
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.full || needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install health check dependencies
         run: sudo apt-get update && sudo apt-get install -y shellcheck python3-pil python3-fonttools
-      # Same gate scripts/release.sh enforces: required files, light/dark
-      # parity, layout drift, metadata, bash -n and shellcheck.
       - name: verify-all.sh
         run: ./verify-all.sh
-      - name: Validate Qt Quick Start menu key handlers
-        run: python3 scripts/check-startmenu-keys.py
-      - name: KWin JavaScript regression tests
-        run: |
-          node tests/osd/test-placement.cjs
-          node tests/shortcuts/test-snapkeys.cjs
-      - name: NixOS installation and runtime identity tests
+      - name: NixOS tests
         run: |
           bash -n install-nixos.sh
           python3 -m unittest discover -s tests/nixos -v
-      - name: Reversible application appearance tests
+      - name: Application appearance tests
         run: python3 -m unittest discover -s tests/apps -v
       - name: Native resource reader tests
         run: /usr/bin/python3 -m unittest discover -s tests/native-assets -v
-      - name: Window material tests
-        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
-      - name: Microsoft Store icon tests
-        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_store_icon.py -v
-      - name: Verify both reviewed Microsoft Store SVGs
+      - name: Theme and artwork tests
         run: |
-          python3 scripts/store-artwork.py prepare "$RUNNER_TEMP/store-artwork"
-          python3 scripts/store-artwork.py verify "$RUNNER_TEMP/store-artwork"
-          cat "$RUNNER_TEMP/store-artwork/manifest.json"
-      - name: Optional Plymouth boot artwork tests
-        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_boot_frames.py -v
-      - name: Private owner bundle rejection checks
-        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_owner_bundle.py -v
+          /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
+          /usr/bin/python3 -m unittest discover -s tests/theme -p test_store_icon.py -v
+          /usr/bin/python3 -m unittest discover -s tests/theme -p test_boot_frames.py -v
+          /usr/bin/python3 -m unittest discover -s tests/theme -p test_owner_bundle.py -v
 
-  build-applets:
-    name: Build C++ applets (Fedora ${{ matrix.fedora }})
+  qml-tests:
+    name: Targeted QML tests
+    needs: changes
+    if: needs.changes.outputs.qml == 'true' || needs.changes.outputs.full == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.full
     runs-on: ubuntu-latest
+    container: fedora:45
+    steps:
+      - name: Install git
+        run: dnf install -y --setopt=install_weak_deps=False git-core
+      - uses: actions/checkout@v4
+      - name: Install Qt and Plasma test dependencies
+        run: |
+          dnf install -y --setopt=install_weak_deps=False             qt6-qtbase-devel qt6-qtdeclarative-devel kf6-kirigami             libplasma-devel plasma-workspace-devel plasma-nm plasma-pa powerdevil bluedevil plasma-desktop             /usr/lib64/qt6/qml/org/kde/plasma/plasma5support/qmldir             /usr/lib64/qt6/qml/org/kde/notificationmanager/qmldir             /usr/lib64/qt6/qml/org/kde/milou/qmldir             /usr/lib64/qt6/qml/Qt5Compat/GraphicalEffects/qmldir
+      - name: Parse owned QML files
+        run: bash scripts/check-qml-syntax.sh
+      - name: Run affected QML suites
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          suites=()
+          if [[ "${{ needs.changes.outputs.full }}" == "true" ]]; then
+            tests/run-qml-tests.sh
+          else
+            [[ "${{ needs.changes.outputs.digitalclock }}" == "true" ]] && suites+=(digitalclock)
+            [[ "${{ needs.changes.outputs.systemtray }}" == "true" ]] && suites+=(systemtray)
+            [[ "${{ needs.changes.outputs.startmenu }}" == "true" ]] && suites+=(startmenu)
+            if [[ "${#suites[@]}" -eq 0 ]]; then
+              tests/run-qml-tests.sh
+            else
+              tests/run-qml-tests.sh "${suites[@]}"
+            fi
+          fi
+      - name: Run affected QML suites at 150 percent
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_SCALE_FACTOR: "1.5"
+        run: |
+          suites=()
+          [[ "${{ needs.changes.outputs.digitalclock }}" == "true" ]] && suites+=(digitalclock)
+          [[ "${{ needs.changes.outputs.systemtray }}" == "true" ]] && suites+=(systemtray)
+          [[ "${{ needs.changes.outputs.startmenu }}" == "true" ]] && suites+=(startmenu)
+          if [[ "${{ needs.changes.outputs.full }}" == "true" || "${#suites[@]}" -eq 0 ]]; then
+            tests/run-qml-tests.sh
+          else
+            tests/run-qml-tests.sh "${suites[@]}"
+          fi
+
+  native-build:
+    name: Build affected native plugins (Fedora 45)
+    needs: changes
+    if: needs.changes.outputs.native_tray == 'true' || needs.changes.outputs.native_tasks == 'true' || needs.changes.outputs.native_menu == 'true' || needs.changes.outputs.full == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.full
     strategy:
       fail-fast: false
       matrix:
-        # Fedora releases track Plasma closely; bump when a new one ships.
-        fedora: ["44", "45"]
+        fedora: ${{ (github.event_name == 'push' || inputs.full) && fromJSON('["44","45"]') || fromJSON('["45"]') }}
+    runs-on: ubuntu-latest
     container: fedora:${{ matrix.fedora }}
     steps:
-      # git first: without it actions/checkout downloads GitHub's tarball,
-      # which honours .gitattributes export-ignore and so has no tests/.
       - name: Install git
         run: dnf install -y --setopt=install_weak_deps=False git-core
       - uses: actions/checkout@v4
       - name: Install build dependencies
         run: |
-          dnf install -y --setopt=install_weak_deps=False \
-            gcc-c++ cmake extra-cmake-modules findutils \
-            qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel \
-            kf6-kpackage-devel kf6-kconfig-devel kf6-ki18n-devel kf6-kcoreaddons-devel \
-            kf6-kwindowsystem-devel kf6-kio-devel kf6-kiconthemes-devel \
-            kf6-kitemmodels-devel kf6-kservice-devel kf6-kxmlgui-devel kf6-kglobalaccel-devel \
-            kf6-kjobwidgets-devel kf6-kcmutils-devel kf6-knotifications-devel \
-            plasma-activities-devel plasma-activities-stats-devel \
-            libplasma-devel plasma-workspace-devel libksysguard-devel \
-            kf6-kirigami python3 plasma-nm plasma-pa powerdevil bluedevil plasma-desktop \
-            /usr/lib64/qt6/qml/org/kde/plasma/plasma5support/qmldir \
-            /usr/lib64/qt6/qml/org/kde/notificationmanager/qmldir \
-            /usr/lib64/qt6/qml/org/kde/milou/qmldir \
-            /usr/lib64/qt6/qml/Qt5Compat/GraphicalEffects/qmldir
-      - name: Parse every owned QML file
-        run: bash scripts/check-qml-syntax.sh
-      - name: Test task icon optical geometry
+          dnf install -y --setopt=install_weak_deps=False             gcc-c++ cmake extra-cmake-modules findutils             qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel             kf6-kpackage-devel kf6-kconfig-devel kf6-ki18n-devel kf6-kcoreaddons-devel             kf6-kwindowsystem-devel kf6-kio-devel kf6-kiconthemes-devel             kf6-kitemmodels-devel kf6-kservice-devel kf6-kxmlgui-devel kf6-kglobalaccel-devel             kf6-kjobwidgets-devel kf6-kcmutils-devel kf6-knotifications-devel             plasma-activities-devel plasma-activities-stats-devel             libplasma-devel plasma-workspace-devel libksysguard-devel             kf6-kirigami python3 plasma-nm plasma-pa powerdevil bluedevil plasma-desktop             /usr/lib64/qt6/qml/org/kde/plasma/plasma5support/qmldir             /usr/lib64/qt6/qml/org/kde/notificationmanager/qmldir             /usr/lib64/qt6/qml/org/kde/milou/qmldir             /usr/lib64/qt6/qml/Qt5Compat/GraphicalEffects/qmldir
+      - name: Select changed native plugins
+        id: targets
         run: |
-          g++ -std=c++20 tests/panel/test_panelicon.cpp $(pkg-config --cflags --libs Qt6Gui) -o /tmp/wm-panelicon-test
-          /tmp/wm-panelicon-test
-      - name: Build and link-check native plugins
-        run: ./scripts/ci-build.sh "$RUNNER_TEMP/build"
-      - name: QML tests
-        run: QT_QPA_PLATFORM=offscreen tests/run-qml-tests.sh
-      - name: QML interaction tests at 150 percent output scaling
-        run: QT_QPA_PLATFORM=offscreen QT_SCALE_FACTOR=1.5 tests/run-qml-tests.sh
-      # Prebuilt plugins for installs without a compiler: keyed by distro,
-      # Plasma and Qt version (scripts/install-lib.sh picks the match).
-      - name: Package plugins
+          targets=()
+          [[ "${{ needs.changes.outputs.native_tray }}" == "true" ]] && targets+=(systemtray)
+          [[ "${{ needs.changes.outputs.native_tasks }}" == "true" ]] && targets+=(icontasks)
+          [[ "${{ needs.changes.outputs.native_menu }}" == "true" ]] && targets+=(contextmenu)
+          if [[ "${{ needs.changes.outputs.full }}" == "true" || "${{ github.event_name }}" == "push" || "${{ inputs.full }}" == "true" || "${#targets[@]}" -eq 0 ]]; then
+            targets=(systemtray icontasks contextmenu)
+          fi
+          echo "components=$(IFS=,; echo "${targets[*]}")" >> "$GITHUB_OUTPUT"
+      - name: Build and link-check changed plugins
+        run: ./scripts/ci-build.sh "$RUNNER_TEMP/build" "${{ steps.targets.outputs.components }}"
+      - name: Package prebuilt plugins
+        if: steps.targets.outputs.components == 'systemtray,icontasks,contextmenu'
         run: ./scripts/package-plugins.sh "$RUNNER_TEMP/build" "$RUNNER_TEMP/plugins"
       - uses: actions/upload-artifact@v4
+        if: steps.targets.outputs.components == 'systemtray,icontasks,contextmenu'
         with:
           name: plugins-fedora${{ matrix.fedora }}
           path: ${{ runner.temp }}/plugins/
 
-  # Package the exact tested source and matching plugins for owner testing.
-  # The archive remains a CI artifact; no stable version tag is created.
   integration-bundle:
     name: Package integration bundle
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-    needs: [health-check, build-applets]
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.full)
+    needs: [changes, qml-tests, native-build, full-health]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,7 +243,9 @@ jobs:
         with:
           pattern: plugins-*
           path: ${{ runner.temp }}/integration-plugins
-      - name: Package exact commit
+      - name: Build package dependencies
+        run: sudo apt-get update && sudo apt-get install -y zip unzip python3 python3-pil python3-fonttools
+      - name: Build integration bundle
         run: |
           mkdir -p "$RUNNER_TEMP/bundle-plugins"
           cat "$RUNNER_TEMP"/integration-plugins/*/SHA256SUMS > "$RUNNER_TEMP/bundle-plugins/SHA256SUMS"
@@ -133,12 +261,10 @@ jobs:
             dist/SHA256SUMS
           if-no-files-found: error
 
-  # On a release tag, attach the prebuilt plugins (and one SHA256SUMS) to
-  # the release that scripts/release.sh created.
   release-plugins:
-    name: Attach prebuilt plugins to the release
+    name: Attach prebuilt plugins to release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build-applets
+    needs: native-build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -154,7 +280,6 @@ jobs:
           mkdir out
           cat plugins/*/SHA256SUMS > out/SHA256SUMS
           cp plugins/*/*.tar.gz out/
-          # release.sh pushes the tag, then creates the release: wait for it.
           for _ in $(seq 30); do
             gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1 && break
             sleep 20
