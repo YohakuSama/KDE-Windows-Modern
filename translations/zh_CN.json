@@ -472,5 +472,7 @@
   "Do not disturb is on": "免打扰已开启",
   "Only notifications allowed by your priority settings appear as banners.": "仅显示优先级设置允许的通知横幅。",
   "Transfer progress": "传输进度",
-  "Resume": "继续"
+  "Resume": "继续",
+  "View": "查看",
+  "Show more options": "显示更多选项"
 }

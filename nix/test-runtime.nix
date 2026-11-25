@@ -11,7 +11,7 @@ let
     kglobalaccel knotifications kpackage kiconthemes kjobwidgets kitemmodels
     libplasma plasma-workspace plasma-activities plasma-activities-stats libksysguard
   ];
-  makeApplet = { name, src, id, rename ? false }:
+  makeApplet = { name, src, id, rename ? false, namespace ? "applets" }:
     let
       source = lib.cleanSourceWith {
         inherit src;
@@ -24,7 +24,7 @@ let
       # applets get identical derivations across upgrades.
       identity = builtins.hashString "sha256" (builtins.toJSON {
         source = toString source;
-        inherit nixpkgsPath plasmaVersion id;
+        inherit nixpkgsPath plasmaVersion id namespace;
         recipe = builtins.hashFile "sha256" ./test-runtime.nix;
       });
     in pkgs.stdenv.mkDerivation {
@@ -74,7 +74,7 @@ let
     '';
     installPhase = ''
       runHook preInstall
-      install -Dm755 wm-build/lib/plasma/applets/${id}.so "$out/${prefix}/plasma/applets/${id}.so"
+      install -Dm755 wm-build/lib/plasma/${namespace}/${id}.so "$out/${prefix}/plasma/${namespace}/${id}.so"
       printf '%s\n' "$src" > "$out/wm-source-${name}"
       printf '%s\n' "$wmBuildToken" > "$out/wm-token-${name}"
       runHook postInstall
@@ -91,6 +91,12 @@ let
     src = ../plasma/applets/org.kde.windowsmodern.systemtray;
     id = "org.kde.windowsmodern.systemtray";
   };
+  contextmenu = makeApplet {
+    name = "contextmenu";
+    src = ../plasma/containmentactions/org.kde.windowsmodern.contextmenu;
+    id = "org.kde.windowsmodern.contextmenu";
+    namespace = "containmentactions";
+  };
   python = pkgs.python3.withPackages (p: [ p.pillow p.fonttools p.pygobject3 ]);
 in
 assert lib.assertMsg (builtins.match "[a-zA-Z0-9.-]+" buildToken != null) "Invalid test build token";
@@ -99,7 +105,7 @@ assert lib.assertMsg (k.plasma-workspace.version == plasmaVersion)
 pkgs.symlinkJoin {
   name = "windows-modern-nixos-test-runtime-" + plasmaVersion + "-" + buildToken;
   paths = [
-    tasks tray pkgs.qt6Packages.qtstyleplugin-kvantum pkgs.bibata-cursors
+    tasks tray contextmenu pkgs.qt6Packages.qtstyleplugin-kvantum pkgs.bibata-cursors
     python pkgs.git pkgs.curl pkgs.gnutar pkgs.zip pkgs.unzip pkgs.dbus
     pkgs.xdg-utils pkgs.haruna k.kate pkgs.mission-center
   ];

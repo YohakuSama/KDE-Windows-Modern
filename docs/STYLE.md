@@ -964,3 +964,7 @@ Plasma 6.8 System Settings category metadata and KCM metadata, and the four ship
 ### Native QWidget context-menu material
 
 The stock desktop/file-manager context menu remains a real KDE QMenu. Its light/dark Kvantum surfaces now use matching 8-pixel corner slices, a continuous one-pixel border, and consistent 98% surface opacity to prevent strong wallpaper tint and corner seams. Row padding is increased without replacing or enabling any native QAction. This is a material pass, not a claim that the desktop action order is the Windows 11 compact layout. The latter requires a containment-actions implementation that forwards the real folder-model actions.
+
+### Native compact desktop background menu (NixOS integration)
+
+The independent ContainmentActions plugin delegates configuration and action availability to KDE's standard context menu. Its compact layout uses the original FolderModel and ViewPropertiesMenu QAction instances for View, Sort By, Refresh, New and Paste, and the original display/desktop settings actions. Other existing native actions are reachable under Show more options without duplicate visible rows. No simulated file operations are introduced. The installer changes only desktop containment right-click, preserves other gestures, and verifies the new plugin's immutable runtime identity. The normal non-NixOS installer and live compositor acceptance are separate work.

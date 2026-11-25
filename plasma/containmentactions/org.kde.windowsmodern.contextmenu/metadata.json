@@ -1,0 +1,12 @@
+{
+  "KPlugin": {
+    "Id": "org.kde.windowsmodern.contextmenu",
+    "Name": "Windows Modern Desktop Menu",
+    "Name[zh_CN]": "Windows Modern 桌面菜单",
+    "Description": "Compact desktop menu using KDE native actions",
+    "Icon": "view-list-icons",
+    "License": "GPL-3.0-or-later",
+    "Version": "1.0"
+  },
+  "X-Plasma-HasConfigurationInterface": true
+}
