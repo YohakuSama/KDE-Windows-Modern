@@ -18,7 +18,7 @@ from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.boundsPen import BoundsPen
 
 from native_assets_input import read_assets, source_manifest
-from native_assets_index import IndexedResources
+from native_assets_index import IndexedResources, mapped_original_names
 
 from native_pe_resources import pe_resources
 
@@ -255,10 +255,9 @@ def main():
     mapping_file = Path(__file__).with_name('native-assets-map.json')
     mapping_bytes = mapping_file.read_bytes()
     mapping = json.loads(mapping_bytes)
-    wanted = {'SystemResources/'+name for name in mapping['libraries'].values()} | {'Fonts/SegoeIcons.ttf'}
-    wanted.update(name for _,_,source,dark in mapping['wallpapers'] for name in (source,dark) if name)
-    wanted.update('Media/'+name+'.wav' for name in mapping['sounds'])
     indexed = IndexedResources(source) if source.is_dir() and (source / 'resource-manifest.json').is_file() else None
+    # Indexed mode consumes verified previews, not the complete MUN binaries.
+    wanted = mapped_original_names(mapping, indexed=indexed is not None)
     data = indexed.read_originals(wanted) if indexed else read_assets(source,wanted)
     dest.parent.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.native-assets-',dir=dest.parent) as temp:

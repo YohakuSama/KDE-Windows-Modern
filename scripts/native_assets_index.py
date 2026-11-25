@@ -2,7 +2,9 @@
 """Consume a previously extracted resource index without re-extracting its ICOs."""
 import hashlib
 import json
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
+import re
+import sys
 
 from native_assets_input import read_assets, read_resource, source_manifest
 
@@ -24,6 +26,96 @@ def read_checked(root, relative, sha256):
     if hashlib.sha256(content).hexdigest() != sha256:
         raise ValueError('Indexed file hash mismatch: ' + relative)
     return content
+
+
+# The runtime branch reuses this exact full reference index for provenance.
+REFERENCE_INDEX_BLOB = '93ffe12063b7c03ac964b4feb40c7174f581fc5b'
+
+
+def verify_reference_index(raw):
+    blob = hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+    if blob != REFERENCE_INDEX_BLOB:
+        raise ValueError('Resource index differs from reviewed reference')
+
+
+def mapped_original_names(mapping, indexed=True):
+    wanted = {'Fonts/SegoeIcons.ttf'}
+    wanted.update(name for _, _, light, dark in mapping['wallpapers']
+                  for name in (light, dark) if name)
+    wanted.update('Media/' + name + '.wav' for name in mapping['sounds'])
+    if not indexed:
+        wanted.update('SystemResources/' + name for name in mapping['libraries'].values())
+    return wanted
+
+
+def selected_preview(group):
+    path = group['preview_png']
+    frame = next((f for f in group['frames'] if f['png'] == path), None)
+    if frame is None:
+        raise ValueError('Preview is not a frame in its indexed group')
+    rel = PurePosixPath(path)
+    if (rel.parts[:2] != ('png', group['module']) or rel.suffix != '.png'
+            or '..' in rel.parts):
+        raise ValueError('Unexpected preview path: ' + path)
+    return frame
+
+
+def mapped_resource_entries(index, mapping):
+    """Exact files read by the indexed importer: relative path -> (hash, size)."""
+    entries = {}
+
+    def add(path, digest, size=None):
+        rel = PurePosixPath(path)
+        if (not rel.parts or rel.is_absolute() or '..' in rel.parts
+                or not re.fullmatch(r'[0-9a-f]{64}', digest)):
+            raise ValueError('Invalid indexed resource: ' + path)
+        value = (digest, size)
+        if path in entries and entries[path] != value:
+            raise ValueError('Conflicting indexed resource: ' + path)
+        entries[path] = value
+
+    originals = {'original/Windows/' + n for n in mapped_original_names(mapping)}
+    for entry in index['original_files']:
+        if entry['path'] in originals:
+            add(entry['path'], entry['sha256'], entry['size_bytes'])
+    if not originals.issubset(entries):
+        raise ValueError('Missing mapped originals in index: ' + ', '.join(sorted(originals - entries.keys())))
+    groups = {}
+    for group in index['groups']:
+        key = (group['module'], group['group_id'], group['language_id'])
+        if key in groups:
+            raise ValueError('Duplicate indexed icon group: ' + str(key))
+        groups[key] = group
+    for source in mapping['icons']:
+        if ':' not in source:
+            continue
+        lib, group_id = source.split(':', 1)
+        keys = sorted(key for key in groups
+                      if key[:2] == (mapping['libraries'][lib], int(group_id)))
+        if not keys:
+            raise ValueError('Missing indexed group: ' + source)
+        frame = selected_preview(groups[keys[0]])
+        add(frame['png'], frame['png_sha256'])
+    return entries
+
+
+def verify_runtime_directory(root, mapping, pin):
+    if (root / 'RESOURCE-COMMIT').read_text().strip() != pin:
+        raise ValueError('Runtime resource revision mismatch')
+    raw = checked_path(root, 'resource-manifest.json').read_bytes()
+    verify_reference_index(raw)
+    entries = mapped_resource_entries(json.loads(raw), mapping)
+    expected = set(entries) | {'resource-manifest.json', 'RESOURCE-COMMIT'}
+    actual = {p.relative_to(root).as_posix() for p in root.rglob('*')
+              if p.is_file() or p.is_symlink()}
+    if actual != expected:
+        raise ValueError('Runtime resource file list mismatch: missing ' +
+                         str(sorted(expected - actual)) + ', extra ' + str(sorted(actual - expected)))
+    for name, (digest, size) in entries.items():
+        content = read_checked(root, name, digest)
+        if size is not None and len(content) != size:
+            raise ValueError('Indexed resource size mismatch: ' + name)
+    return len(entries)
 
 
 class IndexedResources:
@@ -69,12 +161,17 @@ class IndexedResources:
         if not keys:
             raise ValueError(f'Missing indexed group: {module}:{group_id}')
         group = self.groups[keys[0]]
-        path = group['preview_png']
-        frame = next((f for f in group['frames'] if f['png'] == path), None)
-        if frame is None:
-            raise ValueError('Preview is not a frame in its indexed group')
-        rel = PurePosixPath(path)
-        if rel.parts[:2] != ('png', module) or rel.suffix != '.png':
-            raise ValueError('Unexpected preview path: ' + path)
-        content = read_checked(self.root, path, frame['png_sha256'])
+        frame = selected_preview(group)
+        content = read_checked(self.root, frame['png'], frame['png_sha256'])
         return content, (frame['width'], frame['height'])
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 4:
+        raise SystemExit('usage: native_assets_index.py MAPPING RUNTIME_DIRECTORY PIN')
+    try:
+        mapping = json.loads(Path(sys.argv[1]).read_text())
+        count = verify_runtime_directory(Path(sys.argv[2]), mapping, sys.argv[3])
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise SystemExit('Runtime resource verification failed: ' + str(exc))
+    print(f'Verified {count} mapped theme resources')

@@ -289,7 +289,7 @@ if [[ "$OWNER" -eq 1 ]]; then
     # Never report a stripped integration archive as a full owner package.
     if ! python3 "$SCRIPT_DIR/verify-owner-bundle.py" "$build_revision" "$FULL_OUT"; then
         rm -f "$FULL_OUT"
-        err "Owner bundle failed completeness or 90 MB minimum-size verification."
+        err "Owner bundle failed exact payload or resource integrity verification."
         exit 1
     fi
 fi
