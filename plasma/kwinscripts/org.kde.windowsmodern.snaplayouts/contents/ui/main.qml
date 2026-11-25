@@ -161,6 +161,9 @@ Item {
         }
         function onScreensChanged() {
             root.resetPicker();
+            snapTimer.stop();
+            snapTimer.win = null;
+            snapTimer.rect = null;
         }
     }
 }

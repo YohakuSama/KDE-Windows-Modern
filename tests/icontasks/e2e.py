@@ -166,6 +166,17 @@ def preview(vi, out, c):
         time.sleep(0.8)
 
         left, top, right, bottom = preview_popup(vi, button, out)
+        # Use the existing detected popup bounds and header dimensions.
+        # Clicking the title must activate the same window as its thumbnail.
+        vi.move_to(right - 6 * CARD_MARGIN, top + 2 * CARD_MARGIN + CLOSE_SIZE // 2, steps=8)
+        time.sleep(0.5)
+        vi.click()
+        c.check(second.wait(lambda s: s["active"], 3),
+                "clicking the second preview title activates its window")
+        vi.move_to(960, 300, steps=8)
+        time.sleep(0.8)
+
+        left, top, right, bottom = preview_popup(vi, button, out)
         vi.move_to(right - 5 * CARD_MARGIN, bottom - 6 * CARD_MARGIN, steps=8)   # the second card
         time.sleep(0.6)
         vi.move_to(right - 2 * CARD_MARGIN - CLOSE_SIZE // 2, top + 2 * CARD_MARGIN + CLOSE_SIZE // 2, steps=6)
