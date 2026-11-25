@@ -16,6 +16,18 @@ The full library contains the source MUN libraries, all indexed PNG/ICO
 frames, fonts, wallpapers, audio and provenance. Keep it intact. Removing
 a file from the runtime selection must not remove it from the reference.
 
+The reviewed reference snapshot has 713 groups, 5,405 frames and
+467 original files. The three MUN modules contain 369 `imageres`, 335
+`shell32` and 9 `imagesp1` groups. The current mapping selects 61 of
+those groups. The remaining groups stay in the reference branch for
+future semantic review; do not map them by ID alone.
+
+The reference snapshot includes `SegoeIcons.ttf`, but its original file
+inventory contains no `Sysbatt.ttf`, `AXPIcons.ttf`, SystemApps Search
+state images or Task View PRI. The source manifest has no Windows build
+identifier. These absences are specific to the reviewed branch revision,
+not proof that those files do not exist in a separate 26H2 installation.
+
 At the reviewed runtime pin, the resource tree has 104 files totaling
 35,025,393 bytes before ZIP compression: 61 icon previews, 23 wallpapers,
 18 sounds, one icon extraction font and the original resource index.
