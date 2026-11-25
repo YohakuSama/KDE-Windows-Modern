@@ -34,9 +34,12 @@ ColumnLayout {
     // the card, not by moving the popup or shrinking the calendar.
     readonly property int historyChromeHeight: headerHeight + spacing + dndHeight + spacing
     readonly property int minimumSectionHeight: historyChromeHeight + emptyHeight
-    // The notification card keeps the Windows 11 empty-state height.
-    // Notification count and body length affect only the inner scroll view.
-    readonly property int preferredSectionHeight: minimumSectionHeight
+    // Empty history keeps its compact card. A nonempty history uses a
+    // stable card height regardless of individual card/group expansion.
+    // 444 logical px including the outer card's 24 px insets, measured
+    // proportionally from the owner's reference; clamp at the screen.
+    readonly property int preferredSectionHeight: notificationModel.count > 0
+        ? Math.max(minimumSectionHeight, 420) : minimumSectionHeight
     property int modelRevision: 0
     readonly property bool hasClearable: {
         const revision = modelRevision;
