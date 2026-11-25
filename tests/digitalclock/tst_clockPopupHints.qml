@@ -187,10 +187,23 @@ Item {
             compare(popup.height, populatedPopupHeight);
             clock.notificationsInhibited = false;
             tryCompare(dnd, "visible", false);
+            const firstHeight = panel.height;
             for (let i = 0; i < 15; ++i)
                 notifications.append({applicationName:"System", summary:"Notification "+i,
                     body:"A longer body.", closable:true, isGroup:false, isInGroup:false, expired:false});
             tryVerify(() => popup.height <= popup.availableScreenHeight && panel.height > emptyHeight);
+            tryCompare(panel, "height", firstHeight);
+            while (notifications.count > 1)
+                notifications.remove(notifications.count - 1);
+            tryCompare(panel, "height", firstHeight);
+            popup.calendarExpanded = false;
+            tryVerify(() => panel.height >= firstHeight);
+            const collapsedHeight = panel.height;
+            notifications.append({applicationName:"System", summary:"Second", body:"Longer notification",
+                closable:true, isGroup:false, isInGroup:false, expired:false});
+            tryCompare(panel, "height", collapsedHeight);
+            popup.calendarExpanded = true;
+            tryCompare(panel, "height", firstHeight);
             notifications.clear();
             tryCompare(panel, "height", emptyHeight);
             tryCompare(clear, "visible", false);
