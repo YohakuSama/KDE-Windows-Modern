@@ -7,7 +7,7 @@ rest to where Windows has them:
 
   Win+Up / Win+Down   maximize / restore / minimize / quarter-snap (KWin script)
   Win+Tab             Task View (KWin Overview), not window cycling
-  Win+R               Run (KRunner), not screen recording
+  Win+R               themed Run dialog, native KRunner fallback
   Win+M, Win+Home     minimize all / all others
   Win+A / Win+N       Quick Settings / notifications (tray, see "tray" below)
   Win+V               themed Klipper history, native fallback
@@ -20,7 +20,7 @@ The previous keys of every touched action are saved once to
 Usage: windows-shortcuts.py apply   [--group shortcuts|apps] [--dry-run]
        windows-shortcuts.py restore [--group shortcuts|apps]
        windows-shortcuts.py tray-apply | tray-restore   (Plasma Shell must be stopped)
-       windows-shortcuts.py clipboard-apply [--dry-run]
+       windows-shortcuts.py clipboard-apply | run-apply | run-release [--dry-run]
        windows-shortcuts.py show
 """
 import argparse
@@ -141,6 +141,15 @@ CLIPBOARD_COMPONENTS = ("plasmashell", "klipper")
 CLIPBOARD_ACTION = "show-on-mouse-pos"
 THEMED_CLIPBOARD_COMPONENT = "org.kde.windowsmodern.clipboard"
 THEMED_CLIPBOARD_ACTION = "show-history"
+THEMED_RUN_COMPONENT = "org.kde.windowsmodern.run"
+THEMED_RUN_ACTION = "show-run"
+NATIVE_RUN_COMPONENT = "org.kde.krunner.desktop"
+NATIVE_RUN_ACTION = "_launch"
+
+
+def registered_action(ga, component, action):
+    return next((aid for aid in ga.actions(component)
+                 if len(aid) == 4 and aid[:2] == [component, action]), None)
 
 
 def clipboard_target(ga):
@@ -152,10 +161,7 @@ def clipboard_target(ga):
 
 
 def themed_clipboard_target(ga):
-    for aid in ga.actions(THEMED_CLIPBOARD_COMPONENT):
-        if len(aid) == 4 and aid[:2] == [THEMED_CLIPBOARD_COMPONENT, THEMED_CLIPBOARD_ACTION]:
-            return aid
-    return None
+    return registered_action(ga, THEMED_CLIPBOARD_COMPONENT, THEMED_CLIPBOARD_ACTION)
 
 
 def save_backup(backup):
@@ -165,19 +171,19 @@ def save_backup(backup):
     temporary.replace(BACKUP)
 
 
-def bind_clipboard(ga, aid, dry_run=False):
-    """Bind only the registered native action; never create a fake shortcut."""
-    key = parse("Meta+V")
+def bind_native_shortcut(ga, aid, key_text, label, dry_run=False):
+    """Bind only the registered previous action; never create a fake shortcut."""
+    key = parse(key_text)
     current = ga.keys(aid)
     if key in current:
-        print("  Win+V: native Klipper history already bound")
+        print(f"  {label}: previous action already bound")
         return 0
     owner = ga.key_owner(key)
     if owner and owner[:2] != aid[:2]:
-        print(f"  Win+V is already used by {owner[0]} :: {owner[1]}; keeping the existing binding", file=sys.stderr)
+        print(f"  {label} is already used by {owner[0]} :: {owner[1]}; keeping the existing binding", file=sys.stderr)
         return 1
     if dry_run:
-        print("  Win+V: would add native Klipper history binding")
+        print(f"  {label}: would add previous binding")
         return 0
     backup = load_backup()
     backup.setdefault(f"{aid[0]}|{aid[1]}", current)
@@ -186,48 +192,85 @@ def bind_clipboard(ga, aid, dry_run=False):
     ga.set_keys(aid, expected)
     if sorted(ga.keys(aid)) != sorted(expected):
         ga.set_keys(aid, current)
-        print("  Win+V: native Klipper binding failed verification", file=sys.stderr)
+        print(f"  {label}: previous binding failed verification", file=sys.stderr)
         return 1
-    print("  Win+V: native KDE clipboard history bound and verified")
+    print(f"  {label}: previous binding verified")
     return 0
 
 
-def bind_themed_clipboard(ga, themed, native, dry_run=False):
-    """Move only Meta+V from the native action to the live themed action."""
-    key = parse("Meta+V")
+def transfer_shortcut(ga, target, previous, key_text, label, dry_run=False):
+    """Move one key, preserving all other bindings and rolling back on failure."""
+    key = parse(key_text)
     owner = ga.key_owner(key)
-    if owner and owner[:2] not in (themed[:2], native[:2]):
-        print(f"  Win+V is already used by {owner[0]} :: {owner[1]}; keeping the existing binding", file=sys.stderr)
+    if owner and owner[:2] not in (target[:2], previous[:2]):
+        print(f"  {label} is already used by {owner[0]} :: {owner[1]}; keeping the existing binding", file=sys.stderr)
         return 1
-    themed_keys = ga.keys(themed)
-    native_keys = ga.keys(native)
-    if key in themed_keys and key not in native_keys:
+    target_keys = ga.keys(target)
+    previous_keys = ga.keys(previous)
+    if key in target_keys and key not in previous_keys:
         return 0
     if dry_run:
-        print("  Win+V: would use the themed clipboard history")
+        print(f"  {label}: would transfer shortcut")
         return 0
     backup = load_backup()
     previous_backup = dict(backup)
-    if key in native_keys:
-        backup.setdefault(f"{native[0]}|{native[1]}", native_keys)
-    backup.setdefault(f"{themed[0]}|{themed[1]}", themed_keys)
+    if key in previous_keys:
+        backup.setdefault(f"{previous[0]}|{previous[1]}", previous_keys)
+    backup.setdefault(f"{target[0]}|{target[1]}", target_keys)
     save_backup(backup)
-    new_native = [value for value in native_keys if value != key]
-    new_themed = themed_keys + ([key] if key not in themed_keys else [])
+    new_previous = [value for value in previous_keys if value != key]
+    new_target = target_keys + ([key] if key not in target_keys else [])
     try:
-        if new_native != native_keys:
-            ga.set_keys(native, new_native)
-        ga.set_keys(themed, new_themed)
-        if sorted(ga.keys(themed)) != sorted(new_themed) or sorted(ga.keys(native)) != sorted(new_native):
-            raise RuntimeError("clipboard shortcut verification failed")
+        if new_previous != previous_keys:
+            ga.set_keys(previous, new_previous)
+        ga.set_keys(target, new_target)
+        if sorted(ga.keys(target)) != sorted(new_target) or sorted(ga.keys(previous)) != sorted(new_previous):
+            raise RuntimeError("shortcut verification failed")
     except Exception as exc:
-        ga.set_keys(themed, themed_keys)
-        ga.set_keys(native, native_keys)
+        ga.set_keys(target, target_keys)
+        ga.set_keys(previous, previous_keys)
         save_backup(previous_backup)
-        print(f"  Win+V: restored previous binding: {exc}", file=sys.stderr)
+        print(f"  {label}: restored previous binding: {exc}", file=sys.stderr)
         return 1
-    print("  Win+V: themed clipboard history bound and verified")
+    print(f"  {label}: shortcut bound and verified")
     return 0
+
+
+def bind_clipboard(ga, aid, dry_run=False):
+    return bind_native_shortcut(ga, aid, "Meta+V", "Win+V", dry_run)
+
+
+def bind_themed_clipboard(ga, themed, native, dry_run=False):
+    return transfer_shortcut(ga, themed, native, "Meta+V", "Win+V", dry_run)
+
+
+def run_apply(dry_run=False):
+    ga = GlobalAccel()
+    native = registered_action(ga, NATIVE_RUN_COMPONENT, NATIVE_RUN_ACTION)
+    # Never release KRunner until the live tray action has registered.
+    for attempt in range(20):
+        themed = registered_action(ga, THEMED_RUN_COMPONENT, THEMED_RUN_ACTION)
+        if themed and native:
+            return transfer_shortcut(ga, themed, native, "Meta+R", "Win+R", dry_run)
+        if attempt < 19:
+            time.sleep(0.5)
+    if native:
+        return bind_native_shortcut(ga, native, "Meta+R", "Win+R", dry_run)
+    print("  Win+R: no registered Run action found", file=sys.stderr)
+    return 1
+
+
+def run_release(dry_run=False):
+    # Removing the tray alone must not strand Win+R. A full uninstall
+    # restores the original shortcuts first, so this becomes a no-op.
+    ga = GlobalAccel()
+    themed = registered_action(ga, THEMED_RUN_COMPONENT, THEMED_RUN_ACTION)
+    if not themed or parse("Meta+R") not in ga.keys(themed):
+        return 0
+    native = registered_action(ga, NATIVE_RUN_COMPONENT, NATIVE_RUN_ACTION)
+    if not native:
+        return 1
+    return transfer_shortcut(ga, native, themed, "Meta+R", "Win+R", dry_run)
 
 
 def clipboard_apply(dry_run=False):
@@ -275,6 +318,11 @@ def apply(group, dry_run):
         if fcomp and not dry_run:
             ga.register(aid)  # a launcher entry for an app or our .desktop
         current = ga.keys(aid)
+        # A previously migrated Win+R belongs to the themed tray, not KRunner.
+        if comp == NATIVE_RUN_COMPONENT and action == NATIVE_RUN_ACTION:
+            owner = ga.key_owner(parse("Meta+R"))
+            if owner and owner[:2] == [THEMED_RUN_COMPONENT, THEMED_RUN_ACTION]:
+                continue
         new = wanted(current, change)
         backup.setdefault(f"{comp}|{action}", current)
         line = f"  {comp} :: {action}: {', '.join(map(fmt, current)) or '-'} -> {', '.join(map(fmt, new)) or '-'}"
@@ -295,8 +343,17 @@ def apply(group, dry_run):
 def restore(group):
     ga = GlobalAccel()
     backup = load_backup()
-    if group == "shortcuts" and restore_clipboard(ga, backup):
-        return 1
+    if group == "shortcuts":
+        if restore_clipboard(ga, backup):
+            return 1
+        name = f"{THEMED_RUN_COMPONENT}|{THEMED_RUN_ACTION}"
+        if name in backup:
+            aid = [THEMED_RUN_COMPONENT, THEMED_RUN_ACTION, "", ""]
+            ga.set_keys(aid, backup[name])
+            if sorted(ga.keys(aid)) != sorted(backup[name]):
+                print("  Could not restore the themed Run shortcut", file=sys.stderr)
+                return 1
+            backup.pop(name)
     # Reverse order: our actions give their keys up before the original
     # owners take them back.
     for _, comp, action, fcomp, faction, _change in reversed([c for c in CHANGES if c[0] == group]):
@@ -419,7 +476,7 @@ def show():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("command", choices=["apply", "restore", "tray-apply", "tray-restore", "clipboard-apply", "show"])
+    ap.add_argument("command", choices=["apply", "restore", "tray-apply", "tray-restore", "clipboard-apply", "run-apply", "run-release", "show"])
     ap.add_argument("--group", choices=["shortcuts", "apps"], default="shortcuts")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
@@ -430,6 +487,10 @@ def main():
     try:
         if args.command == "clipboard-apply":
             return clipboard_apply(args.dry_run)
+        if args.command == "run-apply":
+            return run_apply(args.dry_run)
+        if args.command == "run-release":
+            return run_release(args.dry_run)
         if args.command == "apply":
             return apply(args.group, args.dry_run)
         if args.command == "restore":

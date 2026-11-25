@@ -518,5 +518,10 @@
   "Unmute": "取消静音",
   "Mute": "静音",
   "Test sound": "测试声音",
-  "Audio settings": "音频设置"
+  "Audio settings": "音频设置",
+  "Open Run dialog": "打开运行窗口",
+  "Type the name of a command to run": "输入要运行的命令名称",
+  "Run": "运行",
+  "Run service is unavailable": "运行服务不可用",
+  "Command execution is blocked by system policy": "系统策略禁止执行此命令"
 }

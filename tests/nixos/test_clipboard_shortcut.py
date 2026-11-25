@@ -126,3 +126,52 @@ class ThemedClipboardShortcutTests(TestCase):
             ga = MultiAccel(conflict=["other", "other-action", "", ""])
             self.assertEqual(shortcuts.bind_themed_clipboard(ga, ga.themed, ga.native), 1)
             self.assertEqual(ga.writes, [])
+
+
+class RunAccel(MultiAccel):
+    native = [shortcuts.NATIVE_RUN_COMPONENT, shortcuts.NATIVE_RUN_ACTION, "KRunner", "Run"]
+    themed = [shortcuts.THEMED_RUN_COMPONENT, shortcuts.THEMED_RUN_ACTION, "Windows Modern", "Run"]
+
+
+class RunShortcutTests(TestCase):
+    def test_transfer_and_release_preserve_other_keys(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(shortcuts, "BACKUP", Path(d) / "shortcuts.json"):
+            key = shortcuts.parse("Meta+R")
+            other = shortcuts.parse("Alt+F2")
+            ga = RunAccel([other, key])
+            with patch.object(shortcuts, "GlobalAccel", return_value=ga):
+                self.assertEqual(shortcuts.run_apply(), 0)
+                self.assertEqual(ga.keys(ga.native), [other])
+                self.assertEqual(ga.keys(ga.themed), [key])
+                self.assertEqual(shortcuts.run_release(), 0)
+                self.assertEqual(ga.keys(ga.native), [other, key])
+                self.assertEqual(ga.keys(ga.themed), [])
+                self.assertEqual(shortcuts.run_release(), 0)
+
+    def test_failed_transfer_keeps_native_run(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(shortcuts, "BACKUP", Path(d) / "shortcuts.json"):
+            key = shortcuts.parse("Meta+R")
+            ga = RunAccel([key], fail=True)
+            with patch.object(shortcuts, "GlobalAccel", return_value=ga):
+                self.assertEqual(shortcuts.run_apply(), 1)
+            self.assertEqual(ga.keys(ga.native), [key])
+            self.assertEqual(ga.keys(ga.themed), [])
+            self.assertEqual(shortcuts.load_backup(), {})
+
+    def test_no_themed_action_falls_back_without_removing_krunner_keys(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(shortcuts, "BACKUP", Path(d) / "shortcuts.json"):
+            key = shortcuts.parse("Meta+R")
+            other = shortcuts.parse("Alt+F2")
+            ga = RunAccel([other])
+            ga.actions = lambda component: [ga.native] if component == ga.native[0] else []
+            with patch.object(shortcuts, "GlobalAccel", return_value=ga), patch.object(shortcuts.time, "sleep"):
+                self.assertEqual(shortcuts.run_apply(), 0)
+            self.assertEqual(ga.keys(ga.native), [other, key])
+            self.assertEqual(ga.keys(ga.themed), [])
+
+    def test_unrelated_binding_is_not_stolen(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(shortcuts, "BACKUP", Path(d) / "shortcuts.json"):
+            ga = RunAccel(conflict=["other", "action", "", ""])
+            with patch.object(shortcuts, "GlobalAccel", return_value=ga):
+                self.assertEqual(shortcuts.run_apply(), 1)
+            self.assertEqual(ga.writes, [])

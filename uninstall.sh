@@ -161,6 +161,10 @@ uninstall_component() {
             info "Start Menu uninstalled."
             ;;
         systray|systemtray)
+            if busctl --user status org.kde.kglobalaccel &>/dev/null; then
+                python3 "$SRC_DIR/scripts/windows-shortcuts.py" run-release \
+                    || warn "Could not return Win+R to KRunner."
+            fi
             rm_path "$(detect_systray_so_dir)/org.kde.windowsmodern.systemtray.so"
             rm_path "/usr/share/plasma/plasmoids/org.kde.windowsmodern.systemtray"
             rm_path "$HOME/.local/share/plasma/plasmoids/org.kde.windowsmodern.systemtray"
