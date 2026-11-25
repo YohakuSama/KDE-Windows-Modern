@@ -55,6 +55,16 @@ Item {
             verify(a.height >= 34 && b.height >= 34);
         }
 
+        function test_sliderWithoutLeadingIcon() {
+            const track = findChild(brightness, "wmFluentSliderTrack");
+            const oldIcon = brightness.iconSource;
+            const before = track.width;
+            brightness.iconSource = "";
+            tryVerify(() => track.width > before);
+            brightness.iconSource = oldIcon;
+            tryCompare(track, "width", before);
+        }
+
         function test_realPointerAndWheel_data() {
             return [{tag: "brightness", row: brightness}, {tag: "volume", row: volume}];
         }

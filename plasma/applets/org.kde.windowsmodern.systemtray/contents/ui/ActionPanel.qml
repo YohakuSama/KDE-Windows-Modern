@@ -35,7 +35,7 @@ ColumnLayout {
     readonly property int sliderInset: Math.round(16 * uiScale)
     readonly property int sliderHorizontalInset: Math.max(0, Math.round(18 * uiScale) - Math.round(frameInset))
     readonly property int sliderGap: Math.round(12 * uiScale)
-    readonly property int sliderHeight: Math.max(32, Math.round(36 * uiScale))
+    readonly property int sliderHeight: Math.max(36, Math.round(36 * uiScale))
     readonly property int footerHeight: Math.max(24, Math.round(48 * uiScale) - Math.round(frameInset))
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
 

@@ -49,6 +49,11 @@ Item {
                 verify(accent.b >= accent.g && accent.g >= accent.r);
             }
         }
+        function test_captionFitsTwoLinesAtSmallScale() {
+            split.buttonHeight = 24;
+            verify(split.captionHeight >= 20);
+            split.buttonHeight = 48;
+        }
         function test_equalSplitGeometryAndTargets() {
             const surface = findChild(split, "wmQuickTileSurface");
             const glyph = findChild(split, "wmQuickTileGlyph");
