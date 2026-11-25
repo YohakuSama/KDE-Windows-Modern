@@ -29,7 +29,12 @@ Item {
         when: windowShown
         function test_languageLabels() {
             compare(Funcs.inputMethodLabel("Fcitx", "fcitx-rime", "中州韵"), "中");
-            compare(Funcs.inputMethodLabel("Fcitx", "", "中州韻"), "中");
+            compare(Funcs.inputMethodLabel("Fcitx", "fcitx_rime_latin", "中州韵"), "英");
+            compare(Funcs.inputMethodLabel("Fcitx", "fcitx_rime_latin_upper", "中州韵"), "英");
+            compare(Funcs.inputMethodLabel("Fcitx", "fcitx-rime-latin-symbolic", "Rime"), "英");
+            compare(Funcs.inputMethodLabel("Fcitx", "fcitx_rime_disable", "中州韵"), "");
+            compare(Funcs.inputMethodLabel("Fcitx", "", "中州韻"), "");
+            compare(Funcs.inputMethodLabel("Fcitx", "input-keyboard", "中州韵"), "");
             compare(Funcs.inputMethodLabel("Fcitx", "input-keyboard", "Keyboard - English (US)"), "英");
             compare(Funcs.inputMethodLabel("Fcitx", "input-keyboard", "Keyboard - Japanese"), "");
             compare(Funcs.inputMethodLabel("Other", "fcitx-rime", "中文"), "");

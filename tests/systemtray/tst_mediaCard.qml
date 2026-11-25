@@ -6,6 +6,7 @@ import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/compon
 
 Item {
     id: fixture
+    function i18n(text) { return text; }
     width: 400
     height: 220
     QtObject {

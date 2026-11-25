@@ -14,28 +14,30 @@ import org.kde.kirigami as Kirigami
 
 import "../components"
 
-ColumnLayout {
+Item {
     id: allAppsPage
 
-    spacing: Kirigami.Units.largeSpacing
-
-    property alias allAppsList: allAppsListView
+    readonly property var allAppsList: categoryMode ? allAppsListView : alphabeticalView
     property Component homeHeader: null
     property var flatModel: null
     property var categoryModel: null
+    property var categoryUsageModel: null
     property bool showAllSection: true
     property bool categoryMode: false
     property bool gridMode: false
+    property bool alphabeticalGrouping: true
     readonly property bool showCategoryCards: categoryMode
-    readonly property var activeView: inCategory ? categoryGrid : allAppsListView
+    readonly property var activeView: inCategory ? categoryGrid : allAppsList
     property var categoryChild: null
     property string categoryTitle: ""
+    property string categoryKey: ""
     property int categoryRow: 0
     readonly property bool inCategory: categoryMode && categoryChild !== null
 
     function resetCategory() {
         categoryChild = null;
         categoryTitle = "";
+        categoryKey = "";
         categoryRow = 0;
     }
 
@@ -57,32 +59,31 @@ ColumnLayout {
     }
 
     function activateRow(row) {
-        const source = allAppsListView.model;
-        if (!source || row < 0 || row >= allAppsListView.count)
-            return;
-        if (categoryMode && !inCategory) {
-            const child = source.modelForRow(row);
-            if (child) {
-                categoryRow = row;
-                categoryTitle = source.labelForRow(row);
-                categoryChild = child;
-                Qt.callLater(function() {
-                    categoryGrid.currentIndex = -1;
-                    categoryGrid.positionViewAtBeginning();
-                    categoryGrid.forceActiveFocus();
-                });
-                return;
-            }
-        }
-        if (source.trigger(row, "", null))
-            root.closeMenu();
+        const bucket = categoryCatalog.rows[row];
+        if (!categoryMode || !bucket || inCategory) return;
+        categoryRow = row;
+        categoryKey = bucket.key;
+        categoryTitle = bucket.label;
+        categoryChild = bucket.entries;
+        Qt.callLater(function() {
+            categoryGrid.currentIndex = -1;
+            categoryGrid.positionViewAtBeginning();
+            categoryGrid.forceActiveFocus();
+        });
     }
 
     function scrollToAll() {
-        if (allAppsListView.count > 0)
-            allAppsListView.positionViewAtIndex(0, GridView.Beginning);
+        if (allAppsList.count > 0)
+            allAppsList.positionViewAtIndex(0, GridView.Beginning);
         else
-            allAppsListView.positionViewAtBeginning();
+            allAppsList.positionViewAtBeginning();
+    }
+
+    function activateFlatRow(row) {
+        if (flatModel && row >= 0 && row < alphabeticalView.sourceEntries.length
+                && typeof flatModel.trigger === "function"
+                && flatModel.trigger(row, "", null))
+            root.closeMenu();
     }
 
     signal backRequested
@@ -96,12 +97,16 @@ ColumnLayout {
     }
 
     function navigateUp() {
-        if (activeView.count > 0)
+        if (activeView === alphabeticalView)
+            alphabeticalView.moveVertical(-1);
+        else if (activeView.count > 0)
             activeView.currentIndex = Math.max(0, activeView.currentIndex - activeView.columns);
     }
 
     function navigateDown() {
-        if (activeView.count > 0)
+        if (activeView === alphabeticalView)
+            alphabeticalView.moveVertical(1);
+        else if (activeView.count > 0)
             activeView.currentIndex = Math.min(activeView.count - 1, activeView.currentIndex < 0 ? 0 : activeView.currentIndex + activeView.columns);
     }
 
@@ -109,28 +114,59 @@ ColumnLayout {
         activeView.activateRow(Math.max(0, activeView.currentIndex));
     }
 
-    // A single native scroller for all three views and the inline home header.
+    // Only the active view owns the Pinned/Recommended/All header. Each
+    // mode has a single vertical scroller; no nested scrolling sections.
+    AlphabeticalAppsView {
+        id: alphabeticalView
+        anchors.fill: parent
+        visible: !allAppsPage.categoryMode
+        sourceModel: allAppsPage.flatModel
+        showApps: !allAppsPage.categoryMode && allAppsPage.showAllSection
+        gridMode: allAppsPage.gridMode
+        alphabeticalGrouping: allAppsPage.alphabeticalGrouping
+        header: !allAppsPage.categoryMode ? allAppsPage.homeHeader : null
+        onApplicationActivated: row => allAppsPage.activateFlatRow(row)
+        onNavigateToHeader: allAppsPage.keyNavUpFromList()
+    }
+
+    WindowsCategories {
+        id: categoryCatalog
+        entries: alphabeticalView.sourceEntries
+        nativeModel: allAppsPage.categoryModel
+        usageModel: allAppsPage.categoryUsageModel
+        onRowsChanged: {
+            if (!allAppsPage.inCategory) return;
+            const row = rows.findIndex(bucket => bucket.key === allAppsPage.categoryKey);
+            if (row < 0) {
+                allAppsPage.resetCategory();
+                return;
+            }
+            const previous = allAppsPage.categoryChild[categoryGrid.currentIndex];
+            const key = previous ? String(previous.favoriteId || previous.url || "") : "";
+            allAppsPage.categoryRow = row;
+            allAppsPage.categoryTitle = rows[row].label;
+            allAppsPage.categoryChild = rows[row].entries;
+            categoryGrid.currentIndex = key ? rows[row].entries.findIndex(entry =>
+                String(entry.favoriteId || entry.url || "") === key) : -1;
+        }
+    }
+
     GridView {
         id: allAppsListView
-        Layout.fillWidth: true
-        Layout.fillHeight: true
+        anchors.fill: parent
         clip: true
+        visible: allAppsPage.categoryMode
         interactive: !allAppsPage.inCategory
         readonly property int scrollGutter: 18
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
-        readonly property int columns: allAppsPage.showCategoryCards || allAppsPage.gridMode
-            ? (contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2) : 1
+        readonly property int columns: contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2
         cellWidth: Math.max(1, Math.floor(contentColumnWidth / columns))
-        cellHeight: allAppsPage.showCategoryCards ? cellWidth + 16
-            : allAppsPage.gridMode ? 82 : Math.max(34, Math.floor(Kirigami.Units.gridUnit * 1.8) + 2)
+        cellHeight: cellWidth + 24
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
-        model: !allAppsPage.showAllSection ? null
-            : allAppsPage.categoryMode
-                ? allAppsPage.categoryModel
-                : allAppsPage.flatModel
+        model: allAppsPage.categoryMode && allAppsPage.showAllSection ? categoryCatalog.rows : []
         function activateRow(row) { allAppsPage.activateRow(row); }
-        header: allAppsPage.homeHeader
+        header: allAppsPage.categoryMode ? allAppsPage.homeHeader : null
 
         PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
         StartWheelHandler {
@@ -138,15 +174,7 @@ ColumnLayout {
             rowHeight: Math.min(40, allAppsListView.cellHeight)
         }
 
-        delegate: allAppsPage.showCategoryCards ? categoryCard : applicationRow
-
-        Component {
-            id: applicationRow
-            ListItemDelegate {
-                gridMode: allAppsPage.gridMode
-                iconSize: allAppsPage.gridMode ? 32 : 24
-            }
-        }
+        delegate: categoryCard
 
         Component {
             id: categoryCard
@@ -154,16 +182,15 @@ ColumnLayout {
                 id: card
                 width: allAppsListView.cellWidth
                 height: allAppsListView.cellHeight
+                required property int index
+                required property var modelData
                 readonly property int categoryIndex: index
-                readonly property string categoryName: model.display ?? ""
-                readonly property var childModel: allAppsListView.model
-                    ? allAppsListView.model.modelForRow(categoryIndex) : null
-                readonly property int appCount: childModel ? Math.max(0, childModel.count || 0) : 0
+                readonly property string categoryName: modelData.label
+                readonly property var childModel: modelData.entries
+                readonly property int appCount: childModel.length
 
                 function appIcon(row) {
-                    // Qt::DecorationRole, preserving the Kicker application's actual icon.
-                    return childModel && row >= 0 && row < appCount
-                        ? childModel.data(childModel.index(row, 0), 1) : "";
+                    return row >= 0 && row < appCount ? childModel[row].decoration || "" : "";
                 }
 
                 function openCategory() {
@@ -243,23 +270,15 @@ ColumnLayout {
                                     onClicked: {
                                         if (slot.cluster)
                                             card.openCategory();
-                                        else if (card.childModel.trigger(slot.index, "", null))
-                                            root.closeMenu();
+                                        else
+                                            allAppsPage.activateFlatRow(card.childModel[slot.index].index);
                                     }
                                 }
                             }
                         }
                     }
 
-                    // Kicker can contain a top-level launchable item rather than a category.
-                    Kirigami.Icon {
-                        anchors.centerIn: parent
-                        width: 32
-                        height: width
-                        visible: !card.childModel
-                        source: model.decoration ?? ""
-                        roundToIconSize: false
-                    }
+
                 }
 
                 PlasmaComponents3.Label {
@@ -339,8 +358,13 @@ ColumnLayout {
             objectName: "wmStartCategorySurface"
             anchors.centerIn: parent
             width: Math.max(1, Math.min(parent.width - 24, 512))
+            // Size from the model and available width, not a child layout
+            // whose height feeds back into the surface's implicit height.
+            readonly property int appColumns: width - 32 >= 340 ? 4 : width - 32 >= 240 ? 3 : 2
+            readonly property int appCount: allAppsPage.categoryChild ? allAppsPage.categoryChild.length : 0
+            readonly property int appCellHeight: 84
             height: Math.max(1, Math.min(parent.height - 24,
-                70 + Math.max(1, Math.ceil(categoryGrid.count / categoryGrid.columns)) * categoryGrid.cellHeight + 20))
+                84 + Math.max(1, Math.ceil(appCount / appColumns)) * appCellHeight))
             radius: 8
             readonly property bool dark: {
                 const c = Kirigami.Theme.backgroundColor;
@@ -372,19 +396,43 @@ ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
-                    model: allAppsPage.categoryChild
-                    readonly property int columns: width >= 340 ? 4 : width >= 240 ? 3 : 2
+                    model: allAppsPage.categoryChild || []
+                    readonly property int columns: categorySurface.appColumns
                     cellWidth: Math.max(1, Math.floor((width - 12) / columns))
-                    cellHeight: 82
+                    cellHeight: categorySurface.appCellHeight
                     boundsBehavior: Flickable.StopAtBounds
                     currentIndex: -1
                     function activateRow(row) {
-                        if (model && row >= 0 && row < count && model.trigger(row, "", null))
-                            root.closeMenu();
+                        if (row >= 0 && row < count)
+                            allAppsPage.activateFlatRow(model[row].index);
+                    }
+                    // The visual grid has reordered rows, but context
+                    // actions must still target the original Kicker proxy.
+                    QtObject {
+                        id: categoryActions
+                        readonly property var model: allAppsPage.flatModel
+                        readonly property bool activeFocus: categoryGrid.activeFocus
+                        readonly property int currentIndex: categoryGrid.currentIndex >= 0
+                            && categoryGrid.currentIndex < categoryGrid.count
+                            ? categoryGrid.model[categoryGrid.currentIndex].index : -1
+                        function forceActiveFocus() { categoryGrid.forceActiveFocus(); }
+                        function activateRow(sourceRow) {
+                            const index = categoryGrid.model.findIndex(entry => entry.index === sourceRow);
+                            if (index < 0) return;
+                            categoryGrid.currentIndex = index;
+                            categoryGrid.activateRow(index);
+                        }
                     }
                     delegate: ListItemDelegate {
+                        required property var modelData
+                        suppliedView: categoryActions
+                        appData: modelData
+                        itemIndex: modelData.index
+                        width: categoryGrid.cellWidth
+                        height: categoryGrid.cellHeight
                         gridMode: true
                         iconSize: 32
+                        showInstallBadge: true
                     }
                     PlasmaComponents3.ScrollBar.vertical: StartScrollBar {}
                     StartWheelHandler {

@@ -24,7 +24,14 @@ Item {
     id: item
 
     readonly property bool inGrid: !!item.GridView.view
-    readonly property var hostView: inGrid ? item.GridView.view : item.ListView.view
+    // Grouped rows provide the original source-model context explicitly.
+    // Native GridView/ListView delegates retain their existing behavior.
+    property var suppliedView: null
+    property var appData: typeof model === "undefined" ? ({}) : model
+    readonly property var hostView: suppliedView || (inGrid ? item.GridView.view : item.ListView.view)
+    readonly property bool currentApp: suppliedView
+        ? suppliedView.currentIndex === itemIndex
+        : (inGrid ? item.GridView.isCurrentItem : item.ListView.isCurrentItem)
     property bool gridMode: false
     width: hostView ? (inGrid ? hostView.cellWidth
         : (hostView.contentColumnWidth !== undefined ? hostView.contentColumnWidth : hostView.width))
@@ -35,18 +42,20 @@ Item {
     clip: !_dragging
     z: _dragging ? 10 : 0
 
-    enabled: !model.disabled
+    enabled: !item.appData.disabled
 
-    property int itemIndex: model.index
+    property int itemIndex: item.appData.index ?? -1
     property int iconSize: Kirigami.Units.iconSizes.smallMedium
     property bool showDescription: false
+    property bool showInstallBadge: false
+    readonly property bool newApplication: showInstallBadge && !!appData.isNewlyInstalled
 
     // Opt-in drag-to-reorder.  Only the pinned (favorites) list sets this;
     // the all-apps list is alphabetical and not reorderable.
     property bool dragEnabled: false
 
     Accessible.role: Accessible.MenuItem
-    Accessible.name: model.display !== undefined ? model.display : ""
+    Accessible.name: item.appData.display ?? ""
     Accessible.onPressAction: launchApp()
 
     // ── Drag state ─────────────────────────────────────────────────────
@@ -69,7 +78,7 @@ Item {
             if (item._dragging) return Theme.opacityHidden;
             if (mouseArea.containsMouse) return Theme.opacityFull;
             if (item.hostView && item.hostView.activeFocus
-                && (item.inGrid ? item.GridView.isCurrentItem : item.ListView.isCurrentItem))
+                && item.currentApp)
                 return Theme.listItemCurrentOpacity;
             return Theme.opacityHidden;
         }
@@ -149,7 +158,7 @@ Item {
             height: width
             animated: false
             roundToIconSize: false
-            source: model.decoration !== undefined ? model.decoration : ""
+            source: item.appData.decoration ?? ""
         }
 
         Column {
@@ -162,23 +171,35 @@ Item {
             PlasmaComponents3.Label {
                 width: parent.width
                 horizontalAlignment: item.gridMode ? Text.AlignHCenter : Text.AlignLeft
-                maximumLineCount: item.gridMode ? 2 : 1
-                wrapMode: item.gridMode ? Text.Wrap : Text.NoWrap
+                maximumLineCount: item.gridMode && !item.newApplication ? 2 : 1
+                wrapMode: item.gridMode && !item.newApplication ? Text.Wrap : Text.NoWrap
                 elide: Text.ElideRight
                 color: Kirigami.Theme.textColor
                 font.pixelSize: item.gridMode ? Math.max(12, Kirigami.Theme.smallFont.pixelSize) : Math.max(12, Kirigami.Theme.defaultFont.pixelSize)
-                text: ("name" in model ? model.name : (model.display !== undefined ? model.display : ""))
+                text: item.appData.name || item.appData.display || ""
                 textFormat: Text.PlainText
             }
 
             PlasmaComponents3.Label {
-                visible: item.showDescription && text.length > 0
+                objectName: "wmNewAppBadge"
+                visible: item.newApplication
+                width: parent.width
+                horizontalAlignment: item.gridMode ? Text.AlignHCenter : Text.AlignLeft
+                maximumLineCount: 1
+                color: Kirigami.Theme.highlightColor
+                font.pixelSize: Math.max(11, Kirigami.Theme.smallFont.pixelSize)
+                text: i18n("New")
+                textFormat: Text.PlainText
+            }
+
+            PlasmaComponents3.Label {
+                visible: item.showDescription && !item.newApplication && text.length > 0
                 width: parent.width
                 maximumLineCount: 1
                 elide: Text.ElideRight
                 color: Kirigami.Theme.disabledTextColor
                 font: Kirigami.Theme.smallFont
-                text: ("description" in model ? (model.description !== undefined ? model.description : "") : "")
+                text: item.appData.description ?? ""
                 textFormat: Text.PlainText
             }
         }
@@ -356,12 +377,12 @@ Item {
 
     function openContextMenu(localX, localY) {
         // A category is a navigation row, not a pinnable application.
-        if (model.isParent) return;
+        if (item.appData.isParent) return;
         var favModel = (typeof kicker !== "undefined" && kicker.globalFavorites)
                        ? kicker.globalFavorites : null
-        var favId = (model.favoriteId !== undefined) ? model.favoriteId : ""
-        var url = (model.url !== undefined) ? model.url : ""
-        var actionList = (model.actionList !== undefined) ? model.actionList : null
+        var favId = item.appData.favoriteId ?? ""
+        var url = item.appData.url ?? ""
+        var actionList = item.appData.actionList ?? null
         var acts = Tools.buildAppActions(i18n, favModel, favId, url, actionList)
         if (acts.length === 0) return
 
