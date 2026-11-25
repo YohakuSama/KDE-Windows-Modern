@@ -72,6 +72,7 @@ Item {
             verify(fileLetter);
             mouseClick(fileLetter, fileLetter.width / 2, fileLetter.height / 2);
             tryCompare(view, "letterIndexOpen", false);
+            tryCompare(overlay, "visible", false);
             compare(view.currentIndex, 4);
             compare(view.jumpToLetter("B"), false);
             compare(view.currentIndex, 4);
@@ -85,7 +86,9 @@ Item {
             tryVerify(() => heading.hovered);
             mouseClick(hitArea, hitArea.width / 2, hitArea.height / 2);
             tryCompare(view, "letterIndexOpen", true);
+            const overlay = findChild(view, "wmStartLetterIndexOverlay");
             view.letterIndexOpen = false;
+            tryCompare(overlay, "visible", false);
         }
         function test_modelUpdatesKeepSourceIdentity() {
             tryCompare(view, "count", 5);

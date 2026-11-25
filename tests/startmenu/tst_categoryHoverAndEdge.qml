@@ -58,6 +58,7 @@ Item {
             tryCompare(overlay, "opacity", 1);
             page.backToCategories();
             tryCompare(page, "inCategory", false);
+            tryCompare(overlay, "visible", false);
 
             let contextRow = -1;
             page.appContextMenuRequested.connect((entry, x, y) => { contextRow = entry.index; });
