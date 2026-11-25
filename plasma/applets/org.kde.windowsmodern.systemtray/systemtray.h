@@ -43,6 +43,7 @@ public:
     bool accessibilityAvailable() const;
     bool castAvailable() const;
     Q_INVOKABLE void openCast();
+    Q_INVOKABLE void registerClipboardShortcut();
     Q_INVOKABLE bool setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
                                       qreal radius, bool enabled);
 
@@ -65,6 +66,7 @@ public:
 
 Q_SIGNALS:
     void castAvailabilityChanged();
+    void clipboardHistoryRequested();
 
 private Q_SLOTS:
     void onEnabledAppletsChanged();

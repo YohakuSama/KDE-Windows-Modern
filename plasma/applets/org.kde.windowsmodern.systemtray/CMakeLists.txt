@@ -14,6 +14,7 @@ include(ECMQtDeclareLoggingCategory)
 find_package(Qt6 REQUIRED COMPONENTS DBus Gui Quick Qml QuickControls2)
 find_package(KF6 REQUIRED COMPONENTS
     Config
+    GlobalAccel
     IconThemes
     I18n
     KIO
@@ -107,6 +108,7 @@ target_link_libraries(systemtray_static
         Qt6::Widgets
         Qt6::Quick
         KF6::ConfigCore
+        KF6::GlobalAccel
         KF6::IconThemes
         KF6::I18n
         KF6::KIOCore

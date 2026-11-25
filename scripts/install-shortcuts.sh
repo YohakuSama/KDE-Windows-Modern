@@ -50,8 +50,8 @@ step "Tray: Win+A Quick Settings, Win+N notifications"
 stop_plasmashell
 python3 "$SRC_DIR/scripts/windows-shortcuts.py" tray-apply || warn "Tray shortcuts not set."
 restart_plasmashell
-step "Win+V: KDE native clipboard history"
+step "Win+V: Windows Modern clipboard history"
 python3 "$SRC_DIR/scripts/windows-shortcuts.py" clipboard-apply \
-    || warn "Native clipboard history shortcut could not be bound."
+    || warn "Clipboard history shortcut could not be bound."
 
 info "Windows shortcuts installed."

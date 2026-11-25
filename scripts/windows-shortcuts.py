@@ -10,7 +10,7 @@ rest to where Windows has them:
   Win+R               Run (KRunner), not screen recording
   Win+M, Win+Home     minimize all / all others
   Win+A / Win+N       Quick Settings / notifications (tray, see "tray" below)
-  Win+V               native KDE Klipper clipboard history
+  Win+V               themed Klipper history, native fallback
   Win+PrtSc           full screenshot saved silently; Alt+PrtSc active window
   Ctrl+Shift+Esc      Mission Center (group "apps")
 
@@ -139,6 +139,8 @@ def load_backup():
 
 CLIPBOARD_COMPONENTS = ("plasmashell", "klipper")
 CLIPBOARD_ACTION = "show-on-mouse-pos"
+THEMED_CLIPBOARD_COMPONENT = "org.kde.windowsmodern.clipboard"
+THEMED_CLIPBOARD_ACTION = "show-history"
 
 
 def clipboard_target(ga):
@@ -146,6 +148,13 @@ def clipboard_target(ga):
         for aid in ga.actions(component):
             if len(aid) == 4 and aid[:2] == [component, CLIPBOARD_ACTION]:
                 return aid
+    return None
+
+
+def themed_clipboard_target(ga):
+    for aid in ga.actions(THEMED_CLIPBOARD_COMPONENT):
+        if len(aid) == 4 and aid[:2] == [THEMED_CLIPBOARD_COMPONENT, THEMED_CLIPBOARD_ACTION]:
+            return aid
     return None
 
 
@@ -183,6 +192,44 @@ def bind_clipboard(ga, aid, dry_run=False):
     return 0
 
 
+def bind_themed_clipboard(ga, themed, native, dry_run=False):
+    """Move only Meta+V from the native action to the live themed action."""
+    key = parse("Meta+V")
+    owner = ga.key_owner(key)
+    if owner and owner[:2] not in (themed[:2], native[:2]):
+        print(f"  Win+V is already used by {owner[0]} :: {owner[1]}; keeping the existing binding", file=sys.stderr)
+        return 1
+    themed_keys = ga.keys(themed)
+    native_keys = ga.keys(native)
+    if key in themed_keys and key not in native_keys:
+        return 0
+    if dry_run:
+        print("  Win+V: would use the themed clipboard history")
+        return 0
+    backup = load_backup()
+    previous_backup = dict(backup)
+    if key in native_keys:
+        backup.setdefault(f"{native[0]}|{native[1]}", native_keys)
+    backup.setdefault(f"{themed[0]}|{themed[1]}", themed_keys)
+    save_backup(backup)
+    new_native = [value for value in native_keys if value != key]
+    new_themed = themed_keys + ([key] if key not in themed_keys else [])
+    try:
+        if new_native != native_keys:
+            ga.set_keys(native, new_native)
+        ga.set_keys(themed, new_themed)
+        if sorted(ga.keys(themed)) != sorted(new_themed) or sorted(ga.keys(native)) != sorted(new_native):
+            raise RuntimeError("clipboard shortcut verification failed")
+    except Exception as exc:
+        ga.set_keys(themed, themed_keys)
+        ga.set_keys(native, native_keys)
+        save_backup(previous_backup)
+        print(f"  Win+V: restored previous binding: {exc}", file=sys.stderr)
+        return 1
+    print("  Win+V: themed clipboard history bound and verified")
+    return 0
+
+
 def clipboard_apply(dry_run=False):
     ga = GlobalAccel()
     # Plasma starts Klipper asynchronously when loading the native clipboard
@@ -192,6 +239,9 @@ def clipboard_apply(dry_run=False):
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         aid = clipboard_target(ga) if service.returncode == 0 else None
         if aid:
+            themed = themed_clipboard_target(ga)
+            if themed:
+                return bind_themed_clipboard(ga, themed, aid, dry_run)
             return bind_clipboard(ga, aid, dry_run)
         if attempt < 19:
             time.sleep(0.5)
@@ -200,11 +250,13 @@ def clipboard_apply(dry_run=False):
 
 
 def restore_clipboard(ga, backup):
-    for component in CLIPBOARD_COMPONENTS:
-        name = f"{component}|{CLIPBOARD_ACTION}"
+    targets = [(THEMED_CLIPBOARD_COMPONENT, THEMED_CLIPBOARD_ACTION)]
+    targets.extend((component, CLIPBOARD_ACTION) for component in CLIPBOARD_COMPONENTS)
+    for component, action in targets:
+        name = f"{component}|{action}"
         if name not in backup:
             continue
-        aid = [component, CLIPBOARD_ACTION, "", ""]
+        aid = [component, action, "", ""]
         ga.set_keys(aid, backup[name])
         if sorted(ga.keys(aid)) != sorted(backup[name]):
             print("  Could not restore the original clipboard shortcut", file=sys.stderr)

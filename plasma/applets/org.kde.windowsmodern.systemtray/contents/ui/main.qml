@@ -68,12 +68,23 @@ ContainmentItem {
         // set active and not the model, as this will cause an assert deep in Qt
         activeInstantiator.active = true;
         hiddenInstantiator.active = true;
+        Plasmoid.registerClipboardShortcut();
     }
 
     Connections {
         target: Plasmoid
         function onActivated() {
             systemTrayState.toggleHome(false);
+        }
+        function onClipboardHistoryRequested() {
+            const applet = Plasmoid.appletForPluginId("org.kde.plasma.clipboard");
+            if (!applet) return;
+            if (systemTrayState.expanded && systemTrayState.activeApplet === applet) {
+                systemTrayState.expanded = false;
+                return;
+            }
+            systemTrayState.overflowMode = false;
+            systemTrayState.setActiveApplet(applet);
         }
     }
 

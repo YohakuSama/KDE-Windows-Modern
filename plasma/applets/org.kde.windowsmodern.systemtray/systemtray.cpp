@@ -16,6 +16,9 @@
 #include "systemtraymodel.h"
 #include "systemtraysettings.h"
 
+#include <QAction>
+#include <QDBusConnection>
+#include <QDBusMessage>
 #include <QGuiApplication>
 #include <QMenu>
 #include <QPainterPath>
@@ -34,6 +37,8 @@
 #include <Plasma/PluginLoader>
 
 #include <KAcceleratorManager>
+#include <KGlobalAccel>
+#include <KLocalizedString>
 #include <KIO/ApplicationLauncherJob>
 #include <KNotificationJobUiDelegate>
 #include <KPluginMetaData>
@@ -52,6 +57,34 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     connect(KSycoca::self(), &KSycoca::databaseChanged, this, &SystemTray::castAvailabilityChanged);
     setHasConfigurationInterface(true);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
+}
+
+void SystemTray::registerClipboardShortcut()
+{
+    // Plasma's primary panel is screen 0 (the same convention used by
+    // the installer for Win+A and Win+N). Do not register duplicates on
+    // secondary panels. The action is owned by the tray, not by plasmashell.
+    static QPointer<QAction> action;
+    if (action || screen() != 0) {
+        return;
+    }
+    action = new QAction(i18n("Open clipboard history"), this);
+    action->setObjectName(QStringLiteral("show-history"));
+    action->setProperty("componentName", QStringLiteral("org.kde.windowsmodern.clipboard"));
+    action->setProperty("componentDisplayName", QStringLiteral("Windows Modern"));
+    connect(action, &QAction::triggered, this, [this] {
+        if (appletForPluginId(QStringLiteral("org.kde.plasma.clipboard"))) {
+            Q_EMIT clipboardHistoryRequested();
+        } else {
+            // Preserve the native history even if the tray applet was disabled.
+            QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(
+                QStringLiteral("org.kde.klipper"), QStringLiteral("/klipper"),
+                QStringLiteral("org.kde.klipper.klipper"), QStringLiteral("showKlipperPopupMenu")));
+        }
+    });
+    // Register a real live action. The installer migrates Meta+V only
+    // after finding it and checking for competing bindings.
+    KGlobalAccel::self()->setShortcut(action, QList<QKeySequence>{});
 }
 
 bool SystemTray::accessibilityAvailable() const
