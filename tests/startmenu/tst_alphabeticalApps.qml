@@ -29,6 +29,8 @@ Item {
             compare(Alphabetical.sectionForName("  Éditeur"), "E");
             compare(Alphabetical.sectionForName("7-Zip"), "#");
             compare(Alphabetical.sectionForName("浏览器"), "浏");
+            compare(Alphabetical.sectionForEntry({display:"浏览器", group:"L"}), "L");
+            compare(Alphabetical.sectionForEntry({display:"Éditeur", group:"É"}), "E");
             tryCompare(view, "count", 5);
             compare(view.columns, 6);
             compare(view.visualRows.length, 3);

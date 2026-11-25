@@ -362,8 +362,13 @@ ColumnLayout {
             objectName: "wmStartCategorySurface"
             anchors.centerIn: parent
             width: Math.max(1, Math.min(parent.width - 24, 512))
+            // Size from the model and available width, not a child layout
+            // whose height feeds back into the surface's implicit height.
+            readonly property int appColumns: width - 32 >= 340 ? 4 : width - 32 >= 240 ? 3 : 2
+            readonly property int appCount: allAppsPage.categoryChild ? allAppsPage.categoryChild.length : 0
+            readonly property int appCellHeight: 84
             height: Math.max(1, Math.min(parent.height - 24,
-                70 + Math.max(1, Math.ceil(categoryGrid.count / categoryGrid.columns)) * categoryGrid.cellHeight + 20))
+                84 + Math.max(1, Math.ceil(appCount / appColumns)) * appCellHeight))
             radius: 8
             readonly property bool dark: {
                 const c = Kirigami.Theme.backgroundColor;
@@ -396,9 +401,9 @@ ColumnLayout {
                     Layout.fillHeight: true
                     clip: true
                     model: allAppsPage.categoryChild || []
-                    readonly property int columns: width >= 340 ? 4 : width >= 240 ? 3 : 2
+                    readonly property int columns: categorySurface.appColumns
                     cellWidth: Math.max(1, Math.floor((width - 12) / columns))
-                    cellHeight: 82
+                    cellHeight: categorySurface.appCellHeight
                     boundsBehavior: Flickable.StopAtBounds
                     currentIndex: -1
                     function activateRow(row) {

@@ -41,7 +41,7 @@ FocusScope {
             const size = typeof source === "number" ? source
                 : typeof source.rowCount === "function" ? source.rowCount()
                 : Number(source.count || 0);
-            const roles = ["display", "name", "decoration", "description", "favoriteId",
+            const roles = ["display", "name", "group", "decoration", "description", "favoriteId",
                 "url", "actionList", "isParent", "disabled", "isNewlyInstalled"];
             const roleIds = {};
             if (typeof source.get !== "function" && typeof source.index === "function" && typeof source.data === "function") {

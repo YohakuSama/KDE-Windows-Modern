@@ -29,8 +29,10 @@ TestCase {
         compare(rows[0].entries[0].index, 8);
         compare(rows[1].entries[0].index, 1);
         compare(rows[2].entries.map(entry => entry.index).sort().join(","), "3,4,5");
-        const all = rows.flatMap(row => row.entries.map(entry => entry.index)).sort();
-        compare(all.join(","), "0,1,2,3,4,5,6,7,8");
+        const all = [];
+        for (const row of rows)
+            for (const entry of row.entries) all.push(entry.index);
+        compare(all.sort().join(","), "0,1,2,3,4,5,6,7,8");
     }
     function test_noInventedApps() {
         compare(Categories.build([], {}, []).length, 0);

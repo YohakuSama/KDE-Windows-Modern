@@ -15,6 +15,14 @@ function sectionForName(name) {
     return "#";
 }
 
+// Kicker's native group role uses ICU for Chinese pinyin (when available)
+// and locale-aware grouping for Japanese/Korean. Keep that authoritative
+// result rather than transliterating Han characters with an invented table.
+function sectionForEntry(entry) {
+    const nativeGroup = String(entry.group || "").trim();
+    return nativeGroup ? sectionForName(nativeGroup) : sectionForName(entry.display || entry.name);
+}
+
 // A heading belongs to the first visual row in each section. Grid rows
 // never borrow cells from another letter, even when the last row is short.
 // The source row is preserved for activation and context menu actions.
@@ -23,7 +31,7 @@ function buildRows(entries, columns, alphabetical) {
     const groups = [];
     const byLabel = Object.create(null);
     for (const entry of entries) {
-        const label = alphabetical ? sectionForName(entry.display || entry.name) : "";
+        const label = alphabetical ? sectionForEntry(entry) : "";
         let group = byLabel[label];
         if (!group) {
             group = { label: label, entries: [] };

@@ -55,16 +55,22 @@ function batteryFillFraction(percent) {
     return Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) / 100 : 0;
 }
 
-// Read Fcitx's real active input method title/icon, not the desktop locale.
+// Fcitx's Rime engine publishes distinct named icons for Han, ASCII
+// and disabled states (rimeengine.cpp: subModeIconImpl). Test these
+// BEFORE matching the engine name, since both modes have a Rime tooltip.
+// When Fcitx supplies a text-icon pixmap instead of a named icon, that
+// pixmap owns the actual submode and must not be covered by a guessed label.
 function inputMethodLabel(id, iconName, tooltip) {
     if (!/^fcitx5?$/i.test(String(id))) return "";
-    const icon = String(iconName || "");
+    const icon = String(iconName || "").split("/").pop().toLowerCase()
+        .replace(/\.(svg|png|xpm)$/, "").replace(/_+/g, "-");
     const name = String(tooltip || "");
+    if (/^(?:fcitx-)?rime-disable(?:d)?(?:-symbolic)?$/.test(icon)) return "";
+    if (/^(?:fcitx-)?rime-latin(?:-upper)?(?:-symbolic)?$/.test(icon)) return "英";
     if (/english|英语|英語|英文/i.test(name) ||
-        /(?:^|[-_])keyboard[-_]us(?:$|[-_])/i.test(icon)) return "英";
-    // The Fcitx keyboard fallback is not evidence of a Chinese engine.
-    if (/^input-keyboard(?:-symbolic)?$/i.test(icon)) return "";
-    const metadata = icon + " " + name;
-    if (/rime|pinyin|chewing|cangjie|wubi|zhuyin|bopomofo|shuangpin|chinese|中州韵|中州韻|中文|拼音|五笔|五筆|注音|仓颉|倉頡|双拼|雙拼/i.test(metadata)) return "中";
+        /(?:^|-)keyboard-us(?:$|-)/i.test(icon)) return "英";
+    if (!icon || /^input-keyboard(?:-symbolic)?$/.test(icon)) return "";
+    if (/^(?:fcitx-)?rime(?:-symbolic)?$/.test(icon)) return "中";
+    if (/(?:^|-)(?:pinyin|chewing|cangjie|wubi|zhuyin|bopomofo|shuangpin|chinese)(?:$|-)/i.test(icon)) return "中";
     return "";
 }
