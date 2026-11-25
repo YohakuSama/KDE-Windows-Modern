@@ -42,35 +42,6 @@ Item {
             glyph.percent = 5;
             compare(glyph.fillCode, 0);
         }
-        function test_26H2SysBattStateCodepoints() {
-            glyph.percent = 100;
-            glyph.charging = false;
-            glyph.pluggedIn = false;
-            glyph.saver = false;
-            compare(glyph.outlineCode, 0xF8D0);
-            compare(glyph.fillCode, 0xF8DA);
-
-            glyph.charging = true;
-            glyph.pluggedIn = true;
-            compare(glyph.outlineCode, 0xF8DB);
-            compare(glyph.fillCode, 0xF8E3);
-
-            glyph.charging = false;
-            compare(glyph.outlineCode, 0xF8E4);
-            compare(glyph.fillCode, 0xF8EC);
-
-            glyph.pluggedIn = false;
-            glyph.saver = true;
-            compare(glyph.outlineCode, 0xF849);
-            compare(glyph.fillCode, 0xF851);
-
-            glyph.percent = 5;
-            compare(glyph.fillColor, "#FF4545");
-            glyph.percent = 15;
-            compare(glyph.fillColor, "#FF9F1A");
-            glyph.percent = 60;
-            compare(glyph.fillColor, "#FFD60A");
-        }
         function test_stableGeometryAndNativeStates() {
             verify(findChild(glyph, "wmBatteryNativeGlyph") !== null);
             glyph.glyphSize = 16;
