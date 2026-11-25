@@ -11,6 +11,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.notificationmanager as NotificationManager
+import "code/notificationPresentation.js" as NotificationPresentation
 
 // Use Plasma's shared notification history, not a second notification server
 // or a watcher that only sees notifications received after opening.
@@ -22,7 +23,7 @@ ColumnLayout {
     property var timeLocale: Qt.locale()
     property string timeFormat: "h:mm AP"
     spacing: 8
-    readonly property int minimumSectionHeight: Math.ceil(historyHeader.implicitHeight + spacing + 32)
+    readonly property int minimumSectionHeight: Math.ceil(historyHeader.implicitHeight + spacing + 32 + (effectiveDnd && notificationsAvailable ? 28 : 0))
 
     Win11Palette { id: palette }
 
@@ -97,7 +98,8 @@ ColumnLayout {
 
         FlyoutButton {
             text: i18n("Clear all")
-            enabled: notificationModel.count > 0
+            visible: NotificationPresentation.showClearAll(history.notificationsAvailable, notificationModel.count)
+            enabled: visible
             onClicked: history.clearAll()
         }
     }
@@ -113,6 +115,15 @@ ColumnLayout {
         color: palette.textSecondary
         font.pixelSize: 12
         visible: notificationModel.count === 0
+    }
+
+    PlasmaComponents.Label {
+        Layout.fillWidth: true
+        visible: history.notificationsAvailable && history.effectiveDnd
+        text: i18n("Do not disturb mode active")
+        color: palette.textSecondary
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
     }
 
     ListView {
