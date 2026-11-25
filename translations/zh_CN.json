@@ -617,5 +617,10 @@
   "Open letter index": "打开字母索引",
   "Choose a letter to jump to its apps": "选择字母跳转到对应应用",
   "Jump to %1": "跳转到 %1",
-  "Other alphabets": "其他文字"
+  "Other alphabets": "其他文字",
+  "Open Run dialog": "打开运行窗口",
+  "Type the name of a command to run": "输入要运行的命令名称",
+  "Run": "运行",
+  "Run service is unavailable": "运行服务不可用",
+  "Command execution is blocked by system policy": "系统策略禁止执行此命令"
 }

@@ -53,5 +53,8 @@ restart_plasmashell
 step "Win+V: Windows Modern clipboard history"
 python3 "$SRC_DIR/scripts/windows-shortcuts.py" clipboard-apply \
     || warn "Clipboard history shortcut could not be bound."
+step "Win+R: Windows Modern Run"
+python3 "$SRC_DIR/scripts/windows-shortcuts.py" run-apply \
+    || warn "Run shortcut could not be migrated."
 
 info "Windows shortcuts installed."

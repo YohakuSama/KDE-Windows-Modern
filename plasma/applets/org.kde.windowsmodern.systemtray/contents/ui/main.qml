@@ -18,6 +18,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.battery as BatteryBackend
 import "js/trayMetrics.js" as TrayMetrics
+import "components" as Components
 
 ContainmentItem {
     id: root
@@ -31,7 +32,10 @@ ContainmentItem {
         ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
     readonly property real panelExtent: Math.max(0, vertical
         ? (panelGeometry.width || root.width) : (panelGeometry.height || root.height))
-    onPanelGeometryChanged: if (dialog && dialog.visible) systemTrayState.expanded = false
+    onPanelGeometryChanged: {
+        if (dialog && dialog.visible) systemTrayState.expanded = false;
+        if (runLoader.item) runLoader.item.close();
+    }
 
     function panelAnchorForApplet(applet) {
         const revision = tasksGrid.delegateRevision;
@@ -88,6 +92,7 @@ ContainmentItem {
         activeInstantiator.active = true;
         hiddenInstantiator.active = true;
         Plasmoid.registerClipboardShortcut();
+        Plasmoid.registerRunShortcut();
     }
 
     Connections {
@@ -95,6 +100,17 @@ ContainmentItem {
         function onActivated() {
             root.quickSettingsOrigin = null;
             systemTrayState.toggleHome(false);
+        }
+        function onRunDialogRequested() {
+            systemTrayState.expanded = false;
+            if (runLoader.item) {
+                if (runLoader.item.opened)
+                    runLoader.item.close();
+                else
+                    runLoader.item.open(Plasmoid.runDialogArea(root));
+            } else {
+                runLoader.active = true;
+            }
         }
         function onClipboardHistoryRequested() {
             const applet = Plasmoid.appletForPluginId("org.kde.plasma.clipboard");
@@ -105,6 +121,14 @@ ContainmentItem {
             }
             systemTrayState.setActiveApplet(applet, undefined, "panel");
         }
+    }
+
+    // Allocate the window only when the user first invokes Win+R.
+    Loader {
+        id: runLoader
+        active: false
+        sourceComponent: Components.RunDialog { commandRunner: Plasmoid }
+        onLoaded: item.open(Plasmoid.runDialogArea(root))
     }
 
     KItemModels.KSortFilterProxyModel {

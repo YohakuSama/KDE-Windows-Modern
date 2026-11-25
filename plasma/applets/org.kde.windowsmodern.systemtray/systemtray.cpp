@@ -17,6 +17,7 @@
 #include "systemtraysettings.h"
 
 #include <QAction>
+#include <QCursor>
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QGuiApplication>
@@ -37,9 +38,11 @@
 #include <Plasma/PluginLoader>
 
 #include <KAcceleratorManager>
+#include <KAuthorized>
 #include <KGlobalAccel>
 #include <KLocalizedString>
 #include <KIO/ApplicationLauncherJob>
+#include <KIO/CommandLauncherJob>
 #include <KNotificationJobUiDelegate>
 #include <KPluginMetaData>
 #include <KService>
@@ -85,6 +88,47 @@ void SystemTray::registerClipboardShortcut()
     // Register a real live action. The installer migrates Meta+V only
     // after finding it and checking for competing bindings.
     KGlobalAccel::self()->setShortcut(action, QList<QKeySequence>{});
+}
+
+void SystemTray::registerRunShortcut()
+{
+    // Like clipboard history, only the primary tray owns this action.
+    static QPointer<QAction> action;
+    if (action || screen() != 0) {
+        return;
+    }
+    action = new QAction(i18n("Open Run dialog"), this);
+    action->setObjectName(QStringLiteral("show-run"));
+    action->setProperty("componentName", QStringLiteral("org.kde.windowsmodern.run"));
+    action->setProperty("componentDisplayName", QStringLiteral("Windows Modern"));
+    connect(action, &QAction::triggered, this, &SystemTray::runDialogRequested);
+    KGlobalAccel::self()->setShortcut(action, QList<QKeySequence>{});
+}
+
+QRect SystemTray::runDialogArea(QQuickItem *anchor) const
+{
+    auto *output = QGuiApplication::screenAt(QCursor::pos());
+    if (!output && anchor && anchor->window()) {
+        output = anchor->window()->screen();
+    }
+    if (!output) {
+        output = QGuiApplication::primaryScreen();
+    }
+    return output ? output->availableGeometry() : QRect();
+}
+
+bool SystemTray::runCommand(const QString &command)
+{
+    const QString value = command.trimmed();
+    // Match KRunner's shell runner authorization checks.
+    if (value.isEmpty() || !KAuthorized::authorize(QStringLiteral("run_command"))
+        || !KAuthorized::authorize(KAuthorized::SHELL_ACCESS)) {
+        return false;
+    }
+    auto *job = new KIO::CommandLauncherJob(value, this);
+    job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
+    job->start();
+    return true;
 }
 
 bool SystemTray::accessibilityAvailable() const
