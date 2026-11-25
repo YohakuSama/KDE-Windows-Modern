@@ -147,6 +147,12 @@ PlasmoidItem {
     ]
 
     Component.onCompleted: {
+        // One-time migration for installations where the old default hid
+        // all nine functional shortcuts. Subsequent user choices are retained.
+        if (!Plasmoid.configuration.footerShortcutsMigrated) {
+            Plasmoid.configuration.showRightColumn = true;
+            Plasmoid.configuration.footerShortcutsMigrated = true;
+        }
         if (Plasmoid.hasOwnProperty("activationTogglesExpanded")) {
             Plasmoid.activationTogglesExpanded = true;
         }

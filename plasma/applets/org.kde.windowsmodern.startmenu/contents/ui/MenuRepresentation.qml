@@ -70,7 +70,10 @@ Item {
 
         const horizontal = Plasmoid.location === PlasmaCore.Types.BottomEdge
                         || Plasmoid.location === PlasmaCore.Types.TopEdge;
-        popupAnchor.x = 0;
+        popupAnchor.x = Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
+            : Plasmoid.location === PlasmaCore.Types.RightEdge ? -8 : 0;
+        popupAnchor.y = Plasmoid.location === PlasmaCore.Types.BottomEdge ? -8
+            : Plasmoid.location === PlasmaCore.Types.TopEdge ? 8 : 0;
         if (horizontal) {
             const pos = startButton.mapToGlobal(0, 0);
             popupAnchor.x = PopupPosition.horizontalAnchorOffset(
@@ -93,7 +96,7 @@ Item {
         flags: Qt.Dialog
         visualParent: popupAnchor
         location: Plasmoid.location
-        floating: Kirigami.Units.smallSpacing
+        floating: 8
         visible: false
         hideOnWindowDeactivate: true
 
@@ -575,10 +578,8 @@ Item {
                                 Image {
                                     anchors.fill: parent
                                     source: {
-                                        // Use the same locally imported native account art as the lock screen.
-                                        const native = StandardPaths.locate(StandardPaths.GenericDataLocation,
-                                            "icons/windows-modern/status/avatar-default.svg", StandardPaths.LocateFile);
-                                        return String(native).length > 0 ? native : Qt.resolvedUrl("default-account.svg");
+                                        // The imported green account glyph is not Windows' default Start avatar.
+                                        return Qt.resolvedUrl("default-account.svg");
                                     }
                                     fillMode: Image.PreserveAspectFit
                                     visible: userAvatar.status !== Image.Ready
@@ -600,7 +601,8 @@ Item {
                     SystemLocationsRow {
                         id: systemLocations
                         visible: Plasmoid.configuration.showRightColumn
-                        Layout.fillWidth: visible
+                        Layout.fillWidth: false
+                        Layout.preferredWidth: visible ? Math.min(implicitWidth, Math.floor(rootItem.width * 0.58)) : 0
                         Layout.maximumWidth: implicitWidth
                         Layout.minimumWidth: 0
                         executable: commandSource

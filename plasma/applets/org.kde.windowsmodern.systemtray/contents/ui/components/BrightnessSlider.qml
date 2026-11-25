@@ -11,6 +11,7 @@ Lib.Slider {
     property rect panelScreenGeometry: Qt.rect(0, 0, 0, 0)
     property int panelScreenIndex: -1
 
+    sliderAccessibleName: i18n("Brightness")
     iconSource: "brightness-high-symbolic"
     iconSize: 20
     showArrow: true

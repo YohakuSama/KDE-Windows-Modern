@@ -8,6 +8,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtCore
 
 import org.kde.plasma.plasmoid
@@ -40,7 +41,57 @@ MouseArea {
         plasmoidItem.notificationsInhibited)
     property bool wasExpanded: false
     function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
-        plasmoidItem.toggleFlyout(previous);
+        clockDialog.toggle(previous);
+    }
+
+    // The dialog is constructed alongside its real panel item, just like
+    // Start. A null/reparented representation must never map a popup at (0,0).
+    Item {
+        id: clockPopupAnchor
+        width: main.width
+        height: main.height
+        x: Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
+            : Plasmoid.location === PlasmaCore.Types.RightEdge ? -8 : 0
+        y: Plasmoid.location === PlasmaCore.Types.BottomEdge ? -8
+            : Plasmoid.location === PlasmaCore.Types.TopEdge ? 8 : 0
+    }
+
+    PlasmaCore.Dialog {
+        id: clockDialog
+        objectName: "wmClockSplitPopup"
+        type: PlasmaCore.Dialog.AppletPopup
+        flags: Qt.Dialog
+        visualParent: clockPopupAnchor
+        location: Plasmoid.location
+        floating: 8
+        backgroundHints: PlasmaCore.Dialog.NoBackground
+        visible: false
+        hideOnWindowDeactivate: !Plasmoid.configuration.pin
+
+        function toggle(previous) {
+            if (previous) { visible = false; return; }
+            if (!clockPopupAnchor.Window.window || !clockPopupAnchor.visible
+                || clockPopupAnchor.width <= 0 || clockPopupAnchor.height <= 0) {
+                console.warn("WM_POPUP clock: panel anchor not mapped");
+                return;
+            }
+            visible = true;
+            requestActivate();
+        }
+
+        mainItem: ExpandedRepresentation {
+            clockApplet: main.plasmoidItem
+            width: implicitWidth
+            height: implicitHeight
+            focus: true
+            Keys.onEscapePressed: clockDialog.visible = false
+        }
+    }
+
+    Component.onCompleted: plasmoidItem.panelPopup = clockDialog
+    Component.onDestruction: {
+        if (plasmoidItem && plasmoidItem.panelPopup === clockDialog)
+            plasmoidItem.panelPopup = null;
     }
 
     // The panel sizes applets from their Layout hints; without them the

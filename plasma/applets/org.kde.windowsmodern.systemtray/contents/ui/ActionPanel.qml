@@ -32,6 +32,7 @@ ColumnLayout {
     readonly property int contentInset: Math.max(0, edgeInset - Math.round(frameInset))
     readonly property int gridBottomGap: Math.round(14 * scale)
     readonly property int sliderInset: Math.round(16 * scale)
+    readonly property int sliderHorizontalInset: Math.max(0, Math.round(18 * scale) - Math.round(frameInset))
     readonly property int sliderGap: Math.round(12 * scale)
     readonly property int sliderHeight: Math.round(36 * scale)
     readonly property int footerHeight: Math.max(24, Math.round(48 * scale) - Math.round(frameInset))
@@ -491,8 +492,8 @@ ColumnLayout {
     GridLayout {
         visible: actionPanel.sliderRows > 0
         Layout.fillWidth: true
-        Layout.leftMargin: actionPanel.contentInset
-        Layout.rightMargin: actionPanel.contentInset
+        Layout.leftMargin: actionPanel.sliderHorizontalInset
+        Layout.rightMargin: actionPanel.sliderHorizontalInset
         Layout.topMargin: actionPanel.sliderInset
         Layout.bottomMargin: actionPanel.sliderInset
         columns: 3
