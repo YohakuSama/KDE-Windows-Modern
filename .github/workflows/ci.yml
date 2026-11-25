@@ -28,7 +28,7 @@ jobs:
           import json, sys
           report = json.load(open(sys.argv[1], encoding="utf-8"))
           print("Icon coverage counts:", json.dumps(report["counts"], sort_keys=True))
-          for status in ("not_in_theme", "native_mapping_not_verified"):
+          for status in ("not_in_theme", "bundled_not_native_verified", "path_bypasses_theme", "native_mapping_not_verified"):
               rows = report["references"].get(status, [])
               print(f"{status}: {len(rows)}")
               for row in rows:
