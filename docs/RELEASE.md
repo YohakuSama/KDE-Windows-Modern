@@ -23,6 +23,14 @@ metadata versions, the existing repository checks, actual desktop
 acceptance and reviewed release notes. A CI pass alone does not establish
 visual parity.
 
+
+The approved `v*` tag pushed by `scripts/release.sh` is the automatic
+release CI trigger. It runs the repository checks and Fedora plugin build,
+then attaches the plugin archives to the release. Normal branch pushes and
+pull-request events do not start CI. For a user-authorized final run, use
+Actions > CI > Run workflow after manual desktop acceptance and confirm the
+acceptance input.
+
 ```bash
 bash scripts/release.sh --dry-run
 ```

@@ -54,9 +54,30 @@ remain open tasks.
 | `third_party/plasma-login-manager/` | Git submodule for the boot greeter (pinned). |
 | `docs/` | Current UI contracts, architecture references, native asset and release guides. |
 
+## Branch and merge flow
+
+- Keep `main` as the stable release branch and `testing` as the integration
+  and user-acceptance branch.
+- Push development changes to `testing`. Branch pushes and pull-request
+  events do not start CI.
+- Complete the relevant local static checks, then have the maintainer install
+  and manually verify the `testing` branch in the target Plasma session.
+- Do not open a pull request or request final merge review until manual
+  desktop acceptance is complete. Then open one pull request from
+  `testing` to `main`.
+- Start final CI only through Actions > CI > Run workflow after acceptance,
+  with `manual_test_completed` confirmed, or through the approved `v*`
+  release-tag flow in `scripts/release.sh`.
+- A manually dispatched run without the acceptance confirmation fails at
+  the gate before health checks or builds start.
+- A newer run cancels an older run of the same workflow and ref. Different
+  refs remain independent, so a separate release tag is not cancelled.
+
 ## Checks
 
-Run these before opening a pull request. CI runs the same ones.
+Run these local checks before pushing to `testing`. An authorized CI run
+executes the repository health checks and Fedora build matrix. CI is not a
+substitute for live desktop acceptance.
 
 ```bash
 ./verify-all.sh            # repository health check — must pass

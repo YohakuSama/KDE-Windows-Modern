@@ -1,17 +1,37 @@
 name: CI
 
 on:
+  workflow_dispatch:
+    inputs:
+      manual_test_completed:
+        description: Confirm manual desktop acceptance on the testing branch
+        required: true
+        type: boolean
+        default: false
   push:
-    branches: [main]
     tags: ["v*"]
-  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+  acceptance-gate:
+    name: Confirm manual desktop acceptance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require acceptance confirmation for manually started CI
+        if: github.event_name == 'workflow_dispatch' && inputs.manual_test_completed != true
+        run: |
+          echo "::error::Manual desktop acceptance must be completed before CI is authorized."
+          exit 1
+
   health-check:
     name: Repository health check
+    needs: acceptance-gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +71,7 @@ jobs:
 
   build-applets:
     name: Build C++ applets (Fedora ${{ matrix.fedora }})
+    needs: acceptance-gate
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -105,7 +126,7 @@ jobs:
   # The archive remains a CI artifact; no stable version tag is created.
   integration-bundle:
     name: Package integration bundle
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch'
     needs: [health-check, build-applets]
     runs-on: ubuntu-latest
     steps:
