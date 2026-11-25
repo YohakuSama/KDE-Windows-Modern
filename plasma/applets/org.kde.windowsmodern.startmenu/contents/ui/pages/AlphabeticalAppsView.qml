@@ -31,26 +31,7 @@ FocusScope {
     readonly property int count: entries.length
     readonly property var visualRows: Alphabetical.buildRows(entries, columns, alphabeticalGrouping)
     property bool letterIndexOpen: false
-    readonly property var letterIndexEntries: {
-        const available = Object.create(null);
-        for (const row of visualRows) {
-            if (row.heading && row.entries.length && available[row.heading] === undefined)
-                available[row.heading] = row.entries[0].index;
-        }
-        const standard = ["#", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")];
-        const extra = Object.keys(available).filter(label => !standard.includes(label))
-            .sort((a, b) => a.localeCompare(b));
-        function item(label) {
-            return {label: label, available: available[label] !== undefined,
-                sourceIndex: available[label] ?? -1};
-        }
-        // The two disabled slots mirror the Windows index. Symbols and
-        // digits share the existing # section; never invent empty groups.
-        return [{label: "recent", icon: "document-open-recent-symbolic", available: false},
-            {label: "&", available: false}, ...standard.map(item),
-            {label: "world", icon: "internet-services-symbolic", available: extra.length > 0,
-                sourceIndex: extra.length ? available[extra[0]] : -1}, ...extra.map(item)];
-    }
+    readonly property var letterIndexEntries: Alphabetical.letterIndex(visualRows)
     signal applicationActivated(int sourceRow)
     signal navigateToHeader()
 

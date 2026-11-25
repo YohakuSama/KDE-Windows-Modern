@@ -58,6 +58,16 @@ Item {
             compare(view.visualRows.map(row => row.heading).join(","), "A,C,,,F");
             view.gridMode = true;
         }
+        function test_letterIndexLocaleSections() {
+            const rows = Alphabetical.buildRows([{index: 0, display: "7-Zip"}, {index: 1, display: "中文"}, {index: 2, display: "Alpha"}], 6, true);
+            const index = Alphabetical.letterIndex(rows);
+            compare(index.length, 31);
+            compare(index.find(entry => entry.label === "#").sourceIndex, 0);
+            compare(index.find(entry => entry.label === "world").sourceIndex, 1);
+            compare(index.find(entry => entry.label === "中").sourceIndex, 1);
+            compare(index.find(entry => entry.label === "A").sourceIndex, 2);
+            verify(!index.find(entry => entry.label === "B").available);
+        }
         function test_letterIndexJumpAndUnavailableLetters() {
             tryCompare(view, "count", 5);
             verify(view.letterIndexEntries.find(item => item.label === "A").available);
