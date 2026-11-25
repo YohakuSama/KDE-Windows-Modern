@@ -24,6 +24,7 @@ ColumnLayout {
 
     property real uiScale: Plasmoid.configuration.scale / 100
     property real availableHeight: Infinity
+    property color shellAccent: Kirigami.Theme.highlightColor
 
     // Outer spacing includes the native KSVG dialog frame when present.
     // The separated media window has no native frame and supplies the
@@ -96,6 +97,7 @@ ColumnLayout {
             readonly property bool hasMoreRows: rows > visibleRows
             readonly property real rowGap: Math.round(12 * actionPanel.uiScale)
             readonly property real columnGap: Math.round(14 * actionPanel.uiScale)
+            readonly property color shellAccent: actionPanel.shellAccent
             readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
             // Two caption lines are reserved for every tile, keeping
             // the second row aligned even for a long device name.
@@ -500,6 +502,7 @@ ColumnLayout {
             id: brightnessSlider
             Layout.fillWidth: true
             controlScale: actionPanel.uiScale
+            shellAccent: actionPanel.shellAccent
             iconSize: Math.round(20 * controlScale)
             visible: Plasmoid.configuration.showBrightness && brightnessAvailable
             showArrow: false
@@ -514,6 +517,7 @@ ColumnLayout {
             id: volumeSlider
             Layout.fillWidth: true
             controlScale: actionPanel.uiScale
+            shellAccent: actionPanel.shellAccent
             iconSize: Math.round(20 * controlScale)
             Layout.preferredHeight: actionPanel.sliderHeight
             implicitHeight: actionPanel.sliderHeight

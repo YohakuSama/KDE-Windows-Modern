@@ -70,7 +70,9 @@ ColumnLayout {
     Keys.onEnterPressed: if (tile.toggleAvailable) tile.clicked()
     Keys.onSpacePressed: if (tile.toggleAvailable) tile.clicked()
 
-    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, ColorType.quickTileSurface(dark))
+    property color shellAccent: orderView && orderView.shellAccent !== undefined
+        ? orderView.shellAccent : Kirigami.Theme.highlightColor
+    readonly property color accent: ColorType.accentForSurface(shellAccent, ColorType.quickTileSurface(dark))
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
     spacing: Math.round(8 * uiScale)

@@ -174,6 +174,7 @@ Lib.Page {
             }
 
             Lib.FluentSwitch {
+                shellAccent: page.shellAccent
                 Accessible.name: i18n("Show battery percentage")
                 checked: Plasmoid.configuration.showBatteryPercentage
                 onToggled: {
@@ -253,6 +254,7 @@ Lib.Page {
             }
 
             Lib.FluentSwitch {
+                shellAccent: page.shellAccent
                 Accessible.name: i18n("Block sleep & screen lock")
                 checked: page.blockSleep
                 onToggled: {

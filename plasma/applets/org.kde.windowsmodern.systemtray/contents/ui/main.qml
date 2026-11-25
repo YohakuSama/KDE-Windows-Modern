@@ -524,6 +524,7 @@ ContainmentItem {
                 } else {
                     expandedSync.stop();
                     dialog.requestActivate();
+                    expandedRepresentation.refreshShellAccent();
                     Qt.callLater(expandedRepresentation.focusCurrentPage);
                     Qt.callLater(expandedRepresentation.scheduleSplitBlur);
                 }

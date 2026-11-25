@@ -44,6 +44,7 @@ Lib.Page {
                 }
 
                 Lib.Slider {
+                    shellAccent: page.shellAccent
                     Layout.fillWidth: true
                     Layout.leftMargin: 12
                     Layout.rightMargin: 12
@@ -73,6 +74,7 @@ Lib.Page {
                 Layout.fillWidth: true
                 PlasmaComponents3.Label { text: i18n("Keyboard Backlight") }
                 Lib.Slider {
+                    shellAccent: page.shellAccent
                     Layout.fillWidth: true
                     sliderAccessibleName: i18n("Keyboard Backlight")
                     from: 0

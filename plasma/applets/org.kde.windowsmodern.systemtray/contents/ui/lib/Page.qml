@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 ColumnLayout {
     id: page
 
+    property color shellAccent: Kirigami.Theme.highlightColor
     property string title
     property bool showSwitch: false
     property bool switchEnabled: true
@@ -22,6 +23,7 @@ ColumnLayout {
 
     PageHeader {
         title: page.title
+        shellAccent: page.shellAccent
         showSwitch: page.showSwitch
         switchEnabled: page.switchEnabled
         switchChecked: page.switchChecked

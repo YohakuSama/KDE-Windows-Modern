@@ -6,6 +6,7 @@ import org.kde.plasma.components as PlasmaComponents3
 RowLayout {
     id: header
 
+    property color shellAccent: Kirigami.Theme.highlightColor
     property string title
     property bool showSwitch: false
     property bool switchEnabled: true
@@ -62,6 +63,7 @@ RowLayout {
 
     FluentSwitch {
         id: radioSwitch
+        shellAccent: header.shellAccent
         objectName: "wmDetailSwitch"
         visible: header.showSwitch
         enabled: header.switchEnabled

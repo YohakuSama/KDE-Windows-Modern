@@ -32,7 +32,11 @@ Item {
         function test_lightAndDarkColors() {
             compare(ColorType.tileFill(false, false, false), "#FBFBFB");
             compare(ColorType.cardFill(false, false), "#F2F2F2");
-            compare(ColorType.tileFill(true, false, false), "#333333");
+            compare(ColorType.tileFill(true, false, false), "#313131");
+            compare(ColorType.cardFill(true, false), "#242424");
+            compare(ColorType.trackFill(true), "#9B9B9B");
+            verify(Math.abs(ColorType.quickTileFill(true, false, false, false, Qt.color("#4CC2FF")).r - 49/255) < 1/255);
+            compare(ColorType.quickTileFill(true, true, false, false, Qt.color("#4CC2FF")), Qt.color("#4CC2FF"));
             compare(ColorType.contrastingForeground(Qt.rgba(0,103/255,192/255,1)), "#FFFFFF");
             compare(ColorType.contrastingForeground(Qt.rgba(76/255,194/255,1,1)), "#000000");
             verify(ColorType.contrastRatio(Qt.rgba(0,103/255,192/255,1), Qt.rgba(1,1,1,1)) >= 4.5);

@@ -23,6 +23,11 @@
 #include <QDBusMessage>
 #include <QGuiApplication>
 #include <QFileInfo>
+#include <QFile>
+#include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QStandardPaths>
 #include <QImageReader>
 #include <QUrl>
 #include <QMenu>
@@ -191,6 +196,65 @@ void SystemTray::setNotificationPopupSlide(QQuickItem *content)
     if (auto *window = content ? content->window() : nullptr) {
         KWindowEffects::slideWindow(window, KWindowEffects::RightEdge, -1);
     }
+}
+
+QColor SystemTray::wallpaperAccent(const QColor &fallback, bool dark) const
+{
+    // KDE's extracted accent can overwrite a wallpaper package's explicit
+    // Light/Dark accent (KDE bug 514656). Only repair that documented mode.
+    KConfig globals(QStringLiteral("kdeglobals"), KConfig::CascadeConfig);
+    if (!KConfigGroup(&globals, QStringLiteral("General")).readEntry("accentColorFromWallpaper", false) || !corona()) {
+        return fallback;
+    }
+    const auto desktops = corona()->config()->group(QStringLiteral("Containments"));
+    QString image;
+    for (auto *desktop : corona()->containments()) {
+        if (desktop->containmentType() != Plasma::Containment::Desktop
+            || desktop->screen() != screen() || desktop->wallpaperPlugin() != QStringLiteral("org.kde.image")) {
+            continue;
+        }
+        const QString candidate = desktops.group(QString::number(desktop->id()))
+            .group(QStringLiteral("Wallpaper")).group(QStringLiteral("org.kde.image"))
+            .group(QStringLiteral("General")).readEntry("Image", QString());
+        if (candidate.isEmpty()) continue;
+        if (!image.isEmpty() && image != candidate) return fallback;
+        image = candidate;
+    }
+    if (image.isEmpty()) return fallback;
+    const QUrl url(image);
+    if (!url.scheme().isEmpty() && !url.isLocalFile()) return fallback;
+    QString path = url.isLocalFile() ? url.toLocalFile() : image;
+    if (QDir::isRelativePath(path)) {
+        if (path.contains(u'/') || path == QStringLiteral("..")) return fallback;
+        path = QStandardPaths::locate(QStandardPaths::GenericDataLocation,
+            QStringLiteral("wallpapers/") + path, QStandardPaths::LocateDirectory);
+    }
+    if (path.isEmpty()) return fallback;
+    const QFileInfo info(path);
+    QDir package = info.isDir() ? QDir(info.absoluteFilePath()) : info.absoluteDir();
+    // A selected image may live at package/contents/images[_dark]/file.
+    // Never walk arbitrary ancestors of an unrelated standalone image.
+    if (!info.isDir()) {
+        if (!package.dirName().startsWith(QStringLiteral("images")) || !package.cdUp()
+            || package.dirName() != QStringLiteral("contents") || !package.cdUp()) {
+            return fallback;
+        }
+    }
+    QFile metadata(package.filePath(QStringLiteral("metadata.json")));
+    if (!metadata.open(QIODevice::ReadOnly) || metadata.size() > 1024 * 1024) return fallback;
+    const auto object = QJsonDocument::fromJson(metadata.readAll()).object();
+    if (object.value(QStringLiteral("KPlugin")).toObject().value(QStringLiteral("Id")).toString().isEmpty()) {
+        return fallback;
+    }
+    const auto accent = object.value(QStringLiteral("X-KDE-PlasmaImageWallpaper-AccentColor"));
+    QString value = accent.toString();
+    if (accent.isObject()) {
+        const auto colors = accent.toObject();
+        value = colors.value(dark ? QStringLiteral("Dark") : QStringLiteral("Light")).toString();
+        if (value.isEmpty()) value = colors.value(QStringLiteral("Light")).toString();
+    }
+    const QColor color(value);
+    return color.isValid() ? color : fallback;
 }
 
 bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,

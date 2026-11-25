@@ -7,7 +7,8 @@ import "../js/colorType.js" as ColorType
 QQC2.Switch {
     id: control
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor,
+    property color shellAccent: Kirigami.Theme.highlightColor
+    readonly property color accent: ColorType.accentForSurface(shellAccent,
         Qt.color(ColorType.cardFill(dark, false)))
     implicitWidth: 44
     implicitHeight: 32

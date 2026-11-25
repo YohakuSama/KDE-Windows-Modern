@@ -20,9 +20,20 @@ import org.kde.plasma.private.mpris as Mpris
 
 import "components" as Components
 import "js/trayMetrics.js" as TrayMetrics
+import "js/colorType.js" as ColorType
 
 Item {
     id: popup
+
+    readonly property color paletteAccent: Kirigami.Theme.highlightColor
+    readonly property bool darkPalette: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    property color shellAccent: paletteAccent
+    function refreshShellAccent() {
+        shellAccent = typeof Plasmoid.wallpaperAccent === "function"
+            ? Plasmoid.wallpaperAccent(paletteAccent, darkPalette) : paletteAccent;
+    }
+    onPaletteAccentChanged: Qt.callLater(refreshShellAccent)
+    onDarkPaletteChanged: Qt.callLater(refreshShellAccent)
 
     // Never derive the window's initial size from an effectively hidden
     // QQuickLayout. The native popup is sized before the window is mapped.
@@ -375,6 +386,7 @@ Item {
                     uiScale: popup.uiScale
                     availableHeight: popup.availableHeight
                     frameInset: 0
+                    shellAccent: popup.shellAccent
                     onVisibleChanged: {
                         if (visible && dialog.visible && !systemTrayState.activeApplet)
                             forceActiveFocus();
@@ -387,6 +399,7 @@ Item {
         // Container for the active applet (themed or unknown)
         PlasmoidPopupsContainer {
             id: container
+            shellAccent: popup.shellAccent
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: systemTrayState.activeApplet

@@ -10,6 +10,7 @@ import org.kde.plasma.components as PlasmaComponents3
 ColumnLayout {
     id: page
     spacing: 0
+    property color shellAccent: Kirigami.Theme.highlightColor
     property string title
     property bool showSwitch: true
     property bool switchEnabled: true
@@ -22,6 +23,7 @@ ColumnLayout {
 
     PageHeader {
         title: page.title
+        shellAccent: page.shellAccent
         showSwitch: page.showSwitch
         switchEnabled: page.switchEnabled
         switchChecked: page.switchChecked

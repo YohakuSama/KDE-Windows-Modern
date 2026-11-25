@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Calibrate Quick Settings dark surfaces, footer and slider against the original Windows reference. Honor the active wallpaper package's explicit Light/Dark accent when KDE wallpaper accent mode is enabled; preserve manual/system palette accents otherwise.
+
 - Balance the outer tray-group hover padding using the actual Wi-Fi and battery/percentage content widths, including mirrored and vertical layouts, without changing the inner icon pitch.
 
 - Use the same rounded Quick Settings card and logical geometry for home, Wi-Fi, Bluetooth and other quick detail routes, with the media card independently above the settings card. Register the previously missing native glyph QML resource in the compiled tray module.

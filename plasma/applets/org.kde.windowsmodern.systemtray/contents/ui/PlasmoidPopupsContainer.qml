@@ -19,6 +19,7 @@ import "js/colorType.js" as ColorType
 QQC2.StackView {
     id: mainStack
     focus: true
+    property color shellAccent: Kirigami.Theme.highlightColor
 
     Layout.minimumWidth: Kirigami.Units.gridUnit * 12
     Layout.minimumHeight: Kirigami.Units.gridUnit * 12
@@ -191,6 +192,7 @@ QQC2.StackView {
     Component {
         id: bluetoothPageComp
         Components.BluetoothPage {
+            shellAccent: mainStack.shellAccent
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
@@ -198,24 +200,28 @@ QQC2.StackView {
     Component {
         id: networkPageComp
         Components.NetworkPage {
+            shellAccent: mainStack.shellAccent
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
     Component {
         id: volumePageComp
         Components.VolumePage {
+            shellAccent: mainStack.shellAccent
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
     Component {
         id: batteryPageComp
         Components.BatteryPage {
+            shellAccent: mainStack.shellAccent
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
     Component {
         id: brightnessPageComp
         Components.BrightnessPage {
+            shellAccent: mainStack.shellAccent
             onBack: systemTrayState.setActiveApplet(null)
         }
     }
@@ -238,6 +244,7 @@ QQC2.StackView {
     Component {
         id: mediaControllerPageComp
         Components.MediaControllerPage {
+            shellAccent: mainStack.shellAccent
             onBack: systemTrayState.setActiveApplet(null)
         }
     }

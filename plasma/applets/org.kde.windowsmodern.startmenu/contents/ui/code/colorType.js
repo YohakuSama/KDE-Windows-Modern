@@ -44,20 +44,20 @@ function accentForSurface(accent, surface, minimumRatio) {
 }
 
 // Sampled light reference: panel #F2F2F2, button #FBFBFB, footer #EEEEEE.
-// Dark is a neutral Fluent compatibility palette, not a Windows capture.
+// Dark values sampled from the owner's original Windows Quick Settings reference.
 function tileFill(dark, hovered, pressed) {
-    if (dark) return pressed ? "#303030" : hovered ? "#3B3B3B" : "#333333";
+    if (dark) return pressed ? "#303030" : hovered ? "#3B3B3B" : "#313131";
     return pressed ? "#EDEDED" : hovered ? "#F6F6F6" : "#FBFBFB";
 }
 function tileBorder(dark) { return dark ? "#3B3B3B" : "#E5E5E5"; }
 function cardFill(dark, acrylic) {
-    if (dark) return acrylic ? "#F2202020" : "#202020";
+    if (dark) return acrylic ? "#FA252525" : "#242424";
     return acrylic ? "#F7F2F2F2" : "#F2F2F2";
 }
 function cardBorder(dark) { return dark ? "#383838" : "#DCDCDC"; }
 function divider(dark) { return dark ? "#18FFFFFF" : "#12000000"; }
-function footerTint(dark) { return dark ? "#15000000" : "#05000000"; }
-function trackFill(dark) { return dark ? "#929292" : "#767676"; }
+function footerTint(dark) { return dark ? "#39000000" : "#05000000"; }
+function trackFill(dark) { return dark ? "#9B9B9B" : "#767676"; }
 function rowFill(dark, selected, hovered, pressed) {
     const alpha = pressed ? 0.10 : selected || hovered ? 0.065 : 0;
     const ink = dark ? 1 : 0;
@@ -76,7 +76,7 @@ function blendOver(ink, base, opacity) {
 }
 
 function quickTileSurface(dark) {
-    return Qt.color(dark ? "#242424" : "#F2F2F2");
+    return Qt.color(cardFill(dark, false));
 }
 
 function quickTileFill(dark, active, hovered, pressed, accent) {
