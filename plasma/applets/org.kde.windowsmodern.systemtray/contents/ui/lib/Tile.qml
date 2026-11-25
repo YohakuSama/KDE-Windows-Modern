@@ -64,8 +64,8 @@ ColumnLayout {
     Keys.onEnterPressed: tile.clicked()
     Keys.onSpacePressed: tile.clicked()
 
-    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
-    readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, ColorType.quickTileSurface(dark))
+    readonly property color fg: active ? ColorType.contrastingForeground(bg.color) : Kirigami.Theme.textColor
 
     spacing: Math.round(8 * uiScale)
     Layout.fillWidth: true
@@ -81,16 +81,8 @@ ColumnLayout {
         Layout.maximumHeight: Layout.preferredHeight
         radius: Math.max(3, Math.round(4 * tile.uiScale))
         border.width: 1
-        border.color: tile.activeFocus ? tile.fg : active
-            ? Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, 0.10)
-            : ColorType.tileBorder(tile.dark)
-        color: {
-            if (active) {
-                const alpha = ma.containsPress ? 0.12 : ma.containsMouse ? 0.06 : 0;
-                return Qt.tint(accent, Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, alpha));
-            }
-            return ColorType.tileFill(tile.dark, ma.containsMouse, ma.containsPress);
-        }
+        border.color: tile.activeFocus ? tile.fg : ColorType.quickTileStroke(tile.dark, tile.active)
+        color: ColorType.quickTileFill(tile.dark, tile.active, ma.containsMouse, ma.containsPress, tile.accent)
 
         Behavior on color {
             ColorAnimation {

@@ -70,7 +70,7 @@ ColumnLayout {
     Keys.onEnterPressed: if (tile.toggleAvailable) tile.clicked()
     Keys.onSpacePressed: if (tile.toggleAvailable) tile.clicked()
 
-    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, ColorType.quickTileSurface(dark))
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
     spacing: Math.round(8 * uiScale)
@@ -87,31 +87,37 @@ ColumnLayout {
         Layout.maximumHeight: Layout.preferredHeight
         radius: Math.max(3, Math.round(4 * tile.uiScale))
         border.width: 1
-        border.color: tile.activeFocus ? tile.fg : active
-            ? Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, 0.10)
-            : ColorType.tileBorder(tile.dark)
-        color: active ? accent : ColorType.tileFill(tile.dark, false, false)
+        border.color: tile.activeFocus ? tile.fg : ColorType.quickTileStroke(tile.dark, tile.active)
+        color: ColorType.quickTileFill(tile.dark, tile.active, false, false, tile.accent)
 
-        // Independent hover/press feedback: the chevron opens details and
-        // must not look like a press on the toggle itself.
+        // Independent Fluent state brushes fill each half continuously.
+        // The shared outline and single divider are preserved.
         Rectangle {
-            x: 2; y: 2
-            width: Math.max(0, toggleMA.width - 3)
-            height: Math.max(0, bg.height - 4)
-            radius: 3
-            color: Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b,
-                toggleMA.containsPress ? 0.14 : toggleMA.containsMouse ? 0.08 : 0)
+            id: toggleBrush
+            objectName: "wmQuickTileToggleBrush"
+            x: 1; y: 1
+            width: Math.max(0, toggleMA.width - 1)
+            height: Math.max(0, bg.height - 2)
+            radius: Math.max(0, bg.radius - 1)
+            topRightRadius: 0
+            bottomRightRadius: 0
+            color: ColorType.quickTileFill(tile.dark, tile.active,
+                toggleMA.containsMouse, toggleMA.containsPress, tile.accent)
             Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
         }
         Rectangle {
-            x: toggleMA.width + 1; y: 2
-            width: Math.max(0, arrowMA.width - 3)
-            height: Math.max(0, bg.height - 4)
-            radius: 3
+            id: detailsBrush
+            objectName: "wmQuickTileDetailsBrush"
+            x: toggleMA.width; y: 1
+            width: Math.max(0, arrowMA.width - 1)
+            height: Math.max(0, bg.height - 2)
+            radius: Math.max(0, bg.radius - 1)
+            topLeftRadius: 0
+            bottomLeftRadius: 0
             border.width: arrowMA.activeFocus ? 1 : 0
             border.color: tile.fg
-            color: Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b,
-                arrowMA.containsPress ? 0.14 : arrowMA.containsMouse ? 0.08 : 0)
+            color: ColorType.quickTileFill(tile.dark, tile.active,
+                arrowMA.containsMouse, arrowMA.containsPress, tile.accent)
             Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
         }
 
@@ -177,7 +183,7 @@ ColumnLayout {
             source: tile.iconSource
             roundToIconSize: false
             opacity: tile.toggleAvailable ? 1 : 0.55
-            color: tile.fg
+            color: tile.active ? ColorType.contrastingForeground(toggleBrush.color) : tile.fg
             isMask: true
         }
 
@@ -198,7 +204,7 @@ ColumnLayout {
             height: width
             roundToIconSize: false
             source: "go-next-symbolic"
-            color: tile.fg
+            color: tile.active ? ColorType.contrastingForeground(detailsBrush.color) : tile.fg
             isMask: true
         }
     }
