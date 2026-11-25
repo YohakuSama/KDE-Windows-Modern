@@ -190,8 +190,12 @@ jobs:
     name: Build affected native plugins (Fedora 45)
     needs: changes
     if: needs.changes.outputs.native_tray == 'true' || needs.changes.outputs.native_tasks == 'true' || needs.changes.outputs.native_menu == 'true' || needs.changes.outputs.full == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.full
+    strategy:
+      fail-fast: false
+      matrix:
+        fedora: ${{ (github.event_name == 'push' || inputs.full) && fromJSON('["44","45"]') || fromJSON('["45"]') }}
     runs-on: ubuntu-latest
-    container: fedora:45
+    container: fedora:${{ matrix.fedora }}
     steps:
       - name: Install git
         run: dnf install -y --setopt=install_weak_deps=False git-core
@@ -212,6 +216,14 @@ jobs:
           echo "components=$(IFS=,; echo "${targets[*]}")" >> "$GITHUB_OUTPUT"
       - name: Build and link-check changed plugins
         run: ./scripts/ci-build.sh "$RUNNER_TEMP/build" "${{ steps.targets.outputs.components }}"
+      - name: Package prebuilt plugins
+        if: steps.targets.outputs.components == 'systemtray,icontasks,contextmenu'
+        run: ./scripts/package-plugins.sh "$RUNNER_TEMP/build" "$RUNNER_TEMP/plugins"
+      - uses: actions/upload-artifact@v4
+        if: steps.targets.outputs.components == 'systemtray,icontasks,contextmenu'
+        with:
+          name: plugins-fedora${{ matrix.fedora }}
+          path: ${{ runner.temp }}/plugins/
 
   integration-bundle:
     name: Package integration bundle
@@ -222,11 +234,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Download matching plugin builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: plugins-*
+          path: ${{ runner.temp }}/integration-plugins
       - name: Build package dependencies
         run: sudo apt-get update && sudo apt-get install -y zip unzip python3 python3-pil python3-fonttools
       - name: Build integration bundle
         run: |
-          ./scripts/package.sh --integration
+          mkdir -p "$RUNNER_TEMP/bundle-plugins"
+          cat "$RUNNER_TEMP"/integration-plugins/*/SHA256SUMS > "$RUNNER_TEMP/bundle-plugins/SHA256SUMS"
+          cp "$RUNNER_TEMP"/integration-plugins/*/*.tar.gz "$RUNNER_TEMP/bundle-plugins/"
+          WM_BUNDLE_PLUGINS_DIR="$RUNNER_TEMP/bundle-plugins" ./scripts/package.sh --integration
           python3 scripts/verify-integration-bundle.py "$GITHUB_SHA" dist/KDE-Windows-Modern-*-integration-*.zip
           (cd dist && sha256sum KDE-Windows-Modern-*-integration-*.zip > SHA256SUMS)
       - uses: actions/upload-artifact@v4
