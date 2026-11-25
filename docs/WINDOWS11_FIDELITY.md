@@ -189,10 +189,12 @@ battery or application-icon dimensions is made by this follow-up.
 
 The private owner bundle is distinct from the smaller public integration
 artifact. Its package mode rejects archives smaller than 90,000,000 bytes,
-checks the source SHA, pinned native resource revision, essential source,
-test and artwork entries, and ZIP CRC integrity before adding the package
-to its private manifest. Do not add filler or publish the private resource
-bundle to the public Actions artifacts.
+checks the source SHA, pinned native resource revision, essential theme,
+installation, local-build and artwork entries, and ZIP CRC integrity before
+adding the package to its private manifest. Reject development tests, CI,
+internal reports, historical screenshots and repository-only tools in the
+owner ZIP. Keep those in the source checkout. Do not add filler or publish
+the private resource bundle to the public Actions artifacts.
 
 ### Start and Search must retain one surface
 

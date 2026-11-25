@@ -35,3 +35,15 @@ class OwnerBundleTests(unittest.TestCase):
                 z.writestr("theme/../escape", "x")
             with self.assertRaisesRegex(ValueError, "Invalid archive paths"):
                 verify(SHA, path, min_bytes=1)
+
+
+    def test_development_payload_rejected(self):
+        for name in ("tests/run-qml-tests.sh", "plasma/applets/demo/tests/test.cpp",
+                     "docs/WINDOWS11_FIDELITY.md", "scripts/ci-build.sh", "View-1.png"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temp:
+                path = Path(temp) / "owner.zip"
+                with ZipFile(path, "w") as z:
+                    z.writestr("theme/INTEGRATION-BUILD", SHA)
+                    z.writestr("theme/" + name, "development only")
+                with self.assertRaisesRegex(ValueError, "Development payload"):
+                    verify(SHA, path, min_bytes=1)

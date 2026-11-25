@@ -191,8 +191,16 @@ if [[ -n "$(git -C "$SRC_DIR" status --porcelain --untracked-files=no)" ]]; then
     warn "Working tree has uncommitted changes — the full bundle is built from HEAD and will not include them."
 fi
 rm -f "$FULL_OUT"
+archive_paths=(.)
+if [[ "$OWNER" -eq 1 ]]; then
+    # The owner archive is an installable theme, not a developer checkout.
+    # Reuse the verifier's exclusion policy so the packager and gate agree.
+    exclusions="$(python3 "$SCRIPT_DIR/verify-owner-bundle.py" --archive-excludes)"
+    mapfile -t owner_excludes <<< "$exclusions"
+    archive_paths+=("${owner_excludes[@]}")
+fi
 git -C "$SRC_DIR" archive --format=zip --prefix="KDE-Windows-Modern-${FULL_VER}/" \
-    -o "$FULL_OUT" HEAD
+    -o "$FULL_OUT" HEAD -- "${archive_paths[@]}"
 # `git archive` leaves submodules out, so the greeter could not be built
 # from the bundle (#15). Add the login manager source at the commit HEAD pins.
 PLM_REL="third_party/plasma-login-manager"
@@ -243,13 +251,10 @@ if [[ "$OWNER" -eq 1 ]]; then
     trap 'rm -rf "$stage"' EXIT
     prefix="KDE-Windows-Modern-${FULL_VER}"
     mkdir -p "$stage/$prefix"
-    # Archive the tests subtree directly so the normal release export-ignore
-    # rule still applies to public theme ZIPs.
-    git -C "$SRC_DIR" archive --prefix=tests/ HEAD:tests | tar -xf - -C "$stage/$prefix"
     bash "$SCRIPT_DIR/stage-native-resources.sh" "$stage/$prefix/native-resources"
     # A source-build test archive never tries to download stale release binaries.
     git -C "$SRC_DIR" rev-parse HEAD > "$stage/$prefix/INTEGRATION-BUILD"
-    (cd "$stage" && zip -qry "$FULL_OUT" "$prefix/native-resources" "$prefix/INTEGRATION-BUILD" "$prefix/tests")
+    (cd "$stage" && zip -qry "$FULL_OUT" "$prefix/native-resources" "$prefix/INTEGRATION-BUILD")
     rm -rf "$stage"
     trap - EXIT
 fi

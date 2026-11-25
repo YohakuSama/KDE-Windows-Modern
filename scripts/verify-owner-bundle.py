@@ -9,6 +9,39 @@ import sys
 from zipfile import ZipFile
 
 MIN_BYTES = 90_000_000  # The owner requires at least 90 MB, measured on disk.
+# Keep installation, upgrade, rollback, runtime checks, licence and artwork.
+# Exclude only known development material; upstream build sources stay intact.
+DEV_PATHS = (
+    "tests", ".github", "plans", "AGENTS.md", "CLAUDE.md",
+    ".editorconfig", ".shellcheckrc", "CONTRIBUTING.md", "PRODUCT.md",
+    "verify-all.sh", "docs/PROGRESS.md", "docs/icon-pack",
+    "docs/PANEL_UI_CONTRACT.md", "docs/PLASMA_SYSTEMTRAY_ARCHITECTURE.md",
+    "docs/RELEASE.md", "docs/STARTMENU_PLAN.md", "docs/STYLE.md",
+    "docs/SYSTEMTRAY_ARCHITECTURE.md", "docs/SYSTEMTRAY_DECISION.md",
+    "docs/WINDOWS11_FIDELITY.md", "docs/NATIVE_COVERAGE.md",
+    "docs/windows11-resource-index.json",
+    "scripts/ci-build.sh", "scripts/check-qml-syntax.sh",
+    "scripts/capture-screenshots.sh", "scripts/commit-icons.sh",
+    "scripts/gen-switch-svg.py", "scripts/icon-coverage.py",
+    "scripts/inspect-shell-resources.py", "scripts/package-plugins.sh",
+    "scripts/package.sh", "scripts/release.sh", "scripts/store",
+    "scripts/update-plm.sh", "scripts/update-previews.sh",
+    "scripts/verify-integration-bundle.py", "scripts/verify-owner-bundle.py",
+)
+
+
+def archive_excludes():
+    return [*(":(exclude,literal)" + p for p in DEV_PATHS),
+            ":(exclude,glob)View-*.png", ":(exclude,glob)plasma/**/tests/**"]
+
+
+def is_development_file(name):
+    parts = PurePosixPath(name).parts
+    return (not parts
+            or any(name == p or name.startswith(p + "/") for p in DEV_PATHS)
+            or (len(parts) == 1 and re.fullmatch(r"View-.*\.png", name))
+            or (parts[0] == "plasma" and "tests" in parts[1:-1])
+            or any(p in (".git", "__pycache__", "wm-build") for p in parts))
 
 
 def verify(revision, filename, min_bytes=MIN_BYTES):
@@ -25,11 +58,17 @@ def verify(revision, filename, min_bytes=MIN_BYTES):
         if len(roots) != 1 or any(PurePosixPath(n).is_absolute() or ".." in PurePosixPath(n).parts for n in members):
             raise ValueError("Invalid archive paths")
         prefix = next(iter(roots)) + "/"
+        for name in members:
+            if not name.startswith(prefix) or is_development_file(name[len(prefix):]):
+                raise ValueError("Development payload in owner ZIP: " + name)
         native = "native-resources/"
         required = (
             "INTEGRATION-BUILD", "install.sh", "install-nixos.sh",
             "uninstall.sh", "third_party/plasma-login-manager/CMakeLists.txt",
-            "tests/systemtray/tst_trayMetrics.qml", "tests/run-qml-tests.sh",
+            "nix/test-runtime.nix", "scripts/prepare-native-assets.sh",
+            "scripts/import-windows-assets.py", "scripts/native-assets-map.json",
+            "scripts/install-icons.sh", "scripts/install-themes.sh",
+            "scripts/install-sounds.sh", "scripts/verify-nixos-runtime.py",
             "plasma/applets/org.kde.windowsmodern.systemtray/systemtray.cpp",
             "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/PanelStatusGlyph.qml",
             "plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt",
@@ -64,6 +103,9 @@ def verify(revision, filename, min_bytes=MIN_BYTES):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--archive-excludes"]:
+        print("\n".join(archive_excludes()))
+        raise SystemExit(0)
     if len(sys.argv) != 3:
         raise SystemExit("usage: verify-owner-bundle.py SHA ZIP")
     verify(sys.argv[1], sys.argv[2])
