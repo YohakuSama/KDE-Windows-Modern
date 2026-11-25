@@ -697,18 +697,6 @@ PlasmaExtras.Menu {
             }
 
             PlasmaExtras.MenuItem {
-                enabled: menu.visualParent && menu.get(TaskManager.AbstractTasksModel.CanSetNoBoder)
-
-                checkable: true
-                checked: menu.visualParent && menu.get(TaskManager.AbstractTasksModel.HasNoBorder)
-
-                text: i18nc("@action:inmenu", "&No Titlebar and Frame")
-                icon: "edit-none-border"
-
-                onClicked: tasksModel.requestToggleNoBorder(menu.modelIndex)
-            }
-
-            PlasmaExtras.MenuItem {
                 enabled: menu.visualParent
 
                 checkable: true

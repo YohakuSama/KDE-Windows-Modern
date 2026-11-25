@@ -15,6 +15,29 @@ The second report checks the XDG icon theme and desktop entries, including the p
 
 Use the generated report and current mapping to count target paths. These are mapped names, not a claim of complete native artwork coverage. Count paths separately from unique original Windows resources. Do not label an icon native merely because its name is present in the bundled pack.
 
+## Windows 11 26H2 shell assets
+
+The 713-group MUN index is not the complete Windows shell artwork set.
+The newer taskbar assets are stored outside those MUN files and are now
+identified by their original paths:
+
+- SysBatt Fluent Icons font, converted locally into 38 battery state SVGs.
+- Search activation/idle PNGs for light taskbars and the activation PNG for dark taskbars. If the source build has no dark idle image, the applet uses the verified Segoe E721 glyph for that state.
+- Task View light/dark SVGs embedded in Windows.UI.SettingsAppThreshold.pri.
+
+Import them from an authorized Windows 11 26H2 installation with
+scripts/import-shell-assets.py. The importer validates glyph coverage,
+selects the highest available Search scale, extracts the PRI SVGs and stores
+the results under the user's private data directory. It does not add the
+Windows font or artwork to the public repository or release ZIP.
+
+The current MUN map selects 56 groups from imageres.dll.mun, 4 from
+shell32.dll.mun and 1 from imagesp1.dll.mun. The remaining indexed groups
+are retained for future inspection. An unmapped group is not automatically
+a missing UI icon. The outstanding semantic gaps remain the Hibernate
+action artwork and original account portraits. Do not substitute KDE or
+generic glyphs for those roles.
+
 If the local source was already imported, the existing importer can export resource IDs and hashes without uploading binaries:
 
 ```sh
