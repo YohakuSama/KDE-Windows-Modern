@@ -52,10 +52,10 @@ Item {
             tryVerify(() => more && more.visible);
             mouseClick(more, more.width / 2, more.height / 2);
             tryVerify(() => {
-                const buttons = findChildren(row, "wmDeviceOtherAction");
-                return buttons.some(button => button.visible && button.text === "Open");
+                const openButton = findChild(row, "wmDeviceOtherAction_open");
+                return openButton && openButton.visible;
             });
-            const open = findChildren(row, "wmDeviceOtherAction").find(button => button.visible && button.text === "Open");
+            const open = findChild(row, "wmDeviceOtherAction_open");
             mouseClick(open, open.width / 2, open.height / 2);
             compare(mockActions.requested, "open");
         }
