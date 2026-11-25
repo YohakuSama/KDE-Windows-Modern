@@ -47,6 +47,24 @@ function cellLength(size, compact, spacing) {
     return Math.max(size + 4, size + extra - opticalInset - (compact ? 8 : 0));
 }
 
+// Measured against the reference as a fraction of its 48 logical-pixel
+// taskbar, not its enlarged screenshot pixels. A run gets a 6px logical
+// leading inset without changing the 24px spacing between glyph centers.
+function leadingSystemInset(systemGroup, previousSystemGroup, vertical) {
+    return systemGroup && !previousSystemGroup && !vertical ? 6 : 0;
+}
+
+// A 48px taskbar has a centered 40px hover surface. The containment
+// can be shorter due to its parent frame; never extend beyond that cell.
+function groupHoverRect(run, panelExtent, vertical) {
+    const cross = Math.max(0, Math.min(vertical ? run.width : run.height, panelExtent - 8));
+    return vertical
+        ? {x: run.x + (run.width - cross) / 2, y: run.y + 2,
+           width: cross, height: Math.max(0, run.height - 4)}
+        : {x: run.x + 2, y: run.y + (run.height - cross) / 2,
+           width: Math.max(0, run.width - 4), height: cross};
+}
+
 function visualIndex(index, count, vertical, reversed) {
     return vertical && reversed ? Math.max(0, count - index - 1) : index;
 }

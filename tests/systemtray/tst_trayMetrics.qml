@@ -56,6 +56,29 @@ TestCase {
             compare(Metrics.coreCellLength(logical, logical, 2) * scale, 24 * scale);
         }
     }
+    function test_groupLeadingPaddingAndCenter() {
+        compare(Metrics.leadingSystemInset(true, false, false), 6);
+        compare(Metrics.leadingSystemInset(true, true, false), 0);
+        compare(Metrics.leadingSystemInset(false, false, false), 0);
+        compare(Metrics.leadingSystemInset(true, false, true), 0);
+        const inset = Metrics.leadingSystemInset(true, false, false);
+        const cell = Metrics.coreCellLength(16, 16, 2);
+        const firstCenter = inset + cell / 2;
+        const nextCenter = inset + cell + cell / 2;
+        for (const scale of [1, 1.5, 2]) {
+            compare((nextCenter - firstCenter) * scale, 24 * scale);
+            const rect = Metrics.groupHoverRect({x: 0, y: 3, width: 114, height: 42}, 48, false);
+            compare(rect.height * scale, 40 * scale);
+            compare((rect.y + rect.height / 2) * scale, 24 * scale);
+            compare(rect.width * scale, 110 * scale);
+            compare((firstCenter - rect.x) * scale, 16 * scale);
+        }
+        const short = Metrics.groupHoverRect({x: 0, y: 0, width: 72, height: 30}, 48, false);
+        compare(short.height, 30);
+        const vertical = Metrics.groupHoverRect({x: 3, y: 0, width: 42, height: 72}, 48, true);
+        compare(vertical.width, 40);
+        compare(vertical.x + vertical.width / 2, 24);
+    }
     function test_systemGroup() {
         verify(Metrics.isQuickSettings("org.kde.plasma.networkmanagement"));
         verify(Metrics.isQuickSettings("org.kde.plasma.volume"));

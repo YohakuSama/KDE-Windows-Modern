@@ -12,6 +12,8 @@ Loader {
     required property int index
     required property int effectiveStatus
     required property var model
+    // Logical leading padding belongs to the hit target, not an icon's ink.
+    property int leadingSystemInset: 0
 
     z: x + 1 // always be above what it's on top of, even for x==0
 

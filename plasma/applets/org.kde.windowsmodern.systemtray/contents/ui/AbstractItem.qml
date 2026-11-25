@@ -151,7 +151,8 @@ PlasmaCore.ToolTipArea {
     ColumnLayout {
         anchors.fill: abstractItem
         // Overflow is icon-only; names remain in tooltips and accessibility.
-        anchors.leftMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0
+        anchors.leftMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset
+            : abstractItem.groupedQuickSettings ? (abstractItem.parent?.leadingSystemInset ?? 0) : 0
         anchors.rightMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0
         anchors.topMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0
         anchors.bottomMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset : 0

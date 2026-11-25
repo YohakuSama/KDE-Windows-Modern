@@ -69,9 +69,11 @@ ContainmentItem {
         font.pixelSize: 12
     }
     readonly property bool panelHasBattery: panelBattery.hasCumulative
+    readonly property real panelBatteryPercent: panelBattery.percent
+    readonly property bool panelBatteryPercentKnown: panelHasBattery
+        && Number.isFinite(panelBatteryPercent) && panelBatteryPercent >= 0
     readonly property bool showPanelBatteryPercentage: !vertical
-        && Plasmoid.configuration.showBatteryPercentage && panelHasBattery
-        && Number.isFinite(panelBattery.percent) && panelBattery.percent >= 0
+        && Plasmoid.configuration.showBatteryPercentage && panelBatteryPercentKnown
     readonly property int batteryGlyphSize: vertical
         ? Math.max(1, Math.min(coreItemSize, Math.floor(width / 1.25))) : coreItemSize
     readonly property int batteryPercentageWidth: Math.ceil(batteryPercentMetrics.advanceWidth)
@@ -274,10 +276,11 @@ ContainmentItem {
                 delegate: Rectangle {
                     required property var modelData
                     objectName: "wmQuickSettingsGroupBackground"
-                    x: modelData.x + 2
-                    y: modelData.y + 3
-                    width: Math.max(0, modelData.width - 4)
-                    height: Math.max(0, modelData.height - 6)
+                    readonly property var hoverRect: TrayMetrics.groupHoverRect(modelData, root.panelExtent, root.vertical)
+                    x: hoverRect.x
+                    y: hoverRect.y
+                    width: hoverRect.width
+                    height: hoverRect.height
                     radius: 4
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                    Kirigami.Theme.textColor.b, 0.08)
@@ -346,8 +349,14 @@ ContainmentItem {
                         readonly property string loadedItemId: item?.itemId || model.itemId || ""
                         readonly property bool systemGroup: TrayMetrics.isQuickSettings(loadedItemId)
                         readonly property bool batteryCell: loadedItemId === "org.kde.plasma.battery"
+                        leadingSystemInset: {
+                            const revision = tasksGrid.delegateRevision;
+                            const previous = tasksGrid.itemAtIndex(index - 1);
+                            return TrayMetrics.leadingSystemInset(systemGroup,
+                                !!previous && previous.systemGroup, root.vertical);
+                        }
                         readonly property int cellLength: systemGroup
-                            ? (batteryCell && !root.vertical
+                            ? leadingSystemInset + (batteryCell && !root.vertical
                                 ? Math.max(root.systemCellLength, root.batteryContentWidth + 6)
                                 : root.systemCellLength)
                             : root.trayCellLength

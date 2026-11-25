@@ -130,3 +130,24 @@ in Qt/KDE. Check first-open geometry, reopening, disabled paste, undo,
 shortcut alignment, icons, arrows, shadow, DPI, RTL, dark/light and unrelated
 application menus. Exact reference scaling was not supplied; these logical
 measurements are provisional. DWM material and glyph parity remain unverified.
+
+### Owner taskbar reference, measured at proportional scale
+
+The supplied current screenshot is 568 x 199 pixels and its taskbar is
+approximately 72 px high; the enlarged Windows crop is 1327 x 460 and its
+taskbar approximately 150 px high. Comparing raw pixels is invalid.
+Bright-pixel centers of the current Wi-Fi/volume/notification glyphs are
+near y=164; reference Ethernet/volume near y=336. The charging battery
+ink extends above its body in both screenshots. Keep its body and the
+percentage on the common centerline, without offsetting all icons upward.
+At a nominal 48 logical px taskbar, keep 16 px status canvases, 24 px
+group cell pitch, and 32 px standalone cells. A battery is 20 px wide.
+The reference implies a 40 px high hover surface and approximately
+6 additional logical px before the first grouped glyph. Apply that inset
+to the actual hit cell and preserve the spacing between adjacent glyphs.
+Qt applies 100/150/200 percent scaling once. Simplify grouped status
+tooltips to a single live status line; KDE actions remain native.
+These are proportional screenshot measurements and implementation targets,
+not independent certification of the reference's display scale or exact
+glyph artwork. Confirm first/last cells, RTL, vertical panels, and actual
+screen-space centering and tooltips in the running shell.

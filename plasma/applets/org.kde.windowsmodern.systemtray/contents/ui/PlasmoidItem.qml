@@ -28,12 +28,31 @@ AbstractItem {
     text: applet?.Plasmoid.title ?? ""
 
     itemId: applet?.Plasmoid.pluginName ?? ""
-    mainText: applet ? (applet.toolTipMainText || text) : ""
-    subText: applet?.toolTipSubText ?? ""
-    mainItem: applet?.toolTipItem ?? null
-    textFormat: applet?.toolTipTextFormat ?? 0 /* Text.AutoText, the default value */
-    active: inVisibleLayout || (!!applet && systemTrayState.activeApplet !== applet
-        && (mainText.length > 0 || subText.length > 0))
+    readonly property var tooltipSink: Vol.PreferredDevice.sink
+    readonly property string groupTooltip: {
+        switch (itemId) {
+        case "org.kde.plasma.volume":
+            if (!tooltipSink || tooltipSink.name === "auto_null")
+                return i18n("No output device");
+            if (tooltipSink.muted) return i18n("Volume: muted");
+            return i18n("Volume: %1%", Math.round(tooltipSink.volume / 65536 * 100));
+        case "org.kde.plasma.battery":
+            return root.panelBatteryPercentKnown
+                ? i18n("Battery status: %1% remaining", Math.round(root.panelBatteryPercent))
+                : i18n("Battery level unknown");
+        default:
+            // Preserve the native network name/status without the stock
+            // multiline instructions or applet-provided tooltip view.
+            return String(applet?.toolTipMainText || text).split(/\r?\n/)[0];
+        }
+    }
+    mainText: groupedQuickSettings ? "" : applet ? (applet.toolTipMainText || text) : ""
+    subText: groupedQuickSettings ? groupTooltip : applet?.toolTipSubText ?? ""
+    mainItem: groupedQuickSettings ? null : applet?.toolTipItem ?? null
+    textFormat: groupedQuickSettings ? Text.PlainText : (applet?.toolTipTextFormat ?? Text.AutoText)
+    active: groupedQuickSettings ? !systemTrayState.quickSettingsOpen && subText.length > 0
+        : inVisibleLayout || (!!applet && systemTrayState.activeApplet !== applet
+            && (mainText.length > 0 || subText.length > 0))
 
     // FIXME: Use an input type agnostic way to activate whatever the primary
     // action of a plasmoid is supposed to be, even if it's just expanding the
