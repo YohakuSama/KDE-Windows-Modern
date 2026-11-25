@@ -41,6 +41,15 @@ Item {
     // The compact representation is the actual Start button in the panel.
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
+    readonly property var popupCoordinator: {
+        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
+        for (const applet of applets) {
+            if (applet && applet.pluginName === "org.kde.windowsmodern.systemtray"
+                    && typeof applet.prepareShellPopup === "function")
+                return applet;
+        }
+        return null;
+    }
     readonly property bool menuShown: root.visible
     readonly property bool searchShown: root.visible && root.searching
     readonly property bool taskbarSearchActive: searchShown && root.taskbarSearchAnchor !== null
@@ -72,6 +81,8 @@ Item {
     function toggleMenu(searchMode, searchAnchor, taskbarBox) {
         if (root.visible) {
             root.visible = false;
+            if (popupCoordinator)
+                popupCoordinator.restoreShellPopupFocus();
             return;
         }
         if (!startButton || !popupAnchor.Window.window || !popupAnchor.visible
@@ -81,7 +92,10 @@ Item {
         // Resolve the requested mode and its size before mapping the popup.
         root.reset(!!searchMode, searchAnchor, taskbarBox);
         updatePopupAnchor();
+        if (popupCoordinator)
+            popupCoordinator.prepareShellPopup("start", root);
         root.visible = true;
+        root.requestActivate();
     }
 
     function updatePopupAnchor() {
@@ -133,7 +147,8 @@ Item {
         location: Plasmoid.location
         floating: PopupGeometry.popupGap()
         visible: false
-        hideOnWindowDeactivate: true
+        hideOnWindowDeactivate: !main.popupCoordinator
+        function closeCoordinatedPopup() { closeMenu(); }
 
         // Match the panel's popup preference by default, like Quick Settings
         // and the clock. Explicit translucency/opacity choices still override it.
