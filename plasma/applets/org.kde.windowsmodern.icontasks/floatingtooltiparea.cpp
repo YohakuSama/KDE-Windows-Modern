@@ -117,6 +117,7 @@ void FloatingToolTipArea::setMainItem(QQuickItem *mainItem)
 
 void FloatingToolTipArea::showToolTip()
 {
+    m_showTimer.stop();
     if (!m_active) {
         return;
     }

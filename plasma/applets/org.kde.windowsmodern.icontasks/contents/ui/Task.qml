@@ -364,11 +364,10 @@ FloatingToolTipArea {
         }
     }
 
-    // Will also be called in activateTaskAtIndex(index)
+    // Bind the actual requested owner for hover and keyboard/group activation.
     function updateMainItemBindings(): void {
-        if (!mainItem || (mainItem.parentTask === this && mainItem.rootIndex?.row === index)
-            || (tasksRoot.toolTipOpenedByClick === null && !active)
-            || (tasksRoot.toolTipOpenedByClick !== null && tasksRoot.toolTipOpenedByClick !== this)) {
+        if (!mainItem || !active
+            || (mainItem.parentTask === this && mainItem.rootIndex?.row === index)) {
             return;
         }
 

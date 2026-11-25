@@ -233,3 +233,21 @@ edge inset. These are screenshot-derived targets, not Microsoft-published
 metrics. Extend the existing real-session tests for launcher name, focus,
 red hover surface and targeted window close, at 100% on one output first;
 verify dark/light and fractional scaling visually on the target session.
+
+### Integration audit: shared tooltip lifecycle and private package integrity
+
+Only the current native tooltip owner may dismiss the shared window. Clear
+click/hover ownership only for that task, and detach an obsolete content
+delegate when a pinned app gains or loses its window. Bind the actual task
+roles together before constructing the next card. Construct the lightweight
+frame synchronously; keep the actual PipeWire thumbnail asynchronous. The
+existing focus/preview/launcher scenarios are the live acceptance route.
+
+Private owner archives are assembled under a temporary directory inside
+`dist`, checked before publication, then renamed to the final filename.
+A failed resource fetch, dirty or changing checkout, missing submodule,
+undersized archive, incomplete indexed resource or hash mismatch must not
+publish a partially built final ZIP. Public packaging leaves prior verified
+owner packages alone. The resource checker uses the existing index schema
+consumed by the native asset importer. Its synthetic fixture checks do not
+prove that a full pinned resource checkout was downloaded and packaged.

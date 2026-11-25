@@ -181,13 +181,14 @@ fi
 info "Building full GitHub release bundle..."
 FULL_VER="$(get_version "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.json")"
 [[ -z "$FULL_VER" ]] && FULL_VER="1.0.0"
+build_revision="$(git -C "$SRC_DIR" rev-parse HEAD)"
+build_short="$(git -C "$SRC_DIR" rev-parse --short "$build_revision")"
 FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}.zip"
 if [[ "$INTEGRATION" -eq 1 ]]; then
-    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-integration-$(git -C "$SRC_DIR" rev-parse --short HEAD).zip"
+    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-integration-$build_short.zip"
 elif [[ "$OWNER" -eq 1 ]]; then
-    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-owner-$(git -C "$SRC_DIR" rev-parse --short HEAD).zip"
+    FULL_OUT="$DIST_DIR/KDE-Windows-Modern-${FULL_VER}-owner-$build_short.zip"
 fi
-build_revision="$(git -C "$SRC_DIR" rev-parse HEAD)"
 if [[ -n "$(git -C "$SRC_DIR" status --porcelain --untracked-files=no)" ]]; then
     if [[ "$OWNER" -eq 1 ]]; then
         err "Owner bundle requires a clean committed checkout."
