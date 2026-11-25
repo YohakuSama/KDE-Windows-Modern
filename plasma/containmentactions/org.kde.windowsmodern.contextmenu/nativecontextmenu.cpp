@@ -48,12 +48,17 @@ public:
         // Reuse FolderModel's real refresh action, even though the stock
         // background menu does not expose it. Never add an unconnected row.
         QAction *refresh = nullptr;
+        QAction *undo = DesktopMenuLayout::named(stock, QStringLiteral("undo"));
         if (auto *newFile = DesktopMenuLayout::named(stock, QStringLiteral("newMenu"))) {
-            if (auto *model = newFile->parent())
+            if (auto *model = newFile->parent()) {
                 QMetaObject::invokeMethod(model, "action", Qt::DirectConnection,
                     Q_RETURN_ARG(QAction *, refresh), Q_ARG(QString, QStringLiteral("refresh")));
+                if (!undo)
+                    QMetaObject::invokeMethod(model, "action", Qt::DirectConnection,
+                        Q_RETURN_ARG(QAction *, undo), Q_ARG(QString, QStringLiteral("undo")));
+            }
         }
-        return m_layout.build(stock, refresh, desktop->internalAction(QStringLiteral("configure")));
+        return m_layout.build(stock, refresh, desktop->internalAction(QStringLiteral("configure")), undo);
     }
 private:
     std::unique_ptr<Plasma::ContainmentActions> m_native;

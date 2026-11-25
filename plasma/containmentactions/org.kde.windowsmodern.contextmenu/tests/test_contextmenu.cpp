@@ -23,6 +23,7 @@ int main(int argc, char **argv)
         customize("Desktop and Wallpaper"), edit("Edit Mode"), hidden("Hidden"), separator;
     newFile.setObjectName(QStringLiteral("newMenu"));
     paste.setObjectName(QStringLiteral("paste"));
+    undo.setObjectName(QStringLiteral("undo"));
     paste.setEnabled(false);
     hidden.setVisible(false);
     separator.setSeparator(true);
@@ -40,11 +41,14 @@ int main(int argc, char **argv)
     REQUIRE(result.at(2) == &refresh);
     REQUIRE(result.contains(&newFile));
     REQUIRE(result.contains(&paste) && !paste.isEnabled());
+    REQUIRE(result.indexOf(&refresh) < result.indexOf(&paste));
+    REQUIRE(result.indexOf(&paste) < result.indexOf(&undo));
+    REQUIRE(result.indexOf(&undo) < result.indexOf(&newFile));
     REQUIRE(result.contains(&customize));
     REQUIRE(!result.contains(&hidden));
     REQUIRE(!result.contains(icons.menuAction()));
     QMenu *more = result.last()->menu();
-    REQUIRE(more && more->actions().contains(&undo) && more->actions().contains(&edit));
+    REQUIRE(more && !more->actions().contains(&undo) && more->actions().contains(&edit));
     REQUIRE(!more->actions().contains(&paste) && !more->actions().contains(&customize));
     refresh.trigger();
     name->trigger();
@@ -53,6 +57,11 @@ int main(int argc, char **argv)
     result = layout.build(native, &refresh, &customize);
     REQUIRE(result.at(1) == sort.menuAction());
     REQUIRE(sort.actions().contains(name));
+    undo.setEnabled(false);
+    result = layout.build(native, &refresh, &customize);
+    REQUIRE(!result.contains(&undo));
+    REQUIRE(!result.last()->menu()->actions().contains(&undo));
+    REQUIRE(result.indexOf(&paste) < result.indexOf(&newFile));
     REQUIRE(layout.build({}, nullptr, nullptr).isEmpty());
     return 0;
 }

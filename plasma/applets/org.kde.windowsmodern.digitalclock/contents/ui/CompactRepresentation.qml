@@ -99,13 +99,26 @@ MouseArea {
         backgroundHints: PlasmaCore.Dialog.NoBackground
         visible: false
         hideOnWindowDeactivate: !Plasmoid.configuration.pin
+        function applyNotificationSlide() {
+            const provider = main.plasmoidItem.splitBlurProvider;
+            if (provider && typeof provider.setNotificationPopupSlide === "function")
+                provider.setNotificationPopupSlide(clockPopupContent);
+        }
         onVisibleChanged: {
-            if (visible) clockGeometryProbe.restart();
-            else clockGeometryProbe.stop();
+            if (visible) {
+                applyNotificationSlide();
+                clockGeometryProbe.restart();
+            } else clockGeometryProbe.stop();
             if (clockPopupContent) clockPopupContent.scheduleSplitBlur();
         }
-        onWidthChanged: if (visible) clockGeometryProbe.restart()
-        onHeightChanged: if (visible) clockGeometryProbe.restart()
+        onWidthChanged: if (visible) {
+            applyNotificationSlide();
+            clockGeometryProbe.restart();
+        }
+        onHeightChanged: if (visible) {
+            applyNotificationSlide();
+            clockGeometryProbe.restart();
+        }
 
         function toggle(previous) {
             if (previous) { visible = false; return; }
@@ -114,6 +127,7 @@ MouseArea {
                 console.warn("WM_POPUP clock: panel anchor not mapped");
                 return;
             }
+            applyNotificationSlide();
             visible = true;
             requestActivate();
         }

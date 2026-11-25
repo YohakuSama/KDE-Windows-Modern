@@ -19,7 +19,7 @@ DesktopMenuLayout::DesktopMenuLayout()
     m_more.setTitle(i18nd(domain, "Show more options"));
     m_more.setIcon(QIcon::fromTheme(QStringLiteral("overflow-menu")));
     m_more.setSeparatorsCollapsible(true);
-    for (auto *a : {&m_separator1, &m_separator2, &m_separator3}) a->setSeparator(true);
+    for (auto *a : {&m_separator1, &m_pasteSeparator, &m_separator2, &m_separator3}) a->setSeparator(true);
 }
 QAction *DesktopMenuLayout::named(const QList<QAction *> &actions, const QString &name)
 {
@@ -42,7 +42,7 @@ QAction *DesktopMenuLayout::sortAction(QAction *view)
     return nullptr;
 }
 QList<QAction *> DesktopMenuLayout::build(const QList<QAction *> &nativeActions,
-                                         QAction *refresh, QAction *personalize)
+                                         QAction *refresh, QAction *personalize, QAction *undo)
 {
     m_view.clear();
     m_more.clear();
@@ -71,8 +71,14 @@ QList<QAction *> DesktopMenuLayout::build(const QList<QAction *> &nativeActions,
     }
     add(refresh);
     separator(&m_separator1);
-    add(named(nativeActions, QStringLiteral("newMenu")));
     add(named(nativeActions, QStringLiteral("paste")));
+    separator(&m_pasteSeparator);
+    // Windows exposes the real undo operation only when it is available.
+    // Keep the native action and its live operation-specific text.
+    if (!undo) undo = named(nativeActions, QStringLiteral("undo"));
+    if (usable(undo) && undo->isEnabled()) add(undo);
+    if (undo) used.insert(undo);
+    add(named(nativeActions, QStringLiteral("newMenu")));
     separator(&m_separator2);
     for (auto *a : nativeActions)
         if (usable(a) && namedIcon(a, QStringLiteral("preferences-desktop-display"))) {

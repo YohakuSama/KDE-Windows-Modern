@@ -9,10 +9,10 @@ class DesktopMenuLayout
 public:
     DesktopMenuLayout();
     QList<QAction *> build(const QList<QAction *> &nativeActions,
-                           QAction *refresh, QAction *personalize);
+                           QAction *refresh, QAction *personalize, QAction *undo = nullptr);
     static QAction *named(const QList<QAction *> &actions, const QString &name);
     static QAction *sortAction(QAction *view);
 private:
     QMenu m_view, m_more;
-    QAction m_separator1, m_separator2, m_separator3;
+    QAction m_separator1, m_pasteSeparator, m_separator2, m_separator3;
 };

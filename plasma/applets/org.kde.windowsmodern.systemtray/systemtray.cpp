@@ -152,6 +152,15 @@ void SystemTray::openCast()
     job->start();
 }
 
+void SystemTray::setNotificationPopupSlide(QQuickItem *content)
+{
+    // Keep the native shell positioning and let KWin animate the actual
+    // window. Only the notification flyout uses this independent edge.
+    if (auto *window = content ? content->window() : nullptr) {
+        KWindowEffects::slideWindow(window, KWindowEffects::RightEdge, -1);
+    }
+}
+
 bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
                                    qreal radius, bool enabled)
 {
