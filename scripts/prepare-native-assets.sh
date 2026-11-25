@@ -12,12 +12,16 @@ fi
 if [ -z "$source" ] && [ -f "$data/resource-input/resource-manifest.json" ]; then
     source="$data/resource-input"
 fi
-if [ -z "$source" ] && [ -f "$output/manifest.json" ]; then
-    if python3 "$root/scripts/check-native-icon-import.py" "$output" "$root/scripts/native-assets-map.json" &&
-        [ -s "$output/wallpapers/Windows-modern/metadata.json" ]; then
+verify_output() {
+    python3 "$root/scripts/check-native-icon-import.py" "$output" "$root/scripts/native-assets-map.json" &&
+        python3 "$root/scripts/check-native-wallpaper.py" "$output" "$output/wallpapers/Windows-modern" Windows-modern &&
+        python3 "$root/scripts/check-native-wallpaper.py" "$output" "$output/wallpapers/Windows-modern-lock" Windows-modern-lock
+}
+if [ -f "$output/manifest.json" ] && [ -z "${WM_NATIVE_RESOURCE_SOURCE:-}" ]; then
+    if verify_output; then
         exit 0
     fi
-    if python3 "$root/scripts/import-windows-assets.py" --reuse --output "$output"; then
+    if [ -z "$source" ] && python3 "$root/scripts/import-windows-assets.py" --reuse --output "$output" && verify_output; then
         exit 0
     fi
 fi
@@ -26,4 +30,4 @@ if [ -z "$source" ]; then
     source="$data/resource-input"
 fi
 python3 "$root/scripts/import-windows-assets.py" "$source" --output "$output"
-python3 "$root/scripts/check-native-icon-import.py" "$output" "$root/scripts/native-assets-map.json"
+verify_output

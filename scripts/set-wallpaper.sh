@@ -1,143 +1,90 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Apply the installed wallpaper packages via KDE's own wallpaper mechanisms.
+# Apply only verified owner images. Never crop or regenerate wallpaper bytes.
 set -euo pipefail
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+data="${XDG_DATA_HOME:-$HOME/.local/share}"
+native="${WM_NATIVE_ASSETS_DIR:-$data/windows-modern/native-assets}"
+wallpapers="$data/wallpapers"
+[ "$EUID" -ne 0 ] || { echo "Apply wallpapers as the desktop user." >&2; exit 1; }
+case "${1:-}" in ""|--lock-only|--allow-fallback) ;; *) echo "Unknown wallpaper option" >&2; exit 2;; esac
 
-WALLPAPER_ID="Windows-modern"
-APPLY_TOOL="plasma-apply-wallpaperimage"
-DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-NATIVE_DIR="$DATA_HOME/windows-modern/native-assets"
-USER_WALLPAPERS="$DATA_HOME/wallpapers"
-
-find_wallpaper() {
-    local id="$1" dir
-    for dir in "$USER_WALLPAPERS/$id" "$HOME/.local/share/wallpapers/$id" "/usr/share/wallpapers/$id"; do
-        if [ -d "$dir" ]; then
-            printf '%s\n' "$dir"
-            return 0
-        fi
-    done
-    return 1
+verify() {
+    python3 "$script_dir/check-native-wallpaper.py" "$native" "$1" "$2"
 }
 
-set_lock_wallpaper() {
-    local dir="$1" key
-    if ! command -v kwriteconfig6 &>/dev/null; then
-        echo "kwriteconfig6 not found; select the lock wallpaper in System Settings." >&2
+ensure_native() {
+    if python3 "$script_dir/check-native-icon-import.py" "$native" "$script_dir/native-assets-map.json" &&
+       verify "$native/wallpapers/Windows-modern" Windows-modern &&
+       verify "$native/wallpapers/Windows-modern-lock" Windows-modern-lock; then
         return 0
     fi
-    for key in Image PreviewImage; do
-        kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper \
-            --group org.kde.image --group General --key "$key" "file://$dir/"
-    done
-    kwriteconfig6 --file kscreenlockerrc --group Greeter --key WallpaperPlugin org.kde.image
-    echo "Lock screen wallpaper set to $(basename "$dir")."
+    bash "$script_dir/prepare-native-assets.sh" &&
+        verify "$native/wallpapers/Windows-modern" Windows-modern &&
+        verify "$native/wallpapers/Windows-modern-lock" Windows-modern-lock
 }
 
-# A standalone session-lock install must not change the desktop wallpaper.
-# Keep the current lock wallpaper if no native lock package was installed.
-if [ "${1:-}" = "--lock-only" ]; then
-    if lock_dir="$(find_wallpaper Windows-modern-lock)"; then
-        set_lock_wallpaper "$lock_dir"
-    fi
-    exit 0
-fi
-
-# Distinguish the owner's imported Bloom from the public compatibility
-# artwork. Never silently pass the bundled wallpaper off as the original.
-is_native_bloom() {
-    local dir="$1"
-    [ -f "$dir/metadata.json" ] &&
-    grep -q '"Local Windows reference image"' "$dir/metadata.json" &&
-    find "$dir/contents/images" -maxdepth 1 -type f -iname '*.jpg' -size +0c -print -quit 2>/dev/null | grep -q . &&
-    find "$dir/contents/images_dark" -maxdepth 1 -type f -iname '*.jpg' -size +0c -print -quit 2>/dev/null | grep -q .
-}
-
-restore_native_bloom() {
-    local original="$NATIVE_DIR/wallpapers/$WALLPAPER_ID" stage destination
-    [ -f "$NATIVE_DIR/manifest.json" ] && is_native_bloom "$original" || return 1
-    mkdir -p "$USER_WALLPAPERS"
-    destination="$USER_WALLPAPERS/$WALLPAPER_ID"
-    stage="$(mktemp -d "$USER_WALLPAPERS/.windows-modern-bloom.XXXXXX")"
-    if ! cp -a "$original" "$stage/new"; then
-        rm -rf "$stage"
-        return 1
+install_package() {
+    local name="$1" source="$native/wallpapers/$1" stage destination="$wallpapers/$1"
+    verify "$source" "$name" || return 1
+    mkdir -p "$wallpapers"
+    stage="$(mktemp -d "$wallpapers/.windows-modern-wallpaper.XXXXXX")"
+    if ! cp -a "$source" "$stage/new" || ! verify "$stage/new" "$name"; then
+        rm -rf "$stage"; return 1
     fi
     if [ -e "$destination" ] || [ -L "$destination" ]; then
-        if ! mv "$destination" "$stage/previous"; then
-            rm -rf "$stage"
-            return 1
-        fi
+        mv "$destination" "$stage/previous" || { rm -rf "$stage"; return 1; }
     fi
     if ! mv "$stage/new" "$destination"; then
         [ ! -e "$stage/previous" ] || mv "$stage/previous" "$destination"
-        rm -rf "$stage"
-        return 1
+        rm -rf "$stage"; return 1
     fi
     rm -rf "$stage"
 }
 
-if [ "$EUID" -eq 0 ]; then
-    echo "Apply the desktop wallpaper as the desktop user, not root." >&2
-    exit 1
+set_lock() {
+    local directory="$1" key
+    command -v kwriteconfig6 >/dev/null || { echo "kwriteconfig6 is required." >&2; return 1; }
+    for key in Image PreviewImage; do
+        kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper \
+            --group org.kde.image --group General --key "$key" "file://$directory/"
+    done
+    kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper \
+        --group org.kde.image --group General --key FillMode --type int 1
+    kwriteconfig6 --file kscreenlockerrc --group Greeter --key WallpaperPlugin org.kde.image
+}
+
+if [ "${1:-}" = --lock-only ]; then
+    ensure_native || exit 1
+    install_package Windows-modern-lock && set_lock "$wallpapers/Windows-modern-lock"
+    exit $?
 fi
-if ! command -v "$APPLY_TOOL" &>/dev/null; then
-    echo "$APPLY_TOOL not found; the desktop wallpaper has not been applied." >&2
+
+command -v plasma-apply-wallpaperimage >/dev/null || { echo "plasma-apply-wallpaperimage is required." >&2; exit 1; }
+if ensure_native; then
+    install_package Windows-modern
+    install_package Windows-modern-lock
+    desktop="$wallpapers/Windows-modern"
+    lock="$wallpapers/Windows-modern-lock"
+elif [ "${1:-}" = --allow-fallback ]; then
+    # Explicit opt-in only, never replace an original installed package.
+    desktop="$(cd "$script_dir/../wallpaper/Windows-modern" && pwd)"
+    lock="$desktop"
+    echo "Explicitly requested compatibility artwork; not an original Windows image." >&2
+else
+    echo "Owner's original wallpaper unavailable; leaving the current wallpaper untouched." >&2
     exit 1
 fi
 
-if [ -f "$NATIVE_DIR/manifest.json" ] && is_native_bloom "$NATIVE_DIR/wallpapers/$WALLPAPER_ID"; then
-    if ! python3 "$(dirname "$0")/check-native-icon-import.py" "$NATIVE_DIR" "$(dirname "$0")/native-assets-map.json"; then
-        bash "$(dirname "$0")/prepare-native-assets.sh" || exit 1
-    fi
-    restore_native_bloom || { echo "Could not restore the imported Bloom package." >&2; exit 1; }
-fi
-wallpaper_dir="$(find_wallpaper "$WALLPAPER_ID" || true)"
-if { [ -z "$wallpaper_dir" ] || ! is_native_bloom "$wallpaper_dir"; } && [ "${1:-}" != "--allow-fallback" ]; then
-    # A fresh owner bundle or checkout contains (or can fetch) the exact
-    # original resource revision. No manual import command is necessary.
-    if bash "$(dirname "$0")/prepare-native-assets.sh" && restore_native_bloom; then
-        wallpaper_dir="$USER_WALLPAPERS/$WALLPAPER_ID"
-    fi
-fi
-if [ -z "$wallpaper_dir" ] || ! is_native_bloom "$wallpaper_dir"; then
-    # Recover from the remembered owner archive if the generated package
-    # is missing, without requiring another upload.
-    if [ -f "$NATIVE_DIR/manifest.json" ] && [ "${1:-}" != "--allow-fallback" ]; then
-        importer="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/import-windows-assets.py"
-        if python3 "$importer" --reuse --output "$NATIVE_DIR" && restore_native_bloom; then
-            wallpaper_dir="$USER_WALLPAPERS/$WALLPAPER_ID"
-        fi
-    fi
-fi
-if [ -z "$wallpaper_dir" ] || ! is_native_bloom "$wallpaper_dir"; then
-    if [ "${1:-}" != "--allow-fallback" ] || [ -z "$wallpaper_dir" ]; then
-        echo "Original Windows 11 Bloom (img0.jpg / img19.jpg) unavailable. The original wallpaper has NOT been restored." >&2
-        echo "Import your local Windows resource archive, then run ./install.sh wallpaper. For the public substitute only, pass --allow-fallback." >&2
-        exit 1
-    fi
-    echo "Applying the explicitly requested compatibility wallpaper, not original Bloom." >&2
-fi
-
-# The layout reset/restart may briefly leave Plasma's D-Bus service
-# unavailable. Apply once it is ready, and surface a real failure.
+# Native Plasma API, aspect-preserving fit: the entire image remains visible.
+# Do not silently fall back to the default crop mode on unsupported versions.
 applied=false
 for _ in 1 2 3 4 5; do
-    if "$APPLY_TOOL" "$wallpaper_dir"; then
-        applied=true
-        break
+    if plasma-apply-wallpaperimage --fill-mode preserveAspectFit "$desktop"; then
+        applied=true; break
     fi
     sleep 1
 done
-if [ "$applied" != true ]; then
-    echo "Plasma did not accept the desktop wallpaper." >&2
-    exit 1
-fi
-echo "Desktop wallpaper applied from $wallpaper_dir."
-
-# Keep the lock package from the same installation as the desktop package.
-lock_dir="$wallpaper_dir"
-if [ -d "$(dirname "$wallpaper_dir")/Windows-modern-lock" ]; then
-    lock_dir="$(dirname "$wallpaper_dir")/Windows-modern-lock"
-fi
-set_lock_wallpaper "$lock_dir"
+[ "$applied" = true ] || { echo "Plasma did not apply the verified wallpaper in fit mode." >&2; exit 1; }
+set_lock "$lock"
+echo "Wallpaper applied without cropping: $desktop"
