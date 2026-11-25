@@ -29,7 +29,7 @@ Item {
     property string detailsAccessibleName: ""
     property bool iconClickable: false
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
 
     signal moved(int value)
     signal released
@@ -116,7 +116,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: 2
-                    color: root.dark ? "#A0A0A0" : "#888888"
+                    color: ColorType.trackFill(root.dark)
                 }
                 Rectangle {
                     width: parent.width * slider.position
@@ -135,7 +135,7 @@ Item {
                 radius: width / 2
                 color: root.dark ? "#383838" : "#FFFFFF"
                 border.width: 1
-                border.color: root.dark ? "#4B4B4B" : "#D6D6D6"
+                border.color: root.dark ? "#454545" : "#D6D6D6"
                 Rectangle {
                     anchors.centerIn: parent
                     width: slider.pressed ? 10 : 12

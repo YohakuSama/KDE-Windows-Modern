@@ -15,6 +15,7 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
 import "components" as Components
+import "js/colorType.js" as ColorType
 QQC2.StackView {
     id: mainStack
     focus: true
@@ -166,7 +167,7 @@ QQC2.StackView {
             anchors.leftMargin: 12
             anchors.rightMargin: 12
             height: 1
-            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
+            color: ColorType.divider(ColorType.isDark(Kirigami.Theme.backgroundColor))
         }
 
         Loader {

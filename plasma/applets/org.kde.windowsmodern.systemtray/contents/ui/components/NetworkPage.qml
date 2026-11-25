@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
+import "../js/colorType.js" as ColorType
 
 Lib.DetailPage {
     id: page
@@ -83,8 +84,9 @@ Lib.DetailPage {
         property string password: ""
         property bool showPassword: false
 
-        readonly property color subtleBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06)
-        readonly property color hoverBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+        readonly property color subtleBg: ColorType.rowFill(dark, true, false, false)
+        readonly property color hoverBg: ColorType.rowFill(dark, false, true, false)
 
         function statusText() {
             if (connectionState === PlasmaNM.Enums.Activated) {

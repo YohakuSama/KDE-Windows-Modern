@@ -20,10 +20,7 @@ Rectangle {
     readonly property string trackName: player ? String(player.track || "") : ""
     readonly property string artistName: player ? String(player.artist || "") : ""
     readonly property string applicationName: player ? String(player.identity || "") : ""
-    readonly property bool dark: {
-        const c = Kirigami.Theme.backgroundColor;
-        return c.r * 0.299 + c.g * 0.587 + c.b * 0.114 < 0.5;
-    }
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
     readonly property color foreground: Kirigami.Theme.textColor
     readonly property color surfaceColor: ColorType.cardFill(dark, acrylic)
     readonly property color outlineColor: ColorType.cardBorder(dark)

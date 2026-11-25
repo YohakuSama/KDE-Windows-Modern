@@ -22,11 +22,12 @@ function contrastingForeground(color) {
 
 // Accents from wallpaper can have poor contrast against the control
 // surface. Adjust only as far as necessary toward the relevant neutral.
-function accentForSurface(accent, surface) {
+function accentForSurface(accent, surface, minimumRatio) {
+    const minimum = minimumRatio || 3;
     const dark = isDark(surface);
     const target = dark ? 1 : 0;
     const opaque = Qt.rgba(accent.r, accent.g, accent.b, 1);
-    if (contrastRatio(opaque, surface) >= 3) return opaque;
+    if (contrastRatio(opaque, surface) >= minimum) return opaque;
     let low = 0;
     let high = 1;
     for (let i = 0; i < 12; ++i) {
@@ -34,7 +35,7 @@ function accentForSurface(accent, surface) {
         const color = Qt.rgba(opaque.r + (target - opaque.r) * weight,
             opaque.g + (target - opaque.g) * weight,
             opaque.b + (target - opaque.b) * weight, 1);
-        if (contrastRatio(color, surface) >= 3) high = weight;
+        if (contrastRatio(color, surface) >= minimum) high = weight;
         else low = weight;
     }
     return Qt.rgba(opaque.r + (target - opaque.r) * high,
@@ -48,11 +49,17 @@ function tileFill(dark, hovered, pressed) {
     if (dark) return pressed ? "#303030" : hovered ? "#3B3B3B" : "#333333";
     return pressed ? "#EDEDED" : hovered ? "#F6F6F6" : "#FBFBFB";
 }
-function tileBorder(dark) { return dark ? "#424242" : "#E7E7E7"; }
+function tileBorder(dark) { return dark ? "#3B3B3B" : "#E5E5E5"; }
 function cardFill(dark, acrylic) {
     if (dark) return acrylic ? "#F0202020" : "#202020";
     return acrylic ? "#F5F2F2F2" : "#F2F2F2";
 }
 function cardBorder(dark) { return dark ? "#3C3C3C" : "#DCDCDC"; }
-function divider(dark) { return dark ? "#24FFFFFF" : "#15000000"; }
-function footerTint(dark) { return dark ? "#18000000" : "#04000000"; }
+function divider(dark) { return dark ? "#18FFFFFF" : "#12000000"; }
+function footerTint(dark) { return dark ? "#15000000" : "#05000000"; }
+function trackFill(dark) { return dark ? "#929292" : "#767676"; }
+function rowFill(dark, selected, hovered, pressed) {
+    const alpha = pressed ? 0.10 : selected || hovered ? 0.065 : 0;
+    const ink = dark ? 1 : 0;
+    return Qt.rgba(ink, ink, ink, alpha);
+}

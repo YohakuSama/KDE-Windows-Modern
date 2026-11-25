@@ -7,6 +7,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
+import "../js/colorType.js" as ColorType
 
 Lib.DetailPage {
     id: page
@@ -78,8 +79,8 @@ Lib.DetailPage {
         width: Math.max(1, page.listView.width - 16)
         height: 52
         radius: 4
-        color: deviceMouse.containsMouse || model.Connected
-            ? Qt.rgba(fg.r, fg.g, fg.b, 0.07) : "transparent"
+        color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
+            model.Connected, deviceMouse.containsMouse, false)
 
         MouseArea {
             id: deviceMouse
