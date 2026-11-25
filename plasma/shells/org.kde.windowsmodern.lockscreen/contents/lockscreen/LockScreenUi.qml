@@ -431,7 +431,7 @@ Item {
                 Layout.preferredHeight: 40
                 Layout.alignment: Qt.AlignVCenter
                 focusPolicy: Qt.TabFocus
-                Accessible.description: i18ndc("plasma_shell_org.kde.plasma.desktop", "Button to change keyboard layout", "Switch layout")
+                Accessible.description: i18ndc("plasma_shell_org.kde.windowsmodern.lockscreen", "Button to change keyboard layout", "Switch layout")
                 icon.name: "input-keyboard"
                 PW.KeyboardLayoutSwitcher { id: keyboardLayoutSwitcher; anchors.fill: parent; acceptedButtons: Qt.NoButton }
                 text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Switch keyboard layout")

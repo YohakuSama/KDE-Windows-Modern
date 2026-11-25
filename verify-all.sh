@@ -224,6 +224,7 @@ for pair in \
     "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml" \
+    "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml" \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentScrollBar.qml" \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml"; do
     # shellcheck disable=SC2086  # two paths on purpose

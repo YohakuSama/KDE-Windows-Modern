@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.mpris as Mpris
 import "../js/colorType.js" as ColorType
+import "../js/mediaSource.js" as MediaSource
 
 Rectangle {
     id: card
@@ -19,7 +20,10 @@ Rectangle {
         player.playbackStatus === Mpris.PlaybackStatus.Paused || String(player.track || "").length > 0)
     readonly property string trackName: player ? String(player.track || "") : ""
     readonly property string artistName: player ? String(player.artist || "") : ""
-    readonly property string applicationName: player ? String(player.identity || "") : ""
+    readonly property var sourceInfo: MediaSource.describe(player ? player.identity : "",
+        player ? player.desktopEntry : "", player ? player.iconName : "")
+    readonly property string applicationName: sourceInfo.name
+    readonly property string applicationIcon: sourceInfo.icon
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
     readonly property color foreground: Kirigami.Theme.textColor
     readonly property color surfaceColor: ColorType.cardFill(dark, acrylic)
@@ -121,17 +125,22 @@ Rectangle {
             Layout.preferredHeight: Math.round(20 * card.uiScale)
             spacing: Math.round(8 * card.uiScale)
             Kirigami.Icon {
-                Layout.preferredWidth: Math.round(16 * card.uiScale)
+                objectName: "wmMediaSourceIcon"
+                Layout.preferredWidth: Math.round(18 * card.uiScale)
                 Layout.preferredHeight: Layout.preferredWidth
-                source: card.player && card.player.iconName ? card.player.iconName : "audio-x-generic"
+                source: card.applicationIcon
+                fallback: card.sourceInfo.fallback
                 roundToIconSize: false
+                animated: false
             }
             Text {
                 Layout.fillWidth: true
                 color: card.foreground
+                objectName: "wmMediaSourceName"
                 text: card.applicationName
                 textFormat: Text.PlainText
                 font.pixelSize: Math.round(12 * card.uiScale)
+                font.weight: Font.Medium
                 elide: Text.ElideRight
             }
         }

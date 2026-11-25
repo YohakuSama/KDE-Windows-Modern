@@ -169,6 +169,18 @@ Item {
             compare(box.preferredWidth, data.boxWidth + 2 * data.margin);
         }
 
+        function test_compactSearchAndSelection() {
+            const box = makeBox({styleMode: 1, width: 120});
+            compare(box.boxWidth, 112);
+            const pill = findChild(box, "wmSearchPill");
+            box.forceHovered = true;
+            tryCompare(pill, "color", pill.hoverFill);
+            box.selected = true;
+            tryCompare(pill, "color", Qt.color("#0078D4"));
+            box.width = 20;
+            verify(!findChild(box, "wmSearchPlaceholder").visible);
+        }
+
         function test_boxFitsConstrainedCell_data() {
             return [
                 {tag: "tiny thickness", width: 100, height: 12},

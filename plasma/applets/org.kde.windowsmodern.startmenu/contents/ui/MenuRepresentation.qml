@@ -40,6 +40,7 @@ Item {
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
     readonly property bool menuShown: root.visible
+    readonly property bool searchShown: root.visible && root.searching
     readonly property var panelWindow: startButton ? startButton.Window.window : null
     readonly property rect panelGeometry: panelWindow
         ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
@@ -71,6 +72,12 @@ Item {
             || startButton.width <= 0 || startButton.height <= 0)
             return;
 
+        updatePopupAnchor();
+        root.visible = true;
+    }
+
+    function updatePopupAnchor() {
+        if (!startButton || !popupAnchor.Window.window) return;
         const horizontal = Plasmoid.location === PlasmaCore.Types.BottomEdge
                         || Plasmoid.location === PlasmaCore.Types.TopEdge;
         popupAnchor.x = Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
@@ -84,7 +91,15 @@ Item {
                 { x: pos.x, width: startButton.width }, panelGeometry,
                 rootItem.width + root.margins.left + root.margins.right);
         }
-        root.visible = true;
+    }
+
+    // Both taskbar Search and Start's own input enter this same surface.
+    function openSearch() {
+        if (!root.visible) toggleMenu();
+        if (!root.visible) return;
+        root.searching = true;
+        root.requestActivate();
+        Qt.callLater(startSearch.focusSearch);
     }
 
     Plasmoid.status: root.visible ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
@@ -116,7 +131,7 @@ Item {
                 : PlasmaCore.Dialog.StandardBackground;
         }
 
-        property bool searching: startSearch.searchText !== ""
+        property bool searching: false
 
         // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results.
         // Pinned and All now share the same scrollable home.
@@ -141,6 +156,7 @@ Item {
             if (visible) {
                 reset();
             } else {
+                searching = false;
                 leftColumnState = 0;
                 modeMenu.close();
                 sharedContextMenu.close();
@@ -150,6 +166,7 @@ Item {
 
         function reset() {
             startSearch.searchText = "";
+            searching = false;
             leftColumnState = 0;
             showMoreRecent = false;
             // Nothing highlighted until hovered or picked with the arrow keys,
@@ -181,13 +198,14 @@ Item {
                 || (Plasmoid.configuration.startMenuSize === 0 && screen.width >= 1440)
             readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
                 && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
-            readonly property int wantedWidth: largeLayout ? 768 : 560
-            readonly property int wantedHeight: largeLayout ? 720 : 640
+            readonly property int wantedWidth: root.searching ? 776 : (largeLayout ? 768 : 560)
+            readonly property int wantedHeight: root.searching ? 690 : (largeLayout ? 720 : 640)
             width: Math.max(1, Math.min(wantedWidth, screen.width > 0
                 ? screen.width - (main.verticalPanel ? main.panelExtent : 0) - 2 * margin : wantedWidth))
             height: Math.max(1, Math.min(wantedHeight, screen.height > 0
                 ? screen.height - (main.verticalPanel ? 0 : main.panelExtent) - 2 * margin : wantedHeight))
             focus: true
+            onWidthChanged: if (root.visible) main.updatePopupAnchor()
 
             // Note: do NOT auto-redirect to the search field here.
             // onFocusChanged fires when any child calls forceActiveFocus(),
@@ -282,9 +300,14 @@ Item {
                 anchors.margins: rootItem.margin
                 anchors.topMargin: 16
 
+                searchMode: root.searching
+                onSearchRequested: root.searching = true
                 onSearchTextChanged: {
+                    if (startSearch.searchText.length > 0) root.searching = true;
                     sharedContextMenu?.close();
                     // Explicitly push the query to Milou ResultsView.
+                    if (startSearch.searchText.length === 0)
+                        searchPage.resultsView.singleRunner = "";
                     searchPage.resultsView.queryString = startSearch.searchText;
                     // Reset scroll to top on new query — only when
                     // the search page is active to avoid warnings
@@ -306,7 +329,10 @@ Item {
                     } else if (powerMenu.opened) {
                         powerMenu.close();
                     } else if (startSearch.searchText !== "") {
-                        root.reset();
+                        startSearch.searchText = "";
+                        startSearch.focusSearch();
+                    } else if (root.searching) {
+                        root.closeMenu();
                     } else if (allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {
@@ -328,7 +354,7 @@ Item {
                 anchors.right: parent.right
                 anchors.margins: rootItem.margin
                 anchors.topMargin: 22
-                anchors.bottomMargin: 0
+                anchors.bottomMargin: root.searching ? 12 : 0
 
                 AllAppsPage {
                     id: allAppsPage
@@ -461,10 +487,30 @@ Item {
                     }
                 }
 
+                Loader {
+                    id: searchHome
+                    anchors.fill: parent
+                    active: root.visible && root.searching && startSearch.searchText.length === 0
+                    visible: active
+                    sourceComponent: SearchHome {
+                        suggestedModel: Plasmoid.configuration.showSearchSuggestions
+                            && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) ? recentUsage : null
+                        topAppsModel: Plasmoid.configuration.showSearchTopApps
+                            && Plasmoid.configuration.showRecentApps ? categoryPopularity : null
+                        showQuickSearches: Plasmoid.configuration.showSearchQuickSearches
+                        onSearchRequested: query => {
+                            searchPage.resultsView.singleRunner = "krunner_systemsettings";
+                            startSearch.searchText = query;
+                            startSearch.focusSearch();
+                        }
+                        onApplicationActivated: root.closeMenu()
+                    }
+                }
+
                 SearchPage {
                     id: searchPage
                     anchors.fill: parent
-                    visible: root.leftColumnState === 2
+                    visible: root.searching && startSearch.searchText.length > 0
                     scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     onFocusSearchRequested: startSearch.focusSearch()
                     onContextMenuRequested: function(actions, x, y, context) {
@@ -479,7 +525,8 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: 56
+                visible: !root.searching
+                height: visible ? 56 : 0
                 color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                Kirigami.Theme.textColor.b, 0.035)
 
@@ -675,6 +722,10 @@ Item {
             }
 
             function navigateFromSearch(direction) {
+                if (searchHome.active) {
+                    if (searchHome.item) searchHome.item.focusFirst();
+                    return;
+                }
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 const page = root.leftColumnState === 0 ? root.pinnedPage
@@ -689,6 +740,10 @@ Item {
             }
 
             function focusActivePageResults() {
+                if (searchHome.active) {
+                    if (searchHome.item) searchHome.item.focusFirst();
+                    return;
+                }
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 if (root.leftColumnState === 0) {
@@ -697,12 +752,13 @@ Item {
                     allAppsPage.tryActivate(Math.max(0, allAppsPage.activeView.currentIndex));
                 } else if (root.leftColumnState === 2 && searchPage.resultsView.count > 0) {
                     searchPage.tryActivate(Math.max(0, searchPage.resultsView.currentIndex), 0);
-                } else {
+                } else if (!root.searching) {
                     accountButton.forceActiveFocus();
                 }
             }
 
             function activateCurrentItem() {
+                if (searchHome.active) return;
                 if (root.leftColumnState === 0) {
                     root.pinnedPage?.activateCurrent();
                 } else if (root.leftColumnState === 1) {
@@ -769,8 +825,11 @@ Item {
                     event.accepted = true;
                     if (powerMenu.opened) {
                         powerMenu.close();
+                    } else if (root.searching && startSearch.searchText.length > 0) {
+                        startSearch.searchText = "";
+                        startSearch.focusSearch();
                     } else if (root.searching) {
-                        root.reset();
+                        root.closeMenu();
                     } else if (root.leftColumnState === 1 && allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {

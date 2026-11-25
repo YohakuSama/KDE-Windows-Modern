@@ -36,6 +36,9 @@ KCM.SimpleKCM {
     property alias cfg_allAppsViewMode: allAppsViewMode.currentIndex
     property alias cfg_showRecentApps: recentApps.checked
     property alias cfg_showRecentDocs: recentDocs.checked
+    property alias cfg_showSearchSuggestions: searchSuggestions.checked
+    property alias cfg_showSearchQuickSearches: searchQuickSearches.checked
+    property alias cfg_showSearchTopApps: searchTopApps.checked
 
     Kirigami.FormLayout {
         anchors.left: parent.left
@@ -182,6 +185,23 @@ KCM.SimpleKCM {
             id: recentDocs
             enabled: recentSection.checked
             Kirigami.FormData.label: i18n("Show recent files")
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("Search")
+        }
+        CheckBox {
+            id: searchSuggestions
+            Kirigami.FormData.label: i18n("Show suggested items in Search")
+        }
+        CheckBox {
+            id: searchQuickSearches
+            Kirigami.FormData.label: i18n("Show quick searches")
+        }
+        CheckBox {
+            id: searchTopApps
+            Kirigami.FormData.label: i18n("Show top apps in Search")
         }
 
         // ── All apps sort ──────────────────────────────────────────────
