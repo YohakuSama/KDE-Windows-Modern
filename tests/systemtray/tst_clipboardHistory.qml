@@ -41,9 +41,20 @@ Item {
         name: "ClipboardHistoryCards"
         when: windowShown
         function init() {
+            // Let ListView dispose of old delegates before the next test.
             page.historyModel.clear();
+            const list = findChild(page, "wmClipboardHistory");
+            list.forceLayout();
+            tryCompare(list, "count", 0);
+            wait(0);
             page.historyModel.append({uuid: "text-1", display: "Actual clipboard text", type: 2, decoration: "", starred: false});
             page.historyModel.append({uuid: "image-1", display: "Image", type: 4, decoration: "", starred: false});
+            list.forceLayout();
+            tryCompare(list, "count", 2);
+            tryVerify(() => list.visible && list.height > 184
+                && list.itemAtIndex(0) && list.itemAtIndex(1)
+                && list.itemAtIndex(0).width > 100);
+            wait(50);
             page.historyModel.starredCount = 0;
             page.historyController.selectedUuid = "";
             page.historyController.clearCalls = 0;
@@ -75,7 +86,8 @@ Item {
             const pin = findChild(card, "wmClipboardPin");
             verify(pin.visible);
             mouseClick(pin, pin.width / 2, pin.height / 2);
-            tryCompare(card, "pinned", true);
+            tryVerify(() => page.historyModel.get(0).starred === true);
+            tryVerify(() => list.itemAtIndex(0)?.pinned === true);
             const clear = findChild(page, "wmClipboardClearAll");
             page.historyModel.starredCount = 2;
             tryCompare(clear, "visible", false);

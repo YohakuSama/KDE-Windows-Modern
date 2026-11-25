@@ -29,6 +29,14 @@ Item {
         name: "CalendarZoom"
         when: windowShown
 
+        function test_nativeAgendaRevision() {
+            const model = view.calendarBackend.daysModel;
+            const previous = view.eventsRevision;
+            model.agendaUpdated(view.selectedDate);
+            model.agendaUpdated(view.selectedDate);
+            tryCompare(view, "eventsRevision", previous + 1);
+        }
+
         function findAll(item, predicate, out) {
             out = out || [];
             if (predicate(item)) {

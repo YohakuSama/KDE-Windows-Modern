@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Templates as T
 import QtQuick.Layouts
+import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
@@ -163,7 +164,7 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             activeFocusOnTab: root.showArrow
             Accessible.role: Accessible.Button
-            Accessible.name: root.detailsAccessibleName || i18n("More")
+            Accessible.name: root.detailsAccessibleName || i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "More")
             Accessible.onPressAction: root.arrowClicked()
             Keys.onReturnPressed: root.arrowClicked()
             Keys.onEnterPressed: root.arrowClicked()

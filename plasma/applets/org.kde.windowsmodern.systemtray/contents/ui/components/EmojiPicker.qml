@@ -3,6 +3,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.emoji as Emoji
 import "../lib" as Lib
@@ -24,23 +25,24 @@ ColumnLayout {
     }
 
     readonly property var kaomojiGroups: [
-        {name: i18n("Happy"), entries: ["(^_^)", "(＾▽＾)", "(≧▽≦)", "(✿◠‿◠)", "(´▽`ʃ♡ƪ)", "(o^▽^o)", "(⌒‿⌒)", "(•‿•)"]},
-        {name: i18n("Sad"), entries: ["(T_T)", "(；ω；)", "(╥﹏╥)", "(｡•́︿•̀｡)", "(ಥ_ಥ)", "(╯︵╰,)"]},
-        {name: i18n("Love"), entries: ["(♥‿♥)", "(♡˙︶˙♡)", "(´｡• ᵕ •｡`) ♡", "(づ￣ ³￣)づ", "(っ˘з(˘⌣˘ )"]},
-        {name: i18n("Other"), entries: ["¯\\_(ツ)_/¯", "(¬_¬)", "(・_・;)", "(・∀・)", "(ง •̀_•́)ง", "(╯°□°）╯︵ ┻━┻", "ʕ•ᴥ•ʔ"]}
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Happy"), entries: ["(^_^)", "(＾▽＾)", "(≧▽≦)", "(✿◠‿◠)", "(´▽`ʃ♡ƪ)", "(o^▽^o)", "(⌒‿⌒)", "(•‿•)"]},
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Sad"), entries: ["(T_T)", "(；ω；)", "(╥﹏╥)", "(｡•́︿•̀｡)", "(ಥ_ಥ)", "(╯︵╰,)"]},
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Love"), entries: ["(♥‿♥)", "(♡˙︶˙♡)", "(´｡• ᵕ •｡`) ♡", "(づ￣ ³￣)づ", "(っ˘з(˘⌣˘ )"]},
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Other"), entries: ["¯\\_(ツ)_/¯", "(¬_¬)", "(・_・;)", "(・∀・)", "(ง •̀_•́)ง", "(╯°□°）╯︵ ┻━┻", "ʕ•ᴥ•ʔ"]}
     ]
     readonly property var symbolGroups: [
-        {name: i18n("Punctuation"), entries: ["…","·","•","‧","«","»","‹","›","‘","’","“","”","¿","¡","※","§","¶","†","‡"]},
-        {name: i18n("Currency"), entries: ["¥","￥","€","£","$","¢","₩","₹","₽","₿","₺","₫","₴","₱","₪","฿"]},
-        {name: i18n("Mathematics"), entries: ["±","×","÷","≠","≈","≤","≥","∞","√","∑","∏","∫","∂","∆","∇","π","°","∠","∈","∉","⊂","∪","∩","∝","≡","∴","∵","‰"]},
-        {name: i18n("Arrows"), entries: ["←","↑","→","↓","↔","↕","↖","↗","↘","↙","↩","↪","⇐","⇒","⇔","⟶","⟵"]},
-        {name: i18n("Other"), entries: ["©","®","™","℠","℃","℉","✓","✔","✕","✖","★","☆","♠","♣","♥","♦","♩","♪","♫","♬","○","●","□","■","△","▲","◇","◆"]}
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Punctuation"), entries: ["…","·","•","‧","«","»","‹","›","‘","’","“","”","¿","¡","※","§","¶","†","‡"]},
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Currency"), entries: ["¥","￥","€","£","$","¢","₩","₹","₽","₿","₺","₫","₴","₱","₪","฿"]},
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Mathematics"), entries: ["±","×","÷","≠","≈","≤","≥","∞","√","∑","∏","∫","∂","∆","∇","π","°","∠","∈","∉","⊂","∪","∩","∝","≡","∴","∵","‰"]},
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Arrows"), entries: ["←","↑","→","↓","↔","↕","↖","↗","↘","↙","↩","↪","⇐","⇒","⇔","⟶","⟵"]},
+        {name: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Other"), entries: ["©","®","™","℠","℃","℉","✓","✔","✕","✖","★","☆","♠","♣","♥","♦","♩","♪","♫","♬","○","●","□","■","△","▲","◇","◆"]}
     ]
     readonly property var groups: mode === "kaomoji" ? kaomojiGroups : symbolGroups
     readonly property var textEntries: {
+        const available = groups || [];
         const entries = localCategory.currentIndex > 0
-            ? (groups[localCategory.currentIndex - 1]?.entries || [])
-            : groups.reduce((all, group) => all.concat(group.entries), []);
+            ? (available[localCategory.currentIndex - 1]?.entries || [])
+            : available.reduce((all, group) => all.concat(group.entries), []);
         return searchField.text ? entries.filter(entry => entry.includes(searchField.text)) : entries;
     }
     onModeChanged: {
@@ -62,7 +64,7 @@ ColumnLayout {
         Layout.leftMargin: 16
         Layout.rightMargin: 16
         Layout.topMargin: 8
-        placeholderText: picker.mode === "emoji" ? i18n("Search emoji") : i18n("Search")
+        placeholderText: picker.mode === "emoji" ? i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Search emoji") : i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Search")
         selectByMouse: true
     }
 
@@ -72,7 +74,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: 16
         Layout.rightMargin: 16
-        model: [i18n("All")].concat(emojis.categories.map(category =>
+        model: [i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "All")].concat(emojis.categories.map(category =>
             i18ndc("org.kde.plasma.emojier", "Emoji Category", category)))
     }
 
@@ -82,7 +84,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: 16
         Layout.rightMargin: 16
-        model: [i18n("All")].concat(picker.groups.map(group => group.name))
+        model: [i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "All")].concat((picker.groups || []).map(group => group.name))
     }
 
     GridView {
@@ -123,7 +125,7 @@ ColumnLayout {
         QQC2.Label {
             anchors.centerIn: parent
             visible: emojiGrid.count === 0
-            text: i18n("No matching emoji found")
+            text: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "No matching emoji found")
         }
     }
 
@@ -161,7 +163,7 @@ ColumnLayout {
         QQC2.Label {
             anchors.centerIn: parent
             visible: localGrid.count === 0
-            text: i18n("No results")
+            text: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "No results")
         }
     }
 }

@@ -140,7 +140,17 @@ ColumnLayout {
     property int eventsRevision: 0
     Connections {
         target: calendarView.calendarBackend.daysModel
-        function onAgendaUpdated() { calendarView.eventsRevision++; }
+        function onAgendaUpdated(updatedDate) {
+            // Only the selected day needs to refresh its agenda. The day
+            // cells also use this revision for event marks, so coalesce
+            // bursts of native plugin updates into one refresh per frame.
+            agendaRefresh.restart();
+        }
+    }
+    Timer {
+        id: agendaRefresh
+        interval: 0
+        onTriggered: calendarView.eventsRevision++
     }
 
     // Events of the picked day, for the agenda under the calendar.

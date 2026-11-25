@@ -2,6 +2,8 @@
 import QtQuick
 
 QtObject {
+    signal agendaUpdated(date updatedDate)
+    property var events: []
     function setPluginsManager(manager) {}
-    function eventsForDate(date) { return []; }
+    function eventsForDate(date) { return events; }
 }

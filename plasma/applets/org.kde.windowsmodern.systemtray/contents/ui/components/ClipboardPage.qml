@@ -192,7 +192,11 @@ ColumnLayout {
             MouseArea {
                 id: selectArea
                 objectName: "wmClipboardSelect"
-                anchors.fill: parent
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.right: actionsColumn.left
+                z: 1
                 hoverEnabled: true
                 activeFocusOnTab: true
                 cursorShape: Qt.PointingHandCursor
@@ -217,7 +221,9 @@ ColumnLayout {
                 anchors.bottomMargin: 8
                 width: Math.max(1, Math.min(card.width - 62, 220))
                 source: card.isImage ? card.model.decoration : ""
+                sourceSize.width: 300
                 sourceSize.height: 200
+                asynchronous: true
                 fillMode: Image.PreserveAspectFit
                 horizontalAlignment: Image.AlignLeft
                 cache: false
@@ -244,6 +250,7 @@ ColumnLayout {
 
             Column {
                 id: actionsColumn
+                z: 2
                 anchors.right: parent.right
                 anchors.rightMargin: 5
                 anchors.top: parent.top
@@ -254,6 +261,7 @@ ColumnLayout {
                 spacing: Math.max(0, height - 64)
 
                 PlasmaComponents3.ToolButton {
+                    id: moreButton
                     width: 32
                     height: 32
                     text: i18n("More actions")
@@ -261,9 +269,14 @@ ColumnLayout {
                     icon.name: "view-more-symbolic"
                     icon.width: 16
                     icon.height: 16
-                    onClicked: actions.open()
+                    onClicked: actions.opened ? actions.close() : actions.open()
                     QQC2.Menu {
                         id: actions
+                        parent: moreButton
+                        popupType: QQC2.Popup.Item
+                        x: moreButton.width - width
+                        y: moreButton.height + 4
+                        closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
                         QQC2.MenuItem {
                             text: i18n("Delete")
                             icon.name: "edit-delete-symbolic"
