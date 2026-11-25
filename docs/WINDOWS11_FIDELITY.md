@@ -26,8 +26,7 @@ same Git blob. Preserve distinct color vs. symbolic roles, genuine application
 logos, signal levels, muted/charging states and theme-aware recoloring.
 Plasma FrameSVG icon sheets remain where its SVG APIs require them; use the
 same icon design there rather than creating a separate user-visible theme.
-Retain Breeze/hicolor as a compatibility fallback for unknown applications,
-not as the intended source of the Windows shell's own glyphs.
+Do not explicitly inherit Breeze. Keep hicolor for genuine third-party application identities. Project-owned system controls must resolve matching original Windows artwork directly; unresolved artwork must not be replaced by unrelated KDE glyphs. Qt/Plasma implicit fallbacks and unverified legacy theme assets remain coverage gaps.
 
 Reference projects: [ELEVEN](https://github.com/innerpulsenet/ELEVEN) for
 preserving panel/font settings and leveraging native KWin/Plasma geometry,
@@ -97,7 +96,7 @@ Implementation references: [KDE Bluedevil](https://github.com/KDE/bluedevil/tree
 
 ### Modern battery and grouped hover follow-up
 
-The current QML battery is a compatibility drawing. Replacing it with reviewed original 26H2 artwork remains an open requirement. Compare the actual states and optional percentage against the matching Windows reference. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The visual asset is recreated, not extracted from Windows.
+The QML battery uses imported Windows battery-state glyphs. Replacing this legacy native family with reviewed original 26H2 artwork remains an open requirement. Compare the actual states and optional percentage against the matching Windows reference. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The legacy glyphs come from Windows; the exact newer artwork is unresolved.
 
 ### Search home, clock and media source (owner reference, 2026-11-25)
 
