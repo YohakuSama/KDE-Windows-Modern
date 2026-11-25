@@ -207,59 +207,46 @@ AbstractItem {
         id: networkGlyph
         Item {
             PlasmaNM.ConnectionIcon { id: liveConnection }
-            Kirigami.Icon {
+            PanelStatusGlyph {
                 anchors.fill: parent
-                roundToIconSize: false
-                isMask: true
                 source: {
                     const icon = liveConnection.connectionIcon;
                     if (!icon) return plasmoidContainer.panelGlyph("network-unavailable-symbolic");
                     return plasmoidContainer.panelGlyph(icon.endsWith("-symbolic") ? icon : icon + "-symbolic");
                 }
-                color: Kirigami.Theme.textColor
             }
         }
     }
 
     Component {
         id: bluetoothGlyph
-        Kirigami.Icon {
-            roundToIconSize: false
-            isMask: true
+        PanelStatusGlyph {
             source: plasmoidContainer.panelGlyph("network-bluetooth-symbolic")
-            color: Kirigami.Theme.textColor
         }
     }
 
     Component {
         id: clipboardGlyph
-        Kirigami.Icon {
-            roundToIconSize: false
-            isMask: true
+        PanelStatusGlyph {
             source: plasmoidContainer.panelGlyph("edit-paste-symbolic")
-            color: Kirigami.Theme.textColor
         }
     }
 
     Component {
         id: removableGlyph
-        Kirigami.Icon {
-            roundToIconSize: false
-            isMask: true
+        PanelStatusGlyph {
             source: plasmoidContainer.panelGlyph("device-notifier-symbolic")
-            color: Kirigami.Theme.textColor
         }
     }
 
     Component {
         id: volumeGlyph
-        Kirigami.Icon {
+        PanelStatusGlyph {
             readonly property var sink: Vol.PreferredDevice.sink
             readonly property bool available: !!sink && sink.name !== "auto_null"
-            roundToIconSize: false
-            isMask: true
-            source: plasmoidContainer.panelGlyph(Funcs.volIconName(available ? sink.volume : 0, !available || sink.muted))
-            color: Kirigami.Theme.textColor
+            readonly property bool muted: !available || sink.muted || sink.volume <= 0
+            source: plasmoidContainer.panelGlyph(Funcs.volIconName(available ? sink.volume : 0, muted))
+            referenceSource: muted ? source : plasmoidContainer.panelGlyph("audio-volume-high-symbolic")
         }
     }
 

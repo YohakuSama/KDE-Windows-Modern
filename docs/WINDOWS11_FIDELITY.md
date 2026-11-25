@@ -151,3 +151,28 @@ These are proportional screenshot measurements and implementation targets,
 not independent certification of the reference's display scale or exact
 glyph artwork. Confirm first/last cells, RTL, vertical panels, and actual
 screen-space centering and tooltips in the running shell.
+
+### Cross-platform optical size calibration
+
+Do not equate a Windows icon resource size with a Qt source canvas. The
+owner screenshots have different crop magnifications: current taskbar
+approximately 71 pixels high; reference approximately 151. At a nominal
+48px panel, a bright-pixel threshold of RGB channels >145 gives battery
+widths 20.3/20.0, bell heights 14.9/15.3 and Chinese label heights
+14.9/14.9 logical pixels (current/reference). These are measurements from
+the supplied crops, not native DPI certification. Do not shrink these
+already comparable surfaces.
+
+Older bundled volume SVGs have a 22px viewport and around 16px full ink
+width, while imported glyphs fill roughly 23/24 of their canvas. The
+direct tray renderer now reads local SVG alpha bounds once per source,
+caches a bounded result, and compensates excess padding only when the
+largest ink dimension is less than 90% of the canvas. It preserves
+aspect ratio, uses a shared full-volume reference for non-muted levels,
+includes faint state waves and centers optical bounds. The bounded
+compensation targets the imported 23/24 coverage, not a second DPI
+multiplier. Unknown or unreadable assets retain normal sizing.
+No changes to battery, clock, application icon sizes or the tray hit
+targets are made by this correction. Confirm actual Qt rasterization
+and same-scale Windows comparison in the live target session; synthetic
+geometry and alpha-bound tests do not constitute visual acceptance.

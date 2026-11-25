@@ -151,6 +151,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/HiddenItemsView.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/ItemLoader.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/PlasmoidItem.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/PanelStatusGlyph.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/PlasmoidPopupsContainer.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/PulseAnimation.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/StatusNotifierItem.qml
@@ -270,7 +271,7 @@ option(WINDOWSMODERN_TEST_TRAY "Build tray status and embedded-resource regressi
 if(WINDOWSMODERN_TEST_TRAY)
     enable_testing()
     add_executable(test_traystatus "${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/systemtray/test_traystatus.cpp")
-    target_link_libraries(test_traystatus PRIVATE Plasma::Plasma)
+    target_link_libraries(test_traystatus PRIVATE Plasma::Plasma Qt6::Gui)
     add_test(NAME tray-status COMMAND test_traystatus)
 
     add_executable(test_tray_resources "${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/systemtray/test_tray_resources.cpp")

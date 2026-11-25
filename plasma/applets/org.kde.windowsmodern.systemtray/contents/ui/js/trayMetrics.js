@@ -3,10 +3,10 @@
 
 // Microsoft Windows 11 app-icon construction specifies 16px tray and
 // 24px taskbar app icon resources at 100%, 24px/36px at 150%.
-// Imported symbolic status glyphs already have normalized optical bounds
-// (23/24 of the source em). Do NOT compensate for their old transparent
-// margins a second time. Qt alone applies display DPI.
-// The standard 48px panel stays at 16px in both sizing modes.
+// The 16px value is the optical design slot, not a requirement to render
+// every SVG at 16px. Imported glyphs already fill ~23/24 of their canvas;
+// older fallback artwork can contain substantial transparent padding.
+// Normalize only the latter, and let Qt apply display DPI exactly once.
 const defaultTraySize = 16;
 function iconSize(thickness, scaleToFit) {
     const limit = Math.max(1, Math.floor(thickness));
@@ -20,6 +20,23 @@ function coreIconSize(thickness, scaleToFit) {
 
 // Fallback host for native compact applets, used only if the direct status
 // glyph component cannot load. It does not determine the rendered glyph size.
+// Match the visible size of the normalized imports (~23/24) without
+// enlarging already-full artwork. The cap preserves intentional shapes and
+// prevents tiny/broken glyphs from producing oversized canvases.
+function opticalPlacement(bounds, slotWidth, slotHeight) {
+    const extent = Math.max(bounds.width, bounds.height);
+    const valid = Number.isFinite(extent) && extent > 0
+        && Number.isFinite(bounds.x) && Number.isFinite(bounds.y);
+    const b = valid ? bounds : {x: 0, y: 0, width: 1, height: 1};
+    const factor = valid && extent < 0.90 ? Math.min(1.5, (23 / 24) / extent) : 1;
+    const side = Math.max(0, Math.min(slotWidth, slotHeight)) * factor;
+    return {
+        width: side, height: side, factor: factor,
+        x: (slotWidth - side) / 2 + (0.5 - b.x - b.width / 2) * side,
+        y: (slotHeight - side) / 2 + (0.5 - b.y - b.height / 2) * side
+    };
+}
+
 function coreRenderSize(displaySize) {
     if (displaySize < 16) return 16;
     if (displaySize <= 32) return 32;

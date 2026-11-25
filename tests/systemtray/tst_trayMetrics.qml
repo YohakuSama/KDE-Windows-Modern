@@ -5,6 +5,27 @@ import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/tra
 
 TestCase {
     name: "WindowsTrayMetrics"
+    function test_opticalPlacementAtAllScales() {
+        // A 22px fallback canvas with 16px of visible ink versus a
+        // normalized original asset: both must paint approximately 15.3px.
+        const fallback = {x: 3/22, y: 4/22, width: 16/22, height: 14/22};
+        const imported = {x: 0.5/24, y: 0.5/24, width: 23/24, height: 23/24};
+        const a = Metrics.opticalPlacement(fallback, 16, 16);
+        const b = Metrics.opticalPlacement(imported, 16, 16);
+        compare(b.factor, 1);
+        verify(a.factor > 1.3 && a.factor < 1.4);
+        for (const scale of [1, 1.25, 1.5, 1.75, 2]) {
+            fuzzyCompare(a.width * fallback.width * scale, b.width * imported.width * scale, 0.0001);
+            fuzzyCompare((a.x + a.width * (fallback.x + fallback.width/2)) * scale, 8 * scale, 0.0001);
+            fuzzyCompare((a.y + a.height * (fallback.y + fallback.height/2)) * scale, 8 * scale, 0.0001);
+        }
+        const asymmetric = {x: 0.1, y: 0.2, width: 0.7, height: 0.5};
+        const c = Metrics.opticalPlacement(asymmetric, 16, 16);
+        fuzzyCompare(c.x + c.width * 0.45, 8, 0.0001);
+        fuzzyCompare(c.y + c.height * 0.45, 8, 0.0001);
+        compare(Metrics.opticalPlacement({x:0,y:0,width:0.01,height:0.01},16,16).factor, 1.5);
+        compare(Metrics.opticalPlacement({x:0,y:0,width:0,height:0},16,16).factor, 1);
+    }
     function test_defaultGlyphAndCell() {
         for (const thickness of [24, 30, 32, 48, 64, 96]) {
             compare(Metrics.iconSize(thickness, false), 16);

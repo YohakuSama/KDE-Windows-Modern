@@ -8,6 +8,7 @@
 
 #include "debug.h"
 #include "systemtray.h"
+#include "panelglyph.h"
 
 #include "plasmoidregistry.h"
 #include "sortedsystemtraymodel.h"
@@ -21,6 +22,9 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QGuiApplication>
+#include <QFileInfo>
+#include <QImageReader>
+#include <QUrl>
 #include <QMenu>
 #include <QPainterPath>
 #include <QRegion>
@@ -150,6 +154,31 @@ void SystemTray::openCast()
     auto *job = new KIO::ApplicationLauncherJob(service);
     job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
     job->start();
+}
+
+QRectF SystemTray::panelGlyphBounds(const QString &source)
+{
+    const QRectF full(0, 0, 1, 1);
+    const QUrl url(source);
+    const QString path = url.isLocalFile() ? url.toLocalFile() : source;
+    // Only inspect local SVG assets resolved by the theme. Do not probe
+    // network URLs, arbitrary icon names, or unbounded image data.
+    if (!path.startsWith(QLatin1Char('/')) || !path.endsWith(QStringLiteral(".svg"), Qt::CaseInsensitive))
+        return full;
+    const auto cached = m_panelGlyphBounds.constFind(path);
+    if (cached != m_panelGlyphBounds.constEnd()) return cached.value();
+    const QFileInfo file(path);
+    if (!file.isFile() || file.size() > 2 * 1024 * 1024) return full;
+    QImageReader reader(path);
+    const QSize intrinsic = reader.size();
+    if (!intrinsic.isValid()) return full;
+    reader.setScaledSize(intrinsic.scaled(128, 128, Qt::KeepAspectRatio));
+    const QRectF bounds = WindowsTray::panelGlyphBounds(reader.read());
+    // The set of tray roles is small. Bound the cache even for changing
+    // icon files; source changes recalculate, frames and DPI changes do not.
+    if (m_panelGlyphBounds.size() >= 128) m_panelGlyphBounds.clear();
+    m_panelGlyphBounds.insert(path, bounds);
+    return bounds;
 }
 
 void SystemTray::setNotificationPopupSlide(QQuickItem *content)
