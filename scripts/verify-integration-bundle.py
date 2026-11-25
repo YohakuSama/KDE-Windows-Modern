@@ -27,6 +27,9 @@ def verify(revision, filename):
         if len(roots) != 1:
             raise ValueError("Archive must contain a single top-level directory")
         prefix = next(iter(roots)) + "/"
+        excluded = ("docs/PROGRESS.md", "docs/icon-pack/00-inventory.md")
+        if any(prefix + name in members for name in excluded):
+            raise ValueError("Historical development files leaked into installable archive")
         required = (
             "INTEGRATION-BUILD", "install.sh", "install-nixos.sh",
             "config/kxmlgui5/dolphin/dolphinui.rc",

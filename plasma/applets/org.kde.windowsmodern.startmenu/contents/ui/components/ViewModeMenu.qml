@@ -19,8 +19,8 @@ QQC2.Popup {
     dim: false
     focus: true
     padding: 4
-    width: Math.min(parent ? parent.width - 16 : 160, 160)
-    height: Math.min(parent ? parent.height - 16 : 120, modes.length * 36 + 8)
+    width: Math.max(1, Math.min(parent ? parent.width - 16 : 160, 160))
+    height: Math.max(1, Math.min(parent ? parent.height - 16 : 120, modes.length * 36 + 8))
     closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
 
     function openAt(button) {
@@ -56,6 +56,11 @@ QQC2.Popup {
         if (mode >= 0) modeChosen(mode);
     }
     onCurrentModeChanged: if (opened && pendingMode < 0) close()
+    onAnchorItemChanged: if (!anchorItem && visible) close()
+    Connections {
+        target: menu.anchorItem
+        function onVisibleChanged() { if (!menu.anchorItem?.visible) menu.close(); }
+    }
 
     background: Rectangle {
         radius: 8

@@ -269,6 +269,7 @@ Item {
                 anchors.topMargin: 16
 
                 onSearchTextChanged: {
+                    sharedContextMenu?.close();
                     // Explicitly push the query to Milou ResultsView.
                     searchPage.resultsView.queryString = startSearch.searchText;
                     // Reset scroll to top on new query — only when
@@ -286,7 +287,9 @@ Item {
                     rootItem.activateCurrentItem();
                 }
                 onSearchEscapePressed: {
-                    if (powerMenu.opened) {
+                    if (sharedContextMenu.opened) {
+                        sharedContextMenu.close();
+                    } else if (powerMenu.opened) {
                         powerMenu.close();
                     } else if (startSearch.searchText !== "") {
                         root.reset();
@@ -623,6 +626,16 @@ Item {
                 }
             }
 
+            // A menu must never execute an outdated row index.
+            Connections {
+                target: sortedAppsModel
+                function onModelReset() { sharedContextMenu.close(); }
+                function onRowsInserted() { sharedContextMenu.close(); }
+                function onRowsRemoved() { sharedContextMenu.close(); }
+                function onRowsMoved() { sharedContextMenu.close(); }
+                function onLayoutChanged() { sharedContextMenu.close(); }
+            }
+
             function handleContextAction(actionId, argument, context) {
                 // Milou runner actions: invoke the named action on the
                 // current match via ResultsView.runAction().
@@ -709,6 +722,11 @@ Item {
             // Navigation keys (Tab, arrows, Enter) are left for children to
             // handle, and only reach here if no child consumed them.
             Keys.onPressed: event => {
+                if (sharedContextMenu.opened) {
+                    event.accepted = true;
+                    if (event.key === Qt.Key_Escape) sharedContextMenu.close();
+                    return;
+                }
                 if (powerMenu.opened) {
                     // The footer popup owns input until dismissed.
                     event.accepted = true;
