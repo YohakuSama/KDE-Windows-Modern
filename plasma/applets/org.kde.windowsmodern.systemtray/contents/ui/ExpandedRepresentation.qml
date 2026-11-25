@@ -36,7 +36,7 @@ Item {
         ? Math.max(1, Math.floor(Math.min(screenRect.height * 0.92,
             screenRect.height - Math.min(96, root.vertical ? root.width : root.height) - 24))) : 720
     readonly property int popupWidth: Math.min(availableWidth,
-        Math.round((overflowHome ? 216 : 360) * uiScale))
+        Math.round((overflowHome ? 216 : 384) * uiScale))
     readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
         * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
         + Math.round(16 * uiScale)

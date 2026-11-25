@@ -65,7 +65,7 @@ ColumnLayout {
     readonly property color accent: Kirigami.Theme.highlightColor
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
-    spacing: 4
+    spacing: 6
     Layout.fillWidth: true
     // Width is supplied by the explicitly sized three-column viewport.
     // A zero preferred-width hint is not a valid tile size.

@@ -14,7 +14,9 @@ Lib.Slider {
     sliderAccessibleName: i18n("Volume")
     iconSource: Funcs.volIconName(sinkAvailable ? sink.volume : 0, sinkAvailable ? sink.muted : true)
     showArrow: true
-    detailsIconSource: "multimedia-volume-control"
+    // Microsoft Segoe Fluent Icons MixVolumes (F4C3), imported locally.
+    detailsIconSource: "wm-sound-output-symbolic"
+    detailsFallbackIconSource: "view-media-equalizer"
     detailsAccessibleName: i18n("Sound output")
     iconClickable: sinkAvailable
 

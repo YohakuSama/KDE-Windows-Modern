@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Layouts
+import QtCore
 import org.kde.kirigami as Kirigami
 
 Item {
@@ -17,6 +17,7 @@ Item {
     property bool pressed: false
     property bool showArrow: false
     property string detailsIconSource: ""
+    property string detailsFallbackIconSource: ""
     property string detailsAccessibleName: ""
     property string sliderAccessibleName: ""
     property bool iconClickable: false
@@ -29,6 +30,18 @@ Item {
     signal middleClicked
 
     implicitHeight: 36
+    implicitWidth: 180
+    LayoutMirroring.childrenInherit: true
+    readonly property bool mirroredRow: LayoutMirroring.enabled
+    readonly property int leadingGap: 8
+    readonly property int trailingGap: 2
+    readonly property int detailsWidth: 36
+    readonly property int leadingWidth: iconSize + leadingGap
+    readonly property int trailingWidth: showArrow ? detailsWidth + trailingGap : 0
+    readonly property url detailsAsset: detailsIconSource.length > 0
+        ? StandardPaths.locate(StandardPaths.GenericDataLocation,
+            "icons/windows-modern/actions/" + detailsIconSource + ".svg", StandardPaths.LocateFile)
+        : ""
 
     MouseArea {
         anchors.fill: parent
@@ -42,111 +55,106 @@ Item {
         }
     }
 
-    GridLayout {
-        anchors.fill: parent
-        columns: 3
-        columnSpacing: 12
+    Kirigami.Icon {
+        objectName: "wmSliderLeadingIcon"
+        x: root.mirroredRow ? root.width - width : 0
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.iconSize
+        height: width
+        source: root.iconSource
+        roundToIconSize: false
+        isMask: true
+        color: Kirigami.Theme.textColor
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: root.iconClickable
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: root.iconClicked()
+        }
+    }
+
+    FluentSlider {
+        id: slider
+        objectName: "wmQuickSettingSlider"
+        x: root.mirroredRow ? root.trailingWidth : root.leadingWidth
+        width: Math.max(0, root.width - root.leadingWidth - root.trailingWidth)
+        height: root.height
+        anchors.verticalCenter: parent.verticalCenter
+        from: root.from
+        to: root.to
+        value: root.value
+        stepSize: root.stepSize
+        Accessible.name: root.sliderAccessibleName
+        // Keep a single wheel path; mouse, touch and keyboard are native.
+        wheelEnabled: false
+        onMoved: root.moved(Math.round(value))
+        onPressedChanged: {
+            if (!slider.pressed)
+                root.released();
+        }
+        Binding {
+            root.pressed: slider.pressed
+        }
+    }
+
+    Item {
+        id: detailsButton
+        objectName: "wmSliderDetails"
+        visible: root.showArrow
+        x: root.mirroredRow ? 0 : root.width - width
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.detailsWidth
+        height: Math.min(root.height, 32)
+        activeFocusOnTab: visible
+        Accessible.role: Accessible.Button
+        Accessible.name: root.detailsAccessibleName || i18n("More")
+        Accessible.onPressAction: root.arrowClicked()
+        Keys.onReturnPressed: root.arrowClicked()
+        Keys.onEnterPressed: root.arrowClicked()
+        Keys.onSpacePressed: root.arrowClicked()
+
+        Rectangle {
+            anchors.fill: parent
+            radius: fluent.controlRadius
+            color: detailsMouse.containsPress ? fluent.controlPressed
+                : detailsMouse.containsMouse || detailsButton.activeFocus ? fluent.controlHover : "transparent"
+            border.width: detailsButton.activeFocus ? 1 : 0
+            border.color: fluent.accent
+        }
 
         Kirigami.Icon {
-            Layout.preferredWidth: root.iconSize
-            Layout.preferredHeight: root.iconSize
-            Layout.alignment: Qt.AlignVCenter
-            source: root.iconSource
+            objectName: "wmSliderDetailsGlyph"
+            visible: root.detailsIconSource.length > 0
+            x: root.mirroredRow ? 14 : 0
+            anchors.verticalCenter: parent.verticalCenter
+            width: 20
+            height: width
+            source: String(root.detailsAsset).length > 0 ? root.detailsAsset
+                : root.detailsFallbackIconSource.length > 0 ? root.detailsFallbackIconSource : root.detailsIconSource
             roundToIconSize: false
             isMask: true
             color: Kirigami.Theme.textColor
-
-            MouseArea {
-                anchors.fill: parent
-                enabled: root.iconClickable
-                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                onClicked: root.iconClicked()
-            }
         }
 
-        FluentSlider {
-            id: slider
-            objectName: "wmQuickSettingSlider"
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.minimumHeight: 24
-            Layout.preferredHeight: implicitHeight
-            from: root.from
-            to: root.to
-            value: root.value
-            stepSize: root.stepSize
-            Accessible.name: root.sliderAccessibleName
-            // The row's wheel handler below is the only wheel path. Mouse,
-            // touch, keyboard and accessibility remain native Qt Slider.
-            wheelEnabled: false
-
-            onMoved: root.moved(Math.round(value))
-            onPressedChanged: {
-                if (!slider.pressed)
-                    root.released();
-            }
-
-            Binding {
-                root.pressed: slider.pressed
-            }
+        Kirigami.Icon {
+            objectName: "wmSliderDetailsChevron"
+            x: root.mirroredRow ? 2 : parent.width - width - 2
+            anchors.verticalCenter: parent.verticalCenter
+            width: 12
+            height: width
+            source: root.mirroredRow ? "go-previous-symbolic" : "go-next-symbolic"
+            roundToIconSize: false
+            isMask: true
+            color: Kirigami.Theme.textColor
         }
 
-        Item {
-            id: detailsButton
-            visible: root.showArrow
-            // Reserve the same trailing width on both rows so their
-            // tracks begin and end at identical horizontal positions.
-            Layout.preferredWidth: 36
-            Layout.preferredHeight: 32
-            Layout.alignment: Qt.AlignVCenter
-            activeFocusOnTab: visible
-            Accessible.role: Accessible.Button
-            Accessible.name: root.detailsAccessibleName || i18n("More")
-            Accessible.onPressAction: root.arrowClicked()
-            Keys.onReturnPressed: root.arrowClicked()
-            Keys.onEnterPressed: root.arrowClicked()
-            Keys.onSpacePressed: root.arrowClicked()
-
-            Rectangle {
-                anchors.fill: parent
-                radius: fluent.controlRadius
-                color: detailsMouse.containsPress ? fluent.controlPressed
-                    : detailsMouse.containsMouse || detailsButton.activeFocus ? fluent.controlHover : "transparent"
-                border.width: detailsButton.activeFocus ? 1 : 0
-                border.color: fluent.accent
-            }
-
-            Row {
-                anchors.right: parent.right
-                anchors.rightMargin: 4
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
-                Kirigami.Icon {
-                    visible: root.detailsIconSource.length > 0
-                    width: 18
-                    height: 18
-                    source: root.detailsIconSource
-                    roundToIconSize: false
-                    isMask: true
-                    color: Kirigami.Theme.textColor
-                }
-                Kirigami.Icon {
-                    width: 12
-                    height: 18
-                    source: "go-next"
-                    roundToIconSize: false
-                    isMask: true
-                    color: Kirigami.Theme.textColor
-                }
-            }
-
-            MouseArea {
-                id: detailsMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.arrowClicked()
-            }
+        MouseArea {
+            id: detailsMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.arrowClicked()
         }
     }
 

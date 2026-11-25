@@ -400,8 +400,7 @@ Win11 elevation penumbra.
 #### Slider (`widgets/slider.svg` + Kvantum)
 
 System-wide slider styling across Plasma applets and Kvantum (Qt apps).
-The system tray flyout uses the default `PlasmaComponents3.Slider`, which
-inherits the themed look.
+The system tray flyout uses the shared native Qt `FluentSlider` template with a nonzero pointer target and explicit equal track geometry. The Quick Settings home uses 384 logical-pixel content width, 52px tile buttons, 24px row and 14px column gaps, and a separate slider band. These candidate dimensions require live reference validation.
 
 | Element | Dark | Light |
 |---|---|---|

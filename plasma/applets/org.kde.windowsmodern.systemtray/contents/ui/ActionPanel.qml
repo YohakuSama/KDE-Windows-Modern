@@ -27,7 +27,7 @@ ColumnLayout {
     readonly property real scale: Plasmoid.configuration.scale / 100
 
     Layout.fillWidth: true
-    spacing: 16 * actionPanel.scale
+    spacing: 0
 
     // A pre-map size from the hardware/configuration and tile geometry,
     // not visible children. Qt Layout implicitHeight can be zero while
@@ -35,10 +35,17 @@ ColumnLayout {
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
     readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
+    readonly property bool mediaShown: mediaRow.player !== null && !!mediaRow.player?.identity
+    readonly property int sliderRowHeight: Math.max(24, Math.round(36 * scale))
+    readonly property int sliderRowGap: Math.round(12 * scale)
+    readonly property int sliderBandInset: Math.round(12 * scale)
+    readonly property int sliderSectionHeight: sliderRows > 0
+        ? sliderRows * sliderRowHeight + (sliderRows - 1) * sliderRowGap + 2 * sliderBandInset + 1 : 0
+    readonly property int mediaSectionHeight: mediaShown
+        ? Math.max(Math.round(44 * scale), mediaRow.implicitHeight + Math.round(16 * scale)) + 1 : 0
     readonly property int homeHeight: Math.ceil(Math.max(220 * scale,
-        12 * scale + Math.max(64 * scale, toggleViewport.viewportHeight)
-        + (sliderRows > 0 ? (sliderRows * 36 + (sliderRows - 1) * 12 + 14 + 32) * scale : 16 * scale)
-        + (mediaRow.visible ? mediaRow.implicitHeight : 0) + 48 * scale))
+        Math.round(16 * scale) + toggleViewport.viewportHeight + Math.round(20 * scale)
+        + sliderSectionHeight + mediaSectionHeight + Math.round(48 * scale)))
 
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
@@ -56,7 +63,8 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: Math.round(14 * actionPanel.scale)
         Layout.rightMargin: Math.round(14 * actionPanel.scale)
-        Layout.topMargin: Math.round(12 * actionPanel.scale)
+        Layout.topMargin: Math.round(16 * actionPanel.scale)
+        Layout.bottomMargin: Math.round(20 * actionPanel.scale)
         implicitHeight: toggleViewport.viewportHeight
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
@@ -84,14 +92,14 @@ ColumnLayout {
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
             readonly property bool hasMoreRows: rows > 2
-            readonly property real rowGap: Math.round(16 * actionPanel.scale)
-            readonly property real columnGap: Math.round(12 * actionPanel.scale)
+            readonly property real rowGap: Math.round(24 * actionPanel.scale)
+            readonly property real columnGap: Math.round(14 * actionPanel.scale)
             readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
             // Height follows the tallest caption (system font), not the
             // effective visibility or width of a GridLayout parent.
             readonly property real rowHeight: tiles.reduce((largest, tile) =>
                 tile.included ? Math.max(largest, tile.implicitHeight) : largest,
-                Math.round(48 * actionPanel.scale) + 4 + captionProbe.implicitHeight)
+                Math.round(52 * actionPanel.scale) + 6 + captionProbe.implicitHeight)
             readonly property real rowStride: rowHeight + rowGap
             readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
@@ -274,7 +282,7 @@ ColumnLayout {
                     id: networkTile
                     orderKey: "network"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: true
                     visible: included
                     onArrowClicked: actionPanel.requestPage("network")
@@ -283,7 +291,7 @@ ColumnLayout {
                     id: bluetoothTile
                     orderKey: "bluetooth"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: available
                     visible: included
                     onArrowClicked: actionPanel.requestPage("bluetooth")
@@ -292,7 +300,7 @@ ColumnLayout {
                     id: airplaneTile
                     orderKey: "airplane"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: Plasmoid.configuration.showAirplane && available
                     visible: included
                 }
@@ -300,7 +308,7 @@ ColumnLayout {
                     id: batterySaverTile
                     orderKey: "battery-saver"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: Plasmoid.configuration.showBatterySaver && available
                     visible: included
                     onArrowClicked: actionPanel.requestPage("battery")
@@ -309,7 +317,7 @@ ColumnLayout {
                     id: nightLightTile
                     orderKey: "night-light"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: Plasmoid.configuration.showNightLight && available
                     visible: included
                 }
@@ -317,7 +325,7 @@ ColumnLayout {
                     id: colorSchemeTile
                     orderKey: "color-scheme"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: Plasmoid.configuration.showColorScheme
                     visible: included
                 }
@@ -325,7 +333,7 @@ ColumnLayout {
                     id: dndTile
                     orderKey: "dnd"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: Plasmoid.configuration.showDnd
                     visible: included
                 }
@@ -333,7 +341,7 @@ ColumnLayout {
                     id: micTile
                     orderKey: "microphone"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: Plasmoid.configuration.showMicMute && available
                     visible: included
                 }
@@ -341,7 +349,7 @@ ColumnLayout {
                     id: castTile
                     orderKey: "cast"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: Plasmoid.castAvailable
                     checkable: false
                     label: i18n("Cast")
@@ -352,7 +360,7 @@ ColumnLayout {
                     id: accessibilityTile
                     orderKey: "accessibility"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     checkable: false
                     included: Plasmoid.accessibilityAvailable
                     label: i18n("Accessibility")
@@ -363,7 +371,7 @@ ColumnLayout {
                     id: hotspotTile
                     orderKey: "hotspot"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(52 * actionPanel.scale)
                     included: Plasmoid.configuration.showHotspot && (hotspotSupported || hotspotActive)
                     visible: included
                 }
@@ -449,74 +457,113 @@ ColumnLayout {
         }
     }
 
-    GridLayout {
-        visible: actionPanel.brightnessShown || actionPanel.volumeShown
+    // A dedicated control band with a subtle divider above it. Tile
+    // scrolling and media presence cannot change either track's width.
+    Item {
+        id: sliderSection
+        objectName: "wmQuickSettingsSliderSection"
+        visible: actionPanel.sliderRows > 0
         Layout.fillWidth: true
-        Layout.leftMargin: 14 * actionPanel.scale
-        Layout.rightMargin: 14 * actionPanel.scale
-        Layout.bottomMargin: 14 * actionPanel.scale
-        columns: 3
-        rowSpacing: 12 * actionPanel.scale
-        columnSpacing: 0
+        Layout.minimumHeight: actionPanel.sliderSectionHeight
+        Layout.preferredHeight: actionPanel.sliderSectionHeight
+        Layout.maximumHeight: actionPanel.sliderSectionHeight
 
-        Components.BrightnessSlider {
-            id: brightnessSlider
-            Layout.fillWidth: true
-            Layout.columnSpan: 3
-            Layout.preferredHeight: Math.round(36 * actionPanel.scale)
-            visible: Plasmoid.configuration.showBrightness && brightnessAvailable
-            showArrow: true
-            panelScreenGeometry: Plasmoid.screenGeometry
-            panelScreenIndex: Plasmoid.containment.screen
-            onArrowClicked: actionPanel.requestPage("brightness")
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                Kirigami.Theme.textColor.b, 0.07)
         }
-        Components.VolumeSlider {
-            id: volumeSlider
-            Layout.fillWidth: true
-            Layout.columnSpan: 3
-            Layout.preferredHeight: Math.round(36 * actionPanel.scale)
-            visible: Plasmoid.configuration.showVolume && sinkAvailable
-            onArrowClicked: actionPanel.requestPage("volume")
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.leftMargin: Math.round(14 * actionPanel.scale)
+            anchors.rightMargin: anchors.leftMargin
+            anchors.topMargin: actionPanel.sliderBandInset + 1
+            anchors.bottomMargin: actionPanel.sliderBandInset
+            spacing: actionPanel.sliderRowGap
+
+            Components.BrightnessSlider {
+                id: brightnessSlider
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.minimumHeight: actionPanel.sliderRowHeight
+                Layout.preferredHeight: actionPanel.sliderRowHeight
+                Layout.maximumHeight: actionPanel.sliderRowHeight
+                visible: actionPanel.brightnessShown
+                showArrow: true
+                panelScreenGeometry: Plasmoid.screenGeometry
+                panelScreenIndex: Plasmoid.containment.screen
+                onArrowClicked: actionPanel.requestPage("brightness")
+            }
+
+            Components.VolumeSlider {
+                id: volumeSlider
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.minimumHeight: actionPanel.sliderRowHeight
+                Layout.preferredHeight: actionPanel.sliderRowHeight
+                Layout.maximumHeight: actionPanel.sliderRowHeight
+                visible: actionPanel.volumeShown
+                onArrowClicked: actionPanel.requestPage("volume")
+            }
         }
     }
 
-    RowLayout {
-        id: mediaRow
-        readonly property var player: players.currentPlayer
-        readonly property bool playing: player?.playbackStatus === Mpris.PlaybackStatus.Playing
-        visible: player !== null && !!player?.identity
+    Item {
+        visible: actionPanel.mediaShown
         Layout.fillWidth: true
-        Layout.leftMargin: toggleRow.Layout.leftMargin
-        Layout.rightMargin: toggleRow.Layout.rightMargin
-        PlasmaComponents3.Label {
-            Layout.fillWidth: true
-            text: mediaRow.player?.track || mediaRow.player?.identity || ""
-            textFormat: Text.PlainText
-            elide: Text.ElideRight
+        Layout.minimumHeight: actionPanel.mediaSectionHeight
+        Layout.preferredHeight: actionPanel.mediaSectionHeight
+        Layout.maximumHeight: actionPanel.mediaSectionHeight
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                Kirigami.Theme.textColor.b, 0.07)
         }
-        Lib.FluentIconButton {
-            text: i18n("Previous track")
-            icon.name: "media-skip-backward"
-            enabled: !!mediaRow.player?.canGoPrevious
-            onClicked: mediaRow.player.Previous()
-        }
-        Lib.FluentIconButton {
-            text: mediaRow.playing ? i18n("Pause") : i18n("Play")
-            icon.name: mediaRow.playing ? "media-playback-pause" : "media-playback-start"
-            enabled: mediaRow.playing ? !!mediaRow.player?.canPause : !!mediaRow.player?.canPlay
-            onClicked: mediaRow.playing ? mediaRow.player.Pause() : mediaRow.player.Play()
-        }
-        Lib.FluentIconButton {
-            text: i18n("Next track")
-            icon.name: "media-skip-forward"
-            enabled: !!mediaRow.player?.canGoNext
-            onClicked: mediaRow.player.Next()
+        RowLayout {
+            id: mediaRow
+            readonly property var player: players.currentPlayer
+            readonly property bool playing: player?.playbackStatus === Mpris.PlaybackStatus.Playing
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: Math.round(14 * actionPanel.scale)
+            anchors.rightMargin: anchors.leftMargin
+            anchors.verticalCenter: parent.verticalCenter
+            PlasmaComponents3.Label {
+                Layout.fillWidth: true
+                text: mediaRow.player?.track || mediaRow.player?.identity || ""
+                textFormat: Text.PlainText
+                elide: Text.ElideRight
+            }
+            Lib.FluentIconButton {
+                text: i18n("Previous track")
+                icon.name: "media-skip-backward"
+                enabled: !!mediaRow.player?.canGoPrevious
+                onClicked: mediaRow.player.Previous()
+            }
+            Lib.FluentIconButton {
+                text: mediaRow.playing ? i18n("Pause") : i18n("Play")
+                icon.name: mediaRow.playing ? "media-playback-pause" : "media-playback-start"
+                enabled: mediaRow.playing ? !!mediaRow.player?.canPause : !!mediaRow.player?.canPlay
+                onClicked: mediaRow.playing ? mediaRow.player.Pause() : mediaRow.player.Play()
+            }
+            Lib.FluentIconButton {
+                text: i18n("Next track")
+                icon.name: "media-skip-forward"
+                enabled: !!mediaRow.player?.canGoNext
+                onClicked: mediaRow.player.Next()
+            }
         }
     }
 
     Components.Footer {
         Layout.fillWidth: true
-        Layout.topMargin: -6 * actionPanel.scale
+        Layout.topMargin: 0
         uiScale: actionPanel.scale
         showBattery: Plasmoid.configuration.showBattery
         onBatteryClicked: actionPanel.requestPage("battery")

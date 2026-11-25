@@ -5,7 +5,7 @@ import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib" a
 
 Item {
     id: host
-    width: 420
+    width: 500
     height: 220
     property int brightness: 35
     property int volume: 60
@@ -30,7 +30,8 @@ Item {
         iconSource: "audio-volume-high-symbolic"
         sliderAccessibleName: "Volume"
         detailsAccessibleName: "Sound output"
-        detailsIconSource: "multimedia-volume-control"
+        detailsIconSource: "wm-sound-output-symbolic"
+        detailsFallbackIconSource: "view-media-equalizer"
         showArrow: true
         value: host.volume
         onMoved: value => host.volume = value
@@ -55,6 +56,10 @@ Item {
             host.volume = 60;
             host.detailsCalls = 0;
             brightnessRow.enabled = true;
+            brightnessRow.width = 340;
+            brightnessRow.LayoutMirroring.enabled = false;
+            volumeRow.LayoutMirroring.enabled = false;
+            volumeRow.detailsIconSource = "wm-sound-output-symbolic";
             detail.value = 40;
             releaseSpy.clear();
         }
@@ -71,6 +76,37 @@ Item {
             mouseClick(b, b.width * 0.25, b.height / 2, Qt.LeftButton);
             tryVerify(() => host.volume >= 20 && host.volume <= 30);
             compare(host.detailsCalls, 0);
+        }
+        function test_actualTrackEndpoints_data() {
+            return [
+                {tag: "narrow", width: 280, mirrored: false},
+                {tag: "normal", width: 356, mirrored: false},
+                {tag: "wide", width: 460, mirrored: false},
+                {tag: "rtl", width: 356, mirrored: true}
+            ];
+        }
+        function test_actualTrackEndpoints(data) {
+            brightnessRow.width = data.width;
+            brightnessRow.LayoutMirroring.enabled = data.mirrored;
+            volumeRow.LayoutMirroring.enabled = data.mirrored;
+            const a = control(brightnessRow);
+            const b = control(volumeRow);
+            tryVerify(() => a.width === b.width && a.background.width === b.background.width);
+            compare(a.mirrored, data.mirrored);
+            compare(b.mirrored, data.mirrored);
+            const start = a.background.mapToItem(host, 0, 0).x;
+            const end = a.background.mapToItem(host, a.background.width, 0).x;
+            compare(b.background.mapToItem(host, 0, 0).x, start);
+            compare(b.background.mapToItem(host, b.background.width, 0).x, end);
+            const arrowA = findChild(brightnessRow, "wmSliderDetailsChevron");
+            const arrowB = findChild(volumeRow, "wmSliderDetailsChevron");
+            compare(arrowA.mapToItem(host, arrowA.width / 2, 0).x,
+                arrowB.mapToItem(host, arrowB.width / 2, 0).x);
+            const details = findChild(volumeRow, "wmSliderDetailsGlyph");
+            verify(details.visible);
+            volumeRow.detailsIconSource = "";
+            tryCompare(details, "visible", false);
+            compare(b.background.mapToItem(host, b.background.width, 0).x, end);
         }
         function test_dragUpdatesBeforeRelease() {
             const a = control(brightnessRow);

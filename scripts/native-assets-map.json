@@ -192,6 +192,7 @@
     "f2a5": "status/notification-active status/notification-active-symbolic",
     "f2a8": "actions/notifications-disabled actions/notifications-disabled-symbolic status/notifications-disabled status/notifications-disabled-symbolic status/notification-disabled status/notification-disabled-symbolic",
     "e88e": "status/device-notifier status/device-notifier-symbolic devices/drive-removable-media devices/drive-removable-media-symbolic devices/device-notifier status/drive-removable-media-symbolic",
+    "f4c3": "actions/wm-sound-output-symbolic",
     "f432": "status/battery-profile-powersave status/battery-profile-powersave-symbolic actions/battery-profile-powersave-symbolic actions/power-saver actions/power-saver-symbolic",
     "e871": "status/network-mobile-0 status/network-mobile-0-symbolic status/network-mobile-0-gprs status/network-mobile-0-gprs-symbolic status/network-mobile-0-edge status/network-mobile-0-edge-symbolic status/network-mobile-0-umts status/network-mobile-0-umts-symbolic status/network-mobile-0-hsdpa status/network-mobile-0-hsdpa-symbolic status/network-mobile-0-hsupa status/network-mobile-0-hsupa-symbolic status/network-mobile-0-hspa status/network-mobile-0-hspa-symbolic status/network-mobile-0-lte status/network-mobile-0-lte-symbolic status/network-mobile-0-5g status/network-mobile-0-5g-symbolic",
     "e86c": "status/network-mobile-20 status/network-mobile-20-symbolic status/network-mobile-20-gprs status/network-mobile-20-gprs-symbolic status/network-mobile-20-edge status/network-mobile-20-edge-symbolic status/network-mobile-20-umts status/network-mobile-20-umts-symbolic status/network-mobile-20-hsdpa status/network-mobile-20-hsdpa-symbolic status/network-mobile-20-hsupa status/network-mobile-20-hsupa-symbolic status/network-mobile-20-hspa status/network-mobile-20-hspa-symbolic status/network-mobile-20-lte status/network-mobile-20-lte-symbolic status/network-mobile-20-5g status/network-mobile-20-5g-symbolic",
@@ -438,7 +439,8 @@
     "e92f",
     "ec49",
     "ec4a",
-    "f0e2"
+    "f0e2",
+    "f4c3"
   ],
   "panel_glyph_groups": {
     "wifi": [

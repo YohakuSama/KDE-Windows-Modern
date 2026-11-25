@@ -6,6 +6,13 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Quick Settings reference spacing and sound output glyph
+
+- Use explicit, equal leading/trailing slider slots and shared track geometry rather than per-row GridLayout width negotiation. Verify the actual painted track endpoints and chevron positions at different widths and RTL, including when the extra sound-output icon is absent.
+- Import Microsoft's MixVolumes (F4C3) glyph from the local Segoe Fluent Icons font; use a distinct equalizer fallback if that optional native glyph is absent, not a second volume speaker icon.
+- Adjust the Quick Settings width and tile gaps against the owner reference; add a separate slider band with subtle separators and calculate section heights before the popup is mapped.
+- Keep the verified legacy battery glyphs until the newer SysBatt resource and state mapping have been identified.
+
 ### Centered sign-in and progressive welcome ring
 
 - Replace default sign-in avatar presentation with a shared translucent circular surface and Microsoft's MIT-licensed Fluent System Icons Person glyph (a compatibility asset, not an extracted LogonUI resource); retain custom account images.
