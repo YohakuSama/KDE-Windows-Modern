@@ -33,7 +33,7 @@ ColumnLayout {
     // user's manual setting, like the existing Quick Settings toggle.
     readonly property bool manualDnd: {
         const until = settings.notificationsInhibitedUntil;
-        return until && !isNaN(until.getTime()) && until.getTime() > history.currentTime.getTime();
+        return !!until && !isNaN(until.getTime()) && until.getTime() > history.currentTime.getTime();
     }
     function toggleDnd() {
         if (manualDnd) {
