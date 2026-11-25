@@ -46,7 +46,7 @@ RowLayout {
         Accessible.name: placeholderText
         Layout.fillWidth: true
         focus: true
-        placeholderText: i18n("Search for apps, settings, and files")
+        placeholderText: searchBox.searchMode ? i18n("Type here to search") : i18n("Search for apps, settings, and files")
         hoverEnabled: true
         TapHandler {
             gesturePolicy: TapHandler.DragThreshold
@@ -115,7 +115,7 @@ RowLayout {
             anchors.leftMargin: 12
             height: 18
             width: height
-            accented: true
+            accented: false
         }
     }
 

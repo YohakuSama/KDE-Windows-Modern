@@ -91,7 +91,7 @@ TestCase {
         const formats = DateFormat.clockFormats(3, pattern);
         const sample = new Date(2026, 10, 25, 19, 17, 9);
         compare(formats.time, pattern);
-        compare(loc.toString(sample, formats.time), loc.toString(sample, Locale.ShortFormat));
+        compare(loc.toString(sample, formats.time), Qt.formatTime(sample, loc, Locale.ShortFormat));
         verify(loc.toString(sample, formats.seconds).length >= loc.toString(sample, formats.time).length);
         compare(DateFormat.clockLocaleName(3, data.locale), data.locale);
     }

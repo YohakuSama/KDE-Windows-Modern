@@ -150,9 +150,15 @@ Item {
         onTriggered: if (root.dashWindow) root.dashWindow.openSearch()
     }
 
+    PlasmaCore.Action {
+        id: searchStateAction
+        enabled: root.dashWindow?.searchShown ?? false
+    }
+
     Component.onCompleted: {
         dashWindow = menuRepComponent.createObject(root);
         Plasmoid.setInternalAction("windowsModernSearch", openSearchAction);
+        Plasmoid.setInternalAction("windowsModernSearchSelected", searchStateAction);
         Plasmoid.activated.connect(function() {
             root.activateStart();
         });

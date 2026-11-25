@@ -32,12 +32,17 @@ PlasmoidItem {
     readonly property int searchMode: Math.max(0, Math.min(2,
         Number(Plasmoid.configuration.searchMode) || 0))
 
+    // A local action communicates popup state without polling or guessing from hover.
+    property var searchStateAction: null
+    readonly property bool searchSelected: searchStateAction ? searchStateAction.enabled : false
+
     function openSearch(): void {
         const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
         for (const applet of applets) {
             if (!applet || applet.pluginName !== "org.kde.windowsmodern.startmenu") continue;
             const action = applet.internalAction("windowsModernSearch");
             if (action && action.enabled) {
+                root.searchStateAction = applet.internalAction("windowsModernSearchSelected");
                 action.trigger();
                 return;
             }
@@ -52,7 +57,7 @@ PlasmoidItem {
     }
 
     // searchMode (contents/config/main.xml), as Windows' Settings >
-    // Taskbar > Search names them: 0 "Search box", 1 "Search icon only".
+    // Taskbar > Search names them: 0 box, 1 icon and label, 2 icon only.
     readonly property bool showBox: searchMode !== 2 && !vertical
 
     preferredRepresentation: fullRepresentation
@@ -82,6 +87,7 @@ PlasmoidItem {
         anchors.fill: parent
         visible: root.showBox
         styleMode: root.searchMode === 1 ? 1 : 0
+        selected: root.searchSelected
         iconName: "search"
         text: i18nc("@action:button taskbar search box", "Search")
         placeholder: i18nc("@info:placeholder taskbar search box", "Search")
@@ -95,6 +101,7 @@ PlasmoidItem {
         iconName: searchBox.iconSource
         hoverIconName: searchBox.hoverIconSource
         iconIsMask: false
+        selected: root.searchSelected
         text: i18nc("@action:button taskbar button", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")
         onTriggered: root.openSearch()

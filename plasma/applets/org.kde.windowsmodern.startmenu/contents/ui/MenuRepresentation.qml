@@ -40,6 +40,7 @@ Item {
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
     readonly property bool menuShown: root.visible
+    readonly property bool searchShown: root.visible && root.searching
     readonly property var panelWindow: startButton ? startButton.Window.window : null
     readonly property rect panelGeometry: panelWindow
         ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)

@@ -18,6 +18,7 @@ MouseArea {
     property string placeholder
     readonly property alias iconSource: magnifier.colorSource
     readonly property alias hoverIconSource: magnifier.accentSource
+    property bool selected: false
     property bool forceHovered: false
     property bool forcePressed: false
     signal triggered()
@@ -29,7 +30,7 @@ MouseArea {
     readonly property real thickness: height
     readonly property int boxHeight: Math.max(0, Math.min(Math.floor(thickness),
         Math.max(16, Math.round(thickness * 32 / 48))))
-    readonly property int boxWidth: Math.round(boxHeight * (styleMode === 1 ? 168 : 220) / 32)
+    readonly property int boxWidth: Math.round(boxHeight * (styleMode === 1 ? 112 : 220) / 32)
     readonly property int sideMargin: Math.max(0, Math.round((thickness - boxHeight) / 4))
     readonly property int preferredWidth: boxWidth + 2 * sideMargin
 
@@ -57,24 +58,27 @@ MouseArea {
     Rectangle {
         id: pill
         objectName: "wmSearchPill"
-        readonly property color restFill: box.darkTheme ? "#303030" : "#F3F3F3"
-        readonly property color hoverFill: Kirigami.Theme.highlightColor
-        readonly property color pressedFill: Qt.darker(Kirigami.Theme.highlightColor, 1.12)
+        readonly property color restFill: box.darkTheme ? (box.styleMode === 1 ? "#292929" : "#202020") : "#F3F3F3"
+        readonly property color hoverFill: box.darkTheme ? "#3B3B3B" : "#E5E5E5"
+        readonly property color pressedFill: box.darkTheme ? "#303030" : "#E0E0E0"
+        readonly property color selectedFill: box.styleMode === 1 ? "#0078D4" : restFill
         readonly property int inset: Math.round(height * 12 / 32)
         readonly property int iconGap: Math.round(height / 4)
         readonly property bool mirrored: box.LayoutMirroring.enabled
-        readonly property bool showPlaceholder: (box.styleMode === 1
-            || width >= 2 * inset + magnifier.width + iconGap + 12)
+        readonly property bool showPlaceholder: width >= 2 * inset + magnifier.width + iconGap + 12
             && placeholderLabel.implicitHeight <= height
+        readonly property real labelWidth: Math.max(0, Math.min(placeholderLabel.implicitWidth,
+            width - 2 * inset - magnifier.width - iconGap))
+        readonly property real groupLeft: box.styleMode === 1 ? Math.round((width - magnifier.width - iconGap - labelWidth) / 2) : inset
 
         anchors.centerIn: parent
         width: Math.max(0, Math.min(box.boxWidth, box.width - 2 * box.sideMargin))
         height: Math.min(box.boxHeight, width)
         radius: height / 2
-        color: box.showPressed ? pressedFill : (box.showHovered ? hoverFill : restFill)
+        color: box.selected ? selectedFill : (box.showPressed ? pressedFill : (box.showHovered ? hoverFill : restFill))
         border.width: 1
-        border.color: box.showHovered || box.showPressed ? Kirigami.Theme.highlightColor
-            : box.darkTheme ? "#484848" : "#D5D5D5"
+        border.color: box.selected && box.styleMode === 1 ? selectedFill
+            : box.darkTheme ? "#454545" : "#D5D5D5"
         Behavior on color {
             ColorAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
         }
@@ -86,12 +90,13 @@ MouseArea {
             id: magnifier
             objectName: "searchBoxIcon"
             anchors.verticalCenter: parent.verticalCenter
-            x: pill.showPlaceholder ? (pill.mirrored ? pill.width - pill.inset - width : pill.inset)
+            x: pill.showPlaceholder ? (pill.mirrored ? pill.width - pill.groupLeft - width : pill.groupLeft)
                                     : Math.round((pill.width - width) / 2)
             width: Math.round(pill.height / 2)
             height: width
             iconName: box.iconName
-            accented: box.showHovered || box.showPressed
+            accented: box.styleMode === 1 || !box.selected
+            foreground: box.selected && box.styleMode === 1 ? "#FFFFFF" : Kirigami.Theme.textColor
         }
 
         Text {
@@ -99,14 +104,14 @@ MouseArea {
             objectName: "wmSearchPlaceholder"
             visible: pill.showPlaceholder
             anchors.verticalCenter: parent.verticalCenter
-            x: pill.mirrored ? pill.inset : magnifier.x + magnifier.width + pill.iconGap
-            width: Math.max(0, pill.width - 2 * pill.inset - magnifier.width - pill.iconGap)
+            x: pill.mirrored ? (box.styleMode === 1 ? pill.groupLeft : pill.inset) : magnifier.x + magnifier.width + pill.iconGap
+            width: box.styleMode === 1 ? pill.labelWidth : Math.max(0, pill.width - 2 * pill.inset - magnifier.width - pill.iconGap)
             horizontalAlignment: Text.AlignLeft
             text: box.styleMode === 1 ? box.text : box.placeholder
             textFormat: Text.PlainText
             elide: Text.ElideRight
             font: Kirigami.Theme.defaultFont
-            color: box.showHovered || box.showPressed ? Kirigami.Theme.highlightedTextColor
+            color: box.selected && box.styleMode === 1 ? "#FFFFFF"
                 : box.darkTheme ? "#C5FFFFFF" : "#9E000000"
             Accessible.ignored: true
         }

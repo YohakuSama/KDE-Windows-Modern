@@ -29,14 +29,15 @@ MouseArea {
     property string iconName
     property string hoverIconName: ""
     property bool iconIsMask: true
+    property bool selected: false
     property string fallbackIconName: "unknown"
     // Accessible name ("Search"); also what screen readers announce.
     property string text
     property string description
 
-    readonly property string effectiveIconName: showHovered && hoverIconName.length > 0
+    readonly property string effectiveIconName: !selected && showHovered && hoverIconName.length > 0
         ? hoverIconName : iconName
-    readonly property bool effectiveIconIsMask: showHovered && hoverIconName.length > 0
+    readonly property bool effectiveIconIsMask: !selected && showHovered && hoverIconName.length > 0
         ? true : iconIsMask
 
     // Preview/test hooks: draw a state without a pointer.
@@ -104,7 +105,7 @@ MouseArea {
         height: button.tileSize
         // Rasterise at device pixels, as KSvg does, not scaled up.
         sourceSize: Qt.size(Math.ceil(width * Screen.devicePixelRatio), Math.ceil(height * Screen.devicePixelRatio))
-        opacity: button.showHovered || button.showPressed ? 1 : 0
+        opacity: button.selected || button.showHovered || button.showPressed ? 1 : 0
         source: "data:image/svg+xml," + encodeURIComponent(
             "<svg xmlns='http://www.w3.org/2000/svg' viewBox='-0.5 -0.5 27 27' preserveAspectRatio='none'>"
             + "<rect width='26' height='26' rx='4' ry='4' fill='" + ink + "' fill-opacity='" + fillOpacity
@@ -124,8 +125,7 @@ MouseArea {
         source: button.effectiveIconName
         fallback: button.fallbackIconName
         isMask: button.effectiveIconIsMask
-        color: button.showHovered && button.hoverIconName.length > 0
-            ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
+        color: Kirigami.Theme.textColor
         scale: button.showPressed ? 0.9 : 1
 
         Behavior on scale {
