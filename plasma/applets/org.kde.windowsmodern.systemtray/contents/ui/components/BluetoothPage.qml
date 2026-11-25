@@ -2,39 +2,30 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.bluezqt as BluezQt
+import org.kde.plasma.private.bluetooth as PlasmaBt
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
+import "../js/colorType.js" as ColorType
 
 Lib.DetailPage {
     id: page
-    property var nativeApplet: null
-    readonly property var manager: BluezQt.Manager
-    readonly property bool operational: manager.bluetoothOperational
-    readonly property bool available: manager.bluetoothBlocked || manager.adapters.length > 0
-    readonly property var addAction: nativeApplet ? nativeApplet.addDeviceAction : null
-    readonly property var pairedDevices: {
-        const result = [];
-        if (operational) {
-            for (const device of manager.devices)
-                if (device && !device.blocked && device.paired) result.push(device);
-        }
-        return result;
-    }
-
     title: i18n("Bluetooth")
-    showSwitch: true
-    switchEnabled: available
-    switchChecked: operational
-    emptyText: !available ? i18n("No Bluetooth adapters available")
-        : !operational ? i18n("Bluetooth is off") : i18n("No devices paired")
+    readonly property bool radioAvailable: BluezQt.Manager.bluetoothBlocked || BluezQt.Manager.adapters.length > 0
+    readonly property bool radioOn: BluezQt.Manager.bluetoothOperational
+    showSwitch: radioAvailable
+    switchEnabled: radioAvailable
+    switchChecked: radioOn
+    emptyText: !radioAvailable ? i18n("No Bluetooth adapters available")
+        : radioOn ? i18n("No devices paired") : i18n("Bluetooth is off")
 
     onSwitchToggled: {
-        if (!available) return;
-        const enable = !operational;
-        manager.bluetoothBlocked = !enable;
-        for (const adapter of manager.adapters) adapter.powered = enable;
+        if (!radioAvailable) return;
+        const enable = !radioOn;
+        BluezQt.Manager.bluetoothBlocked = !enable;
+        for (const adapter of BluezQt.Manager.adapters)
+            adapter.powered = enable;
     }
 
     footer: Lib.MoreSettingsLink {
@@ -42,73 +33,70 @@ Lib.DetailPage {
         onClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
     }
 
-    listView.model: pairedDevices
+    PlasmaBt.DevicesProxyModel {
+        id: devices
+        hideBlockedDevices: true
+        sourceModel: PlasmaBt.SharedDevicesStateProxyModel
+    }
+
+    listView.model: radioOn ? devices : null
     listView.spacing: 2
     listView.header: Item {
         width: page.listView.width
-        height: visible ? 44 : 0
-        visible: page.operational && page.addAction && page.addAction.visible && page.addAction.enabled
+        height: page.radioOn ? 44 : 0
+        visible: page.radioOn
         PlasmaComponents3.Button {
             anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
             anchors.leftMargin: 12
-            anchors.rightMargin: 20
-            height: 32
-            icon.name: "list-add-symbolic"
-            icon.width: 16
-            icon.height: 16
+            anchors.verticalCenter: parent.verticalCenter
             text: i18n("Add device")
-            onClicked: page.addAction.trigger()
+            icon.name: "list-add-symbolic"
+            onClicked: PlasmaBt.LaunchApp.launchWizard()
         }
     }
 
-    listView.delegate: Item {
-        id: row
-        required property var modelData
-        readonly property var device: modelData
-        property var pendingCall: null
-        property string lastError: ""
-        width: Math.max(1, page.listView.width - 16)
-        height: lastError.length > 0 ? 78 : 56
-        function complete(call) {
-            if (call && call.error) lastError = call.errorText || i18n("Connection failed");
-            pendingCall = null;
+    listView.section.property: "Section"
+    listView.section.delegate: Item {
+        required property string section
+        width: page.listView.width
+        height: 30
+        PlasmaComponents3.Label {
+            anchors.left: parent.left
+            anchors.leftMargin: 20
+            anchors.verticalCenter: parent.verticalCenter
+            text: parent.section
+            font.weight: Font.DemiBold
+            opacity: 0.8
         }
-        function toggleDevice() {
-            if (!device || pendingCall || !page.operational) return;
-            lastError = "";
-            pendingCall = device.connected ? device.disconnectFromDevice() : device.connectToDevice();
-            if (pendingCall && pendingCall.isFinished) complete(pendingCall);
-        }
-        Connections {
-            target: row.pendingCall
-            function onFinished(call) { row.complete(call); }
-        }
+    }
 
-        Rectangle {
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            radius: 5
-            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                Kirigami.Theme.textColor.b, rowHover.hovered ? 0.07 : row.device.connected ? 0.045 : 0)
-        }
-        HoverHandler { id: rowHover }
+    listView.delegate: Rectangle {
+        id: deviceRow
+        required property var model
+        readonly property bool busy: model.Connecting || model.Disconnecting
+        readonly property color fg: Kirigami.Theme.textColor
+        x: 8
+        width: Math.max(1, page.listView.width - 16)
+        height: 52
+        radius: 4
+        color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
+            model.Connected, deviceHover.hovered, false)
+
+        HoverHandler { id: deviceHover }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 20
-            anchors.rightMargin: 10
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
             spacing: 12
 
             Kirigami.Icon {
-                Layout.preferredWidth: 20
-                Layout.preferredHeight: 20
+                Layout.preferredWidth: 24
+                Layout.preferredHeight: 24
                 Layout.alignment: Qt.AlignVCenter
-                source: row.device.icon || "network-bluetooth-symbolic"
                 roundToIconSize: false
-                isMask: true
-                color: Kirigami.Theme.textColor
+                source: deviceRow.model.Icon || "network-bluetooth-symbolic"
+                color: deviceRow.fg
             }
 
             ColumnLayout {
@@ -117,31 +105,39 @@ Lib.DetailPage {
                 spacing: 2
                 PlasmaComponents3.Label {
                     Layout.fillWidth: true
-                    text: row.device.name
+                    text: deviceRow.model.DeviceFullName
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
-                    font.pixelSize: 13
                 }
                 PlasmaComponents3.Label {
                     Layout.fillWidth: true
-                    text: row.lastError.length ? row.lastError
-                        : row.pendingCall ? (row.device.connected ? i18n("Disconnecting") : i18n("Connecting"))
-                        : row.device.connected ? i18n("Connected") : i18n("Paired")
-                    textFormat: Text.PlainText
-                    wrapMode: Text.WordWrap
-                    maximumLineCount: 2
+                    text: deviceRow.model.Connecting ? i18n("Connecting")
+                        : deviceRow.model.Disconnecting ? i18n("Disconnecting")
+                        : deviceRow.model.ConnectionFailed ? i18n("Connection failed")
+                        : deviceRow.model.Connected ? i18n("Connected")
+                        : i18n("Not connected")
+                    font: Kirigami.Theme.smallFont
+                    opacity: 0.75
                     elide: Text.ElideRight
-                    font.pixelSize: 11
-                    color: Kirigami.Theme.disabledTextColor
                 }
             }
 
             PlasmaComponents3.Button {
                 Layout.alignment: Qt.AlignVCenter
                 Layout.preferredHeight: 30
-                text: row.device.connected ? i18n("Disconnect") : i18n("Connect")
-                enabled: page.operational && !row.pendingCall
-                onClicked: row.toggleDevice()
+                visible: !!deviceRow.model.Device
+                enabled: !deviceRow.busy
+                text: deviceRow.model.Connected ? i18n("Disconnect") : i18n("Connect")
+                onClicked: {
+                    if (deviceRow.busy || !deviceRow.model.Device) return;
+                    if (deviceRow.model.Connected) {
+                        const call = deviceRow.model.Device.disconnectFromDevice();
+                        PlasmaBt.SharedDevicesStateProxyModel.registerDisconnectingCallForDeviceUbi(call, deviceRow.model.Ubi);
+                    } else {
+                        const call = deviceRow.model.Device.connectToDevice();
+                        PlasmaBt.SharedDevicesStateProxyModel.registerConnectingCallForDeviceUbi(call, deviceRow.model.Ubi);
+                    }
+                }
             }
         }
     }

@@ -19,7 +19,8 @@ ColumnLayout {
     property real buttonHeight: -1
     readonly property real uiScale: buttonHeight > 0 ? buttonHeight / 48 : 1
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    readonly property int captionHeight: Math.round(30 * uiScale)
+    readonly property int captionHeight: Math.max(Math.round(30 * uiScale), Math.ceil(2 * captionMetrics.lineSpacing))
+    FontMetrics { id: captionMetrics; font: caption.font }
     readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
     readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
 
@@ -63,7 +64,7 @@ ColumnLayout {
     Keys.onEnterPressed: tile.clicked()
     Keys.onSpacePressed: tile.clicked()
 
-    readonly property color accent: Kirigami.Theme.highlightColor
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
     spacing: Math.round(8 * uiScale)
@@ -134,6 +135,7 @@ ColumnLayout {
     }
 
     PlasmaComponents3.Label {
+        id: caption
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignHCenter
         text: tile.label

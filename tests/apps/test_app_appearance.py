@@ -16,6 +16,7 @@ class AppAppearanceTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         app.DATA = Path(self.temp.name) / "share"
         app.CONFIG = Path(self.temp.name) / "config"
+        app.STATE = Path(self.temp.name) / "state"
         app.BACKUP = app.DATA / "windows-modern/backup/app-appearance.json"
         self.values = {("konsolerc", "Desktop Entry", "DefaultProfile"): "My.profile"}
         app.read = lambda *args: self.values.get(args, app.MISSING)
@@ -57,6 +58,71 @@ class AppAppearanceTest(unittest.TestCase):
         app.apply()
         app.restore()
         self.assertEqual(path.read_text(), "<gui name='custom'/>")
+
+    def test_terminal_both_toolbars_are_hidden_and_commands_remain(self):
+        main = ET.parse(ROOT / app.FILES["kxmlgui5/konsole/konsoleui.rc"]).getroot()
+        session = ET.parse(ROOT / app.FILES["kxmlgui5/konsole/sessionui.rc"]).getroot()
+        for tree, name in ((main, "mainToolBar"), (session, "sessionToolbar")):
+            bar = tree.find(f"ToolBar[@name='{name}']")
+            self.assertIsNotNone(bar)
+            self.assertEqual(bar.get("hidden"), "true")
+            self.assertEqual(bar.findall("Action"), [])
+        names = {a.get("name") for a in session.findall(".//MenuBar//Action")}
+        self.assertTrue({"edit_copy", "edit_paste", "edit_find", "edit-current-profile"} <= names)
+        self.assertIsNotNone(session.find(".//Menu[@name='session-popup-menu']/Action[@name='edit_find']"))
+
+    def test_layout_revision_resets_regenerated_window_state_once(self):
+        import json
+        key = (str(app.STATE / "dolphinstaterc"), "MainWindow", "State")
+        self.values[key] = "pre-theme-window-state"
+        app.apply()
+        # Simulate the prior theme XML and window state created by Qt.
+        relative = "kxmlgui5/dolphin/dolphinui.rc"
+        prior = b"<gui name='dolphin' version='49'/>"
+        path = app.DATA / relative
+        path.write_bytes(prior)
+        backup = json.loads(app.BACKUP.read_text())
+        backup["files"][relative]["applied"] = prior.hex()
+        app.BACKUP.write_text(json.dumps(backup))
+        self.values[key] = "generated-by-old-layout"
+        app.apply()
+        self.assertNotIn(key, self.values)
+        self.values[key] = "generated-by-current-layout"
+        app.apply()
+        self.assertEqual(self.values[key], "generated-by-current-layout")
+        self.values.pop(key)
+        app.restore()
+        self.assertEqual(self.values[key], "pre-theme-window-state")
+
+    def test_custom_terminal_layout_preserves_visibility(self):
+        path = app.DATA / "kxmlgui5/konsole/sessionui.rc"
+        path.parent.mkdir(parents=True)
+        path.write_text("<gui name='custom'/>")
+        app.apply()
+        self.assertEqual(self.values["konsolerc", "Desktop Entry", "DefaultProfile"], "My.profile")
+        self.assertNotIn(("konsolerc", "MainWindow", "State"), self.values)
+        self.assertEqual(path.read_text(), "<gui name='custom'/>")
+
+    def test_terminal_state_migration_restores_original(self):
+        key = (str(app.STATE / "konsolestaterc"), "MainWindow", "State")
+        self.values[key] = "old-qt-toolbar-state"
+        app.apply()
+        self.assertNotIn(key, self.values)
+        app.restore()
+        self.assertEqual(self.values[key], "old-qt-toolbar-state")
+
+    def test_explorer_layout_migration(self):
+        key = (str(app.STATE / "dolphinstaterc"), "MainWindow", "State")
+        self.values[key] = "old-dolphin-toolbar-state"
+        app.apply()
+        self.assertNotIn(key, self.values)
+        self.assertEqual(self.values["dolphinrc", "General", "ShowStatusBar"], "FullWidth")
+        root = ET.parse(ROOT / app.FILES["kxmlgui5/dolphin/dolphinui.rc"]).getroot()
+        self.assertGreater(int(root.get("version")), 50)
+        commands = {a.get("name") for a in root.findall("./ToolBar[@name='wmCommandToolBar']/Action")}
+        self.assertTrue({"new_menu", "edit_cut", "edit_copy", "edit_paste", "renamefile", "movetotrash", "sort", "view_mode", "hamburger_menu"} <= commands)
+        app.restore()
+        self.assertEqual(self.values[key], "old-dolphin-toolbar-state")
 
     def test_reference_layout_and_aliases(self):
         root = ET.parse(ROOT / app.FILES["kxmlgui5/dolphin/dolphinui.rc"]).getroot()

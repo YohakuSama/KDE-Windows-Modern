@@ -1,9 +1,8 @@
 <?xml version="1.0"?>
 <!DOCTYPE gui SYSTEM "kpartgui.dtd">
-<!-- Windows Modern: Dolphin's own dolphinui.rc (version 49, Dolphin 26.08)
-     with separate Explorer-inspired navigation and command toolbars.
-     If Dolphin ships a newer version, it ignores this copy (no Up button). -->
-<gui name="dolphin" version="49">
+<!-- Based on upstream Dolphin GUI version 50. Local version 51 ensures
+     KXMLGUI selects the Explorer-inspired navigation and command layout. -->
+<gui name="dolphin" version="51">
     <MenuBar>
         <Menu name="file">
             <Action name="new_menu" />
@@ -55,6 +54,7 @@
             <Action name="view_properties" />
             <Separator/>
             <Action name="split_view_menu" />
+            <Action name="move_to_tabs_split_view" />
             <Action name="popout_split_view" />
             <Action name="focus_inactive_split_view" />
             <Action name="split_stash" />
@@ -131,6 +131,7 @@
         <Action name="sort" />
         <Action name="view_mode" />
         <Action name="hamburger_menu" />
+        <Spacer />
         <Action name="show_information_panel" />
     </ToolBar>
     <ActionProperties scheme="Default">
@@ -142,7 +143,13 @@
         <Action priority="0" name="icons"/>
         <Action priority="0" name="compact"/>
         <Action priority="0" name="details"/>
-        <Action priority="0" name="view_mode" />
+        <Action priority="128" name="view_mode" />
+        <Action priority="128" name="sort" />
+        <Action priority="128" name="new_menu" />
+        <Action priority="128" name="show_information_panel" />
+        <Action priority="0" name="renamefile" />
+        <Action priority="0" name="movetotrash" />
+        <Action priority="0" name="columns" />
         <Action priority="0" name="view_settings" />
         <Action priority="0" name="view_zoom_in"/>
         <Action priority="0" name="view_zoom_reset"/>

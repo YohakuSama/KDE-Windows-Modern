@@ -23,6 +23,8 @@ ColumnLayout {
     required property date date
     required property var events
     property var calendarLocale: Qt.locale()
+    property var timeLocale: Qt.locale()
+    property string timeFormat: timeLocale.timeFormat(Locale.ShortFormat)
     // Events listed before "+N more".
     property int maximumEvents: 4
 
@@ -97,9 +99,8 @@ ColumnLayout {
                         if (ev.isAllDay) {
                             return i18nc("@info an event lasting the whole day", "All day");
                         }
-                        const fmt = Qt.locale().timeFormat(Locale.ShortFormat);
-                        return Qt.locale().toString(ev.startDateTime, fmt) + " – "
-                            + Qt.locale().toString(ev.endDateTime, fmt);
+                        return agenda.timeLocale.toString(ev.startDateTime, agenda.timeFormat) + " – "
+                            + agenda.timeLocale.toString(ev.endDateTime, agenda.timeFormat);
                     }
                     color: palette.textSecondary
                     font: Kirigami.Theme.smallFont

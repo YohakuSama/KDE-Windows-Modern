@@ -15,3 +15,7 @@ icons/** -diff
 /scripts/capture-screenshots.sh export-ignore
 /scripts/update-previews.sh export-ignore
 /scripts/store export-ignore
+
+# Historical development reports and generated icon inventory are retained in Git only.
+/docs/PROGRESS.md export-ignore
+/docs/icon-pack/00-inventory.md export-ignore

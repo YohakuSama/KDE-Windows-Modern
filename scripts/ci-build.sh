@@ -44,4 +44,21 @@ for applet in systemtray icontasks; do
     fi
 done
 
+menu_src="$SRC_DIR/plasma/containmentactions/org.kde.windowsmodern.contextmenu"
+menu_build="$BUILD_ROOT/contextmenu"
+cmake -S "$menu_src" -B "$menu_build" -DCMAKE_BUILD_TYPE=Release -DWINDOWSMODERN_TEST_CONTEXTMENU=ON
+cmake --build "$menu_build" --parallel "$(nproc)"
+ctest --test-dir "$menu_build" --output-on-failure --no-tests=error
+menu_so="$menu_build/lib/plasma/containmentactions/org.kde.windowsmodern.contextmenu.so"
+if [ ! -s "$menu_so" ]; then
+    echo "ERROR: native desktop menu plugin not built" >&2
+    FAILED=1
+else
+    unresolved="$(ldd -r "$menu_so" 2>&1 | grep -E 'not found|undefined symbol' || true)"
+    if [ -n "$unresolved" ]; then
+        echo "$unresolved" >&2
+        FAILED=1
+    fi
+fi
+
 exit "$FAILED"

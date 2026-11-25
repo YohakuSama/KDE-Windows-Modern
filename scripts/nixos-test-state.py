@@ -14,16 +14,17 @@ import tempfile
 
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")).absolute()
 DATA = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")).absolute()
+APP_STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")).absolute()
 DOMAINS = ["plasma_applet_org.kde.windowsmodern." + n for n in
            ("startmenu", "systemtray", "digitalclock", "icontasks", "search", "showdesktop", "taskview")]
-DOMAINS.append("plasma_shell_org.kde.windowsmodern.lockscreen")
+DOMAINS.extend(("plasma_shell_org.kde.windowsmodern.lockscreen", "plasma_containmentactions_org.kde.windowsmodern.contextmenu"))
 LANGUAGES = ("zh_CN", "zh_SG", "zh_Hans")
 CONFIG_NAMES = (
     "kdeglobals", "kdedefaults", "kwinrc", "kscreenlockerrc", "plasmarc",
     "plasmashellrc", "plasma-org.kde.plasma.desktop-appletsrc", "kcminputrc",
     "ksplashrc", "kglobalshortcutsrc", "Kvantum/kvantum.kvconfig",
     "kvantum.kvconfig", "gtk-3.0/settings.ini", "gtk-4.0/settings.ini",
-    "xsettingsd/xsettingsd.conf", "mimeapps.list", "spectaclerc", "dolphinrc", "konsolerc", "konsolestaterc",
+    "xsettingsd/xsettingsd.conf", "mimeapps.list", "spectaclerc", "dolphinrc", "konsolerc", "konsolestaterc", "dolphinstaterc",
     "kcmicons", "kxkbrc", "environment.d/90-windows-modern-test.conf",
     "systemd/user/plasma-plasmashell.service.d/90-windows-modern-test.conf",
 )
@@ -36,6 +37,11 @@ def exists(path):
 
 def validate(path):
     path = Path(path).absolute()
+    # Only these two app-owned state files may be modified outside data/config.
+    if path in (APP_STATE / "dolphinstaterc", APP_STATE / "konsolestaterc"):
+        if APP_STATE.is_symlink():
+            raise RuntimeError("Refusing to write through managed state directory: " + str(APP_STATE))
+        return path
     for root in (CONFIG, DATA):
         if path.is_relative_to(root) and path != root:
             # Do not descend through a Home Manager or other external symlink.
@@ -179,7 +185,7 @@ def snapshot(backup, targets):
         if key in entries:
             continue
         for parent in path.parents:
-            if parent in (CONFIG, DATA):
+            if parent in (CONFIG, DATA, APP_STATE):
                 break
             if not exists(parent) and str(parent) not in manifest["absent_parents"]:
                 manifest["absent_parents"].append(str(parent))
@@ -272,6 +278,9 @@ def all_targets(mapping):
     return list(mapping) + compiled_overrides() + [CONFIG / name for name in CONFIG_NAMES] + [
         DATA / "kxmlgui5/dolphin/dolphinui.rc",
         DATA / "kxmlgui5/konsole/konsoleui.rc",
+        DATA / "kxmlgui5/konsole/sessionui.rc",
+        APP_STATE / "konsolestaterc",
+        APP_STATE / "dolphinstaterc",
         DATA / "konsole/WindowsModern.profile",
         DATA / "konsole/WindowsModern-tabs.css",
         DATA / "windows-modern/backup/app-appearance.json",

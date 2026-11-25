@@ -21,6 +21,8 @@ class Permissions(unittest.TestCase):
         self.root = Path(self.tmp.name)
         wm.DATA = self.root / "data"
         wm.CONFIG = self.root / "config"
+        wm.APP_STATE = self.root / "state"
+        wm.APP_STATE.mkdir()
         wm.DATA.mkdir()
         wm.CONFIG.mkdir()
         self.source = self.root / "store" / "Bibata-Modern-Ice"
@@ -43,6 +45,13 @@ class Permissions(unittest.TestCase):
 
     def mode(self, path):
         return stat.S_IMODE(path.stat().st_mode)
+
+    def test_app_state_targets_are_exact(self):
+        self.assertEqual(wm.validate(wm.APP_STATE / "dolphinstaterc"), wm.APP_STATE / "dolphinstaterc")
+        self.assertEqual(wm.validate(wm.APP_STATE / "konsolestaterc"), wm.APP_STATE / "konsolestaterc")
+        with self.assertRaises(ValueError):
+            wm.validate(wm.APP_STATE / "unrelated-state")
+        self.assertIn(wm.DATA / "kxmlgui5/konsole/sessionui.rc", wm.all_targets({}))
 
     def test_install_readonly_store_package(self):
         wm.replace(self.source, self.dst, writable=True)

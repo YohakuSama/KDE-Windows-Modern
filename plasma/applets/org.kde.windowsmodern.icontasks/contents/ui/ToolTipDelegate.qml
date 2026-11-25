@@ -12,6 +12,7 @@ pragma ComponentBehavior: Bound
 
 import QtQml.Models
 import QtQuick
+import QtQuick.Window
 
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PlasmaComponents3
@@ -52,6 +53,9 @@ Loader {
     property rect windowGeometry: Qt.rect(0, 0, 0, 0)
 
     readonly property bool isVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+    readonly property var panelWindow: parentTask ? parentTask.Window.window : null
+    readonly property real panelExtent: panelWindow
+        ? (isVerticalPanel ? panelWindow.width : panelWindow.height) : 0
     // Thumbnail cards (Windows 11): one height, the window's width up to 16:9,
     // and the same padding on every side of the hover highlight.
     readonly property int thumbnailHeight: Kirigami.Units.gridUnit * 7
@@ -104,9 +108,11 @@ Loader {
             readonly property rect panelScreen: Plasmoid.containment.screenGeometry
             readonly property real maximumWidth: Math.max(1,
                 (panelScreen.width > 0 ? panelScreen.width : Screen.desktopAvailableWidth)
+                - (toolTipDelegate.isVerticalPanel ? toolTipDelegate.panelExtent : 0)
                 - 2 * Kirigami.Units.smallSpacing)
             readonly property real maximumHeight: Math.max(1,
                 (panelScreen.height > 0 ? panelScreen.height : Screen.desktopAvailableHeight)
+                - (toolTipDelegate.isVerticalPanel ? 0 : toolTipDelegate.panelExtent)
                 - 2 * Kirigami.Units.gridUnit)
 
             implicitWidth: {
@@ -122,7 +128,7 @@ Loader {
                 const width = (groupToolTipListView.orientation == ListView.Horizontal && listContentWidth > 0)
                     ? listContentWidth
                     : Math.max(delegateModel.estimatedWidth, listContentWidth)
-                return leftPadding + rightPadding + Math.min(maximumWidth, width)
+                return Math.min(maximumWidth, leftPadding + rightPadding + width)
             }
 
             implicitHeight: {

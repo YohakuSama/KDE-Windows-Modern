@@ -1,227 +1,325 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// A presentation of the shared, native Klipper history, not a second clipboard.
+// Use the real Klipper history; moveToTop preserves the complete MIME payload.
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls as QQC2
 import org.kde.plasma.private.clipboard as Clipboard
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../lib" as Lib
+import "../js/colorType.js" as ColorType
 
 ColumnLayout {
     id: page
-    property var history: nativeHistory
-    property var historyRows: history
-    property Component footer: null
-    signal back
-    signal dismissed
     spacing: 0
+    property Component footer: null
+    signal back()
+    signal itemSelected()
+    signal closeRequested()
+    property string activeTab: "clipboard"
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor,
+        Qt.color(ColorType.cardFill(dark, false)), 4.5)
+    property bool emojiPickerEnabled: true
+    // The default is the real shared Klipper history. Tests can substitute
+    // an isolated model and controller without altering the user's history.
+    property Component historySource: Component { Clipboard.HistoryModel {} }
+    readonly property var historyModel: historyLoader.item
+    property var historyController: historyModel
+    readonly property int historyCount: historyModel ? historyModel.count : 0
 
-    Clipboard.HistoryModel { id: nativeHistory }
-
-    function selectEntry(uuid) {
-        if (!uuid || !history) return;
-        // Klipper moves the actual MIME item to the top and updates the
-        // real system clipboard. Works for text, URLs and images alike.
-        history.moveToTop(uuid);
-        dismissed();
-    }
-
-    function removeEntry(uuid) {
-        if (uuid && history) history.remove(uuid);
-    }
-
-    Lib.PageHeader {
-        title: i18n("Clipboard")
-        showSwitch: false
-        onBack: page.back()
+    Keys.onEscapePressed: page.closeRequested()
+    Loader {
+        id: historyLoader
+        visible: false
+        sourceComponent: page.historySource
     }
 
     RowLayout {
         Layout.fillWidth: true
         Layout.leftMargin: 16
-        Layout.rightMargin: 16
-        Layout.bottomMargin: 10
-        spacing: 8
-
+        Layout.rightMargin: 12
+        Layout.topMargin: 8
+        Layout.preferredHeight: 40
         PlasmaComponents3.Label {
-            text: i18n("Clipboard history")
-            font.pixelSize: 14
             Layout.fillWidth: true
+            text: picker.status === Loader.Ready ? i18n("Emoji and more") : i18n("Clipboard history")
+            font.weight: Font.DemiBold
         }
         PlasmaComponents3.ToolButton {
-            objectName: "wmClipboardPinnedFilter"
-            visible: page.history && page.history.starredCount > 0
-            text: i18n("Pinned items")
-            checkable: true
-            checked: page.history && page.history.starredOnly
+            Layout.preferredWidth: 32
+            Layout.preferredHeight: 32
             display: PlasmaComponents3.AbstractButton.IconOnly
-            icon.name: checked ? "starred-symbolic" : "non-starred-symbolic"
-            icon.width: 16
-            icon.height: 16
-            onClicked: if (page.history) page.history.starredOnly = checked
-            PlasmaComponents3.ToolTip { text: parent.text }
-        }
-        PlasmaComponents3.Button {
-            objectName: "wmClipboardClearAll"
-            visible: page.history && page.history.sourceCount > 0
-            text: i18n("Clear all")
-            onClicked: if (page.history) page.history.clearHistory()
-        }
-        PlasmaComponents3.ToolButton {
             text: i18n("Close")
-            display: PlasmaComponents3.AbstractButton.IconOnly
             icon.name: "window-close-symbolic"
-            icon.width: 16
-            icon.height: 16
-            onClicked: page.dismissed()
-            PlasmaComponents3.ToolTip { text: parent.text }
+            icon.width: 18
+            icon.height: 18
+            onClicked: page.closeRequested()
         }
     }
 
+    RowLayout {
+        visible: picker.status === Loader.Ready
+        Layout.fillWidth: true
+        Layout.leftMargin: 12
+        Layout.rightMargin: 12
+        Layout.preferredHeight: 44
+        spacing: 4
+        Repeater {
+            model: picker.status === Loader.Ready ? [
+                {key: "emoji", label: i18n("Emoji"), icon: "preferences-desktop-emoticons", glyph: ""},
+                {key: "kaomoji", label: i18n("Kaomoji"), icon: "", glyph: ";-)"},
+                {key: "symbols", label: i18n("Symbols"), icon: "", glyph: "Ω+"},
+                {key: "clipboard", label: i18n("Clipboard"), icon: "edit-paste", glyph: ""}
+            ] : [{key: "clipboard", label: i18n("Clipboard"), icon: "edit-paste", glyph: ""}]
+            delegate: QQC2.ToolButton {
+                id: tab
+                required property var modelData
+                readonly property bool selected: page.activeTab === modelData.key
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                text: modelData.label
+                onClicked: page.activeTab = modelData.key
+                contentItem: Item {
+                    Kirigami.Icon {
+                        anchors.centerIn: parent
+                        width: 22
+                        height: 22
+                        visible: tab.modelData.glyph === ""
+                        source: tab.modelData.icon
+                        color: Kirigami.Theme.textColor
+                        isMask: true
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        visible: tab.modelData.glyph !== ""
+                        text: tab.modelData.glyph
+                        color: Kirigami.Theme.textColor
+                        font.pixelSize: 17
+                    }
+                }
+                background: Rectangle {
+                    radius: 4
+                    readonly property color fg: Kirigami.Theme.textColor
+                    color: tab.hovered || tab.activeFocus ? Qt.rgba(fg.r, fg.g, fg.b, 0.08) : "transparent"
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        width: 18
+                        height: 3
+                        radius: 1.5
+                        visible: tab.selected
+                        color: page.accent
+                    }
+                }
+                QQC2.ToolTip.text: text
+                QQC2.ToolTip.visible: hovered
+            }
+        }
+    }
+
+    RowLayout {
+        visible: page.activeTab === "clipboard"
+        Layout.fillWidth: true
+        Layout.leftMargin: 16
+        Layout.rightMargin: 16
+        Layout.topMargin: 8
+        Layout.bottomMargin: 8
+        Layout.preferredHeight: 32
+        PlasmaComponents3.Label {
+            Layout.fillWidth: true
+            visible: picker.status === Loader.Ready
+            text: i18n("Clipboard")
+            font.weight: Font.DemiBold
+        }
+        Item { Layout.fillWidth: true; visible: picker.status !== Loader.Ready }
+        PlasmaComponents3.Button {
+            objectName: "wmClipboardClearAll"
+            visible: page.historyCount > 0
+                && (page.historyModel.starredCount === undefined || page.historyCount > page.historyModel.starredCount)
+            text: i18n("Clear all")
+            Layout.preferredHeight: 30
+            onClicked: page.historyController.clearHistory()
+        }
+    }
+
+    // Load optional KDE emoji data in isolation; missing modules never
+    // disable clipboard history or leave a dead tab.
+    Loader {
+        id: picker
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        visible: page.activeTab !== "clipboard" && status === Loader.Ready
+        active: page.emojiPickerEnabled
+        source: "EmojiPicker.qml"
+        onStatusChanged: if (status !== Loader.Ready && page.activeTab !== "clipboard") page.activeTab = "clipboard"
+        onLoaded: item.mode = Qt.binding(() => page.activeTab)
+    }
+    Connections {
+        target: picker.item
+        function onPicked() { page.itemSelected() }
+    }
+
     ListView {
-        id: historyList
+        id: history
         objectName: "wmClipboardHistory"
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.leftMargin: 16
-        Layout.rightMargin: 8
-        clip: true
+        Layout.leftMargin: 12
+        Layout.rightMargin: 12
+        Layout.bottomMargin: 12
+        model: page.historyModel
+        visible: page.activeTab === "clipboard" && count > 0
         spacing: 8
+        clip: true
         boundsBehavior: Flickable.StopAtBounds
-        visible: count > 0
-        model: page.historyRows
-        currentIndex: -1
-        PlasmaComponents3.ScrollBar.vertical: Lib.FluentScrollBar {
-            scrolling: historyList.moving
-        }
+        QQC2.ScrollBar.vertical: Lib.FluentScrollBar {}
 
-        delegate: Item {
-            id: entry
+        delegate: Rectangle {
+            id: card
+            objectName: "wmClipboardCard"
             required property var model
-            required property int index
-            objectName: "wmClipboardCard_" + index
-            readonly property string uuid: String(model.uuid || "")
-            readonly property string displayText: String(model.display || "")
-            readonly property url previewUrl: model.decoration || ""
-            readonly property bool hasImage: String(previewUrl).length > 0
-            readonly property bool pinned: !!model.starred
-            width: Math.max(1, historyList.width - 12)
-            height: hasImage ? 96 : 76
-            activeFocusOnTab: true
-            Accessible.role: Accessible.Button
-            Accessible.name: hasImage ? i18n("Image") + " " + displayText : displayText
-            Accessible.onPressAction: page.selectEntry(uuid)
-            Keys.onReturnPressed: page.selectEntry(uuid)
-            Keys.onEnterPressed: page.selectEntry(uuid)
-            Keys.onSpacePressed: page.selectEntry(uuid)
-            Keys.onDeletePressed: page.removeEntry(uuid)
+            readonly property bool isImage: model.type === 4
+            readonly property bool supportsPin: model.starred !== undefined
+            readonly property bool pinned: supportsPin && model.starred
+            readonly property color fg: Kirigami.Theme.textColor
+            width: Math.max(1, history.width - (history.contentHeight > history.height ? 16 : 0))
+            height: isImage ? 108 : 76
+            radius: 6
+            color: ColorType.rowFill(page.dark, true, selectArea.containsMouse, selectArea.containsPress)
+            border.width: 1
+            border.color: selectArea.activeFocus ? page.accent
+                : ColorType.divider(page.dark)
 
-            Rectangle {
-                anchors.fill: parent
-                radius: 6
-                color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                    Kirigami.Theme.textColor.b, entryMouse.containsPress ? 0.10
-                    : entryMouse.containsMouse || entry.activeFocus ? 0.075 : 0.045)
-                border.width: 1
-                border.color: entry.activeFocus ? Kirigami.Theme.textColor
-                    : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                        Kirigami.Theme.textColor.b, 0.12)
+            function selectItem() {
+                if (!model.uuid) return;
+                page.historyController.moveToTop(model.uuid);
+                page.itemSelected();
             }
 
             MouseArea {
-                id: entryMouse
-                anchors.fill: parent
+                id: selectArea
+                objectName: "wmClipboardSelect"
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.right: actionsColumn.left
+                z: 1
                 hoverEnabled: true
+                activeFocusOnTab: true
                 cursorShape: Qt.PointingHandCursor
-                enabled: entry.uuid.length > 0
-                onClicked: page.selectEntry(entry.uuid)
+                Accessible.role: Accessible.Button
+                Accessible.name: card.isImage ? i18n("Image") : String(card.model.display || "")
+                Accessible.onPressAction: card.selectItem()
+                Keys.onReturnPressed: card.selectItem()
+                Keys.onEnterPressed: card.selectItem()
+                Keys.onSpacePressed: card.selectItem()
+                onClicked: card.selectItem()
             }
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 8
-                spacing: 8
+            Image {
+                id: preview
+                objectName: "wmClipboardPreview"
+                visible: card.isImage
+                anchors.left: parent.left
+                anchors.leftMargin: 8
+                anchors.top: parent.top
+                anchors.topMargin: 8
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 8
+                width: Math.max(1, Math.min(card.width - 62, 220))
+                source: card.isImage ? card.model.decoration : ""
+                sourceSize.width: 300
+                sourceSize.height: 200
+                asynchronous: true
+                fillMode: Image.PreserveAspectFit
+                horizontalAlignment: Image.AlignLeft
+                cache: false
+            }
 
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+            PlasmaComponents3.Label {
+                objectName: "wmClipboardText"
+                anchors.left: parent.left
+                anchors.leftMargin: 12
+                anchors.right: actionsColumn.left
+                anchors.rightMargin: 8
+                anchors.top: parent.top
+                anchors.topMargin: 10
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 10
+                visible: !card.isImage || preview.status === Image.Error
+                text: card.isImage ? i18n("Image") : String(card.model.display || "")
+                textFormat: Text.PlainText
+                wrapMode: Text.Wrap
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+                maximumLineCount: 3
+            }
 
-                    Image {
-                        id: thumbnail
-                        objectName: "wmClipboardImage"
-                        anchors.fill: parent
-                        visible: entry.hasImage && status !== Image.Error
-                        source: entry.previewUrl
-                        fillMode: Image.PreserveAspectFit
-                        horizontalAlignment: Image.AlignLeft
-                        verticalAlignment: Image.AlignVCenter
-                        asynchronous: true
-                        cache: false
-                        sourceSize.width: 360
-                        sourceSize.height: 180
-                    }
+            Column {
+                id: actionsColumn
+                z: 2
+                anchors.right: parent.right
+                anchors.rightMargin: 5
+                anchors.top: parent.top
+                anchors.topMargin: 4
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 4
+                width: 32
+                spacing: Math.max(0, height - 64)
 
-                    PlasmaComponents3.Label {
-                        objectName: "wmClipboardText"
-                        anchors.fill: parent
-                        visible: !entry.hasImage || thumbnail.status === Image.Error
-                        text: entry.displayText || (entry.hasImage ? i18n("Image preview unavailable") : "")
-                        textFormat: Text.PlainText
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 3
-                        elide: Text.ElideRight
-                        verticalAlignment: Text.AlignVCenter
-                        font.pixelSize: 13
+                PlasmaComponents3.ToolButton {
+                    id: moreButton
+                    width: 32
+                    height: 32
+                    text: i18n("More actions")
+                    display: PlasmaComponents3.AbstractButton.IconOnly
+                    icon.name: "view-more-symbolic"
+                    icon.width: 16
+                    icon.height: 16
+                    onClicked: actions.opened ? actions.close() : actions.open()
+                    QQC2.Menu {
+                        id: actions
+                        parent: moreButton
+                        popupType: QQC2.Popup.Item
+                        x: moreButton.width - width
+                        y: moreButton.height + 4
+                        closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+                        QQC2.MenuItem {
+                            text: i18n("Delete")
+                            icon.name: "edit-delete-symbolic"
+                            onTriggered: page.historyController.remove(card.model.uuid)
+                        }
                     }
                 }
 
-                ColumnLayout {
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: 4
-
-                    PlasmaComponents3.ToolButton {
-                        objectName: "wmClipboardRemove"
-                        Layout.preferredWidth: 30
-                        Layout.preferredHeight: 28
-                        text: i18n("Remove")
-                        display: PlasmaComponents3.AbstractButton.IconOnly
-                        icon.name: "edit-delete-symbolic"
-                        icon.width: 14
-                        icon.height: 14
-                        onClicked: page.removeEntry(entry.uuid)
-                        PlasmaComponents3.ToolTip { text: parent.text }
-                    }
-
-                    PlasmaComponents3.ToolButton {
-                        objectName: "wmClipboardPin"
-                        Layout.preferredWidth: 30
-                        Layout.preferredHeight: 28
-                        text: entry.pinned ? i18n("Unpin") : i18n("Pin")
-                        display: PlasmaComponents3.AbstractButton.IconOnly
-                        icon.name: entry.pinned ? "starred-symbolic" : "window-pin"
-                        icon.width: 14
-                        icon.height: 14
-                        // The real writable Klipper starred role persists
-                        // the pinned state. Never maintain a parallel list.
-                        onClicked: entry.model.starred = !entry.pinned
-                        PlasmaComponents3.ToolTip { text: parent.text }
-                    }
+                PlasmaComponents3.ToolButton {
+                    width: 32
+                    height: 32
+                    objectName: "wmClipboardPin"
+                    visible: card.supportsPin
+                    text: card.pinned ? i18n("Unpin") : i18n("Pin")
+                    display: PlasmaComponents3.AbstractButton.IconOnly
+                    icon.name: card.pinned ? "window-unpin" : "window-pin"
+                    icon.width: 16
+                    icon.height: 16
+                    icon.color: card.pinned ? page.accent : Kirigami.Theme.textColor
+                    onClicked: card.model.starred = !card.pinned
                 }
             }
         }
     }
 
     PlasmaComponents3.Label {
-        objectName: "wmClipboardEmpty"
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.leftMargin: 16
-        Layout.rightMargin: 16
-        visible: historyList.count === 0
+        Layout.margins: 20
+        objectName: "wmClipboardEmpty"
+        visible: page.activeTab === "clipboard" && page.historyCount === 0
         text: i18n("Clipboard is empty")
-        color: Kirigami.Theme.disabledTextColor
+        opacity: 0.75
+        wrapMode: Text.WordWrap
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
-        wrapMode: Text.WordWrap
     }
 }

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Templates as T
 import QtQuick.Layouts
+import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
@@ -28,6 +29,7 @@ Item {
     property string detailsAccessibleName: ""
     property bool iconClickable: false
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
 
     signal moved(int value)
     signal released
@@ -56,6 +58,7 @@ Item {
         columnSpacing: root.trackGap
 
         Kirigami.Icon {
+            visible: root.iconSource.length > 0
             Layout.preferredWidth: root.iconSize
             Layout.preferredHeight: root.iconSize
             Layout.alignment: Qt.AlignVCenter
@@ -114,14 +117,14 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: 2
-                    color: root.dark ? "#A0A0A0" : "#888888"
+                    color: ColorType.trackFill(root.dark)
                 }
                 Rectangle {
                     width: parent.width * slider.position
                     height: parent.height
                     x: slider.mirrored ? parent.width - width : 0
                     radius: 2
-                    color: Kirigami.Theme.highlightColor
+                    color: root.accent
                 }
             }
 
@@ -133,13 +136,13 @@ Item {
                 radius: width / 2
                 color: root.dark ? "#383838" : "#FFFFFF"
                 border.width: 1
-                border.color: root.dark ? "#4B4B4B" : "#D6D6D6"
+                border.color: root.dark ? "#454545" : "#D6D6D6"
                 Rectangle {
                     anchors.centerIn: parent
                     width: slider.pressed ? 10 : 12
                     height: width
                     radius: width / 2
-                    color: Kirigami.Theme.highlightColor
+                    color: root.accent
                 }
             }
 
@@ -162,7 +165,7 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             activeFocusOnTab: root.showArrow
             Accessible.role: Accessible.Button
-            Accessible.name: root.detailsAccessibleName || i18n("More")
+            Accessible.name: root.detailsAccessibleName || i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "More")
             Accessible.onPressAction: root.arrowClicked()
             Keys.onReturnPressed: root.arrowClicked()
             Keys.onEnterPressed: root.arrowClicked()

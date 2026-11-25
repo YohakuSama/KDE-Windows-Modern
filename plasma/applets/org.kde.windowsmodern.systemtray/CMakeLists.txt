@@ -14,6 +14,7 @@ include(ECMQtDeclareLoggingCategory)
 find_package(Qt6 REQUIRED COMPONENTS DBus Gui Quick Qml QuickControls2)
 find_package(KF6 REQUIRED COMPONENTS
     Config
+    GlobalAccel
     IconThemes
     I18n
     KIO
@@ -107,6 +108,7 @@ target_link_libraries(systemtray_static
         Qt6::Widgets
         Qt6::Quick
         KF6::ConfigCore
+        KF6::GlobalAccel
         KF6::IconThemes
         KF6::I18n
         KF6::KIOCore
@@ -165,11 +167,13 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/Slider.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/SectionHeader.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/PageHeader.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/FluentSwitch.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/Page.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/MoreSettingsLink.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/ListRow.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/FooterButton.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/DetailPage.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/NetworkSelection.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/FluentScrollBar.qml
 )
 ecm_target_qml_sources(org.kde.windowsmodern.systemtray
@@ -177,6 +181,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/funcs.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/colorType.js
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/mediaSource.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/quickSettingsOrder.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/trayMetrics.js
 )
@@ -208,6 +213,8 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/KeyboardBrightnessSlider.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/Footer.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/ClipboardPage.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/RunDialog.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/EmojiPicker.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/MediaControllerPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/MediaCard.qml
 )

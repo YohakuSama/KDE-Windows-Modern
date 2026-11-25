@@ -25,10 +25,24 @@ function cellRect(area, cell) {
     return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
 }
 
+// Keep the six diagrams within the available output. At the normal size
+// the reference 72 x 44 diagrams and 10px gaps stay unchanged.
+function barMetrics(availableWidth, availableHeight) {
+    const count = layouts.length;
+    const scale = Math.max(0, Math.min(1,
+        availableWidth / (count * 72 + (count - 1) * 10), availableHeight / 44));
+    return {
+        width: Math.max(1, Math.floor(72 * scale)),
+        height: Math.max(1, Math.floor(44 * scale)),
+        gap: Math.floor(10 * scale),
+        cellGap: Math.floor(3 * scale)
+    };
+}
+
 // The layout cell at a point relative to the first diagram's top-left
 // corner, for diagrams of size w x h laid out in a row with gap between
 // them; or null.
-function cellAt(lx, ly, w, h, gap) {
+function cellAt(lx, ly, w, h, gap, cellGap = 0) {
     if (ly < 0 || ly >= h || lx < 0) {
         return null;
     }
@@ -40,7 +54,9 @@ function cellAt(lx, ly, w, h, gap) {
     const cells = layouts[layout];
     for (let i = 0; i < cells.length; ++i) {
         const c = cells[i];
-        if (dx >= c[0] * w && dx < (c[0] + c[2]) * w && ly >= c[1] * h && ly < (c[1] + c[3]) * h) {
+        const inset = cellGap / 2;
+        if (dx >= c[0] * w + inset && dx < (c[0] + c[2]) * w - inset
+            && ly >= c[1] * h + inset && ly < (c[1] + c[3]) * h - inset) {
             return { layout: layout, cell: i };
         }
     }

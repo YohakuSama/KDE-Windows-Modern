@@ -6,6 +6,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui"
+import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Calendar.js" as Calendar
 
 Item {
     id: root
@@ -28,6 +29,14 @@ Item {
     TestCase {
         name: "CalendarZoom"
         when: windowShown
+
+        function test_nativeAgendaRevision() {
+            const model = view.calendarBackend.daysModel;
+            const previous = view.eventsRevision;
+            model.agendaUpdated(view.selectedDate);
+            model.agendaUpdated(view.selectedDate);
+            tryCompare(view, "eventsRevision", previous + 1);
+        }
 
         function findAll(item, predicate, out) {
             out = out || [];
@@ -96,6 +105,45 @@ Item {
             settle();
         }
 
+        function test_sameDayTimeChangePreservesGrid() {
+            const original = root.currentTime;
+            const cells = days();
+            compare(cells.length, 42);
+            root.currentTime = new Date(original.getTime() + 1000);
+            wait(40);
+            compare(view.today.getHours(), 0);
+            compare(days()[0], cells[0]);
+            root.currentTime = new Date(original.getFullYear(), original.getMonth(), original.getDate() + 1, 12, 0);
+            tryCompare(view, "todayKey", (root.currentTime.getFullYear() * 10000)
+                + (root.currentTime.getMonth() + 1) * 100 + root.currentTime.getDate());
+            root.currentTime = original;
+            view.resetToToday();
+        }
+        function test_weekDatesFollowCalendarGrid() {
+            for (const year of [2025, 2026]) {
+                for (const month of [2, 9, 10]) {
+                    for (const first of [0, 1, 6]) {
+                        const grid = Calendar.generateMonthGrid(year, month, root.currentTime, root.currentTime, first);
+                        const start = Calendar.firstGridDate(year, month, first);
+                        compare(start.getDay(), first);
+                        for (let row = 0; row < 6; ++row)
+                            compare(Calendar.dateAfterDays(start, row * 7).getTime(), grid[row * 7].date.getTime());
+                    }
+                }
+            }
+        }
+        function test_clockTickDoesNotRecreateMonthCells() {
+            const original = root.currentTime;
+            const first = days()[0];
+            const date = view.today.getTime();
+            root.currentTime = new Date(original.getTime() + 1000);
+            wait(50);
+            compare(view.today.getTime(), date);
+            compare(days()[0], first);
+            root.currentTime = new Date(original.getFullYear(), original.getMonth(), original.getDate() + 1);
+            tryVerify(() => view.today.getDate() === original.getDate() + 1);
+            root.currentTime = original;
+        }
         function test_monthView() {
             compare(view.zoom, CalendarView.Zoom.Month);
             compare(headerTitle().text, Qt.locale().standaloneMonthName(10, Locale.LongFormat) + " 2026");

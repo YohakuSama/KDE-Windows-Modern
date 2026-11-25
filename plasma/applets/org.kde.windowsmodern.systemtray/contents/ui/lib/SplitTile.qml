@@ -10,6 +10,7 @@ ColumnLayout {
 
     property string iconSource
     property string label
+    property string accessibleLabel: label
     property string tooltipText: ""
     property bool active: false
     property bool included: true
@@ -18,7 +19,8 @@ ColumnLayout {
     property real buttonHeight: -1
     readonly property real uiScale: buttonHeight > 0 ? buttonHeight / 48 : 1
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    readonly property int captionHeight: Math.round(30 * uiScale)
+    readonly property int captionHeight: Math.max(Math.round(30 * uiScale), Math.ceil(2 * captionMetrics.lineSpacing))
+    FontMetrics { id: captionMetrics; font: caption.font }
     readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
     readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
 
@@ -61,14 +63,14 @@ ColumnLayout {
     activeFocusOnTab: toggleAvailable
 
     Accessible.role: Accessible.CheckBox
-    Accessible.name: tile.label
+    Accessible.name: tile.accessibleLabel
     Accessible.checked: tile.active
     Accessible.onPressAction: if (tile.toggleAvailable) tile.clicked()
     Keys.onReturnPressed: if (tile.toggleAvailable) tile.clicked()
     Keys.onEnterPressed: if (tile.toggleAvailable) tile.clicked()
     Keys.onSpacePressed: if (tile.toggleAvailable) tile.clicked()
 
-    readonly property color accent: Kirigami.Theme.highlightColor
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
     spacing: Math.round(8 * uiScale)
@@ -158,7 +160,7 @@ ColumnLayout {
             activeFocusOnTab: true
             onActiveFocusChanged: if (activeFocus && tile.orderView) tile.orderView.ensureVisible(tile.orderKey)
             Accessible.role: Accessible.Button
-            Accessible.name: i18n("%1 details", tile.label)
+            Accessible.name: i18n("%1 details", tile.accessibleLabel)
             Accessible.onPressAction: tile.arrowClicked()
             Keys.onReturnPressed: tile.arrowClicked()
             Keys.onEnterPressed: tile.arrowClicked()
@@ -202,8 +204,10 @@ ColumnLayout {
     }
 
     PlasmaComponents3.Label {
+        id: caption
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignHCenter
+        objectName: "wmQuickTileCaption"
         text: tile.label
         color: Kirigami.Theme.textColor
         Layout.preferredHeight: tile.captionHeight

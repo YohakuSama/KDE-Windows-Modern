@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
+import "../js/colorType.js" as ColorType
 
 Lib.DetailPage {
     id: page
@@ -44,21 +45,25 @@ Lib.DetailPage {
         }
     }
 
-    Component.onCompleted: if (wifiOn) handler.requestScan()
+    Lib.NetworkSelection { id: selection }
+    onWifiOnChanged: selection.reset()
+    onVisibleChanged: if (!visible) selection.reset()
 
     Timer {
         interval: 10200
         repeat: true
+        triggeredOnStart: true
         running: page.wifiOn && page.visible
         onTriggered: handler.requestScan()
     }
 
-    listView.model: page.wifiAvailable && !page.wifiOn ? null : appletProxyModel
+    listView.model: appletProxyModel
     listView.spacing: 2
 
     listView.delegate: Item {
         id: delegate
-        // Reserve the WinUI scrollbar's 16px overlay region.
+        // Balanced gutters; the scrollbar overlays the edge.
+        x: 8
         width: Math.max(1, listView.width - 16)
         height: container.height + 2
 
@@ -68,16 +73,20 @@ Lib.DetailPage {
              SecurityType === PlasmaNM.Enums.Wpa2Psk ||
              SecurityType === PlasmaNM.Enums.SAE)
 
+        readonly property string networkKey: String(DevicePath || "") + "|" + String(ItemUniqueName || "")
         property int connectionState: ConnectionState
-        property bool expanded: false
+        readonly property bool expanded: selection.expandedKey === networkKey
+        Component.onCompleted: if (connectionState === PlasmaNM.Enums.Activated)
+            selection.offerConnected(networkKey)
+        Component.onDestruction: selection.forget(networkKey)
+        onExpandedChanged: if (!expanded) clearPassword()
         property string phase: "idle"
         property string password: ""
         property bool showPassword: false
 
-        readonly property color subtleBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06)
-        readonly property color hoverBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
-        readonly property color pressBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
-        readonly property color btnBg: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.05)
+        readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+        readonly property color subtleBg: ColorType.rowFill(dark, true, false, false)
+        readonly property color hoverBg: ColorType.rowFill(dark, false, true, false)
 
         function statusText() {
             if (connectionState === PlasmaNM.Enums.Activated) {
@@ -93,21 +102,23 @@ Lib.DetailPage {
             return "";
         }
 
+        function clearPassword() {
+            phase = "idle";
+            password = "";
+            showPassword = false;
+        }
+
         function toggleExpand() {
-            if (expanded) {
-                expanded = false;
-                phase = "idle";
-                password = "";
-                showPassword = false;
-            } else {
-                expanded = true;
-                phase = "idle";
-            }
+            selection.toggle(networkKey);
         }
 
         function doConnect() {
             if (predictableWirelessPassword) {
                 phase = "password";
+                Qt.callLater(() => {
+                    if (delegate.expanded && delegate.phase === "password")
+                        pwField.forceActiveFocus();
+                });
             } else if (!predictableWirelessPassword && !Uuid) {
                 handler.addAndActivateConnection(DevicePath, SpecificPath);
             } else {
@@ -116,22 +127,21 @@ Lib.DetailPage {
         }
 
         function doNext() {
+            if (!expanded || phase !== "password" || !pwField.acceptableInput)
+                return;
             handler.addAndActivateConnection(DevicePath, SpecificPath, password);
-            password = "";
-            showPassword = false;
-            phase = "idle";
+            clearPassword();
         }
 
         function doDisconnect() {
             handler.deactivateConnection(ConnectionPath, DevicePath);
-            expanded = false;
+            if (expanded) selection.toggle(networkKey);
         }
 
         onConnectionStateChanged: {
             if (connectionState === PlasmaNM.Enums.Activated) {
-                phase = "idle";
-                password = "";
-                showPassword = false;
+                clearPassword();
+                selection.offerConnected(networkKey);
             }
         }
 
@@ -153,7 +163,7 @@ Lib.DetailPage {
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: delegate.statusText().length ? 48 : 42
+                    Layout.preferredHeight: delegate.statusText().length > 0 ? 48 : 38
 
                     MouseArea {
                         id: headerMA
@@ -172,13 +182,13 @@ Lib.DetailPage {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 16
+                        anchors.leftMargin: 12
                         anchors.rightMargin: 12
                         spacing: 12
 
                         Kirigami.Icon {
-                            Layout.preferredWidth: 20
-                            Layout.preferredHeight: 20
+                            Layout.preferredWidth: 24
+                            Layout.preferredHeight: 24
                             Layout.alignment: Qt.AlignVCenter
                             roundToIconSize: false
                             source: model.ConnectionIcon
@@ -195,8 +205,7 @@ Lib.DetailPage {
                                 text: model.ItemUniqueName
                                 textFormat: Text.PlainText
                                 color: Kirigami.Theme.textColor
-                                font.pixelSize: 13
-                                font.weight: connectionState === PlasmaNM.Enums.Activated ? Font.DemiBold : Font.Normal
+                                font.bold: connectionState === PlasmaNM.Enums.Activated
                                 elide: Text.ElideRight
                             }
 
@@ -205,11 +214,11 @@ Lib.DetailPage {
                                 text: delegate.statusText()
                                 color: Kirigami.Theme.textColor
                                 opacity: 0.8
-                                font.pixelSize: 11
+                                font: Kirigami.Theme.smallFont
                             }
                         }
-                        // The old question-mark opened the same generic KCM
-                        // as the footer. Keep one truthful settings entry.
+
+                        // The footer is the single entry to the generic Network settings KCM.
                     }
                 }
 
@@ -217,6 +226,7 @@ Lib.DetailPage {
                     Layout.fillWidth: true
                     Layout.preferredHeight: delegate.expanded ? expandedCol.implicitHeight : 0
                     clip: true
+                    enabled: delegate.expanded
                     Behavior on Layout.preferredHeight { NumberAnimation { duration: Kirigami.Units.longDuration; easing.type: Easing.OutQuad } }
 
                     ColumnLayout {
@@ -241,31 +251,13 @@ Lib.DetailPage {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
 
-                                Rectangle {
+                                PlasmaComponents3.Button {
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 90
+                                    width: Math.max(90, implicitWidth)
                                     height: 30
-                                    radius: 4
-                                    color: connectBtnMA.containsPress ? delegate.pressBg
-                                         : connectBtnMA.containsMouse ? delegate.hoverBg
-                                         : delegate.btnBg
-                                    Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
-
-                                    PlasmaComponents3.Label {
-                                        anchors.centerIn: parent
-                                        text: i18n("Connect")
-                                        color: Kirigami.Theme.textColor
-                                        font: Kirigami.Theme.defaultFont
-                                    }
-
-                                    MouseArea {
-                                        id: connectBtnMA
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: delegate.doConnect()
-                                    }
+                                    text: i18n("Connect")
+                                    onClicked: delegate.doConnect()
                                 }
                             }
                         }
@@ -287,6 +279,7 @@ Lib.DetailPage {
                                 id: pwField
                                 Layout.fillWidth: true
                                 echoMode: delegate.showPassword ? TextInput.Normal : TextInput.Password
+                                rightPadding: 34
                                 text: delegate.password
                                 onTextEdited: delegate.password = text
                                 font: Kirigami.Theme.defaultFont
@@ -294,33 +287,25 @@ Lib.DetailPage {
                                 validator: RegularExpressionValidator {
                                     regularExpression: SecurityType === PlasmaNM.Enums.StaticWep
                                         ? /^(?:.{5}|[0-9a-fA-F]{10}|.{13}|[0-9a-fA-F]{26}){1}$/
-                                        : /^(?:.{8,64}){1}$/
+                                        : SecurityType === PlasmaNM.Enums.SAE
+                                            ? /^.{8,63}$/
+                                            : /^(?:.{8,63}|[0-9a-fA-F]{64})$/
                                 }
                                 onAccepted: if (acceptableInput) delegate.doNext()
 
-                                Item {
+                                PlasmaComponents3.ToolButton {
                                     anchors.right: parent.right
+                                    anchors.rightMargin: 2
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 22
-                                    height: 22
-
-                                    Kirigami.Icon {
-                                        anchors.centerIn: parent
-                                        width: 20
-                                        height: 20
-                                        source: delegate.showPassword ? "view-visible" : "view-hidden"
-                                        color: Kirigami.Theme.textColor
-                                        isMask: true
-                                        opacity: eyeMA.containsMouse ? 1 : 0.6
-                                    }
-
-                                    MouseArea {
-                                        id: eyeMA
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: delegate.showPassword = !delegate.showPassword
-                                    }
+                                    width: 30
+                                    height: 30
+                                    text: delegate.showPassword ? i18n("Hide password") : i18n("Show password")
+                                    display: PlasmaComponents3.AbstractButton.IconOnly
+                                    icon.name: delegate.showPassword ? "view-visible" : "view-hidden"
+                                    icon.width: 16
+                                    icon.height: 16
+                                    onClicked: delegate.showPassword = !delegate.showPassword
+                                    PlasmaComponents3.ToolTip { text: parent.text }
                                 }
                             }
 
@@ -330,64 +315,19 @@ Lib.DetailPage {
 
                                 Item { Layout.fillWidth: true }
 
-                                // Cancel
-                                Item {
-                                    Layout.preferredWidth: 80
+                                PlasmaComponents3.Button {
+                                    Layout.preferredWidth: Math.max(80, implicitWidth)
                                     Layout.preferredHeight: 30
-
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        radius: 4
-                                        color: cancelBtnMA.containsPress ? delegate.pressBg
-                                             : cancelBtnMA.containsMouse ? delegate.hoverBg
-                                             : delegate.btnBg
-                                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
-
-                                        PlasmaComponents3.Label {
-                                            anchors.centerIn: parent
-                                            text: i18n("Cancel")
-                                            color: Kirigami.Theme.textColor
-                                            font: Kirigami.Theme.defaultFont
-                                        }
-
-                                        MouseArea {
-                                            id: cancelBtnMA
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: { delegate.phase = "idle"; delegate.password = ""; delegate.showPassword = false; }
-                                        }
-                                    }
+                                    text: i18n("Cancel")
+                                    onClicked: delegate.clearPassword()
                                 }
 
-                                // Next (primary)
-                                Item {
-                                    Layout.preferredWidth: 80
+                                PlasmaComponents3.Button {
+                                    Layout.preferredWidth: Math.max(80, implicitWidth)
                                     Layout.preferredHeight: 30
-
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        radius: 4
-                                        color: nextBtnMA.containsPress ? Qt.darker(Kirigami.Theme.highlightColor, 1.1)
-                                             : Kirigami.Theme.highlightColor
-                                        opacity: pwField.acceptableInput ? 1 : 0.4
-                                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
-
-                                        PlasmaComponents3.Label {
-                                            anchors.centerIn: parent
-                                            text: i18n("Next")
-                                            color: Kirigami.Theme.highlightedTextColor
-                                            font: Kirigami.Theme.defaultFont
-                                        }
-
-                                        MouseArea {
-                                            id: nextBtnMA
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: if (pwField.acceptableInput) delegate.doNext()
-                                        }
-                                    }
+                                    text: i18n("Next")
+                                    enabled: pwField.acceptableInput
+                                    onClicked: delegate.doNext()
                                 }
                             }
                         }
@@ -421,31 +361,13 @@ Lib.DetailPage {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
 
-                                Rectangle {
+                                PlasmaComponents3.Button {
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 100
+                                    width: Math.max(100, implicitWidth)
                                     height: 30
-                                    radius: 4
-                                    color: discBtnMA.containsPress ? delegate.pressBg
-                                         : discBtnMA.containsMouse ? delegate.hoverBg
-                                         : delegate.btnBg
-                                    Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
-
-                                    PlasmaComponents3.Label {
-                                        anchors.centerIn: parent
-                                        text: i18n("Disconnect")
-                                        color: Kirigami.Theme.textColor
-                                        font: Kirigami.Theme.defaultFont
-                                    }
-
-                                    MouseArea {
-                                        id: discBtnMA
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: delegate.doDisconnect()
-                                    }
+                                    text: i18n("Disconnect")
+                                    onClicked: delegate.doDisconnect()
                                 }
                             }
                         }

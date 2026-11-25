@@ -11,6 +11,8 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickItem>
+#include <QQuickWindow>
+#include <QScreen>
 
 #include <KWindowSystem>
 #include <PlasmaQuick/PlasmaShellWaylandIntegration>
@@ -60,7 +62,8 @@ FloatingToolTipDialog::~FloatingToolTipDialog() = default;
 
 void FloatingToolTipDialog::updateSize()
 {
-    QScreen *s = screen();
+    QScreen *s = visualParent() && visualParent()->window()
+        ? visualParent()->window()->screen() : screen();
     if (!s) {
         return;
     }
@@ -71,7 +74,7 @@ void FloatingToolTipDialog::updateSize()
     }
     QSize popupSize = QSize(item->implicitWidth(), item->implicitHeight());
     popupSize = popupSize.grownBy(padding());
-    popupSize = popupSize.boundedTo(s->geometry().size());
+    popupSize = popupSize.boundedTo(s->availableGeometry().size());
     if (!popupSize.isEmpty()) {
         resize(popupSize);
     }

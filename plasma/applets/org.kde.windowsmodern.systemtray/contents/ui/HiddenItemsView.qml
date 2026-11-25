@@ -61,8 +61,7 @@ PlasmaComponents3.ScrollView {
 
         model: root.hiddenModel
         delegate: ItemLoader {
-            // A full cell keeps every icon on its true horizontal and
-            // vertical center; subtracting only right/bottom margins offset it.
+            // Use full cells so the icon and hover target share the same center.
             width: hiddenTasks.cellWidth
             height: hiddenTasks.cellHeight
             Accessible.role: Accessible.ListItem

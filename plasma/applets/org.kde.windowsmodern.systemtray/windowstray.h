@@ -107,7 +107,8 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     // notification applet still presents real desktop toast notifications.
     if (itemId == QLatin1String("org.kde.plasma.notifications")
         || itemId == QLatin1String("org.kde.plasma.brightness")
-        || itemId == QLatin1String("org.kde.plasma.userswitcher")) {
+        || itemId == QLatin1String("org.kde.plasma.userswitcher")
+        || itemId == QLatin1String("org.kde.plasma.mediacontroller")) {
         return Status::HiddenStatus;
     }
     if (itemId == QLatin1String("org.kde.plasma.battery")) {
@@ -117,16 +118,6 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
         return Status::ActiveStatus;
     }
     if (!pinned && status == Status::HiddenStatus) {
-        return Status::HiddenStatus;
-    }
-    // Passive device and empty clipboard applets are not decorations.
-    // This also overrides stale forced-overflow entries from old configs.
-    // Their backends stay loaded; configured placement applies when active.
-    const bool idleDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
-        || itemId == QLatin1String("org.kde.plasma.devicenotifier")
-        || itemId == QLatin1String("org.kde.plasma.clipboard");
-    if (idleDevice && (status == Status::PassiveStatus
-        || status == Status::UnknownStatus || status == Status::HiddenStatus)) {
         return Status::HiddenStatus;
     }
     const bool optionalIdle = itemId == QLatin1String("org.kde.plasma.weather")
@@ -139,11 +130,15 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     if (pinned) {
         return Status::ActiveStatus;
     }
+    const bool dynamicDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
+        || itemId == QLatin1String("org.kde.plasma.devicenotifier");
+    const bool idleClipboard = itemId == QLatin1String("org.kde.plasma.clipboard");
+    if ((dynamicDevice || idleClipboard) && (status == Status::PassiveStatus || status == Status::UnknownStatus)) {
+        return Status::HiddenStatus;
+    }
     if (hiddenByUser) {
         return Status::PassiveStatus;
     }
-    const bool dynamicDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
-        || itemId == QLatin1String("org.kde.plasma.devicenotifier");
     const bool needsAttention = status == Status::NeedsAttentionStatus || status == Status::RequiresAttentionStatus
         || status == Status::AcceptingInputStatus;
     const bool activeDefault = (status == Status::ActiveStatus || status == Status::UnknownStatus) && shownByDefault(itemId);

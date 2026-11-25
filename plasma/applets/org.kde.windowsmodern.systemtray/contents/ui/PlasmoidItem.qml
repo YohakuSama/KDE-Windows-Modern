@@ -41,6 +41,7 @@ AbstractItem {
     // do anything with onActivated.
     onActivated: pos => {
         if (groupedQuickSettings) {
+            root.quickSettingsOrigin = plasmoidContainer;
             systemTrayState.toggleHome(false);
             return;
         }
@@ -54,6 +55,7 @@ AbstractItem {
             return
         }
         if (groupedQuickSettings && mouse.button === Qt.LeftButton) {
+            root.quickSettingsOrigin = plasmoidContainer;
             systemTrayState.toggleHome(false, groupWasOpen);
             return;
         }

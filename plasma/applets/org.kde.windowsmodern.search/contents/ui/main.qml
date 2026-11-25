@@ -29,8 +29,42 @@ PlasmoidItem {
 
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool horizontal: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
+    readonly property int searchMode: Math.max(0, Math.min(2,
+        Number(Plasmoid.configuration.searchMode) || 0))
+
+    // A local action communicates popup state without polling or guessing from hover.
+    property var searchStateAction: null
+    readonly property bool searchSelected: searchStateAction ? searchStateAction.enabled : false
+
+    function refreshSearchState(): void {
+        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
+        for (const applet of applets) {
+            if (applet && applet.pluginName === "org.kde.windowsmodern.startmenu") {
+                root.searchStateAction = applet.internalAction("windowsModernSearchSelected");
+                return;
+            }
+        }
+        root.searchStateAction = null;
+    }
+
+    Connections {
+        target: Plasmoid.containment
+        ignoreUnknownSignals: true
+        function onAppletsChanged() { Qt.callLater(root.refreshSearchState); }
+    }
 
     function openSearch(): void {
+        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
+        for (const applet of applets) {
+            if (!applet || applet.pluginName !== "org.kde.windowsmodern.startmenu") continue;
+            const action = applet.internalAction("windowsModernSearch");
+            if (action && action.enabled) {
+                root.searchStateAction = applet.internalAction("windowsModernSearchSelected");
+                action.trigger();
+                return;
+            }
+        }
+        // A different launcher or an older Start version remains usable.
         DBus.SessionBus.asyncCall({
             service: "org.kde.plasmashell",
             path: "/PlasmaShell",
@@ -40,11 +74,11 @@ PlasmoidItem {
     }
 
     // searchMode (contents/config/main.xml), as Windows' Settings >
-    // Taskbar > Search names them: 0 "Search box", 1 "Search icon only".
-    readonly property bool showBox: Plasmoid.configuration.searchMode === 0 && !vertical
+    // Taskbar > Search names them: 0 box, 1 icon and label, 2 icon only.
+    readonly property bool showBox: searchMode !== 2 && !vertical
 
     preferredRepresentation: fullRepresentation
-    Plasmoid.icon: "edit-find"
+    Plasmoid.icon: "search"
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     Plasmoid.onActivated: openSearch()
 
@@ -52,10 +86,12 @@ PlasmoidItem {
     // The icon is a square cell, like the task buttons: as wide as a
     // horizontal panel is thick, as tall as a vertical panel is wide. On
     // the desktop both are 48 px tall.
-    Layout.minimumWidth: showBox ? searchBox.preferredWidth
+    Layout.minimumWidth: showBox ? Math.min(searchBox.preferredWidth, Math.max(1, height))
                                  : (horizontal ? height : (vertical ? 0 : Kirigami.Units.iconSizes.huge))
-    Layout.maximumWidth: (showBox || horizontal) ? Layout.minimumWidth : Number.POSITIVE_INFINITY
-    Layout.preferredWidth: Layout.minimumWidth
+    Layout.maximumWidth: showBox ? searchBox.preferredWidth
+                                 : (horizontal ? Layout.minimumWidth : Number.POSITIVE_INFINITY)
+    Layout.preferredWidth: showBox ? searchBox.preferredWidth : Layout.minimumWidth
+    Layout.fillWidth: showBox && horizontal
     Layout.minimumHeight: vertical ? width : (horizontal ? 0 : Kirigami.Units.iconSizes.huge)
     Layout.maximumHeight: vertical ? width : Number.POSITIVE_INFINITY
     Layout.preferredHeight: Layout.minimumHeight
@@ -67,7 +103,9 @@ PlasmoidItem {
         id: searchBox
         anchors.fill: parent
         visible: root.showBox
-        iconName: "edit-find-symbolic"
+        styleMode: root.searchMode === 1 ? 1 : 0
+        selected: root.searchSelected
+        iconName: "search"
         text: i18nc("@action:button taskbar search box", "Search")
         placeholder: i18nc("@info:placeholder taskbar search box", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")
@@ -77,7 +115,10 @@ PlasmoidItem {
     TaskbarButton {
         anchors.fill: parent
         visible: !root.showBox
-        iconName: "edit-find-symbolic"
+        iconName: searchBox.iconSource
+        hoverIconName: searchBox.hoverIconSource
+        iconIsMask: searchBox.iconIsMask
+        selected: root.searchSelected
         text: i18nc("@action:button taskbar button", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")
         onTriggered: root.openSearch()
@@ -89,4 +130,15 @@ PlasmoidItem {
         }
     }
     // qmllint enable unqualified
+
+    Component.onCompleted: {
+        Qt.callLater(root.refreshSearchState);
+        // Mode 1 used to mean icon-only. Preserve existing user choices while
+        // assigning the new compact icon-and-label mode its own value.
+        if (!Plasmoid.configuration.searchModesMigrated) {
+            if (Plasmoid.configuration.searchMode === 1)
+                Plasmoid.configuration.searchMode = 2;
+            Plasmoid.configuration.searchModesMigrated = true;
+        }
+    }
 }

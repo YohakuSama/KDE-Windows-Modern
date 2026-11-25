@@ -30,6 +30,8 @@ FocusScope {
     readonly property var entries: showApps ? sourceEntries : []
     readonly property int count: entries.length
     readonly property var visualRows: Alphabetical.buildRows(entries, columns, alphabeticalGrouping)
+    property bool letterIndexOpen: false
+    readonly property var letterIndexEntries: Alphabetical.letterIndex(visualRows)
     signal applicationActivated(int sourceRow)
     signal navigateToHeader()
 
@@ -89,7 +91,12 @@ FocusScope {
     }
     function scheduleRefresh() { refreshTimer.restart(); }
     onSourceModelChanged: scheduleRefresh()
-    onShowAppsChanged: scheduleRefresh()
+    onShowAppsChanged: if (!showApps) {
+        currentIndex = -1;
+        letterIndexOpen = false;
+    }
+    onAlphabeticalGroupingChanged: if (!alphabeticalGrouping) letterIndexOpen = false
+    onCountChanged: if (!count) letterIndexOpen = false
     Component.onCompleted: scheduleRefresh()
     Connections {
         target: typeof view.sourceModel === "object" ? view.sourceModel : null
@@ -125,10 +132,33 @@ FocusScope {
         currentIndex = Alphabetical.horizontalNeighbor(visualRows, currentIndex, direction);
     }
 
+    function openLetterIndex() {
+        if (!alphabeticalGrouping || !count) return;
+        letterIndexOpen = true;
+    }
+    function closeLetterIndex(restoreFocus) {
+        if (!letterIndexOpen) return;
+        letterIndexOpen = false;
+        if (restoreFocus) rowsView.forceActiveFocus();
+    }
+
+    function jumpToLetter(letter) {
+        const entry = letterIndexEntries.find(item => item.label === letter);
+        if (!entry || !entry.available) return false;
+        closeLetterIndex(true);
+        // Resolve the section against the current model, not a captured
+        // row number after a queued model reset.
+        currentIndex = entry.sourceIndex;
+        positionViewAtIndex(currentIndex, GridView.Beginning);
+        return true;
+    }
+
     ListView {
         id: rowsView
         anchors.fill: parent
-        focus: true
+        objectName: "wmStartAlphabeticalRows"
+        focus: !view.letterIndexOpen
+        enabled: !view.letterIndexOpen
         keyNavigationEnabled: false
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -146,15 +176,42 @@ FocusScope {
             PlasmaComponents3.Label {
                 id: sectionLabel
                 objectName: "wmStartLetterHeading"
-                width: parent.width
+                width: Math.min(parent.width, Math.max(44, implicitWidth + 10))
                 height: visible ? view.headingHeight : 0
                 visible: visualRow.modelData.heading.length > 0
                 text: visualRow.modelData.heading
+                readonly property bool hovered: sectionHeadingMouse.containsMouse
                 color: Kirigami.Theme.textColor
                 font.pixelSize: Math.max(13, Kirigami.Theme.defaultFont.pixelSize)
+                font.weight: Font.Medium
+                background: Rectangle {
+                    radius: 4
+                    color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                        Kirigami.Theme.textColor.b, sectionHeadingMouse.containsPress ? 0.12
+                            : sectionLabel.hovered || sectionLabel.activeFocus ? 0.07 : 0)
+                    Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+                }
                 verticalAlignment: Text.AlignVCenter
                 leftPadding: 10
                 textFormat: Text.PlainText
+                activeFocusOnTab: visible && view.alphabeticalGrouping
+                Accessible.role: Accessible.Button
+                Accessible.name: text + ", " + i18n("Open letter index")
+                Accessible.description: i18n("Choose a letter to jump to its apps")
+                Accessible.onPressAction: view.openLetterIndex()
+                Keys.onReturnPressed: view.openLetterIndex()
+                Keys.onEnterPressed: view.openLetterIndex()
+                Keys.onSpacePressed: view.openLetterIndex()
+                MouseArea {
+                    id: sectionHeadingMouse
+                    objectName: "wmStartLetterHeadingHitArea"
+                    anchors.fill: parent
+                    enabled: sectionLabel.visible && view.alphabeticalGrouping
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: view.openLetterIndex()
+                }
             }
 
             Row {
@@ -187,7 +244,7 @@ FocusScope {
             anchors.bottom: rowsView.bottom
             anchors.right: rowsView.right
             anchors.rightMargin: -view.scrollbarEdgeOffset
-            visible: rowsView.visible && size < 1
+            visible: rowsView.visible && !view.letterIndexOpen && size < 1
             viewportHovered: alphabeticalViewportHover.hovered
             scrolling: rowsView.moving
             z: 5
@@ -195,8 +252,18 @@ FocusScope {
         StartWheelHandler { view: rowsView; rowHeight: Math.min(40, view.cellHeight) }
     }
 
+    LetterIndex {
+        id: letterIndex
+        anchors.fill: parent
+        z: 20
+        opened: view.letterIndexOpen
+        letters: view.letterIndexEntries
+        onLetterActivated: letter => view.jumpToLetter(letter)
+        onBackRequested: view.closeLetterIndex(true)
+    }
+
     Keys.onPressed: event => {
-        if (!count) return;
+        if (!count || letterIndexOpen) return;
         const position = Alphabetical.locate(visualRows, currentIndex);
         switch (event.key) {
         case Qt.Key_Up:

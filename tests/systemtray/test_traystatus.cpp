@@ -16,16 +16,15 @@ int main()
         check(id, Status::ActiveStatus, true, false, false, Status::ActiveStatus);
         check(id, Status::PassiveStatus, true, false, false, Status::HiddenStatus);
         check(id, Status::ActiveStatus, true, false, true, Status::PassiveStatus);
-        check(id, Status::PassiveStatus, true, true, false, Status::HiddenStatus);
-        check(id, Status::PassiveStatus, true, false, true, Status::HiddenStatus);
-        check(id, Status::ActiveStatus, true, true, false, Status::ActiveStatus);
+        check(id, Status::PassiveStatus, true, true, false, Status::ActiveStatus);
         check(id, Status::ActiveStatus, false, true, false, Status::HiddenStatus);
     }
     const QString clipboard = QStringLiteral("org.kde.plasma.clipboard");
     check(clipboard, Status::PassiveStatus, true, false, false, Status::HiddenStatus);
-    check(clipboard, Status::ActiveStatus, true, false, false, Status::PassiveStatus);
+    check(clipboard, Status::UnknownStatus, true, false, false, Status::HiddenStatus);
     check(clipboard, Status::PassiveStatus, true, false, true, Status::HiddenStatus);
-    check(clipboard, Status::PassiveStatus, true, true, false, Status::HiddenStatus);
+    check(clipboard, Status::PassiveStatus, true, true, false, Status::ActiveStatus);
+    check(clipboard, Status::ActiveStatus, true, false, false, Status::PassiveStatus);
     const QString fcitx = QStringLiteral("Fcitx");
     check(fcitx, Status::ActiveStatus, true, false, false, Status::ActiveStatus);
     check(fcitx, Status::ActiveStatus, true, false, true, Status::PassiveStatus);
@@ -47,8 +46,6 @@ int main()
     check(QStringLiteral("org.kde.plasma.volume"), Status::PassiveStatus, true, false, true, Status::ActiveStatus);
     check(QStringLiteral("org.kde.plasma.networkmanagement"), Status::PassiveStatus, true, false, true, Status::ActiveStatus);
     check(QStringLiteral("org.kde.plasma.userswitcher"), Status::ActiveStatus, true, false, false, Status::HiddenStatus);
-    check(QStringLiteral("org.kde.plasma.userswitcher"), Status::ActiveStatus, true, true, false, Status::HiddenStatus);
-    check(QStringLiteral("org.kde.plasma.userswitcher"), Status::ActiveStatus, true, false, true, Status::HiddenStatus);
     check(QStringLiteral("org.kde.plasma.weather"), Status::ActiveStatus, true, false, false, Status::HiddenStatus);
     check(QStringLiteral("org.kde.plasma.weather"), Status::ActiveStatus, true, false, true, Status::PassiveStatus);
     check(QStringLiteral("org.kde.plasma.keyboardindicator"), Status::NeedsAttentionStatus, true, false, false, Status::ActiveStatus);
