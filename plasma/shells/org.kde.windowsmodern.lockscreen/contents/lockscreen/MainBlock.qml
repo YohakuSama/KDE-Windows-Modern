@@ -107,9 +107,10 @@ SessionManagementScreen {
     // ── Password field + submit button ──
     Item {
         Layout.fillWidth: true
-        Layout.maximumWidth: 380
+        Layout.maximumWidth: 280
         Layout.alignment: Qt.AlignHCenter
-        implicitHeight: 36
+        Layout.preferredHeight: 42
+        implicitHeight: 42
 
         Rectangle {
             id: passwordBorder
@@ -140,7 +141,7 @@ SessionManagementScreen {
 
             property bool showPassword: false
             echoMode: showPassword ? TextInput.Normal : TextInput.Password
-            placeholderText: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:placeholder in text field", "Password")
+            placeholderText: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Password")
             placeholderTextColor: "#A0A0A0"
             font.family: Kirigami.Theme.defaultFont.family
             font.pixelSize: 14
@@ -187,8 +188,8 @@ SessionManagementScreen {
             anchors.right: parent.right
             anchors.rightMargin: 2
             anchors.verticalCenter: parent.verticalCenter
-            width: 32
-            height: 32
+            width: 38
+            height: 38
 
             icon.name: LayoutMirroring.enabled ? "go-previous" : "go-next"
             visible: passwordBox.text.length > 0

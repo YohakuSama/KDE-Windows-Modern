@@ -203,7 +203,7 @@ SessionManagementScreen {
             rightPadding: 10
 
             text: ""
-            placeholderText: i18nd("plasma_login", "Password")
+            placeholderText: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Password")
             echoMode: TextInput.Password
             initialFocus: !showUsernamePrompt
 
@@ -255,10 +255,17 @@ SessionManagementScreen {
     // ── No-password login button ──
     QQC2.Button {
         Layout.alignment: Qt.AlignHCenter
-        text: i18nd("plasma_login", "Log In")
+        Layout.preferredWidth: 144
+        Layout.preferredHeight: WinStyle.textFieldHeight
+        text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in")
         visible: !root.showUsernamePrompt && userList.currentItem && !userList.currentItem.needsPassword
         onClicked: root.startLogin()
-        flat: true
+        background: Rectangle {
+            radius: 4
+            color: parent.hovered ? "#33FFFFFF" : "#20FFFFFF"
+            border.color: "#88FFFFFF"
+            border.width: parent.activeFocus ? 2 : 1
+        }
     }
 
     // ── Synchronize state with GreeterState ──

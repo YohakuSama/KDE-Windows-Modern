@@ -379,7 +379,7 @@
   "Power Saver": "节能",
   "Block sleep & screen lock": "阻止睡眠和锁屏",
   "No Bluetooth adapter available": "没有可用的蓝牙适配器",
-  "No devices paired": "没有已配对的设备",
+  "No devices paired": "没有已配对设备",
   "Bluetooth is off": "蓝牙已关闭",
   "More Bluetooth settings": "更多蓝牙设置",
   "Add new device": "添加新设备",
@@ -472,5 +472,15 @@
   "Do not disturb is on": "免打扰已开启",
   "Only notifications allowed by your priority settings appear as banners.": "仅显示优先级设置允许的通知横幅。",
   "Transfer progress": "传输进度",
-  "Resume": "继续"
+  "Resume": "继续",
+  "Image": "图片",
+  "Pin": "固定",
+  "Unpin": "取消固定",
+  "Delete": "删除",
+  "No Bluetooth adapters available": "没有可用的蓝牙适配器",
+  "Add device": "添加设备",
+  "Connecting": "正在连接",
+  "Disconnecting": "正在断开连接",
+  "Connection failed": "连接失败",
+  "Sign in": "登录"
 }

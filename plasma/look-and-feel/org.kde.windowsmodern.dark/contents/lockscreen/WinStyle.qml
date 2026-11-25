@@ -23,11 +23,11 @@ QtObject {
     readonly property string fontFamily: Application.font.family
 
     readonly property int avatarSize: 140
-    readonly property int textFieldHeight: 36
+    readonly property int textFieldHeight: 42
     readonly property int textFieldRadius: 4
     readonly property color textFieldBorderColor: "#66FFFFFF"
-    readonly property int textFieldMaxWidth: 380
-    readonly property int loginButtonSize: 32
+    readonly property int textFieldMaxWidth: 280
+    readonly property int loginButtonSize: 38
     readonly property int userSwitcherAvatarSize: 32
     readonly property int userSwitcherItemHeight: 32
     readonly property int powerMenuWidth: 150

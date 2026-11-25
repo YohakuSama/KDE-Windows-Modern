@@ -36,8 +36,10 @@ SessionManagementScreen {
     PlasmaComponents3.Button {
         id: loginButton
         focus: true
-        text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button no-password unlock", "Unlock")
-        icon.name: "unlock"
+        text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in")
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredWidth: 144
+        Layout.preferredHeight: 42
         onClicked: Qt.quit();
         Keys.onEnterPressed: clicked()
         Keys.onReturnPressed: clicked()
