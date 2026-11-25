@@ -21,6 +21,24 @@ jobs:
       # parity, layout drift, metadata, bash -n and shellcheck.
       - name: verify-all.sh
         run: ./verify-all.sh
+      - name: Audit unresolved source icon references
+        run: |
+          python3 scripts/icon-coverage.py > "$RUNNER_TEMP/icon-coverage-source.json"
+          python3 - "$RUNNER_TEMP/icon-coverage-source.json" <<'PY'
+          import json, sys
+          report = json.load(open(sys.argv[1], encoding="utf-8"))
+          print("Icon coverage counts:", json.dumps(report["counts"], sort_keys=True))
+          for status in ("not_in_theme", "native_mapping_not_verified"):
+              rows = report["references"].get(status, [])
+              print(f"{status}: {len(rows)}")
+              for row in rows:
+                  candidates = row.get("qml_candidates", [])
+                  if candidates:
+                      locations = ", ".join(
+                          f"{item['file']}:{item['line']}" for item in candidates[:3]
+                      )
+                      print(f"  {row['name']}: {locations}")
+          PY
       - name: Validate Qt Quick Start menu key handlers
         run: python3 scripts/check-startmenu-keys.py
       - name: KWin JavaScript regression tests
