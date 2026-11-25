@@ -5,6 +5,8 @@
 // visible panel and popup, not the smaller button's padded hit target.
 const gap = 12;
 
+function popupGap() { return gap; }
+
 function normalOffset(edge, panel, anchor) {
     const valid = panel && anchor && Number.isFinite(panel.x) && Number.isFinite(panel.y)
         && panel.width > 0 && panel.height > 0 && Number.isFinite(anchor.x) && Number.isFinite(anchor.y)

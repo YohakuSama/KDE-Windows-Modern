@@ -443,9 +443,9 @@ ContainmentItem {
             function sync() {
                 if (!target || !target.Window.window) return;
                 const edge = Plasmoid.location === PlasmaCore.Types.BottomEdge ? "bottom"
-            : Plasmoid.location === PlasmaCore.Types.TopEdge ? "top"
-            : Plasmoid.location === PlasmaCore.Types.LeftEdge ? "left"
-            : Plasmoid.location === PlasmaCore.Types.RightEdge ? "right" : "";
+                    : Plasmoid.location === PlasmaCore.Types.TopEdge ? "top"
+                    : Plasmoid.location === PlasmaCore.Types.LeftEdge ? "left"
+                    : Plasmoid.location === PlasmaCore.Types.RightEdge ? "right" : "";
                 const pos = target.mapToGlobal(0, 0);
                 const offset = PopupGeometry.normalOffset(edge, root.panelGeometry,
                     {x: pos.x, y: pos.y, width: target.width, height: target.height});
@@ -465,7 +465,7 @@ ContainmentItem {
             flags: Qt.Dialog
             visualParent: trayPopupAnchor
             location: Plasmoid.location
-            floating: PopupGeometry.gap
+            floating: PopupGeometry.popupGap()
             hideOnWindowDeactivate: !Plasmoid.configuration.pin
             visible: false
 

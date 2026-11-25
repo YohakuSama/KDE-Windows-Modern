@@ -121,7 +121,7 @@ Item {
         flags: Qt.Dialog
         visualParent: popupAnchor
         location: Plasmoid.location
-        floating: PopupGeometry.gap
+        floating: PopupGeometry.popupGap()
         visible: false
         hideOnWindowDeactivate: true
 

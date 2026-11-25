@@ -91,7 +91,7 @@ MouseArea {
             }
             const inBounds = x >= screen.x - 2 && y >= screen.y - 2
                 && x + w <= screen.x + screen.width + 2 && y + h <= screen.y + screen.height + 2;
-            const ok = inBounds && axisOverlap && Math.abs(gap - PopupGeometry.gap) <= 3;
+            const ok = inBounds && axisOverlap && Math.abs(gap - PopupGeometry.popupGap()) <= 3;
             console.info("WM_POPUP clock", ok ? "OK" : "POSITION_MISMATCH",
                 x, y, w, h, "anchor", a.x, a.y, main.width, main.height, "gap", gap);
         }
@@ -104,7 +104,7 @@ MouseArea {
         flags: Qt.Dialog
         visualParent: clockPopupAnchor
         location: Plasmoid.location
-        floating: PopupGeometry.gap
+        floating: PopupGeometry.popupGap()
         backgroundHints: PlasmaCore.Dialog.NoBackground
         visible: false
         hideOnWindowDeactivate: !Plasmoid.configuration.pin

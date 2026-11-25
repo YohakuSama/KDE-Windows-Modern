@@ -49,7 +49,7 @@ TestCase {
         const offset = Geometry.normalOffset(data.edge, data.panel, data.anchor);
         compare(offset.x, data.x);
         compare(offset.y, data.y);
-        compare(Geometry.gap, 12);
+        compare(Geometry.popupGap(), 12);
     }
 
     function test_horizontalAnchorOffset(data) {

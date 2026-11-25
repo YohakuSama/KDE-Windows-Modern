@@ -26,8 +26,8 @@ function horizontalAnchorOffset(mode, screen, button, panel, popupWidth) {
     // The compositor still handles final placement and vertical work areas.
     if (hasPopupWidth) {
         const half = popupWidth / 2;
-        const minCenter = screen.x + Geometry.gap + half;
-        const maxCenter = screen.x + screen.width - Geometry.gap - half;
+        const minCenter = screen.x + Geometry.popupGap() + half;
+        const maxCenter = screen.x + screen.width - Geometry.popupGap() - half;
         center = minCenter <= maxCenter
             ? Math.max(minCenter, Math.min(maxCenter, center))
             : screen.x + screen.width / 2;
