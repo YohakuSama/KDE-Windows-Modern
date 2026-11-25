@@ -116,16 +116,17 @@ Rectangle {
             id: otherActions
             model: row.actions ?? null
             delegate: PlasmaComponents3.Button {
-                required property string Name
-                required property string Text
-                required property string Icon
-                objectName: "wmDeviceOtherAction_" + Name
+                // Native KDE DeviceItem uses the delegate model object for
+                // these uppercase role names. QML property names cannot
+                // start with uppercase letters.
+                required property var model
+                objectName: "wmDeviceOtherAction_" + model.Name
                 Layout.fillWidth: true
                 visible: row.expanded && row.canOperate
                 enabled: row.canOperate
-                text: Text
-                icon.name: Icon || ""
-                onClicked: row.triggerAction(Name)
+                text: model.Text
+                icon.name: model.Icon || ""
+                onClicked: row.triggerAction(model.Name)
             }
         }
     }
