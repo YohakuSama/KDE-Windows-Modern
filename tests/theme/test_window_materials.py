@@ -66,10 +66,10 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertEqual([x.get('fill') for x in item], [border, color])
                     self.assertTrue(all(x.get('opacity') == '.98' for x in item))
                 config = (theme / (name + '.kvconfig')).read_text()
-                menu = config.split('[Menu]\\n', 1)[1].split('[MenuItem]', 1)[0]
+                menu = config.split('[Menu]\n', 1)[1].split('[MenuItem]', 1)[0]
                 for side in ('top', 'bottom', 'left', 'right'):
                     self.assertIn('frame.' + side + '=8', menu)
-                items = config.split('[MenuItem]\\n', 1)[1].split('[MenuBar]', 1)[0]
+                items = config.split('[MenuItem]\n', 1)[1].split('[MenuBar]', 1)[0]
                 self.assertIn('text.margin.top=3', items)
                 self.assertIn('text.margin.bottom=3', items)
 
