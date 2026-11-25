@@ -9,16 +9,16 @@ TestCase {
 
     function test_distinctSurfaceWidths_data() {
         return [
-            {tag: "small", mode: 1, w: 1920, h: 1080, panel: 48, vertical: false, ew: 560, sw: 688, eh: 640},
-            {tag: "large", mode: 2, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, sw: 896, eh: 720},
-            {tag: "auto 100 percent", mode: 0, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, sw: 896, eh: 720},
-            {tag: "auto 125 percent", mode: 0, w: 1536, h: 864, panel: 48, vertical: false, ew: 768, sw: 896, eh: 720},
-            {tag: "auto 150 percent", mode: 0, w: 1280, h: 720, panel: 48, vertical: false, ew: 560, sw: 688, eh: 616},
-            {tag: "auto 200 percent", mode: 0, w: 960, h: 540, panel: 48, vertical: false, ew: 560, sw: 688, eh: 436},
+            {tag: "small", mode: 1, w: 1920, h: 1080, panel: 48, vertical: false, ew: 560, sw: 680, eh: 640},
+            {tag: "large", mode: 2, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, sw: 928, eh: 720},
+            {tag: "auto 100 percent", mode: 0, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, sw: 928, eh: 720},
+            {tag: "auto 125 percent", mode: 0, w: 1536, h: 864, panel: 48, vertical: false, ew: 768, sw: 928, eh: 720},
+            {tag: "auto 150 percent", mode: 0, w: 1280, h: 720, panel: 48, vertical: false, ew: 560, sw: 680, eh: 616},
+            {tag: "auto 200 percent", mode: 0, w: 960, h: 540, panel: 48, vertical: false, ew: 560, sw: 680, eh: 436},
             {tag: "partially clamped", mode: 1, w: 700, h: 720, panel: 48, vertical: false, ew: 560, sw: 644, eh: 616},
             {tag: "side panel", mode: 2, w: 800, h: 720, panel: 48, vertical: true, ew: 696, sw: 696, eh: 664},
             {tag: "small display", mode: 1, w: 480, h: 360, panel: 48, vertical: false, ew: 424, sw: 424, eh: 256},
-            {tag: "unmapped output", mode: 0, w: 0, h: 0, panel: 0, vertical: false, ew: 560, sw: 688, eh: 640}
+            {tag: "unmapped output", mode: 0, w: 0, h: 0, panel: 0, vertical: false, ew: 560, sw: 680, eh: 640}
         ];
     }
 
@@ -31,6 +31,19 @@ TestCase {
         compare(start.height, data.eh);
         compare(search.height, start.height);
         verify(search.width >= start.width);
+    }
+
+    function test_taskbarSearchAnchor() {
+        const screen = {x: 0, width: 1920};
+        const panel = {x: 0, width: 1920};
+        const start = {x: 12, width: 48};
+        const search = {x: 64, width: 248};
+        compare(PopupPosition.horizontalAnchorOffset(0, screen, start, panel, 680, search),
+                368);
+        const centeredStart = {x: 700, width: 48};
+        const centeredSearch = {x: 752, width: 248};
+        compare(PopupPosition.horizontalAnchorOffset(0, screen, centeredStart, panel, 680, centeredSearch),
+                152);
     }
 
     function test_horizontalAnchorOffset_data() {

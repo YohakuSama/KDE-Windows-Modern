@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Match the distinct Start and taskbar Search entrypoints, use the owner reference width ratio, remove the duplicate empty taskbar Search header, reuse the existing Microsoft Fluent Person artwork, compact the footer and make optional folder shortcuts off by default.
+
 - Keep the existing Start menu size while making Search 128 logical pixels wider at the same height; resolve Search geometry before opening, keep query results stable, and update the regression and live capture contracts.
 
 - Keep the Quick Settings volume row visible while the audio service or output device is unavailable; disable only its track, and recover the real default output from the native device model when KDE's preferred output is unset.

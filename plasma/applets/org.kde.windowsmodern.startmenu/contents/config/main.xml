@@ -99,13 +99,13 @@
     </entry>
 
     <entry name="showRightColumn" type="Bool">
-      <default>true</default>
+      <default>false</default>
     </entry>
     <entry name="footerShortcutsMigrated" type="Bool">
       <default>false</default>
     </entry>
     <entry name="rightColumnItems" type="StringList">
-      <default>documents,downloads,music,pictures,videos,network,home,thispc,settings</default>
+      <default></default>
     </entry>
 
     <entry name="menuTranslucency" type="Int">

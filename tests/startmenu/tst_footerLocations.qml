@@ -38,7 +38,7 @@ TestCase {
     function test_referenceOrderAndMigration() {
         const expected = ["documents", "downloads", "music", "pictures", "videos",
                           "network", "home", "thispc", "settings"];
-        compare(Locations.normalize(undefined), expected);
+        compare(Locations.normalize(undefined), []);
         compare(Locations.normalize(["home", "documents", "pictures", "music", "downloads",
                                     "recent", "thispc", "update", "terminal", "run"]), expected);
         compare(Locations.normalize(["settings", "downloads", "home"]), ["downloads", "home", "settings"]);

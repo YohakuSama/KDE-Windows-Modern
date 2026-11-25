@@ -20,6 +20,7 @@ RowLayout {
     height: implicitHeight
 
     property alias searchText: searchFieldInput.text
+    readonly property bool composing: searchFieldInput.inputMethodComposing
     property bool searchMode: false
     signal searchRequested
 
@@ -43,10 +44,10 @@ RowLayout {
     PlasmaComponents3.TextField {
         id: searchFieldInput
         objectName: "wmStartSearchInput"
-        Accessible.name: placeholderText
+        Accessible.name: searchBox.searchMode ? i18n("Type here to search") : placeholderText
         Layout.fillWidth: true
         focus: true
-        placeholderText: searchBox.searchMode ? i18n("Type here to search") : i18n("Search for apps, settings, and files")
+        placeholderText: i18n("Search for apps, settings, and files")
         hoverEnabled: true
         TapHandler {
             gesturePolicy: TapHandler.DragThreshold

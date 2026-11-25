@@ -201,12 +201,13 @@ the private resource bundle to the public Actions artifacts.
 
 The owner clarified that Search is wider than Start and must have the same
 height. Keep the existing Start size preference (560 x 640 small, 768 x 720
-large). Use a wider Search content size (688 x 640 small, 896 x 720 large),
+large). Use a wider Search content size (680 x 640 small, 928 x 720 large),
 subject to the same screen/work-area clamp. Preserve the common frame and
 vertical placement; recompute the horizontal anchor using the actual width.
 Search home and search results share one size regardless of query changes.
-The 128 logical-pixel width increment is an implementation target, not a
-measured Windows dimension; matched live reference calibration remains open.
+The width ratio of approximately 1.21 is derived from the owner's two
+reference screenshots after normalizing their screen widths. Absolute
+logical dimensions and compositor placement still require live calibration.
 
 The existing live panel scenario `tests/panel/new_features.py OUT_DIR search`
 measures the photographed rectangle and search-field geometry for Start,

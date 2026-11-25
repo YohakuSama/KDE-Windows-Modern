@@ -54,7 +54,17 @@ def search_field(searching=None):
 
 
 def start_menu_open():
-    return search_field() is not None
+    return search_field() is not None or search_home_node() is not None
+
+
+def search_home_node():
+    button = start_button()
+    if button is None:
+        return None
+    return next((n for n in a11y.nodes("plasmashell")
+                 if n.showing and n.window != button.window
+                 and n.name in ("Suggested", "建议", "推荐", "Quick searches", "快速搜索", "Top apps", "热门应用")
+                 and n.rect[2] > 0), None)
 
 
 
@@ -111,27 +121,30 @@ def search(vi, out, c):
     with Image.open(baseline) as img:
         screen_width = img.width
 
-    def capture(name, searching=False):
+    def capture(name, searching=False, taskbar=False):
         field = search_field(searching)
-        if field is None:
-            raise RuntimeError("Shared search field is not showing")
+        node = field or (search_home_node() if taskbar else None)
+        if node is None:
+            raise RuntimeError("Search surface is not showing")
         window = next((n for n in a11y.nodes("plasmashell")
-                       if n.window == field.window and n.depth == 0), None)
+                       if n.window == node.window and n.depth == 0), None)
         if window is None or window.rect[2] <= 0 or window.rect[3] <= 0:
             raise RuntimeError("No accessible popup window extent")
         rect = popup_bounds(baseline, shot(name))
         local = (field.rect[0] - window.rect[0], field.rect[1] - window.rect[1],
-                 field.rect[2], field.rect[3])
+                 field.rect[2], field.rect[3]) if field is not None and field.rect[3] > 0 else None
         print(f"        {name}: physical popup={rect}; logical field={local}")
-        if searching not in expected:
-            expected[searching] = (rect, local)
+        key = "taskbar" if taskbar else searching
+        if key not in expected:
+            expected[key] = (rect, local)
         else:
-            # Compare geometry within each mode, not Start against Search.
-            expected_rect, expected_field = expected[searching]
+            # Compare geometry within each entrypoint, not across anchors.
+            expected_rect, expected_field = expected[key]
             c.check(max(abs(a - b) for a, b in zip(expected_rect, rect)) <= 3,
                     f"mode position and outer size unchanged ({expected_rect} -> {rect})")
-            c.check(max(abs(a - b) for a, b in zip(expected_field, local)) <= 1,
-                    f"mode search field geometry unchanged ({expected_field} -> {local})")
+            if expected_field is not None and local is not None:
+                c.check(max(abs(a - b) for a, b in zip(expected_field, local)) <= 1,
+                        f"mode search field geometry unchanged ({expected_field} -> {local})")
         if searching and False in expected:
             start_rect, _ = expected[False]
             scale = rect[2] / window.rect[2]
@@ -180,9 +193,15 @@ def search(vi, out, c):
         if not c.check(not start_menu_open(), "Escape closes search"):
             return
         click_button(search_button)
-        if not c.check(wait_for(lambda: search_field(True) is not None), "taskbar Search opens wider Search surface"):
+        if not c.check(wait_for(start_menu_open), "taskbar Search opens wider Search surface"):
             return
-        capture("search-click", searching=True)
+        capture("search-click", searching=True, taskbar=True)
+        vi.type_text("test")
+        if not c.check(wait_for(lambda: search_field(True) is not None
+                                and search_field(True).text() == "test"), "taskbar Search accepts typed query"):
+            return
+        capture("taskbar-search-results", searching=True, taskbar=True)
+        vi.tap(e.KEY_ESC, after=0.5)
         vi.tap(e.KEY_ESC, after=0.6)
         if not c.check(not start_menu_open(), "taskbar search closes"):
             return

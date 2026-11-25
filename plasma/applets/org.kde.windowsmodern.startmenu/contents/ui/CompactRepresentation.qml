@@ -166,8 +166,14 @@ Item {
     // a shell scripting call. Search resolves this action on its own panel.
     PlasmaCore.Action {
         id: openSearchAction
+        property var searchAnchor: null
+        property bool taskbarBox: false
         text: i18n("Search")
-        onTriggered: if (root.dashWindow) root.dashWindow.openSearch()
+        onTriggered: {
+            if (root.dashWindow) root.dashWindow.openSearch(searchAnchor, taskbarBox);
+            searchAnchor = null;
+            taskbarBox = false;
+        }
     }
 
     PlasmaCore.Action {

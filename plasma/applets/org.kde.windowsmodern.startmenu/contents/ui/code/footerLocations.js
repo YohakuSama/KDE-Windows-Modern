@@ -26,7 +26,7 @@ function locations(i18n) {
 }
 
 function normalize(selected) {
-    if (selected === null || selected === undefined) return defaults.slice();
+    if (selected === null || selected === undefined) return [];
     const values = Array.from(selected);
     if (values.join(",") === legacy.join(",")) return defaults.slice();
     return defaults.concat(["recent", "update", "terminal", "run"])

@@ -60,6 +60,14 @@ PlasmoidItem {
             const action = applet.internalAction("windowsModernSearch");
             if (action && action.enabled) {
                 root.searchStateAction = applet.internalAction("windowsModernSearchSelected");
+                // New Start versions accept the real source rectangle; older
+                // versions still respond to the original action.
+                if ("searchAnchor" in action && "taskbarBox" in action) {
+                    const inset = root.showBox ? searchBox.sideMargin : 0;
+                    const p = root.mapToGlobal(inset, 0);
+                    action.searchAnchor = {x: p.x, width: Math.max(1, root.width - 2 * inset)};
+                    action.taskbarBox = root.showBox && root.searchMode === 0;
+                }
                 action.trigger();
                 return;
             }

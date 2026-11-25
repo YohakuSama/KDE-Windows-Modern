@@ -25,6 +25,7 @@ KCM.SimpleKCM {
     // Keep the persisted 0/2/3 values; legacy 1 maps to centered at panel.
     property int cfg_displayPosition: Plasmoid.configuration.displayPosition
     property alias cfg_showRightColumn: showRightColumn.checked
+    property alias cfg_showShutdownButton: showShutdownButton.checked
     property var cfg_rightColumnItems: Locations.normalize(Plasmoid.configuration.rightColumnItems)
     property alias cfg_allAppsSortMode: allAppsSortMode.currentIndex
     property alias cfg_menuTranslucency: menuTranslucency.currentIndex
@@ -152,6 +153,11 @@ KCM.SimpleKCM {
         CheckBox {
             id: hideAccountIdentity
             Kirigami.FormData.label: i18n("Hide your name and profile picture on Start")
+        }
+
+        CheckBox {
+            id: showShutdownButton
+            Kirigami.FormData.label: i18n("Show power button")
         }
 
         // ── Show places column ─────────────────────────────────────────

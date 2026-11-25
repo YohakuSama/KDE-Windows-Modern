@@ -26,10 +26,12 @@ Current implementation values are provisional until verified on the desktop.
 ## Start and Search
 
 - Start keeps its 560x640 or 768x720 logical content size. Search uses a
-  wider 688x640 or 896x720 logical content size, clamped to the same work
+  wider 680x640 or 928x720 logical content size, clamped to the same work
   area. Both use the same frame, height and vertical placement. Search home
   and results keep one stable Search size; entering or leaving Search may
   change the width. Narrow screens may clamp both to the same width.
+- The full taskbar Search box opens at its own anchor with no duplicate
+  input on the empty Search page; Start keeps its own top input.
 - Preserve real Kicker/Milou actions, configurable Pinned/Recent/All,
   category/list/grid views, alphabetical navigation, user preferences,
   app previews and the footer. No dummy Windows services or promotions.

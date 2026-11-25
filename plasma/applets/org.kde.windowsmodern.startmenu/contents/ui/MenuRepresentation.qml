@@ -65,7 +65,7 @@ Item {
         height: main.startButton ? main.startButton.height : 0
     }
 
-    function toggleMenu(searchMode) {
+    function toggleMenu(searchMode, searchAnchor, taskbarBox) {
         if (root.visible) {
             root.visible = false;
             return;
@@ -75,7 +75,7 @@ Item {
             return;
 
         // Resolve the requested mode and its size before mapping the popup.
-        root.reset(!!searchMode);
+        root.reset(!!searchMode, searchAnchor, taskbarBox);
         updatePopupAnchor();
         root.visible = true;
     }
@@ -97,15 +97,19 @@ Item {
             popupAnchor.x = PopupPosition.horizontalAnchorOffset(
                 Plasmoid.configuration.displayPosition, Plasmoid.screenGeometry,
                 { x: pos.x, width: startButton.width }, panelGeometry,
-                rootItem.width + root.margins.left + root.margins.right);
+                rootItem.width + root.margins.left + root.margins.right,
+                root.searching ? root.taskbarSearchAnchor : null);
         }
     }
 
     // Both Search entrypoints use the same wider search layout.
-    function openSearch() {
-        if (!root.visible) toggleMenu(true);
+    function openSearch(searchAnchor, taskbarBox) {
+        if (!root.visible) toggleMenu(true, searchAnchor, taskbarBox);
         if (!root.visible) return;
+        root.taskbarSearchAnchor = searchAnchor || null;
+        root.taskbarSearchBox = !!taskbarBox;
         root.searching = true;
+        main.updatePopupAnchor();
         root.requestActivate();
         Qt.callLater(startSearch.focusSearch);
     }
@@ -140,6 +144,10 @@ Item {
         }
 
         property bool searching: false
+        property var taskbarSearchAnchor: null
+        property bool taskbarSearchBox: false
+        readonly property bool taskbarSearchHome: searching && taskbarSearchBox && startSearch.searchText.length === 0
+            && !startSearch.composing
 
         // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results.
         // Pinned and All now share the same scrollable home.
@@ -164,6 +172,8 @@ Item {
         onVisibleChanged: {
             if (!visible) {
                 searching = false;
+                taskbarSearchAnchor = null;
+                taskbarSearchBox = false;
                 leftColumnState = 0;
                 modeMenu.close();
                 sharedContextMenu.close();
@@ -171,7 +181,7 @@ Item {
             }
         }
 
-        function reset(searchMode) {
+        function reset(searchMode, searchAnchor, taskbarBox) {
             startSearch.searchText = "";
             searching = false;
             leftColumnState = 0;
@@ -189,6 +199,8 @@ Item {
             allAppsPage.allAppsList.positionViewAtBeginning();
             // Reset the search filter pills to "All".
             searchPage.resultsView.singleRunner = "";
+            taskbarSearchAnchor = searchAnchor || null;
+            taskbarSearchBox = !!taskbarBox;
             searching = !!searchMode;
             // Defer focus until the dialog has finished laying out.
             Qt.callLater(startSearch.focusSearch);
@@ -313,7 +325,13 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.margins: rootItem.margin
-                anchors.topMargin: 16
+                anchors.topMargin: root.taskbarSearchHome ? 0 : 16
+                // Full taskbar search box already supplies the visible prompt.
+                // Keep the same focused editor alive for typing/IME; reveal it
+                // as soon as a query or input-method composition starts.
+                height: root.taskbarSearchHome ? 0 : implicitHeight
+                opacity: root.taskbarSearchHome ? 0 : 1
+                clip: true
 
                 searchMode: root.searching
                 onSearchRequested: root.searching = true
@@ -370,7 +388,7 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.margins: rootItem.margin
-                anchors.topMargin: 22
+                anchors.topMargin: root.taskbarSearchHome ? 24 : 22
                 anchors.bottomMargin: root.searching ? 12 : 0
 
                 AllAppsPage {
@@ -589,13 +607,15 @@ Item {
                             spacing: Kirigami.Units.smallSpacing
                             Item {
                                 id: avatarArea
-                                Layout.preferredWidth: 36
-                                Layout.preferredHeight: 36
+                                Layout.preferredWidth: 32
+                                Layout.preferredHeight: 32
                                 Layout.alignment: Qt.AlignVCenter
                                 Image {
                                     id: userAvatar
                                     anchors.fill: parent
-                                    source: Plasmoid.configuration.hideAccountIdentity ? "" : kuser.faceIconUrl
+                                    source: Plasmoid.configuration.hideAccountIdentity
+                                        || String(kuser.faceIconUrl).endsWith("/faces/.face.icon")
+                                        ? "" : kuser.faceIconUrl
                                     cache: false
                                     fillMode: Image.PreserveAspectCrop
                                     visible: status === Image.Ready
@@ -608,14 +628,18 @@ Item {
                                         }
                                     }
                                 }
-                                Image {
+                                Rectangle {
                                     anchors.fill: parent
-                                    source: {
-                                        // The imported green account glyph is not Windows' default Start avatar.
-                                        return Qt.resolvedUrl("default-account.svg");
-                                    }
-                                    fillMode: Image.PreserveAspectFit
+                                    radius: width / 2
+                                    color: "#F2F2F2"
                                     visible: userAvatar.status !== Image.Ready
+                                    Image {
+                                        anchors.centerIn: parent
+                                        width: Math.round(parent.width * 0.82)
+                                        height: width
+                                        source: Qt.resolvedUrl("default-account.svg")
+                                        fillMode: Image.PreserveAspectFit
+                                    }
                                 }
                             }
                             PlasmaComponents3.Label {
@@ -644,19 +668,20 @@ Item {
 
                     PlasmaComponents3.ToolButton {
                         id: powerButton
+                        visible: Plasmoid.configuration.showShutdownButton
                         text: i18n("Power")
                         icon.name: "system-shutdown-symbolic"
-                        icon.width: 20
-                        icon.height: 20
+                        icon.width: 16
+                        icon.height: 16
                         display: PlasmaComponents3.AbstractButton.IconOnly
-                        Layout.preferredWidth: 40
-                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 36
+                        Layout.preferredHeight: 36
                         Layout.alignment: Qt.AlignVCenter
                         contentItem: Item {
                             Kirigami.Icon {
                                 anchors.centerIn: parent
-                                width: 20
-                                height: 20
+                                width: 16
+                                height: 16
                                 roundToIconSize: false
                                 isMask: true
                                 color: Kirigami.Theme.textColor

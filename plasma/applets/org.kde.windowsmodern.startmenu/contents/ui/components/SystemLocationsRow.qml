@@ -14,10 +14,10 @@ Item {
     readonly property var selectedKeys: Locations.normalize(Plasmoid.configuration.rightColumnItems)
     readonly property var visibleLocations: Locations.locations(i18n)
         .filter(location => selectedKeys.indexOf(location.key) >= 0)
-    readonly property int buttonExtent: Math.max(24, Math.min(36,
+    readonly property int buttonExtent: Math.max(24, Math.min(32,
         Math.floor(width / Math.max(1, visibleLocations.length))))
     implicitHeight: 40
-    implicitWidth: visibleLocations.length * 36
+    implicitWidth: visibleLocations.length * 32
 
     function shortcutIcon(name) {
         const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
@@ -62,7 +62,7 @@ Item {
                     id: shortcut
                     required property var modelData
                     width: placesRow.buttonExtent
-                    height: 40
+                    height: 36
                     text: modelData.text
                     display: PlasmaComponents3.AbstractButton.IconOnly
                     padding: 0
@@ -79,7 +79,7 @@ Item {
                     contentItem: Item {
                         Kirigami.Icon {
                             anchors.centerIn: parent
-                            width: Math.min(20, parent.width)
+                            width: Math.min(16, parent.width)
                             height: width
                             source: placesRow.shortcutIcon(shortcut.modelData.icon)
                             isMask: true
