@@ -84,6 +84,22 @@ class ShellAssetTests(unittest.TestCase):
             self.assertEqual(assets.local_file(root, "windows"), root / "Windows")
             self.assertIsNone(assets.local_file(root, "missing"))
 
+    def test_optional_default_account_picture(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertIsNone(assets.default_account_artwork(root))
+            directory = root / "ProgramData/Microsoft/User Account Pictures"
+            directory.mkdir(parents=True)
+            picture = directory / "user.png"
+            picture.write_bytes(png())
+            path, data, suffix = assets.default_account_artwork(root)
+            self.assertEqual(path, picture)
+            self.assertEqual(data, picture.read_bytes())
+            self.assertEqual(suffix, ".png")
+            picture.write_bytes(b"not an image")
+            with self.assertRaises(OSError):
+                assets.default_account_artwork(root)
+
     def test_svg_safety(self):
         assets.validate_svg(b'<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0L1 1"/></svg>')
         assets.validate_svg(b'<svg xmlns="http://www.w3.org/2000/svg"><path fill="url(#paint)"/></svg>')

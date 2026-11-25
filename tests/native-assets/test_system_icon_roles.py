@@ -55,11 +55,15 @@ class SystemIconRolesTests(unittest.TestCase):
                     with self.subTest(glyph=glyph, context=context, suffix=suffix):
                         self.assertIn(context + '/' + role + suffix, names)
 
-    def test_sleep_and_logout_are_distinct(self):
+    def test_sleep_hibernate_and_logout_are_distinct(self):
         self.assertIn('actions/system-suspend-symbolic', MAPPING['icons']['e708'].split())
         self.assertIn('status/system-logout', MAPPING['icons']['f3b1'].split())
-        self.assertNotIn('actions/system-suspend-hibernate',
-                         [path for names in MAPPING['icons'].values() for path in names.split()])
+        for context in ('actions', 'status'):
+            for suffix in ('', '-symbolic'):
+                target = context + '/system-suspend-hibernate' + suffix
+                self.assertIn(target, MAPPING['icons']['e823'].split())
+                self.assertNotIn(target, MAPPING['icons']['e708'].split())
+        self.assertIn('e823', MAPPING['optional_glyphs'])
 
     def test_panel_optical_families(self):
         groups = MAPPING['panel_glyph_groups']

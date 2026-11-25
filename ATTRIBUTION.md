@@ -75,9 +75,11 @@ from exercising those rights.
 > familiar with open-source licensing.
 
 
-### Microsoft Fluent UI System Icons: Data Line
+### Microsoft Fluent UI System Icons: Data Line and Person
 
 `icons/windows-modern/actions/office-chart-line.svg` and its symbolic alias use the original Microsoft Fluent UI System Icons `ic_fluent_data_line_24_regular.svg` path with KDE's ColorScheme-Text recoloring. Source: https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Data%20Line/SVG/ic_fluent_data_line_24_regular.svg . License: MIT, reproduced below for this asset.
+
+The Start menu fallback `plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/default-account.svg` uses the original Microsoft `ic_fluent_person_48_filled.svg` path, recolored to #7C7C7C. Source: https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Person/SVG/ic_fluent_person_48_filled.svg . The MIT notice below also applies to this asset. This is a generic Fluent avatar, not a verified Windows 11 26H2 account photograph.
 
 MIT License
 

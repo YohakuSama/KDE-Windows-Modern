@@ -149,6 +149,8 @@ SVGs embedded in the Settings PRI. A dark idle Search PNG is imported when
 present; otherwise that state uses the existing Segoe E721 role. Incomplete
 required input leaves the previous import untouched.
 
+Use the [official Windows 11 26H2 ISO](https://www.microsoft.com/software-download/windows11) or an authorized 26H2 GA installation (build family 26300), rather than an unversioned icon archive. An extracted image may contain both `Windows` and `ProgramData`. In that case the importer also looks for the original default account image under `ProgramData/Microsoft/User Account Pictures` (`user.png`, `user.jpg`, `user.bmp`, or a standard size-specific PNG). Use a clean source installation, since administrators can replace these defaults. The file is optional and remains private; no user-specific account pictures are collected.
+
 ```bash
 python3 scripts/import-shell-assets.py /path/to/Windows --build ACTUAL_BUILD_NUMBER
 ```
@@ -185,8 +187,17 @@ library. The importer and rendering are not evidence that the original
   Search state. Task View uses E7C4 until both original PRI SVG variants are
   imported. These existing sources are not proof of 26H2 provenance; do not use
   Windows 10 or KDE/Breeze replacements.
-- The original indexed account portraits are absent. The existing group 88
-  mapping provides a default image; actual user portraits take precedence.
+- The default Start menu account SVG is the official MIT-licensed Fluent
+  Person 48 Filled path, recolored by the theme (see [attribution](../ATTRIBUTION.md)).
+  It is not a verified 26H2 login portrait. Actual user portraits take
+  precedence; when present, a locally imported Windows default portrait is
+  preferred over the generic fallback. Hidden account identity always uses
+  the generic fallback.
+- Hibernate uses the optional original Segoe Fluent E823 glyph (Recent)
+  from the local Windows font, selected by comparison with the clock-shaped
+  Hibernate artwork in Windows 11 screenshots. Direct 26H2 source-role
+  confirmation remains pending; never substitute the Sleep crescent or KDE
+  artwork.
 - Native Plasma desktop selection, notification toast behavior and
   application menus need live validation independently of icon imports.
 

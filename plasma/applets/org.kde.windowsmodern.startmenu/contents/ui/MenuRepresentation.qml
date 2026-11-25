@@ -695,9 +695,22 @@ Item {
                                 Image {
                                     id: userAvatar
                                     anchors.fill: parent
-                                    source: Plasmoid.configuration.hideAccountIdentity
-                                        || String(kuser.faceIconUrl).endsWith("/faces/.face.icon")
-                                        ? "" : kuser.faceIconUrl
+                                    source: {
+                                        if (Plasmoid.configuration.hideAccountIdentity)
+                                            return "";
+                                        const face = String(kuser.faceIconUrl || "");
+                                        if (face && !face.endsWith("/faces/.face.icon"))
+                                            return kuser.faceIconUrl;
+                                        for (const suffix of [".png", ".jpg", ".bmp"]) {
+                                            const path = StandardPaths.locate(
+                                                StandardPaths.GenericDataLocation,
+                                                "windows-modern/shell-assets/account/default" + suffix,
+                                                StandardPaths.LocateFile);
+                                            if (String(path).length > 0)
+                                                return path;
+                                        }
+                                        return "";
+                                    }
                                     cache: false
                                     fillMode: Image.PreserveAspectCrop
                                     visible: status === Image.Ready

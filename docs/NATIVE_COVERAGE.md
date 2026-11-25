@@ -38,8 +38,8 @@ branch into the runtime package.
 
 The reviewed reference commit `272e06c87be0f548cebb2558392019b941df20d4`
 contains 5,405 original icon frames and 467 original files. The current
-mapping has 266 source entries: 61 MUN group references and 205 Segoe
-Fluent Icons glyph references. These are source mappings, not 263 distinct
+mapping has 267 source entries: 61 MUN group references and 206 Segoe
+Fluent Icons glyph references. These are source mappings, not 267 distinct
 visuals or a claim that all 713 groups are relevant to the current desktop.
 The runtime branch deliberately stages only the selected mapped previews,
 not the complete archive.
@@ -64,8 +64,9 @@ See [native asset import instructions](NATIVE_ASSETS.md#local-shell-artwork-impo
 
 The source paths are identified, but the reference branch does not contain
 these files or establish their exact build. A source mapping does not prove
-that a glyph exists in the staged font. Remaining gaps include the original
-Hibernate artwork and indexed account portraits.
+that a glyph exists in the staged font. Remaining gaps include confirming the Hibernate glyph on the exact 26H2 build and obtaining a clean original default account portrait.
+
+The official Fluent Person 48 Filled SVG path already exists in the Start menu fallback; it is distinct from an actual Windows default account picture. Microsoft documents the default picture location under `%ProgramData%/Microsoft/User Account Pictures` ([policy reference](https://learn.microsoft.com/windows/client-management/mdm/policy-csp-admx-cpls)). The shell importer supports that location on a clean local image.
 
 ## Runtime assets and NixOS
 
@@ -87,6 +88,6 @@ target desktop. Do not claim full coverage based on source checks alone.
 
 ## System action review
 
-Use Microsoft's [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font) to distinguish semantic roles. PowerButton E7E8, Restart3 F305, Lock E72E, SwitchUser E748, SignOut F3B1 and the moon-shaped QuietHours E708 used for Sleep are existing mapped roles. The original SignOut mapping was present; same-name status aliases were not. Synchronize power aliases in the status and actions directories so a stale status icon cannot win. Hibernate still has an unresolved legacy compatibility icon; audit its actual Windows equivalent before claiming complete native coverage. Keep its real `canHibernate`/`hibernate()` action independent of artwork; never reuse an unrelated glyph or draw one. Keep third-party application logos; the missing Store app artwork is not a test blocker.
+Use Microsoft's [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font) to distinguish semantic roles. PowerButton E7E8, Restart3 F305, Lock E72E, SwitchUser E748, SignOut F3B1 and the moon-shaped QuietHours E708 used for Sleep are existing mapped roles. The original SignOut mapping was present; same-name status aliases were not. Synchronize power aliases in the status and actions directories so a stale status icon cannot win. The round clock used for Hibernate is visible in a [June 2026 Windows 11 screenshot](https://www.atera.com/blog/how-to-disable-and-enable-hibernate-in-windows-11/) and [earlier Windows 11 screenshots](https://www.guidingtech.com/how-to-enable-and-use-hibernate-mode-on-windows-11/). The [Windhawk Start Menu Buttons project](https://github.com/ramensoftware/windhawk-mods/blob/main/mods/windows-11-start-menu-buttons.wh.cpp) selects E823 for Hibernate; Microsoft names E823 Recent. The official E823 preview is a matching round clock. Map E823 as an optional original-font candidate, not as proof of the 26H2 shell resource ID. Confirm on the exact target build before claiming full coverage. Keep its real `canHibernate`/`hibernate()` action independent of artwork. Never use the E708 Sleep crescent or a KDE icon for Hibernate. Keep third-party application logos; the missing Store app artwork is not a test blocker.
 
 Public visual references: [Windows Icon Archive](https://github.com/limehawk/windows-icon-archive) (Windows artwork remains Microsoft's; reference only), [Fluent System Icons](https://github.com/microsoft/fluentui-system-icons) (MIT-licensed separate design system), [Win11 Icon Theme](https://github.com/yeyushengfan258/Win11-icon-theme) (GPL-3.0, already credited). None establishes exact 26H2 equivalence or grants a new license to Microsoft proprietary artwork.

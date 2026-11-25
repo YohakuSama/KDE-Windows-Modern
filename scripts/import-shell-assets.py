@@ -142,18 +142,42 @@ def validate_svg(data):
                 raise ValueError("External Task View SVG stylesheet")
 
 
+def default_account_artwork(root):
+    """Read only the optional system-wide default portrait, not user profiles."""
+    directory = "ProgramData/Microsoft/User Account Pictures/"
+    for name in ("user.png", "user.jpg", "user.bmp", "user-192.png",
+                 "user-200.png", "user-48.png", "user-40.png", "user-32.png"):
+        path = local_file(root, directory + name)
+        if path is None:
+            continue
+        data = read_original(root, path)
+        suffix = path.suffix.lower()
+        expected = {".png": "PNG", ".jpg": "JPEG", ".bmp": "BMP"}[suffix]
+        with Image.open(io.BytesIO(data)) as picture:
+            if (picture.format != expected or picture.width != picture.height
+                    or not 0 < picture.width <= 4096):
+                raise ValueError("Invalid default Windows account picture: " + str(path))
+            picture.verify()
+        return path, data, suffix
+    return None
+
+
 def collect(source):
     root = source.resolve(strict=True)
     windows = local_file(root, "Windows")
+    volume_root = None
     if windows is not None and windows.is_dir():
+        volume_root = root
         root = windows
+    elif root.name.casefold() == "windows":
+        volume_root = root.parent
     if not root.is_dir():
         raise ValueError("Provide an extracted Windows directory")
     outputs = {}
     sources = {}
 
-    def write(name, data, path, resource, original):
-        relative = path.relative_to(root).as_posix()
+    def write(name, data, path, resource, original, source_root=None):
+        relative = path.relative_to(source_root or root).as_posix()
         sources[relative] = sha256(original)
         outputs[name] = (data, {"source": relative, "resource": resource, "sha256": sha256(data)})
 
@@ -189,6 +213,13 @@ def collect(source):
             raise ValueError("Missing embedded Windows resource: " + name)
         validate_svg(svg)
         write(f"task-view/{theme}.svg", svg, pri_path, name, pri)
+
+    if volume_root is not None:
+        portrait = default_account_artwork(volume_root)
+        if portrait is not None:
+            path, data, suffix = portrait
+            write("account/default" + suffix, data, path, "default-account-picture",
+                  data, source_root=volume_root)
 
     return outputs, sources
 

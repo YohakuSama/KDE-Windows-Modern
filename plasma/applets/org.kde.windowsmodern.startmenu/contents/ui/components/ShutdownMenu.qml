@@ -163,8 +163,8 @@ Item {
                 onNavigationRequested: direction => root.moveFocus(direction)
             }
 
-            // Preserve the distinct native hibernate icon until the
-            // exact Windows shell glyph is verified.
+            // Optional E823 clock glyph from the original Windows font.
+            // Confirm the exact 26H2 shell role during desktop acceptance.
             PowerOption {
                 id: hibernateOption
                 visible: !root.accountMode && sessionManager.canHibernate
