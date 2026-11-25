@@ -51,10 +51,10 @@ function tileFill(dark, hovered, pressed) {
 }
 function tileBorder(dark) { return dark ? "#3B3B3B" : "#E5E5E5"; }
 function cardFill(dark, acrylic) {
-    if (dark) return acrylic ? "#F0202020" : "#202020";
-    return acrylic ? "#F5F2F2F2" : "#F2F2F2";
+    if (dark) return acrylic ? "#F2202020" : "#202020";
+    return acrylic ? "#F7F2F2F2" : "#F2F2F2";
 }
-function cardBorder(dark) { return dark ? "#3C3C3C" : "#DCDCDC"; }
+function cardBorder(dark) { return dark ? "#383838" : "#DCDCDC"; }
 function divider(dark) { return dark ? "#18FFFFFF" : "#12000000"; }
 function footerTint(dark) { return dark ? "#15000000" : "#05000000"; }
 function trackFill(dark) { return dark ? "#929292" : "#767676"; }

@@ -8,12 +8,16 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils
 import org.kde.plasma.plasmoid
 import "../lib" as Lib
-import "../js/funcs.js" as Funcs
+import "../js/colorType.js" as ColorType
 
 Lib.Page {
     id: page
 
     title: i18n("Battery")
+    contentFillsHeight: false
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor,
+        Qt.color(ColorType.cardFill(dark, false)))
 
     BatteryControlModel {
         id: batteryControl
@@ -84,12 +88,16 @@ Lib.Page {
 
     ColumnLayout {
         Layout.fillWidth: true
-        spacing: 8
+        Layout.leftMargin: 16
+        Layout.rightMargin: 16
+        Layout.topMargin: 4
+        Layout.bottomMargin: 8
+        spacing: 10
 
         PlasmaComponents3.Label {
             text: page.batteryStatus
-            font.pixelSize: 10
-            opacity: 0.6
+            font.pixelSize: 12
+            opacity: 0.75
             color: Kirigami.Theme.textColor
         }
 
@@ -126,12 +134,20 @@ Lib.Page {
             }
         }
 
-        PlasmaComponents3.ProgressBar {
+        Rectangle {
             visible: page.percentKnown
             Layout.fillWidth: true
-            from: 0
-            to: 100
-            value: batteryControl.percent
+            Layout.preferredHeight: 4
+            radius: 2
+            color: ColorType.trackFill(page.dark)
+            Accessible.role: Accessible.ProgressBar
+            Accessible.name: page.percent
+            Rectangle {
+                width: parent.width * (page.percentKnown ? Math.max(0, Math.min(100, batteryControl.percent)) / 100 : 0)
+                height: parent.height
+                radius: 2
+                color: page.accent
+            }
         }
 
         RowLayout {
@@ -173,7 +189,7 @@ Lib.Page {
             Layout.topMargin: 2
             Layout.bottomMargin: 2
             height: 1
-            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
+            color: ColorType.divider(page.dark)
         }
 
         RowLayout {
@@ -186,11 +202,13 @@ Lib.Page {
                 wrapMode: Text.WordWrap
             }
 
-            PlasmaComponents3.Switch {
-                text: ""
+            Lib.FluentSwitch {
                 Accessible.name: i18n("Show battery percentage")
                 checked: Plasmoid.configuration.showBatteryPercentage
-                onClicked: Plasmoid.configuration.showBatteryPercentage = checked
+                onToggled: {
+                    Plasmoid.configuration.showBatteryPercentage = checked;
+                    checked = Qt.binding(() => Plasmoid.configuration.showBatteryPercentage);
+                }
             }
         }
 
@@ -203,6 +221,7 @@ Lib.Page {
 
             delegate: Lib.ListRow {
                 Layout.fillWidth: true
+                inset: 0
                 text: {
                     switch (modelData) {
                     case "performance":
@@ -237,7 +256,7 @@ Lib.Page {
             Layout.topMargin: 2
             Layout.bottomMargin: 2
             height: 1
-            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
+            color: ColorType.divider(page.dark)
         }
 
         RowLayout {
@@ -260,9 +279,13 @@ Lib.Page {
                 Layout.fillWidth: true
             }
 
-            PlasmaComponents3.Switch {
+            Lib.FluentSwitch {
+                Accessible.name: i18n("Block sleep & screen lock")
                 checked: page.blockSleep
-                onClicked: page._toggleBlockSleep()
+                onToggled: {
+                    page._toggleBlockSleep();
+                    checked = Qt.binding(() => page.blockSleep);
+                }
             }
         }
     }

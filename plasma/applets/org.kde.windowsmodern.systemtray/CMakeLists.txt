@@ -167,6 +167,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/Slider.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/SectionHeader.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/PageHeader.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/FluentSwitch.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/Page.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/MoreSettingsLink.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/lib/ListRow.qml
