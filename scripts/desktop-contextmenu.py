@@ -48,11 +48,38 @@ def changes(layout, stock_defaults):
     return result
 
 
+def patch_defaults(source, destination):
+    """Preserve all distribution defaults, replacing only the desktop right click."""
+    lines = source.read_text(encoding="utf-8").splitlines(keepends=True)
+    group = ""
+    matches = 0
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            group = stripped
+        elif group == "[Desktop][ContainmentActions]" and stripped.split("=", 1)[0].strip() == KEY:
+            lines[index] = KEY + "=" + PLUGIN + "\n"
+            matches += 1
+    if matches != 1:
+        raise RuntimeError("Expected exactly one desktop right-click default")
+    if destination.is_symlink():
+        raise RuntimeError("Refusing to modify the stock shell through a symlink")
+    destination.write_text("".join(lines), encoding="utf-8")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--layout", type=Path, required=True)
-    parser.add_argument("--defaults", type=Path, required=True)
+    parser.add_argument("--layout", type=Path)
+    parser.add_argument("--defaults", type=Path)
+    parser.add_argument("--patch-defaults", nargs=2, type=Path, metavar=("SOURCE", "DESTINATION"))
     args = parser.parse_args()
+    if args.patch_defaults:
+        if args.layout or args.defaults:
+            parser.error("--patch-defaults cannot be combined with layout editing")
+        patch_defaults(*args.patch_defaults)
+        return
+    if args.layout is None or args.defaults is None:
+        parser.error("--layout and --defaults are required")
     for key, value in changes(args.layout, args.defaults).items():
         subprocess.run(["kwriteconfig6", "--file", str(args.layout), "--group",
                         "ActionPlugins", "--group", "0", "--key", key, value], check=True)

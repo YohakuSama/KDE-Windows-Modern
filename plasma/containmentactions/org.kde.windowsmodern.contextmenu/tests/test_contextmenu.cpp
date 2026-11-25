@@ -8,6 +8,12 @@
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    REQUIRE(!DesktopMenuLayout::darkMode("Windows-modern-light", "WindowsModernDark", true));
+    REQUIRE(DesktopMenuLayout::darkMode("Windows-modern-dark", "WindowsModernLight", false));
+    REQUIRE(!DesktopMenuLayout::darkMode("", "WindowsModernLight", true));
+    REQUIRE(DesktopMenuLayout::darkMode("", "WindowsModernDark", false));
+    REQUIRE(DesktopMenuLayout::darkMode("", "", true));
+    REQUIRE(!DesktopMenuLayout::darkMode("", "", false));
     DesktopMenuLayout layout;
     QMenu icons, sort, sizes;
     QAction *unsorted = sort.addAction("Unsorted");

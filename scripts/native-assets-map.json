@@ -104,6 +104,7 @@
     "e7be": "actions/applications-education",
     "e704": "actions/network-wireless-hotspot status/network-wireless-hotspot status/network-wireless-hotspot-symbolic actions/network-wireless-hotspot-symbolic",
     "e705": "actions/network-vpn-symbolic status/network-vpn status/network-vpn-symbolic",
+    "e8cb": "actions/view-sort actions/view-sort-symbolic",
     "e7c4": "actions/windows-modern-task-view-symbolic apps/preferences-system-windows apps/preferences-system-windows-symbolic categories/preferences-system-windows categories/preferences-system-windows-symbolic",
     "e77b": "actions/user-identity-symbolic apps/preferences-desktop-user apps/preferences-desktop-user-symbolic categories/preferences-desktop-user categories/preferences-desktop-user-symbolic",
     "e8b7": "actions/folder-symbolic",

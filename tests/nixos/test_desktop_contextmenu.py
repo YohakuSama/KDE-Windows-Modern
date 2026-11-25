@@ -25,3 +25,24 @@ class ContextMenuConfigTests(unittest.TestCase):
             layout = root / "layout"
             layout.write_text("[ActionPlugins][0]\nMiddleButton;NoModifier=my.custom\n[ActionPlugins][1]\nRightButton;NoModifier=org.kde.contextmenu\n")
             self.assertEqual(MENU.changes(layout, root / "defaults"), {MENU.KEY: MENU.PLUGIN})
+
+    def test_reset_uses_custom_shell_defaults(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "stock"
+            destination = root / "overlay"
+            before = ("[Desktop][ContainmentActions]\n"
+                      "RightButton;NoModifier=org.kde.contextmenu\n"
+                      "MiddleButton;NoModifier=org.kde.paste\n"
+                      "[Panel][ContainmentActions]\n"
+                      "RightButton;NoModifier=org.kde.contextmenu\n")
+            source.write_text(before, encoding="utf-8")
+            MENU.patch_defaults(source, destination)
+            self.assertEqual(source.read_text(encoding="utf-8"), before)
+            self.assertEqual(destination.read_text(encoding="utf-8"),
+                             before.replace("org.kde.contextmenu", MENU.PLUGIN, 1))
+            self.assertEqual(MENU.changes(root / "reset-layout", destination)[MENU.KEY], MENU.PLUGIN)
+            invalid = root / "invalid"
+            invalid.write_text("[Desktop]\nContainment=org.kde.plasma.folder\n", encoding="utf-8")
+            with self.assertRaises(RuntimeError):
+                MENU.patch_defaults(invalid, destination)

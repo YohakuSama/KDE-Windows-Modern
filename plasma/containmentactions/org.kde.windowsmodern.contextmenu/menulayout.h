@@ -13,6 +13,7 @@ public:
     static QAction *named(const QList<QAction *> &actions, const QString &name);
     static QAction *sortAction(QAction *view);
     bool ownsMenu(const QMenu *menu) const;
+    static bool darkMode(const QString &plasmaTheme, const QString &scheme, bool paletteDark);
     static void applyAppearance(QMenu *menu, bool dark);
     static void restoreAppearance(QMenu *menu);
 private:

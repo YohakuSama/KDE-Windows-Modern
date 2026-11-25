@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Persist the Windows desktop right-click plugin in the NixOS shell defaults across layout resets, choose the desktop palette independent of stale application styles, render mapped original menu icons with matching foregrounds and add missing contextual Search/Task View translations.
+
 - Keep installed native core tray applets and the toast presenter loaded independent of theme, saved defaults and D-Bus activation; share the real default audio output, use the imported filled light-mode snooze glyph, and restore the date/time hover text.
 
 - Use a screen-relative account form for session unlock, retain three compact sign-in status buttons, fill the lock wallpaper without white margins, and supply a local Chinese translation fallback for the lock greeter.

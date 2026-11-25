@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "menulayout.h"
 #include <KConfigGroup>
+#include <KConfig>
 #include <KPluginFactory>
 #include <Plasma/Containment>
 #include <Plasma/ContainmentActions>
@@ -54,19 +55,26 @@ public:
         auto *desktop = containment();
         if (!desktop) return {};
         const auto stock = m_native ? m_native->contextualActions() : desktop->contextualActions();
-        if (desktop->containmentType() != Plasma::Containment::Desktop || !m_native) return stock;
+        if (desktop->containmentType() != Plasma::Containment::Desktop) return {};
         // Reuse FolderModel's real refresh action, even though the stock
         // background menu does not expose it. Never add an unconnected row.
         QAction *refresh = nullptr;
         QAction *undo = DesktopMenuLayout::named(stock, QStringLiteral("undo"));
-        if (auto *newFile = DesktopMenuLayout::named(stock, QStringLiteral("newMenu"))) {
-            if (auto *model = newFile->parent()) {
-                QMetaObject::invokeMethod(model, "action", Qt::DirectConnection,
-                    Q_RETURN_ARG(QAction *, refresh), Q_ARG(QString, QStringLiteral("refresh")));
+        // The New action may be owned by KNewFileMenu or KActionCollection,
+        // not directly by FolderModel. Search its real QObject ownership chain.
+        for (const auto &name : {QStringLiteral("newMenu"), QStringLiteral("paste"), QStringLiteral("undo")}) {
+            auto *action = DesktopMenuLayout::named(stock, name);
+            for (auto *model = action ? action->parent() : nullptr; model; model = model->parent()) {
+                if (model->metaObject()->indexOfMethod("action(QString)") < 0) continue;
+                if (!refresh)
+                    QMetaObject::invokeMethod(model, "action", Qt::DirectConnection,
+                        Q_RETURN_ARG(QAction *, refresh), Q_ARG(QString, QStringLiteral("refresh")));
                 if (!undo)
                     QMetaObject::invokeMethod(model, "action", Qt::DirectConnection,
                         Q_RETURN_ARG(QAction *, undo), Q_ARG(QString, QStringLiteral("undo")));
+                if (refresh && undo) break;
             }
+            if (refresh && undo) break;
         }
         return m_layout.build(stock, refresh, desktop->internalAction(QStringLiteral("configure")), undo);
     }
@@ -77,10 +85,15 @@ protected:
         if (menu && qApp) {
             if (event->type() == QEvent::Hide) {
                 DesktopMenuLayout::restoreAppearance(menu);
-            } else if ((event->type() == QEvent::ActionAdded
-                        || event->type() == QEvent::Polish || event->type() == QEvent::Show)
-                       && m_layout.ownsMenu(menu)) {
-                const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
+            } else if (event->type() == QEvent::Show && m_layout.ownsMenu(menu)) {
+                // Desktop surfaces follow the Plasma theme, even when Qt apps
+                // still use their previous Kvantum palette after a live switch.
+                const KConfig plasmaConfig(QStringLiteral("plasmarc"), KConfig::CascadeConfig);
+                const auto name = KConfigGroup(&plasmaConfig, QStringLiteral("Theme")).readEntry("name", QString());
+                const KConfig globalConfig(QStringLiteral("kdeglobals"), KConfig::CascadeConfig);
+                const auto scheme = KConfigGroup(&globalConfig, QStringLiteral("General")).readEntry("ColorScheme", QString());
+                const bool dark = DesktopMenuLayout::darkMode(name, scheme,
+                    qApp->palette().color(QPalette::Window).lightness() < 128);
                 DesktopMenuLayout::applyAppearance(menu, dark);
             }
         }

@@ -467,7 +467,7 @@
   "Games": "游戏",
   "Entertainment": "娱乐",
   "Other": "其他",
-  "New": "新",
+  "New": "新建",
   "Energy saver": "节能模式",
   "No new notifications": "没有新通知",
   "Do not disturb is on": "免打扰已开启",
@@ -638,5 +638,17 @@
   "@info:usagetip\u0004Disabling the Notifications widget is not recommended, as notifications sent by apps will no longer be shown.<nl/><nl/>Only do this if you’ve manually added a standalone Notifications widget somewhere else, or are intentionally using a 3rd-party notification manager to handle notifications.": "不建议禁用通知小组件。禁用后，应用发送的通知将不再显示。<nl/><nl/>仅在其他位置添加了独立通知小组件，或使用第三方通知管理器处理通知时禁用此功能。",
   "Battery status: %1% remaining": "电池状态: %1% 剩余",
   "Show power button": "显示电源按钮",
-  "Local time": "本地时间"
+  "Local time": "本地时间",
+  "Sort by": "排序方式",
+  "Refresh": "刷新",
+  "Paste": "粘贴",
+  "Personalize": "个性化",
+  "@action:button taskbar search box\u0004Search": "搜索",
+  "@info:placeholder taskbar search box\u0004Search": "搜索",
+  "@action:button taskbar button\u0004Search": "搜索",
+  "@info:tooltip\u0004Search": "搜索",
+  "@info:tooltip\u0004Open Start and search": "打开搜索",
+  "@action:button taskbar button\u0004Task View": "任务视图",
+  "@info:tooltip\u0004Task View": "任务视图",
+  "@info:tooltip\u0004Show all windows and desktops": "显示所有窗口和桌面"
 }

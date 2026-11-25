@@ -260,7 +260,12 @@ def make_staging(root, state):
         if src.name == "lockscreen":
             continue
         dst = shell / "contents" / src.name
-        if src.name == "logout":
+        if src.name == "defaults":
+            # A layout reset discards ActionPlugins entries. Make the custom
+            # desktop menu the shell's default as well as the active binding.
+            subprocess.run([sys.executable, str(root / "scripts/desktop-contextmenu.py"),
+                            "--patch-defaults", str(src), str(dst)], check=True)
+        elif src.name == "logout":
             # KPackage refuses symlinks outside the logout package.
             shutil.copytree(src, dst, symlinks=False)
             make_writable(dst, files=True)
