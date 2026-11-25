@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Let the taskbar search box shrink within its allocated cell, keep the icon inside narrow cells, and suppress repeated keyboard activation of Search, Task View and Show Desktop. Orient the Show Desktop sliver for vertical panels and avoid toggling out of desktop mode during a drag. Run the existing OSD and snap-key JavaScript tests in CI.
+
 - Reposition existing on-screen displays when their output or screen geometry changes, and stop tracking closed displays. Use KWin's actual maximize state and explicit side/corner actions for windows placed without a native tile.
 
 - Keep Snap Layouts on the cursor's current output, fit its diagrams to narrow screens, reject drops in unpainted cell gaps, and clear stale targets when a window or screen disappears. Fit Alt+Tab to short screens and relayout on height changes. Make preview titles clickable and show a fallback icon instead of blank or stale media artwork.
