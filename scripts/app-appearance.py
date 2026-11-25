@@ -12,7 +12,10 @@ DATA = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
 BACKUP = DATA / "windows-modern/backup/app-appearance.json"
-OLD_DOLPHIN_BLOB = "5dfeecc37067f7c8a7bcbc0aa229f7b0e36728c2"
+OLD_DOLPHIN_BLOBS = {
+    "5dfeecc37067f7c8a7bcbc0aa229f7b0e36728c2",
+    "91f0611fac219f896ab231ec7b6e3864edbf94af",
+}
 MISSING = "__windows_modern_missing_7b6801__"
 
 def blob(content):
@@ -74,6 +77,7 @@ def save(state):
 
 def apply():
     state = json.loads(BACKUP.read_text()) if BACKUP.is_file() else {"keys": {}, "files": {}}
+    layout_changed = set()
     for relative, source in FILES.items():
         path = DATA / relative
         if path.is_symlink() or not path.parent.resolve().is_relative_to(DATA.resolve()):
@@ -84,7 +88,7 @@ def apply():
         record = state["files"].get(relative)
         if record is None:
             if old is not None and old != new and not (
-                relative.startswith("kxmlgui5/") and blob(old) == OLD_DOLPHIN_BLOB
+                relative == "kxmlgui5/dolphin/dolphinui.rc" and blob(old) in OLD_DOLPHIN_BLOBS
             ):
                 print("Keeping custom app file:", path)
                 continue
@@ -95,17 +99,26 @@ def apply():
             continue
         record["applied"] = new.hex()
         save(state)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(new)
+        if old != new:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(new)
+            if relative.startswith("kxmlgui5/"):
+                layout_changed.add(relative.split("/")[1])
+
+    def installed_by_theme(relative):
+        path = DATA / relative
+        return (relative in state["files"] and path.is_file() and not path.is_symlink()
+                and path.read_bytes() == (ROOT / FILES[relative]).read_bytes())
+
     for file, group, key, value in settings():
         if file in ("dolphinrc", str(STATE / "dolphinstaterc")):
             relative = "kxmlgui5/dolphin/dolphinui.rc"
-            installed = DATA / relative
-            if relative not in state["files"] or not installed.is_file() or installed.read_bytes() != (ROOT / FILES[relative]).read_bytes():
+            if not installed_by_theme(relative):
                 continue
         if file == "konsolerc" or file == str(STATE / "konsolestaterc"):
-            required = ("konsole/WindowsModern.profile", "konsole/WindowsModern-tabs.css")
-            if any(relative not in state["files"] for relative in required):
+            required = ("konsole/WindowsModern.profile", "konsole/WindowsModern-tabs.css",
+                        "kxmlgui5/konsole/konsoleui.rc", "kxmlgui5/konsole/sessionui.rc")
+            if not all(installed_by_theme(relative) for relative in required):
                 continue
         if (CONFIG / file).is_symlink():
             print("Keeping managed app config:", file)
@@ -119,7 +132,12 @@ def apply():
             record = {"original": old, "applied": value}
             state["keys"][name] = record
         elif old != record["applied"]:
-            continue
+            # QMainWindow writes a fresh State after every application run.
+            # Reset it once when our own XML layout revision changes, not
+            # on every reinstall, and keep the pre-theme rollback value.
+            name_of_app = "dolphin" if "dolphin" in Path(file).name else "konsole"
+            if not (key == "State" and value == MISSING and name_of_app in layout_changed):
+                continue
         record["applied"] = value
         save(state)
         write(file, group, key, value)

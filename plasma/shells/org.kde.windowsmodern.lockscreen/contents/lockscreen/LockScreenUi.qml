@@ -40,7 +40,7 @@ Item {
         target: authenticator
         function onFailed(kind) {
             if (kind != 0) return;
-            const msg = i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:status", "Unlocking failed");
+            const msg = i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Unlocking failed");
             lockScreenUi.handleMessage(msg);
             root.clearPassword();
             authenticator.startAuthenticating();
@@ -343,7 +343,7 @@ Item {
                 userListModel: users
                 customErrorMessage: {
                     const parts = [];
-                    if (capsLockState.locked) parts.push(i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:status", "Caps Lock is on"));
+                    if (capsLockState.locked) parts.push(i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Caps Lock is on"));
                     if (root.notification) parts.push(root.notification);
                     return parts.join(" \u2022 ");
                 }
@@ -422,7 +422,8 @@ Item {
             id: footer
             anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 16 }
             spacing: 8
-            visible: lockScreenRoot.uiVisible
+            visible: lockScreenRoot.loginUiActive
+            onVisibleChanged: if (!visible) powerMenu.close()
 
             StatusIconButton {
                 id: keyboardButton
@@ -443,13 +444,18 @@ Item {
             }
             Loader {
                 source: "VirtualKeyboardButton.qml"
+                visible: status === Loader.Ready && item && item.available
                 Layout.alignment: Qt.AlignVCenter
             }
             Menu {
                 id: powerMenu
-                x: parent.width - width
-                y: -powerMenu.implicitHeight
-                width: 150
+                parent: powerButton
+                popupType: Popup.Item
+                x: LayoutMirroring.enabled ? 0 : powerButton.width - width
+                y: -height - 4
+                width: 160
+                padding: 4
+                closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
                 background: Rectangle {
                     color: "#2C2C2C"
@@ -485,6 +491,7 @@ Item {
                     }
 
                     background: Rectangle {
+                        radius: 4
                         color: menuItem.highlighted ? "#33FFFFFF" : "transparent"
                     }
                 }
@@ -498,12 +505,14 @@ Item {
                 MenuItem {
                     text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down")
                     icon.name: "system-shutdown"
-                    onTriggered: root.powerOff()
+                    visible: sessionManagement.canShutdown
+                    onTriggered: sessionManagement.requestShutdown()
                 }
                 MenuItem {
                     text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Restart")
                     icon.name: "system-reboot"
-                    onTriggered: root.reboot()
+                    visible: sessionManagement.canReboot
+                    onTriggered: sessionManagement.requestReboot()
                 }
             }
             StatusIconButton {
@@ -514,7 +523,8 @@ Item {
                 focusPolicy: Qt.TabFocus
                 icon.name: "system-shutdown-symbolic"
                 text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power")
-                onClicked: powerMenu.open()
+                visible: root.suspendToRamSupported || sessionManagement.canShutdown || sessionManagement.canReboot
+                onClicked: powerMenu.opened ? powerMenu.close() : powerMenu.open()
             }
         }
     }

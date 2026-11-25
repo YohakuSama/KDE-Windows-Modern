@@ -1,10 +1,16 @@
-// Network and battery, kept up to date (they were fixed icons).
-// Each icon is loaded separately so a missing Plasma module can only hide
-// that icon, never break the lock screen.
+// Network and battery; an unavailable loader must not reserve a gap.
 import QtQuick
 
 Row {
     spacing: 4
-    Loader { source: "NetworkStatusIcon.qml"; anchors.verticalCenter: parent.verticalCenter }
-    Loader { source: "BatteryStatusIcon.qml"; anchors.verticalCenter: parent.verticalCenter }
+    Loader {
+        source: "NetworkStatusIcon.qml"
+        visible: status === Loader.Ready
+        anchors.verticalCenter: parent.verticalCenter
+    }
+    Loader {
+        source: "BatteryStatusIcon.qml"
+        visible: status === Loader.Ready && item && item.available
+        anchors.verticalCenter: parent.verticalCenter
+    }
 }

@@ -71,6 +71,38 @@ class AppAppearanceTest(unittest.TestCase):
         self.assertTrue({"edit_copy", "edit_paste", "edit_find", "edit-current-profile"} <= names)
         self.assertIsNotNone(session.find(".//Menu[@name='session-popup-menu']/Action[@name='edit_find']"))
 
+    def test_layout_revision_resets_regenerated_window_state_once(self):
+        import json
+        key = (str(app.STATE / "dolphinstaterc"), "MainWindow", "State")
+        self.values[key] = "pre-theme-window-state"
+        app.apply()
+        # Simulate the prior theme XML and window state created by Qt.
+        relative = "kxmlgui5/dolphin/dolphinui.rc"
+        prior = b"<gui name='dolphin' version='49'/>"
+        path = app.DATA / relative
+        path.write_bytes(prior)
+        backup = json.loads(app.BACKUP.read_text())
+        backup["files"][relative]["applied"] = prior.hex()
+        app.BACKUP.write_text(json.dumps(backup))
+        self.values[key] = "generated-by-old-layout"
+        app.apply()
+        self.assertNotIn(key, self.values)
+        self.values[key] = "generated-by-current-layout"
+        app.apply()
+        self.assertEqual(self.values[key], "generated-by-current-layout")
+        self.values.pop(key)
+        app.restore()
+        self.assertEqual(self.values[key], "pre-theme-window-state")
+
+    def test_custom_terminal_layout_preserves_visibility(self):
+        path = app.DATA / "kxmlgui5/konsole/sessionui.rc"
+        path.parent.mkdir(parents=True)
+        path.write_text("<gui name='custom'/>")
+        app.apply()
+        self.assertEqual(self.values["konsolerc", "Desktop Entry", "DefaultProfile"], "My.profile")
+        self.assertNotIn(("konsolerc", "MainWindow", "State"), self.values)
+        self.assertEqual(path.read_text(), "<gui name='custom'/>")
+
     def test_terminal_state_migration_restores_original(self):
         key = (str(app.STATE / "konsolestaterc"), "MainWindow", "State")
         self.values[key] = "old-qt-toolbar-state"

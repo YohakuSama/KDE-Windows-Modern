@@ -30,20 +30,21 @@ SessionManagementScreen {
         Layout.alignment: Qt.AlignHCenter
         Layout.preferredWidth: 140
         Layout.preferredHeight: 140
+        Layout.bottomMargin: 16
         source: screen.userListModel && screen.userListModel.count > 0
             ? screen.userListModel.get(0).icon : ""
     }
 
     Text {
         Layout.alignment: Qt.AlignHCenter
-        Layout.topMargin: 8
+        Layout.bottomMargin: 4
         text: {
             if (!screen.userListModel || screen.userListModel.count === 0) return "";
             const user = screen.userListModel.get(0);
             return user.realName || user.name || "";
         }
         color: "white"
-        font.pixelSize: 28
+        font.pixelSize: 32
         horizontalAlignment: Text.AlignHCenter
     }
 

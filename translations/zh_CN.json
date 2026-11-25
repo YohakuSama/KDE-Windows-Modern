@@ -504,5 +504,9 @@
   "Mathematics": "数学",
   "Arrows": "箭头",
   "Show password": "显示密码",
-  "Hide password": "隐藏密码"
+  "Hide password": "隐藏密码",
+  "Unlocking failed": "解锁失败",
+  "Caps Lock is on": "大写锁定已开启",
+  "(or scan your fingerprint on the reader)": "（或扫描你的指纹）",
+  "(or scan your smartcard)": "（或扫描你的智能卡）"
 }

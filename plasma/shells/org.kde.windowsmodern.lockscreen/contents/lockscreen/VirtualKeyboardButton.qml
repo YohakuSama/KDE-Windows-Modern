@@ -5,7 +5,8 @@ import QtQuick
 import org.kde.plasma.workspace.keyboardlayout as Keyboards
 
 StatusIconButton {
-    visible: Keyboards.KWinVirtualKeyboard.available
+    readonly property bool available: Keyboards.KWinVirtualKeyboard.available
+    visible: available
     focusPolicy: Qt.TabFocus
     icon.name: "accessibility"
     text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "On-screen keyboard")

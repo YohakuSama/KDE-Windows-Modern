@@ -15,6 +15,12 @@ PlasmaComponents3.ToolButton {
     display: AbstractButton.IconOnly
     flat: true
     focusPolicy: Qt.NoFocus
+    background: Rectangle {
+        radius: 4
+        color: parent.down ? "#33FFFFFF" : parent.hovered ? "#20FFFFFF" : "transparent"
+        border.width: parent.activeFocus ? 1 : 0
+        border.color: "#FFFFFF"
+    }
     Kirigami.Theme.inherit: false
     Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
     Accessible.name: text
