@@ -1,5 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .import "popupGeometry.js" as Geometry
+// One outer surface for Start, empty search and populated search.
+// Size preference and available logical screen geometry are the only inputs.
+// Never feed query length, search mode, or content implicit size into this.
+function surfaceSize(mode, screen, panelExtent, vertical, margin) {
+    const large = mode === 2 || (mode === 0 && screen.width >= 1440);
+    const wantedWidth = large ? 768 : 560;
+    const wantedHeight = large ? 720 : 640;
+    const panel = Math.max(0, Number(panelExtent) || 0);
+    const inset = 2 * Math.max(0, Number(margin) || 0);
+    return {
+        width: Math.max(1, Math.floor(Math.min(wantedWidth, screen.width > 0
+            ? screen.width - (vertical ? panel : 0) - inset : wantedWidth))),
+        height: Math.max(1, Math.floor(Math.min(wantedHeight, screen.height > 0
+            ? screen.height - (vertical ? 0 : panel) - inset : wantedHeight)))
+    };
+}
+
 // Explicit alignment uses the actual panel span; auto uses the button.
 function horizontalAnchorOffset(mode, screen, button, panel, popupWidth) {
     if (!screen || !button || !Number.isFinite(screen.x)

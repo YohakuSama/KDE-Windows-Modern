@@ -202,16 +202,22 @@ Item {
 
             readonly property int margin: 28
             readonly property rect screen: Plasmoid.screenGeometry
-            readonly property bool largeLayout: Plasmoid.configuration.startMenuSize === 2
-                || (Plasmoid.configuration.startMenuSize === 0 && screen.width >= 1440)
+            readonly property var surfaceSize: PopupPosition.surfaceSize(
+                Plasmoid.configuration.startMenuSize, screen, main.panelExtent, main.verticalPanel, margin)
             readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
                 && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
-            readonly property int wantedWidth: root.searching ? 776 : (largeLayout ? 768 : 560)
-            readonly property int wantedHeight: root.searching ? 690 : (largeLayout ? 720 : 640)
-            width: Math.max(1, Math.min(wantedWidth, screen.width > 0
-                ? screen.width - (main.verticalPanel ? main.panelExtent : 0) - 2 * margin : wantedWidth))
-            height: Math.max(1, Math.min(wantedHeight, screen.height > 0
-                ? screen.height - (main.verticalPanel ? 0 : main.panelExtent) - 2 * margin : wantedHeight))
+            objectName: "wmStartSearchSurface"
+            // The existing Start size is authoritative for both pages.
+            // Explicit equal layout limits also prevent the native dialog
+            // from sizing itself to search results or the hidden footer.
+            implicitWidth: surfaceSize.width
+            implicitHeight: surfaceSize.height
+            width: surfaceSize.width
+            height: surfaceSize.height
+            Layout.minimumWidth: surfaceSize.width
+            Layout.maximumWidth: surfaceSize.width
+            Layout.minimumHeight: surfaceSize.height
+            Layout.maximumHeight: surfaceSize.height
             focus: true
             onWidthChanged: if (root.visible) main.updatePopupAnchor()
 

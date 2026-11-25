@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Click through the optional Search/Task View buttons and the calendar zoom.
 
-  search    both Search entrypoints open the shared search home
+  search    both Search entrypoints and typing retain the same on-screen
+            popup rectangle; run on one display with a static desktop
   taskview  clicking Task View opens KWin's Overview
   calendar  the clock flyout's title zooms out to the year; reopening shows
             today's month again
@@ -21,18 +22,79 @@ import time
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from evdev import ecodes as e  # noqa: E402
-from PIL import Image  # noqa: E402
+from PIL import Image, ImageChops  # noqa: E402
+import json  # noqa: E402
 
 from e2e import a11y  # noqa: E402
 from e2e.session import Checks, screenshot  # noqa: E402
 from e2e.vinput import VirtualInput  # noqa: E402
 
 
+START_NAMES = ("Start", "开始")
+SEARCH_NAMES = ("Search", "搜索")
+HOME_FIELDS = ("Search for apps, settings, and files", "Search for apps, settings and files",
+               "搜索应用、设置和文件")
+SEARCH_FIELDS = ("Type here to search", "在此处输入以搜索")
+
+
+def start_button():
+    return next((n for n in a11y.nodes("plasmashell")
+                 if n.name in START_NAMES and n.role == "button" and n.showing), None)
+
+
+def search_field(searching=None):
+    button = start_button()
+    if button is None:
+        return None
+    names = HOME_FIELDS + SEARCH_FIELDS if searching is None else (SEARCH_FIELDS if searching else HOME_FIELDS)
+    return next((n for n in a11y.nodes("plasmashell")
+                 if n.showing and n.window != button.window and n.name in names
+                 and n.role in ("entry", "text") and n.rect[2] > 0), None)
+
+
 def start_menu_open():
-    """The Start menu's search field is showing."""
-    return any(n.showing and n.role in ("entry", "text") and n.rect[2] > 200
-               and n.window != a11y.find("plasmashell", "Start", visible=False).window
-               for n in a11y.nodes("plasmashell"))
+    return search_field() is not None
+
+
+def _longest_span(values):
+    threshold = max(10, max(values, default=0) * 0.25)
+    spans = []
+    start = None
+    for i, value in enumerate([*values, 0]):
+        if value >= threshold:
+            if start is None:
+                start = i
+        elif start is not None:
+            spans.append((start, i))
+            start = None
+    if not spans:
+        raise RuntimeError("No stable popup edge detected in screenshot")
+    return max(spans, key=lambda span: span[1] - span[0])
+
+
+def popup_bounds(closed_path, opened_path):
+    """Physical screenshot bounds, independent of Wayland client coordinates.
+
+    Compare with a static closed desktop. Ignore small taskbar/cursor changes
+    using the longest substantial changed row and column spans. Fail instead
+    of reporting an invented location when contrast is insufficient.
+    """
+    with Image.open(closed_path) as a, Image.open(opened_path) as b:
+        if a.size != b.size:
+            raise RuntimeError("Display geometry changed during capture")
+        diff = ImageChops.difference(a.convert("RGB"), b.convert("RGB"))
+        red, green, blue = diff.split()
+        mask = ImageChops.lighter(ImageChops.lighter(red, green), blue).point(
+            lambda v: 255 if v > 12 else 0)
+        width, height = mask.size
+        top, bottom = _longest_span(list(mask.resize((1, height), Image.Resampling.BOX).getdata()))
+        middle = mask.crop((0, top, width, bottom))
+        left, right = _longest_span(list(middle.resize((width, 1), Image.Resampling.BOX).getdata()))
+        if right - left < width * 0.15 or bottom - top < height * 0.15:
+            raise RuntimeError("Popup capture is inconclusive; use a static, contrasting desktop")
+        if right - left >= width * 0.98 or bottom - top >= height * 0.98:
+            raise RuntimeError("Background changed or capture has no reliable popup boundary")
+        return (left, top, right - left, bottom - top)
 
 
 def overview_active():
@@ -61,26 +123,108 @@ def click_node(vi, name):
 
 
 def search(vi, out, c):
-    click_node(vi, "Search")
-    time.sleep(1.2)
-    screenshot(out / "search-click.png")
-    c.check(start_menu_open(), "clicking the Search box opens a search field")
-    c.check(wait_for(lambda: "Quick searches" in texts()), "taskbar Search opens the empty-query search home")
-    c.check("Pinned" not in texts(), "search home does not show the Start page")
+    outputs = json.loads(subprocess.check_output(["kscreen-doctor", "-j"], text=True))["outputs"]
+    active = [display for display in outputs if display["enabled"]]
+    if len(active) != 1:
+        raise RuntimeError("Search geometry capture requires a single active output")
+    button = start_button()
+    if button is None:
+        raise RuntimeError("Start button not found")
+    search_button = next((n for n in a11y.nodes("plasmashell")
+                          if n.window == button.window and n.name in SEARCH_NAMES and n.showing), None)
+    if search_button is None:
+        raise RuntimeError("Enable the taskbar Search button before the test")
     vi.tap(e.KEY_ESC, after=0.6)
-    c.check(not start_menu_open(), "Esc closes it")
-    click_node(vi, "Start")
-    c.check(wait_for(lambda: "Pinned" in texts()), "Start opens its normal home")
-    field = next((n for n in a11y.nodes("plasmashell") if n.showing
-                  and n.role in ("entry", "text") and n.rect[2] > 200
-                  and "Search for apps" in n.name), None)
-    c.check(field is not None, "Start exposes its search input")
-    if field:
-        vi.move_to(*field.centre)
+    if not c.check(not start_menu_open(), "Start and Search closed before baseline"):
+        return
+
+    def shot(name):
+        path = out / (name + ".png")
+        path.unlink(missing_ok=True)
+        time.sleep(0.6)
+        screenshot(path)
+        return path
+
+    baseline = shot("search-geometry-closed")
+    expected = None
+    expected_field = None
+
+    def capture(name):
+        nonlocal expected, expected_field
+        field = search_field()
+        if field is None:
+            raise RuntimeError("Shared search field is not showing")
+        window = next((n for n in a11y.nodes("plasmashell")
+                       if n.window == field.window and n.depth == 0), None)
+        if window is None or window.rect[2] <= 0 or window.rect[3] <= 0:
+            raise RuntimeError("No accessible popup window extent")
+        rect = popup_bounds(baseline, shot(name))
+        local = (field.rect[0] - window.rect[0], field.rect[1] - window.rect[1],
+                 field.rect[2], field.rect[3])
+        print(f"        {name}: physical popup={rect}; logical field={local}")
+        if expected is None:
+            expected, expected_field = rect, local
+        else:
+            # Tolerate only minor raster rounding/rounded-corner differences.
+            c.check(max(abs(a - b) for a, b in zip(expected, rect)) <= 3,
+                    f"screen position and outer size unchanged ({expected} -> {rect})")
+            c.check(max(abs(a - b) for a, b in zip(expected_field, local)) <= 1,
+                    f"search field geometry unchanged ({expected_field} -> {local})")
+        return rect, local, window.rect
+
+    def click_button(node):
+        vi.move_to(*node.centre)
         vi.click()
-        c.check(wait_for(lambda: "Quick searches" in texts()), "Start input opens the same search home")
-        screenshot(out / "start-search-click.png")
-    vi.tap(e.KEY_ESC, after=0.6)
+
+    try:
+        click_button(button)
+        if not c.check(wait_for(lambda: search_field(False) is not None), "Start opens normal home"):
+            return
+        rect, local, win = capture("start-home")
+        # On Wayland the popup's AT-SPI children may report local coordinates.
+        # Use the photographed surface origin, not guessed screen coordinates.
+        scale = rect[2] / win[2]
+        if not 0.75 <= scale <= 4:
+            raise RuntimeError(f"Inconsistent screenshot/accessibility scale: {scale}")
+        fx = round(rect[0] / scale + local[0] + local[2] / 2)
+        fy = round(rect[1] / scale + local[1] + local[3] / 2)
+        vi.move_to(fx, fy)
+        vi.click()
+        if not c.check(wait_for(lambda: search_field(True) is not None), "Start input opens search"):
+            return
+        capture("start-search-click")
+        vi.type_text("test")
+        if not c.check(wait_for(lambda: search_field(True) is not None
+                                and search_field(True).text() == "test"), "search accepts typed query"):
+            return
+        capture("start-search-results")
+        vi.tap(e.KEY_ESC, after=0.5)
+        if c.check(wait_for(lambda: search_field(True) is not None
+                            and search_field(True).text() == ""), "Escape clears query"):
+            capture("start-search-cleared")
+        vi.tap(e.KEY_ESC, after=0.6)
+        if not c.check(not start_menu_open(), "Escape closes search"):
+            return
+        click_button(search_button)
+        if not c.check(wait_for(lambda: search_field(True) is not None), "taskbar Search opens same surface"):
+            return
+        capture("search-click")
+        vi.tap(e.KEY_ESC, after=0.6)
+        if not c.check(not start_menu_open(), "taskbar search closes"):
+            return
+        vi.tap(e.KEY_LEFTMETA, after=0.6)
+        if not c.check(wait_for(lambda: search_field(False) is not None), "Meta opens Start"):
+            return
+        capture("start-meta")
+        vi.type_text("test")
+        if c.check(wait_for(lambda: search_field(True) is not None
+                            and search_field(True).text() == "test"), "Meta typing enters search"):
+            capture("start-meta-search")
+    finally:
+        if start_menu_open():
+            vi.tap(e.KEY_ESC, after=0.3)
+        if start_menu_open():
+            vi.tap(e.KEY_ESC, after=0.3)
 
 
 def taskview(vi, out, c):

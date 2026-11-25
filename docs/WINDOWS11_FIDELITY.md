@@ -193,3 +193,21 @@ checks the source SHA, pinned native resource revision, essential source,
 test and artwork entries, and ZIP CRC integrity before adding the package
 to its private manifest. Do not add filler or publish the private resource
 bundle to the public Actions artifacts.
+
+### Start and Search must retain one surface
+
+The owner observed Start expanding from its home rectangle when clicking the
+search field. Remove the search-specific 776 x 690 logical size: both empty
+and populated Search use the existing Start size preference (560 x 640 small,
+768 x 720 large), subject only to the shared screen/work-area clamp. Preserve
+the same anchor and frame; do not reset the outer geometry on query or page
+changes. The inner page is responsible for scrolling and responsive content.
+These sizes preserve the existing Start design, not a new Microsoft measurement.
+
+The existing live panel scenario `tests/panel/new_features.py OUT_DIR search`
+now measures the photographed outer rectangle and search-field geometry for
+Start, input click, typed results, query clearing, direct taskbar Search, and
+Meta typing. Run on a single active display with a static contrasting desktop
+at each required DPI/theme. The screenshot comparison checks relative equality,
+not the absolute Windows margin or material. Headless geometry tests are not
+live acceptance. No new CI workflow is introduced.
