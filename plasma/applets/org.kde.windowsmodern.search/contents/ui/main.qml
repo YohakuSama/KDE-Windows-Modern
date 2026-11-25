@@ -117,7 +117,7 @@ PlasmoidItem {
         visible: !root.showBox
         iconName: searchBox.iconSource
         hoverIconName: searchBox.hoverIconSource
-        iconIsMask: false
+        iconIsMask: searchBox.iconIsMask
         selected: root.searchSelected
         text: i18nc("@action:button taskbar button", "Search")
         description: i18nc("@info:tooltip", "Open Start and search")

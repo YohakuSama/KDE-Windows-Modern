@@ -18,6 +18,7 @@ MouseArea {
     property string placeholder
     readonly property alias iconSource: magnifier.colorSource
     readonly property alias hoverIconSource: magnifier.accentSource
+    readonly property bool iconIsMask: !magnifier.hasColorSource
     property bool selected: false
     property bool forceHovered: false
     property bool forcePressed: false
