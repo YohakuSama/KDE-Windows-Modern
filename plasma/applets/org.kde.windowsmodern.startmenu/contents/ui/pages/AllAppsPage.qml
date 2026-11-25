@@ -42,6 +42,7 @@ Item {
     property string categoryTitle: ""
     property string categoryKey: ""
     property int categoryRow: 0
+    property real categoryScrollY: 0
     readonly property bool inCategory: categoryMode && categoryChild !== null
     readonly property bool letterIndexOpen: !categoryMode && alphabeticalView.letterIndexOpen
     function closeLetterIndex(restoreFocus) { alphabeticalView.closeLetterIndex(restoreFocus); }
@@ -63,22 +64,25 @@ Item {
     }
 
     function backToCategories() {
-        const row = categoryRow;
+        if (!inCategory) return;
+        const scrollY = categoryScrollY;
         resetCategory();
-        Qt.callLater(function() {
-            allAppsListView.positionViewAtIndex(row, GridView.Contain);
-            tryActivate(row);
-        });
+        allAppsListView.forceActiveFocus(Qt.OtherFocusReason);
+        allAppsListView.forceLayout();
+        allAppsListView.contentY = scrollY;
     }
 
     function activateRow(row) {
         const bucket = categoryCatalog.rows[row];
         if (!categoryMode || !bucket || inCategory) return;
+        allAppsListView.cancelFlick();
+        categoryScrollY = allAppsListView.contentY;
         categoryRow = row;
         categoryKey = bucket.key;
         categoryTitle = bucket.label;
         categoryChild = bucket.entries;
         Qt.callLater(function() {
+            if (!allAppsPage.inCategory || !allAppsPage.visible) return;
             categoryGrid.currentIndex = -1;
             categoryGrid.positionViewAtBeginning();
             categoryGrid.forceActiveFocus();
@@ -177,6 +181,7 @@ Item {
         clip: true
         visible: allAppsPage.categoryMode
         interactive: !allAppsPage.inCategory
+        enabled: !allAppsPage.inCategory
         readonly property int scrollGutter: allAppsPage.scrollbarEdgeOffset > 0 ? 0 : 18
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
         readonly property int columns: contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2
@@ -225,8 +230,6 @@ Item {
                 }
 
                 function openCategory() {
-                    allAppsListView.forceActiveFocus();
-                    allAppsListView.currentIndex = categoryIndex;
                     allAppsPage.activateRow(categoryIndex);
                 }
 
@@ -426,15 +429,18 @@ Item {
     // the overlay inside the Flickable's scrolling contentItem.
     Item {
         id: categoryOverlay
-        parent: allAppsListView
+        parent: allAppsPage
         anchors.fill: parent
         z: 100
         visible: allAppsPage.inCategory
         objectName: "wmStartCategoryOverlay"
 
         MouseArea {
+            objectName: "wmStartCategoryBackdrop"
             anchors.fill: parent
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             onClicked: allAppsPage.backToCategories()
+            onWheel: wheel => { wheel.accepted = true; }
         }
 
         Rectangle {
@@ -474,15 +480,26 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 16
                 spacing: 12
-                PlasmaComponents3.Label {
+                RowLayout {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 40
-                    text: allAppsPage.categoryTitle
-                    font.pixelSize: 20
-                    font.weight: Font.DemiBold
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
+                    PlasmaComponents3.Button {
+                        id: categoryBack
+                        objectName: "wmStartCategoryBack"
+                        text: i18n("Back")
+                        flat: true
+                        onClicked: allAppsPage.backToCategories()
+                    }
+                    PlasmaComponents3.Label {
+                        Layout.fillWidth: true
+                        text: allAppsPage.categoryTitle
+                        font.pixelSize: 20
+                        font.weight: Font.DemiBold
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+                    Item { Layout.preferredWidth: categoryBack.width }
                 }
                 GridView {
                     id: categoryGrid

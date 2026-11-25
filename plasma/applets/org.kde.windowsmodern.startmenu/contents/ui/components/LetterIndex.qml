@@ -34,6 +34,7 @@ FocusScope {
 
     MouseArea {
         anchors.fill: parent
+        onClicked: root.backRequested()
         onWheel: wheel => { wheel.accepted = true; }
     }
 
@@ -51,7 +52,6 @@ FocusScope {
             PlasmaComponents3.Button {
                 objectName: "wmStartLetterIndexBack"
                 text: i18n("Back")
-                icon.name: "go-previous-symbolic"
                 flat: true
                 onClicked: root.backRequested()
             }
@@ -143,9 +143,8 @@ FocusScope {
                     MouseArea {
                         id: tileMouse
                         anchors.fill: parent
-                        enabled: tile.available
                         hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
+                        cursorShape: tile.available ? Qt.PointingHandCursor : Qt.ArrowCursor
                         onClicked: grid.activateRow(tile.index)
                     }
                 }

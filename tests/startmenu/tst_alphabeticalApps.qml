@@ -103,6 +103,25 @@ Item {
             tryCompare(view, "letterIndexOpen", false);
             tryCompare(overlayForTest(), "opacity", 0);
         }
+        function test_letterIndexMouseDismissKeepsScroll() {
+            tryCompare(view, "count", 5);
+            const rows = findChild(view, "wmStartAlphabeticalRows");
+            rows.positionViewAtEnd();
+            const before = rows.contentY;
+            view.openLetterIndex();
+            tryCompare(overlayForTest(), "opacity", 1);
+            mouseClick(view, 4, 4);
+            tryCompare(view, "letterIndexOpen", false);
+            compare(rows.contentY, before);
+            tryCompare(overlayForTest(), "opacity", 0);
+            view.openLetterIndex();
+            tryCompare(overlayForTest(), "opacity", 1);
+            const back = findChild(view, "wmStartLetterIndexBack");
+            verify(back);
+            mouseClick(back, back.width / 2, back.height / 2);
+            tryCompare(view, "letterIndexOpen", false);
+            compare(rows.contentY, before);
+        }
         function overlayForTest() { return findChild(view, "wmStartLetterIndexOverlay"); }
         function test_modelUpdatesKeepSourceIdentity() {
             tryCompare(view, "count", 5);

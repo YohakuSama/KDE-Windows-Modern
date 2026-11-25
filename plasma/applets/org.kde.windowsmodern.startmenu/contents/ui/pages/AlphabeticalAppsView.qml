@@ -31,6 +31,7 @@ FocusScope {
     readonly property int count: entries.length
     readonly property var visualRows: Alphabetical.buildRows(entries, columns, alphabeticalGrouping)
     property bool letterIndexOpen: false
+    property real letterIndexScrollY: 0
     readonly property var letterIndexEntries: Alphabetical.letterIndex(visualRows)
     signal applicationActivated(int sourceRow)
     signal navigateToHeader()
@@ -133,13 +134,19 @@ FocusScope {
     }
 
     function openLetterIndex() {
-        if (!alphabeticalGrouping || !count) return;
+        if (!alphabeticalGrouping || !count || letterIndexOpen) return;
+        rowsView.cancelFlick();
+        letterIndexScrollY = rowsView.contentY;
         letterIndexOpen = true;
     }
     function closeLetterIndex(restoreFocus) {
         if (!letterIndexOpen) return;
         letterIndexOpen = false;
-        if (restoreFocus) rowsView.forceActiveFocus();
+        if (restoreFocus) {
+            rowsView.forceActiveFocus(Qt.OtherFocusReason);
+            rowsView.forceLayout();
+            rowsView.contentY = letterIndexScrollY;
+        }
     }
 
     function jumpToLetter(letter) {

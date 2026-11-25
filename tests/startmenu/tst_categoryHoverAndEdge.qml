@@ -54,13 +54,23 @@ Item {
             verify(label);
             mouseMove(label, label.width / 2, label.height / 2);
             tryCompare(label, "hovered", true);
+            const before = page.allAppsList.contentY;
             mouseClick(label, label.width / 2, label.height / 2);
             tryCompare(page, "inCategory", true);
+            compare(page.allAppsList.contentY, before);
             const surface = findChild(page, "wmStartCategorySurface");
             tryCompare(surface, "opacity", 1);
             tryCompare(surface, "scale", 1);
-            page.backToCategories();
+            mouseClick(page, 3, 3);
             tryCompare(page, "inCategory", false);
+            compare(page.allAppsList.contentY, before);
+            mouseClick(label, label.width / 2, label.height / 2);
+            tryCompare(page, "inCategory", true);
+            const back = findChild(page, "wmStartCategoryBack");
+            verify(back);
+            mouseClick(back, back.width / 2, back.height / 2);
+            tryCompare(page, "inCategory", false);
+            compare(page.allAppsList.contentY, before);
             page.destroy();
         }
     }
