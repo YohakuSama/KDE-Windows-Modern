@@ -19,6 +19,11 @@ int main()
         check(id, Status::PassiveStatus, true, true, false, Status::ActiveStatus);
         check(id, Status::ActiveStatus, false, true, false, Status::HiddenStatus);
     }
+    const QString fcitx = QStringLiteral("Fcitx");
+    check(fcitx, Status::ActiveStatus, true, false, false, Status::ActiveStatus);
+    check(fcitx, Status::ActiveStatus, true, false, true, Status::PassiveStatus);
+    Q_ASSERT(WindowsTray::systemOrder(fcitx) == WindowsTray::systemOrder(QStringLiteral("org.kde.plasma.keyboardlayout")));
+    Q_ASSERT(WindowsTray::systemOrder(fcitx) < WindowsTray::systemOrder(QStringLiteral("org.kde.plasma.networkmanagement")));
     const QString camera = QStringLiteral("org.kde.plasma.cameraindicator");
     check(camera, Status::ActiveStatus, true, false, true, Status::ActiveStatus);
     check(camera, Status::PassiveStatus, true, true, false, Status::HiddenStatus);
