@@ -19,7 +19,8 @@ Item {
         "org.kde.plasma.battery":            "battery",
         "org.kde.plasma.brightness":         "brightness",
         "org.kde.plasma.clipboard":          "clipboard",
-        "org.kde.plasma.mediacontroller":    "mediacontroller"
+        "org.kde.plasma.mediacontroller":    "mediacontroller",
+        "org.kde.plasma.devicenotifier":      "devices"
     })
 
     function flyoutNameForApplet(applet) {

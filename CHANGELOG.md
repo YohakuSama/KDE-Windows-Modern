@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Add a native removable-device flyout that reuses KDE's device model and real action dispatcher.
+
 - Share Start application, power and view-menu frames, compact glyph geometry and action row sizes. Keep initial mouse-open selection neutral and bound the footer menu to short work areas.
 
 - Share the live accent palette across the tray, clock and Start menu. Preserve calendar delegates during same-day updates, enable all week-start choices and correct notification links and time-zone offsets.
