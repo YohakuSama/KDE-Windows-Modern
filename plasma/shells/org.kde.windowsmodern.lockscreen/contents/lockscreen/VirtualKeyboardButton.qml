@@ -8,7 +8,7 @@ StatusIconButton {
     readonly property bool available: Keyboards.KWinVirtualKeyboard.available
     visible: available
     focusPolicy: Qt.TabFocus
-    icon.name: "accessibility"
+    icon.name: "preferences-desktop-accessibility-symbolic"
     text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "On-screen keyboard")
     onClicked: Keyboards.KWinVirtualKeyboard.active = !Keyboards.KWinVirtualKeyboard.active
 }

@@ -14,7 +14,7 @@ QtObject {
     readonly property color mutedForegroundColor: "#A0A0A0"
     readonly property color accentColor: "#4CC2FF"
     readonly property color dimOverlayColor: "#000000"
-    readonly property real dimOverlayOpacity: 0.45
+    readonly property real dimOverlayOpacity: 0.30
     readonly property color panelBackground: "#40000000"
     readonly property color menuBackground: "#2C2C2C"
     readonly property color menuBorder: "#3F3F3F"
@@ -22,20 +22,20 @@ QtObject {
 
     readonly property string fontFamily: Application.font.family
 
-    readonly property int avatarSize: 140
+    readonly property int avatarSize: 160
     readonly property int textFieldHeight: 42
     readonly property int textFieldRadius: 4
     readonly property color textFieldBorderColor: "#66FFFFFF"
     readonly property int textFieldMaxWidth: 280
     readonly property int loginButtonSize: 38
-    readonly property int userSwitcherAvatarSize: 32
-    readonly property int userSwitcherItemHeight: 32
+    readonly property int userSwitcherAvatarSize: 40
+    readonly property int userSwitcherItemHeight: 52
     readonly property int powerMenuWidth: 150
     readonly property int powerMenuItemHeight: 36
 
     readonly property int clockTimePixelSize: 96
     readonly property int clockDatePixelSize: 24
-    readonly property int usernamePixelSize: 32
+    readonly property int usernamePixelSize: 28
     readonly property int bodyPixelSize: 14
-    readonly property int userSwitcherNamePixelSize: 20
+    readonly property int userSwitcherNamePixelSize: 14
 }

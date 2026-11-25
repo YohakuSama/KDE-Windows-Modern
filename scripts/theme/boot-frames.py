@@ -18,22 +18,15 @@ def ring_frame(index):
     image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     phase = index / FRAMES
-    wave = (1 - math.cos(2 * math.pi * phase)) / 2
-    start = -90 + 720 * phase
-    sweep = 180 * (0.25 + 1.25 * wave)
     center = size / 2
-    radius = 16 * SUPERSAMPLE
-    stroke = 3 * SUPERSAMPLE
-    # Pillow's arc stroke is inside the bounding ellipse.
-    outer = radius + stroke / 2
-    draw.arc((center-outer, center-outer, center+outer, center+outer),
-             start, start+sweep, fill=(255,255,255,255), width=stroke)
-    for angle in (start, start+sweep):
-        radians = math.radians(angle)
-        x = center + radius * math.cos(radians)
-        y = center + radius * math.sin(radians)
-        cap = stroke / 2
-        draw.ellipse((x-cap, y-cap, x+cap, y+cap), fill=(255,255,255,255))
+    radius = size * 0.36
+    dot_radius = size * 0.043
+    for dot in range(5):
+        angle = 2 * math.pi * (phase - 0.25) - dot * math.pi / 8
+        x = center + radius * math.cos(angle)
+        y = center + radius * math.sin(angle)
+        draw.ellipse((x-dot_radius, y-dot_radius, x+dot_radius, y+dot_radius),
+                     fill=(255,255,255,255))
     return image.resize((RING_SIZE, RING_SIZE), Image.Resampling.LANCZOS)
 
 def logo_frame():

@@ -5,7 +5,10 @@
 #include <Plasma/Containment>
 #include <Plasma/ContainmentActions>
 #include <Plasma/PluginLoader>
+#include <QApplication>
 #include <QDebug>
+#include <QEvent>
+#include <QPalette>
 #include <QMetaObject>
 #include <memory>
 
@@ -14,7 +17,14 @@ class NativeDesktopMenu final : public Plasma::ContainmentActions
     Q_OBJECT
 public:
     NativeDesktopMenu(QObject *parent, const QVariantList &args)
-        : Plasma::ContainmentActions(parent, args) {}
+        : Plasma::ContainmentActions(parent, args)
+    {
+        if (qApp) qApp->installEventFilter(this);
+    }
+    ~NativeDesktopMenu() override
+    {
+        if (qApp) qApp->removeEventFilter(this);
+    }
     void restore(const KConfigGroup &config) override
     {
         if (!m_native)
@@ -59,6 +69,22 @@ public:
             }
         }
         return m_layout.build(stock, refresh, desktop->internalAction(QStringLiteral("configure")), undo);
+    }
+protected:
+    bool eventFilter(QObject *object, QEvent *event) override
+    {
+        auto *menu = qobject_cast<QMenu *>(object);
+        if (menu && qApp) {
+            if (event->type() == QEvent::Hide) {
+                DesktopMenuLayout::restoreAppearance(menu);
+            } else if ((event->type() == QEvent::ActionAdded
+                        || event->type() == QEvent::Polish || event->type() == QEvent::Show)
+                       && m_layout.ownsMenu(menu)) {
+                const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
+                DesktopMenuLayout::applyAppearance(menu, dark);
+            }
+        }
+        return Plasma::ContainmentActions::eventFilter(object, event);
     }
 private:
     std::unique_ptr<Plasma::ContainmentActions> m_native;

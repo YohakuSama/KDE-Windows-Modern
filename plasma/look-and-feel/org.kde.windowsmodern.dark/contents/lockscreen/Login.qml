@@ -19,9 +19,9 @@ SessionManagementScreen {
     id: root
 
     property Item mainPasswordBox: passwordField
-    readonly property int accountAvatarSize: Math.max(1, Math.floor(Math.min(WinStyle.avatarSize, width * 0.6, height * 0.25)))
+    readonly property int accountAvatarSize: Math.max(1, Math.floor(Math.min(WinStyle.avatarSize, width * 0.6, height * 0.32)))
     readonly property url accountImage: !showUsernamePrompt && userList && userList.currentItem && userList.currentItem.icon
-        ? userList.currentItem.icon : Qt.resolvedUrl("faces/.face.icon")
+        ? userList.currentItem.icon : ""
     readonly property string accountName: showUsernamePrompt ? userNameInput.text
         : (userList && userList.currentItem && userList.currentItem.realName
             ? userList.currentItem.realName : (userList ? userList.selectedUser : ""))
@@ -101,8 +101,14 @@ SessionManagementScreen {
         loginRequest(username, password);
     }
 
+    // Preserve the actual avatar position during the authenticated welcome.
+    function avatarTopIn(item) {
+        return accountAvatar.mapToItem(item, 0, 0).y;
+    }
+
     // ── Avatar ──
     WinAvatar {
+        id: accountAvatar
         Layout.alignment: Qt.AlignHCenter
         Layout.bottomMargin: 16
         size: root.accountAvatarSize
@@ -276,10 +282,18 @@ SessionManagementScreen {
         visible: !root.showUsernamePrompt && userList.currentItem && !userList.currentItem.needsPassword
         onClicked: root.startLogin()
         background: Rectangle {
-            radius: 4
-            color: parent.hovered ? "#33FFFFFF" : "#20FFFFFF"
-            border.color: "#88FFFFFF"
+            radius: 6
+            color: parent.down ? "#26FFFFFF" : parent.hovered ? "#33FFFFFF" : "#20FFFFFF"
+            border.color: parent.activeFocus ? "#FFFFFF" : "#88FFFFFF"
             border.width: parent.activeFocus ? 2 : 1
+        }
+        contentItem: Text {
+            text: noPasswordButton.text
+            color: WinStyle.foregroundColor
+            font.family: WinStyle.fontFamily
+            font.pixelSize: WinStyle.bodyPixelSize
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
         }
     }
 

@@ -5,7 +5,7 @@ import Qt5Compat.GraphicalEffects
 Item {
     id: avatar
     property url source
-    property int size: 140
+    property int size: 160
     implicitWidth: size
     implicitHeight: size
 

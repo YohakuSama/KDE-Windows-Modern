@@ -29,6 +29,7 @@ Item {
     property bool loginSucceeded: false
     property string welcomeName: ""
     property url welcomeImage: ""
+    property real welcomeAvatarTop: -1
 
     LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
@@ -103,7 +104,8 @@ Item {
             id: mainStack
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: -parent.height * 0.15
+            anchors.verticalCenterOffset: -Math.min(parent.height * 0.10,
+                Math.max(0, (parent.height - mainStack.height) / 2 - 16))
 
             width: Math.min(parent.width * 0.9, 480)
             height: Math.min(parent.height * 0.8, 600)
@@ -212,10 +214,9 @@ Item {
         // Show only after the real authenticator reports success. The
         // backend owns session startup and is never delayed by this view.
         SignInWelcome {
-            anchors.centerIn: parent
-            width: mainStack.width
-            height: mainStack.height
+            anchors.fill: mainStack
             visible: root.loginSucceeded && loginScreenRoot.uiVisible
+            avatarTop: root.welcomeAvatarTop
             accountName: root.welcomeName
             accountImage: root.welcomeImage
             message: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Welcome")
@@ -232,8 +233,18 @@ Item {
             }
             model: PlasmaLogin.UserModel
             uiVisible: loginScreenRoot.uiVisible && !root.loginSucceeded
-            width: Math.max(0, Math.min(240, parent.width - 2 * anchors.leftMargin))
+            width: Math.max(0, Math.min(180, parent.width - 2 * anchors.leftMargin))
             maximumHeight: Math.max(0, Math.min(parent.height * 0.25, footer.y - anchors.bottomMargin))
+        }
+
+        // The idle clock screen retains the live network status.
+        Loader {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: 16
+            active: !loginScreenRoot.uiVisible && !root.loginSucceeded
+            visible: active && status === Loader.Ready
+            source: "NetworkStatusIcon.qml"
         }
 
         // ── Footer ──
@@ -244,7 +255,8 @@ Item {
             anchors.right: parent.right
             anchors.margins: 16
             spacing: 8
-            enabled: !root.loginSucceeded
+            enabled: loginScreenRoot.uiVisible && !root.loginSucceeded
+            visible: opacity > 0
             opacity: loginScreenRoot.uiVisible && !root.loginSucceeded ? 1 : 0
 
             Behavior on opacity {
@@ -265,11 +277,16 @@ Item {
 
             // Live network state (was a fixed icon); its own Loader, so a
             // missing plasma-nm can only hide the icon.
-            Loader { source: "NetworkStatusIcon.qml"; Layout.alignment: Qt.AlignVCenter }
+            Loader {
+                source: "NetworkStatusIcon.qml"
+                visible: status === Loader.Ready
+                Layout.alignment: Qt.AlignVCenter
+            }
 
             Loader {
                 id: virtualKeyboardLoader
                 source: "VirtualKeyboardButton.qml"
+                visible: status === Loader.Ready && item && item.available
                 Layout.alignment: Qt.AlignVCenter
             }
             Connections {
@@ -280,7 +297,11 @@ Item {
                 }
             }
 
-            Loader { source: "BatteryStatusIcon.qml"; Layout.alignment: Qt.AlignVCenter }
+            Loader {
+                source: "BatteryStatusIcon.qml"
+                visible: status === Loader.Ready && item && item.available
+                Layout.alignment: Qt.AlignVCenter
+            }
 
             WinFooterButton {
                 id: powerButton
@@ -302,6 +323,9 @@ Item {
         root.notificationMessage = "";
         root.welcomeName = mainStack.currentItem?.accountName || username;
         root.welcomeImage = mainStack.currentItem?.accountImage || "";
+        const current = mainStack.currentItem;
+        root.welcomeAvatarTop = current && typeof current.avatarTopIn === "function"
+            ? current.avatarTopIn(mainStack) : -1;
         PlasmaLogin.GreeterState.handleLoginRequest(username, password);
     }
 

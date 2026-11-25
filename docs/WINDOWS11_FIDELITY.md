@@ -112,3 +112,21 @@ WM_DISPOSABLE_DESKTOP=1 xvfb-run -a -s '-screen 0 1920x1080x24' dbus-run-session
 ```
 
 Requires Weston, KWin, Plasma, KScreen, ImageMagick and a compatible rendering backend. The script checks the actual compiled tray and task-manager plugin mappings and records light/dark captures at 100%, 125%, 150% and 200%. It refuses an existing Plasma session and fails if rendering, scaling or plugin loading fails. This remains an opt-in integration test: the previous hosted runner could not supply a compatible nested rendering device. The normal compile and headless interaction CI does not certify physical desktop capture. Use the target NixOS live tests for the owner's hardware acceptance.
+
+### Owner reference: boot, login and desktop background menu
+
+The owner supplied a five-dot loading reference, centered account and password
+form, account switcher with selected row, and compact desktop background menu.
+The independent KSplash packages and greeter share the same five-dot source;
+the Plymouth generator uses the same angular spacing. Shutdown mode hides
+the boot logo and presents actual system status text. Plymouth does not expose
+a separate reboot identifier through GetMode. No delay, authentication bypass
+or power-state simulation is introduced.
+
+The desktop background plugin applies a scoped light/dark row and surface
+style to menus containing its own actions and associated submenus. Native
+actions, availability, keyboard navigation and submenu activation remain
+in Qt/KDE. Check first-open geometry, reopening, disabled paste, undo,
+shortcut alignment, icons, arrows, shadow, DPI, RTL, dark/light and unrelated
+application menus. Exact reference scaling was not supplied; these logical
+measurements are provisional. DWM material and glyph parity remain unverified.
