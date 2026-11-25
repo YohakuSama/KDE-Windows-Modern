@@ -106,7 +106,7 @@ class ShellAssetExtraction(unittest.TestCase):
                 inspection.install_shell_assets(output)
             installed = data_home / "windows-modern/native-assets/shell/search/search-on-light.png"
             self.assertEqual(installed.read_bytes(), raw)
-            manifest = json.loads((installed.parents[2] / "manifest.json").read_text())
+            manifest = json.loads((installed.parents[1] / "manifest.json").read_text())
             self.assertEqual(manifest["assets"][0]["sha256"], hashlib.sha256(raw).hexdigest())
 
 
