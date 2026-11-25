@@ -51,7 +51,7 @@ PlasmoidItem {
         ? (popupVerticalPanel ? popupPanelWindow.width : popupPanelWindow.height)
         : panelPopup && panelPopup.visualParent
             ? (popupVerticalPanel ? panelPopup.visualParent.width : panelPopup.visualParent.height) : 48
-    toolTipMainText: flyoutOpen ? "" : Qt.locale().toString(currentTime, Locale.LongFormat)
+    toolTipMainText: flyoutOpen ? "" : Qt.locale().toString(currentTime, Qt.locale().dateFormat(Locale.LongFormat))
     toolTipSubText: flyoutOpen ? "" : Qt.locale().toString(currentTime, "ddd") + " "
         + formatTime(currentTime, false) + " ("
         + (Plasmoid.configuration.lastSelectedTimezone === "Local" || currentTimeZone === systemClock.timeZone

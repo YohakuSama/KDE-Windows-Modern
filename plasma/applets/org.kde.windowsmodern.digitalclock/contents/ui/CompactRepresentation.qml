@@ -21,6 +21,7 @@ import org.kde.kirigami as Kirigami
 import "code/dateformat.js" as DateFormat
 import "code/popupGeometry.js" as PopupGeometry
 import "code/notificationPresentation.js" as NotificationPresentation
+import "code/colorType.js" as ColorType
 
 MouseArea {
     id: main
@@ -48,7 +49,7 @@ MouseArea {
         "icons/windows-modern/status/wm-notification-snooze-filled-symbolic.svg", StandardPaths.LocateFile))
     readonly property string panelNotificationIcon: NotificationPresentation.panelBellIcon(
         plasmoidItem.notificationIcon, plasmoidItem.notificationsInhibited,
-        Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Dark,
+        ColorType.isDark(Kirigami.Theme.backgroundColor),
         filledDndAsset.length > 0)
     property bool wasExpanded: false
     function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
