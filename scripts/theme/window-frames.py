@@ -195,6 +195,22 @@ def patch_window_svg(svg, active, inactive):
         svg, count = re.subn(pattern, replace, svg)
         if count != 1:
             raise ValueError("Missing or duplicate Kvantum window element: " + element)
+    # Toolbars use the menubar slice set. Match only the first filled rect
+    # in each role; never recolor the transparent border/overlay artwork.
+    # The window and toolbar now share a single opaque wallpaper tint.
+    if 'id="menubar-normal"' in svg:
+        for prefix, color in (("menubar-normal", active),
+                              ("menubar-normal-inactive", inactive)):
+            for part in ("", "-left", "-right", "-top", "-topleft", "-topright",
+                         "-bottom", "-bottomleft", "-bottomright"):
+                role = prefix + part
+                if part.startswith("-bottom"):
+                    pattern = rf'(<g\b[^>]*\bid="{role}"[^>]*>\s*<rect\b[^>]*\bfill=")[^"]+(")'
+                else:
+                    pattern = rf'(<rect\b[^>]*\bid="{role}"[^>]*\bfill=")[^"]+(")'
+                svg, count = re.subn(pattern, lambda match: match[1] + color + match[2], svg)
+                if count != 1:
+                    raise ValueError("Unexpected or missing Kvantum toolbar element: " + role)
     ET.fromstring(svg)
     return svg
 
@@ -212,7 +228,11 @@ def apply_local(aurorae_dir, kvantum_dir, package=None):
             changes[kvantum] = patch_window_svg(kvantum.read_text(encoding="utf-8"), active or base, base)
         print(f"{mode}: active {active or base}, inactive {base}")
     for path, value in changes.items():
-        path.write_text(value, encoding="utf-8")
+        if path.read_text(encoding="utf-8") == value:
+            continue
+        temporary = path.with_name(path.name + ".wm-tmp")
+        temporary.write_text(value, encoding="utf-8")
+        temporary.replace(path)
 
 
 def main():

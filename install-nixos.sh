@@ -457,8 +457,6 @@ kwriteconfig6 --file spectaclerc --group General --key useReleaseToCapture true
 kwriteconfig6 --file spectaclerc --group General --key autoSaveImage true
 kwriteconfig6 --file spectaclerc --group General --key clipboardGroup PostScreenshotCopyImage
 # Keep the system font and user's existing input method.
-"$PYTHON" "$ROOT/scripts/theme/window-frames.py" --apply-local --aurorae-dir "$DATA/aurorae/themes" \
-    --kvantum-dir "$CONFIG/Kvantum/Windows-modern" --wallpaper-package "$DATA/wallpapers/Windows-modern"
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
     sleep 2
     "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group shortcuts
@@ -472,6 +470,16 @@ else
     # pinned apps, layout or the user's light/dark preference on upgrade.
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 fi
+
+# Apply the opaque material on both install and upgrade, using the
+# user's saved wallpaper rather than replacing it with the bundled image.
+material_args=(--apply-local --aurorae-dir "$DATA/aurorae/themes"
+               --kvantum-dir "$CONFIG/Kvantum/Windows-modern")
+if [ ! -f "$DATA/windows-modern/transparency-off" ]; then
+    material_args+=(--wallpaper-config "$CONFIG/plasma-org.kde.plasma.desktop-appletsrc")
+fi
+"$PYTHON" "$ROOT/scripts/theme/window-frames.py" "${material_args[@]}"
+busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 
 # Install just the new native clipboard binding on both fresh installs and
 # upgrades, without resetting the user's other shortcuts.

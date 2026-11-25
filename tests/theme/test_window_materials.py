@@ -51,6 +51,23 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual(ET.tostring(nodes['menu-normal']), ET.tostring(elements(SVG)['menu-normal']))
         self.assertEqual(frames.patch_window_svg(result, '#123456', '#202020'), result)
 
+    def test_real_window_and_toolbar_have_shared_opaque_tint(self):
+        theme = ROOT / 'Kvantum/Windows-modern'
+        for name in ('Windows-modern', 'Windows-modernDark'):
+            source = (theme / (name + '.svg')).read_text()
+            patched = frames.patch_window_svg(source, '#345678', '#202020')
+            self.assertEqual(frames.patch_window_svg(patched, '#345678', '#202020'), patched)
+            nodes = elements(patched)
+            for role, color in (('menubar-normal', '#345678'), ('menubar-normal-inactive', '#202020')):
+                for part in ('', '-left', '-right', '-top', '-topleft', '-topright',
+                             '-bottom', '-bottomleft', '-bottomright'):
+                    node = nodes[role + part]
+                    surface = node[0] if part.startswith('-bottom') else node
+                    self.assertEqual(surface.get('fill'), color)
+                    self.assertIn(surface.get('opacity', '1'), ('1', '1.0'))
+            self.assertEqual(ET.tostring(nodes['menu-normal']),
+                             ET.tostring(elements(source)['menu-normal']))
+
     def test_real_kvantum_menu_slices(self):
         theme = ROOT / 'Kvantum/Windows-modern'
         for name, color, border in (('Windows-modern', '#F9F9F9', '#DADADA'),

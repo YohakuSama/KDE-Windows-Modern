@@ -21,7 +21,7 @@ def render(template, mode, role, variant):
     # Keep tooltip geometry and material separate.
     if dialog:
         fill = "#202020" if mode == "dark" else "#F2F2F2"
-        opacity = ("0.86" if mode == "dark" else "0.90") if acrylic else "1"
+        opacity = ("0.94" if mode == "dark" else "0.96") if acrylic else "1"
         border = "#3C3C3C" if mode == "dark" else "#DCDCDC"
     else:
         fill = "#2C2C2C" if mode == "dark" else "#F9F9F9"
