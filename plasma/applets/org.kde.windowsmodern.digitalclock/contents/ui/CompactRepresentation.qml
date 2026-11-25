@@ -19,6 +19,7 @@ import org.kde.plasma.private.digitalclock as DigitalClockPrivate
 import org.kde.kirigami as Kirigami
 
 import "code/dateformat.js" as DateFormat
+import "code/popupGeometry.js" as PopupGeometry
 import "code/notificationPresentation.js" as NotificationPresentation
 
 MouseArea {
@@ -54,10 +55,17 @@ MouseArea {
         id: clockPopupAnchor
         width: main.width
         height: main.height
-        x: Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
-            : Plasmoid.location === PlasmaCore.Types.RightEdge ? -8 : 0
-        y: Plasmoid.location === PlasmaCore.Types.BottomEdge ? -8
-            : Plasmoid.location === PlasmaCore.Types.TopEdge ? 8 : 0
+        function sync() {
+            const edge = Plasmoid.location === PlasmaCore.Types.BottomEdge ? "bottom"
+            : Plasmoid.location === PlasmaCore.Types.TopEdge ? "top"
+            : Plasmoid.location === PlasmaCore.Types.LeftEdge ? "left"
+            : Plasmoid.location === PlasmaCore.Types.RightEdge ? "right" : "";
+            const pos = main.mapToGlobal(0, 0);
+            const offset = PopupGeometry.normalOffset(edge, main.panelGeometry,
+                {x: pos.x, y: pos.y, width: main.width, height: main.height});
+            x = offset.x;
+            y = offset.y;
+        }
     }
 
     // Verify mapped geometry, not merely a successfully loaded QML tree.
@@ -67,6 +75,7 @@ MouseArea {
         onTriggered: {
             if (!clockDialog.visible) return;
             const a = main.mapToGlobal(0, 0);
+            const panel = main.panelGeometry;
             const screen = Plasmoid.screenGeometry;
             const x = clockDialog.x, y = clockDialog.y;
             const w = clockDialog.width, h = clockDialog.height;
@@ -74,15 +83,15 @@ MouseArea {
             let gap = 0;
             let axisOverlap = false;
             if (location === PlasmaCore.Types.BottomEdge || location === PlasmaCore.Types.TopEdge) {
-                gap = location === PlasmaCore.Types.BottomEdge ? a.y - (y + h) : y - (a.y + main.height);
+                gap = location === PlasmaCore.Types.BottomEdge ? panel.y - (y + h) : y - (panel.y + panel.height);
                 axisOverlap = x <= a.x + main.width && x + w >= a.x;
             } else if (location === PlasmaCore.Types.LeftEdge || location === PlasmaCore.Types.RightEdge) {
-                gap = location === PlasmaCore.Types.LeftEdge ? x - (a.x + main.width) : a.x - (x + w);
+                gap = location === PlasmaCore.Types.LeftEdge ? x - (panel.x + panel.width) : panel.x - (x + w);
                 axisOverlap = y <= a.y + main.height && y + h >= a.y;
             }
             const inBounds = x >= screen.x - 2 && y >= screen.y - 2
                 && x + w <= screen.x + screen.width + 2 && y + h <= screen.y + screen.height + 2;
-            const ok = inBounds && axisOverlap && gap >= 4 && gap <= 32;
+            const ok = inBounds && axisOverlap && Math.abs(gap - PopupGeometry.gap) <= 3;
             console.info("WM_POPUP clock", ok ? "OK" : "POSITION_MISMATCH",
                 x, y, w, h, "anchor", a.x, a.y, main.width, main.height, "gap", gap);
         }
@@ -95,7 +104,7 @@ MouseArea {
         flags: Qt.Dialog
         visualParent: clockPopupAnchor
         location: Plasmoid.location
-        floating: 8
+        floating: PopupGeometry.gap
         backgroundHints: PlasmaCore.Dialog.NoBackground
         visible: false
         hideOnWindowDeactivate: !Plasmoid.configuration.pin
@@ -114,6 +123,7 @@ MouseArea {
                 console.warn("WM_POPUP clock: panel anchor not mapped");
                 return;
             }
+            clockPopupAnchor.sync();
             visible = true;
             requestActivate();
         }

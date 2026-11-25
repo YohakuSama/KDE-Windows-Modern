@@ -2,6 +2,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupPosition.js" as PopupPosition
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupGeometry.js" as Geometry
 
 TestCase {
     name: "StartMenuPopupPosition"
@@ -18,9 +19,9 @@ TestCase {
             {tag: "center on negative monitor", mode: 0, screen: {x: -1920, width: 1920}, button: {x: -1120, width: 48}, expected: 0},
             {tag: "center on secondary monitor", mode: 0, screen: {x: 1920, width: 1536}, button: {x: 2570, width: 48}, expected: 0},
             {tag: "fractional logical width", mode: 0, screen: {x: 0, width: 1280}, button: {x: 530.5, width: 41}, expected: 0},
-            {tag: "auto left edge inset", mode: 0, screen: {x: 0, width: 1920}, button: {x: 0, width: 48}, popupWidth: 560, expected: 264},
-            {tag: "auto right edge inset", mode: 0, screen: {x: 0, width: 1920}, button: {x: 1872, width: 48}, popupWidth: 560, expected: -264},
-            {tag: "negative monitor inset", mode: 3, screen: {x: -1920, width: 1920}, button: {x: -1920, width: 48}, popupWidth: 560, expected: 264},
+            {tag: "auto left edge inset", mode: 0, screen: {x: 0, width: 1920}, button: {x: 0, width: 48}, popupWidth: 560, expected: 268},
+            {tag: "auto right edge inset", mode: 0, screen: {x: 0, width: 1920}, button: {x: 1872, width: 48}, popupWidth: 560, expected: -268},
+            {tag: "negative monitor inset", mode: 3, screen: {x: -1920, width: 1920}, button: {x: -1920, width: 48}, popupWidth: 560, expected: 268},
             {tag: "explicit centered", mode: 2, screen: {x: 0, width: 1920}, button: {x: 8, width: 48}, expected: 928},
             {tag: "legacy centered stays at panel", mode: 1, screen: {x: 0, width: 1920}, button: {x: 8, width: 48}, expected: 928},
             {tag: "explicit left", mode: 3, screen: {x: 0, width: 1920}, button: {x: 936, width: 48}, expected: -936},
@@ -32,6 +33,23 @@ TestCase {
             ,{tag: "short panel center", mode: 2, screen: {x: 0, width: 1920}, panel: {x: 400, width: 800}, button: {x: 430, width: 48}, expected: 346}
             ,{tag: "short panel left", mode: 3, screen: {x: 0, width: 1920}, panel: {x: 400, width: 800}, button: {x: 430, width: 48}, popupWidth: 560, expected: 226}
         ];
+    }
+
+    function test_panelNormalOffsets_data() {
+        return [
+            {tag: "bottom padded button", edge: "bottom", panel: {x:0,y:900,width:1920,height:48}, anchor: {x:200,y:904,width:48,height:40}, x:0,y:-16},
+            {tag: "bottom unpadded group", edge: "bottom", panel: {x:0,y:900,width:1920,height:48}, anchor: {x:1600,y:900,width:120,height:48}, x:0,y:-12},
+            {tag: "top", edge: "top", panel: {x:0,y:0,width:1920,height:48}, anchor: {x:200,y:4,width:48,height:40}, x:0,y:16},
+            {tag: "left negative screen", edge: "left", panel: {x:-1920,y:0,width:48,height:1080}, anchor: {x:-1916,y:200,width:40,height:48}, x:16,y:0},
+            {tag: "right", edge: "right", panel: {x:1872,y:0,width:48,height:1080}, anchor: {x:1876,y:200,width:40,height:48}, x:-16,y:0}
+        ];
+    }
+
+    function test_panelNormalOffsets(data) {
+        const offset = Geometry.normalOffset(data.edge, data.panel, data.anchor);
+        compare(offset.x, data.x);
+        compare(offset.y, data.y);
+        compare(Geometry.gap, 12);
     }
 
     function test_horizontalAnchorOffset(data) {

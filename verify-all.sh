@@ -229,7 +229,9 @@ for pair in \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentScrollBar.qml" \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml" \
     "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/colorType.js" \
-    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js"; do
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js" \
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/popupGeometry.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupGeometry.js" \
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/popupGeometry.js plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/popupGeometry.js"; do
     # shellcheck disable=SC2086  # two paths on purpose
     cmp -s $pair || SHARED_DRIFT="$SHARED_DRIFT ${pair##* }"
 done

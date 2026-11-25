@@ -184,6 +184,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/mediaSource.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/quickSettingsOrder.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/trayMetrics.js
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/popupGeometry.js
 )
 ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     PATH components
