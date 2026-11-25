@@ -22,7 +22,8 @@ Rectangle {
     readonly property string defaultName: actions?.defaultActionName || ""
     readonly property string defaultText: actions?.defaultActionText || ""
     readonly property bool hasDefault: defaultName.length > 0 && defaultText.length > 0
-    readonly property int additionalActionCount: Math.max(0, otherActions.count - (hasDefault ? 1 : 0))
+    // KDE exposes the default action separately from the additional-action model.
+    readonly property int additionalActionCount: otherActions.count
     readonly property bool hasOtherActions: additionalActionCount > 0
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
@@ -107,6 +108,7 @@ Rectangle {
             visible: row.hasDefault && row.present
             enabled: row.canOperate
             text: row.defaultText
+            icon.name: row.actions?.defaultActionIcon || ""
             onClicked: row.triggerAction(row.defaultName)
         }
 
@@ -117,9 +119,10 @@ Rectangle {
                 required property var model
                 objectName: "wmDeviceOtherAction_" + model.Name
                 Layout.fillWidth: true
-                visible: row.expanded && row.canOperate && model.Name !== row.defaultName
+                visible: row.expanded && row.canOperate
                 enabled: row.canOperate
                 text: model.Text
+                icon.name: model.Icon || ""
                 onClicked: row.triggerAction(model.Name)
             }
         }

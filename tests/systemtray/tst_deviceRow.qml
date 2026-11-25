@@ -10,12 +10,13 @@ Item {
 
     ListModel {
         id: mockActions
-        property string defaultActionName: "eject"
-        property string defaultActionText: "Eject"
+        property string defaultActionName: "MountAndOpen"
+        property string defaultActionText: "Safely remove"
+        property string defaultActionIcon: "media-eject"
         property string requested: ""
         function actionTriggered(name) { requested = name; }
-        ListElement { Name: "eject"; Text: "Eject" }
-        ListElement { Name: "open"; Text: "Open" }
+        // ActionsControl does not include its default action in rowCount().
+        ListElement { Name: "open"; Text: "Open"; Icon: "document-open-folder" }
     }
 
     Components.DeviceRow {
@@ -44,10 +45,12 @@ Item {
             const button = findChild(row, "wmDeviceDefaultAction");
             tryVerify(() => button && button.visible && button.enabled);
             mouseClick(button, button.width / 2, button.height / 2);
-            compare(mockActions.requested, "eject");
+            compare(mockActions.requested, "MountAndOpen");
         }
 
         function test_moreActionsUseNativeDispatcher() {
+            compare(row.additionalActionCount, 1);
+            verify(row.hasOtherActions);
             const more = findChild(row, "wmDeviceMoreActions");
             tryVerify(() => more && more.visible);
             mouseClick(more, more.width / 2, more.height / 2);
@@ -60,6 +63,15 @@ Item {
             compare(mockActions.requested, "open");
         }
 
+        function test_emptyAdditionalActionsKeepsDefault() {
+            mockActions.clear();
+            tryCompare(row, "additionalActionCount", 0);
+            verify(!row.hasOtherActions);
+            verify(row.hasDefault);
+            mockActions.append({Name: "open", Text: "Open", Icon: "document-open-folder"});
+            tryCompare(row, "additionalActionCount", 1);
+        }
+
         function test_busyAndRemovedDevicesCannotBeOperated() {
             row.expanded = true;
             row.busy = true;
@@ -67,14 +79,14 @@ Item {
             verify(!row.canOperate);
             const button = findChild(row, "wmDeviceDefaultAction");
             tryCompare(button, "enabled", false);
-            row.triggerAction("eject");
+            row.triggerAction("MountAndOpen");
             compare(mockActions.requested, "");
 
             row.busy = false;
             row.present = false;
             verify(!row.canOperate);
             tryCompare(button, "visible", false);
-            row.triggerAction("eject");
+            row.triggerAction("MountAndOpen");
             compare(mockActions.requested, "");
         }
     }
