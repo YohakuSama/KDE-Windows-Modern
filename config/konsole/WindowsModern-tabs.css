@@ -1,55 +1,80 @@
-/* Windows Terminal appearance, constrained to the native Konsole tab widget.
- * The native window decoration is retained: hiding it would lose window
- * controls, and Konsole does not expose Windows Terminal's integrated titlebar. */
-QTabWidget::pane { border: none; }
-QTabWidget::tab-bar { alignment: left; }
+/* Windows Terminal dark tab strip, constrained to Konsole's native tab widget.
+ * KWin still owns the outer titlebar and window controls. */
+QTabWidget {
+    background: #0C0C0C;
+}
+QTabWidget::pane {
+    border: none;
+    background: #0C0C0C;
+}
+QTabWidget::tab-bar {
+    alignment: left;
+}
 QTabBar {
-    background: palette(button);
+    background: #2D2D2D;
     border: none;
     qproperty-drawBase: 0;
 }
 QTabBar::tab {
     min-width: 180px;
     max-width: 232px;
-    min-height: 30px;
-    padding: 2px 10px;
-    margin: 3px 1px 0px;
+    min-height: 34px;
+    padding: 4px 12px;
+    margin: 4px 1px 0px;
     border: none;
-    border-top-left-radius: 7px;
-    border-top-right-radius: 7px;
-    color: palette(window-text);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    color: #CCCCCC;
     background: transparent;
 }
-/* Campbell's actual terminal background, not the KDE view color. */
 QTabBar::tab:selected {
     background: #0C0C0C;
-    color: #CCCCCC;
+    color: #F3F3F3;
     font-weight: 600;
 }
-QTabBar::tab:!selected:hover { background: palette(midlight); }
+QTabBar::tab:!selected:hover {
+    background: #3A3A3A;
+}
 QTabBar::close-button {
     subcontrol-position: right;
     width: 14px;
     height: 14px;
     margin-right: 4px;
 }
-QTabBar::close-button:hover { background: palette(midlight); border-radius: 3px; }
+QTabBar::close-button:hover {
+    background: #454545;
+    border-radius: 3px;
+}
 QToolButton {
-    color: palette(window-text);
+    color: #F2F2F2;
     border: none;
     border-radius: 4px;
     padding: 4px;
     background: transparent;
 }
-QToolButton:hover { background: palette(midlight); }
-QToolButton:pressed { background: palette(mid); }
+QToolButton:hover {
+    background: #3A3A3A;
+}
+QToolButton:pressed {
+    background: #454545;
+}
 QMenu {
     padding: 4px;
-    border: 1px solid palette(mid);
+    border: 1px solid #454545;
     border-radius: 6px;
-    background: palette(window);
-    color: palette(window-text);
+    background: #2D2D2D;
+    color: #F2F2F2;
 }
-QMenu::item { padding: 7px 24px 7px 30px; border-radius: 4px; }
-QMenu::item:selected { background: palette(midlight); color: palette(window-text); }
-QMenu::separator { height: 1px; background: palette(mid); margin: 4px 8px; }
+QMenu::item {
+    padding: 7px 24px 7px 30px;
+    border-radius: 4px;
+}
+QMenu::item:selected {
+    background: #454545;
+    color: #FFFFFF;
+}
+QMenu::separator {
+    height: 1px;
+    background: #454545;
+    margin: 4px 8px;
+}

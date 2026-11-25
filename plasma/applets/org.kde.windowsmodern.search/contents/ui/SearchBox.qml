@@ -16,9 +16,10 @@ MouseArea {
     property string text
     property string description
     property string placeholder
-    readonly property alias iconSource: magnifier.colorSource
-    readonly property alias hoverIconSource: magnifier.accentSource
-    readonly property bool iconIsMask: !magnifier.hasColorSource
+    readonly property alias iconSource: magnifier.accentSource
+    readonly property alias hoverIconSource: magnifier.colorSource
+    readonly property bool iconIsMask: magnifier.offIsMask
+    readonly property bool hoverIconIsMask: magnifier.onIsMask
     property bool selected: false
     property string queryText: ""
     property int queryCursor: 0
@@ -103,6 +104,7 @@ MouseArea {
             height: width
             iconName: box.iconName
             accented: box.styleMode === 1 && box.selected || !(box.selected || box.showHovered)
+            forceMask: box.styleMode === 1 && box.selected
             foreground: box.selected && box.styleMode === 1 ? "#FFFFFF" : box.darkTheme ? "#D0D0D0" : "#5D5D5D"
         }
 

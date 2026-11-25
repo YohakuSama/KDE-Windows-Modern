@@ -19,7 +19,13 @@
         "License": "GPL-3.0-or-later",
         "Name": "Search (Windows Modern)",
         "Version": "1.2.2",
-        "Website": "https://github.com/YohakuSama/KDE-Windows-Modern"
+        "Website": "https://github.com/YohakuSama/KDE-Windows-Modern",
+        "Name[zh_CN]": "搜索（Windows Modern）",
+        "Description[zh_CN]": "Windows 11 风格任务栏搜索框及搜索按钮",
+        "Name[zh_SG]": "搜索（Windows Modern）",
+        "Description[zh_SG]": "Windows 11 风格任务栏搜索框及搜索按钮",
+        "Name[zh_Hans]": "搜索（Windows Modern）",
+        "Description[zh_Hans]": "Windows 11 风格任务栏搜索框及搜索按钮"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

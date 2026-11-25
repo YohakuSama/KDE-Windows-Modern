@@ -8,6 +8,13 @@
 # ───────────────────────────────────────────────────────────────────
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
+REQUESTED=("$@")
+for name in "${REQUESTED[@]}"; do
+    if [[ "$name" == */* || ! -d "$HERE/$name" ]] || ! compgen -G "$HERE/$name/tst_*.qml" >/dev/null; then
+        echo "Unknown QML test suite: $name" >&2
+        exit 2
+    fi
+done
 
 RUNNER=""
 for candidate in qmltestrunner6 /usr/lib64/qt6/bin/qmltestrunner /usr/lib/qt6/bin/qmltestrunner qmltestrunner; do
@@ -18,9 +25,13 @@ done
 failed=0
 for suite in "$HERE"/*/; do
     compgen -G "$suite/tst_*.qml" >/dev/null || continue
+    name="$(basename "$suite")"
+    if [[ "${#REQUESTED[@]}" -gt 0 ]] && [[ ! " ${REQUESTED[*]} " =~ " ${name} " ]]; then
+        continue
+    fi
     args=(-input "$suite")
     [ -d "$suite/mock" ] && args=(-import "$suite/mock" "${args[@]}")
-    echo "── $(basename "$suite")"
+    echo "── $name"
     if ! QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}" QT_FORCE_STDERR_LOGGING=1 "$RUNNER" "${args[@]}"; then
         failed=1
     fi

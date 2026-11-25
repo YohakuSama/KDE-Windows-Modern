@@ -12,6 +12,8 @@
 #include <QRect>
 #include <QRectF>
 #include <QHash>
+#include <QTimer>
+#include <QWindow>
 
 #include <KConfigWatcher>
 
@@ -54,6 +56,9 @@ public:
     Q_INVOKABLE QRectF panelGlyphBounds(const QString &source);
     Q_INVOKABLE QColor wallpaperAccent(const QColor &fallback, bool dark) const;
     Q_INVOKABLE void setNotificationPopupSlide(QQuickItem *content);
+    // Keep Start/Search independent of the mutually exclusive tray and clock.
+    Q_INVOKABLE void prepareShellPopup(const QString &role, QWindow *window);
+    Q_INVOKABLE void restoreShellPopupFocus();
     Q_INVOKABLE bool setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
                                       qreal radius, bool enabled);
 
@@ -103,4 +108,9 @@ private:
 
     QHash<QString /*plugin id*/, int /*config group*/> m_configGroupIds;
     QHash<QString, QRectF> m_panelGlyphBounds;
+    QHash<QString, QPointer<QWindow>> m_shellPopups;
+    QTimer m_shellPopupDismissTimer;
+    bool shellPopupHasFocus() const;
+    void dismissShellPopup(QWindow *window);
+    void scheduleShellPopupDismissal();
 };

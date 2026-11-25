@@ -15,7 +15,7 @@ layout and power buttons are not pressed.
 
 Usage: tests/panel/e2e.py [--out DIR] [SCENARIO ...]
 Scenarios: show-desktop start-meta start-click start-hover tray-order tray-pages
-           clock quick-settings flyout-scroll flyout-hover  (default: all)
+           clock quick-settings flyout-scroll flyout-hover popup-coordination (default: all)
 
 Not covered: the taskbar's right-click menu. It is a native Qt menu, and
 under uinput input it closes the instant it opens (a real mouse works), so
@@ -464,11 +464,70 @@ def flyout_scroll(p, c):
     p.close_popups()
 
 
+def popup_coordination(p, c):
+    """Check real popup ownership without changing device settings."""
+    panel_window = p.item("Show desktop").window
+    def start_open():
+        return visible("Pinned") or visible("已固定")
+    def clock_open():
+        return (visible("Notifications", exclude_window=panel_window)
+                or visible("通知", exclude_window=panel_window))
+    def quick_open():
+        return visible("Wi-Fi", exclude_window=panel_window)
+
+    try:
+        p.click("Start")
+        c.check(bool(wait_for(start_open)), "Start opens")
+        p.click("Networks")
+        c.check(bool(wait_for(lambda: start_open() and quick_open())),
+                "Start stays open alongside Quick Settings")
+        p.shot("start-and-quick-settings")
+        p.click("Clock")
+        c.check(bool(wait_for(lambda: start_open() and clock_open() and not quick_open())),
+                "notifications replace Quick Settings without closing Start")
+        p.shot("start-and-notifications")
+        p.click("Networks")
+        c.check(bool(wait_for(lambda: start_open() and quick_open() and not clock_open())),
+                "Quick Settings replaces notifications without closing Start")
+        p.close_popups()
+
+        # Search uses Start's wider surface; verify the actual query survives.
+        p.click("Start")
+        wait_for(start_open)
+        p.vi.type_text("settings")
+        def query_open():
+            return next((n for n in a11y.nodes(APP) if n.showing
+                         and n.window != panel_window and n.role in ("text", "entry")
+                         and (n.text() or "").lower() == "settings"), None)
+        c.check(bool(wait_for(query_open)), "search query appears")
+        p.click("Clock")
+        c.check(bool(wait_for(lambda: query_open() and clock_open())),
+                "notifications do not close the search surface")
+        p.click("Networks")
+        c.check(bool(wait_for(lambda: query_open() and quick_open() and not clock_open())),
+                "search persists through a side flyout switch")
+        p.shot("search-and-quick-settings")
+        p.close_popups()
+
+        # Test both routes repeatedly, without Start's app list contributing
+        # list items to the overflow-card accessibility query.
+        for _ in range(3):
+            p.click("Show hidden icons")
+            c.check(bool(wait_for(lambda: not quick_open() and _cards(panel_window))),
+                    "chevron opens only the hidden icon grid")
+            p.click("Networks")
+            c.check(bool(wait_for(lambda: quick_open() and not _cards(panel_window))),
+                    "network group opens only Quick Settings")
+        p.shot("quick-settings-after-route-switches")
+    finally:
+        p.close_popups()
+
+
 SCENARIOS = {"show-desktop": show_desktop, "start-meta": start_meta, "start-click": start_click,
              "start-hover": start_hover,
              "tray-order": tray_order, "tray-pages": tray_pages, "clock": clock,
              "quick-settings": quick_settings, "flyout-scroll": flyout_scroll,
-             "flyout-hover": flyout_hover}
+             "flyout-hover": flyout_hover, "popup-coordination": popup_coordination}
 
 
 def main():

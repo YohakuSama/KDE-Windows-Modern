@@ -12,8 +12,7 @@ Item {
     property alias percent: batteryControl.percent
     property alias pluggedIn: batteryControl.pluggedIn
     readonly property bool percentKnown: hasBattery && Number.isFinite(percent) && percent >= 0
-    readonly property bool charging: pluggedIn && (batteryControl.state === BatteryControlModel.Charging
-        || batteryControl.state === BatteryControlModel.FullyCharged)
+    readonly property bool charging: pluggedIn && batteryControl.state === BatteryControlModel.Charging
 
     property bool showPercentage: true
     property real glyphSize: 18
@@ -38,6 +37,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             percent: root.percentKnown ? root.percent : -1
             charging: root.charging
+            pluggedIn: root.pluggedIn
             saver: powerProfiles.activeProfile === "power-saver"
         }
 
