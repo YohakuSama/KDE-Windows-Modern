@@ -12,6 +12,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtQuick.Controls
 import QtCore
 import Qt5Compat.GraphicalEffects
@@ -65,7 +66,8 @@ Item {
             root.visible = false;
             return;
         }
-        if (!startButton || startButton.width <= 0 || startButton.height <= 0)
+        if (!startButton || !popupAnchor.Window.window || !popupAnchor.visible
+            || startButton.width <= 0 || startButton.height <= 0)
             return;
 
         const horizontal = Plasmoid.location === PlasmaCore.Types.BottomEdge

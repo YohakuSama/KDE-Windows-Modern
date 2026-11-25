@@ -69,6 +69,13 @@ Item {
             tryCompare(control, "pressed", true);
             mouseMove(control, Math.round(control.width * 0.82), y, 80);
             tryVerify(() => row.value >= 75);
+            // A late reply with the pre-drag backend value must not move
+            // the live pointer-controlled thumb backwards.
+            const draggedValue = control.value;
+            row.value = 35;
+            wait(30);
+            compare(control.value, draggedValue);
+            row.value = draggedValue;
             mouseRelease(control, Math.round(control.width * 0.82), y);
             tryCompare(control, "pressed", false);
             mouseClick(control, Math.round(control.width * 0.20), y);

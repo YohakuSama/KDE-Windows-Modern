@@ -56,6 +56,34 @@ MouseArea {
             : Plasmoid.location === PlasmaCore.Types.TopEdge ? 8 : 0
     }
 
+    // Verify mapped geometry, not merely a successfully loaded QML tree.
+    Timer {
+        id: clockGeometryProbe
+        interval: 200
+        onTriggered: {
+            if (!clockDialog.visible) return;
+            const a = main.mapToGlobal(0, 0);
+            const screen = Plasmoid.screenGeometry;
+            const x = clockDialog.x, y = clockDialog.y;
+            const w = clockDialog.width, h = clockDialog.height;
+            const location = Plasmoid.location;
+            let gap = 0;
+            let axisOverlap = false;
+            if (location === PlasmaCore.Types.BottomEdge || location === PlasmaCore.Types.TopEdge) {
+                gap = location === PlasmaCore.Types.BottomEdge ? a.y - (y + h) : y - (a.y + main.height);
+                axisOverlap = x <= a.x + main.width && x + w >= a.x;
+            } else if (location === PlasmaCore.Types.LeftEdge || location === PlasmaCore.Types.RightEdge) {
+                gap = location === PlasmaCore.Types.LeftEdge ? x - (a.x + main.width) : a.x - (x + w);
+                axisOverlap = y <= a.y + main.height && y + h >= a.y;
+            }
+            const inBounds = x >= screen.x - 2 && y >= screen.y - 2
+                && x + w <= screen.x + screen.width + 2 && y + h <= screen.y + screen.height + 2;
+            const ok = inBounds && axisOverlap && gap >= 4 && gap <= 32;
+            console.info("WM_POPUP clock", ok ? "OK" : "POSITION_MISMATCH",
+                x, y, w, h, "anchor", a.x, a.y, main.width, main.height, "gap", gap);
+        }
+    }
+
     PlasmaCore.Dialog {
         id: clockDialog
         objectName: "wmClockSplitPopup"
@@ -67,6 +95,12 @@ MouseArea {
         backgroundHints: PlasmaCore.Dialog.NoBackground
         visible: false
         hideOnWindowDeactivate: !Plasmoid.configuration.pin
+        onVisibleChanged: {
+            if (visible) clockGeometryProbe.restart();
+            else clockGeometryProbe.stop();
+        }
+        onWidthChanged: if (visible) clockGeometryProbe.restart()
+        onHeightChanged: if (visible) clockGeometryProbe.restart()
 
         function toggle(previous) {
             if (previous) { visible = false; return; }
