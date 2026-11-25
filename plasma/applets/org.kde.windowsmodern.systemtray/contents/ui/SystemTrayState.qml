@@ -20,6 +20,7 @@ QtObject {
     // Overflow and Quick Settings are distinct homes of the same native popup.
     // Keep the originating home when navigating to a child applet page.
     property bool overflowMode: false
+    property bool quickSettingsRoute: false
     readonly property bool overflowOpen: expanded && overflowMode && !activeApplet
     readonly property bool quickSettingsOpen: expanded && !overflowMode && !activeApplet
 
@@ -35,6 +36,7 @@ QtObject {
         if (expanded && !popupVisible)
             expanded = false;
         overflowMode = overflow;
+        quickSettingsRoute = !overflow;
         setActiveApplet(null);
         expanded = true;
     }
@@ -52,7 +54,7 @@ QtObject {
     property int oldVisualIndex: -1
     property int newVisualIndex: -1
 
-    function setActiveApplet(applet, visualIndex) {
+    function setActiveApplet(applet, visualIndex, origin) {
 
         // Applets which prefer to always show their full
         // representation will always be expanded, there's
@@ -70,6 +72,10 @@ QtObject {
         }
 
         changingApplet = true;
+        if (origin !== undefined) {
+            overflowMode = origin === "overflow";
+            quickSettingsRoute = origin === "quick";
+        }
         const oldApplet = activeApplet;
         try {
             // The outgoing native view closes before the new page is shown.
@@ -96,6 +102,7 @@ QtObject {
                 setActiveApplet(null)
             }
             overflowMode = false
+            quickSettingsRoute = false
         }
         acceptExpandedChange = false
         root.expanded = expanded

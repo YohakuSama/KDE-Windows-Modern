@@ -65,6 +65,18 @@ Item {
                               + Qt.locale().toString(new Date(2026, 10, 26, 10, 30), fmt)), t.join(" | "));
         }
 
+        function test_explicitClockTimeFormat() {
+            agenda.events = [root.ev("Meeting", false, 13)];
+            agenda.timeLocale = Qt.locale("en_US");
+            agenda.timeFormat = "h:mm AP";
+            waitForRendering(agenda);
+            verify(texts(agenda).includes("1:00 PM – 2:30 PM"));
+            agenda.timeFormat = "HH:mm";
+            waitForRendering(agenda);
+            verify(texts(agenda).includes("13:00 – 14:30"));
+            agenda.timeLocale = Qt.binding(() => Qt.locale());
+            agenda.timeFormat = Qt.binding(() => agenda.timeLocale.timeFormat(Locale.ShortFormat));
+        }
         function test_moreThanFour() {
             agenda.events = [1, 2, 3, 4, 5, 6].map(i => root.ev("Event " + i, true, 0));
             waitForRendering(agenda);

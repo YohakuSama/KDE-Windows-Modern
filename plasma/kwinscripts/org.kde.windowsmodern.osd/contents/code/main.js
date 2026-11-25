@@ -31,8 +31,10 @@ function place(win) {
     }
 }
 
+const watchers = new Map();
+
 function watch(win) {
-    if (!win || !win.onScreenDisplay) return;
+    if (!win || !win.onScreenDisplay || watchers.has(win)) return;
     let placing = false;
     const reposition = () => {
         // Geometry assignment can synchronously emit frameGeometryChanged.
@@ -45,9 +47,18 @@ function watch(win) {
             placing = false;
         }
     };
+    watchers.set(win, reposition);
     win.frameGeometryChanged.connect(reposition);
+    win.outputChanged.connect(reposition);
     reposition();
 }
 
+function repositionVisibleOsds() {
+    for (const reposition of watchers.values()) reposition();
+}
+
 workspace.windowAdded.connect(watch);
+workspace.windowRemoved.connect(win => watchers.delete(win));
+workspace.screensChanged.connect(repositionVisibleOsds);
+workspace.virtualScreenGeometryChanged.connect(repositionVisibleOsds);
 workspace.windowList().forEach(watch);

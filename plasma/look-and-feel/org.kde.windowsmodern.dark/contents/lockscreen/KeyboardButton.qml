@@ -10,7 +10,7 @@ import QtQuick
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.workspace.components as WorkspaceComponents
 
-PlasmaComponents.ToolButton {
+StatusIconButton {
     focusPolicy: Qt.TabFocus
     Accessible.description: i18ndc("plasma_login", "Button to change keyboard layout", "Switch layout")
     icon.name: "input-keyboard"
@@ -22,7 +22,7 @@ PlasmaComponents.ToolButton {
         acceptedButtons: Qt.NoButton
     }
 
-    text: keyboardLayoutSwitcher.layoutNames.longName
+    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Switch keyboard layout")
     onClicked: keyboardLayoutSwitcher.keyboardLayout.switchToNextLayout()
 
     visible: keyboardLayoutSwitcher.hasMultipleKeyboardLayouts

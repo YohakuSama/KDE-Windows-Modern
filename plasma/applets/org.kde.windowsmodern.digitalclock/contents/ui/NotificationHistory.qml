@@ -12,12 +12,14 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.notificationmanager as NotificationManager
 import org.kde.kcmutils as KCMUtils
+import "code/dateformat.js" as DateFormat
 
 // Use Plasma's shared notification history, not a second notification server
 // or a watcher that only sees notifications received after opening.
 ColumnLayout {
     id: history
     required property date currentTime
+    readonly property string todayKey: currentTime.toDateString()
     required property bool notificationsAvailable
     required property bool effectiveDnd
     property var timeLocale: Qt.locale()
@@ -223,7 +225,12 @@ ColumnLayout {
         spacing: 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: FluentScrollBar { objectName: "wmNotificationScrollBar" }
+        HoverHandler { id: listHover }
+        QQC2.ScrollBar.vertical: FluentScrollBar {
+            objectName: "wmNotificationScrollBar"
+            viewportHovered: listHover.hovered
+            scrolling: list.moving || list.flicking
+        }
         Kirigami.WheelHandler {
             target: list
             filterMouseEvents: true
@@ -262,7 +269,7 @@ ColumnLayout {
             }
 
             function invoke(name) {
-                if (isGroup || isJob) return;
+                if (isGroup || isJob || model.expired) return;
                 const idx = notificationModel.index(index, 0);
                 const behavior = model.resident ? NotificationManager.Notifications.None
                                                 : NotificationManager.Notifications.Close;
@@ -337,8 +344,10 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: !card.isGroup
                     implicitHeight: messageContent.implicitHeight + 20
-                    radius: 4
+                    radius: 8
                     color: palette.cardTint
+                    border.width: 1
+                    border.color: Qt.rgba(palette.text.r, palette.text.g, palette.text.b, 0.08)
 
                     ColumnLayout {
                         id: messageContent
@@ -353,11 +362,13 @@ ColumnLayout {
                             spacing: 4
                             PlasmaComponents.Label {
                                 text: {
+                                    const updated = card.model.updated;
                                     const created = card.model.created;
-                                    if (!created || isNaN(created.getTime())) return "";
-                                    const sameDay = created.toDateString() === history.currentTime.toDateString();
-                                    return (sameDay ? "" : history.timeLocale.toString(created, "yyyy/M/d") + " ")
-                                        + history.timeLocale.toString(created, history.timeFormat);
+                                    const timestamp = updated && !isNaN(updated.getTime()) ? updated : created;
+                                    if (!timestamp || isNaN(timestamp.getTime())) return "";
+                                    const sameDay = timestamp.toDateString() === history.todayKey;
+                                    return (sameDay ? "" : history.timeLocale.toString(timestamp, DateFormat.shortDateFullYear(history.timeLocale.dateFormat(Locale.ShortFormat))) + " ")
+                                        + history.timeLocale.toString(timestamp, history.timeFormat);
                                 }
                                 color: palette.textSecondary
                                 font.pixelSize: 11
@@ -405,6 +416,7 @@ ColumnLayout {
                             Layout.fillWidth: true
                             text: card.model.body || ""
                             textFormat: Text.StyledText
+                            onLinkActivated: link => Qt.openUrlExternally(link)
                             color: palette.text
                             font.pixelSize: 12
                             wrapMode: Text.Wrap
@@ -416,12 +428,29 @@ ColumnLayout {
                         RowLayout {
                             Layout.fillWidth: true
                             visible: card.runningJob && !card.isGroup
-                            PlasmaComponents.ProgressBar {
+                            QQC2.ProgressBar {
+                                id: transferProgress
                                 Layout.fillWidth: true
+                                Layout.preferredHeight: 4
+                                padding: 0
                                 from: 0
                                 to: 100
                                 value: Math.max(0, Math.min(100, Number(card.model.percentage) || 0))
                                 Accessible.name: i18n("Transfer progress")
+                                background: Rectangle {
+                                    radius: 2
+                                    color: palette.progressTrack
+                                }
+                                contentItem: Item {
+                                    Rectangle {
+                                        anchors.left: transferProgress.mirrored ? undefined : parent.left
+                                        anchors.right: transferProgress.mirrored ? parent.right : undefined
+                                        width: parent.width * transferProgress.position
+                                        height: parent.height
+                                        radius: 2
+                                        color: palette.accent
+                                    }
+                                }
                             }
                             PlasmaComponents.Label {
                                 text: Math.round(Number(card.model.percentage) || 0) + "%"
@@ -457,25 +486,27 @@ ColumnLayout {
                             id: actions
                             Layout.fillWidth: true
                             spacing: Kirigami.Units.smallSpacing
-                            visible: !card.isGroup && !card.isJob && !card.model.expired && (card.model.hasDefaultAction
-                                || (card.model.actionNames || []).length > 0)
+                            readonly property bool showDefault: !!card.model.hasDefaultAction
+                                && !(card.model.actionLabels || []).includes(defaultAction.actionLabel)
+                            readonly property int actionCount: (showDefault ? 1 : 0) + (card.model.actionNames || []).length
+                            visible: !card.isGroup && !card.isJob && !card.model.expired && actionCount > 0
 
-                            PlasmaComponents.Button {
+                            FlyoutButton {
+                                id: defaultAction
                                 readonly property string actionLabel: card.model.defaultActionLabel || i18n("Open")
                                 text: actionLabel
-                                visible: card.model.hasDefaultAction
-                                    && !(card.model.actionLabels || []).includes(actionLabel)
-                                width: Math.min(implicitWidth, actions.width)
+                                visible: actions.showDefault
+                                width: actions.actionCount === 1 ? actions.width : Math.min(implicitWidth, actions.width)
                                 onClicked: card.invoke("default")
                             }
 
                             Repeater {
                                 model: card.model.actionNames || []
-                                delegate: PlasmaComponents.Button {
+                                delegate: FlyoutButton {
                                     required property int index
                                     required property string modelData
                                     text: (card.model.actionLabels || [])[index] || modelData
-                                    width: Math.min(implicitWidth, actions.width)
+                                    width: actions.actionCount === 1 ? actions.width : Math.min(implicitWidth, actions.width)
                                     onClicked: card.invoke(modelData)
                                 }
                             }
@@ -495,7 +526,7 @@ ColumnLayout {
                                 onAccepted: card.submitReply()
                             }
 
-                            PlasmaComponents.Button {
+                            FlyoutButton {
                                 text: card.model.replySubmitButtonText || i18n("Send")
                                 icon.name: card.model.replySubmitButtonIconName || "document-send"
                                 enabled: replyInput.text.trim().length > 0

@@ -75,8 +75,8 @@ drag_from_buttons=false
 
 [GeneralColors]
 window.color=#202020
-base.color=#2C2C2C
-alt.base.color=#2C2C2C
+base.color=#191919
+alt.base.color=#1E1E1E
 button.color=#2C2C2C
 light.color=#3F3F3F
 mid.light.color=#3F3F3F
@@ -108,7 +108,7 @@ iconless_menu=false
 disabled_icon_opacity=100
 lxqtmainmenu_iconsize=16
 normal_default_pushbutton=true
-single_top_toolbar=true
+single_top_toolbar=false
 tint_on_mouseover=0
 transparent_pcmanfm_view=false
 no_selection_tint=true

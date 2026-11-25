@@ -27,6 +27,18 @@ Item {
     }
     FocusSession { id: focusState; settings: mockSettings }
     QtObject {
+        id: blurBackend
+        property bool supported: true
+        property int calls: 0
+        property bool lastEnabled: false
+        function setSplitPopupBlur(content, first, second, radius, enabled) {
+            calls++;
+            lastEnabled = enabled;
+            return supported && enabled && first.width > 0 && second.width > 0
+                && radius === 8;
+        }
+    }
+    QtObject {
         id: clock
         property date currentTime: new Date(2026, 10, 25, 5, 0)
         property string timeFormatWithSeconds: "HH:mm:ss"
@@ -37,6 +49,7 @@ Item {
         readonly property bool flyoutOpen: expanded
         property rect popupScreenGeometry: Qt.rect(0, 0, 1280, 720)
         property real popupPanelExtent: 48
+        property bool popupVerticalPanel: false
         property bool notificationsAvailable: true
         property bool notificationsInhibited: false
         property var notificationModel: notifications
@@ -53,11 +66,43 @@ Item {
     TestCase {
         name: "ClockExpandedRepresentation"
         when: windowShown
+        function test_splitAcrylicUsesExistingBackendOrSolidFallback() {
+            const panel = findChild(popup, "wmNotificationPanel");
+            compare(popup.splitAcrylic, false);
+            compare(panel.color.a, 1);
+            popup.splitBlurProvider = blurBackend;
+            popup.allowSplitAcrylic = true;
+            tryCompare(popup, "splitAcrylic", true);
+            verify(panel.color.a < 1);
+            popup.allowSplitAcrylic = false;
+            tryCompare(popup, "splitAcrylic", false);
+            compare(blurBackend.lastEnabled, false);
+            compare(panel.color.a, 1);
+            blurBackend.supported = false;
+            const calls = blurBackend.calls;
+            popup.allowSplitAcrylic = true;
+            tryVerify(() => blurBackend.calls > calls);
+            compare(popup.splitAcrylic, false);
+            popup.splitBlurProvider = null;
+            popup.allowSplitAcrylic = false;
+            blurBackend.supported = true;
+        }
         function test_chineseCalendarWithIndependentLocale() {
             compare(popup.calendarLocale.name, "zh_CN");
             tryCompare(findChild(popup, "wmCalendarDateHeading"), "text", "11月25日 星期三");
             tryCompare(findChild(popup, "wmCalendarMonthHeading"), "text", "2026年11月");
             compare(popup.sectionGap, 12);
+        }
+        function test_panelOrientationAndThickness() {
+            clock.popupPanelExtent = 120;
+            compare(popup.availableScreenHeight, 568);
+            clock.popupVerticalPanel = true;
+            compare(popup.availableScreenHeight, 688);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 440, 720);
+            compare(popup.popupWidth, 296);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+            clock.popupPanelExtent = 48;
+            clock.popupVerticalPanel = false;
         }
         function test_fullCalendarHasUsableGeometry() {
             compare(popup.implicitWidth, 320);
@@ -102,6 +147,14 @@ Item {
                 verify(!bar.visible || !bar.indicatorVisible);
             }
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+        }
+        function test_shortScreenDoesNotClipCalendarFooter() {
+            const footer = findChild(popup, "wmFocusFooter");
+            clock.popupScreenGeometry = Qt.rect(0, 0, 800, 360);
+            tryCompare(popup, "calendarCanExpand", false);
+            tryVerify(() => footer.mapToItem(popup, 0, 0).y + footer.height <= popup.height + 1);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+            tryCompare(popup, "calendarBodyShown", true);
         }
         function test_notificationPanelAdaptsAndHidesClearAll() {
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 900);

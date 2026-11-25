@@ -70,25 +70,23 @@ Item {
         visible: false
         z: 100
 
-        readonly property real panelWidth: Kirigami.Units.gridUnit * 10
+        readonly property real panelWidth: 168
         width: panelWidth
-        height: powerColumn.implicitHeight + Kirigami.Units.smallSpacing
-        radius: Kirigami.Units.smallSpacing
-        color: Kirigami.Theme.backgroundColor
+        height: powerColumn.implicitHeight + 8
+        radius: 8
+        color: Theme.menuSurface(Kirigami.Theme.backgroundColor)
         border.width: 1
         border.color: Qt.rgba(Kirigami.Theme.textColor.r,
                                Kirigami.Theme.textColor.g,
                                Kirigami.Theme.textColor.b, Theme.popupBorderOpacity)
 
-        // Soft shadow effect
-        layer.enabled: true
 
         Column {
             id: powerColumn
-            width: popup.panelWidth - Kirigami.Units.smallSpacing
+            width: popup.panelWidth - 8
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.topMargin: Kirigami.Units.smallSpacing / 2
+            anchors.topMargin: 4
             spacing: 0
 
             PowerOption {
@@ -105,7 +103,7 @@ Item {
 
             PowerOption {
                 id: lockOption
-                visible: root.accountMode
+                visible: !root.accountMode && sessionManager.canLock
                 iconSource: "system-lock-screen-symbolic"
                 label: i18n("Lock")
                 optionEnabled: sessionManager.canLock
@@ -214,15 +212,18 @@ Item {
     }
 
     // ── Positioning logic ──────────────────────────────────────────────
+    onWidthChanged: if (popup.visible) close()
+    onHeightChanged: if (popup.visible) close()
+
     function open() {
-        if (!root.visualParent) return
+        if (!root.visualParent || !root.visualParent.visible) return
 
         // Lay out only the active menu's visible rows before measuring.
         popup.visible = true;
         powerColumn.forceLayout();
         var popupW = popup.width
         var popupH = popup.height
-        var gap = Kirigami.Units.smallSpacing
+        var gap = 8
 
         // Account opens at the leading edge; Power stays at the trailing edge.
         const alignLeft = root.accountMode !== root.visualParent.LayoutMirroring.enabled;
@@ -240,8 +241,9 @@ Item {
         popup.x = pos.x
         popup.y = Math.max(gap, Math.min(pos.y, root.height - popupH - gap))
         popup.opacity = 1
+        // Mouse opening leaves every row neutral. Arrow/Tab selects the
+        // first available row; no unsolicited accent-colour selection.
         popup.forceActiveFocus();
-        root.moveFocus(1);
     }
 
     function close() {

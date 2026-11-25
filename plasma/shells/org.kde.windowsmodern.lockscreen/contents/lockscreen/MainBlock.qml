@@ -40,7 +40,8 @@ SessionManagementScreen {
     }
 
     function startLogin() {
-        const password = passwordBox.text
+        const password = passwordBox.text;
+        passwordBox.showPassword = false;
         loginButton.forceActiveFocus();
         passwordResult(password);
     }
@@ -82,11 +83,12 @@ SessionManagementScreen {
         horizontalAlignment: Text.AlignHCenter
     }
 
-    // ── Custom Error Message (Windows 10 style) ──
+    // Error text participates in layout only when present.
     Item {
         Layout.alignment: Qt.AlignHCenter
         Layout.preferredHeight: 20
         Layout.bottomMargin: 0
+        visible: sessionManager.customErrorMessage !== ""
 
         Text {
             anchors.centerIn: parent
@@ -107,9 +109,10 @@ SessionManagementScreen {
     // ── Password field + submit button ──
     Item {
         Layout.fillWidth: true
-        Layout.maximumWidth: 380
+        Layout.maximumWidth: 280
         Layout.alignment: Qt.AlignHCenter
-        implicitHeight: 36
+        Layout.preferredHeight: 42
+        implicitHeight: 42
 
         Rectangle {
             id: passwordBorder
@@ -133,14 +136,14 @@ SessionManagementScreen {
         TextField {
             id: passwordBox
             anchors.left: parent.left
-            anchors.right: loginButton.left
+            anchors.right: revealButton.visible ? revealButton.left : loginButton.left
             anchors.rightMargin: 4
             anchors.verticalCenter: parent.verticalCenter
             height: parent.height
 
             property bool showPassword: false
             echoMode: showPassword ? TextInput.Normal : TextInput.Password
-            placeholderText: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:placeholder in text field", "Password")
+            placeholderText: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Password")
             placeholderTextColor: "#A0A0A0"
             font.family: Kirigami.Theme.defaultFont.family
             font.pixelSize: 14
@@ -173,7 +176,8 @@ SessionManagementScreen {
             Connections {
                 target: root
                 function onClearPassword() {
-                    passwordBox.forceActiveFocus()
+                    passwordBox.showPassword = false;
+                    passwordBox.forceActiveFocus();
                     passwordBox.text = "";
                 }
                 function onNotificationRepeated() {
@@ -183,18 +187,44 @@ SessionManagementScreen {
         }
 
         ToolButton {
+            id: revealButton
+            anchors.right: loginButton.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: 32
+            height: 38
+            visible: passwordBox.text.length > 0
+            text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Show password")
+            display: AbstractButton.IconOnly
+            icon.name: "view-visible"
+            icon.width: 18
+            icon.height: 18
+            icon.color: "#FFFFFF"
+            onPressedChanged: passwordBox.showPassword = pressed && visible
+            onVisibleChanged: if (!visible) passwordBox.showPassword = false
+            onActiveFocusChanged: if (!activeFocus && !pressed) passwordBox.showPassword = false
+            background: Rectangle {
+                radius: 4
+                color: revealButton.hovered || revealButton.pressed ? "#33FFFFFF" : "transparent"
+            }
+        }
+
+        ToolButton {
             id: loginButton
             anchors.right: parent.right
             anchors.rightMargin: 2
             anchors.verticalCenter: parent.verticalCenter
-            width: 32
-            height: 32
+            width: 38
+            height: 38
 
+            text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in")
+            display: AbstractButton.IconOnly
             icon.name: LayoutMirroring.enabled ? "go-previous" : "go-next"
-            visible: passwordBox.text.length > 0
-            icon.color: hovered ? "#4CC2FF" : "#A0A0A0"
+            icon.width: 20
+            icon.height: 20
+            opacity: passwordBox.text.length > 0 ? 1 : 0.65
+            icon.color: hovered ? "#FFFFFF" : "#E0E0E0"
 
-            onClicked: sessionManager.startLogin()
+            onClicked: if (sessionManager.lockScreenUiVisible) sessionManager.startLogin()
             Keys.onEnterPressed: clicked()
             Keys.onReturnPressed: clicked()
 
@@ -245,10 +275,10 @@ SessionManagementScreen {
 
     FailableLabel {
         kind: ScreenLocker.Authenticator.Fingerprint
-        label: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:usagetip", "(or scan your fingerprint on the reader)")
+        label: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "(or scan your fingerprint on the reader)")
     }
     FailableLabel {
         kind: ScreenLocker.Authenticator.Smartcard
-        label: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:usagetip", "(or scan your smartcard)")
+        label: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "(or scan your smartcard)")
     }
 }

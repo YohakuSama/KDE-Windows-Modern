@@ -80,3 +80,26 @@ function horizontalNeighbor(rows, sourceIndex, direction) {
     const next = rows[row].entries;
     return next[direction < 0 ? next.length - 1 : 0].index;
 }
+
+// Keep index generation next to the existing locale-aware section model.
+function letterIndex(rows) {
+    const available = Object.create(null);
+    for (const row of rows) {
+        if (row.heading && row.entries.length && available[row.heading] === undefined)
+            available[row.heading] = row.entries[0].index;
+    }
+    const standard = ["#"].concat("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""));
+    const extra = Object.keys(available).filter(label => standard.indexOf(label) === -1)
+        .sort((a, b) => a.localeCompare(b));
+    const result = [{label: "recent", icon: "document-open-recent-symbolic", available: false, sourceIndex: -1},
+        {label: "&", available: false, sourceIndex: -1}];
+    for (const label of standard) {
+        const found = available[label] !== undefined;
+        result.push({label: label, available: found, sourceIndex: found ? available[label] : -1});
+    }
+    result.push({label: "world", icon: "internet-services-symbolic", available: extra.length > 0,
+        sourceIndex: extra.length ? available[extra[0]] : -1});
+    for (const label of extra)
+        result.push({label: label, available: true, sourceIndex: available[label]});
+    return result;
+}

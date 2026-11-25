@@ -4,7 +4,6 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.volume as Vol
 import "../../lib" as Lib
-import "../../js/funcs.js" as Funcs
 
 ColumnLayout {
     id: section
@@ -12,6 +11,7 @@ ColumnLayout {
     property var models
     property bool expanded: false
     readonly property bool hasMultiple: models.sourceFilterModel.count > 1
+    onHasMultipleChanged: if (!hasMultiple) expanded = false
 
     spacing: 0
 
@@ -21,8 +21,9 @@ ColumnLayout {
 
     Lib.ListRow {
         Layout.fillWidth: true
-        selected: true
-        iconSource: Funcs.volIconName(models.sourceAvailable ? models.source.volume : 0, models.sourceAvailable ? models.source.muted : true)
+        selected: models.sourceAvailable
+        enabled: section.hasMultiple
+        iconSource: models.sourceAvailable && !models.source.muted ? "microphone-sensitivity-high-symbolic" : "microphone-sensitivity-muted-symbolic"
         text: models.sourceAvailable ? models.source.description : i18n("No input device")
         trailing: section.hasMultiple ? arrowComponent : null
         onClicked: if (section.hasMultiple)
@@ -73,11 +74,10 @@ ColumnLayout {
                 delegate: Lib.ListRow {
                     Layout.fillWidth: true
                     selected: model.PulseObject && model.PulseObject.default
-                    iconSource: Funcs.volIconName(model.Volume, model.Muted)
+                    iconSource: model.Muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"
                     text: model.Description || model.Name || i18n("Unknown device")
                     onClicked: {
                         models.setDefaultSource(model.PulseObject);
-                        models.playFeedback(model.PulseObject.index);
                         section.expanded = false;
                     }
                 }

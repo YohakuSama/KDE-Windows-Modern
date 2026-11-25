@@ -142,8 +142,23 @@ Item {
         onClicked: root.activateStart()
     }
 
+    // Register on the native Applet object, not a second launcher or
+    // a shell scripting call. Search resolves this action on its own panel.
+    PlasmaCore.Action {
+        id: openSearchAction
+        text: i18n("Search")
+        onTriggered: if (root.dashWindow) root.dashWindow.openSearch()
+    }
+
+    PlasmaCore.Action {
+        id: searchStateAction
+        enabled: root.dashWindow?.searchShown ?? false
+    }
+
     Component.onCompleted: {
         dashWindow = menuRepComponent.createObject(root);
+        Plasmoid.setInternalAction("windowsModernSearch", openSearchAction);
+        Plasmoid.setInternalAction("windowsModernSearchSelected", searchStateAction);
         Plasmoid.activated.connect(function() {
             root.activateStart();
         });

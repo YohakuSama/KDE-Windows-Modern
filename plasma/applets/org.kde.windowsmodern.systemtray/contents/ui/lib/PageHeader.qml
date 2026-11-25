@@ -11,40 +11,68 @@ RowLayout {
     property bool switchEnabled: true
     property bool switchChecked: false
 
+    property bool showAction: false
+    property string actionText
+    signal actionTriggered
+
     signal back
     signal switchToggled
 
     Layout.fillWidth: true
-    Layout.preferredHeight: Math.max(32, Kirigami.Units.gridUnit * 2)
-    Layout.leftMargin: 10
-    Layout.rightMargin: 10
-    Layout.bottomMargin: 8
-    spacing: 6
+    Layout.preferredHeight: 48
+    Layout.leftMargin: 12
+    Layout.rightMargin: 16
+    Layout.topMargin: 4
+    Layout.bottomMargin: 4
+    spacing: 8
 
     PlasmaComponents3.ToolButton {
-        Layout.preferredWidth: Kirigami.Units.gridUnit * 2
-        Layout.preferredHeight: Kirigami.Units.gridUnit * 2
+        objectName: "wmDetailBack"
+        Layout.preferredWidth: 36
+        Layout.preferredHeight: 36
         Layout.alignment: Qt.AlignVCenter
         text: i18n("Back")
         display: PlasmaComponents3.AbstractButton.IconOnly
         icon.name: Application.layoutDirection === Qt.RightToLeft ? "go-next" : "go-previous"
+        icon.width: 18
+        icon.height: 18
         onClicked: header.back()
         PlasmaComponents3.ToolTip { text: parent.text }
     }
 
     PlasmaComponents3.Label {
+        objectName: "wmDetailTitle"
         text: header.title
         color: Kirigami.Theme.textColor
         font.weight: Font.DemiBold
         Layout.fillWidth: true
+        Layout.alignment: Qt.AlignVCenter
+        verticalAlignment: Text.AlignVCenter
+        elide: Text.ElideRight
     }
 
-    PlasmaComponents3.Switch {
+    PlasmaComponents3.Button {
+        objectName: "wmDetailAction"
+        visible: header.showAction
+        text: header.actionText
+        Layout.preferredHeight: 30
+        Layout.alignment: Qt.AlignVCenter
+        onClicked: header.actionTriggered()
+    }
+
+    FluentSwitch {
+        id: radioSwitch
+        objectName: "wmDetailSwitch"
         visible: header.showSwitch
         enabled: header.switchEnabled
         checked: header.switchChecked
-        onToggled: header.switchToggled()
+        onToggled: {
+            header.switchToggled();
+            checked = Qt.binding(() => header.switchChecked);
+        }
         Accessible.name: header.title
+        Layout.preferredWidth: 44
+        Layout.preferredHeight: 32
         Layout.alignment: Qt.AlignVCenter
     }
 }

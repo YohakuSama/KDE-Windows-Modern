@@ -9,7 +9,7 @@ that reports its own size and focus.
                   top-left quarter, back, bottom-left quarter, minimize
   minimize-all    Win+M minimizes the test window, Win+M again restores it
   task-view       Win+Tab opens KWin's Overview
-  run             Win+R opens KRunner
+  run             Win+R opens the themed Run dialog
   quick-settings  Win+A opens and closes Quick Settings
   notifications   Win+N opens the notifications page
   screenshot      Win+PrtSc saves a screenshot without opening Spectacle
@@ -134,10 +134,14 @@ def task_view(vi, c, out):
 
 def run(vi, c, out):
     press(vi, META, e.KEY_R)
-    box = wait_for(lambda: next((n for n in a11y.nodes("krunner") if n.showing and n.role in ("text", "entry")), None))
+    def run_field():
+        return next((n for n in a11y.nodes("plasmashell") if n.showing
+                     and n.name in ("Type the name of a command to run", "输入要运行的命令名称")), None)
+    box = wait_for(run_field)
     screenshot(out / "run.png")
-    c.check(box is not None, "Win+R opens KRunner with its search field")
+    c.check(box is not None, "Win+R opens the themed command field")
     vi.tap(e.KEY_ESC)
+    c.check(bool(wait_for(lambda: run_field() is None)), "Esc closes Run")
 
 
 def quick_settings(vi, c, out):

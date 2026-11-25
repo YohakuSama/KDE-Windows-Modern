@@ -351,7 +351,7 @@ printf '系统托盘构建输入：%s\n任务栏构建输入：%s\n' "$(cat "$PR
 # Exact Qt/Plasma library paths must agree with the live shell, not just
 # their major version. An incompatible update is stopped before any settings change.
 pid="$(systemctl --user show "$SERVICE" -p MainPID --value)"
-"$PYTHON" - "$pid" "$tray" "$tasks" <<'PY'
+"$PYTHON" - "$pid" "$tray" "$tasks" "$menu" <<'PY'
 import pathlib, re, subprocess, sys
 pid, *plugins = sys.argv[1:]
 maps = pathlib.Path("/proc", pid, "maps").read_text()
@@ -465,8 +465,6 @@ kwriteconfig6 --file spectaclerc --group General --key useReleaseToCapture true
 kwriteconfig6 --file spectaclerc --group General --key autoSaveImage true
 kwriteconfig6 --file spectaclerc --group General --key clipboardGroup PostScreenshotCopyImage
 # Keep the system font and user's existing input method.
-"$PYTHON" "$ROOT/scripts/theme/window-frames.py" --apply-local --aurorae-dir "$DATA/aurorae/themes" \
-    --kvantum-dir "$CONFIG/Kvantum/Windows-modern" --wallpaper-package "$DATA/wallpapers/Windows-modern"
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
     sleep 2
     "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group shortcuts
@@ -482,9 +480,34 @@ else
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 fi
 
+# Apply the opaque material on both install and upgrade, using the
+# user's saved wallpaper rather than replacing it with the bundled image.
+material_args=(--apply-local --aurorae-dir "$DATA/aurorae/themes"
+               --kvantum-dir "$CONFIG/Kvantum/Windows-modern")
+if [ -f "$HOME/.local/share/windows-modern/transparency-off" ] || [ -f "$DATA/windows-modern/transparency-off" ]; then
+    # An upgrade copies fresh theme files. Reapply the existing off choice.
+    for theme in "$CONFIG/Kvantum/Windows-modern/"*.kvconfig; do
+        [ -f "$theme" ] || continue
+        sed -i -E 's/^(blurring|popup_blurring|blur_translucent)=.*/\1=false/' "$theme"
+    done
+    for variant in dark light; do
+        theme="$DATA/plasma/desktoptheme/Windows-modern-$variant"
+        for role in dialogs/background.svg widgets/panel-background.svg; do
+            for folder in "" translucent/; do
+                [ -f "$theme/$folder$role" ] && cp "$theme/solid/$role" "$theme/$folder$role"
+            done
+        done
+    done
+else
+    material_args+=(--wallpaper-config "$CONFIG/plasma-org.kde.plasma.desktop-appletsrc")
+fi
+"$PYTHON" "$ROOT/scripts/theme/window-frames.py" "${material_args[@]}"
+busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
+
 # Install just the new native clipboard binding on both fresh installs and
 # upgrades, without resetting the user's other shortcuts.
 "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" clipboard-apply
+"$PYTHON" "$ROOT/scripts/windows-shortcuts.py" run-apply
 
 # Opt into Plasma's native wallpaper accent on a fresh/unspecified mode.
 # An explicit existing manual mode remains the user's choice.
@@ -500,7 +523,7 @@ for id in org.kde.windowsmodern.startmenu org.kde.windowsmodern.systemtray \
           org.kde.windowsmodern.icontasks org.kde.windowsmodern.digitalclock org.kde.windowsmodern.showdesktop; do
     grep -qx "plugin=$id" "$layout" || { echo "任务栏未加载 $id" >&2; false; }
 done
-# A filename match is NOT sufficient. Verify both mapped objects have
+# A filename match is NOT sufficient. Verify all mapped plugins have
 # exactly the new immutable store paths, inodes, and compiled build token.
 verified=0
 for _ in {1..20}; do

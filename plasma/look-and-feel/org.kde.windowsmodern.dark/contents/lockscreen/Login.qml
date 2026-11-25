@@ -83,14 +83,15 @@ SessionManagementScreen {
             ? userNameInput
             : (passwordField.visible
                 ? passwordField
-                : loginButton));
+                : noPasswordButton));
         nextControl.forceActiveFocus(Qt.TabFocusReason);
     }
 
     function startLogin() {
         const username = showUsernamePrompt ? userNameInput.text : userList.selectedUser;
         const password = passwordField.text;
-        loginButton.forceActiveFocus();
+        if (loginButton.visible) loginButton.forceActiveFocus();
+        else noPasswordButton.forceActiveFocus();
         loginRequest(username, password);
     }
 
@@ -110,10 +111,14 @@ SessionManagementScreen {
     // ── Username label ──
     Text {
         Layout.alignment: Qt.AlignHCenter
+        Layout.fillWidth: true
+        Layout.maximumWidth: root.width
         Layout.bottomMargin: 4
+        textFormat: Text.PlainText
+        elide: Text.ElideRight
         text: {
             if (root.showUsernamePrompt) {
-                return i18nd("plasma_login", "User");
+                return i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "User");
             }
             if (userList.currentItem && userList.currentItem.realName) {
                 return userList.currentItem.realName;
@@ -130,12 +135,20 @@ SessionManagementScreen {
     // ── Error message ──
     Item {
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredHeight: 20
+        Layout.fillWidth: true
+        Layout.maximumWidth: root.width
+        Layout.preferredHeight: Math.max(20, errorLabel.implicitHeight)
         Layout.bottomMargin: 0
+        visible: root.customErrorMessage !== ""
 
         Text {
+            id: errorLabel
             anchors.centerIn: parent
-            visible: root.customErrorMessage !== ""
+            width: parent.width
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+            maximumLineCount: 3
+            elide: Text.ElideRight
             text: root.customErrorMessage
             font.family: WinStyle.fontFamily
             font.pixelSize: WinStyle.bodyPixelSize
@@ -156,7 +169,7 @@ SessionManagementScreen {
         text: ""
         visible: showUsernamePrompt
         initialFocus: showUsernamePrompt
-        placeholderText: i18nd("plasma_login", "Username")
+        placeholderText: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Username")
 
         onAccepted: {
             if (root.loginScreenUiVisible) {
@@ -203,7 +216,7 @@ SessionManagementScreen {
             rightPadding: 10
 
             text: ""
-            placeholderText: i18nd("plasma_login", "Password")
+            placeholderText: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Password")
             echoMode: TextInput.Password
             initialFocus: !showUsernamePrompt
 
@@ -245,7 +258,7 @@ SessionManagementScreen {
             anchors.rightMargin: 2
             anchors.verticalCenter: parent.verticalCenter
             layoutMirrored: root.LayoutMirroring.enabled
-            visible: passwordField.text.length > 0 || !root.showUsernamePrompt
+            opacity: passwordField.text.length > 0 ? 1 : 0.65
             onClicked: root.startLogin()
             Keys.onEnterPressed: clicked()
             Keys.onReturnPressed: clicked()
@@ -254,11 +267,19 @@ SessionManagementScreen {
 
     // ── No-password login button ──
     QQC2.Button {
+        id: noPasswordButton
         Layout.alignment: Qt.AlignHCenter
-        text: i18nd("plasma_login", "Log In")
+        Layout.preferredWidth: 144
+        Layout.preferredHeight: WinStyle.textFieldHeight
+        text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in")
         visible: !root.showUsernamePrompt && userList.currentItem && !userList.currentItem.needsPassword
         onClicked: root.startLogin()
-        flat: true
+        background: Rectangle {
+            radius: 4
+            color: parent.hovered ? "#33FFFFFF" : "#20FFFFFF"
+            border.color: "#88FFFFFF"
+            border.width: parent.activeFocus ? 2 : 1
+        }
     }
 
     // ── Synchronize state with GreeterState ──

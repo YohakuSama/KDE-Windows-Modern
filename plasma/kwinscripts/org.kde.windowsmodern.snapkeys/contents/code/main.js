@@ -18,12 +18,17 @@
     "quick tile top/bottom" combine exactly like Windows (left + bottom =
     bottom-left, top-left + bottom = left), so those are used. KWin's "quick
     tile left" on a window already on the left would move it elsewhere.
+    Windows placed by Snap Layouts may have no native tile; use explicit
+    corner and side actions for those windows.
 
     SPDX-FileCopyrightText: 2026 Jeysef
     SPDX-License-Identifier: GPL-3.0-or-later
 */
 
 const TOLERANCE = 16;
+// KWin::MaximizeFull = MaximizeVertical (1) | MaximizeHorizontal (2).
+// The JavaScript KWin object exports Workspace enums, not MaximizeMode.
+const MAXIMIZE_FULL = 3;
 
 function near(a, b) {
     return Math.abs(a - b) <= TOLERANCE;
@@ -34,11 +39,12 @@ function fits(g, x, y, w, h) {
 }
 
 function placement(win) {
+    if (Number(win.maximizeMode) === MAXIMIZE_FULL) return "maximized";
     const a = workspace.clientArea(KWin.MaximizeArea, win);
     const g = win.frameGeometry;
+    if (!a || !g || a.width <= 0 || a.height <= 0) return "normal";
     const hw = a.width / 2;
     const hh = a.height / 2;
-    if (fits(g, a.x, a.y, a.width, a.height)) return "maximized";
     if (fits(g, a.x, a.y, hw, a.height)) return "left";
     if (fits(g, a.x + hw, a.y, hw, a.height)) return "right";
     if (fits(g, a.x, a.y, hw, hh)) return "topLeft";
@@ -50,18 +56,22 @@ function placement(win) {
 
 function activeNormalWindow() {
     const win = workspace.activeWindow;
-    return win && win.normalWindow && !win.minimized ? win : null;
+    return win && win.normalWindow && !win.minimized && !win.fullScreen && !win.deleted ? win : null;
 }
 
 function snapUp() {
     const win = activeNormalWindow();
     if (!win) return;
     switch (placement(win)) {
-    case "left":
-    case "right":
+    case "left": workspace.slotWindowQuickTileTopLeft(); break;
+    case "right": workspace.slotWindowQuickTileTopRight(); break;
     case "bottomLeft":
+        if (win.tile) workspace.slotWindowQuickTileTop();
+        else workspace.slotWindowQuickTileLeft();
+        break;
     case "bottomRight":
-        workspace.slotWindowQuickTileTop();
+        if (win.tile) workspace.slotWindowQuickTileTop();
+        else workspace.slotWindowQuickTileRight();
         break;
     case "maximized": break;
     default: // normal, top quarters
@@ -74,11 +84,15 @@ function snapDown() {
     if (!win) return;
     switch (placement(win)) {
     case "maximized": workspace.slotWindowMaximize(); break; // toggles back
-    case "left":
-    case "right":
+    case "left": workspace.slotWindowQuickTileBottomLeft(); break;
+    case "right": workspace.slotWindowQuickTileBottomRight(); break;
     case "topLeft":
+        if (win.tile) workspace.slotWindowQuickTileBottom();
+        else workspace.slotWindowQuickTileLeft();
+        break;
     case "topRight":
-        workspace.slotWindowQuickTileBottom();
+        if (win.tile) workspace.slotWindowQuickTileBottom();
+        else workspace.slotWindowQuickTileRight();
         break;
     default: // normal, bottom quarters
         if (win.minimizable) win.minimized = true;

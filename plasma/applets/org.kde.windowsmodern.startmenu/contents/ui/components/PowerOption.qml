@@ -38,16 +38,16 @@ Item {
     Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
     width: parent ? parent.width : Kirigami.Units.gridUnit * 10
-    height: Math.floor(Kirigami.Units.gridUnit * 1.6)
+    height: 36
 
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1
-        radius: Kirigami.Units.smallSpacing / 2
-        color: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus)
-               ? Kirigami.Theme.hoverColor
-               : "transparent"
-        opacity: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus) ? Theme.opacityFull : Theme.opacityHidden
+        radius: 5
+        color: Kirigami.Theme.textColor
+        opacity: !option.optionEnabled ? 0
+            : hoverArea.containsPress ? 0.11
+            : hoverArea.containsMouse || option.activeFocus ? 0.065 : 0
         Behavior on opacity { NumberAnimation { duration: 80 } }
     }
 
@@ -55,12 +55,15 @@ Item {
         id: powerRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.leftMargin: Kirigami.Units.smallSpacing
-        spacing: Kirigami.Units.smallSpacing
+        anchors.leftMargin: 10
+        anchors.right: parent.right
+        anchors.rightMargin: 10
+        spacing: 10
 
         Kirigami.Icon {
-            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-            Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+            Layout.preferredWidth: 16
+            Layout.preferredHeight: 16
+            roundToIconSize: false
             source: option.iconSource
             fallback: option.iconSource.replace(/-symbolic$/, "")
             isMask: true
@@ -71,7 +74,9 @@ Item {
         PlasmaComponents3.Label {
             text: option.label
             color: option.optionEnabled ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
-            font: Kirigami.Theme.defaultFont
+            font.pixelSize: 13
+            Layout.fillWidth: true
+            elide: Text.ElideRight
         }
     }
 

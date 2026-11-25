@@ -10,7 +10,12 @@ Lib.SplitTile {
     property QtObject btManager: BluezQt.Manager
 
     readonly property bool available: btManager.bluetoothBlocked || btManager.adapters.length > 0
-    label: i18n("Bluetooth")
+    readonly property string connectedDeviceName: active && connectedCount === 1
+        ? String(btManager.connectedDevices[0]?.friendlyName || btManager.connectedDevices[0]?.name || "").replace(/[\r\n\t]/g, " ") : ""
+    label: !active || connectedCount === 0 ? i18n("Bluetooth")
+        : connectedCount === 1 ? (connectedDeviceName || i18n("Bluetooth"))
+        : i18n("%1 devices connected", connectedCount)
+    accessibleLabel: label === i18n("Bluetooth") ? label : i18n("Bluetooth") + ": " + label
     toggleAvailable: available
     // Same original Bluetooth glyph in all toggle states; active/disabled
     // appearance comes from the real radio state, not an invented artwork.
@@ -33,7 +38,8 @@ Lib.SplitTile {
         if (!active)
             return i18n("Bluetooth — Off");
         if (connectedCount > 0)
-            return i18n("Bluetooth — %1 connected", connectedCount);
+            return i18n("Bluetooth — %1 connected", connectedCount)
+                + (connectedDeviceName ? "\n" + connectedDeviceName : "");
         return i18n("Bluetooth — On, not connected");
     }
 

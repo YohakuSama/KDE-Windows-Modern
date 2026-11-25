@@ -147,6 +147,15 @@ PlasmoidItem {
     ]
 
     Component.onCompleted: {
+        // One-time migration for installations where the old default hid
+        // all nine functional shortcuts. Subsequent user choices are retained.
+        if (!Plasmoid.configuration.footerShortcutsMigrated) {
+            Plasmoid.configuration.showRightColumn = true;
+            if (!Plasmoid.configuration.rightColumnItems || !Plasmoid.configuration.rightColumnItems.length)
+                Plasmoid.configuration.rightColumnItems = ["documents", "downloads", "music", "pictures",
+                    "videos", "network", "home", "thispc", "settings"];
+            Plasmoid.configuration.footerShortcutsMigrated = true;
+        }
         if (Plasmoid.hasOwnProperty("activationTogglesExpanded")) {
             Plasmoid.activationTogglesExpanded = true;
         }

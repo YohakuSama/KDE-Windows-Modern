@@ -25,6 +25,12 @@ MouseArea {
     width: implicitWidth
     height: implicitHeight
 
+    activeFocusOnTab: true
+    Accessible.role: Accessible.Button
+    Accessible.onPressAction: root.clicked(null)
+    Keys.onReturnPressed: root.clicked(null)
+    Keys.onEnterPressed: root.clicked(null)
+    Keys.onSpacePressed: root.clicked(null)
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
 
@@ -32,7 +38,7 @@ MouseArea {
         anchors.fill: parent
         radius: 4
         color: root.containsPress ? root.pressedColor
-                                  : (root.containsMouse ? root.hoverColor : "transparent")
+                                  : (root.containsMouse || root.activeFocus ? root.hoverColor : "transparent")
 
         Behavior on color {
             ColorAnimation {

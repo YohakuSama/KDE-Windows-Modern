@@ -34,7 +34,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from evdev import ecodes as e  # noqa: E402
 
 from e2e import a11y  # noqa: E402
-from e2e.session import Checks, kwin_property, now, qml_warnings, screenshot  # noqa: E402
+from e2e.session import Checks, journal, kwin_property, now, qml_warnings, screenshot  # noqa: E402
 from e2e.vinput import VirtualInput  # noqa: E402
 
 APP = "plasmashell"
@@ -272,11 +272,15 @@ def tray_order(p, c):
 def clock(p, c):
     panel_window = p.item("Show desktop").window
     year = time.strftime("%Y")
+    opened_since = now()
     p.click("Clock")
     header = wait_for(lambda: next((n for n in a11y.nodes(APP) if n.window != panel_window and n.showing
                                     and n.role == "label"
                                     and (n.name.endswith(year) or n.name.startswith(year + "年"))), None))
+    position = wait_for(lambda: next((line for line in reversed(journal(opened_since, "plasmashell"))
+                                      if "WM_POPUP clock " in line and (" OK " in line or "POSITION_MISMATCH" in line)), None))
     p.shot("clock")
+    c.check(bool(position and "WM_POPUP clock OK " in position), f"mapped clock stays adjacent to its panel: {position}")
     c.check(header is not None, f"clock opens the calendar ({header.name!r})" if header else "clock opens the calendar")
     history = (visible("Notifications", exclude_window=panel_window)
                or visible("通知", exclude_window=panel_window))

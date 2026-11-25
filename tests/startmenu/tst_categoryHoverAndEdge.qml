@@ -50,6 +50,17 @@ Item {
             page.appContextMenuRequested.connect((entry, x, y) => { contextRow = entry.index; });
             mouseClick(slot, slot.width / 2, slot.height / 2, Qt.RightButton);
             compare(contextRow, slot.entry.index);
+            const label = findChild(page, "wmStartCategoryLabel_0");
+            verify(label);
+            mouseMove(label, label.width / 2, label.height / 2);
+            tryCompare(label, "hovered", true);
+            mouseClick(label, label.width / 2, label.height / 2);
+            tryCompare(page, "inCategory", true);
+            const surface = findChild(page, "wmStartCategorySurface");
+            tryCompare(surface, "opacity", 1);
+            tryCompare(surface, "scale", 1);
+            page.backToCategories();
+            tryCompare(page, "inCategory", false);
             page.destroy();
         }
     }

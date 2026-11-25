@@ -12,6 +12,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtQuick.Controls
 import QtCore
 import Qt5Compat.GraphicalEffects
@@ -35,20 +36,22 @@ import "code/popupPosition.js" as PopupPosition
 Item {
     id: main
 
-    // One row of sortedAppsModel, exposed by name for lookupAppByDisplayName().
-    component AppLookupEntry: Item {
-        required property int index
-        required property var model
-        readonly property string displayName: (model.display !== undefined) ? model.display : ""
-        readonly property string favoriteId: (model.favoriteId !== undefined) ? model.favoriteId : ""
-        readonly property var url: (model.url !== undefined) ? model.url : ""
-        readonly property var actionList: (model.actionList !== undefined) ? model.actionList : null
-    }
-
     // The compact representation is the actual Start button in the panel.
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
     readonly property bool menuShown: root.visible
+    readonly property bool searchShown: root.visible && root.searching
+    readonly property var panelWindow: startButton ? startButton.Window.window : null
+    readonly property rect panelGeometry: panelWindow
+        ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
+    readonly property bool verticalPanel: Plasmoid.location === PlasmaCore.Types.LeftEdge
+        || Plasmoid.location === PlasmaCore.Types.RightEdge
+    readonly property real panelExtent: Math.max(0, verticalPanel
+        ? (panelGeometry.width || startButton?.width || 0)
+        : (panelGeometry.height || startButton?.height || 0))
+    // Legacy Dialog does not track every panel move while mapped. Dismiss
+    // safely during reconfiguration; the next open uses the new anchor.
+    onPanelGeometryChanged: if (root && root.visible) root.closeMenu()
 
     // Native Plasma positions the popup relative to an Item in the panel's
     // window, including its real output and work area on Wayland and X11.
@@ -65,19 +68,38 @@ Item {
             root.visible = false;
             return;
         }
-        if (!startButton || startButton.width <= 0 || startButton.height <= 0)
+        if (!startButton || !popupAnchor.Window.window || !popupAnchor.visible
+            || startButton.width <= 0 || startButton.height <= 0)
             return;
 
+        updatePopupAnchor();
+        root.visible = true;
+    }
+
+    function updatePopupAnchor() {
+        if (!startButton || !popupAnchor.Window.window) return;
         const horizontal = Plasmoid.location === PlasmaCore.Types.BottomEdge
                         || Plasmoid.location === PlasmaCore.Types.TopEdge;
-        popupAnchor.x = 0;
+        popupAnchor.x = Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
+            : Plasmoid.location === PlasmaCore.Types.RightEdge ? -8 : 0;
+        popupAnchor.y = Plasmoid.location === PlasmaCore.Types.BottomEdge ? -8
+            : Plasmoid.location === PlasmaCore.Types.TopEdge ? 8 : 0;
         if (horizontal) {
             const pos = startButton.mapToGlobal(0, 0);
             popupAnchor.x = PopupPosition.horizontalAnchorOffset(
                 Plasmoid.configuration.displayPosition, Plasmoid.screenGeometry,
-                { x: pos.x, width: startButton.width });
+                { x: pos.x, width: startButton.width }, panelGeometry,
+                rootItem.width + root.margins.left + root.margins.right);
         }
-        root.visible = true;
+    }
+
+    // Both taskbar Search and Start's own input enter this same surface.
+    function openSearch() {
+        if (!root.visible) toggleMenu();
+        if (!root.visible) return;
+        root.searching = true;
+        root.requestActivate();
+        Qt.callLater(startSearch.focusSearch);
     }
 
     Plasmoid.status: root.visible ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
@@ -93,7 +115,7 @@ Item {
         flags: Qt.Dialog
         visualParent: popupAnchor
         location: Plasmoid.location
-        floating: Kirigami.Units.smallSpacing
+        floating: 8
         visible: false
         hideOnWindowDeactivate: true
 
@@ -109,7 +131,7 @@ Item {
                 : PlasmaCore.Dialog.StandardBackground;
         }
 
-        property bool searching: startSearch.searchText !== ""
+        property bool searching: false
 
         // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results.
         // Pinned and All now share the same scrollable home.
@@ -119,7 +141,9 @@ Item {
 
         onSearchingChanged: {
             if (searching) {
+                modeMenu.close();
                 allAppsPage.resetCategory();
+                allAppsPage.closeLetterIndex(false);
                 leftColumnState = 2;
                 // Reset scroll position when entering search mode.
                 searchPage.resultsView.contentY = 0;
@@ -133,7 +157,9 @@ Item {
             if (visible) {
                 reset();
             } else {
+                searching = false;
                 leftColumnState = 0;
+                modeMenu.close();
                 sharedContextMenu.close();
                 powerMenu.close();
             }
@@ -141,6 +167,7 @@ Item {
 
         function reset() {
             startSearch.searchText = "";
+            searching = false;
             leftColumnState = 0;
             showMoreRecent = false;
             // Nothing highlighted until hovered or picked with the arrow keys,
@@ -151,6 +178,7 @@ Item {
                 root.pinnedPage.favoritesList.positionViewAtBeginning();
             }
             allAppsPage.resetCategory();
+            allAppsPage.closeLetterIndex(false);
             allAppsPage.allAppsList.currentIndex = -1;
             allAppsPage.allAppsList.positionViewAtBeginning();
             // Reset the search filter pills to "All".
@@ -172,11 +200,14 @@ Item {
                 || (Plasmoid.configuration.startMenuSize === 0 && screen.width >= 1440)
             readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
                 && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
-            readonly property int wantedWidth: largeLayout ? 768 : 560
-            readonly property int wantedHeight: largeLayout ? 720 : 640
-            width: Math.max(1, Math.min(wantedWidth, screen.width > 0 ? screen.width - 2 * margin : wantedWidth))
-            height: Math.max(1, Math.min(wantedHeight, screen.height > 0 ? screen.height - 3 * margin : wantedHeight))
+            readonly property int wantedWidth: root.searching ? 776 : (largeLayout ? 768 : 560)
+            readonly property int wantedHeight: root.searching ? 690 : (largeLayout ? 720 : 640)
+            width: Math.max(1, Math.min(wantedWidth, screen.width > 0
+                ? screen.width - (main.verticalPanel ? main.panelExtent : 0) - 2 * margin : wantedWidth))
+            height: Math.max(1, Math.min(wantedHeight, screen.height > 0
+                ? screen.height - (main.verticalPanel ? 0 : main.panelExtent) - 2 * margin : wantedHeight))
             focus: true
+            onWidthChanged: if (root.visible) main.updatePopupAnchor()
 
             // Note: do NOT auto-redirect to the search field here.
             // onFocusChanged fires when any child calls forceActiveFocus(),
@@ -271,8 +302,14 @@ Item {
                 anchors.margins: rootItem.margin
                 anchors.topMargin: 16
 
+                searchMode: root.searching
+                onSearchRequested: root.searching = true
                 onSearchTextChanged: {
+                    if (startSearch.searchText.length > 0) root.searching = true;
+                    sharedContextMenu?.close();
                     // Explicitly push the query to Milou ResultsView.
+                    if (startSearch.searchText.length === 0)
+                        searchPage.resultsView.singleRunner = "";
                     searchPage.resultsView.queryString = startSearch.searchText;
                     // Reset scroll to top on new query — only when
                     // the search page is active to avoid warnings
@@ -289,10 +326,17 @@ Item {
                     rootItem.activateCurrentItem();
                 }
                 onSearchEscapePressed: {
-                    if (powerMenu.opened) {
+                    if (sharedContextMenu.opened) {
+                        sharedContextMenu.close();
+                    } else if (powerMenu.opened) {
                         powerMenu.close();
                     } else if (startSearch.searchText !== "") {
-                        root.reset();
+                        startSearch.searchText = "";
+                        startSearch.focusSearch();
+                    } else if (root.searching) {
+                        root.closeMenu();
+                    } else if (allAppsPage.letterIndexOpen) {
+                        allAppsPage.closeLetterIndex(true);
                     } else if (allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {
@@ -314,7 +358,7 @@ Item {
                 anchors.right: parent.right
                 anchors.margins: rootItem.margin
                 anchors.topMargin: 22
-                anchors.bottomMargin: 0
+                anchors.bottomMargin: root.searching ? 12 : 0
 
                 AllAppsPage {
                     id: allAppsPage
@@ -439,68 +483,38 @@ Item {
                                         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                             Kirigami.Theme.textColor.b, viewSelector.hovered || viewSelector.activeFocus ? 0.06 : 0)
                                     }
-                                    onClicked: modeMenu.open()
-                                    function choose(index) {
-                                        root.leftColumnState = 1;
-                                        allAppsPage.resetCategory();
-                                        Plasmoid.configuration.allAppsViewMode = index;
-                                        Qt.callLater(allAppsPage.focusFirstApp);
-                                    }
+                                    onClicked: modeMenu.openAt(viewSelector)
 
-                                    Menu {
-                                        id: modeMenu
-                                        x: viewSelector.width - width
-                                        y: viewSelector.height + 4
-                                        width: 148
-                                        padding: 4
-                                        background: Rectangle {
-                                            radius: 8
-                                            color: Kirigami.Theme.backgroundColor
-                                            border.width: 1
-                                            border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                                Kirigami.Theme.textColor.b, 0.12)
-                                        }
-                                        component ModeItem: MenuItem {
-                                            id: modeItem
-                                            required property int mode
-                                            implicitHeight: 36
-                                            leftPadding: 32
-                                            rightPadding: 10
-                                            text: viewSelector.modes[mode]
-                                            indicator: Kirigami.Icon {
-                                                x: 10
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                width: 13
-                                                height: 13
-                                                source: "emblem-ok-symbolic"
-                                                visible: Plasmoid.configuration.allAppsViewMode === modeItem.mode
-                                            }
-                                            contentItem: PlasmaComponents3.Label {
-                                                text: modeItem.text
-                                                verticalAlignment: Text.AlignVCenter
-                                            }
-                                            background: Rectangle {
-                                                radius: 4
-                                                color: modeItem.highlighted
-                                                    ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                                        Kirigami.Theme.textColor.b, 0.08) : "transparent"
-                                            }
-                                            onTriggered: viewSelector.choose(mode)
-                                        }
-                                        ModeItem { mode: 2 }
-                                        ModeItem { mode: 1 }
-                                        ModeItem { mode: 0 }
-                                    }
                                 }
                             }
                         }
                     }
                 }
 
+                Loader {
+                    id: searchHome
+                    anchors.fill: parent
+                    active: root.visible && root.searching && startSearch.searchText.length === 0
+                    visible: active
+                    sourceComponent: SearchHome {
+                        suggestedModel: Plasmoid.configuration.showSearchSuggestions
+                            && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) ? recentUsage : null
+                        topAppsModel: Plasmoid.configuration.showSearchTopApps
+                            && Plasmoid.configuration.showRecentApps ? categoryPopularity : null
+                        showQuickSearches: Plasmoid.configuration.showSearchQuickSearches
+                        onSearchRequested: query => {
+                            searchPage.resultsView.singleRunner = "krunner_systemsettings";
+                            startSearch.searchText = query;
+                            startSearch.focusSearch();
+                        }
+                        onApplicationActivated: root.closeMenu()
+                    }
+                }
+
                 SearchPage {
                     id: searchPage
                     anchors.fill: parent
-                    visible: root.leftColumnState === 2
+                    visible: root.searching && startSearch.searchText.length > 0
                     scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     onFocusSearchRequested: startSearch.focusSearch()
                     onContextMenuRequested: function(actions, x, y, context) {
@@ -515,7 +529,8 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: 56
+                visible: !root.searching
+                height: visible ? 56 : 0
                 color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                Kirigami.Theme.textColor.b, 0.035)
 
@@ -575,10 +590,8 @@ Item {
                                 Image {
                                     anchors.fill: parent
                                     source: {
-                                        // Use the same locally imported native account art as the lock screen.
-                                        const native = StandardPaths.locate(StandardPaths.GenericDataLocation,
-                                            "icons/windows-modern/status/avatar-default.svg", StandardPaths.LocateFile);
-                                        return String(native).length > 0 ? native : Qt.resolvedUrl("default-account.svg");
+                                        // The imported green account glyph is not Windows' default Start avatar.
+                                        return Qt.resolvedUrl("default-account.svg");
                                     }
                                     fillMode: Image.PreserveAspectFit
                                     visible: userAvatar.status !== Image.Ready
@@ -600,7 +613,8 @@ Item {
                     SystemLocationsRow {
                         id: systemLocations
                         visible: Plasmoid.configuration.showRightColumn
-                        Layout.fillWidth: visible
+                        Layout.fillWidth: false
+                        Layout.preferredWidth: visible ? Math.min(implicitWidth, Math.floor(rootItem.width * 0.58)) : 0
                         Layout.maximumWidth: implicitWidth
                         Layout.minimumWidth: 0
                         executable: commandSource
@@ -635,6 +649,21 @@ Item {
                         }
                         PlasmaComponents3.ToolTip { text: parent.text }
                     }
+                }
+            }
+
+            // Owned by the stable dialog, never by a disposable ListView header.
+            ViewModeMenu {
+                id: modeMenu
+                parent: rootItem
+                modes: [i18n("List"), i18n("Grid"), i18n("Category")]
+                currentMode: Plasmoid.configuration.allAppsViewMode
+                onModeChosen: index => {
+                    if (index === Plasmoid.configuration.allAppsViewMode) return;
+                    root.leftColumnState = 1;
+                    allAppsPage.resetCategory();
+                    Plasmoid.configuration.allAppsViewMode = index;
+                    Qt.callLater(allAppsPage.focusFirstApp);
                 }
             }
 
@@ -697,6 +726,10 @@ Item {
             }
 
             function navigateFromSearch(direction) {
+                if (searchHome.active) {
+                    if (searchHome.item) searchHome.item.focusFirst();
+                    return;
+                }
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 const page = root.leftColumnState === 0 ? root.pinnedPage
@@ -711,6 +744,10 @@ Item {
             }
 
             function focusActivePageResults() {
+                if (searchHome.active) {
+                    if (searchHome.item) searchHome.item.focusFirst();
+                    return;
+                }
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 if (root.leftColumnState === 0) {
@@ -719,12 +756,13 @@ Item {
                     allAppsPage.tryActivate(Math.max(0, allAppsPage.activeView.currentIndex));
                 } else if (root.leftColumnState === 2 && searchPage.resultsView.count > 0) {
                     searchPage.tryActivate(Math.max(0, searchPage.resultsView.currentIndex), 0);
-                } else {
+                } else if (!root.searching) {
                     accountButton.forceActiveFocus();
                 }
             }
 
             function activateCurrentItem() {
+                if (searchHome.active) return;
                 if (root.leftColumnState === 0) {
                     root.pinnedPage?.activateCurrent();
                 } else if (root.leftColumnState === 1) {
@@ -734,48 +772,10 @@ Item {
                 }
             }
 
-            // App lookup for search-result context menus: given a display
-            // name, find the matching row in sortedAppsModel so the menu can
-            // offer the same actions (and trigger them on the right row) as
-            // the All Apps list.
-            //
-            // Scans the helper Repeater's live delegates on demand rather than
-            // caching: when the proxy re-sorts it rebinds model data onto the
-            // existing delegates, so any cache keyed at creation time goes
-            // stale. One linear scan per right-click is negligible.
-            // Returns { row, favoriteId, url, actionList } or null.
-            function lookupAppByDisplayName(displayName) {
-                if (!displayName) return null;
-                for (let i = 0; i < appLookupRepeater.count; ++i) {
-                    const item = appLookupRepeater.itemAt(i) as AppLookupEntry;
-                    if (item && item.displayName === displayName) {
-                        return {
-                            row: item.index,
-                            favoriteId: item.favoriteId,
-                            url: item.url,
-                            actionList: item.actionList
-                        };
-                    }
-                }
-                return null;
-            }
-
-            // Off-screen helper that exposes sortedAppsModel's roles by name
-            // (QAbstractItemModel roleNames() aren't reachable from QML). A
-            // Repeater, not a ListView: it instantiates ALL delegates, while a
-            // ListView only creates the ones near its viewport.
-            Column {
-                x: -9999
-                y: -9999
-                width: 0
-                height: 0
-                visible: true
-
-                Repeater {
-                    id: appLookupRepeater
-                    model: sortedAppsModel
-                    delegate: AppLookupEntry {}
-                }
+            // Reuse the existing alphabetical snapshot. A second hidden
+            // Repeater used to allocate one visual Item for every app.
+            function lookupAppByUrls(urls) {
+                return allAppsPage.lookupAppByUrls(urls);
             }
 
             // ── Single global keyboard handler ─────────────────────────────
@@ -786,6 +786,11 @@ Item {
             // Navigation keys (Tab, arrows, Enter) are left for children to
             // handle, and only reach here if no child consumed them.
             Keys.onPressed: event => {
+                if (sharedContextMenu.opened) {
+                    event.accepted = true;
+                    if (event.key === Qt.Key_Escape) sharedContextMenu.close();
+                    return;
+                }
                 if (powerMenu.opened) {
                     // The footer popup owns input until dismissed.
                     event.accepted = true;
@@ -824,8 +829,13 @@ Item {
                     event.accepted = true;
                     if (powerMenu.opened) {
                         powerMenu.close();
+                    } else if (root.searching && startSearch.searchText.length > 0) {
+                        startSearch.searchText = "";
+                        startSearch.focusSearch();
                     } else if (root.searching) {
-                        root.reset();
+                        root.closeMenu();
+                    } else if (allAppsPage.letterIndexOpen) {
+                        allAppsPage.closeLetterIndex(true);
                     } else if (root.leftColumnState === 1 && allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {

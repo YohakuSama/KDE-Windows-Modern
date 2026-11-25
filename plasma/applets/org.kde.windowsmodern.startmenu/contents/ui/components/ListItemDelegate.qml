@@ -248,6 +248,7 @@ Item {
 
         onReleased: mouse => {
             if (item._dragging) {
+                updateDrag(mouse.x, mouse.y);
                 endDrag();
                 _mightDrag = false;
                 _pressX = -1;
@@ -310,9 +311,11 @@ Item {
             item._dragOffsetY = delta;
             if (item.inGrid) {
                 item._dragOffsetX = localX - item._dragStartX;
+                const visiblePoint = item.mapToItem(view, localX, localY);
+                const inside = visiblePoint.x >= 0 && visiblePoint.x < view.width
+                    && visiblePoint.y >= 0 && visiblePoint.y < view.height;
                 const point = item.mapToItem(view.contentItem, localX, localY);
-                const target = view.indexAt(point.x, point.y);
-                if (target >= 0) view.dropTargetIndex = target;
+                view.dropTargetIndex = inside ? view.indexAt(point.x, point.y) : -1;
                 return;
             }
 

@@ -3,6 +3,7 @@
 """Configure the real Desktop containment's right-click plugin while the shell is stopped."""
 import argparse
 import configparser
+import os
 from pathlib import Path
 import subprocess
 
@@ -20,12 +21,23 @@ def read_config(path):
     return config
 
 
+def find_defaults(preferred):
+    if preferred.is_file():
+        return preferred
+    roots = os.environ.get("XDG_DATA_DIRS") or "/run/current-system/sw/share:/usr/local/share:/usr/share"
+    for root in roots.split(os.pathsep):
+        candidate = Path(root) / "plasma/shells/org.kde.plasma.desktop/contents/defaults"
+        if candidate.is_file():
+            return candidate
+    raise RuntimeError("Native desktop containment action defaults unavailable")
+
+
 def changes(layout, stock_defaults):
     config = read_config(layout)
     if config.has_section(GROUP):
         # Keep all existing middle-click/wheel/other gesture bindings.
         return {KEY: PLUGIN}
-    defaults = read_config(stock_defaults)
+    defaults = read_config(find_defaults(stock_defaults))
     group = "Desktop][ContainmentActions"
     if not defaults.has_section(group):
         raise RuntimeError("Native desktop containment action defaults unavailable")

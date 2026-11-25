@@ -12,8 +12,10 @@ import org.kde.kirigami 2.20 as Kirigami
 
 import org.kde.plasma.login as PlasmaLogin
 
-PlasmaComponents.ToolButton {
+StatusIconButton {
     id: root
+    icon.name: "preferences-desktop"
+    focusPolicy: Qt.TabFocus
 
     property int currentIndex: PlasmaLogin.GreeterState.sessionIndex
 
@@ -21,14 +23,14 @@ PlasmaComponents.ToolButton {
     readonly property string currentSessionFileName: instantiator.model.data(instantiator.model.index(currentIndex, 0), PlasmaLogin.SessionModel.FileNameRole)
 
     // Count is used as instantiator may not have made items yet
-    text: i18nd("plasma_login", "Desktop Session: %1", instantiator.count > currentIndex ? instantiator.objectAt(currentIndex).text : "")
+    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Desktop session: %1", instantiator.count > currentIndex ? instantiator.objectAt(currentIndex).text : "")
     visible: menu.count > 1
 
     checkable: true
     checked: menu.opened
     onToggled: {
         if (checked) {
-            menu.popup(root, 0, 0)
+            menu.popup(root, 0, -menu.implicitHeight)
         } else {
             menu.dismiss()
         }

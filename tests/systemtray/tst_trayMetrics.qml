@@ -86,6 +86,15 @@ TestCase {
         compare(vertical[0].height, 48);
         compare(Metrics.groupRects([], false).length, 0);
     }
+    function test_anchorRunFollowsActualTrigger() {
+        const runs = [{x: 8, y: 0, width: 24, height: 48},
+            {x: 96, y: 0, width: 72, height: 48}];
+        compare(Metrics.anchorRun(runs, {x: 20, y: 24}, false, false).x, 8);
+        compare(Metrics.anchorRun(runs, {x: 120, y: 24}, false, false).x, 96);
+        compare(Metrics.anchorRun(runs, null, false, false).x, 96);
+        compare(Metrics.anchorRun(runs, null, false, true).x, 8);
+        compare(Metrics.anchorRun([], null, false, false), null);
+    }
     function test_order() {
         compare(Metrics.visualIndex(0, 4, false, false), 0);
         compare(Metrics.visualIndex(0, 4, false, true), 0);

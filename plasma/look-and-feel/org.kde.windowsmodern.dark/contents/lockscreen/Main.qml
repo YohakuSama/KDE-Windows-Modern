@@ -216,6 +216,8 @@ Item {
             }
             model: PlasmaLogin.UserModel
             uiVisible: loginScreenRoot.uiVisible
+            width: Math.max(0, Math.min(240, parent.width - 2 * anchors.leftMargin))
+            maximumHeight: Math.max(0, Math.min(parent.height * 0.25, footer.y - anchors.bottomMargin))
         }
 
         // ── Footer ──
@@ -224,8 +226,8 @@ Item {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.margins: Kirigami.Units.largeSpacing
-            spacing: Kirigami.Units.largeSpacing
+            anchors.margins: 16
+            spacing: 8
             opacity: loginScreenRoot.uiVisible ? 1 : 0
 
             Behavior on opacity {
@@ -238,8 +240,8 @@ Item {
 
             SessionButton {
                 id: sessionButton
-                onSessionChanged: userListComponent.mainPasswordBox.forceActiveFocus();
-                Layout.fillHeight: true
+                onSessionChanged: mainStack.currentItem?.focusFirstVisibleFormControl();
+                Layout.alignment: Qt.AlignVCenter
             }
 
             Item { Layout.fillWidth: true }
@@ -257,7 +259,7 @@ Item {
                 target: virtualKeyboardLoader.item
                 // Keep typing going to the password box, not the button.
                 function onClicked() {
-                    userListComponent.mainPasswordBox.forceActiveFocus();
+                    mainStack.currentItem?.focusFirstVisibleFormControl();
                 }
             }
 
@@ -265,7 +267,8 @@ Item {
 
             WinFooterButton {
                 id: powerButton
-                iconName: "system-shutdown"
+                iconName: "system-shutdown-symbolic"
+                text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power")
                 onClicked: powerMenu.open()
 
                 WinPowerMenu {

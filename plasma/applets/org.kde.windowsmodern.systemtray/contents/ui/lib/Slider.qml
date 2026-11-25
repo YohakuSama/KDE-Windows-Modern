@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Templates as T
 import QtQuick.Layouts
+import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
@@ -14,7 +16,10 @@ Item {
     property int value: 0
     property int stepSize: 1
     property int iconSize: 20
-    property bool pressed: false
+    readonly property bool pressed: slider.pressed
+    property string sliderAccessibleName: ""
+    readonly property int trackGap: 8
+    readonly property int thumbExtent: 18
     property bool showArrow: false
     // Home rows reserve the same output slot so both tracks end at
     // the same x coordinate. Other detail-page sliders stay full-width.
@@ -24,6 +29,7 @@ Item {
     property string detailsAccessibleName: ""
     property bool iconClickable: false
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
 
     signal moved(int value)
     signal released
@@ -49,9 +55,10 @@ Item {
     GridLayout {
         anchors.fill: parent
         columns: 3
-        columnSpacing: 12
+        columnSpacing: root.trackGap
 
         Kirigami.Icon {
+            visible: root.iconSource.length > 0
             Layout.preferredWidth: root.iconSize
             Layout.preferredHeight: root.iconSize
             Layout.alignment: Qt.AlignVCenter
@@ -68,53 +75,74 @@ Item {
             }
         }
 
-        PlasmaComponents3.Slider {
+        // Use the native Qt Quick slider template directly. Its input
+        // rectangle must cover the whole row height, not just the 4px groove.
+        T.Slider {
             id: slider
             objectName: "wmFluentSliderTrack"
             Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: root.implicitHeight
+            implicitHeight: root.implicitHeight
+            implicitWidth: 160
             from: root.from
             to: root.to
-            value: root.value
             stepSize: root.stepSize
+            live: true
+            snapMode: T.Slider.SnapAlways
+            focusPolicy: Qt.StrongFocus
+            wheelEnabled: false
+            hoverEnabled: true
             leftPadding: 0
             rightPadding: 0
+            Accessible.name: root.sliderAccessibleName || root.iconSource
+
+            // Asynchronous DBus/PipeWire feedback must not drag the thumb
+            // backwards while the user owns the pointer.
+            Binding {
+                target: slider
+                property: "value"
+                value: root.value
+                when: !slider.pressed
+                restoreMode: Binding.RestoreNone
+            }
 
             // Fluent track and thumb; the native control retains keyboard,
             // mouse, accessibility, wheel and value semantics.
             background: Item {
-                x: slider.leftPadding + 10
+                x: slider.leftPadding + root.thumbExtent / 2
                 y: (slider.height - height) / 2
-                width: Math.max(0, slider.availableWidth - 20)
+                width: Math.max(0, slider.availableWidth - root.thumbExtent)
                 height: 4
                 Rectangle {
                     anchors.fill: parent
                     radius: 2
-                    color: root.dark ? "#A0A0A0" : "#888888"
+                    color: ColorType.trackFill(root.dark)
                 }
                 Rectangle {
                     width: parent.width * slider.position
                     height: parent.height
                     x: slider.mirrored ? parent.width - width : 0
                     radius: 2
-                    color: Kirigami.Theme.highlightColor
+                    color: root.accent
                 }
             }
 
             handle: Rectangle {
                 x: slider.leftPadding + slider.visualPosition * Math.max(0, slider.availableWidth - width)
                 y: (slider.height - height) / 2
-                width: 20
-                height: 20
+                width: root.thumbExtent
+                height: root.thumbExtent
                 radius: width / 2
                 color: root.dark ? "#383838" : "#FFFFFF"
                 border.width: 1
-                border.color: root.dark ? "#4B4B4B" : "#D6D6D6"
+                border.color: root.dark ? "#454545" : "#D6D6D6"
                 Rectangle {
                     anchors.centerIn: parent
                     width: slider.pressed ? 10 : 12
                     height: width
                     radius: width / 2
-                    color: Kirigami.Theme.highlightColor
+                    color: root.accent
                 }
             }
 
@@ -124,9 +152,7 @@ Item {
                     root.released();
             }
 
-            Binding {
-                root.pressed: slider.pressed
-            }
+
         }
 
         Item {
@@ -134,12 +160,12 @@ Item {
             visible: root.showArrow || root.reserveDetailsSpace
             enabled: root.showArrow
             opacity: root.showArrow ? 1 : 0
-            Layout.preferredWidth: root.reserveDetailsSpace || root.soundOutputDetails || root.detailsIconSource.length > 0 ? 36 : 24
+            Layout.preferredWidth: root.reserveDetailsSpace || root.soundOutputDetails || root.detailsIconSource.length > 0 ? 32 : 24
             Layout.preferredHeight: 32
             Layout.alignment: Qt.AlignVCenter
             activeFocusOnTab: root.showArrow
             Accessible.role: Accessible.Button
-            Accessible.name: root.detailsAccessibleName || i18n("More")
+            Accessible.name: root.detailsAccessibleName || i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "More")
             Accessible.onPressAction: root.arrowClicked()
             Keys.onReturnPressed: root.arrowClicked()
             Keys.onEnterPressed: root.arrowClicked()
@@ -231,17 +257,18 @@ Item {
     }
 
     WheelHandler {
-        target: slider
+        target: null
         orientation: Qt.Vertical
         acceptedButtons: Qt.NoButton
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         onWheel: function (wheel) {
             const delta = wheel.angleDelta.y;
+            const before = slider.value;
             if (delta > 0)
                 slider.increase();
             else if (delta < 0)
                 slider.decrease();
-            slider.moved();
+            if (slider.value !== before) slider.moved();
         }
     }
 }
