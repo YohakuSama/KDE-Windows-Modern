@@ -96,6 +96,18 @@ TestCase {
         compare(DateFormat.clockLocaleName(3, data.locale), data.locale);
     }
 
+    function test_uppercaseLatinDayPeriods() {
+        const loc = Qt.locale("en_GB");
+        const morning = new Date(2026, 10, 25, 5, 6, 7);
+        const evening = new Date(2026, 10, 25, 22, 36, 7);
+        compare(DateFormat.formatClockTime(loc, morning, "h:mm ap"), "5:06 AM");
+        compare(DateFormat.formatClockTime(loc, evening, "h:mm ap"), "10:36 PM");
+        compare(DateFormat.formatClockTime(loc, evening, "h:mm:ss ap"), "10:36:07 PM");
+        compare(DateFormat.formatClockTime(loc, evening, "HH:mm"), "22:36");
+        const chinese = Qt.locale("zh_CN");
+        compare(DateFormat.formatClockTime(chinese, morning, "AP h:mm"), chinese.toString(morning, "AP h:mm"));
+    }
+
     function test_shortDateFullYear_patterns() {
         compare(DateFormat.shortDateFullYear("dd.MM.yy"), "dd.MM.yyyy");
         compare(DateFormat.shortDateFullYear("yy-MM-dd"), "yyyy-MM-dd");
