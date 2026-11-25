@@ -8,6 +8,7 @@ Item {
     width: 420
     height: 300
     Start.ContextMenu { id: menu; anchors.fill: parent }
+    ListModel { id: sourceModel; ListElement { title: "First" }; ListElement { title: "Second" } }
     SignalSpy { id: invoked; target: menu; signalName: "actionTriggered" }
     TestCase {
         name: "StartContextMenu"
@@ -26,6 +27,13 @@ Item {
             compare(invoked.signalArguments[0][0], "remove");
             compare(invoked.signalArguments[0][1], 0);
             compare(invoked.signalArguments[0][2].index, 7);
+        }
+        function test_modelChangesDismissCapturedRow() {
+            menu.open([{text: "Open", actionId: "open"}], 10, 10, {model: sourceModel, index: 0});
+            tryCompare(menu, "opened", true);
+            sourceModel.move(0, 1, 1);
+            tryCompare(menu, "opened", false);
+            compare(invoked.count, 0);
         }
         function test_largeMenuBoundedAndDismissible() {
             const actions = [];

@@ -640,16 +640,6 @@ Item {
                 }
             }
 
-            // A menu must never execute an outdated row index.
-            Connections {
-                target: sortedAppsModel
-                function onModelReset() { sharedContextMenu.close(); }
-                function onRowsInserted() { sharedContextMenu.close(); }
-                function onRowsRemoved() { sharedContextMenu.close(); }
-                function onRowsMoved() { sharedContextMenu.close(); }
-                function onLayoutChanged() { sharedContextMenu.close(); }
-            }
-
             function handleContextAction(actionId, argument, context) {
                 // Milou runner actions: invoke the named action on the
                 // current match via ResultsView.runAction().
@@ -724,8 +714,8 @@ Item {
 
             // Reuse the existing alphabetical snapshot. A second hidden
             // Repeater used to allocate one visual Item for every app.
-            function lookupAppByDisplayName(displayName) {
-                return allAppsPage.lookupAppByDisplayName(displayName);
+            function lookupAppByUrls(urls) {
+                return allAppsPage.lookupAppByUrls(urls);
             }
 
             // ── Single global keyboard handler ─────────────────────────────

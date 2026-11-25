@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Resolve Start search app actions by desktop-file URL, dismiss row-based menus when their source model changes, prevent launching collapsed or disabled results, wrap search filters on narrow panels, and cancel pin reordering outside the grid.
+
 - Reuse the tray's native rounded-region blur for the notification and calendar flyout, keeping an opaque fallback when disabled or unavailable. Share calendar day colors and avoid rebuilding the month grid on each clock tick. Only request second-level clock updates when needed, display agenda times in the configured clock format, and translate weekday settings while keeping the system region default.
 
 - Keep week numbers aligned with local calendar dates through daylight-saving transitions, align weekday columns, and allow keyboard activation of calendar navigation and zoom tiles.
