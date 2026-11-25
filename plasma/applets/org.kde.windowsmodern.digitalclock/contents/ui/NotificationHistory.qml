@@ -322,7 +322,7 @@ ColumnLayout {
                             visible: !card.isGroup && !card.model.expired && (card.model.hasDefaultAction
                                 || (card.model.actionNames || []).length > 0)
 
-                            PlasmaComponents.Button {
+                            FlyoutButton {
                                 readonly property string actionLabel: card.model.defaultActionLabel || i18n("Open")
                                 text: actionLabel
                                 visible: card.model.hasDefaultAction
@@ -333,7 +333,7 @@ ColumnLayout {
 
                             Repeater {
                                 model: card.model.actionNames || []
-                                delegate: PlasmaComponents.Button {
+                                delegate: FlyoutButton {
                                     required property int index
                                     required property string modelData
                                     text: (card.model.actionLabels || [])[index] || modelData
@@ -352,12 +352,33 @@ ColumnLayout {
                                 id: replyInput
                                 Layout.fillWidth: true
                                 Layout.minimumWidth: 0
+                                Layout.minimumHeight: palette.controlHeight
+                                leftPadding: 10
+                                rightPadding: 10
+                                font: Kirigami.Theme.defaultFont
+                                color: palette.text
+                                placeholderTextColor: palette.textSecondary
+                                background: Rectangle {
+                                    radius: palette.controlRadius
+                                    color: palette.controlFill
+                                    border.width: 1
+                                    border.color: palette.controlBorder
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.bottom: parent.bottom
+                                        anchors.margins: 2
+                                        height: replyInput.activeFocus ? 2 : 1
+                                        radius: 1
+                                        color: replyInput.activeFocus ? palette.accent : palette.switchOutline
+                                    }
+                                }
                                 placeholderText: card.model.replyPlaceholderText || i18n("Reply")
                                 Accessible.name: card.model.replyActionLabel || i18n("Reply to notification")
                                 onAccepted: card.submitReply()
                             }
 
-                            PlasmaComponents.Button {
+                            FlyoutButton {
                                 text: card.model.replySubmitButtonText || i18n("Send")
                                 icon.name: card.model.replySubmitButtonIconName || "document-send"
                                 enabled: replyInput.text.trim().length > 0

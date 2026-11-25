@@ -206,6 +206,7 @@ for pair in \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/dateformat.js $LOCK/dateformat.js" \
     "$LOCK/dateformat.js $LOGIN/dateformat.js" \
     "$LOCK/StatusIconButton.qml $LOGIN/StatusIconButton.qml" \
+    "$LOCK/FluentPowerMenuItem.qml $LOGIN/FluentPowerMenuItem.qml" \
     "$LOCK/NetworkStatusIcon.qml $LOGIN/NetworkStatusIcon.qml" \
     "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml" \
@@ -214,6 +215,7 @@ for pair in \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Win11Palette.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/Win11Palette.qml" \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Win11Palette.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/Win11Palette.qml" \
     "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Win11Palette.qml plasma/applets/org.kde.windowsmodern.icontasks/contents/ui/Win11Palette.qml" \
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentIconButton.qml plasma/applets/org.kde.windowsmodern.icontasks/contents/ui/FluentIconButton.qml" \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml"; do
     # shellcheck disable=SC2086  # two paths on purpose
     cmp -s $pair || SHARED_DRIFT="$SHARED_DRIFT ${pair##* }"

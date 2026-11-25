@@ -20,34 +20,36 @@ ListView {
     visible: count > 1 && uiVisible && PlasmaLogin.GreeterState.loginState !== PlasmaLogin.GreeterState.LoginState.UserPrompt
 
     delegate: Item {
+        id: userRow
         width: root.width
         height: WinStyle.userSwitcherItemHeight
-        opacity: ListView.isCurrentItem ? 1.0 : 0.7
+        Rectangle {
+            anchors.fill: parent
+            radius: 4
+            color: userRow.ListView.isCurrentItem || pointer.hovered ? "#17FFFFFF" : "transparent"
+        }
+
+        HoverHandler { id: pointer }
 
         Row {
             anchors.fill: parent
-            spacing: Kirigami.Units.smallSpacing
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 8
 
-            Rectangle {
-                width: WinStyle.userSwitcherAvatarSize
-                height: WinStyle.userSwitcherAvatarSize
-                radius: WinStyle.userSwitcherAvatarSize / 2
-                color: WinStyle.hoverBackground
-                visible: model.icon !== ""
-
-                Image {
-                    anchors.fill: parent
-                    source: model.icon || ""
-                    fillMode: Image.PreserveAspectCrop
-                    clip: true
-                }
+            WinAvatar {
+                size: WinStyle.userSwitcherAvatarSize
+                source: model.icon || ""
+                anchors.verticalCenter: parent.verticalCenter
             }
 
             Text {
+                width: Math.max(0, parent.width - WinStyle.userSwitcherAvatarSize - parent.spacing)
                 text: model.realName || model.name
+                textFormat: Text.PlainText
+                elide: Text.ElideRight
                 font.family: WinStyle.fontFamily
-                font.pixelSize: WinStyle.userSwitcherNamePixelSize
-                font.weight: Font.Light
+                font.pixelSize: WinStyle.bodyPixelSize
                 color: WinStyle.foregroundColor
                 verticalAlignment: Text.AlignVCenter
                 height: WinStyle.userSwitcherItemHeight

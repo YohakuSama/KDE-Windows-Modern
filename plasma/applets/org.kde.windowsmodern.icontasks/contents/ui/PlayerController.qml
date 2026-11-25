@@ -66,13 +66,13 @@ RowLayout {
         }
     }
 
-    PlasmaComponents3.ToolButton {
+    FluentIconButton {
         enabled: toolTipDelegate.playerData?.canGoPrevious ?? false
         icon.name: mirrored ? "media-skip-forward" : "media-skip-backward"
         onClicked: toolTipDelegate.playerData.Previous()
     }
 
-    PlasmaComponents3.ToolButton {
+    FluentIconButton {
         enabled: (root.isPlaying ? toolTipDelegate.playerData?.canPause : toolTipDelegate.playerData?.canPlay) ?? false
         icon.name: root.isPlaying ? "media-playback-pause" : "media-playback-start"
         onClicked: {
@@ -84,7 +84,7 @@ RowLayout {
         }
     }
 
-    PlasmaComponents3.ToolButton {
+    FluentIconButton {
         enabled: toolTipDelegate.playerData?.canGoNext ?? false
         icon.name: mirrored ? "media-skip-backward" : "media-skip-forward"
         onClicked: toolTipDelegate.playerData.Next()

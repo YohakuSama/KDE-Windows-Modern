@@ -6,6 +6,13 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+### Consistent nested controls and sign-in surfaces
+
+- Share Fluent icon buttons between tray headers and task preview media controls. Remove the default heading fill on native fallback applet chrome while retaining native device actions.
+- Use themed notification action buttons and reply input with a focus accent.
+- Style explicit login/lock power menu items rather than an unused dynamic delegate; keep native session commands and hidden capability handling. Match footer controls and login account rows.
+- Document the missing modern battery resource and local collection requirements; legacy Microsoft battery glyphs remain the fallback.
+
 ### Bluetooth and nested shell surfaces
 
 - Route Bluetooth to the themed detail page; connect and disconnect real BlueZ devices, show pending/error states, retain native pairing and settings, and preserve removable-device fallback.

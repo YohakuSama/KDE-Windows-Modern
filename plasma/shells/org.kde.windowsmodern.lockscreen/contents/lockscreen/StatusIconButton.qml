@@ -5,9 +5,18 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
 PlasmaComponents3.ToolButton {
+    id: control
     width: 32
     height: 32
     icon.color: "#FFFFFF"
+    icon.width: 16
+    icon.height: 16
+    background: Rectangle {
+        radius: 4
+        color: control.down ? "#0DFFFFFF" : control.hovered || control.activeFocus ? "#17FFFFFF" : "transparent"
+        border.width: control.activeFocus ? 1 : 0
+        border.color: "#4CC2FF"
+    }
     display: AbstractButton.IconOnly
     flat: true
     focusPolicy: Qt.NoFocus

@@ -14,7 +14,15 @@ PlasmaComponents3.ToolButton {
 
     property alias iconName: root.icon.name
 
+    icon.width: 16
+    icon.height: 16
     icon.color: WinStyle.foregroundColor
+    background: Rectangle {
+        radius: 4
+        color: root.down ? "#0DFFFFFF" : root.hovered || root.activeFocus ? "#17FFFFFF" : "transparent"
+        border.width: root.activeFocus ? 1 : 0
+        border.color: WinStyle.accentColor
+    }
     display: QQC2.AbstractButton.IconOnly
     flat: true
     Kirigami.Theme.inherit: false

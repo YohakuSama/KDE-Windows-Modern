@@ -18,9 +18,12 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
 import "components" as Components
+import "lib" as Lib
 
 Item {
     id: popup
+
+    Lib.Win11Palette { id: fluent }
 
     // Never derive the window's initial size from an effectively hidden
     // QQuickLayout. The native popup is sized before the window is mapped.
@@ -102,6 +105,7 @@ Item {
             right: parent.right
         }
         visible: popup.unknownActive
+        background: Item {}
         height: trayHeading.height + bottomPadding + container.headingHeight
         Behavior on height {
             NumberAnimation { duration: Kirigami.Units.shortDuration / 2; easing.type: Easing.InOutQuad }
@@ -118,8 +122,11 @@ Item {
             id: trayHeading
             Layout.fillWidth: true
             visible: plasmoidHeading.visible
+            Layout.leftMargin: 10
+            Layout.rightMargin: 10
+            spacing: 6
 
-            PlasmaComponents.ToolButton {
+            Lib.FluentIconButton {
                 id: backButton
                 visible: systemTrayState.activeApplet && systemTrayState.activeApplet.expanded
                 icon.name: mirrored ? "go-previous-symbolic-rtl" : "go-previous-symbolic"
@@ -133,10 +140,11 @@ Item {
                 }
             }
 
-            Kirigami.Heading {
+            PlasmaComponents.Label {
                 Layout.fillWidth: true
-                leftPadding: 0
-                level: 1
+                font: Kirigami.Theme.defaultFont
+                font.weight: Font.DemiBold
+                color: fluent.text
                 text: systemTrayState.activeApplet ? systemTrayState.activeApplet.plasmoid.title : i18n("Status and Notifications")
                 maximumLineCount: 1
                 textFormat: Text.PlainText
@@ -146,7 +154,7 @@ Item {
             Repeater {
                 id: primaryActionButtons
                 model: actionsButton.applet ? actionsButton.applet.Plasmoid.contextualActions.filter(a => !a.isSeparator && a.priority === PlasmaCore.Action.HighPriority) : []
-                delegate: PlasmaComponents.ToolButton {
+                delegate: Lib.FluentIconButton {
                     id: actionButton
                     required property int index
                     required property PlasmaCore.Action modelData
@@ -155,7 +163,7 @@ Item {
                     contentItem: Kirigami.Icon {
                         anchors.centerIn: parent
                         active: actionButton.hovered
-                        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                        implicitWidth: fluent.menuIconSize
                         implicitHeight: implicitWidth
                         source: actionButton.qAction ? actionButton.qAction.icon.name : ""
                     }
@@ -172,7 +180,7 @@ Item {
                 }
             }
 
-            PlasmaComponents.ToolButton {
+            Lib.FluentIconButton {
                 id: actionsButton
                 visible: visibleActions > 0
                 enabled: visibleActions > 1 || (singleAction && singleAction.enabled)
@@ -198,7 +206,7 @@ Item {
                     parent: actionsButton
                     anchors.centerIn: parent
                     active: actionsButton.hovered
-                    implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                    implicitWidth: fluent.menuIconSize
                     implicitHeight: implicitWidth
                     source: actionsButton.singleAction !== null ? actionsButton.singleAction.icon.name : ""
                     visible: actionsButton.singleAction
@@ -215,7 +223,7 @@ Item {
                     onObjectRemoved: (index, object) => configMenu.removeMenuItem(object)
                 }
             }
-            PlasmaComponents.ToolButton {
+            Lib.FluentIconButton {
                 id: configureButton
                 icon.name: "configure"
                 visible: actionsButton.applet && actionsButton.applet.plasmoid.internalAction("configure")
@@ -231,7 +239,7 @@ Item {
                 PlasmaComponents.ToolTip { text: parent.visible ? parent.text : "" }
                 onClicked: actionsButton.applet.plasmoid.internalAction("configure").trigger()
             }
-            PlasmaComponents.ToolButton {
+            Lib.FluentIconButton {
                 id: pinButton
                 checkable: true
                 checked: Plasmoid.configuration.pin
@@ -303,6 +311,7 @@ Item {
         position: PlasmaComponents.ToolBar.Footer
         anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
         visible: popup.unknownActive && container.appletHasFooter
+        background: Item {}
         height: container.footerHeight
         z: -9999
     }

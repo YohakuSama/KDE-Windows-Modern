@@ -19,7 +19,9 @@ QQC2.ToolButton {
     icon.color: root.hovered ? WinStyle.accentColor : WinStyle.mutedForegroundColor
 
     background: Rectangle {
-        color: root.hovered ? WinStyle.hoverBackground : "transparent"
+        color: root.down ? "#0DFFFFFF" : root.hovered || root.activeFocus ? "#17FFFFFF" : "transparent"
+        border.width: root.activeFocus ? 1 : 0
+        border.color: WinStyle.accentColor
         radius: WinStyle.textFieldRadius
     }
 

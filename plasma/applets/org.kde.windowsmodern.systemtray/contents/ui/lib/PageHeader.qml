@@ -23,19 +23,10 @@ RowLayout {
     Layout.bottomMargin: 8
     spacing: 6
 
-    PlasmaComponents3.ToolButton {
+    FluentIconButton {
         id: backButton
         Layout.preferredWidth: fluent.controlHeight
         Layout.preferredHeight: fluent.controlHeight
-        icon.width: fluent.menuIconSize
-        icon.height: fluent.menuIconSize
-        background: Rectangle {
-            radius: fluent.controlRadius
-            color: backButton.down ? fluent.controlPressed
-                : backButton.hovered || backButton.activeFocus ? fluent.controlHover : "transparent"
-            border.width: backButton.activeFocus ? 1 : 0
-            border.color: fluent.accent
-        }
         Layout.alignment: Qt.AlignVCenter
         text: i18n("Back")
         display: PlasmaComponents3.AbstractButton.IconOnly

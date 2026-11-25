@@ -443,72 +443,46 @@ Item {
                 id: powerMenu
                 x: parent.width - width
                 y: -powerMenu.implicitHeight
-                width: 150
+                width: Math.max(160, 12 * Kirigami.Units.smallSpacing)
+                padding: 4
 
                 background: Rectangle {
+                    radius: 8
                     color: "#2C2C2C"
                     border.color: "#3F3F3F"
                     border.width: 1
                 }
 
-                delegate: MenuItem {
-                    id: menuItem
-                    width: parent.width
-                    height: 36
-
-                    contentItem: Row {
-                        spacing: Kirigami.Units.smallSpacing
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 12
-
-                        Kirigami.Icon {
-                            source: menuItem.icon.name
-                            width: 16; height: 16
-                            color: "#FFFFFF"
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: menuItem.text
-                            color: "#FFFFFF"
-                            font.family: Kirigami.Theme.defaultFont.family
-                            font.pixelSize: 14
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    background: Rectangle {
-                        color: menuItem.highlighted ? "#33FFFFFF" : "transparent"
-                    }
-                }
-
-                MenuItem {
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
                     text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button", "&Sleep")
                     icon.name: "system-suspend"
                     onTriggered: root.suspendToRam()
-                    visible: root.suspendToRamSupported
+                    actionAvailable: root.suspendToRamSupported
                 }
-                MenuItem {
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
                     text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button", "&Shut Down")
                     icon.name: "system-shutdown"
                     onTriggered: root.powerOff()
                 }
-                MenuItem {
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
                     text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button", "&Restart")
                     icon.name: "system-reboot"
                     onTriggered: root.reboot()
                 }
             }
-            PlasmaComponents3.ToolButton {
+            StatusIconButton {
                 id: powerButton
-                width: 32
-                height: 32
+                focusPolicy: Qt.TabFocus
                 icon.name: "system-shutdown"
                 icon.color: "#FFFFFF"
                 display: AbstractButton.IconOnly
                 flat: true
                 Kirigami.Theme.inherit: false
                 Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
+                text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button", "Power")
                 onClicked: powerMenu.open()
             }
         }

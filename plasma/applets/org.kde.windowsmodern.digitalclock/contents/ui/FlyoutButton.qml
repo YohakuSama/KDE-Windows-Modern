@@ -21,7 +21,8 @@ PlasmaComponents.Button {
         color: control.down ? fluent.controlPressed
             : control.hovered || control.activeFocus || control.checked || control.attentionActive ? fluent.controlHover
             : control.quiet ? "transparent" : fluent.controlFill
-        border.width: control.activeFocus ? 1 : 0
-        border.color: Kirigami.Theme.highlightColor
+        border.width: control.activeFocus || !control.quiet ? 1 : 0
+        border.color: control.activeFocus ? fluent.accent : fluent.controlBorder
+        opacity: control.enabled ? 1 : 0.45
     }
 }
