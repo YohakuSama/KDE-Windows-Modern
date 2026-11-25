@@ -76,7 +76,7 @@ SVG glyphs, not an installed text font.
 4. Reimport and verify the entire mapped output and compare it on the
    running desktop. Do not equate a valid resource ID with correct semantics.
 
-The source checkout includes read-only coverage and inspection tools, the
+The development Git checkout (not the installation ZIP) includes read-only coverage and inspection tools, the
 metadata-only reference snapshot, and tests. See the current
 [native coverage guide](https://github.com/YohakuSama/KDE-Windows-Modern/blob/main/docs/NATIVE_COVERAGE.md)
 for development checks.

@@ -800,7 +800,7 @@ Revert: `sudo bash scripts/uninstall-greeter-system.sh` (restores from
 
 ### Icons
 
-Location: `icons/windows-modern/` (gitignored — ~145MB)
+Location: `icons/windows-modern/` (tracked fallback artwork; native resources are imported separately)
 
 Curated Windows-11-style icon theme assembled from multiple upstream
  packs (Eleven, Fluent, Cobalt, Windows-Eleven, Win11, We10X, Fluentwin,

@@ -26,7 +26,7 @@ fi
 if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ]; then
     if ! python3 "$PROJECT_DIR/scripts/check-native-icon-import.py" "$NATIVE_ASSETS_DIR" "$PROJECT_DIR/scripts/native-assets-map.json"; then
         info "Refreshing local Windows icon mappings from the remembered source..."
-        if ! python3 "$PROJECT_DIR/scripts/import-windows-assets.py" --reuse --output "$NATIVE_ASSETS_DIR" ||
+        if ! bash "$PROJECT_DIR/scripts/prepare-native-assets.sh" ||
             ! python3 "$PROJECT_DIR/scripts/check-native-icon-import.py" "$NATIVE_ASSETS_DIR" "$PROJECT_DIR/scripts/native-assets-map.json"; then
             err "Local Windows icon refresh failed. Existing installed icon theme was not removed."
             exit 1

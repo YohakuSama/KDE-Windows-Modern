@@ -60,7 +60,7 @@ system login manager. A new login may be required for KWin or Qt changes.
 To clone and package the current source (run from the desired parent directory):
 
 ```bash
-nix-shell -p git zip unzip python3 curl gnutar xz --run '
+nix-shell -p git zip unzip python3 curl gnutar xz util-linux --run '
 set -e
 git clone --depth 1 --recurse-submodules https://github.com/YohakuSama/KDE-Windows-Modern.git
 cd KDE-Windows-Modern

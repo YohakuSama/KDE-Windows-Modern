@@ -47,20 +47,19 @@ cmake --build build --parallel $(nproc)
 
 ## Install
 
-The recommended way is to use the repository-wide installer, which builds,
-installs the `.so`, removes any conflicting KPackage, prunes stale local
-copies, and restarts plasmashell:
+On NixOS, use `bash install.sh` from the theme root and select install or
+upgrade. It builds against the running system ABI and handles rollback;
+do not use the mutable-system build/install commands below on NixOS.
+
+On conventional distributions, use the repository-wide installer from
+the theme root:
 
 ```bash
-cd plasma/applets/org.kde.windowsmodern.systemtray
-./dev.sh
+bash install.sh systray
 ```
 
-Or from the repo root:
-
-```bash
-./install.sh systray
-```
+The separate `dev.sh` helper is available in the development Git checkout,
+not in the installable ZIP.
 
 If you prefer a manual install:
 
