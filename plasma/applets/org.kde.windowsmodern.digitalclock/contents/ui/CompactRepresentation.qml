@@ -18,6 +18,7 @@ import org.kde.plasma.private.digitalclock as DigitalClockPrivate
 import org.kde.kirigami as Kirigami
 
 import "code/dateformat.js" as DateFormat
+import "code/notificationPresentation.js" as NotificationPresentation
 
 MouseArea {
     id: main
@@ -32,8 +33,11 @@ MouseArea {
     required property var plasmoidItem
 
     readonly property real panelHeight: parent ? parent.height : height
-    readonly property bool showBell: Plasmoid.configuration.showNotificationButton
-        && Plasmoid.formFactor !== PlasmaCore.Types.Vertical
+    readonly property bool showBell: NotificationPresentation.showBell(
+        Plasmoid.configuration.showNotificationButton,
+        Plasmoid.formFactor !== PlasmaCore.Types.Vertical,
+        plasmoidItem.notificationsAvailable, plasmoidItem.notificationModel.count,
+        plasmoidItem.notificationsInhibited)
     property bool wasExpanded: false
     function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
         plasmoidItem.toggleFlyout(previous);
