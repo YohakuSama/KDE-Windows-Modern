@@ -283,7 +283,7 @@ MouseArea {
                 verticalAlignment: Text.AlignVCenter
                 textFormat: Text.PlainText
 
-                text: main.plasmoidItem.clockTimeLocale.toString(clock.dateTime,
+                text: DateFormat.formatClockTime(main.plasmoidItem.clockTimeLocale, clock.dateTime,
                     Plasmoid.configuration.showSeconds === 2 ? main.plasmoidItem.timeFormatWithSeconds : main.plasmoidItem.timeFormat)
 
                 font {

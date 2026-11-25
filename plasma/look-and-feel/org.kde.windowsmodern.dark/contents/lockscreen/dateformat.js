@@ -69,3 +69,10 @@ function calendarLongDate(locale, date, longFormat) {
         return locale.toString(date, "M月d日 dddd");
     return locale.toString(date, longDateWithoutYear(locale.dateFormat(longFormat)));
 }
+
+// QLocale uses lowercase Latin day-periods in some regions (e.g. en_GB).
+// Keep the locale's hour system, punctuation, ordering and native words;
+// normalize only the English AM/PM tokens to Windows' uppercase display.
+function formatClockTime(locale, date, pattern) {
+    return locale.toString(date, pattern).replace(/\b(?:am|pm)\b/gi, token => token.toUpperCase());
+}
