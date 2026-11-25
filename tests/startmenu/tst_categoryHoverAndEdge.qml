@@ -19,9 +19,41 @@ Item {
         ListElement { display: "Firefox"; favoriteId: "applications:firefox.desktop" }
         ListElement { display: "Calculator"; favoriteId: "applications:org.kde.kcalc.desktop" }
     }
+    Component {
+        id: testHeader
+        Item { width: 500; height: 500 }
+    }
     TestCase {
         name: "StartCategoryHoverAndEdge"
         when: windowShown
+        function test_viewChangesKeepHeaderAnchor() {
+            const component = Qt.createComponent("../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/pages/AllAppsPage.qml");
+            tryVerify(() => component.status !== Component.Loading);
+            verify(component.status === Component.Ready, component.errorString());
+            const page = component.createObject(fixture, {
+                width: 560, height: 250, flatModel: catalog, homeHeader: testHeader
+            });
+            verify(page);
+            tryCompare(page.allAppsList, "count", 4);
+            tryVerify(() => page.activeScroller.headerItem !== null);
+            page.activeScroller.positionViewAtBeginning();
+            page.activeScroller.contentY += 140;
+            page.activeScroller.forceLayout();
+            const initial = page.captureViewAnchor().headerBottom;
+            const modes = [{category: false, grid: true}, {category: true, grid: false},
+                {category: false, grid: false}];
+            for (const mode of modes) {
+                const anchor = page.captureViewAnchor();
+                page.categoryMode = mode.category;
+                page.gridMode = mode.grid;
+                page.restoreViewAnchor(anchor, false);
+                tryVerify(() => page.activeScroller.headerItem !== null);
+                tryVerify(() => Math.abs(page.activeScroller.headerItem.mapToItem(page, 0,
+                    page.activeScroller.headerItem.height).y - initial) <= 1);
+                compare(page.allAppsList.currentIndex, -1);
+            }
+            page.destroy();
+        }
         function test_hoverLaunchAndSidebarGeometry() {
             const component = Qt.createComponent("../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/pages/AllAppsPage.qml");
             tryVerify(() => component.status !== Component.Loading);

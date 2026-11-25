@@ -17,6 +17,7 @@ FocusScope {
     property bool alphabeticalGrouping: true
     property Component header: null
     readonly property var headerItem: rowsView.headerItem
+    readonly property alias scrollView: rowsView
     property int scrollbarEdgeOffset: 0
     readonly property int scrollGutter: scrollbarEdgeOffset > 0 ? 0 : 18
     HoverHandler { id: alphabeticalViewportHover }

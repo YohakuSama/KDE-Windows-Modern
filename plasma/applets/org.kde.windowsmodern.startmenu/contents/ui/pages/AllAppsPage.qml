@@ -58,6 +58,44 @@ Item {
     onCategoryModeChanged: resetCategory()
     onShowAllSectionChanged: if (!showAllSection) resetCategory()
 
+    readonly property var activeScroller: categoryMode ? allAppsListView : alphabeticalView.scrollView
+
+    // All view modes share the same home header. Preserve its on-screen
+    // location instead of scrolling to the first app on mode changes.
+    function captureViewAnchor() {
+        const scroller = activeScroller;
+        scroller.cancelFlick();
+        scroller.forceLayout();
+        const header = scroller.headerItem;
+        const anchor = {
+            headerBottom: header ? header.mapToItem(allAppsPage, 0, header.height).y : null,
+            offset: scroller.contentY - scroller.originY
+        };
+        resetCategory();
+        closeLetterIndex(false);
+        alphabeticalView.currentIndex = -1;
+        allAppsListView.currentIndex = -1;
+        return anchor;
+    }
+
+    function restoreViewAnchor(anchor, restoreFocus) {
+        if (!anchor || !visible) return;
+        const scroller = activeScroller;
+        scroller.forceLayout();
+        scroller.positionViewAtBeginning();
+        scroller.forceLayout();
+        const beginning = scroller.contentY;
+        const header = scroller.headerItem;
+        const desired = header && anchor.headerBottom !== null
+            ? header.mapToItem(allAppsPage, 0, header.height).y - anchor.headerBottom
+            : anchor.offset;
+        if (restoreFocus && header && header.viewSelectorItem)
+            header.viewSelectorItem.forceActiveFocus(Qt.OtherFocusReason);
+        scroller.contentY = beginning + Math.max(0, Math.min(desired,
+            Math.max(0, scroller.contentHeight - scroller.height)));
+        scroller.forceLayout();
+    }
+
     function focusFirstApp() {
         scrollToAll();
         tryActivate(0);

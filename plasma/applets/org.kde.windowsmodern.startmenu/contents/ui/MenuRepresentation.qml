@@ -433,6 +433,7 @@ Item {
                             height: implicitHeight
                             spacing: 20
                             property alias pinnedSectionItem: pinnedSection
+                            property alias viewSelectorItem: viewSelector
 
                             PinnedPage {
                                 id: pinnedSection
@@ -711,10 +712,11 @@ Item {
                 currentMode: Plasmoid.configuration.allAppsViewMode
                 onModeChosen: index => {
                     if (index === Plasmoid.configuration.allAppsViewMode) return;
-                    root.leftColumnState = 1;
-                    allAppsPage.resetCategory();
+                    const anchor = allAppsPage.captureViewAnchor();
                     Plasmoid.configuration.allAppsViewMode = index;
-                    Qt.callLater(allAppsPage.focusFirstApp);
+                    // Recreate the header in the new scroller before the next
+                    // frame. Do not select an app or change the page state.
+                    allAppsPage.restoreViewAnchor(anchor, true);
                 }
             }
 
