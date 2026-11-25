@@ -8,7 +8,8 @@ StatusIconButton {
     BatteryControlModel {
         id: battery
     }
-    visible: battery.hasCumulative
+    readonly property bool available: battery.hasCumulative
+    visible: available
     readonly property bool percentKnown: Number.isFinite(battery.percent) && battery.percent >= 0
     icon.name: {
         if (!percentKnown)

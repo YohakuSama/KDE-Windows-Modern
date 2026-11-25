@@ -16,6 +16,7 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
+import org.kde.plasma.private.mpris as Mpris
 
 import "components" as Components
 
@@ -25,21 +26,33 @@ Item {
     // Never derive the window's initial size from an effectively hidden
     // QQuickLayout. The native popup is sized before the window is mapped.
     readonly property bool overflowHome: systemTrayState.overflowMode && !systemTrayState.activeApplet
-    readonly property real uiScale: Math.max(0.5, actionPanel.scale)
     readonly property rect screenRect: Plasmoid.screenGeometry
     readonly property int availableWidth: screenRect.width >= 100
-        ? Math.max(1, Math.floor(screenRect.width * 0.92)) : 720
+        ? Math.max(1, Math.floor(screenRect.width - (root.vertical ? root.panelExtent : 0) - 24)) : 720
     readonly property int availableHeight: screenRect.height >= 100
-        ? Math.max(1, Math.floor(Math.min(screenRect.height * 0.92,
-            screenRect.height - Math.min(96, root.vertical ? root.width : root.height) - 24))) : 720
-    readonly property int popupWidth: Math.min(availableWidth,
+        ? Math.max(1, Math.floor(screenRect.height - (root.vertical ? 0 : root.panelExtent) - 24)) : 720
+    // The configured scale is a ceiling. Small work areas shrink the grid
+    // before mapping, without using physical DPI or depending on panel length.
+    readonly property real uiScale: Math.max(0.35, Math.min(Plasmoid.configuration.scale / 100,
+        availableWidth / 360, availableHeight / 400))
+    readonly property int frameWidth: separatedMedia ? 0 : Math.round(dialog.margins.left + dialog.margins.right)
+    readonly property int frameHeight: separatedMedia ? 0 : Math.round(dialog.margins.top + dialog.margins.bottom)
+    readonly property bool quickHome: !systemTrayState.activeApplet && !systemTrayState.overflowMode
+    readonly property int popupWidth: Math.max(1, Math.min(availableWidth,
         Math.round((overflowHome ? 216 : 360) * uiScale))
+        - frameWidth)
     readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
         * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
         + Math.round(16 * uiScale)
-    readonly property int popupHeight: Math.min(availableHeight,
+    Mpris.Mpris2Model { id: mediaModel }
+    readonly property int mediaGap: Math.round(12 * uiScale)
+    readonly property int mediaHeight: Math.round(178 * uiScale)
+    readonly property bool separatedMedia: !systemTrayState.activeApplet && !systemTrayState.overflowMode
+        && mediaCard.hasSession && availableHeight >= actionPanel.nominalHomeHeight + mediaGap + mediaHeight
+    readonly property int popupHeight: Math.max(1, Math.min(availableHeight - frameHeight,
         systemTrayState.activeApplet ? Math.max(360, Kirigami.Units.gridUnit * 24)
-        : overflowHome ? overflowHeight : actionPanel.homeHeight)
+        : overflowHome ? overflowHeight
+        : actionPanel.homeHeight + (separatedMedia ? mediaGap + mediaHeight : 0)))
 
     implicitWidth: popupWidth
     implicitHeight: popupHeight
@@ -49,6 +62,36 @@ Item {
     Layout.minimumHeight: popupHeight
     Layout.preferredHeight: popupHeight
     Layout.maximumHeight: popupHeight
+
+    // The native Dialog suppresses its rectangular blur when NoBackground
+    // is selected. Enable only the two rounded card regions after layout.
+    property bool splitAcrylic: false
+    readonly property bool allowSplitAcrylic: (Plasmoid.containmentDisplayHints
+        & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) === 0
+
+    function scheduleSplitBlur() {
+        if (separatedMedia && dialog.visible) splitBlurTimer.restart();
+        else {
+            splitBlurTimer.stop();
+            splitAcrylic = false;
+        }
+    }
+    Timer {
+        id: splitBlurTimer
+        interval: 16
+        onTriggered: {
+            if (!popup.separatedMedia || !dialog.visible) {
+                popup.splitAcrylic = false;
+                return;
+            }
+            popup.splitAcrylic = Plasmoid.setSplitPopupBlur(popup, mediaCard, settingsCard,
+                mediaCard.radius, popup.allowSplitAcrylic);
+        }
+    }
+    onSeparatedMediaChanged: scheduleSplitBlur()
+    onAllowSplitAcrylicChanged: scheduleSplitBlur()
+    onWidthChanged: scheduleSplitBlur()
+    onHeightChanged: scheduleSplitBlur()
 
     property alias hiddenLayout: hiddenItemsView.layout
     property alias plasmoidContainer: container
@@ -81,7 +124,7 @@ Item {
         if (!pluginId) return
         const applet = Plasmoid.appletForPluginId(pluginId)
         if (applet) {
-            systemTrayState.setActiveApplet(applet)
+            systemTrayState.setActiveApplet(applet, undefined, "quick")
             return
         }
         const settings = {
@@ -258,10 +301,10 @@ Item {
                 id: hiddenItemsView
                 Layout.fillWidth: true
                 Layout.preferredHeight: hiddenItemsView.contentRowsHeight
-                Layout.leftMargin: Math.round(8 * actionPanel.scale)
-                Layout.rightMargin: Math.round(8 * actionPanel.scale)
-                Layout.topMargin: Math.round(8 * actionPanel.scale)
-                Layout.bottomMargin: Math.round(8 * actionPanel.scale)
+                Layout.leftMargin: Math.round(8 * actionPanel.uiScale)
+                Layout.rightMargin: Math.round(8 * actionPanel.uiScale)
+                Layout.topMargin: Math.round(8 * actionPanel.uiScale)
+                Layout.bottomMargin: Math.round(8 * actionPanel.uiScale)
                 visible: popup.overflowHome && root.hiddenLayout.itemCount > 0
                 KeyNavigation.up: pinButton
                 onVisibleChanged: {
@@ -272,15 +315,53 @@ Item {
                 }
             }
 
-            ActionPanel {
-                id: actionPanel
+            Components.MediaCard {
+                id: mediaCard
                 Layout.fillWidth: true
+                Layout.preferredHeight: popup.mediaHeight
+                Layout.minimumHeight: popup.mediaHeight
+                Layout.maximumHeight: popup.mediaHeight
+                Layout.bottomMargin: popup.mediaGap
+                uiScale: popup.uiScale
+                player: mediaModel.currentPlayer
+                acrylic: popup.splitAcrylic
+                visible: popup.separatedMedia
+                onXChanged: popup.scheduleSplitBlur()
+                onYChanged: popup.scheduleSplitBlur()
+                onWidthChanged: popup.scheduleSplitBlur()
+                onHeightChanged: popup.scheduleSplitBlur()
+            }
+
+            Item {
+                id: settingsCard
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: actionPanel.homeHeight
+                onXChanged: popup.scheduleSplitBlur()
+                onYChanged: popup.scheduleSplitBlur()
+                onWidthChanged: popup.scheduleSplitBlur()
+                onHeightChanged: popup.scheduleSplitBlur()
                 visible: !systemTrayState.overflowMode
-                onVisibleChanged: {
-                    if (visible && dialog.visible && !systemTrayState.activeApplet)
-                        forceActiveFocus();
+                Rectangle {
+                    anchors.fill: parent
+                    visible: popup.separatedMedia
+                    radius: mediaCard.radius
+                    color: mediaCard.surfaceColor
+                    border.width: 1
+                    border.color: mediaCard.outlineColor
                 }
-                onRequestPage: name => popup.activateFlyout(name)
+                ActionPanel {
+                    id: actionPanel
+                    anchors.fill: parent
+                    uiScale: popup.uiScale
+                    availableHeight: popup.availableHeight
+                    frameInset: popup.separatedMedia ? 0 : Math.max(0, dialog.margins.left)
+                    onVisibleChanged: {
+                        if (visible && dialog.visible && !systemTrayState.activeApplet)
+                            forceActiveFocus();
+                    }
+                    onRequestPage: name => popup.activateFlyout(name)
+                }
             }
         }
 
@@ -290,7 +371,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: systemTrayState.activeApplet
-            Layout.topMargin: mergeHeadings ? 0 : dialog.topPadding
+            Layout.topMargin: mergeHeadings ? 0 : dialog.margins.top
             KeyNavigation.up: pinButton
             KeyNavigation.backtab: pinButton
             onVisibleChanged: if (visible) forceActiveFocus()

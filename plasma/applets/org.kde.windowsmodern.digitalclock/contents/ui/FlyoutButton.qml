@@ -14,16 +14,18 @@ PlasmaComponents.Button {
     icon.width: 14
     icon.height: 14
     font.pixelSize: 12
+    Win11Palette { id: colors }
+    readonly property bool selected: checked || attentionActive
+    icon.color: selected ? colors.accentText : colors.text
+    palette.buttonText: selected ? colors.accentText : colors.text
     background: Rectangle {
-        readonly property bool dark: (Kirigami.Theme.backgroundColor.r * 0.299
-            + Kirigami.Theme.backgroundColor.g * 0.587 + Kirigami.Theme.backgroundColor.b * 0.114) < 0.5
         radius: 4
-        color: control.quiet && !control.hovered && !control.activeFocus ? "transparent"
-            : dark ? Qt.rgba(1, 1, 1, control.down ? 0.13
-                : control.hovered || control.activeFocus || control.checked || control.attentionActive ? 0.09 : 0.05)
-            : Qt.rgba(1, 1, 1, control.down ? 0.35 : control.hovered ? 0.95 : 0.75)
-        border.width: control.activeFocus ? 1 : (!dark && !control.quiet ? 1 : 0)
-        border.color: control.activeFocus ? Kirigami.Theme.highlightColor
-            : Qt.rgba(0, 0, 0, 0.08)
+        color: control.selected ? colors.accent
+            : control.down ? colors.pressed
+            : control.hovered || control.activeFocus ? colors.hover
+            : control.quiet ? "transparent" : colors.surface
+        border.width: control.quiet && !control.selected && !control.activeFocus ? 0 : 1
+        border.color: control.activeFocus || control.selected ? colors.accent : colors.surfaceBorder
+        opacity: control.enabled ? 1 : 0.55
     }
 }

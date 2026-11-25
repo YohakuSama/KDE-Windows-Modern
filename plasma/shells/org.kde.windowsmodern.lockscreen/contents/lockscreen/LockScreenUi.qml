@@ -40,7 +40,7 @@ Item {
         target: authenticator
         function onFailed(kind) {
             if (kind != 0) return;
-            const msg = i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:status", "Unlocking failed");
+            const msg = i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Unlocking failed");
             lockScreenUi.handleMessage(msg);
             root.clearPassword();
             authenticator.startAuthenticating();
@@ -343,7 +343,7 @@ Item {
                 userListModel: users
                 customErrorMessage: {
                     const parts = [];
-                    if (capsLockState.locked) parts.push(i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:status", "Caps Lock is on"));
+                    if (capsLockState.locked) parts.push(i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Caps Lock is on"));
                     if (root.notification) parts.push(root.notification);
                     return parts.join(" \u2022 ");
                 }
@@ -420,35 +420,48 @@ Item {
         // ── Footer (keyboard, network, audio, battery, power) - shown when unlocking ──
         RowLayout {
             id: footer
-            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: Kirigami.Units.smallSpacing }
-            spacing: Kirigami.Units.smallSpacing
-            visible: lockScreenRoot.uiVisible
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 16 }
+            spacing: 8
+            visible: lockScreenRoot.loginUiActive
+            onVisibleChanged: if (!visible) powerMenu.close()
 
-            PlasmaComponents3.ToolButton {
+            StatusIconButton {
                 id: keyboardButton
+                Layout.preferredWidth: 40
+                Layout.preferredHeight: 40
+                Layout.alignment: Qt.AlignVCenter
                 focusPolicy: Qt.TabFocus
-                Accessible.description: i18ndc("plasma_shell_org.kde.plasma.desktop", "Button to change keyboard layout", "Switch layout")
+                Accessible.description: i18ndc("plasma_shell_org.kde.windowsmodern.lockscreen", "Button to change keyboard layout", "Switch layout")
                 icon.name: "input-keyboard"
                 PW.KeyboardLayoutSwitcher { id: keyboardLayoutSwitcher; anchors.fill: parent; acceptedButtons: Qt.NoButton }
-                text: keyboardLayoutSwitcher.layoutNames.longName
+                text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Switch keyboard layout")
                 onClicked: keyboardLayoutSwitcher.keyboardLayout.switchToNextLayout()
                 visible: keyboardLayoutSwitcher.hasMultipleKeyboardLayouts
-                Layout.fillHeight: true
             }
             Item { Layout.fillWidth: true }
             StatusIcons {
                 Layout.alignment: Qt.AlignVCenter
             }
+            Loader {
+                source: "VirtualKeyboardButton.qml"
+                visible: status === Loader.Ready && item && item.available
+                Layout.alignment: Qt.AlignVCenter
+            }
             Menu {
                 id: powerMenu
-                x: parent.width - width
-                y: -powerMenu.implicitHeight
-                width: 150
+                parent: powerButton
+                popupType: Popup.Item
+                x: LayoutMirroring.enabled ? 0 : powerButton.width - width
+                y: -height - 4
+                width: 160
+                padding: 4
+                closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
                 background: Rectangle {
                     color: "#2C2C2C"
                     border.color: "#3F3F3F"
                     border.width: 1
+                    radius: 6
                 }
 
                 delegate: MenuItem {
@@ -478,38 +491,40 @@ Item {
                     }
 
                     background: Rectangle {
+                        radius: 4
                         color: menuItem.highlighted ? "#33FFFFFF" : "transparent"
                     }
                 }
 
                 MenuItem {
-                    text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button", "&Sleep")
+                    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sleep")
                     icon.name: "system-suspend"
                     onTriggered: root.suspendToRam()
                     visible: root.suspendToRamSupported
                 }
                 MenuItem {
-                    text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button", "&Shut Down")
+                    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down")
                     icon.name: "system-shutdown"
-                    onTriggered: root.powerOff()
+                    visible: sessionManagement.canShutdown
+                    onTriggered: sessionManagement.requestShutdown()
                 }
                 MenuItem {
-                    text: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button", "&Restart")
+                    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Restart")
                     icon.name: "system-reboot"
-                    onTriggered: root.reboot()
+                    visible: sessionManagement.canReboot
+                    onTriggered: sessionManagement.requestReboot()
                 }
             }
-            PlasmaComponents3.ToolButton {
+            StatusIconButton {
                 id: powerButton
-                width: 32
-                height: 32
-                icon.name: "system-shutdown"
-                icon.color: "#FFFFFF"
-                display: AbstractButton.IconOnly
-                flat: true
-                Kirigami.Theme.inherit: false
-                Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
-                onClicked: powerMenu.open()
+                Layout.preferredWidth: 40
+                Layout.preferredHeight: 40
+                Layout.alignment: Qt.AlignVCenter
+                focusPolicy: Qt.TabFocus
+                icon.name: "system-shutdown-symbolic"
+                text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power")
+                visible: root.suspendToRamSupported || sessionManagement.canShutdown || sessionManagement.canReboot
+                onClicked: powerMenu.opened ? powerMenu.close() : powerMenu.open()
             }
         }
     }

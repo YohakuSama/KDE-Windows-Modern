@@ -8,6 +8,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 
 import org.kde.draganddrop as DnD
@@ -17,6 +18,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.battery as BatteryBackend
 import "js/trayMetrics.js" as TrayMetrics
+import "components" as Components
 
 ContainmentItem {
     id: root
@@ -24,6 +26,27 @@ ContainmentItem {
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool reverseLayout: Plasmoid.configuration.reverseIconOrder
     property Item hoveredQuickSetting: null
+    property Item quickSettingsOrigin: null
+    readonly property var panelWindow: root.Window.window
+    readonly property rect panelGeometry: panelWindow
+        ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
+    readonly property real panelExtent: Math.max(0, vertical
+        ? (panelGeometry.width || root.width) : (panelGeometry.height || root.height))
+    onPanelGeometryChanged: {
+        if (dialog && dialog.visible) systemTrayState.expanded = false;
+        if (runLoader.item) runLoader.item.close();
+    }
+
+    function panelAnchorForApplet(applet) {
+        const revision = tasksGrid.delegateRevision;
+        if (applet) {
+            for (let i = 0; i < tasksGrid.count; ++i) {
+                const cell = tasksGrid.itemAtIndex(i);
+                if (cell && cell.item?.applet === applet) return cell;
+            }
+        }
+        return null;
+    }
 
     Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.small : mainLayout.implicitWidth
     Layout.minimumHeight: vertical ? mainLayout.implicitHeight : Kirigami.Units.iconSizes.small
@@ -68,13 +91,44 @@ ContainmentItem {
         // set active and not the model, as this will cause an assert deep in Qt
         activeInstantiator.active = true;
         hiddenInstantiator.active = true;
+        Plasmoid.registerClipboardShortcut();
+        Plasmoid.registerRunShortcut();
     }
 
     Connections {
         target: Plasmoid
         function onActivated() {
+            root.quickSettingsOrigin = null;
             systemTrayState.toggleHome(false);
         }
+        function onRunDialogRequested() {
+            systemTrayState.expanded = false;
+            if (runLoader.item) {
+                if (runLoader.item.opened)
+                    runLoader.item.close();
+                else
+                    runLoader.item.open(Plasmoid.runDialogArea(root));
+            } else {
+                runLoader.active = true;
+            }
+        }
+        function onClipboardHistoryRequested() {
+            const applet = Plasmoid.appletForPluginId("org.kde.plasma.clipboard");
+            if (!applet) return;
+            if (systemTrayState.expanded && systemTrayState.activeApplet === applet) {
+                systemTrayState.expanded = false;
+                return;
+            }
+            systemTrayState.setActiveApplet(applet, undefined, "panel");
+        }
+    }
+
+    // Allocate the window only when the user first invokes Win+R.
+    Loader {
+        id: runLoader
+        active: false
+        sourceComponent: Components.RunDialog { commandRunner: Plasmoid }
+        onLoaded: item.open(Plasmoid.runDialogArea(root))
     }
 
     KItemModels.KSortFilterProxyModel {
@@ -109,7 +163,7 @@ ContainmentItem {
             target: applet
             function onExpandedChanged(expanded: bool) {
                 if (expanded) {
-                    systemTrayState.setActiveApplet(applet, row)
+                    systemTrayState.setActiveApplet(applet, row, "overflow")
                 }
             }
         }
@@ -125,7 +179,7 @@ ContainmentItem {
             target: applet
             function onExpandedChanged(expanded: bool) {
                 if (expanded) {
-                    systemTrayState.setActiveApplet(applet, row)
+                    systemTrayState.setActiveApplet(applet, row, "panel")
                 }
             }
         }
@@ -230,6 +284,23 @@ ContainmentItem {
             }
         }
 
+        // Invisible-to-input item with the exact geometry of the system
+        // button group, not the entire tray (which may include many icons).
+        Item {
+            id: quickSettingsAnchor
+            readonly property var run: {
+                const runs = quickSettingsHighlight.runs;
+                const origin = root.quickSettingsOrigin;
+                const point = origin ? origin.mapToItem(root, origin.width / 2, origin.height / 2) : null;
+                return TrayMetrics.anchorRun(runs, point, root.vertical,
+                    !root.vertical && root.LayoutMirroring.enabled);
+            }
+            x: run ? run.x : 0
+            y: run ? run.y : 0
+            width: run ? run.width : root.width
+            height: run ? run.height : root.height
+        }
+
         //Main Layout
         GridLayout {
             id: mainLayout
@@ -331,58 +402,62 @@ ContainmentItem {
             onTriggered: if (!dialog.visible) systemTrayState.expanded = false;
         }
 
-        //Main popup
-        PlasmaCore.AppletPopup {
-            id: dialog
-            objectName: "popupWindow"
-            visualParent: systemTrayState.overflowMode && expander.visible ? expander : root
-            popupDirection: switch (Plasmoid.location) {
-                case PlasmaCore.Types.TopEdge:
-                    return Qt.BottomEdge
-                case PlasmaCore.Types.LeftEdge:
-                    return Qt.RightEdge
-                case PlasmaCore.Types.RightEdge:
-                    return Qt.LeftEdge
-                default:
-                    return Qt.TopEdge
-            }
-            // Keep a visible gap and native rounded frames on docked panels.
-            margin: Math.max(Math.round(8 * Plasmoid.configuration.scale / 100),
-                (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets)
-                    ? Kirigami.Units.largeSpacing : 0)
-
-            Behavior on margin {
-                NumberAnimation {
-                    // Since the panel animation won't be perfectly in sync,
-                    // using a duration larger than the panel animation results
-                    // in a better-looking animation.
-                    duration: Kirigami.Units.veryLongDuration
-                    easing.type: Easing.OutCubic
+        // Dialog's default property is its single QQuickItem mainItem.
+        // Nonvisual helpers belong to the owning item, not that property.
+        Connections {
+            target: systemTrayState
+            function onExpandedChanged() { dialog.openForState(); }
+        }
+        Timer {
+            id: geometryProbe
+            interval: 180
+            repeat: true
+            property int attempts: 0
+            onTriggered: {
+                if (!dialog.visible) { stop(); return; }
+                attempts++;
+                const ok = Math.abs(dialog.width - dialog.wantedWidth) <= 2
+                    && Math.abs(dialog.height - dialog.wantedHeight) <= 2
+                    && expandedRepresentation.height >= expandedRepresentation.popupHeight - 2;
+                if (ok || attempts >= 3) {
+                    console.info("WM_POPUP tray", ok ? "OK" : "SIZE_MISMATCH",
+                        dialog.width, dialog.height, expandedRepresentation.width,
+                        expandedRepresentation.height, "expected", dialog.wantedWidth, dialog.wantedHeight);
+                    stop();
                 }
             }
+        }
 
-            floating: Plasmoid.location == PlasmaCore.Desktop
-
-            removeBorderStrategy: PlasmaCore.AppletPopup.AtScreenEdges
-
-
+        // One shell-role popup, with independent card surfaces when a
+        // media session is present. Dialog.NoBackground lets the actual
+        // desktop remain visible between cards; no second focus window.
+        PlasmaCore.Dialog {
+            id: dialog
+            objectName: "popupWindow"
+            type: PlasmaCore.Dialog.AppletPopup
+            flags: Qt.Dialog
+            visualParent: systemTrayState.overflowMode && expander.visible ? expander
+                : systemTrayState.quickSettingsRoute || !systemTrayState.activeApplet ? quickSettingsAnchor
+                : root.panelAnchorForApplet(systemTrayState.activeApplet) || quickSettingsAnchor
+            location: Plasmoid.location
+            floating: Math.max(Math.round(8 * Plasmoid.configuration.scale / 100),
+                (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets)
+                    ? Kirigami.Units.largeSpacing : 0)
             hideOnWindowDeactivate: !Plasmoid.configuration.pin
-            // Do not attach an appletInterface: AppletPopup would restore
-            // and persist the previously collapsed popupWidth/popupHeight.
-            // Explicitly size the window BEFORE showing it instead.
             visible: false
-            animated: false
 
-            readonly property int wantedWidth: Math.ceil(expandedRepresentation.popupWidth + leftPadding + rightPadding)
-            readonly property int wantedHeight: Math.ceil(expandedRepresentation.popupHeight + topPadding + bottomPadding)
-            function applyGeometry() {
-                width = wantedWidth;
-                height = wantedHeight;
-            }
+            // Dialog owns screen placement and frame margins. Explicit
+            // content sizes are supplied by the representation itself.
+            readonly property int wantedWidth: Math.ceil(expandedRepresentation.popupWidth + margins.left + margins.right)
+            readonly property int wantedHeight: Math.ceil(expandedRepresentation.popupHeight + margins.top + margins.bottom)
             function openForState() {
                 if (systemTrayState.expanded) {
+                    if (!visualParent || !visualParent.Window.window || !visualParent.visible
+                            || visualParent.width <= 0 || visualParent.height <= 0) {
+                        systemTrayState.expanded = false;
+                        return;
+                    }
                     expandedSync.stop();
-                    applyGeometry();
                     visible = true;
                     geometryProbe.attempts = 0;
                     geometryProbe.restart();
@@ -390,49 +465,29 @@ ContainmentItem {
                     visible = false;
                 }
             }
-            onWantedWidthChanged: if (visible) Qt.callLater(applyGeometry)
-            onWantedHeightChanged: if (visible) Qt.callLater(applyGeometry)
 
-            Connections {
-                target: systemTrayState
-                function onExpandedChanged() { dialog.openForState(); }
-            }
-            Timer {
-                id: geometryProbe
-                interval: 180
-                repeat: true
-                property int attempts: 0
-                onTriggered: {
-                    if (!dialog.visible) { stop(); return; }
-                    attempts++;
-                    const ok = Math.abs(dialog.width - dialog.wantedWidth) <= 2
-                        && Math.abs(dialog.height - dialog.wantedHeight) <= 2
-                        && expandedRepresentation.height >= expandedRepresentation.popupHeight - 2;
-                    if (ok || attempts >= 3) {
-                        console.info("WM_POPUP tray", ok ? "OK" : "SIZE_MISMATCH",
-                            dialog.width, dialog.height, expandedRepresentation.width,
-                            expandedRepresentation.height, "expected", dialog.wantedWidth, dialog.wantedHeight);
-                        stop();
-                    } else {
-                        dialog.applyGeometry();
-                    }
-                }
-            }
-
-            backgroundHints: (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) ? PlasmaCore.AppletPopup.SolidBackground : PlasmaCore.AppletPopup.StandardBackground
+            backgroundHints: expandedRepresentation.separatedMedia ? PlasmaCore.Dialog.NoBackground
+                : (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersOpaqueBackground)
+                    ? PlasmaCore.Dialog.SolidBackground : PlasmaCore.Dialog.StandardBackground
 
             onVisibleChanged: {
                 if (!visible) {
-                    if (expandedRepresentation) expandedRepresentation.resetQuickSettings();
+                    if (expandedRepresentation) {
+                        expandedRepresentation.resetQuickSettings();
+                        expandedRepresentation.scheduleSplitBlur();
+                    }
                     expandedSync.restart();
                 } else {
                     expandedSync.stop();
                     dialog.requestActivate();
                     Qt.callLater(expandedRepresentation.focusCurrentPage);
+                    Qt.callLater(expandedRepresentation.scheduleSplitBlur);
                 }
             }
             mainItem: ExpandedRepresentation {
                 id: expandedRepresentation
+                width: implicitWidth
+                height: implicitHeight
 
                 Keys.onEscapePressed: event => {
                     systemTrayState.expanded = false

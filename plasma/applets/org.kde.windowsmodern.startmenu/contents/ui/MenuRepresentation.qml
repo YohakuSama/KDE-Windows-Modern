@@ -12,7 +12,9 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtQuick.Controls
+import QtCore
 import Qt5Compat.GraphicalEffects
 
 import org.kde.plasma.plasmoid
@@ -34,20 +36,22 @@ import "code/popupPosition.js" as PopupPosition
 Item {
     id: main
 
-    // One row of sortedAppsModel, exposed by name for lookupAppByDisplayName().
-    component AppLookupEntry: Item {
-        required property int index
-        required property var model
-        readonly property string displayName: (model.display !== undefined) ? model.display : ""
-        readonly property string favoriteId: (model.favoriteId !== undefined) ? model.favoriteId : ""
-        readonly property var url: (model.url !== undefined) ? model.url : ""
-        readonly property var actionList: (model.actionList !== undefined) ? model.actionList : null
-    }
-
     // The compact representation is the actual Start button in the panel.
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
     readonly property bool menuShown: root.visible
+    readonly property bool searchShown: root.visible && root.searching
+    readonly property var panelWindow: startButton ? startButton.Window.window : null
+    readonly property rect panelGeometry: panelWindow
+        ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
+    readonly property bool verticalPanel: Plasmoid.location === PlasmaCore.Types.LeftEdge
+        || Plasmoid.location === PlasmaCore.Types.RightEdge
+    readonly property real panelExtent: Math.max(0, verticalPanel
+        ? (panelGeometry.width || startButton?.width || 0)
+        : (panelGeometry.height || startButton?.height || 0))
+    // Legacy Dialog does not track every panel move while mapped. Dismiss
+    // safely during reconfiguration; the next open uses the new anchor.
+    onPanelGeometryChanged: if (root && root.visible) root.closeMenu()
 
     // Native Plasma positions the popup relative to an Item in the panel's
     // window, including its real output and work area on Wayland and X11.
@@ -64,19 +68,38 @@ Item {
             root.visible = false;
             return;
         }
-        if (!startButton || startButton.width <= 0 || startButton.height <= 0)
+        if (!startButton || !popupAnchor.Window.window || !popupAnchor.visible
+            || startButton.width <= 0 || startButton.height <= 0)
             return;
 
+        updatePopupAnchor();
+        root.visible = true;
+    }
+
+    function updatePopupAnchor() {
+        if (!startButton || !popupAnchor.Window.window) return;
         const horizontal = Plasmoid.location === PlasmaCore.Types.BottomEdge
                         || Plasmoid.location === PlasmaCore.Types.TopEdge;
-        popupAnchor.x = 0;
+        popupAnchor.x = Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
+            : Plasmoid.location === PlasmaCore.Types.RightEdge ? -8 : 0;
+        popupAnchor.y = Plasmoid.location === PlasmaCore.Types.BottomEdge ? -8
+            : Plasmoid.location === PlasmaCore.Types.TopEdge ? 8 : 0;
         if (horizontal) {
             const pos = startButton.mapToGlobal(0, 0);
             popupAnchor.x = PopupPosition.horizontalAnchorOffset(
                 Plasmoid.configuration.displayPosition, Plasmoid.screenGeometry,
-                { x: pos.x, width: startButton.width });
+                { x: pos.x, width: startButton.width }, panelGeometry,
+                rootItem.width + root.margins.left + root.margins.right);
         }
-        root.visible = true;
+    }
+
+    // Both taskbar Search and Start's own input enter this same surface.
+    function openSearch() {
+        if (!root.visible) toggleMenu();
+        if (!root.visible) return;
+        root.searching = true;
+        root.requestActivate();
+        Qt.callLater(startSearch.focusSearch);
     }
 
     Plasmoid.status: root.visible ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
@@ -92,7 +115,7 @@ Item {
         flags: Qt.Dialog
         visualParent: popupAnchor
         location: Plasmoid.location
-        floating: Kirigami.Units.smallSpacing
+        floating: 8
         visible: false
         hideOnWindowDeactivate: true
 
@@ -108,7 +131,7 @@ Item {
                 : PlasmaCore.Dialog.StandardBackground;
         }
 
-        property bool searching: startSearch.searchText !== ""
+        property bool searching: false
 
         // Keyboard target: 0 = pinned, 1 = all apps, 2 = search results.
         // Pinned and All now share the same scrollable home.
@@ -118,6 +141,9 @@ Item {
 
         onSearchingChanged: {
             if (searching) {
+                modeMenu.close();
+                allAppsPage.resetCategory();
+                allAppsPage.closeLetterIndex(false);
                 leftColumnState = 2;
                 // Reset scroll position when entering search mode.
                 searchPage.resultsView.contentY = 0;
@@ -131,7 +157,9 @@ Item {
             if (visible) {
                 reset();
             } else {
+                searching = false;
                 leftColumnState = 0;
+                modeMenu.close();
                 sharedContextMenu.close();
                 powerMenu.close();
             }
@@ -139,6 +167,7 @@ Item {
 
         function reset() {
             startSearch.searchText = "";
+            searching = false;
             leftColumnState = 0;
             showMoreRecent = false;
             // Nothing highlighted until hovered or picked with the arrow keys,
@@ -149,6 +178,7 @@ Item {
                 root.pinnedPage.favoritesList.positionViewAtBeginning();
             }
             allAppsPage.resetCategory();
+            allAppsPage.closeLetterIndex(false);
             allAppsPage.allAppsList.currentIndex = -1;
             allAppsPage.allAppsList.positionViewAtBeginning();
             // Reset the search filter pills to "All".
@@ -164,20 +194,20 @@ Item {
         FocusScope {
             id: rootItem
 
-            // Reference measured from the owner's 26H2 Start screenshot.
-            readonly property int margin: 32
-            readonly property int homeInset: width >= 600 ? 52 : 28
-            readonly property int homeTrailingInset: Math.max(18, homeInset - 4)
+            readonly property int margin: 28
             readonly property rect screen: Plasmoid.screenGeometry
             readonly property bool largeLayout: Plasmoid.configuration.startMenuSize === 2
                 || (Plasmoid.configuration.startMenuSize === 0 && screen.width >= 1440)
             readonly property bool showRecentSection: Plasmoid.configuration.showRecentSection
                 && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs)
-            readonly property int wantedWidth: largeLayout ? 816 : 640
-            readonly property int wantedHeight: largeLayout ? 720 : 690
-            width: Math.max(1, Math.min(wantedWidth, screen.width > 0 ? screen.width - 2 * margin : wantedWidth))
-            height: Math.max(1, Math.min(wantedHeight, screen.height > 0 ? screen.height - 3 * margin : wantedHeight))
+            readonly property int wantedWidth: root.searching ? 776 : (largeLayout ? 768 : 560)
+            readonly property int wantedHeight: root.searching ? 690 : (largeLayout ? 720 : 640)
+            width: Math.max(1, Math.min(wantedWidth, screen.width > 0
+                ? screen.width - (main.verticalPanel ? main.panelExtent : 0) - 2 * margin : wantedWidth))
+            height: Math.max(1, Math.min(wantedHeight, screen.height > 0
+                ? screen.height - (main.verticalPanel ? 0 : main.panelExtent) - 2 * margin : wantedHeight))
             focus: true
+            onWidthChanged: if (root.visible) main.updatePopupAnchor()
 
             // Note: do NOT auto-redirect to the search field here.
             // onFocusChanged fires when any child calls forceActiveFocus(),
@@ -194,7 +224,10 @@ Item {
                 }
 
                 function exec(cmd) {
+                    if (typeof cmd !== "string" || !cmd.length)
+                        return false;
                     connectSource(cmd);
+                    return true;
                 }
             }
 
@@ -228,8 +261,8 @@ Item {
                 property var favoritesModel: sourceModel ? sourceModel.favoritesModel : null
             }
 
-            // KDE supplies the application categories and their translated names.
-            // Flatten only the nested entries inside each category, not the root.
+            // KDE provides real freedesktop membership. WindowsCategories
+            // maps it to Windows-style buckets instead of exposing KDE labels.
             Kicker.AppsModel {
                 id: nativeCategoryModel
                 flat: true
@@ -244,6 +277,12 @@ Item {
                 function onModelAboutToBeReset() {
                     allAppsPage.resetCategory();
                 }
+            }
+
+            Kicker.RecentUsageModel {
+                id: categoryPopularity
+                shownItems: Kicker.RecentUsageModel.OnlyApps
+                ordering: Kicker.RecentUsageModel.Popular
             }
 
             Kicker.RecentUsageModel {
@@ -263,8 +302,14 @@ Item {
                 anchors.margins: rootItem.margin
                 anchors.topMargin: 16
 
+                searchMode: root.searching
+                onSearchRequested: root.searching = true
                 onSearchTextChanged: {
+                    if (startSearch.searchText.length > 0) root.searching = true;
+                    sharedContextMenu?.close();
                     // Explicitly push the query to Milou ResultsView.
+                    if (startSearch.searchText.length === 0)
+                        searchPage.resultsView.singleRunner = "";
                     searchPage.resultsView.queryString = startSearch.searchText;
                     // Reset scroll to top on new query — only when
                     // the search page is active to avoid warnings
@@ -281,10 +326,17 @@ Item {
                     rootItem.activateCurrentItem();
                 }
                 onSearchEscapePressed: {
-                    if (powerMenu.opened) {
+                    if (sharedContextMenu.opened) {
+                        sharedContextMenu.close();
+                    } else if (powerMenu.opened) {
                         powerMenu.close();
                     } else if (startSearch.searchText !== "") {
-                        root.reset();
+                        startSearch.searchText = "";
+                        startSearch.focusSearch();
+                    } else if (root.searching) {
+                        root.closeMenu();
+                    } else if (allAppsPage.letterIndexOpen) {
+                        allAppsPage.closeLetterIndex(true);
                     } else if (allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {
@@ -298,38 +350,38 @@ Item {
                 onTabOut: rootItem.focusActivePageResults()
             }
 
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: startSearch.bottom
-                anchors.topMargin: 15
-                height: 1
-                color: Kirigami.Theme.textColor
-                opacity: Theme.headerSeparatorOpacity
-                visible: root.leftColumnState !== 2
-            }
-
             Item {
                 id: pageArea
                 anchors.top: startSearch.bottom
                 anchors.bottom: footer.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: root.leftColumnState === 2 ? rootItem.margin : rootItem.homeInset
-                anchors.rightMargin: root.leftColumnState === 2 ? rootItem.margin : 4
-                anchors.topMargin: root.leftColumnState === 2 ? 22 : 38
-                anchors.bottomMargin: 0
+                anchors.margins: rootItem.margin
+                anchors.topMargin: 22
+                anchors.bottomMargin: root.searching ? 12 : 0
 
                 AllAppsPage {
                     id: allAppsPage
                     anchors.fill: parent
                     visible: root.leftColumnState !== 2
+                    scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     showAllSection: Plasmoid.configuration.showAllSection
-                    contentRightInset: rootItem.homeTrailingInset
                     flatModel: sortedAppsModel
                     categoryModel: nativeCategoryModel
+                    categoryUsageModel: categoryPopularity
                     categoryMode: Plasmoid.configuration.allAppsViewMode === 2
                     gridMode: Plasmoid.configuration.allAppsViewMode === 1
+                    alphabeticalGrouping: Plasmoid.configuration.allAppsSortMode === 0
+                        || Plasmoid.configuration.allAppsSortMode === 1
+                    onAppContextMenuRequested: function(entry, x, y) {
+                        const actions = Tools.buildAppActions(i18n, globalFavorites,
+                            entry.favoriteId || "", entry.url || "", entry.actionList || null);
+                        if (!actions.length) return;
+                        const pos = allAppsPage.mapToItem(sharedContextMenu, x, y);
+                        sharedContextMenu.open(actions, pos.x, pos.y, {
+                            model: sortedAppsModel, index: entry.index
+                        });
+                    }
                     onKeyNavUpFromList: {
                         root.leftColumnState = 0;
                         allAppsPage.allAppsList.positionViewAtBeginning();
@@ -358,9 +410,6 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                Layout.topMargin: 12
-                                Layout.leftMargin: 10
-                                Layout.rightMargin: 10
                                 visible: rootItem.showRecentSection && recentGrid.count > 0
                                 PlasmaComponents3.Label {
                                     Layout.fillWidth: true
@@ -381,13 +430,11 @@ Item {
                             GridView {
                                 id: recentGrid
                                 Layout.fillWidth: true
-                                Layout.leftMargin: 4
-                                Layout.rightMargin: 4
-                                readonly property int recentColumns: rootItem.largeLayout ? 3 : 2
+                                readonly property int recentColumns: 2
                                 Layout.preferredHeight: (root.showMoreRecent
                                     ? Math.ceil(count / recentColumns) : Math.min(2, Math.ceil(count / recentColumns))) * cellHeight
                                 cellWidth: Math.max(1, Math.floor(width / recentColumns))
-                                cellHeight: 54
+                                cellHeight: 48
                                 visible: rootItem.showRecentSection && count > 0
                                 model: rootItem.showRecentSection ? recentUsage : null
                                 clip: true
@@ -401,50 +448,74 @@ Item {
                             RowLayout {
                                 Layout.fillWidth: true
                                 visible: Plasmoid.configuration.showAllSection
-                                Layout.topMargin: 12
-                                Layout.leftMargin: 10
-                                Layout.rightMargin: 10
-                                Layout.bottomMargin: 2
+                                Layout.bottomMargin: Kirigami.Units.smallSpacing
                                 spacing: Kirigami.Units.smallSpacing
-
-                                AToolButton {
-                                    visible: allAppsPage.inCategory
-                                    text: i18n("Back")
-                                    iconName: "go-previous"
-                                    mirror: true
-                                    flat: true
-                                    onClicked: allAppsPage.backToCategories()
-                                }
 
                                 PlasmaComponents3.Label {
                                     Layout.fillWidth: true
-                                    text: allAppsPage.inCategory ? allAppsPage.categoryTitle : i18n("All")
+                                    text: i18n("All")
                                     textFormat: Text.PlainText
                                     elide: Text.ElideRight
                                     font.weight: Font.DemiBold
                                 }
 
-                                StartViewSelector {
+                                PlasmaComponents3.Button {
                                     id: viewSelector
-                                    Layout.preferredWidth: Math.max(144, implicitWidth)
-                                    Layout.preferredHeight: 32
-                                    mode: Plasmoid.configuration.allAppsViewMode
-                                    onModeRequested: index => {
-                                        allAppsPage.resetCategory();
-                                        Plasmoid.configuration.allAppsViewMode = index;
-                                        // Keep the selected control in view; a mouse
-                                        // selection must not jump down into the grid.
+                                    Layout.preferredWidth: Math.max(132, implicitWidth)
+                                    Layout.preferredHeight: 30
+                                    readonly property var modes: [i18n("List"), i18n("Grid"), i18n("Category")]
+                                    text: i18n("View: %1", modes[Plasmoid.configuration.allAppsViewMode] || modes[0])
+                                    contentItem: RowLayout {
+                                        spacing: 6
+                                        PlasmaComponents3.Label {
+                                            Layout.fillWidth: true
+                                            text: viewSelector.text
+                                            horizontalAlignment: Text.AlignRight
+                                        }
+                                        Kirigami.Icon {
+                                            Layout.preferredWidth: 12
+                                            Layout.preferredHeight: 12
+                                            source: "go-down-symbolic"
+                                        }
                                     }
+                                    background: Rectangle {
+                                        radius: 4
+                                        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                                            Kirigami.Theme.textColor.b, viewSelector.hovered || viewSelector.activeFocus ? 0.06 : 0)
+                                    }
+                                    onClicked: modeMenu.openAt(viewSelector)
+
                                 }
                             }
                         }
                     }
                 }
 
+                Loader {
+                    id: searchHome
+                    anchors.fill: parent
+                    active: root.visible && root.searching && startSearch.searchText.length === 0
+                    visible: active
+                    sourceComponent: SearchHome {
+                        suggestedModel: Plasmoid.configuration.showSearchSuggestions
+                            && (Plasmoid.configuration.showRecentApps || Plasmoid.configuration.showRecentDocs) ? recentUsage : null
+                        topAppsModel: Plasmoid.configuration.showSearchTopApps
+                            && Plasmoid.configuration.showRecentApps ? categoryPopularity : null
+                        showQuickSearches: Plasmoid.configuration.showSearchQuickSearches
+                        onSearchRequested: query => {
+                            searchPage.resultsView.singleRunner = "krunner_systemsettings";
+                            startSearch.searchText = query;
+                            startSearch.focusSearch();
+                        }
+                        onApplicationActivated: root.closeMenu()
+                    }
+                }
+
                 SearchPage {
                     id: searchPage
                     anchors.fill: parent
-                    visible: root.leftColumnState === 2
+                    visible: root.searching && startSearch.searchText.length > 0
+                    scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     onFocusSearchRequested: startSearch.focusSearch()
                     onContextMenuRequested: function(actions, x, y, context) {
                         var pos = searchPage.mapToItem(sharedContextMenu, x, y);
@@ -458,7 +529,8 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: 64
+                visible: !root.searching
+                height: visible ? 56 : 0
                 color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                Kirigami.Theme.textColor.b, 0.035)
 
@@ -475,24 +547,16 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: rootItem.homeInset + 10
-                    anchors.rightMargin: rootItem.homeInset + 10
+                    anchors.leftMargin: 28
+                    anchors.rightMargin: 28
                     spacing: 8
 
                     PlasmaComponents3.ToolButton {
                         id: accountButton
                         text: Plasmoid.configuration.hideAccountIdentity ? "" : (kuser.fullName || kuser.loginName)
                         Layout.maximumWidth: rootItem.width * 0.32
-                        Layout.preferredHeight: Theme.menuFooterButtonSize
+                        Layout.preferredHeight: 40
                         Layout.alignment: Qt.AlignVCenter
-                        padding: 8
-                        background: Rectangle {
-                            radius: Theme.menuRowRadius
-                            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                Kirigami.Theme.textColor.b, accountButton.down ? 0.12
-                                    : accountButton.hovered || accountButton.activeFocus
-                                        || (powerMenu.opened && powerMenu.accountMode) ? Theme.menuHoverOpacity : 0)
-                        }
                         Accessible.name: i18n("Account")
                         Accessible.description: accountButton.text || i18n("Account")
                         onClicked: {
@@ -504,8 +568,8 @@ Item {
                             spacing: Kirigami.Units.smallSpacing
                             Item {
                                 id: avatarArea
-                                Layout.preferredWidth: 24
-                                Layout.preferredHeight: 24
+                                Layout.preferredWidth: 36
+                                Layout.preferredHeight: 36
                                 Layout.alignment: Qt.AlignVCenter
                                 Image {
                                     id: userAvatar
@@ -525,7 +589,10 @@ Item {
                                 }
                                 Image {
                                     anchors.fill: parent
-                                    source: Qt.resolvedUrl("default-account.svg")
+                                    source: {
+                                        // The imported green account glyph is not Windows' default Start avatar.
+                                        return Qt.resolvedUrl("default-account.svg");
+                                    }
                                     fillMode: Image.PreserveAspectFit
                                     visible: userAvatar.status !== Image.Ready
                                 }
@@ -534,7 +601,6 @@ Item {
                                 Layout.fillWidth: true
                                 visible: !Plasmoid.configuration.hideAccountIdentity
                                 text: accountButton.text
-                                font.pixelSize: Theme.menuFontSize
                                 textFormat: Text.PlainText
                                 elide: Text.ElideRight
                             }
@@ -547,7 +613,8 @@ Item {
                     SystemLocationsRow {
                         id: systemLocations
                         visible: Plasmoid.configuration.showRightColumn
-                        Layout.fillWidth: visible
+                        Layout.fillWidth: false
+                        Layout.preferredWidth: visible ? Math.min(implicitWidth, Math.floor(rootItem.width * 0.58)) : 0
                         Layout.maximumWidth: implicitWidth
                         Layout.minimumWidth: 0
                         executable: commandSource
@@ -558,25 +625,17 @@ Item {
                         id: powerButton
                         text: i18n("Power")
                         icon.name: "system-shutdown-symbolic"
-                        icon.width: Theme.menuGlyphSize
-                        icon.height: Theme.menuGlyphSize
+                        icon.width: 20
+                        icon.height: 20
                         display: PlasmaComponents3.AbstractButton.IconOnly
-                        Layout.preferredWidth: Theme.menuFooterButtonSize
-                        Layout.preferredHeight: Theme.menuFooterButtonSize
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
                         Layout.alignment: Qt.AlignVCenter
-                        padding: 0
-                        background: Rectangle {
-                            radius: Theme.menuRowRadius
-                            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                Kirigami.Theme.textColor.b, powerButton.down ? 0.12
-                                    : powerButton.hovered || powerButton.activeFocus
-                                        || (powerMenu.opened && !powerMenu.accountMode) ? Theme.menuHoverOpacity : 0)
-                        }
                         contentItem: Item {
                             Kirigami.Icon {
                                 anchors.centerIn: parent
-                                width: Theme.menuGlyphSize
-                                height: Theme.menuGlyphSize
+                                width: 20
+                                height: 20
                                 roundToIconSize: false
                                 isMask: true
                                 color: Kirigami.Theme.textColor
@@ -590,6 +649,21 @@ Item {
                         }
                         PlasmaComponents3.ToolTip { text: parent.text }
                     }
+                }
+            }
+
+            // Owned by the stable dialog, never by a disposable ListView header.
+            ViewModeMenu {
+                id: modeMenu
+                parent: rootItem
+                modes: [i18n("List"), i18n("Grid"), i18n("Category")]
+                currentMode: Plasmoid.configuration.allAppsViewMode
+                onModeChosen: index => {
+                    if (index === Plasmoid.configuration.allAppsViewMode) return;
+                    root.leftColumnState = 1;
+                    allAppsPage.resetCategory();
+                    Plasmoid.configuration.allAppsViewMode = index;
+                    Qt.callLater(allAppsPage.focusFirstApp);
                 }
             }
 
@@ -652,6 +726,10 @@ Item {
             }
 
             function navigateFromSearch(direction) {
+                if (searchHome.active) {
+                    if (searchHome.item) searchHome.item.focusFirst();
+                    return;
+                }
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 const page = root.leftColumnState === 0 ? root.pinnedPage
@@ -666,20 +744,25 @@ Item {
             }
 
             function focusActivePageResults() {
+                if (searchHome.active) {
+                    if (searchHome.item) searchHome.item.focusFirst();
+                    return;
+                }
                 if (root.leftColumnState === 0 && !hasPinnedApps())
                     root.leftColumnState = 1;
                 if (root.leftColumnState === 0) {
                     root.pinnedPage.tryActivate(Math.max(0, root.pinnedPage.favoritesList.currentIndex));
                 } else if (root.leftColumnState === 1 && allAppsPage.allAppsList.count > 0) {
-                    allAppsPage.tryActivate(Math.max(0, allAppsPage.allAppsList.currentIndex));
+                    allAppsPage.tryActivate(Math.max(0, allAppsPage.activeView.currentIndex));
                 } else if (root.leftColumnState === 2 && searchPage.resultsView.count > 0) {
                     searchPage.tryActivate(Math.max(0, searchPage.resultsView.currentIndex), 0);
-                } else {
+                } else if (!root.searching) {
                     accountButton.forceActiveFocus();
                 }
             }
 
             function activateCurrentItem() {
+                if (searchHome.active) return;
                 if (root.leftColumnState === 0) {
                     root.pinnedPage?.activateCurrent();
                 } else if (root.leftColumnState === 1) {
@@ -689,48 +772,10 @@ Item {
                 }
             }
 
-            // App lookup for search-result context menus: given a display
-            // name, find the matching row in sortedAppsModel so the menu can
-            // offer the same actions (and trigger them on the right row) as
-            // the All Apps list.
-            //
-            // Scans the helper Repeater's live delegates on demand rather than
-            // caching: when the proxy re-sorts it rebinds model data onto the
-            // existing delegates, so any cache keyed at creation time goes
-            // stale. One linear scan per right-click is negligible.
-            // Returns { row, favoriteId, url, actionList } or null.
-            function lookupAppByDisplayName(displayName) {
-                if (!displayName) return null;
-                for (let i = 0; i < appLookupRepeater.count; ++i) {
-                    const item = appLookupRepeater.itemAt(i) as AppLookupEntry;
-                    if (item && item.displayName === displayName) {
-                        return {
-                            row: item.index,
-                            favoriteId: item.favoriteId,
-                            url: item.url,
-                            actionList: item.actionList
-                        };
-                    }
-                }
-                return null;
-            }
-
-            // Off-screen helper that exposes sortedAppsModel's roles by name
-            // (QAbstractItemModel roleNames() aren't reachable from QML). A
-            // Repeater, not a ListView: it instantiates ALL delegates, while a
-            // ListView only creates the ones near its viewport.
-            Column {
-                x: -9999
-                y: -9999
-                width: 0
-                height: 0
-                visible: true
-
-                Repeater {
-                    id: appLookupRepeater
-                    model: sortedAppsModel
-                    delegate: AppLookupEntry {}
-                }
+            // Reuse the existing alphabetical snapshot. A second hidden
+            // Repeater used to allocate one visual Item for every app.
+            function lookupAppByUrls(urls) {
+                return allAppsPage.lookupAppByUrls(urls);
             }
 
             // ── Single global keyboard handler ─────────────────────────────
@@ -741,6 +786,11 @@ Item {
             // Navigation keys (Tab, arrows, Enter) are left for children to
             // handle, and only reach here if no child consumed them.
             Keys.onPressed: event => {
+                if (sharedContextMenu.opened) {
+                    event.accepted = true;
+                    if (event.key === Qt.Key_Escape) sharedContextMenu.close();
+                    return;
+                }
                 if (powerMenu.opened) {
                     // The footer popup owns input until dismissed.
                     event.accepted = true;
@@ -779,8 +829,13 @@ Item {
                     event.accepted = true;
                     if (powerMenu.opened) {
                         powerMenu.close();
+                    } else if (root.searching && startSearch.searchText.length > 0) {
+                        startSearch.searchText = "";
+                        startSearch.focusSearch();
                     } else if (root.searching) {
-                        root.reset();
+                        root.closeMenu();
+                    } else if (allAppsPage.letterIndexOpen) {
+                        allAppsPage.closeLetterIndex(true);
                     } else if (root.leftColumnState === 1 && allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {

@@ -63,20 +63,9 @@ kwriteconfig6 --file spectaclerc --group General --key useReleaseToCapture true
 kwriteconfig6 --file spectaclerc --group General --key autoSaveImage true
 kwriteconfig6 --file spectaclerc --group General --key clipboardGroup PostScreenshotCopyImage
 
-# 5. Explorer (Dolphin): an Up button next to Back/Forward, only if there is
-#    no toolbar layout yet. Dolphin rewrites the file (dropping comments), so
-#    a note in the backup folder records that it is ours, for uninstall.
-ui="$HOME/.local/share/kxmlgui5/dolphin/dolphinui.rc"
-if [ ! -f "$ui" ]; then
-    step "Explorer: Up button in the toolbar"
-    ensure_dir "$(dirname "$ui")"
-    cp "$SRC_DIR/config/kxmlgui5/dolphin/dolphinui.rc" "$ui"
-    touch "$BACKUP_DIR/dolphinui.rc.ours"
-elif [ -f "$BACKUP_DIR/dolphinui.rc.ours" ]; then
-    step "Explorer: toolbar layout already set up (kept as it is)"
-else
-    step "Explorer: keeping your own toolbar layout"
-fi
+# 5. Explorer and Terminal. Preserve customized XML, profiles and settings.
+step "Explorer and Terminal appearance"
+python3 "$SRC_DIR/scripts/app-appearance.py" apply
 
 # 6. Ctrl+Shift+Esc opens Mission Center.
 if busctl --user status org.kde.kglobalaccel &>/dev/null; then

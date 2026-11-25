@@ -194,6 +194,20 @@ Item {
             }
         }
 
+        function test_shortScreenFitsCardsAndRelayouts() {
+            try {
+                fill(8, Qt.rect(0, 0, 800, 240));
+                verify(view.height <= view.screenGeometry.height);
+                verify(card(0).height <= view.maxContentHeight);
+                view.screenGeometry = Qt.rect(0, 0, 800, 160);
+                tryVerify(() => view.height <= 160 && card(0).height <= view.maxContentHeight);
+                tryVerify(() => view.contentHeight === view.rows.length * view.cardHeight
+                    + (view.rows.length - 1) * view.cardSpacing);
+            } finally {
+                view.screenGeometry = Qt.rect(0, 0, 1920, 1080);
+            }
+        }
+
         function test_emptyModel() {
             fill(0);
             compare(view.rows.length, 0);

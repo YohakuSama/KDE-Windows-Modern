@@ -15,6 +15,7 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
 import "components" as Components
+import "js/colorType.js" as ColorType
 QQC2.StackView {
     id: mainStack
     focus: true
@@ -154,9 +155,20 @@ QQC2.StackView {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         visible: mainStack.themedActive && footerLoader.sourceComponent !== null
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.03)
-        implicitHeight: footerLoader.item ? footerLoader.item.implicitHeight + 8 : 0
+        color: "transparent"
+        z: 10
+        implicitHeight: footerLoader.item ? footerLoader.item.implicitHeight + 4 : 0
         height: implicitHeight
+
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            height: 1
+            color: ColorType.divider(ColorType.isDark(Kirigami.Theme.backgroundColor))
+        }
 
         Loader {
             id: footerLoader
@@ -167,12 +179,20 @@ QQC2.StackView {
 
     readonly property var themedPages: ({
         "network":         networkPageComp,
+        "bluetooth":       bluetoothPageComp,
         "volume":          volumePageComp,
         "battery":         batteryPageComp,
         "brightness":      brightnessPageComp,
         "clipboard":       clipboardPageComp,
         "mediacontroller": mediaControllerPageComp
     })
+
+    Component {
+        id: bluetoothPageComp
+        Components.BluetoothPage {
+            onBack: systemTrayState.setActiveApplet(null)
+        }
+    }
 
     Component {
         id: networkPageComp
@@ -202,6 +222,8 @@ QQC2.StackView {
         id: clipboardPageComp
         Components.ClipboardPage {
             onBack: systemTrayState.setActiveApplet(null)
+            onItemSelected: systemTrayState.expanded = false
+            onCloseRequested: systemTrayState.expanded = false
         }
     }
     Component {

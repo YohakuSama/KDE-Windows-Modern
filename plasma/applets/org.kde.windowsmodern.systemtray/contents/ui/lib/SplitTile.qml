@@ -10,15 +10,17 @@ ColumnLayout {
 
     property string iconSource
     property string label
+    property string accessibleLabel: label
     property string tooltipText: ""
     property bool active: false
     property bool included: true
     property string orderKey: ""
     property Item orderView: null
     property real buttonHeight: -1
-    readonly property real glyphScale: orderView ? orderView.tileScale : 1
-    readonly property color restingColor: ColorType.isDark(Kirigami.Theme.backgroundColor)
-        ? Qt.rgba(1, 1, 1, 0.045) : Qt.rgba(1, 1, 1, 0.65)
+    readonly property real uiScale: buttonHeight > 0 ? buttonHeight / 48 : 1
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property int captionHeight: Math.max(Math.round(30 * uiScale), Math.ceil(2 * captionMetrics.lineSpacing))
+    FontMetrics { id: captionMetrics; font: caption.font }
     readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
     readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
 
@@ -61,17 +63,17 @@ ColumnLayout {
     activeFocusOnTab: toggleAvailable
 
     Accessible.role: Accessible.CheckBox
-    Accessible.name: tile.label
+    Accessible.name: tile.accessibleLabel
     Accessible.checked: tile.active
     Accessible.onPressAction: if (tile.toggleAvailable) tile.clicked()
     Keys.onReturnPressed: if (tile.toggleAvailable) tile.clicked()
     Keys.onEnterPressed: if (tile.toggleAvailable) tile.clicked()
     Keys.onSpacePressed: if (tile.toggleAvailable) tile.clicked()
 
-    readonly property color accent: Kirigami.Theme.highlightColor
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
-    spacing: Math.round(8 * tile.glyphScale)
+    spacing: Math.round(8 * uiScale)
     Layout.fillWidth: true
     // Width is supplied by the explicitly sized three-column viewport.
     // A zero preferred-width hint is not a valid tile size.
@@ -79,11 +81,16 @@ ColumnLayout {
     Rectangle {
         id: bg
         Layout.fillWidth: true
+        objectName: "wmQuickTileSurface"
         Layout.preferredHeight: tile.buttonHeight > 0 ? tile.buttonHeight : width / 2
-        radius: 4
+        Layout.minimumHeight: Layout.preferredHeight
+        Layout.maximumHeight: Layout.preferredHeight
+        radius: Math.max(3, Math.round(4 * tile.uiScale))
         border.width: 1
-        border.color: tile.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
-        color: active ? accent : tile.restingColor
+        border.color: tile.activeFocus ? tile.fg : active
+            ? Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, 0.10)
+            : ColorType.tileBorder(tile.dark)
+        color: active ? accent : ColorType.tileFill(tile.dark, false, false)
 
         // Independent hover/press feedback: the chevron opens details and
         // must not look like a press on the toggle itself.
@@ -127,7 +134,7 @@ ColumnLayout {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * 0.60
+            width: parent.width * 0.5
             acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -147,13 +154,13 @@ ColumnLayout {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * 0.40
+            width: parent.width * 0.5
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             activeFocusOnTab: true
             onActiveFocusChanged: if (activeFocus && tile.orderView) tile.orderView.ensureVisible(tile.orderKey)
             Accessible.role: Accessible.Button
-            Accessible.name: i18n("%1 details", tile.label)
+            Accessible.name: i18n("%1 details", tile.accessibleLabel)
             Accessible.onPressAction: tile.arrowClicked()
             Keys.onReturnPressed: tile.arrowClicked()
             Keys.onEnterPressed: tile.arrowClicked()
@@ -162,9 +169,10 @@ ColumnLayout {
         }
 
         Kirigami.Icon {
-            x: parent.width * 0.38 - width / 2
+            x: toggleMA.x + (toggleMA.width - width) / 2
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.round(16 * tile.glyphScale)
+            objectName: "wmQuickTileGlyph"
+            width: Math.max(12, Math.round(16 * tile.uiScale))
             height: width
             source: tile.iconSource
             roundToIconSize: false
@@ -175,34 +183,42 @@ ColumnLayout {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            x: parent.width * 0.60
+            x: Math.round(toggleMA.width)
             width: 1
-            height: parent.height * 0.5
-            visible: toggleMA.containsMouse || arrowMA.containsMouse || arrowMA.activeFocus
-            color: active ? Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, 0.28) : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
+            height: parent.height - 4
+            color: Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b,
+                toggleMA.containsMouse || arrowMA.containsMouse || arrowMA.activeFocus ? 0.20 : 0.07)
         }
 
         Kirigami.Icon {
-            x: bg.width * 0.71 - width / 2
+            objectName: "wmQuickTileDetailsGlyph"
+            x: arrowMA.x + (arrowMA.width - width) / 2
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.round(12 * tile.glyphScale)
+            width: Math.max(8, Math.round(12 * tile.uiScale))
             height: width
             roundToIconSize: false
-            source: "go-next"
+            source: "go-next-symbolic"
             color: tile.fg
             isMask: true
         }
     }
 
     PlasmaComponents3.Label {
+        id: caption
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignHCenter
+        objectName: "wmQuickTileCaption"
         text: tile.label
         color: Kirigami.Theme.textColor
-        font.family: Kirigami.Theme.defaultFont.family
-        font.pixelSize: Math.round(13 * tile.glyphScale)
-        maximumLineCount: 1
+        Layout.preferredHeight: tile.captionHeight
+        Layout.minimumHeight: tile.captionHeight
+        Layout.maximumHeight: tile.captionHeight
+        font.pixelSize: Math.max(10, Math.round(12 * tile.uiScale))
+        maximumLineCount: 2
+        wrapMode: Text.Wrap
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignTop
+        textFormat: Text.PlainText
     }
 }

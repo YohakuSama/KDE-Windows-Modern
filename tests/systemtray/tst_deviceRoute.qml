@@ -7,7 +7,7 @@ TestCase {
     name: "NativeDeviceRoute"
     Tray.FlyoutRouter { id: router }
     function test_nativeDevicePages() {
-        compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.bluetooth"}}), "");
+        compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.bluetooth"}}), "bluetooth");
         compare(router.flyoutNameForApplet({plasmoid: {pluginName: "org.kde.plasma.devicenotifier"}}), "");
     }
     function test_themedPagesAndFallback() {

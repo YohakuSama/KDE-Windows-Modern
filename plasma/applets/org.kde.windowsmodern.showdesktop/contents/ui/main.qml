@@ -35,12 +35,14 @@ PlasmoidItem {
     // Minimum must never exceed maximum: the old 32px minimum
     // overrode the 6px sliver and left a blank cell to the bell's right.
     readonly property int sliverSize: Math.max(1, Plasmoid.configuration.size)
-    Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.medium : sliverSize
-    Layout.minimumHeight: vertical ? sliverSize : Kirigami.Units.iconSizes.medium
-    Layout.maximumWidth: Layout.minimumWidth
-    Layout.maximumHeight: Layout.minimumHeight
-    Layout.preferredWidth: Layout.minimumWidth
-    Layout.preferredHeight: Layout.minimumHeight
+    Layout.minimumWidth: vertical ? 0 : sliverSize
+    Layout.minimumHeight: vertical ? sliverSize : 0
+    Layout.maximumWidth: vertical ? Number.POSITIVE_INFINITY : sliverSize
+    Layout.maximumHeight: vertical ? sliverSize : Number.POSITIVE_INFINITY
+    Layout.preferredWidth: vertical ? Kirigami.Units.iconSizes.medium : sliverSize
+    Layout.preferredHeight: vertical ? sliverSize : Kirigami.Units.iconSizes.medium
+    Layout.fillWidth: vertical
+    Layout.fillHeight: !vertical
 
     Plasmoid.constraintHints: Plasmoid.CanFillArea
 
@@ -59,7 +61,9 @@ PlasmoidItem {
     MouseArea {
         id: mouseArea
         anchors.fill: parent
-        anchors.rightMargin: -panelMargins.panelEdgeMargin
+        // Qt automatically mirrors the right margin in right-to-left layouts.
+        anchors.rightMargin: root.horizontal ? -panelMargins.panelEdgeMargin : 0
+        anchors.bottomMargin: root.vertical ? -panelMargins.panelEdgeMargin : 0
 
         activeFocusOnTab: true
         hoverEnabled: true
@@ -76,7 +80,8 @@ PlasmoidItem {
             case Qt.Key_Enter:
             case Qt.Key_Return:
             case Qt.Key_Select:
-                Plasmoid.activated();
+                if (!event.isAutoRepeat) Plasmoid.activated();
+                event.accepted = true;
                 break;
             }
         }
@@ -84,6 +89,7 @@ PlasmoidItem {
         Accessible.name: Plasmoid.title
         Accessible.description: toolTipSubText
         Accessible.role: Accessible.Button
+        Accessible.onPressAction: Plasmoid.activated()
 
         Kirigami.Icon {
             anchors.fill: parent
@@ -96,12 +102,13 @@ PlasmoidItem {
             anchors.fill: parent
             onEntered: activateTimer.start()
             onExited: activateTimer.stop()
+            onDropped: activateTimer.stop()
         }
 
         Timer {
             id: activateTimer
             interval: 250
-            onTriggered: Plasmoid.activated()
+            onTriggered: if (!root.activeController.active) Plasmoid.activated()
         }
 
         state: {
@@ -115,7 +122,7 @@ PlasmoidItem {
         }
 
         // Win11 show-desktop: invisible by default. On hover, a short
-        // vertical line (50% of panel height, centered) fades in. No
+        // line across half the panel thickness fades in. No
         // background fill, no separator line.
         Rectangle {
             id: hoverLine
@@ -123,8 +130,8 @@ PlasmoidItem {
                   || Qt.rgba(Kirigami.Theme.textColor.r,
                              Kirigami.Theme.textColor.g,
                              Kirigami.Theme.textColor.b, 0.5)
-            width: 1
-            height: parent.height * 0.5
+            width: root.vertical ? parent.width * 0.5 : 1
+            height: root.vertical ? 1 : parent.height * 0.5
             anchors.centerIn: parent
             opacity: mouseArea.state === "hover" || mouseArea.state === "pressed" ? 1 : 0
             Behavior on opacity { OpacityAnimator { duration: Kirigami.Units.shortDuration; easing.type: Easing.InOutQuad } }

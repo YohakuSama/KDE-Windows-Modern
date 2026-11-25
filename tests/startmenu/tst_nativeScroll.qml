@@ -40,6 +40,18 @@ Item {
             mouseMove(testList, 80, 100);
             tryCompare(bar, "indicatorVisible", false);
         }
+        function test_thinIndicatorWhileBrowsing() {
+            mouseMove(testList, 80, 100);
+            bar.viewportHovered = true;
+            tryCompare(bar, "thumbWidth", 2);
+            tryCompare(bar, "indicatorVisible", true);
+            bar.viewportHovered = false;
+            tryCompare(bar, "indicatorVisible", false);
+            bar.scrolling = true;
+            tryCompare(bar, "indicatorVisible", true);
+            bar.scrolling = false;
+            tryCompare(bar, "indicatorVisible", false);
+        }
         function test_threeRowsPerNotch() {
             mouseWheel(testList, 80, 100, 0, -120);
             tryVerify(() => testList.contentY >= 110, 1500);

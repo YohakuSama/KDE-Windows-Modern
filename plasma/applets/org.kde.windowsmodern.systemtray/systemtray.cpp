@@ -16,8 +16,14 @@
 #include "systemtraymodel.h"
 #include "systemtraysettings.h"
 
+#include <QAction>
+#include <QCursor>
+#include <QDBusConnection>
+#include <QDBusMessage>
 #include <QGuiApplication>
 #include <QMenu>
+#include <QPainterPath>
+#include <QRegion>
 #include <QMetaMethod>
 #include <QMetaObject>
 #include <QPointer>
@@ -32,7 +38,11 @@
 #include <Plasma/PluginLoader>
 
 #include <KAcceleratorManager>
+#include <KAuthorized>
+#include <KGlobalAccel>
+#include <KLocalizedString>
 #include <KIO/ApplicationLauncherJob>
+#include <KIO/CommandLauncherJob>
 #include <KNotificationJobUiDelegate>
 #include <KPluginMetaData>
 #include <KService>
@@ -40,6 +50,7 @@
 #include <KActionCollection>
 #include <KSharedConfig>
 #include <KWindowSystem>
+#include <KWindowEffects>
 
 using namespace Qt::StringLiterals;
 
@@ -49,6 +60,75 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     connect(KSycoca::self(), &KSycoca::databaseChanged, this, &SystemTray::castAvailabilityChanged);
     setHasConfigurationInterface(true);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
+}
+
+void SystemTray::registerClipboardShortcut()
+{
+    // Plasma's primary panel is screen 0 (the same convention used by
+    // the installer for Win+A and Win+N). Do not register duplicates on
+    // secondary panels. The action is owned by the tray, not by plasmashell.
+    static QPointer<QAction> action;
+    if (action || screen() != 0) {
+        return;
+    }
+    action = new QAction(i18n("Open clipboard history"), this);
+    action->setObjectName(QStringLiteral("show-history"));
+    action->setProperty("componentName", QStringLiteral("org.kde.windowsmodern.clipboard"));
+    action->setProperty("componentDisplayName", QStringLiteral("Windows Modern"));
+    connect(action, &QAction::triggered, this, [this] {
+        if (appletForPluginId(QStringLiteral("org.kde.plasma.clipboard"))) {
+            Q_EMIT clipboardHistoryRequested();
+        } else {
+            // Preserve the native history even if the tray applet was disabled.
+            QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(
+                QStringLiteral("org.kde.klipper"), QStringLiteral("/klipper"),
+                QStringLiteral("org.kde.klipper.klipper"), QStringLiteral("showKlipperPopupMenu")));
+        }
+    });
+    // Register a real live action. The installer migrates Meta+V only
+    // after finding it and checking for competing bindings.
+    KGlobalAccel::self()->setShortcut(action, QList<QKeySequence>{});
+}
+
+void SystemTray::registerRunShortcut()
+{
+    // Like clipboard history, only the primary tray owns this action.
+    static QPointer<QAction> action;
+    if (action || screen() != 0) {
+        return;
+    }
+    action = new QAction(i18n("Open Run dialog"), this);
+    action->setObjectName(QStringLiteral("show-run"));
+    action->setProperty("componentName", QStringLiteral("org.kde.windowsmodern.run"));
+    action->setProperty("componentDisplayName", QStringLiteral("Windows Modern"));
+    connect(action, &QAction::triggered, this, &SystemTray::runDialogRequested);
+    KGlobalAccel::self()->setShortcut(action, QList<QKeySequence>{});
+}
+
+QRect SystemTray::runDialogArea(QQuickItem *anchor) const
+{
+    auto *output = QGuiApplication::screenAt(QCursor::pos());
+    if (!output && anchor && anchor->window()) {
+        output = anchor->window()->screen();
+    }
+    if (!output) {
+        output = QGuiApplication::primaryScreen();
+    }
+    return output ? output->availableGeometry() : QRect();
+}
+
+bool SystemTray::runCommand(const QString &command)
+{
+    const QString value = command.trimmed();
+    // Match KRunner's shell runner authorization checks.
+    if (value.isEmpty() || !KAuthorized::authorize(QStringLiteral("run_command"))
+        || !KAuthorized::authorize(KAuthorized::SHELL_ACCESS)) {
+        return false;
+    }
+    auto *job = new KIO::CommandLauncherJob(value, this);
+    job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
+    job->start();
+    return true;
 }
 
 bool SystemTray::accessibilityAvailable() const
@@ -70,6 +150,38 @@ void SystemTray::openCast()
     auto *job = new KIO::ApplicationLauncherJob(service);
     job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
     job->start();
+}
+
+bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
+                                   qreal radius, bool enabled)
+{
+    auto *window = content ? content->window() : nullptr;
+    if (!window || !window->isVisible()) {
+        return false;
+    }
+    // Honor the actual compositor/user setting. Never advertise an
+    // acrylic surface when blur is unavailable or disabled.
+    KConfig config(QStringLiteral("kwinrc"), KConfig::NoGlobals);
+    enabled = enabled && KConfigGroup(&config, QStringLiteral("Plugins")).readEntry("blurEnabled", true)
+        && KWindowEffects::isEffectAvailable(KWindowEffects::BlurBehind);
+    QRegion mask;
+    if (enabled) {
+        for (auto *item : {first, second}) {
+            if (!item || item->window() != window || !item->isVisible()
+                || item->width() <= 0 || item->height() <= 0) {
+                enabled = false;
+                break;
+            }
+            QPainterPath path;
+            path.addRoundedRect(item->mapRectToScene(item->boundingRect()), radius, radius);
+            mask |= QRegion(path.toFillPolygon().toPolygon(), Qt::WindingFill);
+        }
+    }
+    // An empty QRegion means whole-window blur in KWindowEffects.
+    // Explicitly disable in that case so the desktop gap stays clear.
+    enabled = enabled && !mask.isEmpty();
+    KWindowEffects::enableBlurBehind(window, enabled, enabled ? mask : QRegion());
+    return enabled;
 }
 
 SystemTray::~SystemTray()

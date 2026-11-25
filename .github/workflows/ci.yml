@@ -23,14 +23,24 @@ jobs:
         run: ./verify-all.sh
       - name: Validate Qt Quick Start menu key handlers
         run: python3 scripts/check-startmenu-keys.py
+      - name: KWin JavaScript regression tests
+        run: |
+          node tests/osd/test-placement.cjs
+          node tests/shortcuts/test-snapkeys.cjs
       - name: NixOS installation and runtime identity tests
         run: |
           bash -n install-nixos.sh
           python3 -m unittest discover -s tests/nixos -v
+      - name: Reversible application appearance tests
+        run: python3 -m unittest discover -s tests/apps -v
       - name: Native resource reader tests
         run: python3 -m unittest discover -s tests/native-assets -v
       - name: Window material tests
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_window_materials.py -v
+      - name: Microsoft Store icon tests
+        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_store_icon.py -v
+      - name: Optional Plymouth boot artwork tests
+        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_boot_frames.py -v
 
   build-applets:
     name: Build C++ applets (Fedora ${{ matrix.fedora }})
@@ -58,12 +68,18 @@ jobs:
             kf6-kjobwidgets-devel kf6-kcmutils-devel kf6-knotifications-devel \
             plasma-activities-devel plasma-activities-stats-devel \
             libplasma-devel plasma-workspace-devel libksysguard-devel \
-            kf6-kirigami python3 /usr/lib64/qt6/qml/org/kde/notificationmanager/qmldir
+            kf6-kirigami python3 plasma-nm plasma-pa powerdevil bluedevil plasma-desktop \
+            /usr/lib64/qt6/qml/org/kde/plasma/plasma5support/qmldir \
+            /usr/lib64/qt6/qml/org/kde/notificationmanager/qmldir \
+            /usr/lib64/qt6/qml/org/kde/milou/qmldir \
+            /usr/lib64/qt6/qml/Qt5Compat/GraphicalEffects/qmldir
+      - name: Parse every owned QML file
+        run: bash scripts/check-qml-syntax.sh
       - name: Test task icon optical geometry
         run: |
           g++ -std=c++20 tests/panel/test_panelicon.cpp $(pkg-config --cflags --libs Qt6Gui) -o /tmp/wm-panelicon-test
           /tmp/wm-panelicon-test
-      - name: Build and link-check both applets
+      - name: Build and link-check native plugins
         run: ./scripts/ci-build.sh "$RUNNER_TEMP/build"
       - name: QML tests
         run: QT_QPA_PLATFORM=offscreen tests/run-qml-tests.sh
@@ -100,6 +116,7 @@ jobs:
           cat "$RUNNER_TEMP"/integration-plugins/*/SHA256SUMS > "$RUNNER_TEMP/bundle-plugins/SHA256SUMS"
           cp "$RUNNER_TEMP"/integration-plugins/*/*.tar.gz "$RUNNER_TEMP/bundle-plugins/"
           WM_BUNDLE_PLUGINS_DIR="$RUNNER_TEMP/bundle-plugins" ./scripts/package.sh --integration
+          python3 scripts/verify-integration-bundle.py "$GITHUB_SHA" dist/KDE-Windows-Modern-*-integration-*.zip
           (cd dist && sha256sum KDE-Windows-Modern-*-integration-*.zip > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:

@@ -8,6 +8,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import QtCore
 
 import org.kde.plasma.plasmoid
@@ -18,6 +19,7 @@ import org.kde.plasma.private.digitalclock as DigitalClockPrivate
 import org.kde.kirigami as Kirigami
 
 import "code/dateformat.js" as DateFormat
+import "code/notificationPresentation.js" as NotificationPresentation
 
 MouseArea {
     id: main
@@ -32,11 +34,106 @@ MouseArea {
     required property var plasmoidItem
 
     readonly property real panelHeight: parent ? parent.height : height
-    readonly property bool showBell: Plasmoid.configuration.showNotificationButton
-        && Plasmoid.formFactor !== PlasmaCore.Types.Vertical
+    readonly property var panelWindow: main.Window.window
+    readonly property rect panelGeometry: panelWindow
+        ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
+    onPanelGeometryChanged: if (clockDialog && clockDialog.visible) clockDialog.visible = false
+    readonly property bool showBell: NotificationPresentation.showBell(
+        Plasmoid.configuration.showNotificationButton,
+        Plasmoid.formFactor !== PlasmaCore.Types.Vertical,
+        plasmoidItem.notificationsAvailable, plasmoidItem.notificationModel.count,
+        plasmoidItem.notificationsInhibited)
     property bool wasExpanded: false
     function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
-        plasmoidItem.toggleFlyout(previous);
+        clockDialog.toggle(previous);
+    }
+
+    // The dialog is constructed alongside its real panel item, just like
+    // Start. A null/reparented representation must never map a popup at (0,0).
+    Item {
+        id: clockPopupAnchor
+        width: main.width
+        height: main.height
+        x: Plasmoid.location === PlasmaCore.Types.LeftEdge ? 8
+            : Plasmoid.location === PlasmaCore.Types.RightEdge ? -8 : 0
+        y: Plasmoid.location === PlasmaCore.Types.BottomEdge ? -8
+            : Plasmoid.location === PlasmaCore.Types.TopEdge ? 8 : 0
+    }
+
+    // Verify mapped geometry, not merely a successfully loaded QML tree.
+    Timer {
+        id: clockGeometryProbe
+        interval: 200
+        onTriggered: {
+            if (!clockDialog.visible) return;
+            const a = main.mapToGlobal(0, 0);
+            const screen = Plasmoid.screenGeometry;
+            const x = clockDialog.x, y = clockDialog.y;
+            const w = clockDialog.width, h = clockDialog.height;
+            const location = Plasmoid.location;
+            let gap = 0;
+            let axisOverlap = false;
+            if (location === PlasmaCore.Types.BottomEdge || location === PlasmaCore.Types.TopEdge) {
+                gap = location === PlasmaCore.Types.BottomEdge ? a.y - (y + h) : y - (a.y + main.height);
+                axisOverlap = x <= a.x + main.width && x + w >= a.x;
+            } else if (location === PlasmaCore.Types.LeftEdge || location === PlasmaCore.Types.RightEdge) {
+                gap = location === PlasmaCore.Types.LeftEdge ? x - (a.x + main.width) : a.x - (x + w);
+                axisOverlap = y <= a.y + main.height && y + h >= a.y;
+            }
+            const inBounds = x >= screen.x - 2 && y >= screen.y - 2
+                && x + w <= screen.x + screen.width + 2 && y + h <= screen.y + screen.height + 2;
+            const ok = inBounds && axisOverlap && gap >= 4 && gap <= 32;
+            console.info("WM_POPUP clock", ok ? "OK" : "POSITION_MISMATCH",
+                x, y, w, h, "anchor", a.x, a.y, main.width, main.height, "gap", gap);
+        }
+    }
+
+    PlasmaCore.Dialog {
+        id: clockDialog
+        objectName: "wmClockSplitPopup"
+        type: PlasmaCore.Dialog.AppletPopup
+        flags: Qt.Dialog
+        visualParent: clockPopupAnchor
+        location: Plasmoid.location
+        floating: 8
+        backgroundHints: PlasmaCore.Dialog.NoBackground
+        visible: false
+        hideOnWindowDeactivate: !Plasmoid.configuration.pin
+        onVisibleChanged: {
+            if (visible) clockGeometryProbe.restart();
+            else clockGeometryProbe.stop();
+            if (clockPopupContent) clockPopupContent.scheduleSplitBlur();
+        }
+        onWidthChanged: if (visible) clockGeometryProbe.restart()
+        onHeightChanged: if (visible) clockGeometryProbe.restart()
+
+        function toggle(previous) {
+            if (previous) { visible = false; return; }
+            if (!clockPopupAnchor.Window.window || !clockPopupAnchor.visible
+                || clockPopupAnchor.width <= 0 || clockPopupAnchor.height <= 0) {
+                console.warn("WM_POPUP clock: panel anchor not mapped");
+                return;
+            }
+            visible = true;
+            requestActivate();
+        }
+
+        mainItem: ExpandedRepresentation {
+            id: clockPopupContent
+            clockApplet: main.plasmoidItem
+            splitBlurProvider: main.plasmoidItem.splitBlurProvider
+            allowSplitAcrylic: main.plasmoidItem.allowSplitAcrylic
+            width: implicitWidth
+            height: implicitHeight
+            focus: true
+            Keys.onEscapePressed: clockDialog.visible = false
+        }
+    }
+
+    Component.onCompleted: plasmoidItem.panelPopup = clockDialog
+    Component.onDestruction: {
+        if (plasmoidItem && plasmoidItem.panelPopup === clockDialog)
+            plasmoidItem.panelPopup = null;
     }
 
     // The panel sizes applets from their Layout hints; without them the
@@ -157,7 +254,7 @@ MouseArea {
 
     Rectangle {
         anchors.fill: parent
-        anchors.margins: 3
+        anchors.margins: 2
         radius: 4
         visible: main.containsMouse || main.activeFocus || main.plasmoidItem.flyoutOpen
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
@@ -246,6 +343,7 @@ MouseArea {
 
         PlasmaComponents.ToolButton {
             id: notificationButton
+            objectName: "wmTaskbarNotificationButton"
             visible: main.showBell
             Layout.alignment: Qt.AlignVCenter
             // Keep the final cell fixed. The six-pixel Show Desktop

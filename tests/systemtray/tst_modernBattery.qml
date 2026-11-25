@@ -2,7 +2,6 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
-import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/funcs.js" as Funcs
 
 Item {
     width: 100
@@ -14,52 +13,39 @@ Item {
         height: implicitHeight
         foreground: "white"
     }
-
     TestCase {
-        name: "NativeBatteryGlyph"
+        name: "ModernBatteryGlyph"
         when: windowShown
-        function test_nativeSourceAndStableGeometry() {
-            const icon = findChild(glyph, "wmBatterySourceIcon");
-            verify(icon !== null);
-            verify(!icon.roundToIconSize);
-            verify(findChild(glyph, "wmBatteryOutline") === null);
-            verify(findChild(glyph, "wmBatteryLevelFill") === null);
+        function test_stableGeometryAndExactFill() {
+            const body = findChild(glyph, "wmBatteryOutline");
+            const level = findChild(glyph, "wmBatteryLevelFill");
+            verify(body !== null && level !== null);
             glyph.glyphSize = 16;
             compare(glyph.implicitWidth, 20);
             compare(glyph.implicitHeight, 16);
-            compare(icon.width, 20);
-            compare(icon.height, 20);
             glyph.glyphSize = 20;
             compare(glyph.implicitWidth, 25);
             compare(glyph.implicitHeight, 20);
-            compare(icon.width, 25);
-            compare(icon.height, 25);
+            glyph.charging = false;
+            glyph.saver = false;
             glyph.percent = 95;
+            compare(glyph.visualState, "normal");
+            compare(glyph.fillFraction, 0.95);
+            verify(level.width < body.width - 2 * level.inset);
             glyph.charging = true;
-            compare(glyph.iconName, "battery-100-charging-symbolic");
+            compare(glyph.visualState, "charging");
+            compare(glyph.fillColor, Qt.rgba(98/255, 184/255, 90/255, 1));
             glyph.charging = false;
             glyph.saver = true;
             glyph.percent = 20;
-            compare(glyph.iconName, "battery-020-profile-powersave-symbolic");
-            glyph.charging = true;
-            compare(glyph.iconName, "battery-020-charging-symbolic");
-            glyph.charging = false;
-            glyph.saver = false;
+            compare(glyph.visualState, "saver");
+            compare(glyph.fillFraction, 0.2);
             glyph.percent = 5;
-            compare(glyph.iconName, "battery-000-symbolic");
+            compare(glyph.visualState, "critical");
             glyph.percent = -1;
-            compare(glyph.iconName, "battery-unknown-symbolic");
-            glyph.charging = true;
-            compare(glyph.iconName, "battery-unknown-charging-symbolic");
-            compare(icon.width, 25);
-        }
-
-        function test_originalSaverLevels() {
-            for (let n = 0; n <= 100; n += 10) {
-                compare(Funcs.batteryIconName(n, false, true),
-                    "battery-" + String(n).padStart(3, "0") + "-profile-powersave-symbolic");
-            }
-            compare(Funcs.batteryIconName(NaN, false, true), "battery-unknown-symbolic");
+            compare(glyph.visualState, "unknown");
+            verify(!level.visible);
+            compare(glyph.implicitWidth, 25);
         }
     }
 }

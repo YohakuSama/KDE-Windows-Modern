@@ -18,6 +18,7 @@ QQC2.Menu {
         color: WinStyle.menuBackground
         border.color: WinStyle.menuBorder
         border.width: 1
+        radius: 6
     }
 
     delegate: QQC2.MenuItem {
@@ -54,21 +55,21 @@ QQC2.Menu {
     }
 
     QQC2.MenuItem {
-        text: i18nd("plasma_login", "Sleep")
+        text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sleep")
         icon.name: "system-suspend"
         onTriggered: PlasmaLogin.SessionManagement.suspend()
         visible: PlasmaLogin.SessionManagement.canSuspend
     }
 
     QQC2.MenuItem {
-        text: i18nd("plasma_login", "Shut Down")
+        text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down")
         icon.name: "system-shutdown"
         onTriggered: PlasmaLogin.SessionManagement.requestShutdown(PlasmaLogin.SessionManagement.ConfirmationMode.Skip)
         visible: PlasmaLogin.SessionManagement.canShutdown
     }
 
     QQC2.MenuItem {
-        text: i18nd("plasma_login", "Restart")
+        text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Restart")
         icon.name: "system-reboot"
         onTriggered: PlasmaLogin.SessionManagement.requestReboot(PlasmaLogin.SessionManagement.ConfirmationMode.Skip)
         visible: PlasmaLogin.SessionManagement.canReboot

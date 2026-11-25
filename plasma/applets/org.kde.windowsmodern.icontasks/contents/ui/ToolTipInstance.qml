@@ -95,7 +95,7 @@ Item {
     readonly property bool titleIncludesTrack: {
         const player = toolTipDelegate.playerData;
         const track = player?.track ?? "";
-        return player !== null && player.playbackStatus !== Mpris.PlaybackStatus.Stopped
+        return !!player && player.playbackStatus !== Mpris.PlaybackStatus.Stopped
             && track.length > 0 && title.includes(track);
     }
 
@@ -107,20 +107,22 @@ Item {
     // The preview under the pointer is lit as a whole card, title included,
     // as on Windows 11 (it used to be a box around the thumbnail only, cut
     // off below the title). Declared before contentColumn: stays behind it.
-    PlasmaExtras.Highlight {
+    Rectangle {
         anchors.fill: parent
+        radius: 8
         visible: root.thumbnailMode && tileHover.hovered
-        pressed: (hoverHandler.item as MouseArea)?.containsPress ?? false
-        hovered: true
+        color: Qt.alpha(Kirigami.Theme.textColor,
+            ((hoverHandler.item as MouseArea)?.containsPress || (headerHoverHandler.item as MouseArea)?.containsPress)
+                ? 0.09 : 0.06)
     }
 
-    // Make the header clickable if image tooltips are disabled. These overlay
+    // Make the title clickable in both thumbnail and text-only tooltips. These overlay
     // the header but live outside contentColumn: anchoring items that a
     // layout manages is undefined behaviour (Qt warns on every tooltip).
     // Declared before contentColumn so they stack below the header's buttons.
     Loader {
         id: headerHoverHandler
-        active: (root.index !== -1) && !Plasmoid.configuration.showToolTips
+        active: (root.index !== -1) && (root.thumbnailMode || !Plasmoid.configuration.showToolTips)
         x: contentColumn.x + headerItem.x
         y: contentColumn.y + headerItem.y
         width: headerItem.width
@@ -138,7 +140,7 @@ Item {
         y: headerHoverHandler.y
         width: headerHoverHandler.width
         height: headerHoverHandler.height
-        visible: (headerHoverHandler.item as MouseArea)?.containsMouse ?? false
+        visible: !root.thumbnailMode && ((headerHoverHandler.item as MouseArea)?.containsMouse ?? false)
         pressed: (headerHoverHandler.item as MouseArea)?.containsPress ?? false
         hovered: true
     }
@@ -354,15 +356,7 @@ Item {
             readonly property /*undefined|WId where WId = int|string*/ var winId:
                 toolTipDelegate.isWin ? toolTipDelegate.windows[root.index] : undefined
 
-            Rectangle {
-                id: thumbnailClip
-                anchors.fill: parent
-                radius: Kirigami.Units.smallSpacing * 2
-                color: "transparent"
-                visible: false
-            }
-
-            Loader {
+             Loader {
                 id: pipeWireLoader
                 anchors.fill: hoverHandler
                 anchors.margins: 0
@@ -403,8 +397,11 @@ Item {
 
             Image {
                 id: albumArtImage
-                readonly property bool available: (status === Image.Ready || status === Image.Loading)
-                    && (!(toolTipDelegate.isGroup || backend.applicationCategories(launcherUrl).includes("WebBrowser")) || root.titleIncludesTrack)
+                readonly property bool available: status === Image.Ready
+                    && !!toolTipDelegate.playerData
+                    && toolTipDelegate.playerData.playbackStatus !== Mpris.PlaybackStatus.Stopped
+                    && (toolTipDelegate.playerData.track ?? "").length > 0
+                    && (!(toolTipDelegate.isGroup || backend.applicationCategories(toolTipDelegate.launcherUrl).includes("WebBrowser")) || root.titleIncludesTrack)
 
                 anchors.fill: hoverHandler
                 anchors.margins: 1
@@ -415,6 +412,14 @@ Item {
                 source: toolTipDelegate.playerData?.artUrl ?? ""
                 fillMode: Image.PreserveAspectFit
                 visible: available
+            }
+
+            Kirigami.Icon {
+                anchors.centerIn: parent
+                width: Math.min(Kirigami.Units.iconSizes.large, parent.width, parent.height)
+                height: width
+                source: toolTipDelegate.icon
+                visible: root.thumbnailMode && !albumArtImage.visible && !(pipeWireLoader.item?.hasThumbnail ?? false)
             }
 
             Loader {

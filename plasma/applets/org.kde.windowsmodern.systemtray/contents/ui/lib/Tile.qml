@@ -17,9 +17,10 @@ ColumnLayout {
     property string orderKey: ""
     property Item orderView: null
     property real buttonHeight: -1
-    readonly property real glyphScale: orderView ? orderView.tileScale : 1
-    readonly property color restingColor: ColorType.isDark(Kirigami.Theme.backgroundColor)
-        ? Qt.rgba(1, 1, 1, 0.045) : Qt.rgba(1, 1, 1, 0.65)
+    readonly property real uiScale: buttonHeight > 0 ? buttonHeight / 48 : 1
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property int captionHeight: Math.max(Math.round(30 * uiScale), Math.ceil(2 * captionMetrics.lineSpacing))
+    FontMetrics { id: captionMetrics; font: caption.font }
     readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
     readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
 
@@ -63,10 +64,10 @@ ColumnLayout {
     Keys.onEnterPressed: tile.clicked()
     Keys.onSpacePressed: tile.clicked()
 
-    readonly property color accent: Kirigami.Theme.highlightColor
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor, Qt.color(ColorType.cardFill(dark, false)))
     readonly property color fg: active ? ColorType.contrastingForeground(accent) : Kirigami.Theme.textColor
 
-    spacing: Math.round(8 * tile.glyphScale)
+    spacing: Math.round(8 * uiScale)
     Layout.fillWidth: true
     // Width is supplied by the explicitly sized three-column viewport.
     // A zero preferred-width hint is not a valid tile size.
@@ -74,20 +75,21 @@ ColumnLayout {
     Rectangle {
         id: bg
         Layout.fillWidth: true
+        objectName: "wmQuickTileSurface"
         Layout.preferredHeight: tile.buttonHeight > 0 ? tile.buttonHeight : width / 2
-        radius: 4
+        Layout.minimumHeight: Layout.preferredHeight
+        Layout.maximumHeight: Layout.preferredHeight
+        radius: Math.max(3, Math.round(4 * tile.uiScale))
         border.width: 1
-        border.color: tile.activeFocus ? Kirigami.Theme.textColor : active ? "transparent" : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        border.color: tile.activeFocus ? tile.fg : active
+            ? Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, 0.10)
+            : ColorType.tileBorder(tile.dark)
         color: {
             if (active) {
                 const alpha = ma.containsPress ? 0.12 : ma.containsMouse ? 0.06 : 0;
                 return Qt.tint(accent, Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b, alpha));
             }
-            if (ma.containsPress)
-                return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10);
-            if (ma.containsMouse)
-                return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06);
-            return tile.restingColor;
+            return ColorType.tileFill(tile.dark, ma.containsMouse, ma.containsPress);
         }
 
         Behavior on color {
@@ -122,7 +124,8 @@ ColumnLayout {
 
         Kirigami.Icon {
             anchors.centerIn: parent
-            width: Math.round(16 * tile.glyphScale)
+            objectName: "wmQuickTileGlyph"
+            width: Math.max(12, Math.round(16 * tile.uiScale))
             height: width
             source: tile.iconSource
             roundToIconSize: false
@@ -132,14 +135,20 @@ ColumnLayout {
     }
 
     PlasmaComponents3.Label {
+        id: caption
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignHCenter
         text: tile.label
         color: Kirigami.Theme.textColor
-        font.family: Kirigami.Theme.defaultFont.family
-        font.pixelSize: Math.round(13 * tile.glyphScale)
-        maximumLineCount: 1
+        Layout.preferredHeight: tile.captionHeight
+        Layout.minimumHeight: tile.captionHeight
+        Layout.maximumHeight: tile.captionHeight
+        font.pixelSize: Math.max(10, Math.round(12 * tile.uiScale))
+        maximumLineCount: 2
+        wrapMode: Text.Wrap
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignTop
+        textFormat: Text.PlainText
     }
 }

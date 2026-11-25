@@ -24,8 +24,6 @@ Item {
     property Item visualParent
     property bool accountMode: false
     readonly property bool opened: popup.visible
-    readonly property rect popupGeometry: Qt.rect(popup.x, popup.y, popup.width, popup.height)
-    readonly property int visibleOptionCount: options.filter(o => o.visible).length
     readonly property var options: [settingsOption, lockOption, switchOption, logoutOption,
                                     sleepOption, hibernateOption, shutdownOption, rebootOption]
 
@@ -33,14 +31,21 @@ Item {
     signal accountSettingsRequested
     signal actionInvoked
 
+    FontMetrics { id: footerMetrics; font.family: Kirigami.Theme.defaultFont.family; font.pixelSize: 13 }
+
     function moveFocus(direction) {
         const available = options.map(option => option.visible && option.optionEnabled);
         const current = options.findIndex(option => option.activeFocus);
         const next = FooterNavigation.nextEnabledIndex(available, current, direction);
-        if (next >= 0)
-            options[next].forceActiveFocus();
-        else
+        if (next >= 0) {
+            const option = options[next];
+            option.forceActiveFocus();
+            if (option.y < powerScroll.contentY) powerScroll.contentY = option.y;
+            else if (option.y + option.height > powerScroll.contentY + powerScroll.height)
+                powerScroll.contentY = Math.max(0, option.y + option.height - powerScroll.height);
+        } else {
             popup.forceActiveFocus();
+        }
     }
 
     function finishAction() {
@@ -67,26 +72,32 @@ Item {
     }
 
     // ── The floating panel ─────────────────────────────────────────────
-    StartMenuSurface {
+    StartMenuBackground {
         id: popup
-        objectName: "wmStartFooterMenuSurface"
         visible: false
         z: 100
 
-        // Measure ALL account and power labels, not just the currently
-        // visible subset. Switching modes cannot change the shared width.
-        readonly property real contentWidth: Math.max(0, ...root.options.map(o => o.implicitWidth))
-        readonly property real panelWidth: Theme.actionMenuWidth(contentWidth, root.width)
+        readonly property real panelWidth: Math.max(0, Math.min(root.width - 16,
+            Math.max(168, ...root.options.filter(option => option && option.visible)
+                .map(option => footerMetrics.advanceWidth(option.label) + 64))))
         width: panelWidth
-        height: powerColumn.implicitHeight + 2 * Theme.menuOuterInset
+        height: Math.min(powerColumn.implicitHeight + 2 * Theme.menuInset, Math.max(0, root.height - 16))
 
-        Column {
-            id: powerColumn
-            width: Math.max(1, popup.panelWidth - 2 * Theme.menuOuterInset)
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: Theme.menuOuterInset
-            spacing: 0
+
+        Flickable {
+            id: powerScroll
+            anchors.fill: parent
+            anchors.margins: Theme.menuInset
+            contentWidth: width
+            contentHeight: powerColumn.implicitHeight
+            clip: true
+            interactive: contentHeight > height
+            boundsBehavior: Flickable.StopAtBounds
+
+            Column {
+                id: powerColumn
+                width: powerScroll.width
+                spacing: 0
 
             PowerOption {
                 id: settingsOption
@@ -102,7 +113,7 @@ Item {
 
             PowerOption {
                 id: lockOption
-                visible: root.accountMode
+                visible: !root.accountMode && sessionManager.canLock
                 iconSource: "system-lock-screen-symbolic"
                 label: i18n("Lock")
                 optionEnabled: sessionManager.canLock
@@ -192,6 +203,7 @@ Item {
                 }
                 onNavigationRequested: direction => root.moveFocus(direction)
             }
+            }
         }
 
         // Consume unhandled keys while the popup owns focus, rather than
@@ -211,23 +223,38 @@ Item {
     }
 
     // ── Positioning logic ──────────────────────────────────────────────
+    onWidthChanged: if (popup.visible) close()
+    onHeightChanged: if (popup.visible) close()
+
     function open() {
-        if (!root.visualParent) return;
-        if (popup.visible) { root.close(); return; }
+        if (!root.visualParent || !root.visualParent.visible || root.width <= 16 || root.height <= 16) return
 
         // Lay out only the active menu's visible rows before measuring.
         popup.visible = true;
         powerColumn.forceLayout();
-        const anchor = root.visualParent.mapToItem(root, 0, 0);
-        const leading = root.accountMode !== root.visualParent.LayoutMirroring.enabled;
-        const position = Theme.actionMenuPosition(anchor.x, anchor.y,
-            root.visualParent.width, root.visualParent.height,
-            popup.width, popup.height, root.width, root.height, leading);
-        popup.x = position.x;
-        popup.y = position.y;
+        powerScroll.contentY = 0;
+        var popupW = popup.width
+        var popupH = popup.height
+        var gap = 8
+
+        // Account opens at the leading edge; Power stays at the trailing edge.
+        const alignLeft = root.accountMode !== root.visualParent.LayoutMirroring.enabled;
+        var pos = root.visualParent.mapToItem(root, alignLeft ? 0 : root.visualParent.width - popupW, -popupH - gap)
+
+        // If the popup would go above the top of the dialog, open below
+        // the button instead.
+        if (pos.y < gap) {
+            pos.y = root.visualParent.mapToItem(root, 0, root.visualParent.height + gap).y
+        }
+
+        // Clamp horizontally — keep the popup within the dialog bounds.
+        pos.x = Math.max(gap, Math.min(pos.x, root.width - popupW - gap))
+
+        popup.x = pos.x
+        popup.y = Math.max(gap, Math.min(pos.y, root.height - popupH - gap))
         popup.opacity = 1
-        // Opening with the pointer must not pre-highlight the first row.
-        // Up/Down/Tab select the first enabled action from this focus scope.
+        // Mouse opening leaves every row neutral. Arrow/Tab selects the
+        // first available row; no unsolicited accent-colour selection.
         popup.forceActiveFocus();
     }
 

@@ -8,19 +8,21 @@
  *   then reference values like Theme.buttonFlatBackgroundOpacity.
  ***************************************************************************/
 
+.import "colorType.js" as ColorType
+
 // Flat buttons / chips ("All apps", "Back", filter pills, shutdown split)
 var buttonFlatBackgroundOpacity = 0.06;
-var buttonFlatHoverOpacity      = 0.12;
+var buttonFlatHoverOpacity      = 0.08;
 
 // Raised / hover-filled controls (legacy AToolButton hover, list items)
-var buttonHoverOpacity          = 0.15;
+var buttonHoverOpacity          = 0.08;
 
 // Borders and dividers
-var buttonBorderOpacity         = 0.15;
-var buttonDividerOpacity        = 0.20;
+var buttonBorderOpacity         = 0.08;
+var buttonDividerOpacity        = 0.10;
 var fieldBorderOpacity          = 0.12;
-var popupBorderOpacity          = 0.20;
-var separatorOpacity            = 0.12;
+var popupBorderOpacity          = 0.10;
+var separatorOpacity            = 0.09;
 var headerSeparatorOpacity      = 0.08;
 
 // Icons and text that are de-emphasized
@@ -42,38 +44,15 @@ var menuTranslucencyOpaque      = 2;
 var opacityFull   = 1.0;
 var opacityHidden = 0.0;
 
-// Shared logical sizes for compact Start action menus. Native symbolic
-// assets already contain their intended geometry; no DPI multiplier.
+// Use the same neutral surfaces as the shell popup frames.
+function isDark(color) { return ColorType.isDark(color); }
+function menuSurface(bg) { return isDark(bg) ? "#2C2C2C" : "#F9F9F9"; }
+function menuBorder(bg) { return ColorType.cardBorder(isDark(bg)); }
+
+// Shared Start transient menu geometry in logical pixels.
 var menuGlyphSize = 16;
 var menuRowHeight = 32;
-var menuOuterInset = 4;
+var menuInset = 4;
+var menuRadius = 8;
 var menuTextInset = 10;
 var menuIconGap = 10;
-var menuRadius = 8;
-var menuFontSize = 13;
-var menuHoverOpacity = 0.07;
-
-// A single geometry contract for Start's transient action menus.
-var menuMinWidth = 184;
-var menuMaxWidth = 320;
-var menuAnchorGap = 6;
-var menuRowRadius = 4;
-var menuFrameOpacity = 0.10;
-var menuFooterButtonSize = 40;
-
-function actionMenuWidth(contentWidth, availableWidth) {
-    const maximum = Math.max(1, Math.min(menuMaxWidth, availableWidth - 2 * menuAnchorGap));
-    return Math.floor(Math.min(maximum, Math.max(menuMinWidth, Math.ceil(contentWidth + 2 * menuOuterInset))));
-}
-
-function actionMenuPosition(anchorX, anchorY, anchorWidth, anchorHeight,
-                            menuWidth, menuHeight, areaWidth, areaHeight, alignLeading) {
-    const gap = menuAnchorGap;
-    let x = alignLeading ? anchorX : anchorX + anchorWidth - menuWidth;
-    let y = anchorY - menuHeight - gap;
-    if (y < gap && anchorY + anchorHeight + gap + menuHeight <= areaHeight - gap)
-        y = anchorY + anchorHeight + gap;
-    x = Math.max(gap, Math.min(x, areaWidth - menuWidth - gap));
-    y = Math.max(gap, Math.min(y, areaHeight - menuHeight - gap));
-    return { x: Math.round(x), y: Math.round(y) };
-}

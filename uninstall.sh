@@ -161,6 +161,10 @@ uninstall_component() {
             info "Start Menu uninstalled."
             ;;
         systray|systemtray)
+            if busctl --user status org.kde.kglobalaccel &>/dev/null; then
+                python3 "$SRC_DIR/scripts/windows-shortcuts.py" run-release \
+                    || warn "Could not return Win+R to KRunner."
+            fi
             rm_path "$(detect_systray_so_dir)/org.kde.windowsmodern.systemtray.so"
             rm_path "/usr/share/plasma/plasmoids/org.kde.windowsmodern.systemtray"
             rm_path "$HOME/.local/share/plasma/plasmoids/org.kde.windowsmodern.systemtray"
@@ -317,9 +321,14 @@ uninstall_component() {
             elif [ -f "$backup_dir/mimeapps.list.none" ]; then
                 rm -f "$HOME/.config/mimeapps.list" "$backup_dir/mimeapps.list.none"
             fi
+            python3 "$SRC_DIR/scripts/app-appearance.py" restore
             ui="$HOME/.local/share/kxmlgui5/dolphin/dolphinui.rc"
             if [ -f "$backup_dir/dolphinui.rc.ours" ]; then
-                rm_path "$ui"
+                # Older releases owned the unmodified Up-button-only XML.
+                # Leave any layout the user edited after installation intact.
+                if [ -f "$ui" ] && [ "$(git hash-object "$ui" 2>/dev/null || true)" = "5dfeecc37067f7c8a7bcbc0aa229f7b0e36728c2" ]; then
+                    rm_path "$ui"
+                fi
                 rm -f "$backup_dir/dolphinui.rc.ours"
             fi
             if busctl --user status org.kde.kglobalaccel &>/dev/null; then

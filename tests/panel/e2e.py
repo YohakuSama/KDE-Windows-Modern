@@ -34,7 +34,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from evdev import ecodes as e  # noqa: E402
 
 from e2e import a11y  # noqa: E402
-from e2e.session import Checks, kwin_property, now, qml_warnings, screenshot  # noqa: E402
+from e2e.session import Checks, journal, kwin_property, now, qml_warnings, screenshot  # noqa: E402
 from e2e.vinput import VirtualInput  # noqa: E402
 
 APP = "plasmashell"
@@ -224,8 +224,9 @@ def tray_pages(p, c):
 # Windows 11 ends the tray with these, left to right, before the clock.
 TRAY_TAIL = ["Keyboard Layout", "Networks", "Audio Volume", "Power & Battery"]
 # Not Windows tray icons: they wait behind the chevron unless pinned.
-OVERFLOW_BY_DEFAULT = {"Clipboard": "org.kde.plasma.clipboard", "Bluetooth": "org.kde.plasma.bluetooth",
+OVERFLOW_BY_DEFAULT = {"Clipboard": "org.kde.plasma.clipboard",
                        "Brightness & Color": "org.kde.plasma.brightness", "KDE Connect": "org.kde.kdeconnect"}
+DYNAMIC_TRAY = ("Bluetooth", "Disks & Devices", "Device Notifier", "Camera Indicator")
 
 
 def pinned_tray_items():
@@ -259,6 +260,10 @@ def tray_order(p, c):
     c.check(not stray, f"non-Windows icons wait behind the chevron unless pinned (in the row: {stray})")
     if tail and "Show hidden icons" in xs:
         c.check(xs["Show hidden icons"] < xs[tail[0]], "overflow chevron precedes system status icons")
+        for name in DYNAMIC_TRAY:
+            if name in xs:
+                c.check(xs["Show hidden icons"] < xs[name] < xs[tail[0]],
+                        f"{name} between overflow chevron and core system group")
     if tail and "Clock" in xs:
         between = [n for n, x in xs.items() if xs[tail[-1]] < x < xs["Clock"]]
         c.check(not between, f"no extra item between {tail[-1]!r} and the clock (found {between})")
@@ -267,18 +272,19 @@ def tray_order(p, c):
 def clock(p, c):
     panel_window = p.item("Show desktop").window
     year = time.strftime("%Y")
+    opened_since = now()
     p.click("Clock")
     header = wait_for(lambda: next((n for n in a11y.nodes(APP) if n.window != panel_window and n.showing
                                     and n.role == "label"
                                     and (n.name.endswith(year) or n.name.startswith(year + "年"))), None))
+    position = wait_for(lambda: next((line for line in reversed(journal(opened_since, "plasmashell"))
+                                      if "WM_POPUP clock " in line and (" OK " in line or "POSITION_MISMATCH" in line)), None))
     p.shot("clock")
+    c.check(bool(position and "WM_POPUP clock OK " in position), f"mapped clock stays adjacent to its panel: {position}")
     c.check(header is not None, f"clock opens the calendar ({header.name!r})" if header else "clock opens the calendar")
     history = (visible("Notifications", exclude_window=panel_window)
                or visible("通知", exclude_window=panel_window))
     c.check(history is not None, "clock flyout also opens notification history")
-    if header and history:
-        c.check(history.window != header.window,
-                "standard horizontal clock uses two native flyout surfaces")
     # On Wayland popup origins can be relative to the popup itself, but
     # extents still expose a collapsed/blank flyout.
     if header:

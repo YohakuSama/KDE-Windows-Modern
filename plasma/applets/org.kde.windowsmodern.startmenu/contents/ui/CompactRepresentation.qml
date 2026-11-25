@@ -25,6 +25,47 @@ Item {
     readonly property bool useCustomButtonImage: (Plasmoid.configuration.useCustomButtonImage
                                                   && Plasmoid.configuration.customButtonImage.length != 0)
     property MenuRepresentation dashWindow: null
+    property real logoScale: 1
+    // All activation routes (including the global Meta shortcut) share
+    // one animation. The menu's window geometry stays independent.
+    function activateStart() {
+        if (!dashWindow) return;
+        pressMotion.stop();
+        releaseMotion.restart();
+        dashWindow.toggleMenu();
+    }
+    NumberAnimation {
+        id: pressMotion
+        target: root
+        property: "logoScale"
+        to: 0.84
+        duration: Math.min(80, Kirigami.Units.shortDuration)
+        easing.type: Easing.OutCubic
+    }
+    SequentialAnimation {
+        id: releaseMotion
+        NumberAnimation {
+            target: root
+            property: "logoScale"
+            to: 0.84
+            duration: Math.min(65, Kirigami.Units.shortDuration)
+            easing.type: Easing.OutQuad
+        }
+        NumberAnimation {
+            target: root
+            property: "logoScale"
+            to: 1.035
+            duration: Math.min(115, Kirigami.Units.shortDuration)
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: root
+            property: "logoScale"
+            to: 1
+            duration: Math.min(85, Kirigami.Units.shortDuration)
+            easing.type: Easing.OutQuad
+        }
+    }
 
     Plasmoid.status: dashWindow && dashWindow.visible ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus
 
@@ -33,7 +74,7 @@ Item {
     Accessible.role: Accessible.Button
     Accessible.name: i18nc("@action:button the Start menu button", "Start")
     Accessible.description: i18nc("@info:tooltip", "Open the Start menu")
-    Accessible.onPressAction: if (dashWindow) dashWindow.toggleMenu()
+    Accessible.onPressAction: root.activateStart()
 
     // Use the same 30px icon canvas as task icons. The default logo keeps
     // its original 4px optical inset on the 64px artwork canvas.
@@ -76,8 +117,7 @@ Item {
         // Windows 11 does not lighten the logo on hover (the tile shows it);
         // pressing shrinks it slightly, like the other taskbar buttons.
         active: false
-        scale: mouseArea.pressed ? 0.9 : 1
-        Behavior on scale { NumberAnimation { duration: Kirigami.Units.shortDuration } }
+        scale: root.logoScale
         smooth: true
     }
 
@@ -87,15 +127,40 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
 
-        onClicked: {
-            if (dashWindow) dashWindow.toggleMenu();
+        onPressed: {
+            releaseMotion.stop();
+            pressMotion.restart();
         }
+        onCanceled: {
+            pressMotion.stop();
+            releaseMotion.restart();
+        }
+        onReleased: {
+            pressMotion.stop();
+            releaseMotion.restart();
+        }
+        onClicked: root.activateStart()
+    }
+
+    // Register on the native Applet object, not a second launcher or
+    // a shell scripting call. Search resolves this action on its own panel.
+    PlasmaCore.Action {
+        id: openSearchAction
+        text: i18n("Search")
+        onTriggered: if (root.dashWindow) root.dashWindow.openSearch()
+    }
+
+    PlasmaCore.Action {
+        id: searchStateAction
+        enabled: root.dashWindow?.searchShown ?? false
     }
 
     Component.onCompleted: {
         dashWindow = menuRepComponent.createObject(root);
+        Plasmoid.setInternalAction("windowsModernSearch", openSearchAction);
+        Plasmoid.setInternalAction("windowsModernSearchSelected", searchStateAction);
         Plasmoid.activated.connect(function() {
-            if (dashWindow) dashWindow.toggleMenu();
+            root.activateStart();
         });
     }
 

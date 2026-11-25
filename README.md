@@ -224,6 +224,24 @@ puts them back. Win+Up/Down come from a small KWin script
 `./uninstall.sh apps` restores your previous defaults; the apps stay
 installed.
 
+## Live accent and notification history
+
+Windows Modern uses the global KDE color scheme for Plasma text and selection
+colors, instead of a second fixed-blue desktop-theme palette. A fresh install
+enables KDE's native accent-from-wallpaper mode when no mode has been set.
+Existing explicit manual choices are preserved. Change the mode in System
+Settings → Colors & Themes → Colors → Accent color. The compositor and
+wallpaper plugin own the live color updates; application logos and semantic
+battery/charging colors do not change with the accent.
+
+Win+N uses Plasma's shared notification history, including transfer jobs
+when the system's job-history setting is enabled. The native notification
+applet remains loaded to present real toast notifications, but its duplicate
+tray icon is suppressed. The date and notification cards have an independent
+transparent gap, with a bounded notification list that grows with its content.
+Clearing history never cancels running file transfers. The Do not disturb
+switch lives in the notification center.
+
 ## Transparency effects
 
 Like Windows' Settings → Personalization → Colors → Transparency effects:
@@ -449,6 +467,57 @@ test it without KWin: `tests/windowswitcher/preview.sh` and
 `tests/windowswitcher/e2e.py`.
 
 ---
+
+## Session startup and optional early-boot animation
+
+The global theme includes the Plasma session splash (KSplash): the centered
+white continuous loading ring runs only while the real session is loading.
+No artificial startup delay is added. KWin's native sliding-popups effect
+provides edge-relative open/close motion for Quick Settings and other
+shell-role popups; an explicit user-disabled setting is respected.
+
+Early boot, before the login screen, is handled by Plymouth, not Plasma.
+The optional Windows Modern Plymouth package builds a four-pane logo and
+an 80-frame loading ring, with real Plymouth message, question and disk
+password prompt callbacks. The desktop test installer never changes the
+bootloader, initramfs, encryption configuration, or login manager.
+
+### NixOS (opt-in)
+
+Add the following to your existing system configuration, replacing the
+absolute path with your unpacked source checkout. Keep your normal boot
+menu, fallback generation, and existing disk-unlock configuration.
+
+```nix
+{ pkgs, ... }: {
+  boot.plymouth = {
+    enable = true;
+    theme = "windows-modern";
+    themePackages = [
+      (pkgs.callPackage /absolute/path/to/KDE-Windows-Modern/nix/plymouth-theme.nix {})
+    ];
+  };
+}
+```
+
+Rebuild using your existing NixOS configuration workflow. To revert, remove
+these optional Plymouth settings and rebuild, or choose the previous boot
+generation. The graphical encrypted-disk prompt is implemented, but test
+it on a VM before using this theme on an encrypted production machine.
+
+### Other Linux distributions
+
+Generate the optional theme into a staging directory (Python 3 + Pillow):
+
+```sh
+python3 scripts/theme/boot-frames.py /tmp/windows-modern-plymouth \
+  --image-dir /usr/share/plymouth/themes/windows-modern
+```
+
+The directory contains the .plymouth descriptor, script and PNG artwork.
+Install/activate it through your distribution's documented Plymouth and
+initramfs workflow. No automatic root-level installation is part of this
+project's desktop installer.
 
 ## Lock screen and boot greeter
 

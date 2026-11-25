@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "../js/colorType.js" as ColorType
 
 Item {
     id: row
@@ -9,43 +10,44 @@ Item {
     property string iconSource
     property string text
     property bool selected: false
-    property bool referenceSelection: false
+    property int inset: 8
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor,
+        Qt.color(ColorType.cardFill(dark, false)), 4.5)
     property Component trailing: null
 
     signal clicked
 
     Layout.fillWidth: true
-    Layout.preferredHeight: referenceSelection ? 40 : 36
-    activeFocusOnTab: enabled
+    Layout.preferredHeight: 40
+    activeFocusOnTab: true
     Accessible.role: Accessible.Button
-    Accessible.name: text
-    Accessible.onPressAction: if (enabled) clicked()
-    Keys.onReturnPressed: if (enabled) clicked()
-    Keys.onSpacePressed: if (enabled) clicked()
+    Accessible.name: row.text
+    Accessible.onPressAction: row.clicked()
+    Keys.onReturnPressed: row.clicked()
+    Keys.onEnterPressed: row.clicked()
+    Keys.onSpacePressed: row.clicked()
 
     Rectangle {
         anchors.fill: parent
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
+        anchors.leftMargin: row.inset
+        anchors.rightMargin: row.inset
         radius: 4
-        color: row.selected
-            ? (row.referenceSelection ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.055)
-                : Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15))
-            : (rowMouse.containsMouse || row.activeFocus
-                ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
-                : "transparent")
-
-        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+        color: ColorType.rowFill(row.dark, row.selected, rowMouse.containsMouse, rowMouse.containsPress)
+        border.width: row.activeFocus ? 1 : 0
+        border.color: row.accent
 
         Rectangle {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             width: 3
-            height: 16
+            height: Math.min(18, parent.height - 8)
             radius: 1.5
-            visible: row.referenceSelection && row.selected
-            color: Kirigami.Theme.highlightColor
+            visible: row.selected
+            color: row.accent
         }
+
+        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
 
         RowLayout {
             anchors.fill: parent
@@ -54,11 +56,10 @@ Item {
             spacing: 8
 
             Kirigami.Icon {
-                Layout.preferredWidth: row.referenceSelection ? 16 : 20
-                Layout.preferredHeight: Layout.preferredWidth
-                roundToIconSize: false
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 20
                 source: row.iconSource
-                color: row.selected && !row.referenceSelection ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
+                color: Kirigami.Theme.textColor
                 isMask: true
                 visible: row.iconSource.length > 0
             }
@@ -66,9 +67,10 @@ Item {
             PlasmaComponents3.Label {
                 Layout.fillWidth: true
                 text: row.text
+                textFormat: Text.PlainText
                 color: Kirigami.Theme.textColor
-                font.pixelSize: row.referenceSelection ? 13 : 11
-                font.bold: row.selected && !row.referenceSelection
+                font.pixelSize: 12
+                font.weight: row.selected ? Font.DemiBold : Font.Normal
                 elide: Text.ElideRight
             }
 

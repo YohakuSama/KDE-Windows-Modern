@@ -20,8 +20,6 @@ Item {
     property string iconSource
     property string label
     property bool optionEnabled: true
-    property bool monochrome: true
-    readonly property int glyphSize: Theme.menuGlyphSize
 
     signal activated
     signal navigationRequested(int direction)
@@ -39,23 +37,17 @@ Item {
     Keys.onBacktabPressed: navigationRequested(-1)
     Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
-    implicitWidth: labelMetrics.advanceWidth + 2 * Theme.menuTextInset + glyphSize + Theme.menuIconGap
-    TextMetrics {
-        id: labelMetrics
-        font: optionLabel.font
-        text: option.label
-    }
-    implicitHeight: Theme.menuRowHeight
-    width: parent ? parent.width : implicitWidth
-    height: implicitHeight
+    width: parent ? parent.width : Kirigami.Units.gridUnit * 10
+    height: Theme.menuRowHeight
 
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1
-        radius: Theme.menuRowRadius
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-            Kirigami.Theme.textColor.b, hoverArea.containsPress ? 0.12 : Theme.menuHoverOpacity)
-        opacity: option.optionEnabled && (hoverArea.containsMouse || option.activeFocus) ? Theme.opacityFull : Theme.opacityHidden
+        radius: 5
+        color: Kirigami.Theme.textColor
+        opacity: !option.optionEnabled ? 0
+            : hoverArea.containsPress ? 0.11
+            : hoverArea.containsMouse || option.activeFocus ? 0.065 : 0
         Behavior on opacity { NumberAnimation { duration: 80 } }
     }
 
@@ -63,39 +55,30 @@ Item {
         id: powerRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.right: parent.right
         anchors.leftMargin: Theme.menuTextInset
+        anchors.right: parent.right
         anchors.rightMargin: Theme.menuTextInset
         spacing: Theme.menuIconGap
 
         Kirigami.Icon {
-            objectName: "wmStartMenuActionGlyph"
-            Layout.minimumWidth: option.glyphSize
-            Layout.preferredWidth: option.glyphSize
-            Layout.maximumWidth: option.glyphSize
-            Layout.minimumHeight: option.glyphSize
-            Layout.preferredHeight: option.glyphSize
-            Layout.maximumHeight: option.glyphSize
+            objectName: "wmStartPowerGlyph"
+            Layout.preferredWidth: Theme.menuGlyphSize
+            Layout.preferredHeight: Theme.menuGlyphSize
+            Layout.alignment: Qt.AlignVCenter
             roundToIconSize: false
             source: option.iconSource
             fallback: option.iconSource.replace(/-symbolic$/, "")
-            isMask: option.monochrome
-            color: option.monochrome ? Kirigami.Theme.textColor : "transparent"
+            isMask: true
+            color: Kirigami.Theme.textColor
             opacity: option.optionEnabled ? Theme.opacityFull : Theme.disabledIconOpacity
         }
 
         PlasmaComponents3.Label {
-            id: optionLabel
-            objectName: "wmStartMenuActionLabel"
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
             text: option.label
-            textFormat: Text.PlainText
-            elide: Text.ElideRight
-            maximumLineCount: 1
             color: option.optionEnabled ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
-            font.family: Kirigami.Theme.defaultFont.family
-            font.pixelSize: Theme.menuFontSize
+            font.pixelSize: 13
+            Layout.fillWidth: true
+            elide: Text.ElideRight
         }
     }
 

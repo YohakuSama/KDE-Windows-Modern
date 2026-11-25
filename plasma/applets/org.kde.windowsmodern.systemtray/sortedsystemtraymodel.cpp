@@ -35,9 +35,10 @@ bool SortedSystemTrayModel::lessThanConfigurationPage(const QModelIndex &left, c
 bool SortedSystemTrayModel::lessThanSystemTray(const QModelIndex &left, const QModelIndex &right) const {
     QVariant lid = left.data(static_cast<int>(BaseModel::BaseRole::ItemId));
     QVariant rid = right.data(static_cast<int>(BaseModel::BaseRole::ItemId));
-    const int ltail = WindowsTray::tail().indexOf(lid.toString());
-    const int rtail = WindowsTray::tail().indexOf(rid.toString());
-    if (ltail != -1 || rtail != -1) return ltail < rtail; // -1 (not in the tail) sorts first
+    const int ltail = WindowsTray::systemOrder(lid.toString());
+    const int rtail = WindowsTray::systemOrder(rid.toString());
+    if (ltail != rtail) return ltail < rtail;
+    if (ltail >= 0) return QSortFilterProxyModel::lessThan(left, right);
     int cmp = compareCategoriesOrderly(left, right);
     return cmp == 0 ? QSortFilterProxyModel::lessThan(left, right) : cmp < 0;
 }

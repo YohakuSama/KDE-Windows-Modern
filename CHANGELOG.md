@@ -6,20 +6,29 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
-### Shared Start menu surface
+- Share Start application, power and view-menu frames, compact glyph geometry and action row sizes. Keep initial mouse-open selection neutral and bound the footer menu to short work areas.
 
-- Use a common transient menu surface, row component, measured footer width, anchor gap and footer button hover style for account, power and application context menus; test label/icon alignment and shared geometry without invoking session actions.
+- Share the live accent palette across the tray, clock and Start menu. Preserve calendar delegates during same-day updates, enable all week-start choices and correct notification links and time-zone offsets.
 
-### Owner 26H2 reference layout pass
+- Add the interactive alphabetical index to Start's list and grid modes, with available-letter navigation, category label hover states and category opening animations.
 
-- Implement separate native notification and calendar flyout windows with shared dismissal and fixed combined height; retain a combined fallback for small/vertical layouts. Refine light notification card and button surfaces.
-- Restore visible Start view selector text, Recommended descriptions, reference-derived menu proportions and separate header/footer. Keep existing explicit view preferences.
-- Use explicit Quick Settings section metrics and light tile colors; present Sound output devices directly, include master volume and application mixer, and instantiate the real details-page footer. No simulated unsupported controls or new glyph artwork.
+- Open a shared local Search home from the Start field and taskbar search action. Use real recent/popular application models and settings queries, explicit search-role artwork and hover/press states; omit online promotions. Default the clock to the system region's time and date, migrate previously forced default formats once, preserve other explicit formats, and resolve common browser media-source identities and icons from the live MPRIS session.
 
-### Start action menu and flyout regression cleanup
+- Let the taskbar search box shrink within its allocated cell, keep the icon inside narrow cells, and suppress repeated keyboard activation of Search, Task View and Show Desktop. Orient the Show Desktop sliver for vertical panels and avoid toggling out of desktop mode during a drag. Run the existing OSD and snap-key JavaScript tests in CI.
 
-- Use consistent compact 16px action glyphs, 32px rows and explicit spacing in the Start footer and context menus. Keep existing actions and avoid preselecting a power action on open.
-- Remove duplicate internal notification/calendar outlines while retaining the native popup frame. Independent acrylic windows and the Plasma expanded indicator remain live-acceptance work.
+- Reposition existing on-screen displays when their output or screen geometry changes, and stop tracking closed displays. Use KWin's actual maximize state and explicit side/corner actions for windows placed without a native tile.
+
+- Keep Snap Layouts on the cursor's current output, fit its diagrams to narrow screens, reject drops in unpainted cell gaps, and clear stale targets when a window or screen disappears. Fit Alt+Tab to short screens and relayout on height changes. Make preview titles clickable and show a fallback icon instead of blank or stale media artwork.
+
+- Resolve Start search app actions by desktop-file URL, dismiss row-based menus when their source model changes, prevent launching collapsed or disabled results, wrap search filters on narrow panels, and cancel pin reordering outside the grid.
+
+- Reuse the tray's native rounded-region blur for the notification and calendar flyout, keeping an opaque fallback when disabled or unavailable. Share calendar day colors and avoid rebuilding the month grid on each clock tick. Only request second-level clock updates when needed, display agenda times in the configured clock format, and translate weekday settings while keeping the system region default.
+
+- Keep week numbers aligned with local calendar dates through daylight-saving transitions, align weekday columns, and allow keyboard activation of calendar navigation and zoom tiles.
+- Keep the calendar footer visible in short work areas by fitting the grid before optional sections; use consistent notification actions, progress colors and scrolling feedback.
+
+- Use live KDE battery time and health data, remove the UPower polling subprocess, and open the native power settings module directly.
+- Correct audio device selection states and microphone icons; keep input switching from playing feedback on a sink index. Reuse the same slider for brightness details and app volume, preserve two-line captions and reduce visible tile rows on small work areas.
 
 ### Fixed tray reference baseline
 

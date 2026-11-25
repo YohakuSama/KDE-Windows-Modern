@@ -56,15 +56,19 @@ Item {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
 
+                activeFocusOnTab: true
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.caption ? modelData.text + " " + modelData.caption : modelData.text
                 Accessible.onPressAction: zoomGrid.picked(index)
 
+                Keys.onReturnPressed: zoomGrid.picked(index)
+                Keys.onEnterPressed: zoomGrid.picked(index)
+                Keys.onSpacePressed: zoomGrid.picked(index)
                 onClicked: zoomGrid.picked(index)
 
                 Rectangle {
                     anchors.centerIn: parent
-                    width: Math.min(parent.width, parent.height) - 2 * Kirigami.Units.smallSpacing
+                    width: Math.max(1, Math.min(parent.width, parent.height) - 2 * Kirigami.Units.smallSpacing)
                     height: width
                     radius: width / 2       // a circle in every state, like the day cells
                     color: {
@@ -72,7 +76,7 @@ Item {
                             return palette.accent;
                         } else if (tile.containsPress) {
                             return palette.pressed;
-                        } else if (tile.containsMouse) {
+                        } else if (tile.containsMouse || tile.activeFocus) {
                             return palette.hover;
                         }
                         return "transparent";

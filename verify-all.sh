@@ -46,6 +46,14 @@ done
 check_dir  "Kvantum/Windows-modern"                         "Kvantum theme"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"
 check_file "icons/windows-modern/index.theme"               "Icon pack"
+store_icons=(icons/windows-modern/apps/discover.svg icons/windows-modern/apps/org.kde.discover.svg icons/windows-modern/apps/plasma-discover.svg icons/windows-modern/apps/plasmadiscover.svg icons/windows-modern/apps/muondiscover.svg)
+if cmp -s "${store_icons[0]}" "${store_icons[1]}" \
+   && cmp -s "${store_icons[0]}" "${store_icons[2]}" \
+   && cmp -s "${store_icons[0]}" "${store_icons[3]}"; then
+    pass "Discover aliases use the same current Store icon"
+else
+    fail "Discover icon aliases differ"
+fi
 if python3 -I scripts/theme/popup-frames.py --check >/dev/null; then
     pass "popup frame generator (dark/light, solid/acrylic, tooltip)"
 else
@@ -195,6 +203,12 @@ else
     fail "settings backup test failed — run: tests/backup/test.sh"
 fi
 
+if python3 -m unittest discover -s tests/apps -v >/dev/null 2>&1; then
+    pass "Explorer/Terminal appearance and restore tests"
+else
+    fail "app appearance tests failed — run: python3 -m unittest discover -s tests/apps -v"
+fi
+
 # ── Shared code copies ──────────────────────────────────────────────
 # The lock screen is its own package, so it carries a copy of the clock's
 # date formatting; the two must not drift apart. Likewise the Search and
@@ -210,8 +224,11 @@ for pair in \
     "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml" \
+    "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml" \
     "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentScrollBar.qml" \
-    "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml"; do
+    "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml" \
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/colorType.js" \
+    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js"; do
     # shellcheck disable=SC2086  # two paths on purpose
     cmp -s $pair || SHARED_DRIFT="$SHARED_DRIFT ${pair##* }"
 done

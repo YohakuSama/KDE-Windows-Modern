@@ -11,6 +11,7 @@ import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+import "js/funcs.js" as Funcs
 
 AbstractItem {
     id: taskIcon
@@ -21,12 +22,26 @@ AbstractItem {
     subText: model?.ToolTipSubTitle ?? ""
     textFormat: Text.AutoText
     active: inVisibleLayout || mainText.length > 0 || subText.length > 0
+    readonly property string languageLabel: inVisibleLayout
+        ? Funcs.inputMethodLabel(itemId, model?.IconName || "", model?.ToolTipTitle || "") : ""
+
+    Text {
+        parent: taskIcon.iconContainer
+        anchors.centerIn: parent
+        visible: taskIcon.languageLabel.length > 0
+        text: taskIcon.languageLabel
+        textFormat: Text.PlainText
+        color: Kirigami.Theme.textColor
+        font.family: Kirigami.Theme.defaultFont.family
+        font.pixelSize: Math.min(16, taskIcon.iconContainer.height)
+    }
 
     Kirigami.Icon {
         id: iconItem
         parent: taskIcon.iconContainer
         anchors.fill: iconItem.parent
         roundToIconSize: false
+        visible: taskIcon.languageLabel.length === 0
 
         source: {
             if (taskIcon.model?.status === PlasmaCore.Types.NeedsAttentionStatus) {

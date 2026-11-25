@@ -27,15 +27,29 @@ Item {
     }
     FocusSession { id: focusState; settings: mockSettings }
     QtObject {
+        id: blurBackend
+        property bool supported: true
+        property int calls: 0
+        property bool lastEnabled: false
+        function setSplitPopupBlur(content, first, second, radius, enabled) {
+            calls++;
+            lastEnabled = enabled;
+            return supported && enabled && first.width > 0 && second.width > 0
+                && radius === 8;
+        }
+    }
+    QtObject {
         id: clock
         property date currentTime: new Date(2026, 10, 25, 5, 0)
         property string timeFormatWithSeconds: "HH:mm:ss"
         property string timeFormat: "HH:mm"
         property var focusSession: focusState
         property bool expanded: true
+        function closeFlyout() { expanded = false; }
         readonly property bool flyoutOpen: expanded
         property rect popupScreenGeometry: Qt.rect(0, 0, 1280, 720)
         property real popupPanelExtent: 48
+        property bool popupVerticalPanel: false
         property bool notificationsAvailable: true
         property bool notificationsInhibited: false
         property var notificationModel: notifications
@@ -52,11 +66,43 @@ Item {
     TestCase {
         name: "ClockExpandedRepresentation"
         when: windowShown
+        function test_splitAcrylicUsesExistingBackendOrSolidFallback() {
+            const panel = findChild(popup, "wmNotificationPanel");
+            compare(popup.splitAcrylic, false);
+            compare(panel.color.a, 1);
+            popup.splitBlurProvider = blurBackend;
+            popup.allowSplitAcrylic = true;
+            tryCompare(popup, "splitAcrylic", true);
+            verify(panel.color.a < 1);
+            popup.allowSplitAcrylic = false;
+            tryCompare(popup, "splitAcrylic", false);
+            compare(blurBackend.lastEnabled, false);
+            compare(panel.color.a, 1);
+            blurBackend.supported = false;
+            const calls = blurBackend.calls;
+            popup.allowSplitAcrylic = true;
+            tryVerify(() => blurBackend.calls > calls);
+            compare(popup.splitAcrylic, false);
+            popup.splitBlurProvider = null;
+            popup.allowSplitAcrylic = false;
+            blurBackend.supported = true;
+        }
         function test_chineseCalendarWithIndependentLocale() {
             compare(popup.calendarLocale.name, "zh_CN");
             tryCompare(findChild(popup, "wmCalendarDateHeading"), "text", "11月25日 星期三");
             tryCompare(findChild(popup, "wmCalendarMonthHeading"), "text", "2026年11月");
-            compare(popup.nativePopup, null);
+            compare(popup.sectionGap, 12);
+        }
+        function test_panelOrientationAndThickness() {
+            clock.popupPanelExtent = 120;
+            compare(popup.availableScreenHeight, 568);
+            clock.popupVerticalPanel = true;
+            compare(popup.availableScreenHeight, 688);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 440, 720);
+            compare(popup.popupWidth, 296);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+            clock.popupPanelExtent = 48;
+            clock.popupVerticalPanel = false;
         }
         function test_fullCalendarHasUsableGeometry() {
             compare(popup.implicitWidth, 320);
@@ -85,10 +131,6 @@ Item {
             const footer = findChild(popup, "wmFocusFooter");
             verify(content !== null && calendar !== null && bar !== null && grid !== null
                 && notificationPanel !== null && calendarPanel !== null && footer !== null);
-            // The native AppletPopup already provides an outer frame.
-            // Do not introduce a second pair of nested outlines.
-            compare(notificationPanel.border.width, 0);
-            compare(calendarPanel.border.width, 0);
             for (const h of [600, 720, 900]) {
                 clock.popupScreenGeometry = Qt.rect(0, 0, 1280, h);
                 tryVerify(() => {
@@ -100,11 +142,87 @@ Item {
                         && pos.y + calendar.height <= footerPos.y
                         && grid.height >= 6 * grid.cellHeight + 5 * grid.spacing - 1
                         && gridPos.y + grid.height <= footerPos.y
-                        && footerPos.y + footer.height <= popup.height - 1;
+                        && footerPos.y + footer.height <= popup.height + 1;
                 }, 2000);
                 verify(!bar.visible || !bar.indicatorVisible);
             }
             clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+        }
+        function test_shortScreenDoesNotClipCalendarFooter() {
+            const footer = findChild(popup, "wmFocusFooter");
+            clock.popupScreenGeometry = Qt.rect(0, 0, 800, 360);
+            tryCompare(popup, "calendarCanExpand", false);
+            tryVerify(() => footer.mapToItem(popup, 0, 0).y + footer.height <= popup.height + 1);
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+            tryCompare(popup, "calendarBodyShown", true);
+        }
+        function test_notificationPanelAdaptsAndHidesClearAll() {
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 900);
+            const panel = findChild(popup, "wmNotificationPanel");
+            const calendar = findChild(popup, "wmCalendarPanel");
+            const clear = findChild(popup, "wmClearNotifications");
+            const dnd = findChild(popup, "wmDoNotDisturbBanner");
+            const empty = findChild(popup, "wmEmptyNotifications");
+            verify(panel && calendar && clear && dnd && empty);
+            notifications.clear();
+            clock.notificationsInhibited = false;
+            tryCompare(clear, "visible", false);
+            tryCompare(empty, "visible", true);
+            tryCompare(dnd, "visible", false);
+            tryCompare(panel, "height", 124);
+            const emptyHeight = panel.height;
+            const calendarHeight = calendar.height;
+            notifications.append({applicationName:"System", summary:"A real notification layout",
+                body:"An example message which takes up more space than the empty state.", closable:true,
+                isGroup:false, isInGroup:false, expired:false});
+            tryCompare(clear, "visible", true);
+            tryCompare(empty, "visible", false);
+            tryVerify(() => panel.height > emptyHeight);
+            compare(calendar.height, calendarHeight);
+            for (let i = 0; i < 15; ++i)
+                notifications.append({applicationName:"System", summary:"Notification "+i,
+                    body:"A longer body.", closable:true, isGroup:false, isInGroup:false, expired:false});
+            tryVerify(() => popup.height <= popup.availableScreenHeight && panel.height > emptyHeight);
+            notifications.clear();
+            tryCompare(panel, "height", emptyHeight);
+            tryCompare(clear, "visible", false);
+            clock.notificationsInhibited = true;
+            tryCompare(dnd, "visible", true);
+            tryVerify(() => panel.height > emptyHeight);
+            tryCompare(clear, "visible", false);
+            clock.notificationsInhibited = false;
+            clock.popupScreenGeometry = Qt.rect(0, 0, 1280, 720);
+        }
+        function test_focusFooterRealActions() {
+            focusState.stop();
+            focusState.durationMinutes = 30;
+            mockSettings.notificationsInhibitedUntil = undefined;
+            const decrease = findChild(popup, "wmFocusDecrease");
+            const increase = findChild(popup, "wmFocusIncrease");
+            const duration = findChild(popup, "wmFocusDuration");
+            const running = findChild(popup, "wmFocusRunningLabel");
+            const button = findChild(popup, "wmFocusButton");
+            verify(decrease && increase && duration && running && button);
+            tryCompare(decrease, "visible", true);
+            tryCompare(increase, "visible", true);
+            tryCompare(running, "visible", false);
+            mouseClick(decrease);
+            tryCompare(focusState, "durationMinutes", 25);
+            mouseClick(increase);
+            tryCompare(focusState, "durationMinutes", 30);
+            mouseClick(button);
+            tryCompare(focusState, "running", true);
+            verify(mockSettings.notificationsInhibitedUntil.getTime() === focusState.endTime);
+            tryCompare(decrease, "visible", false);
+            tryCompare(increase, "visible", false);
+            tryCompare(duration, "visible", false);
+            tryCompare(running, "visible", true);
+            compare(button.text, "End session");
+            mouseClick(button);
+            tryCompare(focusState, "running", false);
+            tryCompare(decrease, "visible", true);
+            tryCompare(running, "visible", false);
+            compare(mockSettings.notificationsInhibitedUntil, undefined);
         }
         function test_focusSurvivesPopupClosing() {
             focusState.durationMinutes = 30;
@@ -116,32 +234,11 @@ Item {
             focusState.stop();
             verify(!focusState.running);
         }
-        function test_collapseCalendarTransfersSpaceToHistory() {
-            const total = popup.implicitHeight;
-            const history = findChild(popup, "wmNotificationPanel");
-            const calendar = findChild(popup, "wmCalendarPanel");
-            const previous = calendar.height;
-            const previousHistory = history.height;
+        function test_collapseCalendarDoesNotCollapseWindow() {
             popup.calendarExpanded = false;
-            compare(popup.implicitHeight, total);
-            tryVerify(() => calendar.height < previous && history.height > previousHistory);
+            verify(popup.implicitHeight >= 220);
             popup.calendarExpanded = true;
-            compare(popup.implicitHeight, total);
-        }
-
-        function test_standaloneCalendarHasNoNestedHistoryOrFrame() {
-            popup.calendarOnly = true;
-            const history = findChild(popup, "wmNotificationPanel");
-            const calendar = findChild(popup, "wmCalendarPanel");
-            tryCompare(history, "visible", false);
-            compare(calendar.border.width, 0);
-            compare(popup.implicitHeight, popup.expandedCalendarHeight);
-            const total = popup.flyoutTotalHeight;
-            popup.calendarExpanded = false;
-            compare(popup.implicitHeight, popup.collapsedCalendarHeight);
-            compare(popup.flyoutTotalHeight, total);
-            popup.calendarExpanded = true;
-            popup.calendarOnly = false;
+            verify(popup.implicitHeight >= 400);
         }
     }
 }

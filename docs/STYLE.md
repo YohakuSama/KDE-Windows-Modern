@@ -955,4 +955,24 @@ The local wallpaper tint is confined to existing active window SVG roles. Transp
 
 The overflow and Quick Settings share one native popup and one tray model, but never share visible home content. Both float above a docked panel with a scaled 8 logical pixel gap. Hidden icon cells show names via native tooltips and accessibility, not permanent labels. The chevron is a distinct panel entry; native application activation and context menus remain unchanged. The existing brightness detail page uses the same control-center header and footer.
 
-Known Quick Settings details use the existing themed pages over KDE backends. Native fallback pages use the same Plasma palette/frame and are displayed exclusively in the same stack. The back button is a native themed control. The clock bell is outline with no unread notifications, filled with unread notifications, and uses the disabled glyph with actual native inhibition or service failure (the tooltip distinguishes the latter). Native notification applets remain in overflow unless explicitly pinned. Native toast structure and application-defined content remain KDE-owned.
+Known Quick Settings details use the existing themed pages over KDE backends. Native fallback pages use the same Plasma palette/frame and are displayed exclusively in the same stack. The back button is a native themed control. The clock bell is absent with an empty notification history and no inhibition; it is outline for read history, filled for unread history, and uses the disabled glyph when the native notification server is inhibited. An unavailable server does not reserve a taskbar cell. The clock and Win+N always open the existing history and calendar. Native notification applets remain in overflow unless explicitly pinned. Native toast structure and application-defined content remain KDE-owned.
+
+### KDE application navigation icon coverage
+
+Plasma 6.8 System Settings category metadata and KCM metadata, and the four shipped System Monitor pages, are the source of the native icon role aliases. The existing resource importer maps standard and symbolic names in the installed application/category directories from the owner's pinned Segoe Fluent glyphs. The glyph presence was verified against the exact pinned font blob. `office-chart-line` uses Microsoft's MIT-licensed Fluent Data Line artwork as a semantic compatibility icon; it is not the Windows Task Manager binary asset. Real application identities and owner-created System Monitor pages remain unchanged. Native Qt Quick delegate layout and contrast are a separate acceptance item; icon mapping is not a claim of complete application redesign.
+
+### Native QWidget context-menu material
+
+The stock desktop/file-manager context menu remains a real KDE QMenu. Its light/dark Kvantum surfaces now use matching 8-pixel corner slices, a continuous one-pixel border, and consistent 98% surface opacity to prevent strong wallpaper tint and corner seams. Row padding is increased without replacing or enabling any native QAction. This is a material pass, not a claim that the desktop action order is the Windows 11 compact layout. The latter requires a containment-actions implementation that forwards the real folder-model actions.
+
+### Runtime regression fixes for panel popups and footer
+
+The clock popup is owned by its actual compact representation, with an explicit mapped panel anchor and an eight logical pixel gap. It refuses to open without a valid panel window rather than appearing at desktop origin. Start uses the same edge gap. Quick Settings uses a Qt Quick Slider template with full-row input height, longer equal tracks, and backend readback suspended during an active drag. Tests exercise real click, press/move/release, and wheel events on both rows. The default Start avatar is locally drawn to match the neutral reference (not the imported green glyph); custom user photos remain supported. An initial footer migration enables the previously hidden shortcuts once. Power/account menus use neutral hover, 16px icons and 36px rows with Lock in the power menu.
+
+### Native desktop background context menu
+
+On NixOS, the containment-actions plugin groups the stock KDE desktop actions into a compact Windows-style menu, delegates the real actions and retains additional commands under Show more options. It is a loadable module built against the same Plasma ABI, with a reversible layout configuration and runtime build identity check. The Dolphin file menu is separate and requires its own visual acceptance.
+
+### Native tray and clipboard integration
+
+Center the overflow cells and keep the same native status glyphs in overflow and on the panel. Respect an explicitly pinned clipboard or device, hide passive unpinned entries, keep the native history and optional working emoji categories, and do not display an empty tab strip. Wi-Fi retains the real network model and one generic network settings link. The existing clipboard test now verifies a rendered image fixture.

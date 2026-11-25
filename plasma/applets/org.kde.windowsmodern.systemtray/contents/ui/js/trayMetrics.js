@@ -77,3 +77,15 @@ function groupRects(cells, vertical) {
     }
     return result;
 }
+
+// Choose the run containing the clicked cell; keyboard activation uses the
+// trailing system group in the actual (possibly mirrored) layout.
+function anchorRun(runs, point, vertical, mirrored) {
+    if (!runs || runs.length === 0) return null;
+    if (point) {
+        const hit = runs.find(r => point.x >= r.x && point.x <= r.x + r.width
+            && point.y >= r.y && point.y <= r.y + r.height);
+        if (hit) return hit;
+    }
+    return runs[!vertical && mirrored ? 0 : runs.length - 1];
+}

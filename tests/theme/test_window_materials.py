@@ -51,6 +51,45 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual(ET.tostring(nodes['menu-normal']), ET.tostring(elements(SVG)['menu-normal']))
         self.assertEqual(frames.patch_window_svg(result, '#123456', '#202020'), result)
 
+    def test_real_window_and_toolbar_have_shared_opaque_tint(self):
+        theme = ROOT / 'Kvantum/Windows-modern'
+        for name in ('Windows-modern', 'Windows-modernDark'):
+            source = (theme / (name + '.svg')).read_text()
+            patched = frames.patch_window_svg(source, '#345678', '#202020')
+            self.assertEqual(frames.patch_window_svg(patched, '#345678', '#202020'), patched)
+            nodes = elements(patched)
+            for role, color in (('menubar-normal', '#345678'), ('menubar-normal-inactive', '#202020')):
+                for part in ('', '-left', '-right', '-top', '-topleft', '-topright',
+                             '-bottom', '-bottomleft', '-bottomright'):
+                    node = nodes[role + part]
+                    surface = node[0] if part.startswith('-bottom') else node
+                    self.assertEqual(surface.get('fill'), color)
+                    self.assertIn(surface.get('opacity', '1'), ('1', '1.0'))
+            self.assertEqual(ET.tostring(nodes['menu-normal']),
+                             ET.tostring(elements(source)['menu-normal']))
+
+    def test_real_kvantum_menu_slices(self):
+        theme = ROOT / 'Kvantum/Windows-modern'
+        for name, color, border in (('Windows-modern', '#F9F9F9', '#DADADA'),
+                                    ('Windows-modernDark', '#2C2C2C', '#454545')):
+            with self.subTest(name=name):
+                svg = elements((theme / (name + '.svg')).read_text())
+                self.assertEqual(svg['menu-normal'].get('fill'), color)
+                self.assertEqual(svg['menu-normal'].get('opacity'), '.98')
+                for part in ('top', 'bottom', 'left', 'right', 'topleft', 'topright',
+                             'bottomleft', 'bottomright'):
+                    item = svg['menu-normal-' + part]
+                    self.assertEqual(len(item), 2)
+                    self.assertEqual([x.get('fill') for x in item], [border, color])
+                    self.assertTrue(all(x.get('opacity') == '.98' for x in item))
+                config = (theme / (name + '.kvconfig')).read_text()
+                menu = config.split('[Menu]\n', 1)[1].split('[MenuItem]', 1)[0]
+                for side in ('top', 'bottom', 'left', 'right'):
+                    self.assertIn('frame.' + side + '=8', menu)
+                items = config.split('[MenuItem]\n', 1)[1].split('[MenuBar]', 1)[0]
+                self.assertIn('text.margin.top=3', items)
+                self.assertIn('text.margin.bottom=3', items)
+
     def test_missing_or_invalid_elements_rejected(self):
         with self.assertRaises(ValueError):
             frames.patch_window_svg(SVG.replace('window-normal-inactive', 'other'), '#123456', '#202020')

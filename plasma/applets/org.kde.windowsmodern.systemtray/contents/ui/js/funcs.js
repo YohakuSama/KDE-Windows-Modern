@@ -54,3 +54,23 @@ function batteryVisualState(percent, charging, saver) {
 function batteryFillFraction(percent) {
     return Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) / 100 : 0;
 }
+
+// Fcitx's Rime engine publishes distinct named icons for Han, ASCII
+// and disabled states (rimeengine.cpp: subModeIconImpl). Test these
+// BEFORE matching the engine name, since both modes have a Rime tooltip.
+// When Fcitx supplies a text-icon pixmap instead of a named icon, that
+// pixmap owns the actual submode and must not be covered by a guessed label.
+function inputMethodLabel(id, iconName, tooltip) {
+    if (!/^fcitx5?$/i.test(String(id))) return "";
+    const icon = String(iconName || "").split("/").pop().toLowerCase()
+        .replace(/\.(svg|png|xpm)$/, "").replace(/_+/g, "-");
+    const name = String(tooltip || "");
+    if (/^(?:fcitx-)?rime-disable(?:d)?(?:-symbolic)?$/.test(icon)) return "";
+    if (/^(?:fcitx-)?rime-latin(?:-upper)?(?:-symbolic)?$/.test(icon)) return "英";
+    if (/english|英语|英語|英文/i.test(name) ||
+        /(?:^|-)keyboard-us(?:$|-)/i.test(icon)) return "英";
+    if (!icon || /^input-keyboard(?:-symbolic)?$/.test(icon)) return "";
+    if (/^(?:fcitx-)?rime(?:-symbolic)?$/.test(icon)) return "中";
+    if (/(?:^|-)(?:pinyin|chewing|cangjie|wubi|zhuyin|bopomofo|shuangpin|chinese)(?:$|-)/i.test(icon)) return "中";
+    return "";
+}

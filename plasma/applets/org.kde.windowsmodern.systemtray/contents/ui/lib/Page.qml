@@ -54,21 +54,4 @@ ColumnLayout {
             spacing: 0
         }
     }
-
-    Rectangle {
-        visible: page.footer !== null
-        Layout.fillWidth: true
-        Layout.preferredHeight: 1
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-            Kirigami.Theme.textColor.b, 0.08)
-    }
-
-    Loader {
-        id: footerLoader
-        visible: page.footer !== null
-        active: visible
-        Layout.fillWidth: true
-        Layout.preferredHeight: item ? item.implicitHeight : 0
-        sourceComponent: page.footer
-    }
 }

@@ -8,6 +8,7 @@
 
 #include <QAbstractItemModel>
 #include <QPointer>
+#include <QRect>
 
 #include <KConfigWatcher>
 
@@ -43,6 +44,12 @@ public:
     bool accessibilityAvailable() const;
     bool castAvailable() const;
     Q_INVOKABLE void openCast();
+    Q_INVOKABLE void registerClipboardShortcut();
+    Q_INVOKABLE void registerRunShortcut();
+    Q_INVOKABLE QRect runDialogArea(QQuickItem *anchor) const;
+    Q_INVOKABLE bool runCommand(const QString &command);
+    Q_INVOKABLE bool setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
+                                      qreal radius, bool enabled);
 
     void restoreContents(KConfigGroup &group) override;
 
@@ -63,6 +70,8 @@ public:
 
 Q_SIGNALS:
     void castAvailabilityChanged();
+    void clipboardHistoryRequested();
+    void runDialogRequested();
 
 private Q_SLOTS:
     void onEnabledAppletsChanged();

@@ -15,23 +15,32 @@ import org.kde.plasma.components as PlasmaComponents3
 import "components" as Components
 import "lib" as Lib
 import "js/quickSettingsOrder.js" as Order
+import "js/colorType.js" as ColorType
 
 ColumnLayout {
     id: actionPanel
 
     signal requestPage(string name)
 
-    readonly property real scale: Plasmoid.configuration.scale / 100
+    property real uiScale: Plasmoid.configuration.scale / 100
+    property real availableHeight: Infinity
+
+    // Outer spacing includes the native KSVG dialog frame when present.
+    // The separated media window has no native frame and supplies the
+    // same total spacing itself.
+    property real frameInset: 0
+    readonly property int edgeInset: Math.round(24 * uiScale)
+    readonly property int contentInset: Math.max(0, edgeInset - Math.round(frameInset))
+    readonly property int gridBottomGap: Math.round(14 * uiScale)
+    readonly property int sliderInset: Math.round(16 * uiScale)
+    readonly property int sliderHorizontalInset: Math.max(0, Math.round(18 * uiScale) - Math.round(frameInset))
+    readonly property int sliderGap: Math.round(12 * uiScale)
+    readonly property int sliderHeight: Math.max(36, Math.round(36 * uiScale))
+    readonly property int footerHeight: Math.max(24, Math.round(48 * uiScale) - Math.round(frameInset))
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
     Layout.fillWidth: true
     spacing: 0
-    readonly property int edgeInset: Math.round(20 * scale)
-    readonly property int gridTopInset: Math.round(22 * scale)
-    readonly property int gridBottomInset: Math.round(22 * scale)
-    readonly property int sliderInset: Math.round(14 * scale)
-    readonly property int sliderHeight: Math.round(44 * scale)
-    readonly property int sliderGap: Math.round(8 * scale)
-    readonly property int footerHeight: Math.round(48 * scale)
 
     // A pre-map size from the hardware/configuration and tile geometry,
     // not visible children. Qt Layout implicitHeight can be zero while
@@ -39,9 +48,13 @@ ColumnLayout {
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
     readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
-    readonly property int homeHeight: Math.ceil(gridTopInset + toggleViewport.viewportHeight + gridBottomInset
-        + (sliderRows > 0 ? 1 + 2 * sliderInset + sliderRows * sliderHeight
-            + (sliderRows - 1) * sliderGap : 0) + footerHeight)
+    readonly property int sliderBlockHeight: sliderRows > 0 ? 1 + 2 * sliderInset
+        + sliderRows * sliderHeight + (sliderRows - 1) * sliderGap : 0
+    readonly property int nominalFixedHeight: edgeInset + gridBottomGap + sliderBlockHeight
+        + Math.max(24, Math.round(48 * uiScale))
+    readonly property int gridHeight: Math.max(Math.round(64 * uiScale), toggleViewport.viewportHeight)
+    readonly property int nominalHomeHeight: nominalFixedHeight + gridHeight
+    readonly property int homeHeight: contentInset + gridHeight + gridBottomGap + sliderBlockHeight + footerHeight
 
     // Only this viewport scrolls; the sliders and footer remain fixed.
     function resetScroll() {
@@ -57,50 +70,40 @@ ColumnLayout {
     Item {
         id: toggleRow
         Layout.fillWidth: true
-        Layout.leftMargin: actionPanel.edgeInset
-        Layout.rightMargin: actionPanel.edgeInset
-        Layout.topMargin: actionPanel.gridTopInset
-        Layout.bottomMargin: actionPanel.gridBottomInset
-        implicitHeight: toggleViewport.viewportHeight
+        objectName: "wmQuickSettingsTileRow"
+        Layout.leftMargin: actionPanel.contentInset
+        Layout.rightMargin: actionPanel.contentInset
+        Layout.topMargin: actionPanel.contentInset
+        Layout.bottomMargin: actionPanel.gridBottomGap
+        implicitHeight: Math.max(Math.round(64 * actionPanel.uiScale), toggleViewport.viewportHeight)
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
         Layout.maximumHeight: implicitHeight
 
-        // Measure the caption independently of visibility. QQuickLayout
-        // can report zero implicit size before its window becomes visible.
-        PlasmaComponents3.Label {
-            id: captionProbe
-            visible: false
-            text: "Ag"
-            font.pixelSize: Math.round(13 * actionPanel.scale)
-        }
-
         Flickable {
             id: toggleViewport
             anchors.fill: parent
-            anchors.rightMargin: hasMoreRows ? Math.round(16 * actionPanel.scale) : 0
             objectName: "wmQuickSettingsGridViewport"
-            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile, castTile, accessibilityTile]
+            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, micTile, hotspotTile, castTile, accessibilityTile]
             readonly property var knownKeys: tiles.map(tile => tile.orderKey)
             readonly property var availableKeys: tiles.filter(tile => tile.included).map(tile => tile.orderKey)
             readonly property var order: Order.normalizeOrder(
                 String(Plasmoid.configuration.quickSettingsOrder || "").split(","), knownKeys)
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
-            readonly property bool hasMoreRows: rows > 2
-            readonly property real tileScale: actionPanel.scale
-            readonly property real rowGap: Math.round(20 * actionPanel.scale)
-            readonly property real columnGap: Math.round(14 * actionPanel.scale)
+            readonly property bool hasMoreRows: rows > visibleRows
+            readonly property real rowGap: Math.round(12 * actionPanel.uiScale)
+            readonly property real columnGap: Math.round(14 * actionPanel.uiScale)
             readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
-            // Height follows the tallest caption (system font), not the
-            // effective visibility or width of a GridLayout parent.
-            readonly property real rowHeight: tiles.reduce((largest, tile) =>
-                tile.included ? Math.max(largest, tile.implicitHeight) : largest,
-                Math.round(56 * actionPanel.scale) + captionProbe.implicitHeight)
+            // Two caption lines are reserved for every tile, keeping
+            // the second row aligned even for a long device name.
+            readonly property real rowHeight: networkTile.buttonHeight + networkTile.spacing + networkTile.captionHeight
             readonly property real rowStride: rowHeight + rowGap
-            readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
+            readonly property int visibleRows: rows === 0 ? 0 : Math.max(1, Math.min(2, rows,
+                Math.floor((actionPanel.availableHeight - actionPanel.nominalFixedHeight + rowGap) / Math.max(1, rowStride))))
+            readonly property real viewportHeight: Math.max(0, visibleRows * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
-            readonly property int pageCount: Math.max(1, Math.ceil(rows / 2))
+            readonly property int pageCount: Math.max(1, Math.ceil(rows / Math.max(1, visibleRows)))
             readonly property int currentPage: maxOffset > 0 ? Math.round(contentY / maxOffset * (pageCount - 1)) : 0
 
             property string dragKey: ""
@@ -137,12 +140,28 @@ ColumnLayout {
                 contentY = Order.clampOffset(offset, maxOffset);
             }
 
+            function settleRows() {
+                if (dragKey !== "" || moving || flicking) return;
+                const next = Order.snapOffset(contentY, rowStride, maxOffset);
+                if (Math.abs(next - contentY) > 0.5) setOffsetImmediately(next);
+            }
             function page(direction) {
-                setOffsetImmediately(contentY + direction * height);
+                showPage(Math.max(0, Math.min(pageCount - 1, currentPage + direction)));
             }
 
             function showPage(index) {
-                setOffsetImmediately(pageCount > 1 ? index * maxOffset / (pageCount - 1) : 0);
+                setOffsetImmediately(Order.snapOffset(pageCount > 1
+                    ? index * maxOffset / (pageCount - 1) : 0, rowStride, maxOffset));
+            }
+
+            // WheelHandler can move contentY without emitting movementEnded.
+            // Settle after the last delta, without interfering with drag/reorder.
+            onContentYChanged: if (ready && dragKey === "") rowSettle.restart()
+            onMovementEnded: settleRows()
+            Timer {
+                id: rowSettle
+                interval: 120
+                onTriggered: toggleViewport.settleRows()
             }
 
             // The same native wheel event filter used by Plasma Kickoff.
@@ -258,12 +277,12 @@ ColumnLayout {
                     if (point.x < 0 || point.x >= toggleViewport.width
                             || point.y < 0 || point.y >= toggleViewport.height)
                         return;
-                    const edge = Math.round(20 * actionPanel.scale);
+                    const edge = Math.round(20 * actionPanel.uiScale);
                     const direction = point.y < edge ? -1
                         : point.y > toggleViewport.height - edge ? 1 : 0;
                     if (direction !== 0) {
                         toggleViewport.contentY = Order.clampOffset(
-                            toggleViewport.contentY + direction * 5 * actionPanel.scale,
+                            toggleViewport.contentY + direction * 5 * actionPanel.uiScale,
                             toggleViewport.maxOffset);
                         toggleViewport.updateDrag(toggleViewport.dragKey, point);
                     }
@@ -279,7 +298,7 @@ ColumnLayout {
                     id: networkTile
                     orderKey: "network"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: true
                     visible: included
                     onArrowClicked: actionPanel.requestPage("network")
@@ -288,7 +307,7 @@ ColumnLayout {
                     id: bluetoothTile
                     orderKey: "bluetooth"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: available
                     visible: included
                     onArrowClicked: actionPanel.requestPage("bluetooth")
@@ -297,7 +316,7 @@ ColumnLayout {
                     id: airplaneTile
                     orderKey: "airplane"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showAirplane && available
                     visible: included
                 }
@@ -305,16 +324,16 @@ ColumnLayout {
                     id: batterySaverTile
                     orderKey: "battery-saver"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showBatterySaver && available
                     visible: included
-                    onArrowClicked: actionPanel.requestPage("battery")
+                    onRightClicked: actionPanel.requestPage("battery")
                 }
                 Components.NightLightToggle {
                     id: nightLightTile
                     orderKey: "night-light"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showNightLight && available
                     visible: included
                 }
@@ -322,23 +341,15 @@ ColumnLayout {
                     id: colorSchemeTile
                     orderKey: "color-scheme"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showColorScheme
-                    visible: included
-                }
-                Components.DndToggle {
-                    id: dndTile
-                    orderKey: "dnd"
-                    orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
-                    included: Plasmoid.configuration.showDnd
                     visible: included
                 }
                 Components.MicMuteToggle {
                     id: micTile
                     orderKey: "microphone"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showMicMute && available
                     visible: included
                 }
@@ -346,7 +357,7 @@ ColumnLayout {
                     id: castTile
                     orderKey: "cast"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.castAvailable
                     checkable: false
                     label: i18n("Cast")
@@ -357,7 +368,7 @@ ColumnLayout {
                     id: accessibilityTile
                     orderKey: "accessibility"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     checkable: false
                     included: Plasmoid.accessibilityAvailable
                     label: i18n("Accessibility")
@@ -368,7 +379,7 @@ ColumnLayout {
                     id: hotspotTile
                     orderKey: "hotspot"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showHotspot && (hotspotSupported || hotspotActive)
                     visible: included
                 }
@@ -397,10 +408,12 @@ ColumnLayout {
             id: pageControls
             objectName: "wmQuickSettingsPageControls"
             visible: toggleViewport.hasMoreRows
-            width: Math.round(16 * actionPanel.scale)
-            anchors.right: parent.right
+            // Use the existing right gutter, not part of a tile column.
+            width: Math.round(14 * actionPanel.uiScale)
+            anchors.left: parent.right
+            anchors.leftMargin: Math.round(1 * actionPanel.uiScale)
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+            spacing: Math.round(2 * actionPanel.uiScale)
 
             Repeater {
                 model: toggleViewport.pageCount
@@ -408,7 +421,7 @@ ColumnLayout {
                     id: pageDot
                     required property int index
                     width: pageControls.width
-                    height: Math.round(12 * actionPanel.scale)
+                    height: Math.round(12 * actionPanel.uiScale)
                     Accessible.role: Accessible.Button
                     Accessible.name: i18n("Page %1", index + 1)
                     Accessible.onPressAction: toggleViewport.showPage(index)
@@ -417,11 +430,11 @@ ColumnLayout {
                     Keys.onSpacePressed: toggleViewport.showPage(index)
                     Rectangle {
                         anchors.centerIn: parent
-                        width: Math.round((toggleViewport.currentPage === pageDot.index ? 6 : 4) * actionPanel.scale)
+                        width: Math.round((toggleViewport.currentPage === pageDot.index ? 5 : 3) * actionPanel.uiScale)
                         height: width
                         radius: width / 2
-                        color: Kirigami.Theme.textColor
-                        opacity: toggleViewport.currentPage === pageDot.index || pageDot.activeFocus ? 0.9 : 0.4
+                        color: actionPanel.dark ? "#CCCCCC" : "#737373"
+                        opacity: toggleViewport.currentPage === pageDot.index || pageDot.activeFocus ? 1 : 0.55
                     }
                     MouseArea { anchors.fill: parent; onClicked: toggleViewport.showPage(pageDot.index) }
                 }
@@ -430,7 +443,7 @@ ColumnLayout {
             Item {
                 id: pageArrow
                 width: pageControls.width
-                height: Math.round(16 * actionPanel.scale)
+                height: Math.round(16 * actionPanel.uiScale)
                 readonly property bool atEnd: toggleViewport.contentY >= toggleViewport.maxOffset - 1
                 function navigate() { toggleViewport.page(atEnd ? -1 : 1); }
                 activeFocusOnTab: true
@@ -439,15 +452,30 @@ ColumnLayout {
                 Accessible.onPressAction: navigate()
                 Keys.onReturnPressed: navigate()
                 Keys.onSpacePressed: navigate()
-                Kirigami.Icon {
+                Canvas {
+                    id: pageTriangle
                     anchors.centerIn: parent
-                    width: Math.round(12 * actionPanel.scale)
+                    width: Math.max(8, Math.round(10 * actionPanel.uiScale))
                     height: width
-                    source: pageArrow.atEnd ? "go-up" : "go-down"
-                    isMask: true
-                    color: Kirigami.Theme.textColor
-                    roundToIconSize: false
-                    opacity: pageArrow.activeFocus ? 1 : 0.7
+                    readonly property bool up: pageArrow.atEnd
+                    readonly property color ink: actionPanel.dark ? "#CCCCCC" : "#737373"
+                    onUpChanged: requestPaint()
+                    onInkChanged: requestPaint()
+                    onWidthChanged: requestPaint()
+                    onHeightChanged: requestPaint()
+                    Component.onCompleted: requestPaint()
+                    onPaint: {
+                        const c = getContext("2d");
+                        c.reset();
+                        c.clearRect(0, 0, width, height);
+                        c.fillStyle = ink;
+                        c.beginPath();
+                        c.moveTo(width * 0.13, height * (up ? 0.70 : 0.30));
+                        c.lineTo(width * 0.87, height * (up ? 0.70 : 0.30));
+                        c.lineTo(width * 0.50, height * (up ? 0.26 : 0.74));
+                        c.closePath();
+                        c.fill();
+                    }
                 }
                 MouseArea { anchors.fill: parent; onClicked: pageArrow.navigate() }
             }
@@ -455,18 +483,20 @@ ColumnLayout {
     }
 
     Rectangle {
+        objectName: "wmQuickSettingsSliderDivider"
         visible: actionPanel.sliderRows > 0
         Layout.fillWidth: true
+        Layout.leftMargin: -actionPanel.frameInset + 1
+        Layout.rightMargin: -actionPanel.frameInset + 1
         Layout.preferredHeight: 1
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-            Kirigami.Theme.textColor.b, 0.08)
+        color: ColorType.divider(actionPanel.dark)
     }
 
     GridLayout {
         visible: actionPanel.sliderRows > 0
         Layout.fillWidth: true
-        Layout.leftMargin: actionPanel.edgeInset
-        Layout.rightMargin: actionPanel.edgeInset
+        Layout.leftMargin: actionPanel.sliderHorizontalInset
+        Layout.rightMargin: actionPanel.sliderHorizontalInset
         Layout.topMargin: actionPanel.sliderInset
         Layout.bottomMargin: actionPanel.sliderInset
         columns: 3
@@ -477,26 +507,34 @@ ColumnLayout {
             id: brightnessSlider
             Layout.fillWidth: true
             Layout.columnSpan: 3
-            Layout.preferredHeight: actionPanel.sliderHeight
             visible: Plasmoid.configuration.showBrightness && brightnessAvailable
-            showArrow: true
+            showArrow: false
+            reserveDetailsSpace: true
+            Layout.preferredHeight: actionPanel.sliderHeight
+            implicitHeight: actionPanel.sliderHeight
             panelScreenGeometry: Plasmoid.screenGeometry
             panelScreenIndex: Plasmoid.containment.screen
-            onArrowClicked: actionPanel.requestPage("brightness")
+            onRightClicked: actionPanel.requestPage("brightness")
         }
         Components.VolumeSlider {
             id: volumeSlider
             Layout.fillWidth: true
             Layout.columnSpan: 3
             Layout.preferredHeight: actionPanel.sliderHeight
+            implicitHeight: actionPanel.sliderHeight
             visible: Plasmoid.configuration.showVolume && sinkAvailable
+            reserveDetailsSpace: true
             onArrowClicked: actionPanel.requestPage("volume")
         }
     }
 
     Components.Footer {
         Layout.fillWidth: true
-        uiScale: actionPanel.scale
+        Layout.preferredHeight: actionPanel.footerHeight
+        Layout.minimumHeight: actionPanel.footerHeight
+        Layout.maximumHeight: actionPanel.footerHeight
+        frameInset: actionPanel.frameInset
+        uiScale: actionPanel.uiScale
         showBattery: Plasmoid.configuration.showBattery
         onBatteryClicked: actionPanel.requestPage("battery")
     }
