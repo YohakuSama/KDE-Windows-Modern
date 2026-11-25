@@ -9,8 +9,8 @@ PlasmaComponents3.ToolButton {
     implicitHeight: 40
     width: 40
     height: 40
-    icon.width: 20
-    icon.height: 20
+    icon.width: 18
+    icon.height: 18
     icon.color: "#FFFFFF"
     display: AbstractButton.IconOnly
     flat: true

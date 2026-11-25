@@ -7,22 +7,26 @@ Item {
     property string accountName
     property url accountImage
     property string message
-    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(WinStyle.avatarSize, width * 0.6, height * 0.25)))
+    property real avatarTop: -1
+    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(WinStyle.avatarSize, width * 0.6, height * 0.32)))
+    readonly property real verticalGap: Math.min(18, Math.max(4, height / 30))
 
     ColumnLayout {
         id: form
         objectName: "wmWelcomeForm"
         width: Math.min(root.width, 380)
         height: implicitHeight
-        anchors.centerIn: parent
-        spacing: 8
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: Math.max(0, Math.min(root.height - height,
+            root.avatarTop >= 0 ? root.avatarTop : (root.height - height) / 2))
+        spacing: root.verticalGap
 
         WinAvatar {
             objectName: "wmWelcomeAvatar"
             size: root.avatarSize
             source: root.accountImage
             Layout.alignment: Qt.AlignHCenter
-            Layout.bottomMargin: 4
+            Layout.bottomMargin: 0
         }
         Text {
             objectName: "wmWelcomeName"
@@ -38,7 +42,7 @@ Item {
         SignInProgress {
             objectName: "wmWelcomeRing"
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: Math.min(36, Math.max(18, root.height / 8))
+            Layout.preferredWidth: Math.min(36, Math.max(18, root.height / 9))
             Layout.preferredHeight: Layout.preferredWidth
             running: root.visible
         }

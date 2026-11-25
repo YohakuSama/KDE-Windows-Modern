@@ -15,7 +15,7 @@ SessionManagementScreen {
     id: screen
     focus: true
     showUserList: true
-    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(140, width * 0.6, height * 0.25)))
+    readonly property int avatarSize: Math.max(1, Math.floor(Math.min(160, width * 0.6, height * 0.32)))
     actionItems: [ Item { visible: false } ]
 
     Component.onCompleted: {
@@ -50,7 +50,7 @@ SessionManagementScreen {
             return user.realName || user.name || "";
         }
         color: "white"
-        font.pixelSize: 32
+        font.pixelSize: 28
         horizontalAlignment: Text.AlignHCenter
     }
 
@@ -62,7 +62,7 @@ SessionManagementScreen {
         Layout.preferredWidth: Math.min(144, screen.width)
         Layout.preferredHeight: 42
         background: Rectangle {
-            radius: 4
+            radius: 6
             color: loginButton.down ? "#26FFFFFF" : loginButton.hovered ? "#33FFFFFF" : "#20FFFFFF"
             border.width: loginButton.activeFocus ? 2 : 1
             border.color: loginButton.activeFocus ? "#FFFFFF" : "#88FFFFFF"
