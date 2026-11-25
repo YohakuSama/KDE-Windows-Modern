@@ -334,6 +334,12 @@ apply_lookandfeel() {
     fi
     info "Applying $id ${reset_flag:+with layout reset}..."
     plasma-apply-lookandfeel -a "$id" $reset_flag
+    # The Plasma wallpaper plugin owns extraction and live palette updates.
+    # Preserve an explicitly selected manual accent mode on upgrades.
+    if command -v kreadconfig6 >/dev/null && command -v kwriteconfig6 >/dev/null &&
+       [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
+        kwriteconfig6 --notify --file kdeglobals --group General --key accentColorFromWallpaper --type bool true
+    fi
     # Apply the wallpaper only after the caller has completed layout reset
     # and restarted Plasma. Otherwise the new desktop may overwrite it.
 }

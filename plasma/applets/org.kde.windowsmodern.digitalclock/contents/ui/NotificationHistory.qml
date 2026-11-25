@@ -11,6 +11,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.notificationmanager as NotificationManager
+import org.kde.kcmutils as KCMUtils
 
 // Use Plasma's shared notification history, not a second notification server
 // or a watcher that only sees notifications received after opening.
@@ -22,7 +23,34 @@ ColumnLayout {
     property var timeLocale: Qt.locale()
     property string timeFormat: "h:mm AP"
     spacing: 8
-    readonly property int minimumSectionHeight: Math.ceil(historyHeader.implicitHeight + spacing + 32)
+    // Size from the content, even before the shell-role window is mapped.
+    // The parent caps the history height using the available screen area.
+    readonly property int headerHeight: 28
+    readonly property int emptyHeight: 64
+    readonly property int dndHeight: effectiveDnd ? Math.ceil(24 + 6 + Math.max(30, dndMessage.implicitHeight) + 8 + 22) : 0
+    readonly property int historyChromeHeight: headerHeight + spacing + (effectiveDnd ? dndHeight + spacing : 0)
+    readonly property int minimumSectionHeight: historyChromeHeight + emptyHeight
+    readonly property int preferredSectionHeight: historyChromeHeight + (notificationModel.count > 0
+        ? Math.max(emptyHeight, Math.ceil(list.contentHeight > 0 ? list.contentHeight : notificationModel.count * 100))
+        : emptyHeight)
+    property int modelRevision: 0
+    readonly property bool hasClearable: {
+        const revision = modelRevision;
+        for (let row = 0; row < notificationModel.count; ++row) {
+            if (typeof notificationModel.get === "function") {
+                if (notificationModel.get(row).closable) return true;
+            } else if (notificationModel.data(notificationModel.index(row, 0), NotificationManager.Notifications.ClosableRole)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    Connections {
+        target: history.notificationModel
+        ignoreUnknownSignals: true
+        function onDataChanged() { history.modelRevision++; }
+        function onModelReset() { history.modelRevision++; }
+    }
 
     Win11Palette { id: palette }
 
@@ -30,7 +58,7 @@ ColumnLayout {
     required property var settings
 
     // Respect automatic/application-driven DND; this button only controls the
-    // user's manual setting, like the existing Quick Settings toggle.
+    // user's manual setting; the notification center is its single entry.
     readonly property bool manualDnd: {
         const until = settings.notificationsInhibitedUntil;
         return !!until && !isNaN(until.getTime()) && until.getTime() > history.currentTime.getTime();
@@ -50,7 +78,7 @@ ColumnLayout {
         // Take persistent indexes before closing anything: group rows can
         // disappear or move as their children are removed. Close a group only
         // once, including hidden children. KDE still checks each child's
-        // closable state. Jobs never enter this notification model.
+        // closable state, so clearing history never cancels running jobs.
         const targets = [];
         for (let row = notificationModel.count - 1; row >= 0; --row) {
             const idx = notificationModel.index(row, 0);
@@ -69,6 +97,9 @@ ColumnLayout {
     RowLayout {
         id: historyHeader
         Layout.fillWidth: true
+        Layout.preferredHeight: history.headerHeight
+        Layout.minimumHeight: Layout.preferredHeight
+        Layout.maximumHeight: Layout.preferredHeight
         spacing: Kirigami.Units.smallSpacing
 
         PlasmaComponents.Label {
@@ -96,20 +127,84 @@ ColumnLayout {
         }
 
         FlyoutButton {
+            objectName: "wmClearNotifications"
             text: i18n("Clear all")
-            enabled: notificationModel.count > 0
+            visible: history.hasClearable
+            enabled: visible
             onClicked: history.clearAll()
         }
     }
 
+    Item {
+        objectName: "wmDoNotDisturbBanner"
+        Layout.fillWidth: true
+        Layout.preferredHeight: history.dndHeight
+        Layout.minimumHeight: Layout.preferredHeight
+        Layout.maximumHeight: Layout.preferredHeight
+        visible: history.effectiveDnd
+
+        RowLayout {
+            id: dndTitle
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 24
+            spacing: 6
+            Kirigami.Icon {
+                Layout.preferredWidth: 16
+                Layout.preferredHeight: 16
+                source: "notification-disabled-symbolic"
+                isMask: true
+                color: palette.text
+            }
+            PlasmaComponents.Label {
+                Layout.fillWidth: true
+                text: i18n("Do not disturb is on")
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+                color: palette.text
+                elide: Text.ElideRight
+            }
+        }
+
+        PlasmaComponents.Label {
+            id: dndMessage
+            anchors.top: dndTitle.bottom
+            anchors.topMargin: 6
+            width: Math.max(1, history.width)
+            text: i18n("Only notifications allowed by your priority settings appear as banners.")
+            color: palette.textSecondary
+            font.pixelSize: 13
+            wrapMode: Text.WordWrap
+        }
+
+        PlasmaComponents.Label {
+            objectName: "wmNotificationSettingsLink"
+            anchors.top: dndMessage.bottom
+            anchors.topMargin: 8
+            text: i18n("Notification settings")
+            color: palette.accentLink
+            font.pixelSize: 13
+            font.underline: true
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Link
+            Accessible.name: text
+            Accessible.onPressAction: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications")
+            Keys.onReturnPressed: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications")
+            Keys.onSpacePressed: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications")
+            TapHandler { onTapped: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications") }
+            HoverHandler { cursorShape: Qt.PointingHandCursor }
+        }
+    }
+
     PlasmaComponents.Label {
+        objectName: "wmEmptyNotifications"
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.minimumHeight: 0
-        Layout.preferredHeight: 32
+        Layout.preferredHeight: history.emptyHeight
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
-        text: history.notificationsAvailable ? i18n("No notifications") : i18n("Notification service not available")
+        text: history.notificationsAvailable ? i18n("No new notifications") : i18n("Notification service not available")
         color: palette.textSecondary
         font.pixelSize: 12
         visible: notificationModel.count === 0
@@ -121,8 +216,9 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.minimumHeight: 0
-        Layout.preferredHeight: Math.max(32, contentHeight)
+        Layout.preferredHeight: Math.max(history.emptyHeight, contentHeight)
         visible: count > 0
+        interactive: contentHeight > height
         model: notificationModel
         spacing: 8
         clip: true
@@ -142,6 +238,8 @@ ColumnLayout {
             required property var model
             readonly property bool isGroup: !!model.isGroup
             readonly property bool inGroup: !!model.isInGroup
+            readonly property bool isJob: model.type === NotificationManager.Notifications.JobType
+            readonly property bool runningJob: isJob && model.jobState !== NotificationManager.Notifications.JobStateStopped
             readonly property var notificationId: model.id
             property bool bodyExpanded: false
             onNotificationIdChanged: {
@@ -155,7 +253,7 @@ ColumnLayout {
 
             function submitReply() {
                 const text = replyInput.text;
-                if (isGroup || !text.trim() || model.expired || !model.hasReplyAction) return;
+                if (isGroup || isJob || !text.trim() || model.expired || !model.hasReplyAction) return;
                 const idx = notificationModel.index(index, 0);
                 const behavior = model.resident ? NotificationManager.Notifications.None
                                                 : NotificationManager.Notifications.Close;
@@ -164,7 +262,7 @@ ColumnLayout {
             }
 
             function invoke(name) {
-                if (isGroup) return;
+                if (isGroup || isJob) return;
                 const idx = notificationModel.index(index, 0);
                 const behavior = model.resident ? NotificationManager.Notifications.None
                                                 : NotificationManager.Notifications.Close;
@@ -315,11 +413,51 @@ ColumnLayout {
                             visible: !card.isGroup && text.length > 0
                         }
 
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: card.runningJob && !card.isGroup
+                            PlasmaComponents.ProgressBar {
+                                Layout.fillWidth: true
+                                from: 0
+                                to: 100
+                                value: Math.max(0, Math.min(100, Number(card.model.percentage) || 0))
+                                Accessible.name: i18n("Transfer progress")
+                            }
+                            PlasmaComponents.Label {
+                                text: Math.round(Number(card.model.percentage) || 0) + "%"
+                                color: palette.textSecondary
+                                font.pixelSize: 12
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: card.runningJob && !card.isGroup
+                            FlyoutButton {
+                                visible: !!card.model.suspendable
+                                text: card.model.jobState === NotificationManager.Notifications.JobStateSuspended
+                                    ? i18n("Resume") : i18n("Pause")
+                                onClicked: {
+                                    const idx = history.notificationModel.index(card.index, 0);
+                                    if (card.model.jobState === NotificationManager.Notifications.JobStateSuspended)
+                                        history.notificationModel.resumeJob(idx);
+                                    else
+                                        history.notificationModel.suspendJob(idx);
+                                }
+                            }
+                            FlyoutButton {
+                                visible: !!card.model.killable
+                                text: i18n("Cancel")
+                                onClicked: history.notificationModel.killJob(history.notificationModel.index(card.index, 0))
+                            }
+                            Item { Layout.fillWidth: true }
+                        }
+
                         Flow {
                             id: actions
                             Layout.fillWidth: true
                             spacing: Kirigami.Units.smallSpacing
-                            visible: !card.isGroup && !card.model.expired && (card.model.hasDefaultAction
+                            visible: !card.isGroup && !card.isJob && !card.model.expired && (card.model.hasDefaultAction
                                 || (card.model.actionNames || []).length > 0)
 
                             PlasmaComponents.Button {
@@ -345,7 +483,7 @@ ColumnLayout {
 
                         RowLayout {
                             Layout.fillWidth: true
-                            visible: !card.isGroup && !card.model.expired && !!card.model.hasReplyAction
+                            visible: !card.isGroup && !card.isJob && !card.model.expired && !!card.model.hasReplyAction
                             spacing: Kirigami.Units.smallSpacing
 
                             PlasmaComponents.TextField {

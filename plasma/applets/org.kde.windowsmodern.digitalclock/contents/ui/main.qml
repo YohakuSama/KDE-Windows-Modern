@@ -71,8 +71,10 @@ PlasmoidItem {
         id: notificationModel
         showExpired: true
         showDismissed: true
-        // Keep file-copy/transfer jobs available through the native KDE applet.
-        showJobs: false
+        // Shared Plasma notifications and transfer jobs. Keep the native
+        // applet loaded as the toast presenter, without its duplicate icon.
+        showJobs: notificationSettings.jobsInNotifications
+        showAddedDuringInhibition: true
         showNotifications: true
         sortMode: NotificationManager.Notifications.SortByDate
         groupMode: NotificationManager.Notifications.GroupApplicationsFlat
@@ -81,6 +83,8 @@ PlasmoidItem {
         ignoreBlacklistDuringInhibition: true
         blacklistedDesktopEntries: notificationSettings.historyBlacklistedApplications
         blacklistedNotifyRcNames: notificationSettings.historyBlacklistedServices
+        popupBlacklistedDesktopEntries: notificationSettings.popupBlacklistedApplications
+        popupBlacklistedNotifyRcNames: notificationSettings.popupBlacklistedServices
         urgencies: NotificationManager.Notifications.CriticalUrgency
                  | NotificationManager.Notifications.NormalUrgency
                  | (notificationSettings.lowPriorityHistory ? NotificationManager.Notifications.LowUrgency : 0)

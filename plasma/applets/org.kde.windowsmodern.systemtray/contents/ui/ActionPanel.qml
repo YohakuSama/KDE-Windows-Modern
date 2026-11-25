@@ -81,7 +81,7 @@ ColumnLayout {
             id: toggleViewport
             anchors.fill: parent
             objectName: "wmQuickSettingsGridViewport"
-            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, dndTile, micTile, hotspotTile, castTile, accessibilityTile]
+            readonly property var tiles: [networkTile, bluetoothTile, airplaneTile, batterySaverTile, nightLightTile, colorSchemeTile, micTile, hotspotTile, castTile, accessibilityTile]
             readonly property var knownKeys: tiles.map(tile => tile.orderKey)
             readonly property var availableKeys: tiles.filter(tile => tile.included).map(tile => tile.orderKey)
             readonly property var order: Order.normalizeOrder(
@@ -136,12 +136,28 @@ ColumnLayout {
                 contentY = Order.clampOffset(offset, maxOffset);
             }
 
+            function settleRows() {
+                if (dragKey !== "" || moving || flicking) return;
+                const next = Order.snapOffset(contentY, rowStride, maxOffset);
+                if (Math.abs(next - contentY) > 0.5) setOffsetImmediately(next);
+            }
             function page(direction) {
-                setOffsetImmediately(contentY + direction * height);
+                showPage(Math.max(0, Math.min(pageCount - 1, currentPage + direction)));
             }
 
             function showPage(index) {
-                setOffsetImmediately(pageCount > 1 ? index * maxOffset / (pageCount - 1) : 0);
+                setOffsetImmediately(Order.snapOffset(pageCount > 1
+                    ? index * maxOffset / (pageCount - 1) : 0, rowStride, maxOffset));
+            }
+
+            // WheelHandler can move contentY without emitting movementEnded.
+            // Settle after the last delta, without interfering with drag/reorder.
+            onContentYChanged: if (ready && dragKey === "") rowSettle.restart()
+            onMovementEnded: settleRows()
+            Timer {
+                id: rowSettle
+                interval: 120
+                onTriggered: toggleViewport.settleRows()
             }
 
             // The same native wheel event filter used by Plasma Kickoff.
@@ -323,14 +339,6 @@ ColumnLayout {
                     orderView: toggleViewport
                     buttonHeight: Math.round(48 * actionPanel.scale)
                     included: Plasmoid.configuration.showColorScheme
-                    visible: included
-                }
-                Components.DndToggle {
-                    id: dndTile
-                    orderKey: "dnd"
-                    orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
-                    included: Plasmoid.configuration.showDnd
                     visible: included
                 }
                 Components.MicMuteToggle {

@@ -224,6 +224,24 @@ puts them back. Win+Up/Down come from a small KWin script
 `./uninstall.sh apps` restores your previous defaults; the apps stay
 installed.
 
+## Live accent and notification history
+
+Windows Modern uses the global KDE color scheme for Plasma text and selection
+colors, instead of a second fixed-blue desktop-theme palette. A fresh install
+enables KDE's native accent-from-wallpaper mode when no mode has been set.
+Existing explicit manual choices are preserved. Change the mode in System
+Settings → Colors & Themes → Colors → Accent color. The compositor and
+wallpaper plugin own the live color updates; application logos and semantic
+battery/charging colors do not change with the accent.
+
+Win+N uses Plasma's shared notification history, including transfer jobs
+when the system's job-history setting is enabled. The native notification
+applet remains loaded to present real toast notifications, but its duplicate
+tray icon is suppressed. The date and notification cards have an independent
+transparent gap, with a bounded notification list that grows with its content.
+Clearing history never cancels running file transfers. The Do not disturb
+switch lives in the notification center.
+
 ## Transparency effects
 
 Like Windows' Settings → Personalization → Colors → Transparency effects:

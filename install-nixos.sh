@@ -473,6 +473,12 @@ else
     busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 fi
 
+# Opt into Plasma's native wallpaper accent on a fresh/unspecified mode.
+# An explicit existing manual mode remains the user's choice.
+if [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
+    kwriteconfig6 --notify --file kdeglobals --group General --key accentColorFromWallpaper --type bool true
+fi
+
 "$PYTHON" "$ROOT/scripts/app-appearance.py" apply
 
 # Do not report success with stock fallback applets or a stale C++ plugin.

@@ -34,5 +34,13 @@ int main()
     check(QStringLiteral("example.sni"), Status::NeedsAttentionStatus, true, false, false, Status::ActiveStatus);
     check(QStringLiteral("example.sni"), Status::HiddenStatus, true, false, false, Status::HiddenStatus);
     check(QStringLiteral("org.kde.plasma.volume"), Status::PassiveStatus, true, false, false, Status::ActiveStatus);
-    check(QStringLiteral("org.kde.plasma.notifications"), Status::NeedsAttentionStatus, true, false, false, Status::PassiveStatus);
+    check(QStringLiteral("org.kde.plasma.notifications"), Status::NeedsAttentionStatus, true, false, false, Status::HiddenStatus);
+    check(QStringLiteral("org.kde.plasma.notifications"), Status::ActiveStatus, true, true, false, Status::HiddenStatus);
+    check(QStringLiteral("org.kde.plasma.brightness"), Status::ActiveStatus, true, true, false, Status::HiddenStatus);
+    check(QStringLiteral("org.kde.plasma.volume"), Status::PassiveStatus, true, false, true, Status::ActiveStatus);
+    check(QStringLiteral("org.kde.plasma.networkmanagement"), Status::PassiveStatus, true, false, true, Status::ActiveStatus);
+    check(QStringLiteral("org.kde.plasma.userswitcher"), Status::ActiveStatus, true, false, false, Status::HiddenStatus);
+    check(QStringLiteral("org.kde.plasma.weather"), Status::ActiveStatus, true, false, false, Status::HiddenStatus);
+    check(QStringLiteral("org.kde.plasma.weather"), Status::ActiveStatus, true, false, true, Status::PassiveStatus);
+    check(QStringLiteral("org.kde.plasma.keyboardindicator"), Status::NeedsAttentionStatus, true, false, false, Status::ActiveStatus);
 }
