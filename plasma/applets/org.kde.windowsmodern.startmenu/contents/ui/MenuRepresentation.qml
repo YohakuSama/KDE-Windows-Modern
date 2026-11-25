@@ -128,6 +128,7 @@ Item {
             if (searching) {
                 modeMenu.close();
                 allAppsPage.resetCategory();
+                allAppsPage.closeLetterIndex(false);
                 leftColumnState = 2;
                 // Reset scroll position when entering search mode.
                 searchPage.resultsView.contentY = 0;
@@ -160,6 +161,7 @@ Item {
                 root.pinnedPage.favoritesList.positionViewAtBeginning();
             }
             allAppsPage.resetCategory();
+            allAppsPage.closeLetterIndex(false);
             allAppsPage.allAppsList.currentIndex = -1;
             allAppsPage.allAppsList.positionViewAtBeginning();
             // Reset the search filter pills to "All".
@@ -307,6 +309,8 @@ Item {
                         powerMenu.close();
                     } else if (startSearch.searchText !== "") {
                         root.reset();
+                    } else if (allAppsPage.letterIndexOpen) {
+                        allAppsPage.closeLetterIndex(true);
                     } else if (allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {
@@ -771,6 +775,8 @@ Item {
                         powerMenu.close();
                     } else if (root.searching) {
                         root.reset();
+                    } else if (allAppsPage.letterIndexOpen) {
+                        allAppsPage.closeLetterIndex(true);
                     } else if (root.leftColumnState === 1 && allAppsPage.inCategory) {
                         allAppsPage.backToCategories();
                     } else if (root.leftColumnState === 1) {

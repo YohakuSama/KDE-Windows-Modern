@@ -58,6 +58,42 @@ Item {
             compare(view.visualRows.map(row => row.heading).join(","), "A,C,,,F");
             view.gridMode = true;
         }
+        function test_letterIndexJumpAndUnavailableLetters() {
+            tryCompare(view, "count", 5);
+            verify(view.letterIndexEntries.find(item => item.label === "A").available);
+            verify(view.letterIndexEntries.find(item => item.label === "F").available);
+            verify(!view.letterIndexEntries.find(item => item.label === "B").available);
+            view.openLetterIndex();
+            tryCompare(view, "letterIndexOpen", true);
+            const overlay = findChild(view, "wmStartLetterIndexOverlay");
+            verify(overlay);
+            tryCompare(overlay, "opacity", 1);
+            const fileLetter = findChild(overlay, "wmStartLetterIndex_F");
+            verify(fileLetter);
+            mouseClick(fileLetter, fileLetter.width / 2, fileLetter.height / 2);
+            tryCompare(view, "letterIndexOpen", false);
+            compare(view.currentIndex, 4);
+            compare(view.jumpToLetter("B"), false);
+            compare(view.currentIndex, 4);
+            tryCompare(overlay, "opacity", 0);
+        }
+        function test_headingHoverAndOpen() {
+            tryCompare(view, "count", 5);
+            view.positionViewAtBeginning();
+            const rows = findChild(view, "wmStartAlphabeticalRows");
+            tryVerify(() => rows.itemAtIndex(0) !== null);
+            const heading = findChild(rows.itemAtIndex(0), "wmStartLetterHeading");
+            const hitArea = findChild(heading, "wmStartLetterHeadingHitArea");
+            verify(heading && hitArea);
+            mouseMove(hitArea, hitArea.width / 2, hitArea.height / 2);
+            tryVerify(() => heading.hovered);
+            mouseClick(hitArea, hitArea.width / 2, hitArea.height / 2);
+            tryCompare(view, "letterIndexOpen", true);
+            view.closeLetterIndex(true);
+            tryCompare(view, "letterIndexOpen", false);
+            tryCompare(overlayForTest(), "opacity", 0);
+        }
+        function overlayForTest() { return findChild(view, "wmStartLetterIndexOverlay"); }
         function test_modelUpdatesKeepSourceIdentity() {
             tryCompare(view, "count", 5);
             view.currentIndex = 4;
