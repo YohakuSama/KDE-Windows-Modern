@@ -33,6 +33,7 @@ import "code/tools.js" as Tools
 import "code/theme.js" as Theme
 import "code/popupPosition.js" as PopupPosition
 import "code/popupGeometry.js" as PopupGeometry
+import "code/colorType.js" as FooterColors
 
 Item {
     id: main
@@ -536,15 +537,23 @@ Item {
                 anchors.right: parent.right
                 visible: !root.searching
                 height: visible ? 56 : 0
-                color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, 0.035)
+                color: "transparent"
 
+                // Extend into the native frame inset without covering its border.
                 Rectangle {
-                    anchors.top: parent.top
-                    width: parent.width
-                    height: 1
-                    color: Kirigami.Theme.textColor
-                    opacity: Theme.separatorOpacity
+                    objectName: "wmStartFooterSurface"
+                    x: 1 - root.margins.left
+                    width: Math.max(0, footer.width + root.margins.left + root.margins.right - 2)
+                    height: Math.max(0, footer.height + root.margins.bottom - 1)
+                    radius: Math.max(0, root.margins.bottom - 1)
+                    topLeftRadius: 0
+                    topRightRadius: 0
+                    color: FooterColors.footerTint(FooterColors.isDark(Kirigami.Theme.backgroundColor))
+                    Rectangle {
+                        width: parent.width
+                        height: 1
+                        color: FooterColors.divider(FooterColors.isDark(Kirigami.Theme.backgroundColor))
+                    }
                 }
 
                 RowLayout {

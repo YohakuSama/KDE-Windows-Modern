@@ -60,6 +60,10 @@ step "Wallpapers"
 ensure_dir "$WALLPAPER_DIR"
 if [ "$UID" -ne 0 ] && [ -f "$SRC_DIR/native-resources/resource-manifest.json" ]; then
     bash "$SRC_DIR/scripts/prepare-native-assets.sh" || exit 1
+elif [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ]; then
+    if ! python3 "$SRC_DIR/scripts/check-native-icon-import.py" "$NATIVE_ASSETS_DIR" "$SRC_DIR/scripts/native-assets-map.json"; then
+        bash "$SRC_DIR/scripts/prepare-native-assets.sh" || exit 1
+    fi
 fi
 if [ "$UID" -ne 0 ] && [ -f "$NATIVE_ASSETS_DIR/manifest.json" ] && [ -d "$NATIVE_ASSETS_DIR/wallpapers/Windows-modern" ]; then
     step "Installing original Windows wallpaper packages"

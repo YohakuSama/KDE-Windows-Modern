@@ -125,6 +125,16 @@ def glyph_svg(font, code, panel_transform=''):
             f'<path class="ColorScheme-Text" fill="currentColor" transform="{panel_transform}translate({(em-advance)/2} {ascent}) scale(1 -1)" d="{path}"/></svg>\n').encode()
 
 
+def wallpaper_metadata(package, label, mapping):
+    meta = {'KPlugin': {'Id':package,'Name':label,'Description':'Local Windows reference image','Authors':[{'Name':'Microsoft'}]}}
+    # Calibrate only original Windows Bloom. Other wallpapers continue
+    # dynamic extraction; KDE still respects manually selected accents.
+    accent = mapping.get('wallpaper_accents', {}).get(package)
+    if accent:
+        meta['X-KDE-PlasmaImageWallpaper-AccentColor'] = accent
+    return meta
+
+
 def build(stage, data, mapping, indexed=None):
     hashes = {}
     outputs = {}
@@ -191,7 +201,7 @@ def build(stage, data, mapping, indexed=None):
                 width,height = image.size
                 image.verify()
             write(f'wallpapers/{package}/contents/{folder}/{width}x{height}.jpg',data[name],name)
-        meta = {'KPlugin': {'Id':package,'Name':label,'Description':'Local Windows reference image','Authors':[{'Name':'Microsoft'}]}}
+        meta = wallpaper_metadata(package, label, mapping)
         write(f'wallpapers/{package}/metadata.json',json.dumps(meta,indent=2).encode(),'metadata')
     sounddir = 'sounds/windows-modern'
     write(sounddir+'/index.theme',b'[Sound Theme]\nName=Windows Modern (local)\nComment=Imported Windows system sounds\nInherits=freedesktop\nDirectories=stereo\n\n[stereo]\nOutputProfile=stereo\n','metadata')

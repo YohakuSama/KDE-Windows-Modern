@@ -87,6 +87,9 @@ if ! command -v "$APPLY_TOOL" &>/dev/null; then
 fi
 
 if [ -f "$NATIVE_DIR/manifest.json" ] && is_native_bloom "$NATIVE_DIR/wallpapers/$WALLPAPER_ID"; then
+    if ! python3 "$(dirname "$0")/check-native-icon-import.py" "$NATIVE_DIR" "$(dirname "$0")/native-assets-map.json"; then
+        bash "$(dirname "$0")/prepare-native-assets.sh" || exit 1
+    fi
     restore_native_bloom || { echo "Could not restore the imported Bloom package." >&2; exit 1; }
 fi
 wallpaper_dir="$(find_wallpaper "$WALLPAPER_ID" || true)"

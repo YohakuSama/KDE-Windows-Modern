@@ -29,6 +29,12 @@ TestCase {
         verify(!Locations.invoke(entries[0], () => "file:///x", () => false, () => true));
         verify(!Locations.invoke(entries[8], () => "", () => true, () => false));
     }
+    function test_nativeOutlineRoles() {
+        const entries = Locations.locations(s => s).slice(0, 9);
+        for (const entry of entries)
+            compare(entry.icon, "wm-start-" + entry.key + "-symbolic");
+    }
+
     function test_referenceOrderAndMigration() {
         const expected = ["documents", "downloads", "music", "pictures", "videos",
                           "network", "home", "thispc", "settings"];
