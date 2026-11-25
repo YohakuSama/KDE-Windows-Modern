@@ -176,3 +176,20 @@ No changes to battery, clock, application icon sizes or the tray hit
 targets are made by this correction. Confirm actual Qt rasterization
 and same-scale Windows comparison in the live target session; synthetic
 geometry and alpha-bound tests do not constitute visual acceptance.
+
+### Follow-up: stable signal-state geometry and owner bundle acceptance
+
+Measure the actual fallback SVGs using Qt's image decoder in the native
+test target, including five output scale factors. Resolve standard KDE
+theme names when no direct local status/action/device path is available.
+Use one Wi-Fi family reference for all signal levels and a separate full
+limited-network reference; do not resize weaker states independently.
+The volume family retains its full-level calibration. No change to
+battery or application-icon dimensions is made by this follow-up.
+
+The private owner bundle is distinct from the smaller public integration
+artifact. Its package mode rejects archives smaller than 90,000,000 bytes,
+checks the source SHA, pinned native resource revision, essential source,
+test and artwork entries, and ZIP CRC integrity before adding the package
+to its private manifest. Do not add filler or publish the private resource
+bundle to the public Actions artifacts.

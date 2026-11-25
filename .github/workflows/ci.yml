@@ -46,6 +46,8 @@ jobs:
           cat "$RUNNER_TEMP/store-artwork/manifest.json"
       - name: Optional Plymouth boot artwork tests
         run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_boot_frames.py -v
+      - name: Private owner bundle rejection checks
+        run: /usr/bin/python3 -m unittest discover -s tests/theme -p test_owner_bundle.py -v
 
   build-applets:
     name: Build C++ applets (Fedora ${{ matrix.fedora }})

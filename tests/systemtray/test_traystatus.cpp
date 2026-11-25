@@ -2,10 +2,46 @@
 #include "../../plasma/applets/org.kde.windowsmodern.systemtray/windowstray.h"
 #include <QDebug>
 #include <QPainter>
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
 #include "../../plasma/applets/org.kde.windowsmodern.systemtray/panelglyph.h"
 
-int main()
+int main(int argc, char **argv)
 {
+    QCoreApplication application(argc, argv);
+    if (argc != 2) qFatal("Expected the bundled status icon directory");
+    const QDir status(QString::fromLocal8Bit(argv[1]));
+    for (const auto &name : {QStringLiteral("audio-volume-medium-symbolic.svg"),
+                            QStringLiteral("audio-volume-high-symbolic.svg"),
+                            QStringLiteral("network-wired-symbolic.svg"),
+                            QStringLiteral("notifications-disabled-symbolic.svg")}) {
+        const QString path = status.filePath(name);
+        QImageReader reader(path);
+        if (!reader.canRead() || reader.read().isNull())
+            qFatal() << "Cannot rasterize bundled tray artwork" << path;
+        const QRectF bounds = WindowsTray::panelGlyphFileBounds(path);
+        const qreal extent = qMax(bounds.width(), bounds.height());
+        if (extent < 0.65 || extent > 1.0001 ||
+            qAbs(bounds.center().x() - 0.5) > 0.15 ||
+            qAbs(bounds.center().y() - 0.5) > 0.15)
+            qFatal() << "Unexpected optical extent or center" << name << bounds;
+        // Same scale rule as the QML helper. Check physical ink after Qt
+        // rasterization at 100%, 125%, 150%, 175% and 200%.
+        const qreal factor = extent < 0.90 ? qMin(1.5, (23.0/24)/extent) : 1;
+        for (const qreal scale : {1.0, 1.25, 1.5, 1.75, 2.0}) {
+            const int canvas = qRound(16 * scale * factor);
+            QImageReader atScale(path);
+            const QSize intrinsic = atScale.size();
+            atScale.setScaledSize(intrinsic.scaled(canvas, canvas, Qt::KeepAspectRatio));
+            const QImage rendered = atScale.read();
+            if (rendered.isNull()) qFatal() << "Scaled tray decode failed" << name << scale;
+            const auto ink = WindowsTray::panelGlyphBounds(rendered);
+            const qreal painted = qMax(ink.width(), ink.height()) * canvas;
+            if (painted < 16 * scale * 0.85 - 1 || painted > 16 * scale + 1)
+                qFatal() << "Scaled tray ink out of bounds" << name << scale << painted;
+        }
+    }
     QImage padded(22, 22, QImage::Format_ARGB32);
     padded.fill(Qt::transparent);
     {

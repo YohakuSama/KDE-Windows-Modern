@@ -272,7 +272,8 @@ if(WINDOWSMODERN_TEST_TRAY)
     enable_testing()
     add_executable(test_traystatus "${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/systemtray/test_traystatus.cpp")
     target_link_libraries(test_traystatus PRIVATE Plasma::Plasma Qt6::Gui)
-    add_test(NAME tray-status COMMAND test_traystatus)
+    add_test(NAME tray-status COMMAND test_traystatus
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../../icons/windows-modern/status")
 
     add_executable(test_tray_resources "${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/systemtray/test_tray_resources.cpp")
     target_link_libraries(test_tray_resources PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick)

@@ -260,6 +260,14 @@ mkdir -p "$store_stage/KDE-Windows-Modern-${FULL_VER}"
 cp -a "$DIST_DIR/.store-artwork" "$store_stage/KDE-Windows-Modern-${FULL_VER}/bundled-store-artwork"
 (cd "$store_stage" && zip -qry "$FULL_OUT" "KDE-Windows-Modern-${FULL_VER}/bundled-store-artwork")
 rm -rf "$store_stage"
+if [[ "$OWNER" -eq 1 ]]; then
+    # Never report a stripped integration archive as a full owner package.
+    if ! python3 "$SCRIPT_DIR/verify-owner-bundle.py" "$(git -C "$SRC_DIR" rev-parse HEAD)" "$FULL_OUT"; then
+        rm -f "$FULL_OUT"
+        err "Owner bundle failed completeness or 90 MB minimum-size verification."
+        exit 1
+    fi
+fi
 echo "$FULL_OUT" >> "$MANIFEST"
 step "built $(basename "$FULL_OUT")  (full bundle from $(git -C "$SRC_DIR" rev-parse --short HEAD))"
 

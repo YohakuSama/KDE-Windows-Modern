@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 #include <QImage>
+#include <QImageReader>
 #include <QRectF>
 #include <QtGlobal>
 
@@ -27,5 +28,16 @@ inline QRectF panelGlyphBounds(const QImage &source)
     return QRectF((left + (side - image.width()) / 2) / side,
                   (top + (side - image.height()) / 2) / side,
                   (right - left + 1) / side, (bottom - top + 1) / side);
+}
+
+// Shared production and test decoder. Qt renders the actual local artwork,
+// including viewBox transforms and alpha, before bounds are calculated.
+inline QRectF panelGlyphFileBounds(const QString &path)
+{
+    QImageReader reader(path);
+    const QSize intrinsic = reader.size();
+    if (!intrinsic.isValid()) return QRectF(0, 0, 1, 1);
+    reader.setScaledSize(intrinsic.scaled(128, 128, Qt::KeepAspectRatio));
+    return panelGlyphBounds(reader.read());
 }
 }

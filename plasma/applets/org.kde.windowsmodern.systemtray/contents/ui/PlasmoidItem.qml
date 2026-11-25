@@ -19,6 +19,7 @@ import org.kde.bluezqt as BluezQt
 import org.kde.plasma.private.volume as Vol
 import "components" as Components
 import "js/funcs.js" as Funcs
+import "js/trayMetrics.js" as TrayMetrics
 
 AbstractItem {
     id: plasmoidContainer
@@ -191,8 +192,12 @@ AbstractItem {
     }
 
     function panelGlyphFile(name) {
-        return StandardPaths.locate(StandardPaths.GenericDataLocation,
-            "icons/windows-modern/status/" + name + ".svg", StandardPaths.LocateFile);
+        for (const context of ["status", "actions", "devices"]) {
+            const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
+                "icons/windows-modern/" + context + "/" + name + ".svg", StandardPaths.LocateFile);
+            if (String(file).length > 0) return file;
+        }
+        return "";
     }
 
     function panelGlyph(name) {
@@ -209,11 +214,12 @@ AbstractItem {
             PlasmaNM.ConnectionIcon { id: liveConnection }
             PanelStatusGlyph {
                 anchors.fill: parent
-                source: {
-                    const icon = liveConnection.connectionIcon;
-                    if (!icon) return plasmoidContainer.panelGlyph("network-unavailable-symbolic");
-                    return plasmoidContainer.panelGlyph(icon.endsWith("-symbolic") ? icon : icon + "-symbolic");
+                readonly property string iconName: {
+                    const icon = liveConnection.connectionIcon || "network-unavailable-symbolic";
+                    return icon.endsWith("-symbolic") ? icon : icon + "-symbolic";
                 }
+                source: plasmoidContainer.panelGlyph(iconName)
+                referenceSource: plasmoidContainer.panelGlyph(TrayMetrics.networkReferenceName(iconName))
             }
         }
     }

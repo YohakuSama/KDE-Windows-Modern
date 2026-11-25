@@ -44,6 +44,8 @@
 #include <KAcceleratorManager>
 #include <KAuthorized>
 #include <KGlobalAccel>
+#include <KIconLoader>
+#include <QRegularExpression>
 #include <KLocalizedString>
 #include <KIO/ApplicationLauncherJob>
 #include <KIO/CommandLauncherJob>
@@ -160,20 +162,21 @@ QRectF SystemTray::panelGlyphBounds(const QString &source)
 {
     const QRectF full(0, 0, 1, 1);
     const QUrl url(source);
-    const QString path = url.isLocalFile() ? url.toLocalFile() : source;
-    // Only inspect local SVG assets resolved by the theme. Do not probe
-    // network URLs, arbitrary icon names, or unbounded image data.
-    if (!path.startsWith(QLatin1Char('/')) || !path.endsWith(QStringLiteral(".svg"), Qt::CaseInsensitive))
+    QString path = url.isLocalFile() ? url.toLocalFile() : source;
+    // Resolve legitimate theme names as well as direct Windows theme paths.
+    // Never fetch a URL or decode an arbitrary remote resource.
+    static const QRegularExpression iconName(QStringLiteral("^[A-Za-z0-9_.-]+$"));
+    if (!path.startsWith(QLatin1Char('/')) && iconName.match(path).hasMatch())
+        path = KIconLoader::global()->iconPath(path, -16, true);
+    if (!path.startsWith(QLatin1Char('/')) ||
+        (!path.endsWith(QStringLiteral(".svg"), Qt::CaseInsensitive) &&
+         !path.endsWith(QStringLiteral(".svgz"), Qt::CaseInsensitive)))
         return full;
     const auto cached = m_panelGlyphBounds.constFind(path);
     if (cached != m_panelGlyphBounds.constEnd()) return cached.value();
     const QFileInfo file(path);
     if (!file.isFile() || file.size() > 2 * 1024 * 1024) return full;
-    QImageReader reader(path);
-    const QSize intrinsic = reader.size();
-    if (!intrinsic.isValid()) return full;
-    reader.setScaledSize(intrinsic.scaled(128, 128, Qt::KeepAspectRatio));
-    const QRectF bounds = WindowsTray::panelGlyphBounds(reader.read());
+    const QRectF bounds = WindowsTray::panelGlyphFileBounds(path);
     // The set of tray roles is small. Bound the cache even for changing
     // icon files; source changes recalculate, frames and DPI changes do not.
     if (m_panelGlyphBounds.size() >= 128) m_panelGlyphBounds.clear();

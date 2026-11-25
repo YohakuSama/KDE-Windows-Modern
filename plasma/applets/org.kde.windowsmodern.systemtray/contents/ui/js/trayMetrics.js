@@ -18,8 +18,6 @@ function coreIconSize(thickness, scaleToFit) {
     return iconSize(thickness, scaleToFit);
 }
 
-// Fallback host for native compact applets, used only if the direct status
-// glyph component cannot load. It does not determine the rendered glyph size.
 // Match the visible size of the normalized imports (~23/24) without
 // enlarging already-full artwork. The cap preserves intentional shapes and
 // prevents tiny/broken glyphs from producing oversized canvases.
@@ -37,6 +35,18 @@ function opticalPlacement(bounds, slotWidth, slotHeight) {
     };
 }
 
+// Wi-Fi signal bars must not grow or move when the signal level changes.
+// The importer already uses a common transform for each of these families.
+function networkReferenceName(name) {
+    const n = String(name || "");
+    if (/^network-wireless-(?:connected-)?[0-9]+-symbolic$/.test(n))
+        return "network-wireless-symbolic";
+    if (/^network-wireless-[0-9]+-limited-symbolic$/.test(n))
+        return "network-wireless-100-limited-symbolic";
+    return n;
+}
+
+// Native fallback host, distinct from the visible optical slot.
 function coreRenderSize(displaySize) {
     if (displaySize < 16) return 16;
     if (displaySize <= 32) return 32;
