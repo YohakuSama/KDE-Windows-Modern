@@ -8,6 +8,8 @@
  *   then reference values like Theme.buttonFlatBackgroundOpacity.
  ***************************************************************************/
 
+.import "colorType.js" as ColorType
+
 // Flat buttons / chips ("All apps", "Back", filter pills, shutdown split)
 var buttonFlatBackgroundOpacity = 0.06;
 var buttonFlatHoverOpacity      = 0.08;
@@ -43,9 +45,6 @@ var opacityFull   = 1.0;
 var opacityHidden = 0.0;
 
 // Use the same neutral surfaces as the shell popup frames.
-function isDark(color) {
-    const rgb = [color.r, color.g, color.b].map(v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
-    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] <= 0.179;
-}
+function isDark(color) { return ColorType.isDark(color); }
 function menuSurface(bg) { return isDark(bg) ? "#2C2C2C" : "#F9F9F9"; }
-function menuBorder(bg) { return isDark(bg) ? "#383838" : "#DCDCDC"; }
+function menuBorder(bg) { return ColorType.cardBorder(isDark(bg)); }

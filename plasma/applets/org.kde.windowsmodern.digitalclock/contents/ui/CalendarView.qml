@@ -28,7 +28,11 @@ ColumnLayout {
     // The applet root (main.qml): the clock and the popup's expanded state.
     required property var applet
     property var calendarLocale: Qt.locale()
-    readonly property date today: applet.currentTime
+    // Grid models depend on the local calendar day, not the displayed seconds.
+    readonly property int todayKey: applet.currentTime.getFullYear() * 10000
+        + (applet.currentTime.getMonth() + 1) * 100 + applet.currentTime.getDate()
+    readonly property date today: new Date(Math.floor(todayKey / 10000),
+        Math.floor(todayKey / 100) % 100 - 1, todayKey % 100)
     // Use the same row pitch in the month and zoomed-out views.
     property real dayHeightLimit: 36
     readonly property real chromeHeight: Math.ceil(Math.max(28, monthNavigation.implicitHeight)

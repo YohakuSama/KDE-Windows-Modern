@@ -60,7 +60,7 @@ KCMUtils.ScrollViewKCM {
             Layout.fillWidth: true
 
             textRole: "text"
-            model: [-1, 0, 1, 5, 6].map(day => ({
+            model: [-1, 0, 1, 2, 3, 4, 5, 6].map(day => ({
                 day,
                 text: day === -1 ? i18nc("@item:inlistbox first day of week option", "Use region defaults") : Qt.locale().dayName(day),
             }))

@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Reuse the tray palette in the clock and Start menu, and check packaged copies for drift. Retain calendar delegates across same-day clock updates, avoid tracking hidden seconds, and correct notification links and time-zone formatting.
+
 - Keep week numbers aligned with local calendar dates through daylight-saving transitions, align weekday columns, and allow keyboard activation of calendar navigation and zoom tiles.
 - Keep the calendar footer visible in short work areas by fitting the grid before optional sections; use consistent notification actions, progress colors and scrolling feedback.
 

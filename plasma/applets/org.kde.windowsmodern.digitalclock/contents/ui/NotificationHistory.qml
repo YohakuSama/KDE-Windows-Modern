@@ -18,6 +18,7 @@ import org.kde.kcmutils as KCMUtils
 ColumnLayout {
     id: history
     required property date currentTime
+    readonly property string todayKey: currentTime.toDateString()
     required property bool notificationsAvailable
     required property bool effectiveDnd
     property var timeLocale: Qt.locale()
@@ -267,7 +268,7 @@ ColumnLayout {
             }
 
             function invoke(name) {
-                if (isGroup || isJob) return;
+                if (isGroup || isJob || model.expired) return;
                 const idx = notificationModel.index(index, 0);
                 const behavior = model.resident ? NotificationManager.Notifications.None
                                                 : NotificationManager.Notifications.Close;
@@ -362,7 +363,7 @@ ColumnLayout {
                                     const created = card.model.created;
                                     const timestamp = updated && !isNaN(updated.getTime()) ? updated : created;
                                     if (!timestamp || isNaN(timestamp.getTime())) return "";
-                                    const sameDay = timestamp.toDateString() === history.currentTime.toDateString();
+                                    const sameDay = timestamp.toDateString() === history.todayKey;
                                     return (sameDay ? "" : history.timeLocale.toString(timestamp, "yyyy/M/d") + " ")
                                         + history.timeLocale.toString(timestamp, history.timeFormat);
                                 }
@@ -412,6 +413,7 @@ ColumnLayout {
                             Layout.fillWidth: true
                             text: card.model.body || ""
                             textFormat: Text.StyledText
+                            onLinkActivated: link => Qt.openUrlExternally(link)
                             color: palette.text
                             font.pixelSize: 12
                             wrapMode: Text.Wrap

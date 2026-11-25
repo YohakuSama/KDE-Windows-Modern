@@ -121,7 +121,8 @@ PlasmoidItem {
         timeZone: Plasmoid.configuration.lastSelectedTimezone
         // Second-by-second only while seconds are on screen: the flyout's
         // large clock shows them (it showed :00 with minute updates).
-        trackSeconds: root.flyoutOpen || Plasmoid.configuration.showSeconds === 2
+        trackSeconds: (root.flyoutOpen && (Plasmoid.configuration.showTimeInNotificationCenter || root.notificationsInhibited))
+            || Plasmoid.configuration.showSeconds === 2
     }
 
     PlasmaClock.Clock {
@@ -166,18 +167,19 @@ PlasmoidItem {
         // % keeps the sign of the dividend; the sign is already expressed by
         // "later"/"earlier", so render "7:30 earlier", not "7:-30 earlier".
         const minuteOffset = Math.abs(offset % 60);
+        const paddedMinutes = String(minuteOffset).padStart(2, "0");
 
         if (offset > 0) {
             if (minuteOffset === 0) {
                 return i18ncp("@info offset from current time", " • %1 hour later", " • %1 hours later", hourOffset);
             } else {
-                return i18nc("@info offset from current time in hours and minutes", " • %1:%2 later", hourOffset, minuteOffset);
+                return i18nc("@info offset from current time in hours and minutes", " • %1:%2 later", hourOffset, paddedMinutes);
             }
         } else {
             if (minuteOffset === 0) {
                 return i18ncp("@info offset from current time", " • %1 hour earlier", " • %1 hours earlier", hourOffset);
             } else {
-                return i18nc("@info offset from current time in hours and minutes", " • %1:%2 earlier", hourOffset, minuteOffset);
+                return i18nc("@info offset from current time in hours and minutes", " • %1:%2 earlier", hourOffset, paddedMinutes);
             }
         }
     }
@@ -185,11 +187,10 @@ PlasmoidItem {
     function selectedTimeZonesDeduplicatingExplicitLocalTimeZone(): /* [string] */ var {
         // Suppress duplicates when the user has added their local city explicitly
         // and is currently back in their normal local time zone.
-        const isLiterallyLocalOrResolvesToSomethingOtherThanLocal = timeZone =>
-            timeZone === "Local" || timeZone !== systemClock.timeZone;
-
-        return DigitalClockPrivate.TimeZoneUtils.sortedTimeZones(
-            Plasmoid.configuration.selectedTimeZones.filter(isLiterallyLocalOrResolvesToSomethingOtherThanLocal));
+        const selected = Plasmoid.configuration.selectedTimeZones;
+        return DigitalClockPrivate.TimeZoneUtils.sortedTimeZones(selected.includes("Local")
+            ? selected.filter(timeZone => timeZone === "Local" || timeZone !== systemClock.timeZone)
+            : selected);
     }
 
     // Computes time format strings based on locale and user settings.

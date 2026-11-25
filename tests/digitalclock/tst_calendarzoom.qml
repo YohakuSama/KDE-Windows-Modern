@@ -105,6 +105,20 @@ Item {
             settle();
         }
 
+        function test_sameDayTimeChangePreservesGrid() {
+            const original = root.currentTime;
+            const cells = days();
+            compare(cells.length, 42);
+            root.currentTime = new Date(original.getTime() + 1000);
+            wait(40);
+            compare(view.today.getHours(), 0);
+            compare(days()[0], cells[0]);
+            root.currentTime = new Date(original.getFullYear(), original.getMonth(), original.getDate() + 1, 12, 0);
+            tryCompare(view, "todayKey", (root.currentTime.getFullYear() * 10000)
+                + (root.currentTime.getMonth() + 1) * 100 + root.currentTime.getDate());
+            root.currentTime = original;
+            view.resetToToday();
+        }
         function test_weekDatesFollowCalendarGrid() {
             for (const year of [2025, 2026]) {
                 for (const month of [2, 9, 10]) {
