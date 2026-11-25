@@ -224,8 +224,8 @@ Item {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.margins: Kirigami.Units.largeSpacing
-            spacing: Kirigami.Units.largeSpacing
+            anchors.margins: 16
+            spacing: 8
             opacity: loginScreenRoot.uiVisible ? 1 : 0
 
             Behavior on opacity {
@@ -239,7 +239,7 @@ Item {
             SessionButton {
                 id: sessionButton
                 onSessionChanged: userListComponent.mainPasswordBox.forceActiveFocus();
-                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignVCenter
             }
 
             Item { Layout.fillWidth: true }
@@ -265,7 +265,8 @@ Item {
 
             WinFooterButton {
                 id: powerButton
-                iconName: "system-shutdown"
+                iconName: "system-shutdown-symbolic"
+                text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power")
                 onClicked: powerMenu.open()
 
                 WinPowerMenu {

@@ -6,7 +6,8 @@ import org.kde.plasma.workspace.keyboardlayout as Keyboards
 
 StatusIconButton {
     visible: Keyboards.KWinVirtualKeyboard.available
-    icon.name: Keyboards.KWinVirtualKeyboard.active ? "input-keyboard-virtual-on" : "input-keyboard-virtual"
-    text: i18nd("plasma_login", "On-screen keyboard")
+    focusPolicy: Qt.TabFocus
+    icon.name: "accessibility"
+    text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "On-screen keyboard")
     onClicked: Keyboards.KWinVirtualKeyboard.active = !Keyboards.KWinVirtualKeyboard.active
 }
