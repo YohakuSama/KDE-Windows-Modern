@@ -8,6 +8,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 
 import org.kde.draganddrop as DnD
@@ -24,6 +25,24 @@ ContainmentItem {
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool reverseLayout: Plasmoid.configuration.reverseIconOrder
     property Item hoveredQuickSetting: null
+    property Item quickSettingsOrigin: null
+    readonly property var panelWindow: root.Window.window
+    readonly property rect panelGeometry: panelWindow
+        ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
+    readonly property real panelExtent: Math.max(0, vertical
+        ? (panelGeometry.width || root.width) : (panelGeometry.height || root.height))
+    onPanelGeometryChanged: if (dialog.visible) systemTrayState.expanded = false
+
+    function panelAnchorForApplet(applet) {
+        const revision = tasksGrid.delegateRevision;
+        if (applet) {
+            for (let i = 0; i < tasksGrid.count; ++i) {
+                const cell = tasksGrid.itemAtIndex(i);
+                if (cell && cell.item?.applet === applet) return cell;
+            }
+        }
+        return null;
+    }
 
     Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.small : mainLayout.implicitWidth
     Layout.minimumHeight: vertical ? mainLayout.implicitHeight : Kirigami.Units.iconSizes.small
@@ -74,6 +93,7 @@ ContainmentItem {
     Connections {
         target: Plasmoid
         function onActivated() {
+            root.quickSettingsOrigin = null;
             systemTrayState.toggleHome(false);
         }
         function onClipboardHistoryRequested() {
@@ -83,8 +103,7 @@ ContainmentItem {
                 systemTrayState.expanded = false;
                 return;
             }
-            systemTrayState.overflowMode = false;
-            systemTrayState.setActiveApplet(applet);
+            systemTrayState.setActiveApplet(applet, undefined, "panel");
         }
     }
 
@@ -120,7 +139,7 @@ ContainmentItem {
             target: applet
             function onExpandedChanged(expanded: bool) {
                 if (expanded) {
-                    systemTrayState.setActiveApplet(applet, row)
+                    systemTrayState.setActiveApplet(applet, row, "overflow")
                 }
             }
         }
@@ -136,7 +155,7 @@ ContainmentItem {
             target: applet
             function onExpandedChanged(expanded: bool) {
                 if (expanded) {
-                    systemTrayState.setActiveApplet(applet, row)
+                    systemTrayState.setActiveApplet(applet, row, "panel")
                 }
             }
         }
@@ -239,6 +258,23 @@ ContainmentItem {
                                    Kirigami.Theme.textColor.b, 0.08)
                 }
             }
+        }
+
+        // Invisible-to-input item with the exact geometry of the system
+        // button group, not the entire tray (which may include many icons).
+        Item {
+            id: quickSettingsAnchor
+            readonly property var run: {
+                const runs = quickSettingsHighlight.runs;
+                const origin = root.quickSettingsOrigin;
+                const point = origin ? origin.mapToItem(root, origin.width / 2, origin.height / 2) : null;
+                return TrayMetrics.anchorRun(runs, point, root.vertical,
+                    !root.vertical && root.LayoutMirroring.enabled);
+            }
+            x: run ? run.x : 0
+            y: run ? run.y : 0
+            width: run ? run.width : root.width
+            height: run ? run.height : root.height
         }
 
         //Main Layout
@@ -376,7 +412,9 @@ ContainmentItem {
             objectName: "popupWindow"
             type: PlasmaCore.Dialog.AppletPopup
             flags: Qt.Dialog
-            visualParent: systemTrayState.overflowMode && expander.visible ? expander : root
+            visualParent: systemTrayState.overflowMode && expander.visible ? expander
+                : systemTrayState.quickSettingsRoute || !systemTrayState.activeApplet ? quickSettingsAnchor
+                : root.panelAnchorForApplet(systemTrayState.activeApplet) || quickSettingsAnchor
             location: Plasmoid.location
             floating: Math.max(Math.round(8 * Plasmoid.configuration.scale / 100),
                 (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets)
@@ -390,6 +428,11 @@ ContainmentItem {
             readonly property int wantedHeight: Math.ceil(expandedRepresentation.popupHeight + margins.top + margins.bottom)
             function openForState() {
                 if (systemTrayState.expanded) {
+                    if (!visualParent || !visualParent.Window.window || !visualParent.visible
+                            || visualParent.width <= 0 || visualParent.height <= 0) {
+                        systemTrayState.expanded = false;
+                        return;
+                    }
                     expandedSync.stop();
                     visible = true;
                     geometryProbe.attempts = 0;

@@ -26,17 +26,21 @@ Item {
     // Never derive the window's initial size from an effectively hidden
     // QQuickLayout. The native popup is sized before the window is mapped.
     readonly property bool overflowHome: systemTrayState.overflowMode && !systemTrayState.activeApplet
-    readonly property real uiScale: Math.max(0.5, actionPanel.scale)
     readonly property rect screenRect: Plasmoid.screenGeometry
     readonly property int availableWidth: screenRect.width >= 100
-        ? Math.max(1, Math.floor(screenRect.width * 0.92)) : 720
+        ? Math.max(1, Math.floor(screenRect.width - (root.vertical ? root.panelExtent : 0) - 24)) : 720
     readonly property int availableHeight: screenRect.height >= 100
-        ? Math.max(1, Math.floor(Math.min(screenRect.height * 0.92,
-            screenRect.height - Math.min(96, root.vertical ? root.width : root.height) - 24))) : 720
+        ? Math.max(1, Math.floor(screenRect.height - (root.vertical ? 0 : root.panelExtent) - 24)) : 720
+    // The configured scale is a ceiling. Small work areas shrink the grid
+    // before mapping, without using physical DPI or depending on panel length.
+    readonly property real uiScale: Math.max(0.35, Math.min(Plasmoid.configuration.scale / 100,
+        availableWidth / 360, availableHeight / 400))
+    readonly property int frameWidth: separatedMedia ? 0 : Math.round(dialog.margins.left + dialog.margins.right)
+    readonly property int frameHeight: separatedMedia ? 0 : Math.round(dialog.margins.top + dialog.margins.bottom)
     readonly property bool quickHome: !systemTrayState.activeApplet && !systemTrayState.overflowMode
     readonly property int popupWidth: Math.max(1, Math.min(availableWidth,
         Math.round((overflowHome ? 216 : 360) * uiScale))
-        - (quickHome && !separatedMedia ? Math.round(dialog.margins.left + dialog.margins.right) : 0))
+        - frameWidth)
     readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
         * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
         + Math.round(16 * uiScale)
@@ -45,10 +49,10 @@ Item {
     readonly property int mediaHeight: Math.round(178 * uiScale)
     readonly property bool separatedMedia: !systemTrayState.activeApplet && !systemTrayState.overflowMode
         && mediaCard.hasSession && availableHeight >= actionPanel.nominalHomeHeight + mediaGap + mediaHeight
-    readonly property int popupHeight: Math.min(availableHeight,
+    readonly property int popupHeight: Math.max(1, Math.min(availableHeight - frameHeight,
         systemTrayState.activeApplet ? Math.max(360, Kirigami.Units.gridUnit * 24)
         : overflowHome ? overflowHeight
-        : actionPanel.homeHeight + (separatedMedia ? mediaGap + mediaHeight : 0))
+        : actionPanel.homeHeight + (separatedMedia ? mediaGap + mediaHeight : 0)))
 
     implicitWidth: popupWidth
     implicitHeight: popupHeight
@@ -120,7 +124,7 @@ Item {
         if (!pluginId) return
         const applet = Plasmoid.appletForPluginId(pluginId)
         if (applet) {
-            systemTrayState.setActiveApplet(applet)
+            systemTrayState.setActiveApplet(applet, undefined, "quick")
             return
         }
         const settings = {
@@ -349,6 +353,7 @@ Item {
                 ActionPanel {
                     id: actionPanel
                     anchors.fill: parent
+                    scale: popup.uiScale
                     frameInset: popup.separatedMedia ? 0 : Math.max(0, dialog.margins.left)
                     onVisibleChanged: {
                         if (visible && dialog.visible && !systemTrayState.activeApplet)

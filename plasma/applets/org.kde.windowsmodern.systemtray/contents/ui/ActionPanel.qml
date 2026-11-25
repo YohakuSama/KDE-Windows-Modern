@@ -22,7 +22,7 @@ ColumnLayout {
 
     signal requestPage(string name)
 
-    readonly property real scale: Plasmoid.configuration.scale / 100
+    property real scale: Plasmoid.configuration.scale / 100
 
     // Outer spacing includes the native KSVG dialog frame when present.
     // The separated media window has no native frame and supplies the

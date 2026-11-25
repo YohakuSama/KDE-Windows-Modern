@@ -39,7 +39,7 @@ PlasmaExtras.Menu {
         }
     }
 
-    minimumWidth: (visualParent as Item).width
+    minimumWidth: visualParent ? Math.min(visualParent.width, 240) : 0
 
     onStatusChanged: {
         if (visualParent && get(TaskManager.AbstractTasksModel.LauncherUrlWithoutIcon).toString() !== "" && status === PlasmaExtras.Menu.Open) {

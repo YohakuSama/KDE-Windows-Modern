@@ -7,6 +7,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 
 import org.kde.plasma.plasmoid
@@ -31,8 +32,12 @@ PlasmoidItem {
     readonly property bool flyoutOpen: !!panelPopup && panelPopup.visible
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry
     readonly property bool popupVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
-    readonly property real popupPanelExtent: panelPopup && panelPopup.visualParent
-        ? (popupVerticalPanel ? panelPopup.visualParent.width : panelPopup.visualParent.height) : 48
+    readonly property var popupPanelWindow: panelPopup && panelPopup.visualParent
+        ? panelPopup.visualParent.Window.window : null
+    readonly property real popupPanelExtent: popupPanelWindow
+        ? (popupVerticalPanel ? popupPanelWindow.width : popupPanelWindow.height)
+        : panelPopup && panelPopup.visualParent
+            ? (popupVerticalPanel ? panelPopup.visualParent.width : panelPopup.visualParent.height) : 48
     toolTipMainText: flyoutOpen ? "" : i18n("Clock")
     toolTipSubText: flyoutOpen ? "" : notificationStatusText
     Plasmoid.status: flyoutOpen ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.PassiveStatus

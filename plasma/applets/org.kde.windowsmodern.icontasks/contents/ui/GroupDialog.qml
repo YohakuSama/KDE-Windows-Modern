@@ -7,6 +7,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import QtQml.Models
 
 import org.kde.plasma.core as PlasmaCore
@@ -45,8 +46,16 @@ PlasmaCore.PopupPlasmaWindow {
             return Qt.TopEdge
     }
 
-    readonly property real preferredWidth: Screen.width / 3
-    readonly property real preferredHeight: Screen.height / 2
+    readonly property rect panelScreen: Plasmoid.containment.screenGeometry
+    readonly property var panelWindow: visualParent ? visualParent.Window.window : null
+    readonly property bool verticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+    readonly property real panelExtent: panelWindow ? (verticalPanel ? panelWindow.width : panelWindow.height) : 0
+    readonly property real availableWidth: Math.max(1, (panelScreen.width || Screen.width)
+        - (verticalPanel ? panelExtent : 0) - 24)
+    readonly property real availableHeight: Math.max(1, (panelScreen.height || Screen.height)
+        - (verticalPanel ? 0 : panelExtent) - 24)
+    readonly property real preferredWidth: Math.max(1, Math.min(availableWidth - leftPadding - rightPadding, (panelScreen.width || Screen.width) / 3))
+    readonly property real preferredHeight: Math.max(1, Math.min(availableHeight - topPadding - bottomPadding, (panelScreen.height || Screen.height) / 2))
     readonly property real contentWidth: mainItem.width // No padding here to avoid text elide.
 
     property /*PlasmaCore.ItemStatus*/int _oldAppletStatus: PlasmaCore.Types.UnknownStatus
@@ -74,7 +83,7 @@ PlasmaCore.PopupPlasmaWindow {
 
     mainItem: MouseHandler {
         id: mouseHandler
-        implicitWidth: Math.min(groupDialog.preferredWidth, Math.max(groupListView.maxWidth, groupDialog.visualParent.width))
+        implicitWidth: Math.min(groupDialog.preferredWidth, Math.max(groupListView.maxWidth, groupDialog.visualParent?.width || 0))
         implicitHeight: Math.min(groupDialog.preferredHeight, groupListView.maxHeight)
 
         target: groupListView
