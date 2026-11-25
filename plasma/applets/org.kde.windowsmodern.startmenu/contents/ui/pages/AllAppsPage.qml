@@ -369,7 +369,7 @@ Item {
                     id: categoryLabel
                     objectName: "wmStartCategoryLabel_" + card.categoryIndex
                     readonly property bool hovered: categoryLabelMouse.containsMouse
-                    height: 30
+                    height: 24
                     verticalAlignment: Text.AlignVCenter
                     background: Rectangle {
                         radius: 4

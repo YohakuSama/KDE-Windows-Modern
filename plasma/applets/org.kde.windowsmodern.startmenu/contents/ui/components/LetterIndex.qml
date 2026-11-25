@@ -64,7 +64,7 @@ FocusScope {
                 objectName: "wmStartLetterIndexGrid"
                 anchors.centerIn: parent
                 width: Math.min(parent.width, 4 * 52)
-                height: Math.min(parent.height, contentHeight)
+                height: Math.max(0, Math.min(parent.height, Math.ceil(count / 4) * cellHeight))
                 cellWidth: Math.max(1, width / 4)
                 cellHeight: 48
                 clip: true
