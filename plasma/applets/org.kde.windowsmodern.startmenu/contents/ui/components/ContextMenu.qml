@@ -14,11 +14,11 @@ Item {
     property var context: ({})
     property var actions: []
     property var pendingAction: null
-    readonly property int rowHeight: 36
+    readonly property int rowHeight: Theme.menuRowHeight
     readonly property int separatorHeight: 9
     readonly property int gap: 8
 
-    FontMetrics { id: metrics; font: Kirigami.Theme.defaultFont }
+    FontMetrics { id: metrics; font.family: Kirigami.Theme.defaultFont.family; font.pixelSize: 13 }
 
     // Every source model can change while a menu is open (not just All
     // Apps). Discard captured row indexes before an action can use them.
@@ -48,6 +48,7 @@ Item {
 
     function step(direction) {
         let index = list.currentIndex;
+        if (index < 0 && direction < 0) index = 0;
         for (let n = 0; n < actions.length; ++n) {
             index = (index + direction + actions.length) % actions.length;
             if (selectable(index)) {
@@ -71,7 +72,7 @@ Item {
         context = details || ({});
         pendingAction = null;
         let widest = 0;
-        let wantedHeight = 12;
+        let wantedHeight = 2 * Theme.menuInset;
         for (const action of actions) {
             wantedHeight += action.type === "separator" ? separatorHeight : rowHeight;
             widest = Math.max(widest, metrics.advanceWidth(action.text || "") + (action.shortcut ? metrics.advanceWidth(action.shortcut) + 24 : 0));
@@ -101,12 +102,11 @@ Item {
         modal: true
         dim: false
         focus: true
-        padding: 6
+        padding: Theme.menuInset
         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
         onOpened: {
-            list.currentIndex = -1;
-            contextMenu.step(1);
             list.forceActiveFocus();
+            list.currentIndex = -1;
         }
         onClosed: {
             const pending = contextMenu.pendingAction;
@@ -118,12 +118,7 @@ Item {
                 contextMenu.actionTriggered(pending.action.actionId,
                     pending.action.actionArgument ?? null, pending.context);
         }
-        background: Rectangle {
-            radius: 8
-            color: Theme.menuSurface(Kirigami.Theme.backgroundColor)
-            border.width: 1
-            border.color: Theme.menuBorder(Kirigami.Theme.backgroundColor)
-        }
+        background: StartMenuBackground {}
         contentItem: ListView {
             id: list
             model: contextMenu.actions
@@ -154,8 +149,8 @@ Item {
                 readonly property bool separator: modelData.type === "separator"
                 width: list.width
                 height: separator ? contextMenu.separatorHeight : contextMenu.rowHeight
-                leftPadding: 12
-                rightPadding: 12
+                leftPadding: Theme.menuTextInset
+                rightPadding: Theme.menuTextInset
                 enabled: contextMenu.selectable(index)
                 focusPolicy: Qt.NoFocus
                 text: modelData.text || ""
@@ -177,11 +172,16 @@ Item {
                 }
                 contentItem: RowLayout {
                     visible: !row.separator
-                    spacing: 12
+                    spacing: Theme.menuIconGap
                     Kirigami.Icon {
-                        Layout.preferredWidth: 20
-                        Layout.preferredHeight: 20
+                        objectName: "wmStartActionGlyph"
+                        Layout.preferredWidth: Theme.menuGlyphSize
+                        Layout.preferredHeight: Theme.menuGlyphSize
+                        Layout.alignment: Qt.AlignVCenter
+                        roundToIconSize: false
                         source: row.modelData.icon || ""
+                        isMask: String(row.modelData.icon || "").endsWith("-symbolic")
+                        color: Kirigami.Theme.textColor
                     }
                     QQC2.Label {
                         Layout.fillWidth: true

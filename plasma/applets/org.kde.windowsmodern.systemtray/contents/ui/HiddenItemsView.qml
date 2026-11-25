@@ -42,7 +42,6 @@ PlasmaComponents3.ScrollView {
         readonly property int columns: 5
 
         // Compact Windows 11 overflow grid, independent of Quick Settings.
-        readonly property int cellSpacing: Math.round(4 * Plasmoid.configuration.scale / 100)
 
         // From the full width (not availableWidth, which changes with the
         // scrollbar) so cell size cannot feed back into the view's height.
@@ -62,10 +61,9 @@ PlasmaComponents3.ScrollView {
 
         model: root.hiddenModel
         delegate: ItemLoader {
-            // GridView places each delegate at its cell origin; the spacing is
-            // the unused right/bottom strip of the cell.
-            width: hiddenTasks.cellWidth - hiddenTasks.cellSpacing
-            height: hiddenTasks.cellHeight - hiddenTasks.cellSpacing
+            // Use full cells so the icon and hover target share the same center.
+            width: hiddenTasks.cellWidth
+            height: hiddenTasks.cellHeight
             Accessible.role: Accessible.ListItem
         }
 

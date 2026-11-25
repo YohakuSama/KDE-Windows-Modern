@@ -48,3 +48,11 @@ var opacityHidden = 0.0;
 function isDark(color) { return ColorType.isDark(color); }
 function menuSurface(bg) { return isDark(bg) ? "#2C2C2C" : "#F9F9F9"; }
 function menuBorder(bg) { return ColorType.cardBorder(isDark(bg)); }
+
+// Shared Start transient menu geometry in logical pixels.
+var menuGlyphSize = 16;
+var menuRowHeight = 32;
+var menuInset = 4;
+var menuRadius = 8;
+var menuTextInset = 10;
+var menuIconGap = 10;

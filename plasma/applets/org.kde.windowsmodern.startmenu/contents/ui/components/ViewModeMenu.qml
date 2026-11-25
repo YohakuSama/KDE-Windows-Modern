@@ -19,9 +19,9 @@ QQC2.Popup {
     modal: true
     dim: false
     focus: true
-    padding: 4
+    padding: Theme.menuInset
     width: Math.max(1, Math.min(parent ? parent.width - 16 : 160, 160))
-    height: Math.max(1, Math.min(parent ? parent.height - 16 : 120, modes.length * 36 + 8))
+    height: Math.max(1, Math.min(parent ? parent.height - 16 : 120, modes.length * Theme.menuRowHeight + 2 * Theme.menuInset))
     closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
 
     function openAt(button) {
@@ -65,12 +65,7 @@ QQC2.Popup {
         function onVisibleChanged() { if (!menu.anchorItem?.visible) menu.close(); }
     }
 
-    background: Rectangle {
-        radius: 8
-        color: Theme.menuSurface(Kirigami.Theme.backgroundColor)
-        border.width: 1
-        border.color: Theme.menuBorder(Kirigami.Theme.backgroundColor)
-    }
+    background: StartMenuBackground {}
 
     contentItem: ListView {
         id: list
@@ -86,13 +81,14 @@ QQC2.Popup {
             readonly property int mode: menu.modes.length - 1 - index
             objectName: "wmViewMode_" + mode
             width: ListView.view.width
-            height: 36
+            height: Theme.menuRowHeight
             text: menu.modes[mode]
             contentItem: RowLayout {
                 spacing: 8
                 Kirigami.Icon {
-                    Layout.preferredWidth: 16
-                    Layout.preferredHeight: 16
+                    Layout.preferredWidth: Theme.menuGlyphSize
+                    Layout.preferredHeight: Theme.menuGlyphSize
+                    roundToIconSize: false
                     Layout.alignment: Qt.AlignVCenter
                     source: "emblem-ok-symbolic"
                     opacity: menu.currentMode === entry.mode ? 1 : 0

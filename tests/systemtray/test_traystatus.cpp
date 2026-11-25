@@ -19,6 +19,12 @@ int main()
         check(id, Status::PassiveStatus, true, true, false, Status::ActiveStatus);
         check(id, Status::ActiveStatus, false, true, false, Status::HiddenStatus);
     }
+    const QString clipboard = QStringLiteral("org.kde.plasma.clipboard");
+    check(clipboard, Status::PassiveStatus, true, false, false, Status::HiddenStatus);
+    check(clipboard, Status::UnknownStatus, true, false, false, Status::HiddenStatus);
+    check(clipboard, Status::PassiveStatus, true, false, true, Status::HiddenStatus);
+    check(clipboard, Status::PassiveStatus, true, true, false, Status::ActiveStatus);
+    check(clipboard, Status::ActiveStatus, true, false, false, Status::PassiveStatus);
     const QString fcitx = QStringLiteral("Fcitx");
     check(fcitx, Status::ActiveStatus, true, false, false, Status::ActiveStatus);
     check(fcitx, Status::ActiveStatus, true, false, true, Status::PassiveStatus);

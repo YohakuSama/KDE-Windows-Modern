@@ -43,6 +43,8 @@ def main():
     p.add_argument("--tasks-token", required=True)
     p.add_argument("--tray", required=True, type=Path)
     p.add_argument("--tasks", required=True, type=Path)
+    p.add_argument("--menu", type=Path)
+    p.add_argument("--menu-token")
     p.add_argument("--pid", type=int)
     p.add_argument("--quiet", action="store_true")
     args = p.parse_args()
@@ -54,8 +56,13 @@ def main():
             env = Path(f"/proc/{args.pid}/environ").read_bytes().split(b"\0")
             if b"QML_DISABLE_DISK_CACHE=1" not in env:
                 raise RuntimeError("Plasma is not running with the test QML disk cache disabled")
-        for label, path, token in (("systemtray", args.tray, args.tray_token),
-                                   ("icontasks", args.tasks, args.tasks_token)):
+        plugins = [("systemtray", args.tray, args.tray_token),
+                   ("icontasks", args.tasks, args.tasks_token)]
+        if bool(args.menu) != bool(args.menu_token):
+            raise RuntimeError("Incomplete context menu build identity")
+        if args.menu:
+            plugins.append(("contextmenu", args.menu, args.menu_token))
+        for label, path, token in plugins:
             resolved = verify_plugin(path, token, maps)
             if not args.quiet:
                 print(f"{label} {'LOADED' if maps is not None else 'BUILT'}: {resolved}")

@@ -48,7 +48,7 @@ Item {
             tryCompare(list, "count", 0);
             wait(0);
             page.historyModel.append({uuid: "text-1", display: "Actual clipboard text", type: 2, decoration: "", starred: false});
-            page.historyModel.append({uuid: "image-1", display: "Image", type: 4, decoration: "", starred: false});
+            page.historyModel.append({uuid: "image-1", display: "Image", type: 4, decoration: String(Qt.resolvedUrl("fixtures/clipboard-preview.svg")), starred: false});
             list.forceLayout();
             tryCompare(list, "count", 2);
             tryVerify(() => list.visible && list.height > 184
@@ -69,7 +69,9 @@ Item {
             compare(findChild(textCard, "wmClipboardText").text, "Actual clipboard text");
             compare(textCard.isImage, false);
             compare(imageCard.isImage, true);
-            compare(findChild(imageCard, "wmClipboardPreview").visible, true);
+            const preview = findChild(imageCard, "wmClipboardPreview");
+            compare(preview.visible, true);
+            tryCompare(preview, "status", Image.Ready);
             const target = findChild(textCard, "wmClipboardSelect");
             mouseClick(target, 20, target.height / 2);
             compare(page.historyController.selectedUuid, "text-1");

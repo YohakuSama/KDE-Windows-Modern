@@ -31,14 +31,21 @@ Item {
     signal accountSettingsRequested
     signal actionInvoked
 
+    FontMetrics { id: footerMetrics; font.family: Kirigami.Theme.defaultFont.family; font.pixelSize: 13 }
+
     function moveFocus(direction) {
         const available = options.map(option => option.visible && option.optionEnabled);
         const current = options.findIndex(option => option.activeFocus);
         const next = FooterNavigation.nextEnabledIndex(available, current, direction);
-        if (next >= 0)
-            options[next].forceActiveFocus();
-        else
+        if (next >= 0) {
+            const option = options[next];
+            option.forceActiveFocus();
+            if (option.y < powerScroll.contentY) powerScroll.contentY = option.y;
+            else if (option.y + option.height > powerScroll.contentY + powerScroll.height)
+                powerScroll.contentY = Math.max(0, option.y + option.height - powerScroll.height);
+        } else {
             popup.forceActiveFocus();
+        }
     }
 
     function finishAction() {
@@ -65,29 +72,32 @@ Item {
     }
 
     // ── The floating panel ─────────────────────────────────────────────
-    Rectangle {
+    StartMenuBackground {
         id: popup
         visible: false
         z: 100
 
-        readonly property real panelWidth: 168
+        readonly property real panelWidth: Math.max(0, Math.min(root.width - 16,
+            Math.max(168, ...root.options.filter(option => option && option.visible)
+                .map(option => footerMetrics.advanceWidth(option.label) + 64))))
         width: panelWidth
-        height: powerColumn.implicitHeight + 8
-        radius: 8
-        color: Theme.menuSurface(Kirigami.Theme.backgroundColor)
-        border.width: 1
-        border.color: Qt.rgba(Kirigami.Theme.textColor.r,
-                               Kirigami.Theme.textColor.g,
-                               Kirigami.Theme.textColor.b, Theme.popupBorderOpacity)
+        height: Math.min(powerColumn.implicitHeight + 2 * Theme.menuInset, Math.max(0, root.height - 16))
 
 
-        Column {
-            id: powerColumn
-            width: popup.panelWidth - 8
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: 4
-            spacing: 0
+        Flickable {
+            id: powerScroll
+            anchors.fill: parent
+            anchors.margins: Theme.menuInset
+            contentWidth: width
+            contentHeight: powerColumn.implicitHeight
+            clip: true
+            interactive: contentHeight > height
+            boundsBehavior: Flickable.StopAtBounds
+
+            Column {
+                id: powerColumn
+                width: powerScroll.width
+                spacing: 0
 
             PowerOption {
                 id: settingsOption
@@ -193,6 +203,7 @@ Item {
                 }
                 onNavigationRequested: direction => root.moveFocus(direction)
             }
+            }
         }
 
         // Consume unhandled keys while the popup owns focus, rather than
@@ -216,11 +227,12 @@ Item {
     onHeightChanged: if (popup.visible) close()
 
     function open() {
-        if (!root.visualParent || !root.visualParent.visible) return
+        if (!root.visualParent || !root.visualParent.visible || root.width <= 16 || root.height <= 16) return
 
         // Lay out only the active menu's visible rows before measuring.
         popup.visible = true;
         powerColumn.forceLayout();
+        powerScroll.contentY = 0;
         var popupW = popup.width
         var popupH = popup.height
         var gap = 8

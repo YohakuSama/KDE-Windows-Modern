@@ -335,13 +335,15 @@ prefix="$(cat "$PROFILE/wm-qt-plugin-prefix")"
 plugin="$PROFILE/$prefix"
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"
 tasks="$plugin/plasma/applets/org.kde.windowsmodern.icontasks.so"
-if [[ ! -s "$tray" || ! -s "$tasks" ]]; then
-    echo "两个 C++ 插件未完整构建。" >&2
+menu="$plugin/plasma/containmentactions/org.kde.windowsmodern.contextmenu.so"
+if [[ ! -s "$tray" || ! -s "$tasks" || ! -s "$menu" ]]; then
+    echo "C++ 插件未完整构建。" >&2
     exit 1
 fi
 tray_token="$(cat "$PROFILE/wm-token-systemtray")"
 tasks_token="$(cat "$PROFILE/wm-token-icontasks")"
-verify_args=(--tray-token "$tray_token" --tasks-token "$tasks_token" --tray "$tray" --tasks "$tasks")
+menu_token="$(cat "$PROFILE/wm-token-contextmenu")"
+verify_args=(--tray-token "$tray_token" --tasks-token "$tasks_token" --tray "$tray" --tasks "$tasks" --menu "$menu" --menu-token "$menu_token")
 "$PYTHON" "$ROOT/scripts/verify-nixos-runtime.py" "${verify_args[@]}"
 printf '系统托盘源码及 ABI 标识：%s\n任务栏源码及 ABI 标识：%s\n' "$tray_token" "$tasks_token"
 printf '系统托盘构建输入：%s\n任务栏构建输入：%s\n' "$(cat "$PROFILE/wm-source-systemtray")" "$(cat "$PROFILE/wm-source-icontasks")"
@@ -349,7 +351,7 @@ printf '系统托盘构建输入：%s\n任务栏构建输入：%s\n' "$(cat "$PR
 # Exact Qt/Plasma library paths must agree with the live shell, not just
 # their major version. An incompatible update is stopped before any settings change.
 pid="$(systemctl --user show "$SERVICE" -p MainPID --value)"
-"$PYTHON" - "$pid" "$tray" "$tasks" <<'PY'
+"$PYTHON" - "$pid" "$tray" "$tasks" "$menu" <<'PY'
 import pathlib, re, subprocess, sys
 pid, *plugins = sys.argv[1:]
 maps = pathlib.Path("/proc", pid, "maps").read_text()
@@ -428,6 +430,12 @@ stop_shell
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" install --root "$ROOT" --state "$STATE" --profile "$PROFILE" "${upgrade_args[@]}"
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" verify-sources --root "$ROOT" --state "$STATE" --profile "$PROFILE"
 ln -sfn "$PROFILE" "$STATE/runtime"
+configure_desktop_menu() {
+    "$PYTHON" "$ROOT/scripts/desktop-contextmenu.py" \
+        --layout "$CONFIG/plasma-org.kde.plasma.desktop-appletsrc" \
+        --defaults "$DATA/plasma/shells/org.kde.plasma.desktop/contents/defaults"
+}
+configure_desktop_menu
 set_profile_env "$plugin"
 start_shell
 
@@ -463,6 +471,7 @@ kwriteconfig6 --file spectaclerc --group General --key clipboardGroup PostScreen
     "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" apply --group apps
     stop_shell
     "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" tray-apply
+    configure_desktop_menu
     start_shell
     bash "$ROOT/scripts/set-wallpaper.sh"
 else
@@ -514,7 +523,7 @@ for id in org.kde.windowsmodern.startmenu org.kde.windowsmodern.systemtray \
           org.kde.windowsmodern.icontasks org.kde.windowsmodern.digitalclock org.kde.windowsmodern.showdesktop; do
     grep -qx "plugin=$id" "$layout" || { echo "任务栏未加载 $id" >&2; false; }
 done
-# A filename match is NOT sufficient. Verify both mapped objects have
+# A filename match is NOT sufficient. Verify all mapped plugins have
 # exactly the new immutable store paths, inodes, and compiled build token.
 verified=0
 for _ in {1..20}; do

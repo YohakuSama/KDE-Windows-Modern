@@ -120,8 +120,7 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     if (!pinned && status == Status::HiddenStatus) {
         return Status::HiddenStatus;
     }
-    const bool optionalIdle = itemId == QLatin1String("org.kde.plasma.userswitcher")
-        || itemId == QLatin1String("org.kde.plasma.weather")
+    const bool optionalIdle = itemId == QLatin1String("org.kde.plasma.weather")
         || itemId == QLatin1String("org.kde.plasma.keyboardindicator");
     if (optionalIdle && !pinned && !hiddenByUser
         && status != Status::NeedsAttentionStatus && status != Status::RequiresAttentionStatus
@@ -133,7 +132,8 @@ inline Plasma::Types::ItemStatus effectiveStatus(const QString &itemId, Plasma::
     }
     const bool dynamicDevice = itemId == QLatin1String("org.kde.plasma.bluetooth")
         || itemId == QLatin1String("org.kde.plasma.devicenotifier");
-    if (dynamicDevice && (status == Status::PassiveStatus || status == Status::UnknownStatus)) {
+    const bool idleClipboard = itemId == QLatin1String("org.kde.plasma.clipboard");
+    if ((dynamicDevice || idleClipboard) && (status == Status::PassiveStatus || status == Status::UnknownStatus)) {
         return Status::HiddenStatus;
     }
     if (hiddenByUser) {

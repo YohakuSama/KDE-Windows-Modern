@@ -38,7 +38,7 @@ Item {
     Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
     width: parent ? parent.width : Kirigami.Units.gridUnit * 10
-    height: 36
+    height: Theme.menuRowHeight
 
     Rectangle {
         anchors.fill: parent
@@ -55,14 +55,16 @@ Item {
         id: powerRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.leftMargin: 10
+        anchors.leftMargin: Theme.menuTextInset
         anchors.right: parent.right
-        anchors.rightMargin: 10
-        spacing: 10
+        anchors.rightMargin: Theme.menuTextInset
+        spacing: Theme.menuIconGap
 
         Kirigami.Icon {
-            Layout.preferredWidth: 16
-            Layout.preferredHeight: 16
+            objectName: "wmStartPowerGlyph"
+            Layout.preferredWidth: Theme.menuGlyphSize
+            Layout.preferredHeight: Theme.menuGlyphSize
+            Layout.alignment: Qt.AlignVCenter
             roundToIconSize: false
             source: option.iconSource
             fallback: option.iconSource.replace(/-symbolic$/, "")
