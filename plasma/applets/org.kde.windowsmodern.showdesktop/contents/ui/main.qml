@@ -61,8 +61,8 @@ PlasmoidItem {
     MouseArea {
         id: mouseArea
         anchors.fill: parent
-        anchors.rightMargin: root.horizontal && !root.LayoutMirroring.enabled ? -panelMargins.panelEdgeMargin : 0
-        anchors.leftMargin: root.horizontal && root.LayoutMirroring.enabled ? -panelMargins.panelEdgeMargin : 0
+        // Qt automatically mirrors the right margin in right-to-left layouts.
+        anchors.rightMargin: root.horizontal ? -panelMargins.panelEdgeMargin : 0
         anchors.bottomMargin: root.vertical ? -panelMargins.panelEdgeMargin : 0
 
         activeFocusOnTab: true

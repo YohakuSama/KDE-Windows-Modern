@@ -133,6 +133,9 @@ Item {
         Component {
             id: boxComponent
             SearchBox {
+                property bool mirroredLayout: false
+                LayoutMirroring.enabled: mirroredLayout
+                LayoutMirroring.childrenInherit: true
                 height: 48
                 width: preferredWidth
                 iconName: "edit-find-symbolic"
@@ -186,6 +189,16 @@ Item {
             verify(pill.y >= 0 && pill.y + pill.height <= box.height);
             verify(icon.x >= 0 && icon.x + icon.width <= pill.width);
             verify(!label.visible || label.x + label.width <= pill.width);
+        }
+
+        function test_boxMirroredOrder() {
+            const box = makeBox({width: 228, height: 48});
+            const icon = findChild(box, "searchBoxIcon");
+            const label = findChild(box, "wmSearchPlaceholder");
+            verify(label.visible);
+            verify(icon.x + icon.width <= label.x);
+            box.mirroredLayout = true;
+            tryVerify(() => label.x + label.width <= icon.x);
         }
 
         function test_boxClick() {

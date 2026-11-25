@@ -91,6 +91,7 @@ MouseArea {
         objectName: "wmSearchPill"
         readonly property int inset: Math.round(height * 12 / 32)
         readonly property int iconGap: Math.round(height / 4)
+        readonly property bool mirrored: box.LayoutMirroring.enabled
         readonly property bool showPlaceholder: width >= 2 * inset + magnifier.width + iconGap + 12
             && placeholderLabel.implicitHeight <= height
         anchors.centerIn: parent
@@ -110,7 +111,8 @@ MouseArea {
             objectName: "searchBoxIcon"
 
             anchors.verticalCenter: parent.verticalCenter
-            x: pill.showPlaceholder ? pill.inset : Math.round((pill.width - width) / 2)
+            x: pill.showPlaceholder ? (pill.mirrored ? pill.width - pill.inset - width : pill.inset)
+                                    : Math.round((pill.width - width) / 2)
             width: Math.round(pill.height / 2)
             roundToIconSize: false
             height: width
@@ -125,9 +127,9 @@ MouseArea {
             objectName: "wmSearchPlaceholder"
             visible: pill.showPlaceholder
             anchors.verticalCenter: parent.verticalCenter
-            anchors.left: magnifier.right
-            anchors.leftMargin: pill.iconGap
-            width: Math.max(0, pill.width - magnifier.x - magnifier.width - pill.iconGap - pill.inset)
+            x: pill.mirrored ? pill.inset : magnifier.x + magnifier.width + pill.iconGap
+            width: Math.max(0, pill.width - 2 * pill.inset - magnifier.width - pill.iconGap)
+            horizontalAlignment: Text.AlignLeft
             text: box.placeholder
             textFormat: Text.PlainText
             elide: Text.ElideRight
