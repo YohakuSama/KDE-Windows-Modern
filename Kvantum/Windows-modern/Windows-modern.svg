@@ -1796,30 +1796,38 @@
   <path d="m22 473v57l2 1e-5v-57z" fill="#ffffff" opacity=".8"/>
   <rect transform="rotate(90)" x="473" y="-22" width="57" height="6" fill="url(#linearGradient4855-3)" opacity=".15" stroke-width="1.037"/>
  </g>
- <path id="menu-normal" d="m111 473h48v48h-48z" fill="#ffffff" opacity=".8"/>
- <g id="menu-normal-left" transform="matrix(.33333 0 0 1 69.247 -230.75)">
-  <path d="m116.26 703.75h6v48h-6z" fill="#ffffff" opacity=".8"/>
+  <path id="menu-normal" d="M111 473h48v48h-48z" fill="#F9F9F9" opacity=".98"/>
+ <g id="menu-normal-left" transform="translate(103 473)">
+  <path d="M0 0h1v48H0z" fill="#DADADA" opacity=".98"/>
+  <path d="M1 0h7v48H1z" fill="#F9F9F9" opacity=".98"/>
  </g>
- <g id="menu-normal-topleft" transform="matrix(.33333 0 0 .33333 69.246 237.08)">
-  <path d="m122.26 698.75c-3.3229 1e-3 -5.9977 2.6768-5.9977 6h6z" fill="#ffffff" opacity=".8"/>
+ <g id="menu-normal-top" transform="translate(111 465)">
+  <path d="M0 0h48v1H0z" fill="#DADADA" opacity=".98"/>
+  <path d="M0 1h48v7H0z" fill="#F9F9F9" opacity=".98"/>
  </g>
- <g id="menu-normal-top" transform="matrix(0 .33333 -1 0 862.75 431.25)">
-  <path d="m116.26 703.75h6v48h-6z" fill="#ffffff" opacity=".8"/>
+ <g id="menu-normal-right" transform="translate(167 473) scale(-1 1)">
+  <path d="M0 0h1v48H0z" fill="#DADADA" opacity=".98"/>
+  <path d="M1 0h7v48H1z" fill="#F9F9F9" opacity=".98"/>
  </g>
- <g id="menu-normal-topright" transform="matrix(0 .33333 -.33333 0 394.92 431.25)">
-  <path d="m122.26 698.75c-3.3229 1e-3 -5.9977 2.6768-5.9977 6h6z" fill="#ffffff" opacity=".8"/>
+ <g id="menu-normal-bottom" transform="translate(111 529) scale(1 -1)">
+  <path d="M0 0h48v1H0z" fill="#DADADA" opacity=".98"/>
+  <path d="M0 1h48v7H0z" fill="#F9F9F9" opacity=".98"/>
  </g>
- <g id="menu-normal-right" transform="matrix(-.33333 0 0 1 200.75 -230.75)">
-  <path d="m116.26 703.75h6v48h-6z" fill="#ffffff" opacity=".8"/>
+ <g id="menu-normal-topleft" transform="translate(103 465)">
+  <path d="M8 0A8 8 0 0 0 0 8H1A7 7 0 0 1 8 1Z" fill="#DADADA" opacity=".98"/>
+  <path d="M8 1A7 7 0 0 0 1 8H8Z" fill="#F9F9F9" opacity=".98"/>
  </g>
- <g id="menu-normal-bottomright" transform="matrix(-.33333 0 0 -.33333 200.75 756.92)">
-  <path d="m122.26 698.75c-3.3229 1e-3 -5.9977 2.6768-5.9977 6h6z" fill="#ffffff" opacity=".8"/>
+ <g id="menu-normal-topright" transform="translate(167 465) scale(-1 1)">
+  <path d="M8 0A8 8 0 0 0 0 8H1A7 7 0 0 1 8 1Z" fill="#DADADA" opacity=".98"/>
+  <path d="M8 1A7 7 0 0 0 1 8H8Z" fill="#F9F9F9" opacity=".98"/>
  </g>
- <g id="menu-normal-bottom" transform="matrix(0 -.33333 1 0 -592.75 562.75)">
-  <path d="m116.26 703.75h6v48h-6z" fill="#ffffff" opacity=".8"/>
+ <g id="menu-normal-bottomleft" transform="translate(103 529) scale(1 -1)">
+  <path d="M8 0A8 8 0 0 0 0 8H1A7 7 0 0 1 8 1Z" fill="#DADADA" opacity=".98"/>
+  <path d="M8 1A7 7 0 0 0 1 8H8Z" fill="#F9F9F9" opacity=".98"/>
  </g>
- <g id="menu-normal-bottomleft" transform="matrix(0 -.33333 .33333 0 -124.91 568.08)">
-  <path d="m138.25 698.74c-3.3229 1e-3 -5.9977 2.6768-5.9977 6h6z" fill="#ffffff" opacity=".8"/>
+ <g id="menu-normal-bottomright" transform="translate(167 529) scale(-1 -1)">
+  <path d="M8 0A8 8 0 0 0 0 8H1A7 7 0 0 1 8 1Z" fill="#DADADA" opacity=".98"/>
+  <path d="M8 1A7 7 0 0 0 1 8H8Z" fill="#F9F9F9" opacity=".98"/>
  </g>
  <g id="menu-shadow-bottom" transform="matrix(.96 0 0 1 -36.236 -412.45)" fill-rule="evenodd">
   <g id="bottom" transform="matrix(-1 0 0 -.57142 302.75 1081.5)" fill="#343031">

@@ -960,3 +960,7 @@ Known Quick Settings details use the existing themed pages over KDE backends. Na
 ### KDE application navigation icon coverage
 
 Plasma 6.8 System Settings category metadata and KCM metadata, and the four shipped System Monitor pages, are the source of the native icon role aliases. The existing resource importer maps standard and symbolic names in the installed application/category directories from the owner's pinned Segoe Fluent glyphs. The glyph presence was verified against the exact pinned font blob. `office-chart-line` uses Microsoft's MIT-licensed Fluent Data Line artwork as a semantic compatibility icon; it is not the Windows Task Manager binary asset. Real application identities and owner-created System Monitor pages remain unchanged. Native Qt Quick delegate layout and contrast are a separate acceptance item; icon mapping is not a claim of complete application redesign.
+
+### Native QWidget context-menu material
+
+The stock desktop/file-manager context menu remains a real KDE QMenu. Its light/dark Kvantum surfaces now use matching 8-pixel corner slices, a continuous one-pixel border, and consistent 98% surface opacity to prevent strong wallpaper tint and corner seams. Row padding is increased without replacing or enabling any native QAction. This is a material pass, not a claim that the desktop action order is the Windows 11 compact layout. The latter requires a containment-actions implementation that forwards the real folder-model actions.
