@@ -301,10 +301,10 @@ Item {
                 id: hiddenItemsView
                 Layout.fillWidth: true
                 Layout.preferredHeight: hiddenItemsView.contentRowsHeight
-                Layout.leftMargin: Math.round(8 * actionPanel.scale)
-                Layout.rightMargin: Math.round(8 * actionPanel.scale)
-                Layout.topMargin: Math.round(8 * actionPanel.scale)
-                Layout.bottomMargin: Math.round(8 * actionPanel.scale)
+                Layout.leftMargin: Math.round(8 * actionPanel.uiScale)
+                Layout.rightMargin: Math.round(8 * actionPanel.uiScale)
+                Layout.topMargin: Math.round(8 * actionPanel.uiScale)
+                Layout.bottomMargin: Math.round(8 * actionPanel.uiScale)
                 visible: popup.overflowHome && root.hiddenLayout.itemCount > 0
                 KeyNavigation.up: pinButton
                 onVisibleChanged: {
@@ -353,7 +353,7 @@ Item {
                 ActionPanel {
                     id: actionPanel
                     anchors.fill: parent
-                    scale: popup.uiScale
+                    uiScale: popup.uiScale
                     frameInset: popup.separatedMedia ? 0 : Math.max(0, dialog.margins.left)
                     onVisibleChanged: {
                         if (visible && dialog.visible && !systemTrayState.activeApplet)

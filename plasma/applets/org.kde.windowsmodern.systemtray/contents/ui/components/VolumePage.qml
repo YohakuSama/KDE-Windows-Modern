@@ -4,6 +4,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
+import "../js/colorType.js" as ColorType
 import "volume" as Volume
 
 Lib.Page {
@@ -33,7 +34,7 @@ Lib.Page {
         Layout.topMargin: 8
         Layout.bottomMargin: 8
         height: 1
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        color: ColorType.divider(ColorType.isDark(Kirigami.Theme.backgroundColor))
         visible: models.sinkInputFilterModel.count > 0
     }
 
@@ -49,7 +50,7 @@ Lib.Page {
         Layout.topMargin: 8
         Layout.bottomMargin: 8
         height: 1
-        color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
+        color: ColorType.divider(ColorType.isDark(Kirigami.Theme.backgroundColor))
         visible: models.sourceAvailable
     }
 
@@ -63,8 +64,8 @@ Lib.Page {
         Layout.topMargin: 10
         text: i18n("No applications playing audio")
         color: Kirigami.Theme.textColor
-        opacity: 0.5
-        font.pixelSize: 11
+        opacity: 0.75
+        font.pixelSize: 12
         visible: models.sinkInputFilterModel.count === 0
         horizontalAlignment: Text.AlignHCenter
     }

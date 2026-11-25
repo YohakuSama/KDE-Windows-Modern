@@ -50,7 +50,7 @@ Item {
         : (panelGeometry.height || startButton?.height || 0))
     // Legacy Dialog does not track every panel move while mapped. Dismiss
     // safely during reconfiguration; the next open uses the new anchor.
-    onPanelGeometryChanged: if (root.visible) root.closeMenu()
+    onPanelGeometryChanged: if (root && root.visible) root.closeMenu()
 
     // Native Plasma positions the popup relative to an Item in the panel's
     // window, including its real output and work area on Wayland and X11.

@@ -31,7 +31,7 @@ ContainmentItem {
         ? Qt.rect(panelWindow.x, panelWindow.y, panelWindow.width, panelWindow.height) : Qt.rect(0, 0, 0, 0)
     readonly property real panelExtent: Math.max(0, vertical
         ? (panelGeometry.width || root.width) : (panelGeometry.height || root.height))
-    onPanelGeometryChanged: if (dialog.visible) systemTrayState.expanded = false
+    onPanelGeometryChanged: if (dialog && dialog.visible) systemTrayState.expanded = false
 
     function panelAnchorForApplet(applet) {
         const revision = tasksGrid.delegateRevision;

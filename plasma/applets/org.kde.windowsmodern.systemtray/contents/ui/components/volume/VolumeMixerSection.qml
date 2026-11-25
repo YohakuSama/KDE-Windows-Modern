@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../../lib" as Lib
+import "../../js/colorType.js" as ColorType
 
 ColumnLayout {
     id: section
@@ -29,9 +30,8 @@ ColumnLayout {
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
                 radius: 4
-                color: rowMouse.containsMouse
-                    ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
-                    : "transparent"
+                color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
+                    false, rowHover.hovered, false)
 
                 RowLayout {
                     anchors.fill: parent
@@ -51,7 +51,7 @@ ColumnLayout {
                         Layout.fillWidth: true
                         text: (model.Client && model.Client.name) || model.Name || i18n("Unknown application")
                         color: Kirigami.Theme.textColor
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         elide: Text.ElideRight
                     }
 
@@ -73,12 +73,7 @@ ColumnLayout {
                     }
                 }
 
-                MouseArea {
-                    id: rowMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    acceptedButtons: Qt.NoButton
-                }
+                HoverHandler { id: rowHover }
             }
         }
     }

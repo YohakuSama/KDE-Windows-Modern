@@ -7,6 +7,7 @@ import org.kde.plasma.private.clipboard as Clipboard
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../lib" as Lib
+import "../js/colorType.js" as ColorType
 
 ColumnLayout {
     id: page
@@ -16,6 +17,9 @@ ColumnLayout {
     signal itemSelected()
     signal closeRequested()
     property string activeTab: "clipboard"
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor,
+        Qt.color(ColorType.cardFill(dark, false)), 4.5)
     property bool emojiPickerEnabled: true
     // The default is the real shared Klipper history. Tests can substitute
     // an isolated model and controller without altering the user's history.
@@ -104,7 +108,7 @@ ColumnLayout {
                         height: 3
                         radius: 1.5
                         visible: tab.selected
-                        color: Kirigami.Theme.highlightColor
+                        color: page.accent
                     }
                 }
                 QQC2.ToolTip.text: text
@@ -178,10 +182,10 @@ ColumnLayout {
             width: Math.max(1, history.width - (history.contentHeight > history.height ? 16 : 0))
             height: isImage ? 108 : 76
             radius: 6
-            color: Qt.rgba(fg.r, fg.g, fg.b, selectArea.containsMouse ? 0.10 : 0.055)
-            border.width: selectArea.activeFocus ? 2 : 1
-            border.color: selectArea.activeFocus ? Kirigami.Theme.highlightColor
-                : Qt.rgba(fg.r, fg.g, fg.b, 0.12)
+            color: ColorType.rowFill(page.dark, true, selectArea.containsMouse, selectArea.containsPress)
+            border.width: 1
+            border.color: selectArea.activeFocus ? page.accent
+                : ColorType.divider(page.dark)
 
             function selectItem() {
                 if (!model.uuid) return;
@@ -295,7 +299,7 @@ ColumnLayout {
                     icon.name: card.pinned ? "window-unpin" : "window-pin"
                     icon.width: 16
                     icon.height: 16
-                    icon.color: card.pinned ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
+                    icon.color: card.pinned ? page.accent : Kirigami.Theme.textColor
                     onClicked: card.model.starred = !card.pinned
                 }
             }

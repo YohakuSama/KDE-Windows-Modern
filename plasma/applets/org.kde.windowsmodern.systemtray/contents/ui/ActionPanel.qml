@@ -22,20 +22,20 @@ ColumnLayout {
 
     signal requestPage(string name)
 
-    property real scale: Plasmoid.configuration.scale / 100
+    property real uiScale: Plasmoid.configuration.scale / 100
 
     // Outer spacing includes the native KSVG dialog frame when present.
     // The separated media window has no native frame and supplies the
     // same total spacing itself.
     property real frameInset: 0
-    readonly property int edgeInset: Math.round(24 * scale)
+    readonly property int edgeInset: Math.round(24 * uiScale)
     readonly property int contentInset: Math.max(0, edgeInset - Math.round(frameInset))
-    readonly property int gridBottomGap: Math.round(14 * scale)
-    readonly property int sliderInset: Math.round(16 * scale)
-    readonly property int sliderHorizontalInset: Math.max(0, Math.round(18 * scale) - Math.round(frameInset))
-    readonly property int sliderGap: Math.round(12 * scale)
-    readonly property int sliderHeight: Math.round(36 * scale)
-    readonly property int footerHeight: Math.max(24, Math.round(48 * scale) - Math.round(frameInset))
+    readonly property int gridBottomGap: Math.round(14 * uiScale)
+    readonly property int sliderInset: Math.round(16 * uiScale)
+    readonly property int sliderHorizontalInset: Math.max(0, Math.round(18 * uiScale) - Math.round(frameInset))
+    readonly property int sliderGap: Math.round(12 * uiScale)
+    readonly property int sliderHeight: Math.max(28, Math.round(36 * uiScale))
+    readonly property int footerHeight: Math.max(24, Math.round(48 * uiScale) - Math.round(frameInset))
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
     Layout.fillWidth: true
@@ -47,11 +47,11 @@ ColumnLayout {
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume && volumeSlider.sinkAvailable
     readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
-    readonly property int nominalHomeHeight: Math.ceil(Math.max(220 * scale,
-        edgeInset + Math.max(64 * scale, toggleViewport.viewportHeight) + gridBottomGap
+    readonly property int nominalHomeHeight: Math.ceil(Math.max(220 * uiScale,
+        edgeInset + Math.max(64 * uiScale, toggleViewport.viewportHeight) + gridBottomGap
         + (sliderRows > 0 ? 1 + 2 * sliderInset + sliderRows * sliderHeight
             + (sliderRows - 1) * sliderGap : 0)
-        + Math.round(48 * scale)))
+        + Math.round(48 * uiScale)))
     readonly property int homeHeight: Math.max(1, nominalHomeHeight - 2 * Math.round(frameInset))
 
     // Only this viewport scrolls; the sliders and footer remain fixed.
@@ -73,7 +73,7 @@ ColumnLayout {
         Layout.rightMargin: actionPanel.contentInset
         Layout.topMargin: actionPanel.contentInset
         Layout.bottomMargin: actionPanel.gridBottomGap
-        implicitHeight: Math.max(Math.round(64 * actionPanel.scale), toggleViewport.viewportHeight)
+        implicitHeight: Math.max(Math.round(64 * actionPanel.uiScale), toggleViewport.viewportHeight)
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
         Layout.maximumHeight: implicitHeight
@@ -90,13 +90,13 @@ ColumnLayout {
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
             readonly property bool hasMoreRows: rows > 2
-            readonly property real rowGap: Math.round(12 * actionPanel.scale)
-            readonly property real columnGap: Math.round(14 * actionPanel.scale)
+            readonly property real rowGap: Math.round(12 * actionPanel.uiScale)
+            readonly property real columnGap: Math.round(14 * actionPanel.uiScale)
             readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
             // Two caption lines are reserved for every tile, keeping
             // the second row aligned even for a long device name.
-            readonly property real rowHeight: Math.round(48 * actionPanel.scale)
-                + Math.round(8 * actionPanel.scale) + Math.round(30 * actionPanel.scale)
+            readonly property real rowHeight: Math.round(48 * actionPanel.uiScale)
+                + Math.round(8 * actionPanel.uiScale) + Math.round(30 * actionPanel.uiScale)
             readonly property real rowStride: rowHeight + rowGap
             readonly property real viewportHeight: Math.max(0, Math.min(2, rows) * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
@@ -274,12 +274,12 @@ ColumnLayout {
                     if (point.x < 0 || point.x >= toggleViewport.width
                             || point.y < 0 || point.y >= toggleViewport.height)
                         return;
-                    const edge = Math.round(20 * actionPanel.scale);
+                    const edge = Math.round(20 * actionPanel.uiScale);
                     const direction = point.y < edge ? -1
                         : point.y > toggleViewport.height - edge ? 1 : 0;
                     if (direction !== 0) {
                         toggleViewport.contentY = Order.clampOffset(
-                            toggleViewport.contentY + direction * 5 * actionPanel.scale,
+                            toggleViewport.contentY + direction * 5 * actionPanel.uiScale,
                             toggleViewport.maxOffset);
                         toggleViewport.updateDrag(toggleViewport.dragKey, point);
                     }
@@ -295,7 +295,7 @@ ColumnLayout {
                     id: networkTile
                     orderKey: "network"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: true
                     visible: included
                     onArrowClicked: actionPanel.requestPage("network")
@@ -304,7 +304,7 @@ ColumnLayout {
                     id: bluetoothTile
                     orderKey: "bluetooth"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: available
                     visible: included
                     onArrowClicked: actionPanel.requestPage("bluetooth")
@@ -313,7 +313,7 @@ ColumnLayout {
                     id: airplaneTile
                     orderKey: "airplane"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showAirplane && available
                     visible: included
                 }
@@ -321,7 +321,7 @@ ColumnLayout {
                     id: batterySaverTile
                     orderKey: "battery-saver"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showBatterySaver && available
                     visible: included
                     onRightClicked: actionPanel.requestPage("battery")
@@ -330,7 +330,7 @@ ColumnLayout {
                     id: nightLightTile
                     orderKey: "night-light"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showNightLight && available
                     visible: included
                 }
@@ -338,7 +338,7 @@ ColumnLayout {
                     id: colorSchemeTile
                     orderKey: "color-scheme"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showColorScheme
                     visible: included
                 }
@@ -346,7 +346,7 @@ ColumnLayout {
                     id: micTile
                     orderKey: "microphone"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showMicMute && available
                     visible: included
                 }
@@ -354,7 +354,7 @@ ColumnLayout {
                     id: castTile
                     orderKey: "cast"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.castAvailable
                     checkable: false
                     label: i18n("Cast")
@@ -365,7 +365,7 @@ ColumnLayout {
                     id: accessibilityTile
                     orderKey: "accessibility"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     checkable: false
                     included: Plasmoid.accessibilityAvailable
                     label: i18n("Accessibility")
@@ -376,7 +376,7 @@ ColumnLayout {
                     id: hotspotTile
                     orderKey: "hotspot"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.scale)
+                    buttonHeight: Math.round(48 * actionPanel.uiScale)
                     included: Plasmoid.configuration.showHotspot && (hotspotSupported || hotspotActive)
                     visible: included
                 }
@@ -406,11 +406,11 @@ ColumnLayout {
             objectName: "wmQuickSettingsPageControls"
             visible: toggleViewport.hasMoreRows
             // Use the existing right gutter, not part of a tile column.
-            width: Math.round(14 * actionPanel.scale)
+            width: Math.round(14 * actionPanel.uiScale)
             anchors.left: parent.right
-            anchors.leftMargin: Math.round(1 * actionPanel.scale)
+            anchors.leftMargin: Math.round(1 * actionPanel.uiScale)
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Math.round(2 * actionPanel.scale)
+            spacing: Math.round(2 * actionPanel.uiScale)
 
             Repeater {
                 model: toggleViewport.pageCount
@@ -418,7 +418,7 @@ ColumnLayout {
                     id: pageDot
                     required property int index
                     width: pageControls.width
-                    height: Math.round(12 * actionPanel.scale)
+                    height: Math.round(12 * actionPanel.uiScale)
                     Accessible.role: Accessible.Button
                     Accessible.name: i18n("Page %1", index + 1)
                     Accessible.onPressAction: toggleViewport.showPage(index)
@@ -427,7 +427,7 @@ ColumnLayout {
                     Keys.onSpacePressed: toggleViewport.showPage(index)
                     Rectangle {
                         anchors.centerIn: parent
-                        width: Math.round((toggleViewport.currentPage === pageDot.index ? 5 : 3) * actionPanel.scale)
+                        width: Math.round((toggleViewport.currentPage === pageDot.index ? 5 : 3) * actionPanel.uiScale)
                         height: width
                         radius: width / 2
                         color: actionPanel.dark ? "#CCCCCC" : "#737373"
@@ -440,7 +440,7 @@ ColumnLayout {
             Item {
                 id: pageArrow
                 width: pageControls.width
-                height: Math.round(16 * actionPanel.scale)
+                height: Math.round(16 * actionPanel.uiScale)
                 readonly property bool atEnd: toggleViewport.contentY >= toggleViewport.maxOffset - 1
                 function navigate() { toggleViewport.page(atEnd ? -1 : 1); }
                 activeFocusOnTab: true
@@ -452,7 +452,7 @@ ColumnLayout {
                 Canvas {
                     id: pageTriangle
                     anchors.centerIn: parent
-                    width: Math.max(8, Math.round(10 * actionPanel.scale))
+                    width: Math.max(8, Math.round(10 * actionPanel.uiScale))
                     height: width
                     readonly property bool up: pageArrow.atEnd
                     readonly property color ink: actionPanel.dark ? "#CCCCCC" : "#737373"
@@ -507,7 +507,8 @@ ColumnLayout {
             visible: Plasmoid.configuration.showBrightness && brightnessAvailable
             showArrow: false
             reserveDetailsSpace: true
-            Layout.preferredHeight: Math.round(36 * actionPanel.scale)
+            Layout.preferredHeight: actionPanel.sliderHeight
+            implicitHeight: actionPanel.sliderHeight
             panelScreenGeometry: Plasmoid.screenGeometry
             panelScreenIndex: Plasmoid.containment.screen
             onRightClicked: actionPanel.requestPage("brightness")
@@ -516,7 +517,8 @@ ColumnLayout {
             id: volumeSlider
             Layout.fillWidth: true
             Layout.columnSpan: 3
-            Layout.preferredHeight: Math.round(36 * actionPanel.scale)
+            Layout.preferredHeight: actionPanel.sliderHeight
+            implicitHeight: actionPanel.sliderHeight
             visible: Plasmoid.configuration.showVolume && sinkAvailable
             reserveDetailsSpace: true
             onArrowClicked: actionPanel.requestPage("volume")
@@ -529,7 +531,7 @@ ColumnLayout {
         Layout.minimumHeight: actionPanel.footerHeight
         Layout.maximumHeight: actionPanel.footerHeight
         frameInset: actionPanel.frameInset
-        uiScale: actionPanel.scale
+        uiScale: actionPanel.uiScale
         showBattery: Plasmoid.configuration.showBattery
         onBatteryClicked: actionPanel.requestPage("battery")
     }
