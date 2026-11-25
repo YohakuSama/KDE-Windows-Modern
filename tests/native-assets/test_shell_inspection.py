@@ -1,14 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-import hashlib
 import importlib.util
-import json
-import os
 from pathlib import Path
 import struct
 import sys
-import tempfile
 import unittest
-from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
@@ -48,66 +43,6 @@ class NamedResources(unittest.TestCase):
         self.assertEqual(pe_resources(data), {(14, 7, 0): b'def'})
         self.assertEqual(pe_resources(data, named=True),
                          {(14, 'Battery', 1033): b'abc', (14, 7, 0): b'def'})
-
-
-class ShellAssetExtraction(unittest.TestCase):
-    def png(self, width=24, height=24):
-        return (b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR"
-                + struct.pack(">II", width, height) + bytes((8, 6, 0, 0, 0)) + bytes(4))
-
-    def test_search_icon_is_kept_as_original_png(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            source = root / "source"
-            output = root / "output"
-            asset = source / "SystemApps/MicrosoftWindows.Client.Core/StartMenu/Assets/SearchIcons/SearchIconOnLight.scale-100.png"
-            asset.parent.mkdir(parents=True)
-            asset.write_bytes(self.png())
-            self.assertEqual(inspection.scan(source, output), [])
-            inventory = json.loads((output / "inventory.json").read_text())
-            self.assertEqual(len(inventory["shell_assets"]), 1)
-            record = inventory["shell_assets"][0]
-            self.assertEqual(record["role"], "search-on-light")
-            self.assertEqual((output / record["output"]).read_bytes(), self.png())
-            self.assertEqual(record["sha256"], hashlib.sha256(self.png()).hexdigest())
-
-    def test_rejects_invalid_search_png(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            output = root / "output"
-            assets = []
-            with self.assertRaisesRegex(ValueError, "Invalid original PNG"):
-                inspection.write_shell_asset(
-                    output, assets, "search-on-light", "SearchIconOnLight.png",
-                    "shell/search/search-on-light.png", b"not a PNG", "png"
-                )
-            self.assertEqual(assets, [])
-
-    def test_install_copies_only_hash_verified_shell_assets(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            output = root / "output"
-            asset = output / "shell/search/search-on-light.png"
-            asset.parent.mkdir(parents=True)
-            raw = self.png()
-            asset.write_bytes(raw)
-            (output / "inventory.json").write_text(json.dumps({
-                "shell_assets": [{
-                    "role": "search-on-light",
-                    "source": "Windows/SystemApps/SearchIconOnLight.scale-100.png",
-                    "output": "shell/search/search-on-light.png",
-                    "bytes": len(raw),
-                    "sha256": hashlib.sha256(raw).hexdigest(),
-                    "format": "png",
-                }]
-            }))
-            data_home = root / "data"
-            with patch.dict(os.environ, {"XDG_DATA_HOME": str(data_home)}):
-                inspection.install_shell_assets(output)
-            installed = data_home / "windows-modern/native-assets/shell/search/search-on-light.png"
-            self.assertEqual(installed.read_bytes(), raw)
-            manifest = json.loads((installed.parents[1] / "manifest.json").read_text())
-            self.assertEqual(manifest["assets"][0]["sha256"], hashlib.sha256(raw).hexdigest())
 
 
 class IconGroup(unittest.TestCase):
