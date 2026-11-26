@@ -90,13 +90,17 @@ Lib.DetailPage {
             anchors.rightMargin: 12
             spacing: 12
 
-            Kirigami.Icon {
+            Item {
                 Layout.preferredWidth: 24
                 Layout.preferredHeight: 24
                 Layout.alignment: Qt.AlignVCenter
-                roundToIconSize: false
-                source: deviceRow.model.Icon || "network-bluetooth-symbolic"
-                color: deviceRow.fg
+                NativeGlyph {
+                    anchors.fill: parent
+                    roleName: deviceRow.model.Icon || ""
+                    fallbackRoleName: "network-bluetooth-symbolic"
+                    foreground: deviceRow.fg
+                    isMask: nativeSource.endsWith("-symbolic.svg")
+                }
             }
 
             ColumnLayout {

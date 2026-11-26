@@ -7,6 +7,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../components" as Components
 
 Item {
     id: root
@@ -34,11 +35,11 @@ Item {
     // the same x coordinate. Other detail-page sliders stay full-width.
     property bool reserveDetailsSpace: false
     property bool soundOutputDetails: false
-    // The supplied reference uses Speakers (Segoe Fluent Icons E7F5).
-    // Reuse the existing native import mapping and theme fallback.
+    // Dedicated sound-output role (F4C3), distinct from speaker volume.
+    // Use only the private Windows import; the chevron remains if absent.
     readonly property url nativeSoundOutputAsset: soundOutputDetails
         ? StandardPaths.locate(StandardPaths.GenericDataLocation,
-            "icons/windows-modern/apps/preferences-desktop-sound-symbolic.svg", StandardPaths.LocateFile)
+            "windows-modern/native-assets/icons/actions/wm-sound-output-symbolic.svg", StandardPaths.LocateFile)
         : ""
     property string detailsIconSource: ""
     property string detailsAccessibleName: ""
@@ -83,13 +84,13 @@ Item {
             Layout.maximumWidth: root.leadingWidth
             Layout.preferredHeight: Math.max(root.iconSize, Math.round(32 * root.controlScale))
             Layout.alignment: Qt.AlignVCenter
-            Kirigami.Icon {
+            Components.NativeGlyph {
                 objectName: "wmFluentSliderLeadingGlyph"
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.iconSize
                 height: width
-                source: root.iconSource
+                roleName: root.iconSource
                 roundToIconSize: false
                 isMask: true
                 color: Kirigami.Theme.textColor
@@ -218,14 +219,11 @@ Item {
                 anchors.centerIn: parent
                 spacing: Math.round(2 * root.controlScale)
                 readonly property int glyphExtent: Math.max(8, Math.round((root.reserveDetailsSpace ? 16 : 18) * root.controlScale))
-                Kirigami.Icon {
-                    visible: !root.soundOutputDetails && root.detailsIconSource.length > 0
+                Components.NativeGlyph {
+                    visible: !root.soundOutputDetails && nativeSource.length > 0
                     width: parent.glyphExtent
                     height: parent.glyphExtent
-                    source: root.detailsIconSource
-                    roundToIconSize: false
-                    isMask: true
-                    color: Kirigami.Theme.textColor
+                    roleName: root.detailsIconSource
                 }
                 Kirigami.Icon {
                     objectName: "wmNativeSoundOutputGlyph"
@@ -233,26 +231,16 @@ Item {
                     width: parent.glyphExtent
                     height: parent.glyphExtent
                     source: root.nativeSoundOutputAsset
+                    fallback: ""
                     roundToIconSize: false
                     isMask: true
                     color: Kirigami.Theme.textColor
                 }
-                Kirigami.Icon {
-                    objectName: "wmFallbackSoundOutputGlyph"
-                    visible: root.soundOutputDetails && String(root.nativeSoundOutputAsset).length === 0
-                    width: parent.glyphExtent
-                    height: parent.glyphExtent
-                    source: "preferences-desktop-sound-symbolic"
-                    fallback: "audio-card"
-                    roundToIconSize: false
-                    isMask: true
-                    color: Kirigami.Theme.textColor
-                }
-                Kirigami.Icon {
+                Components.NativeGlyph {
                     objectName: "wmFluentSliderDetailsChevron"
                     width: Math.max(6, Math.round((root.reserveDetailsSpace ? 8 : 12) * root.controlScale))
                     height: parent.glyphExtent
-                    source: "go-next-symbolic"
+                    roleName: "go-next-symbolic"
                     roundToIconSize: false
                     isMask: true
                     color: Kirigami.Theme.textColor

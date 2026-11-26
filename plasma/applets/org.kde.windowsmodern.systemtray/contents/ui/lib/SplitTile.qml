@@ -4,6 +4,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../components" as Components
 
 ColumnLayout {
     id: tile
@@ -176,16 +177,16 @@ ColumnLayout {
             onClicked: tile.arrowClicked()
         }
 
-        Kirigami.Icon {
+        Components.NativeGlyph {
             x: toggleMA.x + (toggleMA.width - width) / 2
             anchors.verticalCenter: parent.verticalCenter
             objectName: "wmQuickTileGlyph"
             width: Math.max(12, Math.round(16 * tile.uiScale))
             height: width
-            source: tile.iconSource
+            roleName: tile.iconSource
             roundToIconSize: false
             opacity: tile.toggleAvailable ? 1 : 0.55
-            color: tile.active ? ColorType.contrastingForeground(toggleBrush.color) : tile.fg
+            foreground: tile.active ? ColorType.contrastingForeground(toggleBrush.color) : tile.fg
             isMask: true
         }
 
@@ -198,15 +199,15 @@ ColumnLayout {
                 toggleMA.containsMouse || arrowMA.containsMouse || arrowMA.activeFocus ? 0.20 : 0.07)
         }
 
-        Kirigami.Icon {
+        Components.NativeGlyph {
             objectName: "wmQuickTileDetailsGlyph"
             x: arrowMA.x + (arrowMA.width - width) / 2
             anchors.verticalCenter: parent.verticalCenter
             width: Math.max(8, Math.round(12 * tile.uiScale))
             height: width
             roundToIconSize: false
-            source: "go-next-symbolic"
-            color: tile.active ? ColorType.contrastingForeground(detailsBrush.color) : tile.fg
+            roleName: "go-next-symbolic"
+            foreground: tile.active ? ColorType.contrastingForeground(detailsBrush.color) : tile.fg
             isMask: true
         }
     }

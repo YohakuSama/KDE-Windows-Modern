@@ -30,6 +30,13 @@
 #include <QJsonArray>
 #include <QIcon>
 #include <QImage>
+#include <QImageReader>
+#include <QFileInfo>
+#include <QDateTime>
+#include <QHash>
+#include <QPainter>
+#include <QPalette>
+#include <QRegularExpression>
 #include <QPixmap>
 #include "panelicon.h"
 #include <QMenu>
@@ -93,6 +100,63 @@ QVariant Backend::normalizedPanelIcon(const QVariant &decoration) const
         return decoration;
     }
     return QVariant::fromValue(QIcon(QPixmap::fromImage(canvas)));
+}
+
+// Use the same private importer as the desktop context menu. A QIcon
+// returned to PlasmaExtras is already tinted; no inherited theme lookup
+// can replace a missing Windows role with a KDE icon.
+QVariant Backend::nativeMenuIcon(const QString &role) const
+{
+    static const QRegularExpression validRole(QStringLiteral("^(actions|status|devices|apps)/[A-Za-z0-9_.+-]+$"));
+    if (!validRole.match(role).hasMatch())
+        return QVariant::fromValue(QIcon());
+
+    const auto path = QStandardPaths::locate(QStandardPaths::GenericDataLocation,
+        QStringLiteral("windows-modern/native-assets/icons/") + role + QStringLiteral(".svg"));
+    const QFileInfo info(path);
+    if (!info.isFile() || info.isSymLink())
+        return QVariant::fromValue(QIcon());
+
+    const QPalette palette = QApplication::palette("QMenu");
+    const QColor foreground = palette.color(QPalette::Active, QPalette::WindowText);
+    const QColor disabled = palette.color(QPalette::Disabled, QPalette::WindowText);
+    const QColor selected = palette.color(QPalette::Active, QPalette::HighlightedText);
+    const QString key = path + QString::number(info.lastModified().toMSecsSinceEpoch())
+        + foreground.name(QColor::HexArgb) + disabled.name(QColor::HexArgb)
+        + selected.name(QColor::HexArgb);
+    static QHash<QString, QIcon> cache;
+    const auto cached = cache.constFind(key);
+    if (cached != cache.constEnd())
+        return QVariant::fromValue(cached.value());
+
+    QIcon icon;
+    for (const qreal dpr : {1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}) {
+        const int size = qRound(16 * dpr);
+        QImageReader reader(path);
+        reader.setScaledSize(QSize(size, size));
+        const QImage mask = reader.read().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        if (mask.isNull())
+            continue;
+        const auto add = [&](const QColor &color, QIcon::Mode mode) {
+            QImage image = mask;
+            QPainter painter(&image);
+            painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+            painter.fillRect(image.rect(), color);
+            painter.end();
+            QPixmap pixmap = QPixmap::fromImage(image);
+            pixmap.setDevicePixelRatio(dpr);
+            icon.addPixmap(pixmap, mode);
+        };
+        add(foreground, QIcon::Normal);
+        add(disabled, QIcon::Disabled);
+        add(selected, QIcon::Selected);
+    }
+    if (!icon.isNull()) {
+        if (cache.size() >= 128)
+            cache.clear();
+        cache.insert(key, icon);
+    }
+    return QVariant::fromValue(icon);
 }
 
 Backend::~Backend()
@@ -356,7 +420,7 @@ QVariantList Backend::placesActions(const QUrl &launcherUrl, bool showAllPlaces,
         }
 
         QAction *action = new QAction(parent);
-        action->setIcon(QIcon::fromTheme(QStringLiteral("view-more-symbolic")));
+        action->setIcon(nativeMenuIcon(QStringLiteral("actions/view-more-symbolic")).value<QIcon>());
         action->setText(i18ncp("Show all user Places", "%1 more Place…", "%1 more Places…", totalActionCount - actions.count()));
         connect(action, &QAction::triggered, this, &Backend::showAllPlaces);
         actions << QVariant::fromValue(action);
@@ -462,7 +526,7 @@ QVariantList Backend::recentDocumentActions(const QUrl &launcherUrl, QObject *pa
         } else {
             action->setText(i18nc("@action:inmenu", "Forget Recent Files"));
         }
-        action->setIcon(QIcon::fromTheme(QStringLiteral("edit-clear-history")));
+        // KDE-specific history cleanup has no verified Windows shell role.
         action->setProperty("agent", storageId);
         connect(action, &QAction::triggered, this, &Backend::handleRecentDocumentAction);
         actions << QVariant::fromValue<QAction *>(action);

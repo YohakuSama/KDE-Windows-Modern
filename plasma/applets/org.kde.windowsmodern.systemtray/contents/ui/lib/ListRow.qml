@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../components" as Components
 
 Item {
     id: row
@@ -55,13 +56,14 @@ Item {
             anchors.rightMargin: 10
             spacing: 8
 
-            Kirigami.Icon {
+            Item {
                 Layout.preferredWidth: 20
                 Layout.preferredHeight: 20
-                source: row.iconSource
-                color: Kirigami.Theme.textColor
-                isMask: true
                 visible: row.iconSource.length > 0
+                Components.NativeGlyph {
+                    anchors.fill: parent
+                    roleName: row.iconSource
+                }
             }
 
             PlasmaComponents3.Label {

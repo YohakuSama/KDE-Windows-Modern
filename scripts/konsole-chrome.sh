@@ -39,9 +39,7 @@ fi
 [ ! -L "$STATE/lock" ] || fail 'Refusing an externally managed lock.'
 exec 9>"$STATE/lock"
 flock 9
-for path in "$STATE/manifest"; do
-    [ ! -L "$path" ] || fail 'Refusing an externally managed manifest.'
-done
+[ ! -L "$STATE/manifest" ] || fail 'Refusing an externally managed manifest.'
 [ ! -e "$STATE/result" ] || [ -L "$STATE/result" ] \
     || fail 'Refusing to replace an unrelated result path.'
 

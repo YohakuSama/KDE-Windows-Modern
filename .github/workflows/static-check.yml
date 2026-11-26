@@ -157,6 +157,11 @@ jobs:
                                         for x in row.get("qml_candidates", [])[:3])
                   if locations:
                       print(f"  {row['name']}: {locations}")
+          print("Source reference counts:", json.dumps(report["source_reference_counts"], sort_keys=True))
+          for key in ("private_role_unmapped", "private_name_unmapped", "cpp_theme_name",
+                      "dynamic_cpp_candidate", "direct_artwork"):
+              for row in report["source_references"].get(key, []):
+                  print(f"  {key}: {row['file']}:{row['line']} {row['value']}")
           print("Limitations:", report["limitations"])
           if report["broken_theme_links"] or report["missing_index_directories"]:
               raise SystemExit(1)

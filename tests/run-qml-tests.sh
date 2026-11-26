@@ -26,8 +26,15 @@ failed=0
 for suite in "$HERE"/*/; do
     compgen -G "$suite/tst_*.qml" >/dev/null || continue
     name="$(basename "$suite")"
-    if [[ "${#REQUESTED[@]}" -gt 0 ]] && [[ ! " ${REQUESTED[*]} " =~ " ${name} " ]]; then
-        continue
+    if [[ "${#REQUESTED[@]}" -gt 0 ]]; then
+        selected=false
+        for requested in "${REQUESTED[@]}"; do
+            if [[ "$requested" == "$name" ]]; then
+                selected=true
+                break
+            fi
+        done
+        [[ "$selected" == true ]] || continue
     fi
     args=(-input "$suite")
     [ -d "$suite/mock" ] && args=(-import "$suite/mock" "${args[@]}")

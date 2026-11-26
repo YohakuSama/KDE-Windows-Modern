@@ -89,12 +89,11 @@ Item {
             }
         }
 
-        function test_soundOutputGlyphHasFallback() {
+        function test_soundOutputGlyphUsesNativeImportOnly() {
             const nativeGlyph = findChild(volume, "wmNativeSoundOutputGlyph");
-            const fallbackGlyph = findChild(volume, "wmFallbackSoundOutputGlyph");
-            verify(nativeGlyph !== null && fallbackGlyph !== null);
+            verify(nativeGlyph !== null);
             compare(nativeGlyph.visible, String(volume.nativeSoundOutputAsset).length > 0);
-            compare(fallbackGlyph.visible, !nativeGlyph.visible);
+            compare(findChild(volume, "wmFallbackSoundOutputGlyph"), null);
         }
 
         function test_sliderWithoutLeadingIcon() {

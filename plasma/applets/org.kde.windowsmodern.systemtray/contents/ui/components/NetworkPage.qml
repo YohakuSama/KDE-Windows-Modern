@@ -186,13 +186,17 @@ Lib.DetailPage {
                         anchors.rightMargin: 12
                         spacing: 12
 
-                        Kirigami.Icon {
+                        // Keep the same row geometry even when a backend
+                        // connection state has no reviewed Windows mapping.
+                        Item {
                             Layout.preferredWidth: 24
                             Layout.preferredHeight: 24
                             Layout.alignment: Qt.AlignVCenter
-                            roundToIconSize: false
-                            source: model.ConnectionIcon
-                            color: Kirigami.Theme.textColor
+                            NativeGlyph {
+                                id: connectionGlyph
+                                anchors.fill: parent
+                                roleName: model.ConnectionIcon || ""
+                            }
                         }
 
                         ColumnLayout {
@@ -279,7 +283,7 @@ Lib.DetailPage {
                                 id: pwField
                                 Layout.fillWidth: true
                                 echoMode: delegate.showPassword ? TextInput.Normal : TextInput.Password
-                                rightPadding: 34
+                                rightPadding: passwordButton.width + 4
                                 text: delegate.password
                                 onTextEdited: delegate.password = text
                                 font: Kirigami.Theme.defaultFont
@@ -294,14 +298,17 @@ Lib.DetailPage {
                                 onAccepted: if (acceptableInput) delegate.doNext()
 
                                 PlasmaComponents3.ToolButton {
+                                    id: passwordButton
+                                    readonly property string nativeIcon: connectionGlyph.resolveRole(delegate.showPassword ? "view-visible" : "view-hidden")
                                     anchors.right: parent.right
                                     anchors.rightMargin: 2
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 30
+                                    width: nativeIcon.length > 0 ? 30 : implicitWidth
                                     height: 30
                                     text: delegate.showPassword ? i18n("Hide password") : i18n("Show password")
-                                    display: PlasmaComponents3.AbstractButton.IconOnly
-                                    icon.name: delegate.showPassword ? "view-visible" : "view-hidden"
+                                    display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly
+                                        : PlasmaComponents3.AbstractButton.TextOnly
+                                    icon.source: nativeIcon
                                     icon.width: 16
                                     icon.height: 16
                                     onClicked: delegate.showPassword = !delegate.showPassword

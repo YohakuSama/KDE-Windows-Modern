@@ -4,6 +4,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../components" as Components
 
 ColumnLayout {
     id: tile
@@ -116,14 +117,14 @@ ColumnLayout {
             }
         }
 
-        Kirigami.Icon {
+        Components.NativeGlyph {
             anchors.centerIn: parent
             objectName: "wmQuickTileGlyph"
             width: Math.max(12, Math.round(16 * tile.uiScale))
             height: width
-            source: tile.iconSource
+            roleName: tile.iconSource
             roundToIconSize: false
-            color: tile.fg
+            foreground: tile.fg
             isMask: true
         }
     }

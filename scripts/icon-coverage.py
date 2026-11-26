@@ -13,11 +13,22 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 EXTENSIONS = {".svg", ".svgz", ".png", ".xpm"}
 NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.+-]*$")
-# Literal references only. Dynamic expressions and pixmap providers require
-# live inspection. The source: form is a candidate, not a proven icon lookup.
+# Source candidates, not a QML/C++ parser or a claim of runtime coverage.
+# Keep legacy name counts separate from exact private paths and expressions.
 REFERENCE = re.compile(
-    r'\b(icon\.name|iconName|iconSource|icon|source)\s*:\s*["\']([^"\']+)["\']'
+    r'\b(icon\.name|iconName|iconSource|icon|source)\s*(?::|=(?!=))\s*["\']([^"\']+)["\']'
 )
+QML_FIELD = re.compile(
+    r'\b(icon\.name|icon\.source|iconName|iconSource|fallbackRoleName|roleName|icon|source)\s*'
+    r'(?::|=(?!=))\s*(.*)'
+)
+QUOTED = re.compile(r'["\']([^"\']+)["\']')
+ROLE = re.compile(r'^(?:actions|status|devices|apps|emblems|categories|places|mimetypes)/'
+                  r'[A-Za-z0-9_.+-]+$')
+CPP_THEME = re.compile(r'QIcon::fromTheme\s*\(\s*(?:QStringLiteral\s*\(\s*)?["\']([^"\']+)["\']')
+CPP_LITERAL = re.compile(r'QStringLiteral\s*\(\s*"([^"]+)"\s*\)')
+CAPTION_CALL = re.compile(r'new\s+CaptionButton\s*\([^;]+?\);', re.S)
+ASSET_EXTENSIONS = EXTENSIONS | {".jpg", ".jpeg", ".webp", ".ico"}
 
 
 def read_ini(path):
@@ -98,6 +109,109 @@ def qml_candidates(root):
     return found
 
 
+def source_candidates(root, expected, names):
+    """Collect distinct source sites outside the legacy name inventory.
+
+    Literal private paths are compared by exact context/name. Dynamic
+    providers, local images and QIcon theme lookups remain candidates;
+    never treat a syntactic match as proof of Windows origin.
+    """
+    mapped_paths = {path.removesuffix(".svg")
+                    for entries in expected.values() for _, path in entries}
+    report = defaultdict(list)
+
+    def add(kind, path, line, value, **details):
+        report[kind].append({"file": path.relative_to(root).as_posix(),
+                             "line": line, "value": value, **details})
+
+    def private_role(path, line, role):
+        if ROLE.fullmatch(role):
+            add("private_role_mapped" if role in mapped_paths
+                else "private_role_unmapped", path, line, role)
+
+    def literal(path, line, value, field=""):
+        if value.startswith("windows-modern/native-assets/icons/"):
+            role = value.removeprefix("windows-modern/native-assets/icons/").removesuffix(".svg")
+            if ROLE.fullmatch(role):
+                private_role(path, line, role)
+            else:
+                add("private_path_expression", path, line, value)
+        elif value.startswith("windows-modern/shell-assets/"):
+            add("private_shell_asset", path, line, value)
+        elif value.startswith("data:image/"):
+            add("inline_artwork", path, line, value[:100])
+        elif Path(value).suffix.lower() in ASSET_EXTENSIONS:
+            add("direct_artwork", path, line, value)
+        elif field in ("roleName", "fallbackRoleName") and NAME.fullmatch(value):
+            alternate = (value.removesuffix("-symbolic") if value.endswith("-symbolic")
+                         else value + "-symbolic")
+            mapped = value in expected or alternate in expected
+            add("private_name_mapped" if mapped else "private_name_unmapped",
+                path, line, value)
+        elif field and NAME.fullmatch(value) and not Path(value).suffix.lower() in (".qml", ".js", ".json"):
+            add("theme_name_candidate", path, line, value,
+                mapped=value in expected, bundled=value in names)
+
+    for directory in (root / "plasma", root / "app-decorations"):
+        for path in sorted(directory.rglob("*")):
+            if path.suffix not in (".qml", ".cpp", ".h") or not path.is_file():
+                continue
+            if any(part.startswith("build") for part in path.relative_to(root).parts):
+                continue
+            source = path.read_text(encoding="utf-8")
+            if path.name == "windowsmodernchrome.cpp":
+                for call in CAPTION_CALL.finditer(source):
+                    line = source.count("\n", 0, call.start()) + 1
+                    for value in CPP_LITERAL.findall(call.group(0)):
+                        if NAME.fullmatch(value):
+                            private_role(path, line, "actions/" + value)
+            for line, raw in enumerate(source.splitlines(), 1):
+                content = raw.strip()
+                if content.startswith(("//", "/*", "*")):
+                    continue
+                if path.suffix == ".qml":
+                    field = QML_FIELD.search(content)
+                    if field:
+                        name, expr = field.groups()
+                        expr = expr.strip()
+                        if expr not in ('""', "''", '"";', "'';"):
+                            first = QUOTED.match(expr)
+                            if first and (first.group(1).startswith("data:image/")
+                                          or not re.search(r'\?\s*["\']|\+\s*', expr)):
+                                literal(path, line, first.group(1), name)
+                            else:
+                                add("dynamic_qml_candidate", path, line, expr[:200], field=name)
+                    # A private resolver can occur inside a binding, on a
+                    # continuation line, or in a JavaScript assignment.
+                    for value in QUOTED.findall(content):
+                        if ROLE.fullmatch(value) and "nativeMenuIcon" in content:
+                            private_role(path, line, value)
+                        elif ROLE.fullmatch(value) and re.search(r'^\s*\?\s*["\']', content):
+                            private_role(path, line, value)
+                        elif value.startswith(("windows-modern/native-assets/icons/",
+                                                "windows-modern/shell-assets/")):
+                            literal(path, line, value)
+                    continue
+
+                theme = CPP_THEME.search(content)
+                if theme:
+                    add("cpp_theme_name", path, line, theme.group(1),
+                        mapped=theme.group(1) in expected, bundled=theme.group(1) in names)
+                elif "QIcon::fromTheme(" in content:
+                    add("dynamic_cpp_candidate", path, line, content[:200])
+                for value in CPP_LITERAL.findall(content):
+                    if ROLE.fullmatch(value):
+                        private_role(path, line, value)
+                    elif value.startswith(("windows-modern/native-assets/icons/",
+                                            "windows-modern/shell-assets/")):
+                        literal(path, line, value)
+
+    # QML literal paths can be found both as a field and in the resolver.
+    return {kind: list({(row["file"], row["line"], row["value"]): row
+                       for row in rows}.values())
+            for kind, rows in sorted(report.items())}
+
+
 def desktop_candidates(data_dirs):
     found = defaultdict(list)
     seen = set()
@@ -150,6 +264,7 @@ def main():
     names, broken, missing_dirs = theme_inventory(theme)
     expected, actual, mismatched = native_inventory(mapping, manifest, theme, names)
     qml = qml_candidates(ROOT)
+    sources = source_candidates(ROOT, expected, names)
     desktop = desktop_candidates([data_home] + [
         Path(p) for p in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":") if p
     ]) if args.installed else {}
@@ -175,10 +290,13 @@ def main():
         "native_output_missing_or_changed": mismatched,
         "counts": {k: len(v) for k, v in sorted(report.items())},
         "references": dict(sorted(report.items())),
+        "source_reference_counts": {kind: len(rows) for kind, rows in sources.items()},
+        "source_references": sources,
         "limitations": [
             "Not in this theme may still resolve through inherited themes.",
             "Bundled does not establish Windows origin; verify the resource before replacing.",
-            "Literal QML candidates may include non-icon sources; dynamic names, native applets and pixmaps need live testing.",
+            "QML source and C++ literal scans are heuristic, not complete expression or data-flow analysis.",
+            "Exact private role mapping proves a declared source, not local asset presence; direct artwork, native controls and dynamic pixmaps require provenance and live review.",
             "A verified output hash establishes local import parity, not semantic identity or Windows version."
         ],
     }, indent=2, ensure_ascii=False))

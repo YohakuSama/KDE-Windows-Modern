@@ -53,13 +53,17 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 10
 
-            Kirigami.Icon {
+            Item {
                 Layout.preferredWidth: 24
                 Layout.preferredHeight: 24
                 Layout.alignment: Qt.AlignVCenter
-                source: row.iconName || "drive-removable-media"
-                roundToIconSize: false
-                color: Kirigami.Theme.textColor
+                NativeGlyph {
+                    id: deviceGlyph
+                    anchors.fill: parent
+                    roleName: row.iconName
+                    fallbackRoleName: "drive-removable-media-symbolic"
+                    isMask: nativeSource.endsWith("-symbolic.svg")
+                }
             }
 
             ColumnLayout {
@@ -92,9 +96,11 @@ Rectangle {
                 objectName: "wmDeviceMoreActions"
                 visible: row.hasOtherActions && row.canOperate
                 enabled: row.canOperate
-                display: PlasmaComponents3.AbstractButton.IconOnly
+                readonly property string nativeIcon: deviceGlyph.resolveRole(row.expanded ? "go-up-symbolic" : "view-more-symbolic")
+                display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly
+                    : PlasmaComponents3.AbstractButton.TextOnly
                 text: row.expanded ? i18n("Show less") : i18n("More actions")
-                icon.name: row.expanded ? "go-up-symbolic" : "view-more-symbolic"
+                icon.source: nativeIcon
                 icon.width: 16
                 icon.height: 16
                 onClicked: row.expanded = !row.expanded
@@ -108,7 +114,9 @@ Rectangle {
             visible: row.hasDefault && row.present
             enabled: row.canOperate
             text: row.defaultText
-            icon.name: row.actions?.defaultActionIcon || ""
+            // Backend actions can carry arbitrary KDE icons; show only
+            // roles that resolve in the private Windows import.
+            icon.source: deviceGlyph.resolveRole(row.actions?.defaultActionIcon || "")
             onClicked: row.triggerAction(row.defaultName)
         }
 
@@ -125,7 +133,7 @@ Rectangle {
                 visible: row.expanded && row.canOperate
                 enabled: row.canOperate
                 text: model.Text
-                icon.name: model.Icon || ""
+                icon.source: deviceGlyph.resolveRole(model.Icon || "")
                 onClicked: row.triggerAction(model.Name)
             }
         }

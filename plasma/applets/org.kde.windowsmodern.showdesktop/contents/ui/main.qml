@@ -26,7 +26,8 @@ PlasmoidItem {
     preferredRepresentation: fullRepresentation
     toolTipSubText: activeController.description
 
-    Plasmoid.icon: "transform-move"
+    // Windows 11 displays a sliver rather than a show-desktop glyph.
+    Plasmoid.icon: ""
     Plasmoid.title: activeController.title
     Plasmoid.onActivated: activeController.toggle()
 
@@ -91,13 +92,6 @@ PlasmoidItem {
         Accessible.role: Accessible.Button
         Accessible.onPressAction: Plasmoid.activated()
 
-        Kirigami.Icon {
-            anchors.fill: parent
-            active: mouseArea.containsMouse || activeController.active
-            visible: Plasmoid.containment.corona.editMode
-            source: Plasmoid.icon
-        }
-
         DropArea {
             anchors.fill: parent
             onEntered: activateTimer.start()
@@ -133,7 +127,7 @@ PlasmoidItem {
             width: root.vertical ? parent.width * 0.5 : 1
             height: root.vertical ? 1 : parent.height * 0.5
             anchors.centerIn: parent
-            opacity: mouseArea.state === "hover" || mouseArea.state === "pressed" ? 1 : 0
+            opacity: Plasmoid.containment.corona.editMode || mouseArea.state === "hover" || mouseArea.state === "pressed" ? 1 : 0
             Behavior on opacity { OpacityAnimator { duration: Kirigami.Units.shortDuration; easing.type: Easing.InOutQuad } }
         }
 

@@ -72,6 +72,7 @@ public:
 
     Q_INVOKABLE QRect globalRect(QQuickItem *item) const;
     Q_INVOKABLE QVariant normalizedPanelIcon(const QVariant &decoration) const;
+    Q_INVOKABLE QVariant nativeMenuIcon(const QString &role) const;
 
     Q_INVOKABLE bool isApplication(const QUrl &url) const;
 

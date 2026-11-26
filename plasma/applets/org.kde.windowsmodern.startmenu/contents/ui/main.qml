@@ -140,7 +140,8 @@ PlasmoidItem {
     Plasmoid.contextualActions: [
         PlasmaCore.Action {
             text: i18n("Edit Applications…")
-            icon.name: "kmenuedit"
+            // KDE-only menu editor: retain the command without a substitute icon.
+            icon.name: ""
             visible: Plasmoid.immutability !== PlasmaCore.Types.SystemImmutable
             onTriggered: processRunner.runMenuEditor()
         }

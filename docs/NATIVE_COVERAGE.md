@@ -11,7 +11,7 @@ python3 scripts/icon-coverage.py > icon-coverage-source.json
 python3 scripts/icon-coverage.py --installed > icon-coverage-installed.json
 ```
 
-The second report checks the XDG icon theme and desktop entries, including the paths exported by NixOS. It separates verified native output hashes, mapped but unverified names, bundled artwork, absent theme entries, and absolute icon paths. Static QML literal candidates include some non-icon references. Explicit Breeze inheritance is removed. A missing theme entry can still trigger implicit toolkit fallbacks or resolve via hicolor; treat project-owned controls using those fallbacks as unresolved coverage, not verified Windows artwork. Dynamic QML names, native widget SVGs, scale selection and actual pixmaps need desktop checks. Review the report before sharing. No files are uploaded.
+The second report checks the XDG icon theme and desktop entries, including the paths exported by NixOS. It separates verified native output hashes, mapped but unverified names, bundled artwork, absent theme entries, and absolute icon paths. Static QML literal candidates include some non-icon references. The separate `source_references` inventory also lists QML icon bindings, private role paths, C++ theme lookups, Konsole caption roles and direct artwork. The scan is heuristic; dynamic providers and native widget internals still require runtime review. Explicit Breeze inheritance is removed. A missing theme entry can still trigger implicit toolkit fallbacks or resolve via hicolor; treat project-owned controls using those fallbacks as unresolved coverage, not verified Windows artwork. Dynamic QML names, native widget SVGs, scale selection and actual pixmaps need desktop checks. Review the report before sharing. No files are uploaded.
 
 Use the generated report and current mapping to count target paths. These are mapped names, not a claim of complete native artwork coverage. Count paths separately from unique original Windows resources. Do not label an icon native merely because its name is present in the bundled pack.
 
@@ -38,8 +38,8 @@ branch into the runtime package.
 
 The reviewed reference commit `272e06c87be0f548cebb2558392019b941df20d4`
 contains 5,405 original icon frames and 467 original files. The current
-mapping has 267 source entries: 61 MUN group references and 206 Segoe
-Fluent Icons glyph references. These are source mappings, not 267 distinct
+mapping has 269 source entries: 61 MUN group references and 208 Segoe
+Fluent Icons glyph references (910 target paths). These are source mappings, not 269 distinct
 visuals or a claim that all 713 groups are relevant to the current desktop.
 The runtime branch deliberately stages only the selected mapped previews,
 not the complete archive.
@@ -85,6 +85,35 @@ then review and pin the runtime selection.
 
 Native palette, icon states and input behavior need verification on the
 target desktop. Do not claim full coverage based on source checks alone.
+
+## Taskbar and Quick Settings icon audit
+
+The existing runtime `SegoeIcons.ttf` contains E7C2 (Move) and E744
+(ResizeMouseMedium), documented by Microsoft. Both are mapped as optional
+original-font roles for the taskbar's advanced Move and Resize actions.
+They are original glyph candidates for the operation, not evidence of a
+particular 26H2 menu resource. The runtime resource pin is unchanged.
+The six other unmapped literal roles (Activities, menu editor, Keep Above,
+Keep Below, exclusion from capture, and grouping) retain their text and
+operations without unverified icons. The show-desktop sliver retains its
+edit-mode marker rather than reusing the Move glyph.
+
+Taskbar system menu actions, including generated media actions, request
+private imported SVGs rendered as palette-tinted QIcons. KDE-specific
+activity actions are text-only; application, file and media identities
+remain separate. Quick Settings tiles, slider icons, network/device rows
+and list entries use the existing private glyph resolver. Bluetooth and
+removable hardware may use a mapped generic icon for that same device
+category; unknown network states must not be assigned a fake strength.
+Missing private glyphs leave artwork empty instead of resolving through
+Breeze. Text and interaction geometry remain available.
+
+Remaining review includes the native Qt tab-close/scroll buttons and
+profile icons in Konsole, third-party application icons, native applet
+configuration pages, remaining theme lookups, dynamic pixmaps, and the
+26H2-specific shell assets listed above. The two recent-file compatibility
+SVGs have had invalid editor-only attributes removed, but their provenance
+is still unverified. Do not count them as Microsoft originals.
 
 ## System action review
 

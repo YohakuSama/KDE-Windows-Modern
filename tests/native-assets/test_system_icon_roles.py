@@ -34,6 +34,15 @@ class SystemIconRolesTests(unittest.TestCase):
             'Windows-modern': {'Light': '#0067C0', 'Dark': '#4CC2FF'}
         })
 
+    def test_window_move_and_resize_roles(self):
+        self.assertIn('actions/transform-move-symbolic', MAPPING['icons']['e7c2'].split())
+        self.assertIn('actions/transform-scale-symbolic', MAPPING['icons']['e744'].split())
+        for absent in ('activities', 'window-keep-above', 'window-keep-below',
+                       'view-group', 'view-private', 'kmenuedit'):
+            self.assertFalse(any(path.split('/')[-1] == absent
+                                 for names in MAPPING['icons'].values()
+                                 for path in names.split()))
+
     def test_sound_output_role_is_not_speaker_volume(self):
         self.assertEqual(MAPPING['icons']['f4c3'], 'actions/wm-sound-output-symbolic')
         self.assertIn('f4c3', MAPPING['optional_glyphs'])

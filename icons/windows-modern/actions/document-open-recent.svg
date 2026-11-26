@@ -18,18 +18,15 @@
   <path
      id="page-outline"
      style="fill:#7d7d7b;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
-     d="M 12,4 H 40.5 L 51.999999,15.5 V 60.000002 H 12 Z"
-     sodipodi:nodetypes="cccccc" />
+     d="M 12,4 H 40.5 L 51.999999,15.5 V 60.000002 H 12 Z" />
   <path
      id="page"
      style="fill:#fafafa;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
-     d="M 13,5 V 59 H 51 V 17 H 40 c -0.554003,0 -1,-0.446 -1,-1 V 5 Z m 27,0 v 11 h 11 z"
-     sodipodi:nodetypes="ccccsscccccc" />
+     d="M 13,5 V 59 H 51 V 17 H 40 c -0.554003,0 -1,-0.446 -1,-1 V 5 Z m 27,0 v 11 h 11 z" />
   <path
      id="text-lines"
      style="fill:#999999;fill-opacity:1;stroke-width:2.89827;stroke-linecap:round;stroke-linejoin:round"
-     d="m 18,24 v 1 h 20 v -1 z m 0,3 v 1 h 14 v -1 z m 0,3 v 1 h 26 v -1 z m 0,3 v 1 h 28 v -1 z m 0,3 v 1 h 24 v -1 z m 0,3 v 1 h 28 v -1 z m 0,3 v 1 h 18 v -1 z m 0,3 v 1 h 20 v -1 z"
-     sodipodi:nodetypes="cccccccccccccccccccc" />
+     d="m 18,24 v 1 h 20 v -1 z m 0,3 v 1 h 14 v -1 z m 0,3 v 1 h 26 v -1 z m 0,3 v 1 h 28 v -1 z m 0,3 v 1 h 24 v -1 z m 0,3 v 1 h 28 v -1 z m 0,3 v 1 h 18 v -1 z m 0,3 v 1 h 20 v -1 z" />
   <!-- clock badge -->
   <circle
      id="badge-keyline"
