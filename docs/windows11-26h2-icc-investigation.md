@@ -359,3 +359,46 @@ powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\capture-windows-i
 ```
 
 The default Pcs output is windows-icc-pcs.json on the Desktop. Static review covered the full diff, documented native signatures, array strides, allocation lengths, profile header sizes and hashes, original loop preservation, and independent input hash calculation. No C# compilation or Windows execution, repository build, automated test suite, CI, main or runtime change. The missing native report is the remaining dependency for this experiment.
+
+
+## PCS boundary capture: high-bit packing resolved, public transforms not composable
+
+The supplied Pcs report (Windows build 26300.9974, SHA-256 `6ED9DA8D7FAB4A7F36DDAC4CAB40F17391FA633C19E3BFD6FBD5E1079E162465`) contains 57,355 input colors and 23 directed pairs. All 67 binary payloads passed length/hash validation: one input, seven synthetic profiles, 23 COLOR outputs, 13 bitmap outputs and 23 device links. All transforms and links succeeded and reported the Win CMM. The ten pairs involving XYZ device space returned native error 2017 from TranslateBitmapBits; their TranslateColors outputs and device links succeeded. Unsupported bitmap results are not counted as successful conversions. The previous matrix-only linear-sRGB to registered-sRGB and diagonal-to-diagonal control links retain identical input, CLUT and output tables.
+
+### High-bit packing
+
+TranslateColors reads/writes the first three COLOR words in logical channel order. On this capture's Win CMM, BM_16b_RGB bitmap input and output words instead have B,G,R order. The complete 32-cube and axis-sweep inputs (57,347 of the 57,355 colors per pair) admit an exact R/B-reversed input permutation. For each of the 13 RGB-to-RGB pairs, applying that permutation to the COLOR output and reversing the bitmap output words gives zero differing channels. Asymmetric matrix transforms distinguish this from identity and channel-permutation controls that by themselves cannot resolve a simultaneous input/output reversal. All marker words are still retained and hash-checked; the eight markers are not included in the symmetric-set packing comparison.
+
+The existing precision diagnostic now normalizes 16-bit bitmap output words to RGB, and compares high-bit outputs only with outputs using the same input format (the prior 16-bit input bytes themselves were BGR). The older report's RGB10 outputs are exactly the high ten bits of the corrected RGB16 outputs, for all 24 source/intent/direct-or-replay/input-depth combinations (368,640 channel comparisons). The RGB8 path does not in general equal the high byte of RGB16; no new high-bit interpolation formula is claimed. All previous RGB8 replays remain exact.
+
+### Independent PCS boundaries
+
+The three identity paths (RGB-to-RGB, XYZ-to-RGB and RGB-to-XYZ) produce identical numeric tables and COLOR outputs to XYZ-to-XYZ. The seven forward/inverse bridge comparisons (three matrix sources and four matrix targets) likewise give exactly equal tables and COLOR outputs for the XYZ device profile and its RGB bridge. The ZYX controls give exact channel permutation of the expected forward output or inverse input axes, both in the measured COLOR data and in the CLUT. However, even the identity COLOR transform is not a numerical no-op: 116,693 channel values differ from the input by up to 12 raw 16-bit units; the identity CLUT differs from ideal normalized grid coordinates at 92,160 of 98,304 entries, by at most eight units.
+
+Comparing the bridge CLUT rounded to the inferred Q13 PCS scale (round-half-up(raw XYZ / 4)) with the earlier inferred matrix-only lattice from the diagonal-target link:
+
+| Source | Unclipped entries | Different entries | Max inferred lattice error |
+| --- | ---: | ---: | ---: |
+| Linear sRGB | 98,298 | 49,314 | 1 |
+| Mixed | 98,299 | 50,493 | 1 |
+| Diagonal | 93,184 | 38,912 | 1 |
+
+This rejects identifying the bridge's measured grid directly with the previously inferred intermediate lattice. Neither the earlier inferred lattice nor the public bridge is a direct dump of the matrix-only CMM's internal PCS buffer.
+
+A stronger composition counterexample uses exact measured XYZ axis inputs, without interpolation or a fitted matrix. For each diagonal-source axis input whose forward COLOR result is a multiple of four within the captured inverse-axis domain, compare its recorded inverse COLOR result to the direct diagonal-to-diagonal COLOR result. All off-axis components are zero.
+
+| Axis | Exactly available inverse input | Different composed output | Max 16-bit difference |
+| --- | ---: | ---: | ---: |
+| X | 2,053 | 2,036 | 16 |
+| Y | 2,191 | 2,172 | 18 |
+| Z | 2,048 | 2,015 | 19 |
+
+For example, RGB WORDs (0,260,0) produce PCS WORDs (0,128,0); the separately measured inverse gives (0,255,0), while the direct transform gives (0,258,0). Thus the public two-transform route introduces additional quantization even when an exact intermediate input is available. It cannot serve as an exact replacement for the matrix-only link, and adding a bridge profile to the theme would not solve independent CLUT generation.
+
+The existing matrix-capture diagnostic now accepts an optional PCS report, reusing the previous verified matrix capture and the bounded binary decoder. The generic measured mft2 reader validates the expected color spaces, while RGB8 replay still accepts only RGB-to-RGB links. The new diagnostic reconstructs the input words, checks profile and payload hashes, preserves API failures, and reports the comparisons above without archiving or fitting captured tables.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-matrix-capture.py /path/to/windows-icc-matrix.json --target /path/to/sRGB.icm --pcs-report /path/to/windows-icc-pcs.json
+```
+
+Local static Python AST parsing and offline comparison of the actual supplied matrix, precision and PCS reports succeeded in a writable isolated reconstruction of the repository. The original matrix curve comparisons and six precision intent replays remain exact. No runtime changes, new dependencies, repository build, automated test suite, CI or main change. Next investigate the measured identity-link normalization and matrix-only sampling stages; the public bridge measurements are additional evidence, not an independently generated CLUT.

@@ -133,12 +133,199 @@ def analyze(root, report, target_path):
             'inverse_from_inferred_pcs':inverse_metrics}
 
 
+
+PCS_PROFILES = {
+    'xyz-identity': 'B6E383B40B96A7BD0824C145B5761692B92851B4DF4BD16319157CCB21D19D77',
+    'rgb-pcs': 'D32E4F221D8FBA508546D930EC200C200AEAAAE95EA22E23331B68D3495BF1A4',
+    'rgb-pcs-zyx': '086832DEE2195FBFC5FAF48A48C30CF2301D70CBA9C92CA46C11E6257C5DBB18',
+}
+PCS_PAIRS = (
+    'xyz-identity|xyz-identity', 'rgb-pcs|rgb-pcs', 'rgb-pcs|rgb-pcs-zyx',
+    'xyz-identity|rgb-pcs', 'rgb-pcs|xyz-identity',
+    'linear-srgb|xyz-identity', 'mixed|xyz-identity', 'diagonal|xyz-identity',
+    'xyz-identity|diagonal', 'xyz-identity|registered-srgb', 'xyz-identity|mixed', 'xyz-identity|mixed-delta',
+    'linear-srgb|rgb-pcs', 'mixed|rgb-pcs', 'diagonal|rgb-pcs',
+    'rgb-pcs|diagonal', 'rgb-pcs|registered-srgb', 'rgb-pcs|mixed', 'rgb-pcs|mixed-delta',
+    'linear-srgb|rgb-pcs-zyx', 'rgb-pcs-zyx|registered-srgb',
+    'linear-srgb|registered-srgb', 'diagonal|diagonal',
+)
+
+
+def pcs_inputs():
+    markers = np.array([[0,0,0],[1,12345,32768],[32768,1,65535],[1000,2000,3000],
+                        [65535,0,0],[0,65535,0],[0,0,65535],[65535,65535,65535]])
+    nodes = np.indices((32,32,32)).reshape(3,-1).T
+    grid = (nodes*65535+15)//31
+    axes = np.zeros((3,8193,3),dtype=np.int64)
+    for axis in range(3):
+        axes[axis,:,axis] = np.arange(8193)*4
+    return np.concatenate((markers,grid,axes.reshape(-1,3))).astype('<u2')
+
+
+def table_difference(a,b):
+    if a.shape != b.shape:
+        raise ValueError('Table shape mismatch')
+    error = np.abs(a.astype(np.int64)-b.astype(np.int64))
+    return {'different_entries':int(np.count_nonzero(error)),
+            'absolute_error_sum':int(error.sum()),'max_error':int(error.max())}
+
+
+def analyze_pcs(root, report, matrix_report):
+    """Validate isolated PCS boundary captures against the prior matrix report."""
+    p = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-precision.py'))
+    e = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-engine.py'))
+    sha, checked = p['sha'], p['checked']
+    fields = ('schema_version','probe_set','windows_build','flags','intent',
+              'marker_count','grid_count','axis_count','color_count','input_words')
+    if tuple(report[k] for k in fields) != (
+            1,'Pcs','26300.9974',3,1,8,32768,8193,57355,'little-endian three WORDs'):
+        raise ValueError('Unexpected PCS measurement identity')
+    hashes = {**PROFILE_HASHES,**PCS_PROFILES}
+    if report['profiles'] != hashes or set(report['results']) != set(PCS_PAIRS):
+        raise ValueError('Unexpected PCS profile or transform set')
+    profiles = {}
+    for key,names in (('matrix_profiles',set(PROFILE_HASHES)-{'linear-srgb','registered-srgb'}),
+                      ('pcs_profiles',set(PCS_PROFILES))):
+        if set(report[key]) != names:
+            raise ValueError('Unexpected embedded synthetic profiles')
+        for name,item in report[key].items():
+            data = base64.b64decode(item['base64'],validate=True)
+            if sha(data) != item['sha256'] or sha(data) != hashes[name]:
+                raise ValueError('Synthetic profile hash mismatch')
+            e['tags'](data)
+            profiles[name] = data
+    pixels = pcs_inputs()
+    raw = checked(report['input16'],pixels.nbytes)
+    if raw != pixels.tobytes() or sha(raw) != 'CE19EB355E773C647F28C7A7DD9FDE12B756955FC590C0B4CD51996B2ACD9997':
+        raise ValueError('Unexpected PCS input words')
+    pixels = pixels.astype(np.int64)
+    # All grid and axis inputs have a corresponding red/blue-reversed input.
+    # Exclude the asymmetric marker set from this comparison.
+    perm = np.r_[8+np.arange(32768).reshape(32,32,32).transpose(2,1,0).ravel(),
+                 32776+np.arange(3*8193).reshape(3,8193)[::-1].ravel()]
+    if not np.array_equal(pixels[perm],pixels[8:,::-1]):
+        raise ValueError('Incorrect channel permutation')
+    results, colors, tables = {}, {}, {}
+    payloads = 1+len(profiles)
+    bitmap_success = 0
+    bitmap_comparisons = 0
+    for pair in PCS_PAIRS:
+        entry = report['results'][pair]
+        if entry['status'] != 'ok' or entry['cmm_ident'] != '57696E20':
+            raise ValueError('Native Win CMM transform unavailable: '+pair)
+        color = checked(entry['color16'],pixels.size*2)
+        bitmap = checked(entry['bitmap16'],pixels.size*2)
+        link = checked(entry['link_profile'])
+        if color is None or link is None:
+            raise ValueError('Missing PCS output or device link: '+pair)
+        payloads += 2
+        colors[pair] = p['rgb'](color,16).astype(np.int64)
+        spaces = tuple('XYZ ' if name=='xyz-identity' else 'RGB ' for name in pair.split('|'))
+        tables[pair] = p['read_link_tables'](link,spaces)
+        row = {'color16_sha256':sha(color),'link_sha256':sha(link),
+               'table_sha256':[sha(t.astype('>u2').tobytes()) for t in tables[pair]],
+               'cmm_dll_version':entry['cmm_dll_version'],
+               'cmm_win_version':entry['cmm_win_version']}
+        if bitmap is None:
+            row['bitmap_error'] = entry['bitmap16']
+        else:
+            bitmap_success += 1
+            payloads += 1
+            row['bitmap16_sha256'] = sha(bitmap)
+            if spaces == ('RGB ','RGB '):
+                b = p['rgb'](bitmap,16).astype(np.int64)
+                row['bitmap16_raw_vs_color16'] = p['metric'](b[8:],colors[pair][8:])
+                row['bitmap16_bgr_vs_color16'] = p['metric'](b[8:,::-1],colors[pair][perm])
+                bitmap_comparisons += 1
+        results[pair] = row
+
+    def compare_tables(a,b):
+        return {name:table_difference(x,y) for name,x,y in zip(
+            ('input','clut','output'),a,b)}
+
+    def compare_paths(a,b):
+        return {'color16':p['metric'](colors[a],colors[b]),
+                'tables':compare_tables(tables[a],tables[b])}
+
+    identity = 'xyz-identity|xyz-identity'
+    identity_paths = {name:compare_paths(identity,name) for name in (
+        'rgb-pcs|rgb-pcs','xyz-identity|rgb-pcs','rgb-pcs|xyz-identity')}
+    bridges = {}
+    for name in ('linear-srgb','mixed','diagonal'):
+        bridges[name+'|pcs'] = compare_paths(name+'|xyz-identity',name+'|rgb-pcs')
+    for name in ('diagonal','registered-srgb','mixed','mixed-delta'):
+        bridges['pcs|'+name] = compare_paths('xyz-identity|'+name,'rgb-pcs|'+name)
+    f, f_rev = 'linear-srgb|rgb-pcs', 'linear-srgb|rgb-pcs-zyx'
+    r, r_rev = 'rgb-pcs|registered-srgb', 'rgb-pcs-zyx|registered-srgb'
+    permutation = {
+        'identity_color16':p['metric'](colors['rgb-pcs|rgb-pcs-zyx'],colors[identity][:,::-1]),
+        'forward_color16':p['metric'](colors[f_rev],colors[f][:,::-1]),
+        'forward_clut':table_difference(tables[f_rev][1],tables[f][1][...,::-1]),
+        'inverse_color16':p['metric'](colors[r_rev][8:],colors[r][perm]),
+        'inverse_clut':table_difference(tables[r_rev][1],tables[r][1].transpose(2,1,0,3)),
+    }
+    prior = {}
+    for pair in ('linear-srgb|registered-srgb','diagonal|diagonal'):
+        link = checked(matrix_report['results'][pair]['link_profile'])
+        prior[pair] = compare_tables(tables[pair],p['read_rgb8_tables'](link))
+    # Compare the bridge's measured CLUT against the previous inferred PCS
+    # lattice; a public PCS conversion is not the matrix-only internal stage.
+    diagonal = e['matrix'](e['tags'](profiles['diagonal']))
+    inferred = {}
+    for name in ('linear-srgb','mixed','diagonal'):
+        grid = tables[name+'|xyz-identity'][1]
+        previous = p['read_rgb8_tables'](checked(matrix_report['results'][name+'|diagonal']['link_profile']))[1]
+        old_q = np.floor(previous@diagonal.T/8+.5).astype(np.int64)
+        new_q = (grid+2)//4
+        mask = (previous>0)&(previous<65535)
+        inferred[name] = {'unclipped_entries':int(mask.sum()),
+                          **table_difference(new_q[mask],old_q[mask])}
+    # For the diagonal control use only exact measured PCS inputs, not
+    # interpolated values. This tests composition of the *public* transforms.
+    composition = {}
+    for axis in range(3):
+        section = slice(32776+axis*8193,32776+(axis+1)*8193)
+        forward = colors['diagonal|xyz-identity'][section]
+        inverse = colors['xyz-identity|diagonal'][section]
+        direct = colors['diagonal|diagonal'][section]
+        other = [c for c in range(3) if c!=axis]
+        if np.any(forward[:,other]) or np.any(inverse[:,other]) or np.any(direct[:,other]):
+            raise ValueError('Diagonal axis control has channel leakage')
+        v = forward[:,axis]
+        match = (v%4==0)&(v<=32768)
+        index = np.flatnonzero(match)
+        indirect = inverse[v[match]//4]
+        mismatch = np.flatnonzero(np.any(indirect!=direct[match],axis=1))
+        witness = None
+        if len(mismatch):
+            j = int(mismatch[0])
+            i = index[j]
+            witness = {'input':pixels[section][i].tolist(),'pcs':forward[i].tolist(),
+                       'composed':indirect[j].tolist(),'direct':direct[i].tolist()}
+        composition[str(axis)] = {'matched_axis_inputs':len(index),
+                                  **p['metric'](indirect,direct[match]),'witness':witness}
+    return {'windows_build':report['windows_build'],'verified_payloads':payloads,
+            'color16_success':len(colors),'bitmap16_success':bitmap_success,
+            'bitmap16_rgb_comparisons':bitmap_comparisons,
+            'packing_comparison_colors_per_pair':len(perm),'links':len(tables),
+            'results':results,'identity_vs_ideal':p['metric'](colors[identity],pixels),
+            'identity_grid_vs_ideal':table_difference(tables[identity][1].reshape(-1,3),pixels[8:32776]),
+            'identity_paths':identity_paths,'bridges':bridges,'permutation':permutation,
+            'prior_control_tables':prior,'bridge_vs_inferred_pcs':inferred,
+            'public_diagonal_composition':composition}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('report',type=Path)
     parser.add_argument('--target',required=True,type=Path)
+    parser.add_argument('--pcs-report',type=Path,help='Also compare the isolated PCS capture')
     args = parser.parse_args()
-    print(json.dumps(analyze(ROOT,json.loads(args.report.read_text(encoding='utf-8-sig')),args.target),indent=2))
+    report = json.loads(args.report.read_text(encoding='utf-8-sig'))
+    result = analyze(ROOT,report,args.target)
+    if args.pcs_report:
+        result['pcs'] = analyze_pcs(ROOT,json.loads(args.pcs_report.read_text(encoding='utf-8-sig')),report)
+    print(json.dumps(result,indent=2))
 
 
 if __name__=='__main__':

@@ -5,6 +5,7 @@ import argparse
 import base64
 import gzip
 import hashlib
+from io import BytesIO
 import json
 from pathlib import Path
 import struct
@@ -28,9 +29,20 @@ def checked(entry, size=None, limit=16*1024*1024):
     length = entry['length']
     if type(length) is not int or not 0 < length <= limit or (size is not None and length != size):
         raise ValueError('Invalid native buffer length')
-    if len(entry['base64']) != 4*((length+2)//3):
-        raise ValueError('Invalid base64 length')
-    data = base64.b64decode(entry['base64'], validate=True)
+    if ('base64' in entry) == ('gzip_base64' in entry):
+        raise ValueError('Expected exactly one binary encoding')
+    if 'base64' in entry:
+        if len(entry['base64']) != 4*((length+2)//3):
+            raise ValueError('Invalid base64 length')
+        data = base64.b64decode(entry['base64'], validate=True)
+    else:
+        encoded = entry['gzip_base64']
+        # Allow gzip overhead, but bound both compressed and decoded buffers.
+        if len(encoded) > 4*((limit+65536+2)//3):
+            raise ValueError('Compressed native buffer too large')
+        compressed = base64.b64decode(encoded, validate=True)
+        with gzip.GzipFile(fileobj=BytesIO(compressed)) as stream:
+            data = stream.read(length+1)
     if len(data) != length or sha(data) != entry['sha256']:
         raise ValueError('Native buffer hash mismatch')
     return data
@@ -87,11 +99,11 @@ def describe_link(data):
     return result
 
 
-def read_rgb8_tables(data):
-    """Read the validated measured RGB8 mft2 tables."""
+def read_link_tables(data, spaces):
+    """Read the measured three-channel mft2 tables in the specified spaces."""
     description = describe_link(data)
-    if (description['input_space'], description['output_space']) != ('RGB ', 'RGB '):
-        raise ValueError('Expected RGB-to-RGB device link')
+    if (description['input_space'], description['output_space']) != spaces:
+        raise ValueError('Unexpected device-link color spaces')
     count = len(description['tags'])
     matches = [(off, size) for sig, off, size in
                (struct.unpack_from('>4sII', data, 132+12*i) for i in range(count))
@@ -111,6 +123,11 @@ def read_rgb8_tables(data):
     grid = np.frombuffer(tag[52+6*ni:-6*no], '>u2').reshape(32,32,32,3).astype(np.int64)
     target = np.frombuffer(tag[-6*no:], '>u2').reshape(3,no).astype(np.int64)
     return source, grid, target
+
+
+def read_rgb8_tables(data):
+    """Keep RGB8 replay restricted to RGB-to-RGB device links."""
+    return read_link_tables(data, ('RGB ', 'RGB '))
 
 
 def execute_rgb8_tables(source, grid, target, pixels):
@@ -166,16 +183,25 @@ def measure(entry, count, reference, n):
         if data is None:
             failures[key]=item
         else:
-            buffers[key]=rgb(data,bits)
+            values=rgb(data,bits)
+            # Win CMM BM_16b_RGB uses B,G,R WORDs on this reference build.
+            # TranslateColors COLOR_RGB uses R,G,B; see the PCS controls.
+            buffers[key]=values[:,::-1] if bits==16 else values
     result['failures']=failures
     result['rgb8_vs_wic']={k:partitions(v,reference,n) for k,v in buffers.items() if k=='8to8'}
-    result['packing_note']='16-bit raw channel order is unresolved on this capture; no cross-depth precision inference from 16-bit input/output.'
+    result['packing_note']='BM_16b_RGB WORDs are B,G,R in this Win CMM capture. Output is normalized to RGB; 16-bit input remains BGR, so comparisons only use the same input format.'
+    result['rgb10_vs_rgb16_high_bits']={}
+    for depth in (8,16):
+        ten, sixteen=f'{depth}to10', f'{depth}to16'
+        if ten in buffers and sixteen in buffers:
+            result['rgb10_vs_rgb16_high_bits'][str(depth)]=partitions(
+                buffers[ten],buffers[sixteen]>>6,n)
     result['downconversion']={}
     # Compare high-bit outputs against 8-bit output from the same input format.
     # These are diagnostic comparisons, not a claim that the paths share precision.
     for key,bits in FORMATS.items():
         baseline=key.split('to')[0]+'to8'
-        if key!='8to10' or key not in buffers or baseline not in buffers:
+        if bits==8 or key not in buffers or baseline not in buffers:
             continue
         x=buffers[key]; y=buffers[baseline]; maxval=(1<<bits)-1
         reduced={'shift':x>>(bits-8),'round255':(x*255+maxval//2)//maxval,
