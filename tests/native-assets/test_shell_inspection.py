@@ -4,6 +4,7 @@ from pathlib import Path
 import struct
 import sys
 import unittest
+from unittest.mock import Mock
 
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
@@ -68,3 +69,28 @@ class IconGroup(unittest.TestCase):
         self.resources[(3, 42, 0)] = b"shorter than declared?"
         with self.assertRaisesRegex(ValueError, "length"):
             inspection.icon_group(self.resources, self.group)
+
+
+class FontReviewGlyph(unittest.TestCase):
+    def test_mask_centers_visible_pixels_without_text_shaping(self):
+        from PIL import Image
+
+        mask = Image.new("L", (8, 10))
+        mask.paste(255, (1, 2, 5, 8))
+        font = Mock()
+        font.getmask.return_value = mask.im
+        tile = Image.new("RGB", (84, 76), "white")
+        self.assertTrue(inspection.draw_review_glyph(tile, font, 0xE700, 52))
+        font.getmask.assert_called_once_with(chr(0xE700), mode="L")
+        self.assertEqual(tile.getpixel((40, 23)), (0, 0, 0))
+        self.assertEqual(tile.getpixel((39, 23)), (255, 255, 255))
+        self.assertEqual(tile.getpixel((40, 29)), (255, 255, 255))
+
+    def test_blank_mask_does_not_create_a_replacement_glyph(self):
+        from PIL import Image
+
+        font = Mock()
+        font.getmask.return_value = Image.new("L", (8, 10)).im
+        tile = Image.new("RGB", (84, 76), "white")
+        self.assertFalse(inspection.draw_review_glyph(tile, font, 0x20, 52))
+        self.assertEqual(tile.getextrema(), ((255, 255), (255, 255), (255, 255)))

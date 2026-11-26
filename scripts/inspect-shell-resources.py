@@ -135,6 +135,25 @@ def scan(source, output):
     return issues
 
 
+def draw_review_glyph(tile, font, code, area_height):
+    """Draw one FreeType mask, without text shaping or multiline interpretation."""
+    from PIL import Image
+
+    mask = font.getmask(chr(code), mode="L")
+    if not all(mask.size):
+        return False
+    bitmap = Image.frombytes("L", mask.size, bytes(mask))
+    bounds = bitmap.getbbox()
+    if bounds is None:
+        return False
+    bitmap = bitmap.crop(bounds)
+    bitmap.thumbnail((tile.width - 4, area_height - 4), Image.Resampling.LANCZOS)
+    x = (tile.width - bitmap.width) // 2
+    y = (area_height - bitmap.height) // 2
+    tile.paste((0, 0, 0), (x, y, x + bitmap.width, y + bitmap.height), bitmap)
+    return True
+
+
 def font_review(source, output):
     """Export review sheets and a metadata catalog, never the font files."""
     from PIL import Image, ImageDraw, ImageFont
@@ -146,25 +165,30 @@ def font_review(source, output):
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     wanted = {"segoeicons.ttf", "settingsicons.ttf", "axpicons.ttf"}
     candidates = {}
+    records, issues = [], []
     for directory in ("Fonts", "SystemApps", "SystemResources"):
         for path in sorted((root / directory).rglob("*")):
             if (path.name.casefold() not in wanted or path.is_symlink()
                     or not path.is_file() or not path.resolve().is_relative_to(root)):
                 continue
-            data = path.read_bytes()
+            try:
+                data = path.read_bytes()
+            except OSError as exc:
+                issues.append({"path": path.relative_to(root).as_posix(), "error": str(exc)})
+                continue
             key = digest(data)
             if key not in candidates:
                 candidates[key] = {"data": data, "sources": []}
             candidates[key]["sources"].append(path.relative_to(root).as_posix())
 
-    records, issues = [], []
     if not candidates:
         issues.append({"error": "No original Segoe, Settings or AXP icon fonts found"})
     columns, rows_per_page = 12, 12
     cell_width, cell_height = 84, 76
     label_font = ImageFont.load_default()
     for sha, candidate in sorted(candidates.items()):
-        record = {"sha256": sha, "sources": candidate["sources"], "pages": []}
+        record = {"sha256": sha, "sources": candidate["sources"], "pages": [],
+                  "blank_glyphs": [], "failed_glyphs": []}
         records.append(record)
         try:
             with TTFont(io.BytesIO(candidate["data"])) as font:
@@ -176,7 +200,10 @@ def font_review(source, output):
             if not glyphs:
                 raise ValueError("No Unicode glyph mapping")
             record["glyphs"] = {f"U+{code:04X}": name for code, name in glyphs}
-            preview_font = ImageFont.truetype(io.BytesIO(candidate["data"]), 36)
+            # A review tile is a single cmap entry. RAQM shaping is neither
+            # needed nor desirable for control and private-use code points.
+            preview_font = ImageFont.truetype(io.BytesIO(candidate["data"]), 36,
+                                              layout_engine=ImageFont.Layout.BASIC)
             page_size = columns * rows_per_page
             directory = output / sha
             directory.mkdir()
@@ -184,15 +211,21 @@ def font_review(source, output):
                 chunk = glyphs[start:start + page_size]
                 height = ((len(chunk) + columns - 1) // columns) * cell_height
                 image = Image.new("RGB", (columns * cell_width, height), "white")
-                for index, (code, _) in enumerate(chunk):
-                    # Clip each glyph within its own tile to prevent overlap.
+                for index, (code, name) in enumerate(chunk):
+                    # Keep the codepoint label and the rest of the page even
+                    # when a particular FreeType glyph cannot be rendered.
                     tile = Image.new("RGB", (cell_width, cell_height), "white")
                     draw = ImageDraw.Draw(tile)
-                    character = chr(code)
-                    x0, y0, x1, y1 = draw.textbbox((0, 0), character, font=preview_font)
-                    draw.text(((cell_width - (x1 - x0)) / 2 - x0,
-                               (52 - (y1 - y0)) / 2 - y0), character,
-                              font=preview_font, fill="black")
+                    codepoint = f"U+{code:04X}"
+                    try:
+                        if not draw_review_glyph(tile, preview_font, code, 52):
+                            record["blank_glyphs"].append(codepoint)
+                    except (RuntimeError, OSError, ValueError) as exc:
+                        record["failed_glyphs"].append(codepoint)
+                        issues.append({"sha256": sha, "codepoint": codepoint,
+                                       "glyph": name, "error": str(exc)})
+                        draw.text((cell_width / 2, 26), "ERROR", font=label_font,
+                                  fill="black", anchor="mm")
                     draw.text((cell_width / 2, 64), f"{code:04X}",
                               font=label_font, fill="black", anchor="mm")
                     image.paste(tile, ((index % columns) * cell_width,
@@ -202,8 +235,8 @@ def font_review(source, output):
                 record["pages"].append({"file": dest.relative_to(output).as_posix(),
                                         "first": f"U+{chunk[0][0]:04X}",
                                         "last": f"U+{chunk[-1][0]:04X}"})
-        except (OSError, ValueError, KeyError, TTLibError, struct.error) as exc:
-            issues.append({"sources": candidate["sources"], "error": str(exc)})
+        except (RuntimeError, OSError, ValueError, KeyError, TTLibError, struct.error) as exc:
+            issues.append({"sha256": sha, "sources": candidate["sources"], "error": str(exc)})
     (output / "font-review.json").write_text(
         json.dumps({"fonts": records, "issues": issues}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8")

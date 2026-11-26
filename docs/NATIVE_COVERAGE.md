@@ -118,6 +118,13 @@ identically named fonts as interchangeable.
 python3 scripts/inspect-shell-resources.py /path/to/extracted/image/Windows /path/to/new/private/font-review --font-review
 ```
 
+Font review uses FreeType's basic layout engine and individual grayscale
+glyph masks rather than RAQM text shaping. Blank cmap entries remain in
+the catalog as blank glyphs; unrenderable entries are labeled ERROR and
+recorded with the exact font hash and codepoint. The inspector completes
+the remaining pages and writes its catalog, returning a nonzero status
+if issues were recorded.
+
 The review sheets and glyph names are candidates, not proof of the
 role used by a particular Windows component. Confirm the relevant
 PRI/XBF or live Windows UI before mapping. Settings page icons, tray
