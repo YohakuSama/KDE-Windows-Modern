@@ -952,3 +952,59 @@ is introduced. Regression definitions use the six observed buffer
 hashes and five observed RGB probe mappings, not the private reports.
 General independent CLUT generation and broader transparent format
 parity remain unresolved.
+
+## Equal-row-sum neutral-axis constraint and next native boundary
+
+Reopened the owner's matrix archive and checked all 32 binary payloads
+against their recorded hashes. All eighteen direct/replay transform
+records identify the Win CMM (57696E20), CMM DLL version 65536 and
+CMM Windows version 262144. These API values identify the CMM family;
+they are not the PE file version or the identity of the loaded DLL.
+
+The source-v2 and linear-sRGB controls share the reviewed source
+colorants. Their exact X colorant row sum is 63190 in signed 16.16
+units, the same as the diagonal source. Their Y row sum is also
+65536; the Z row sums differ by one. A diagonal destination has no
+cross-channel terms in its exact inverse, so a model that first
+forms the exact source dot product and only then applies a common
+scalar quantizer must agree for the X component at equal neutral
+RGB grid coordinates, regardless of that quantizer's formula.
+
+Independent examination of the original matrix report gives:
+
+| Source compared with diagonal | Destination | Different neutral nodes / 32 | Different entries | Max raw 16-bit error |
+| --- | --- | ---: | ---: | ---: |
+| Linear sRGB | Diagonal | 17 | 17 | 9 |
+| Mixed | Diagonal | 0 | 0 | 0 |
+| Mixed-delta | Diagonal | 0 | 0 | 0 |
+| Linear sRGB | Registered sRGB | 17 | 46 | 26 |
+| Source-v2 | Registered sRGB | 17 | 46 | 26 |
+
+For the diagonal destination, all 17 differences are in the X
+component, where the exact source row sums agree. At grid index
+(8,8,8), the diagonal control returns X-channel code 16908 while
+the linear-sRGB control returns 16917. This rejects the stated
+row-sum-only model without assuming Q13 intermediate coordinates
+or choosing a post-map rounding rule. It does not prove any
+specific per-coefficient rounding formula. The registered-sRGB
+comparison is descriptive because its inverse couples the three
+components. The existing matrix-capture analyzer now reports
+these constraints and the recorded CMM version metadata.
+
+The earlier transparent PNG reciprocal result was separately
+rechecked using a local array transcription of the measured
+RGB mappings, premultiplication, pixel-center interpolation and
+Q16 reciprocal. All twelve supplied buffers match their original
+SHA-256 and all 786,432 scaled pixel values match exactly. This
+is a numerical archive comparison, not an execution of the
+repository regression suite.
+
+Further independent CLUT generation requires identifying the
+native matrix construction and normalization stages. Do not
+continue fitting single rounded coefficients to these observations.
+Inspect the reference VM's own 64-bit ICM module (icm32.dll)
+and its API dispatcher (mscms.dll), including the PE versions,
+exports and SHA-256 identities, before deriving another candidate.
+Keep these Windows binaries private; do not add them to the theme,
+its dependencies or the public repository. The present change
+does not modify the runtime or enable a fitted matrix.

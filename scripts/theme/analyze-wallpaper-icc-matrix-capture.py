@@ -38,6 +38,54 @@ def endpoint_regression(execute):
         raise ValueError('Maximum input vertex regression')
 
 
+def neutral_axis_constraints(grids, matrices):
+    """Separate per-coefficient native rounding from row-sum-only models.
+
+    For a diagonal destination, each ideal neutral-axis output component
+    depends only on the corresponding source colorant row sum. Any
+    differences with equal exact row sums reject that particular model,
+    regardless of its final scalar rounding function.
+    """
+    indices = np.arange(32)
+    sums = {name: np.rint(matrix * 65536).astype(np.int64).sum(axis=1)
+            for name, matrix in matrices.items()}
+    result = {}
+    for target in ('diagonal', 'registered-srgb'):
+        reference = grids['diagonal|' + target].reshape(32,32,32,3)[indices,indices,indices]
+        rows = {}
+        for pair, grid in grids.items():
+            source, destination = pair.split('|')
+            if destination != target or source == 'diagonal':
+                continue
+            observed = grid.reshape(32,32,32,3)[indices,indices,indices]
+            delta = observed.astype(np.int64) - reference.astype(np.int64)
+            same_sum = sums[source] == sums['diagonal']
+            hits = np.argwhere(delta != 0)
+            # Other row sums cannot influence a diagonal destination's
+            # corresponding ideal component. For a non-diagonal target
+            # this is descriptive only, not a channel-wise counterexample.
+            contradiction = (delta != 0) & same_sum if target == 'diagonal' else np.zeros_like(delta, dtype=bool)
+            violations = np.argwhere(contradiction)
+            witness = None
+            if len(violations):
+                node, channel = map(int, violations[0])
+                witness = {'node':node, 'channel':channel,
+                           'source_row_sum_s15fixed16':int(sums[source][channel]),
+                           'reference_raw':int(reference[node,channel]),
+                           'source_raw':int(observed[node,channel])}
+            rows[source] = {
+                'source_row_sums_s15fixed16':sums[source].tolist(),
+                'diagonal_row_sums_s15fixed16':sums['diagonal'].tolist(),
+                'different_nodes':int(np.count_nonzero(np.any(delta != 0, axis=1))),
+                'different_entries':len(hits),
+                'maximum_raw_error':int(np.abs(delta).max()),
+                'equal_row_sum_counterexamples':len(violations),
+                'counterexample':witness,
+            }
+        result[target] = rows
+    return result
+
+
 def analyze(root, report, target_path):
     p = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-precision.py'))
     e = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-engine.py'))
@@ -71,6 +119,7 @@ def analyze(root, report, target_path):
     endpoint_regression(p['execute_rgb8_tables'])
     pixels = p['rgb'](raw,8)
     grids, table_sets, results = {}, {}, {}
+    cmm_versions = set()
     for pair in PAIRS:
         entry = report['results'][pair]
         if entry['status'] != 'ok':
@@ -81,8 +130,11 @@ def analyze(root, report, target_path):
         if direct is None or replay != direct or link is None:
             raise ValueError('Native replay mismatch: '+pair)
         for kind in ('direct','link_replay'):
-            if entry[kind]['cmm_ident'] != '57696E20':
+            identity = tuple(entry[kind][key] for key in
+                             ('cmm_ident','cmm_dll_version','cmm_win_version'))
+            if identity[0] != '57696E20':
                 raise ValueError('Unexpected native CMM')
+            cmm_versions.add(identity)
         tables = p['read_rgb8_tables'](link)
         pred = p['execute_rgb8_tables'](*tables,pixels)
         if pred.tobytes() != direct:
@@ -128,6 +180,9 @@ def analyze(root, report, target_path):
         guess = np.floor(q/8192 @ (np.floor(matrix*65536+.5)/65536).T *65535).clip(0,65535)
         inverse_metrics[name] = p['metric'](guess,expected)
     return {'windows_build':report['windows_build'],'verified_payloads':32,
+            'native_cmm_versions':[{'ident':ident,'dll_version':dll,'win_version':win}
+                                   for ident,dll,win in sorted(cmm_versions)],
+            'neutral_axis_constraints':neutral_axis_constraints(grids,matrices),
             'portable_rgb8_colors':len(PAIRS)*len(pixels),'pairs':results,
             'v2_v4_identical_tables':equal_v2,'source_perturbation_changed_entries':forward_delta,
             'target_perturbation_changed_entries':inverse_delta,'inferred_shared_pcs':pcs,
