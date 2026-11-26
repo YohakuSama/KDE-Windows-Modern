@@ -378,6 +378,93 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual(half["width"] * half["height"], 1280 * 800 // 2)
         self.assertEqual(small["width"] * small["height"], 1280 * 800 // 16)
 
+    def test_cache_isolation_automatic_palette_and_alpha(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        report = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes-cache-isolation.json").read_text(
+            encoding="utf-8"))
+        self.assertEqual(report["probe_set"], "CacheIsolation")
+        self.assertEqual(len(report["samples"]), 16)
+        self.assertTrue(report["restoration"]["wallpaper_path_verified"])
+        self.assertTrue(report["restoration"]["palette_matches_baseline"])
+        baseline = report["baseline"]
+        roles = ("Accent", *sync["PRESET_SHADE_ROLES"])
+        native_base = baseline["native_wallpaper_color_api"]["argb"]
+        by_name = {}
+        solid_count = 0
+        for sample in report["samples"]:
+            image = sample["image"]
+            observation = sample["observation"]
+            capture = observation["capture"]
+            native = capture["native_wallpaper_color_api"]
+            appearance = capture["appearance"]
+            registry = appearance["registry"]
+            reference = observation["isolation_reference"]
+            cache = observation["cache_observation"]["transcoded"]
+            with self.subTest(name=image["name"]):
+                self.assertEqual(capture["windows_build"], "26300.9974")
+                self.assertEqual(capture["accent_mode_registry"], "Automatic")
+                self.assertFalse(capture["accent_mode_registry_conflict"])
+                self.assertEqual((sample["width"], sample["height"]), (1280, 800))
+                self.assertEqual(observation["stable_captures"], 2)
+                self.assertTrue(observation["native_argb_changed_from_reference"])
+                self.assertEqual(reference["native_argb"], native_base)
+                self.assertEqual(reference["wallpaper_sha256"],
+                                 baseline["appearance"]["registered_wallpaper_sha256"])
+                self.assertNotEqual(native["argb"], native_base)
+                self.assertEqual(appearance["source_wallpaper_sha256"],
+                                 appearance["registered_wallpaper_sha256"])
+                self.assertEqual(native["status"], "ok")
+                self.assertEqual(native["hresult"], "0x00000000")
+                self.assertEqual(native["argb"], native["image_color_argb"])
+                self.assertEqual(native["argb"], native["image_color_after_api_argb"])
+                self.assertFalse(native["image_color_changed_by_api"])
+                argb = int(native["argb"], 16)
+                self.assertEqual(argb, registry["desktop_image_color_raw"] & 0xFFFFFFFF)
+                self.assertEqual(argb & 0xFFFFFF, registry["dwm_colorization_color_raw"] & 0xFFFFFF)
+                self.assertEqual(argb >> 24, native["alpha"])
+                candidate = "#{:06X}".format(argb & 0xFFFFFF)
+                expected = {role: "#" + appearance["colors_argb"][role][3:] for role in roles}
+                self.assertEqual(sync["derive_automatic_palette"](candidate), expected)
+                self.assertEqual(cache["status"], "ok")
+                self.assertTrue(cache["is_jpeg"])
+                self.assertNotEqual(cache["sha256"], reference["caches"]["transcoded"]["sha256"])
+                if image["rectangle"] is None:
+                    solid_count += 1
+                    pixels = cache["sampled_solid_rgb"]
+                    self.assertEqual(len(pixels), 9)
+                    self.assertEqual(set(pixels), {cache["background_rgb"]})
+                    self.assertTrue(cache["sampled_uniform"])
+                    channels = tuple(bytes.fromhex(cache["background_rgb"][1:]))
+                    span = max(channels) - min(channels)
+                    # Only the sampled uniform solids identify this statistic.
+                    self.assertEqual(sync["derive_wallpaper_alpha"](span * len(pixels), len(pixels)),
+                                     native["alpha"])
+                    self.assertEqual(cache["alpha_from_sampled_span"], native["alpha"])
+                by_name[image["name"]] = (candidate, cache["sha256"])
+        self.assertEqual(solid_count, 7)
+        self.assertEqual(len(by_name), 16)
+        # Keep the counterexamples visible without treating them as a
+        # general extraction formula or a position-dependent lookup.
+        self.assertEqual(by_name["isolated-red-high-left"][0], "#D24444")
+        for name in ("isolated-red-high-right", "isolated-red-high-top",
+                     "isolated-red-low-left", "isolated-red-low-right"):
+            self.assertEqual(by_name[name][0], "#008700")
+        for name in ("isolated-cyan-60-left", "isolated-cyan-60-right", "isolated-cyan-60-top"):
+            self.assertEqual(by_name[name][0], "#D44343")
+        self.assertEqual(by_name["isolated-cyan-75-left"][0], "#008181")
+        self.assertEqual(by_name["isolated-alpha-span-48"], by_name["isolated-alpha-span-49"])
+
+    def test_wallpaper_alpha_statistics_contract(self):
+        derive = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))["derive_wallpaper_alpha"]
+        for range_sum, count, expected in ((0, 1, 125), (99, 2, 174),
+                                           (100, 2, 175), (255, 1, 175)):
+            with self.subTest(range_sum=range_sum, count=count):
+                self.assertEqual(derive(range_sum, count), expected)
+        for range_sum, count in ((-1, 1), (0, 0), (256, 1), (1.0, 1), (1, True)):
+            with self.subTest(range_sum=range_sum, count=count):
+                with self.assertRaises(ValueError):
+                    derive(range_sum, count)
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')

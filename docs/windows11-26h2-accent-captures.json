@@ -1,7 +1,7 @@
 {
   "windows_build": "26300.9974",
   "display_version": "26H2",
-  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In the manual samples, the observed base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1. The v2 orange capture independently records the registry mode and raw palette, with the same seven UISettings colors as the v1 orange capture. The v2 automatic sample reports Automatic at both registry locations; unlike the manual captures, the current API/Explorer palette differs from DWM's unchanged manual orange values. The v2 custom-color capture records a third manual palette; the requested input was #9F5A8C, but the capture itself does not attest to the exact entered RGB. The low-saturation capture preserves the requested near-gray color and uses FF, rather than 00, in the fourth byte of each of its first seven registry slots. The schema-5 native diagnostic on the automatic Bloom baseline returned 0xAF2475CE, matching ImageColor before and after the call and matching DWM RGB. This confirms the full ARGB relationship for this wallpaper on build 26300.9974 only; it does not establish the wallpaper pixel-to-RGB algorithm or validate the alpha formula across every probe.",
+  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In the manual samples, the observed base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1. The v2 orange capture independently records the registry mode and raw palette, with the same seven UISettings colors as the v1 orange capture. The v2 automatic sample reports Automatic at both registry locations; unlike the manual captures, the current API/Explorer palette differs from DWM's unchanged manual orange values. The v2 custom-color capture records a third manual palette; the requested input was #9F5A8C, but the capture itself does not attest to the exact entered RGB. The low-saturation capture preserves the requested near-gray color and uses FF, rather than 00, in the fourth byte of each of its first seven registry slots. The later schema-5 native diagnostics are separate observations; see windows11-26h2-wallpaper-probes-cache-isolation.json, whose baseline preserves the complete simultaneous native and registry capture.",
   "winui_roles": {
     "dark": {
       "primary_fill": "AccentLight2",
@@ -203,23 +203,6 @@
           "accent_palette_length_bytes": 32,
           "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
         }
-      },
-      "native_wallpaper_color_api": {
-        "status": "ok",
-        "hresult": "0x00000000",
-        "argb": "0xAF2475CE",
-        "alpha": 175,
-        "image_color_argb": "0xAF2475CE",
-        "image_color_alpha": 175,
-        "image_color_after_api_argb": "0xAF2475CE",
-        "image_color_changed_by_api": false,
-        "argb_matches_image_color": true,
-        "alpha_matches_image_color": true,
-        "argb_matches_image_color_after_api": true,
-        "alpha_matches_image_color_after_api": true,
-        "rgb_matches_image_color": true,
-        "rgb_matches_dwm_colorization": true,
-        "error_type": null
       }
     },
     "manual_custom_light_registry": {

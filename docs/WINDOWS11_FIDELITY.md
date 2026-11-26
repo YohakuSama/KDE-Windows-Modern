@@ -1206,6 +1206,60 @@ sweep. The current evidence is sufficient to stage the alpha reduction
 and preserve the orientation counterexamples, but not to claim exact
 automatic-accent parity or enable a guessed extractor.
 
+### Target-build extraction investigation
+
+The existing theme regression suite now preserves all 16 isolated
+automatic palette observations, the seven uniform-solid Alpha
+observations, the cache collision and the orientation/area
+counterexamples. The Alpha helper's integer rounding, ceiling and
+invalid-input contract have their own cases. These cases must not be
+interpreted as an implementation of the missing extractor or a
+desktop acceptance result.
+
+The pinned OpenFluidGlass analysis identifies
+`CAutoColorization::s_AutoColorEnabled`,
+`CAutoColorImageData::CreateImageColorizationData` and the
+`CDesktopBrowser::_SetDWMAndImmersiveColor` boundary in shell32.
+It describes a legacy analysis path and a weighted-RGB path selected
+by feature 41486951 in 10.0.26100.9549. The analysis dimensions are
+capped at 256 each in that inspected version. See the
+[original analysis](https://github.com/DreY85/OpenFluidGlass/blob/49dd5176acd3afabc03066680a2de2b59296e472/OpenGlassGUI/Configuration.design.md#native-automatic-alpha-and-later-wallpapers).
+This narrows the investigation to image decoding/resampling, the
+representative-color routine and the final RGB normalization. It does
+not establish the enabled feature branch or cap in build 26300.9974.
+
+The second historical Microsoft patent,
+[US8897552B2](https://patents.google.com/patent/US8897552B2/en), describes
+weighted pixels and combining a dominant color bin with neighboring
+bins. It supplies a plausible reason to investigate color merging but
+does not identify the modern implementation or its constants. The
+orientation counterexample still rules out a simple geometry-independent
+score on the original image. Do not select another exponent on this basis.
+
+As a separate offline calculation on the seven actual sampled uniform
+JPEG cache colors in CacheIsolation, using standard sRGB/D65 CIELAB
+coordinates, the native RGB lightness spans approximately 48.19 to
+48.62, while its hue differs from the decoded cache hue by at most
+about 1.1 degrees. The six low-chroma red inputs show an increased Lab
+chroma (roughly 1.29 to 1.38 times the sampled cache chroma). The cyan
+input instead increases chroma by about 1.07 times. This constrains the
+solid-color normalization, but the data do not establish a constant
+lightness or chroma multiplier. The more saturated archived red/blue
+solids are counterexamples to a universal chroma boost. No such
+formula is added to the runtime.
+
+The next evidence should be the exact native x64 shell32 module from
+the running reference VM, not additional wallpaper sweeps or the
+original ISO's potentially older module. Record its file version and
+SHA-256, then use its PE CodeView identity to select matching public
+Microsoft PDB symbols (see [Microsoft's symbol documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/symbols)).
+Inspect the image-data and representative-color call chain statically.
+If public symbols are unavailable, report that limitation rather than
+using a different build as proof. Keep Windows binaries and symbol
+files outside the repository and do not distribute them in theme
+packages. Only independently written portable code, measured data
+and original research notes belong in the repository.
+
 ### Native automatic-color diagnostic
 
 OpenGlass reverse-engineers the private
@@ -1243,10 +1297,13 @@ Run it once on the current Automatic wallpaper:
 .\capture-windows-accent.ps1 -AccentMode Automatic -IncludeNativeWallpaperColor
 ```
 
-The baseline result is preserved in
-[windows11-26h2-accent-captures.json](windows11-26h2-accent-captures.json).
-The full match confirms both the native alpha and RGB relationship for
-this sample. It does not reveal how Windows selects RGB from image pixels.
+The complete simultaneous schema-5 baseline, including its registry and
+native ARGB evidence, is preserved in the
+[CacheIsolation report](windows11-26h2-wallpaper-probes-cache-isolation.json).
+Keep it separate from the earlier schema-2 automatic capture in
+[windows11-26h2-accent-captures.json](windows11-26h2-accent-captures.json),
+whose DWM values had not yet changed from manual orange. Do not attach
+a later native result to those older registry values.
 
 ### Native colorization-strength alpha
 
