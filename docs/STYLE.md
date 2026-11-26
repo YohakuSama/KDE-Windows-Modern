@@ -973,7 +973,25 @@ on delivered KConfig notifications for KWin's blurEnabled preference.
 No polling or compositor preference writes are added; notification delivery,
 effect availability timing and physical rendering still require validation.
 
+The detail page, clipboard and notification scrollbars share the same
+16px input region and 2/6px indicator extents. The tray consumers now
+supply actual viewport hover/movement states, as the notification page
+already did. The thumb follows the public WinUI ScrollBar
+[theme roles](https://github.com/microsoft/microsoft-ui-xaml/blob/main/controls/dev/CommonStyles/ScrollBar_themeresources.xaml)
+(ControlStrongFillColorDefault/Disabled), including its original alpha;
+the same brush is used for normal, hover and press. This is a partial
+overlay-scrollbar implementation: exact track, arrow buttons, full
+Windows indicator timing and runtime comparison remain open. The home
+tile grid still deliberately has no rail.
+
 ### System accent propagation
+
+The detail switch knob now uses WinUI Normal/Disabled 12x12, PointerOver
+14x14 and Pressed 17x14 logical-pixel extents. Its size transitions use
+the public common 83/250ms timing and 0,0,0,1 key spline, honoring the
+existing disabled-animation setting. The host's native Qt switching,
+RTL selection, click and keyboard behavior are unchanged. Positioning
+and drag/transition parity with the actual shell template remain open.
 
 The detail switches and brightness/volume sliders now consume the enabled,
 hovered, pressed and disabled brush roles in Microsoft's public

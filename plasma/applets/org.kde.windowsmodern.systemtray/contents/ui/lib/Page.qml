@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import org.kde.kirigami as Kirigami
+import "../js/colorType.js" as ColorType
 
 ColumnLayout {
     id: page
@@ -33,15 +34,23 @@ ColumnLayout {
 
     ScrollView {
         id: scrollView
+        objectName: "wmDetailScrollView"
         Layout.fillWidth: true
         Layout.fillHeight: true
+        Layout.minimumHeight: 0
         clip: true
         leftPadding: 0
         rightPadding: 0
         topPadding: 0
         bottomPadding: 0
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        ScrollBar.vertical: FluentScrollBar {}
+        HoverHandler { id: viewportHover }
+        ScrollBar.vertical: FluentScrollBar {
+            objectName: "wmDetailScrollBar"
+            dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+            viewportHovered: viewportHover.hovered
+            scrolling: !!scrollView.contentItem && !!scrollView.contentItem.moving
+        }
         Kirigami.WheelHandler {
             target: scrollView
             filterMouseEvents: true

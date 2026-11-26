@@ -34,13 +34,41 @@ QQC2.Switch {
         border.width: control.checked ? 0 : 1
         border.color: ColorType.switchOffStroke(control.dark, control.enabled)
         Rectangle {
-            width: control.down ? 10 : 12
-            height: width
-            radius: width / 2
+            id: knob
+            objectName: "wmDetailSwitchKnob"
+            // WinUI ToggleSwitch common states: Normal/Disabled 12x12,
+            // PointerOver 14x14, Pressed 17x14. Press extends inward.
+            readonly property bool engaged: control.enabled && control.down
+            readonly property bool enlarged: control.enabled && (control.hovered || control.down)
+            readonly property int stateDuration: Kirigami.Units.shortDuration <= 0 ? 0
+                : control.enabled ? 83 : 250
+            property real sidePosition: control.checked !== control.mirrored ? 1 : 0
+            width: engaged ? 17 : enlarged ? 14 : 12
+            height: enlarged ? 14 : 12
+            radius: height / 2
             anchors.verticalCenter: parent.verticalCenter
-            x: (control.checked !== control.mirrored) ? parent.width - width - 4 : 4
+            // Animate side changes independently of width; resizing cannot
+            // restart a position animation on every frame.
+            x: (parent.width / 2 - width) / 2 + sidePosition * parent.width / 2
+                + (engaged ? (1 - 2 * sidePosition) * 1.5 : 0)
             color: ColorType.switchKnobFill(control.dark, control.checked, control.enabled, control.accent)
-            Behavior on x { NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutQuad } }
+            Behavior on sidePosition {
+                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutQuad }
+            }
+            Behavior on width {
+                NumberAnimation {
+                    duration: knob.stateDuration
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: [0, 0, 0, 1, 1, 1]
+                }
+            }
+            Behavior on height {
+                NumberAnimation {
+                    duration: knob.stateDuration
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: [0, 0, 0, 1, 1, 1]
+                }
+            }
         }
     }
 }

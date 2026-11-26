@@ -80,6 +80,34 @@ Item {
             mouseClick(back, back.width / 2, back.height / 2);
             compare(wentBack.count, 1);
         }
+        function test_switchKnobStates() {
+            header.showSwitch = true;
+            header.showAction = false;
+            header.switchEnabled = true;
+            header.switchChecked = false;
+            const sw = findChild(header, "wmDetailSwitch");
+            const knob = findChild(sw, "wmDetailSwitchKnob");
+            verify(sw && knob);
+            try {
+                mouseMove(fixture, fixture.width - 1, fixture.height - 1);
+                tryCompare(knob, "width", 12);
+                compare(knob.height, 12);
+                mouseMove(sw, sw.width / 2, sw.height / 2);
+                tryCompare(knob, "width", 14);
+                tryCompare(knob, "height", 14);
+                mousePress(sw, sw.width / 2, sw.height / 2);
+                tryCompare(knob, "width", 17);
+                tryCompare(knob, "height", 14);
+                mouseRelease(sw, sw.width / 2, sw.height / 2);
+                tryCompare(header, "switchChecked", true);
+                header.switchEnabled = false;
+                tryCompare(knob, "width", 12);
+                tryCompare(knob, "height", 12);
+            } finally {
+                header.switchEnabled = true;
+            }
+        }
+
         function test_fixedFooter_data() {
             return [{tag: "scroll page", component: pageComponent},
                     {tag: "empty detail page", component: detailComponent}];
@@ -95,6 +123,16 @@ Item {
             tryVerify(() => Math.abs(loader.y + loader.height - page.height) <= 1);
             compare(loader.height, loader.item.implicitHeight + 4);
             tryCompare(link, "width", loader.width);
+            const viewport = findChild(page, "wmDetailScrollView");
+            if (viewport) {
+                verify(viewport.height > 0);
+                verify(viewport.y + viewport.height <= loader.y + 1);
+                const bar = findChild(viewport, "wmDetailScrollBar");
+                verify(bar);
+                mouseMove(viewport, 20, 20);
+                tryCompare(bar, "viewportHovered", true);
+                tryCompare(bar, "indicatorVisible", true);
+            }
             fixture.footerClicks = 0;
             mouseClick(link, link.width / 2, link.height / 2);
             compare(fixture.footerClicks, 1);

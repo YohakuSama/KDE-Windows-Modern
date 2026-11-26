@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "../js/colorType.js" as ColorType
 
 ColumnLayout {
     id: page
@@ -33,15 +34,23 @@ ColumnLayout {
 
     ListView {
         id: list
+        objectName: "wmDetailList"
         readonly property int headerHeight: headerItem ? headerItem.height : 0
         Layout.fillWidth: true
         Layout.fillHeight: count > 0
+        Layout.minimumHeight: 0
         Layout.preferredHeight: count > 0 ? -1 : headerHeight
         visible: count > 0 || headerHeight > 0
         spacing: 0
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: FluentScrollBar {}
+        HoverHandler { id: listHover }
+        QQC2.ScrollBar.vertical: FluentScrollBar {
+            objectName: "wmDetailScrollBar"
+            dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+            viewportHovered: listHover.hovered
+            scrolling: list.moving || list.flicking
+        }
         Kirigami.WheelHandler {
             target: list
             filterMouseEvents: true

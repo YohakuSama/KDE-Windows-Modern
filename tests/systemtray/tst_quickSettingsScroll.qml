@@ -23,9 +23,12 @@ Item {
             height: view.contentHeight
             color: "transparent"
         }
+        HoverHandler { id: viewportHover }
         QQC2.ScrollBar.vertical: FluentScrollBar {
             id: bar
             policy: QQC2.ScrollBar.AlwaysOn
+            viewportHovered: viewportHover.hovered
+            scrolling: view.moving || view.flicking
         }
         Kirigami.WheelHandler {
             target: view
@@ -61,12 +64,25 @@ Item {
             mouseMove(view, 100, 100);
             tryCompare(bar, "thumbWidth", 2);
             compare(bar.width, 16);
-            tryCompare(bar, "indicatorVisible", false);
+            tryCompare(bar, "indicatorVisible", true);
             mouseMove(bar, bar.width / 2, bar.height / 2);
             tryCompare(bar, "thumbWidth", 6);
             tryCompare(bar, "indicatorVisible", true);
             mouseMove(view, 80, 100);
+            tryCompare(bar, "thumbWidth", 2);
+            tryCompare(bar, "indicatorVisible", true);
+            mouseMove(root, root.width - 1, root.height - 1);
             tryCompare(bar, "indicatorVisible", false);
+        }
+        function test_nativeThumbBrush() {
+            for (const dark of [true, false]) {
+                bar.dark = dark;
+                bar.enabled = true;
+                compare(bar.thumbBrush, Qt.color(dark ? "#8BFFFFFF" : "#72000000"));
+                bar.enabled = false;
+                compare(bar.thumbBrush, Qt.color(dark ? "#3FFFFFFF" : "#51000000"));
+            }
+            bar.enabled = true;
         }
         function test_gridWithoutRailStillScrolls() {
             view.visible = false;

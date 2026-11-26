@@ -17,6 +17,12 @@ QQC2.ScrollBar {
     readonly property int thumbWidth: pointer.hovered || pressed ? 6 : 2
     property bool viewportHovered: false
     property bool scrolling: false
+    // Consumers supply their existing theme-mode detection; use the
+    // public WinUI ControlStrongFill role rather than dimming text ink.
+    property bool dark: Kirigami.Theme.backgroundColor.hslLightness < 0.5
+    readonly property color thumbBrush: Qt.color(dark
+        ? (enabled ? "#8BFFFFFF" : "#3FFFFFFF")
+        : (enabled ? "#72000000" : "#51000000"))
     // The thin panning indicator appears while browsing or scrolling.
     // Only entering the edge's input region expands the thumb.
     readonly property bool indicatorVisible: size < 1 && (pointer.hovered || pressed || scrolling || viewportHovered)
@@ -33,10 +39,11 @@ QQC2.ScrollBar {
             anchors.bottom: parent.bottom
             width: bar.thumbWidth
             radius: width / 2
-            color: Kirigami.Theme.textColor
-            opacity: bar.indicatorVisible ? (bar.pressed ? 0.72 : 0.55) : 0
+            objectName: "wmFluentScrollThumb"
+            color: bar.thumbBrush
+            opacity: bar.indicatorVisible ? 1 : 0
             Behavior on opacity {
-                NumberAnimation { duration: 100 }
+                NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 100 : 0 }
             }
             Behavior on width {
                 NumberAnimation { duration: Kirigami.Units.shortDuration }

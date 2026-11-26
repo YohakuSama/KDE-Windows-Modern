@@ -183,7 +183,13 @@ ColumnLayout {
         spacing: 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: Lib.FluentScrollBar {}
+        HoverHandler { id: historyHover }
+        QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
+            objectName: "wmClipboardScrollBar"
+            dark: page.dark
+            viewportHovered: historyHover.hovered
+            scrolling: history.moving || history.flicking
+        }
 
         delegate: Rectangle {
             id: card

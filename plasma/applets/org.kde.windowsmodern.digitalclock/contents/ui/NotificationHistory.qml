@@ -240,6 +240,7 @@ ColumnLayout {
         HoverHandler { id: listHover }
         QQC2.ScrollBar.vertical: FluentScrollBar {
             objectName: "wmNotificationScrollBar"
+            dark: palette.isDark
             viewportHovered: listHover.hovered
             scrolling: list.moving || list.flicking
         }
