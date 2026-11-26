@@ -12,7 +12,7 @@ The theme only drew the plain states for a bottom panel by hand, so:
   * the top/left/right frames were drawn separately and had drifted (bar at
     the wrong edge, a misnamed top-panel piece).
 
-This script, run on each variant's tasks.svg:
+This script, run on the shared tasks.svg (or a staged renderer copy):
 
   1. puts the state bars 1.5 units (about 2.5 px on a 48 px panel) above
      the bottom of the tile, not flush with its edge;
@@ -25,7 +25,8 @@ Generated elements live in one marked block before </svg>; re-running
 replaces it. The file is edited as text, never re-serialised (an XML
 round-trip once renamed xlink:href and broke the theme).
 
-Usage: scripts/theme/tasks-frames.py plasma/desktoptheme/*/widgets/tasks.svg
+Usage: scripts/theme/tasks-frames.py plasma/desktoptheme/Windows-modern-dark/widgets/tasks.svg
+The appearance materializer creates the light renderer from this source.
 """
 import re
 import sys

@@ -67,21 +67,28 @@ else
     fail "Aurorae window frames differ from their generator — run scripts/theme/window-frames.py"
 fi
 check_file "plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/ui/main.qml" "Alt+Tab switcher"
-# The top/left/right and hover task frames are generated from the bottom
-# ones; a hand edit would make the panel edges drift apart again.
+# The task frames share one source. Check both complete renderer packages
+# rather than reading a sparse light source directory.
 tasks_tmp="$(mktemp -d)"
-drift=""
-for v in dark light; do
-    cp "plasma/desktoptheme/Windows-modern-${v}/widgets/tasks.svg" "$tasks_tmp/${v}.svg"
-    python3 -I scripts/theme/tasks-frames.py "$tasks_tmp/${v}.svg" >/dev/null
-    cmp -s "$tasks_tmp/${v}.svg" "plasma/desktoptheme/Windows-modern-${v}/widgets/tasks.svg" || drift+=" ${v}"
-done
-rm -rf "$tasks_tmp"
-if [ -z "$drift" ]; then
-    pass "Task frames match scripts/theme/tasks-frames.py"
+if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance" --component desktopthemes; then
+    drift=""
+    for v in dark light; do
+        task_source="$tasks_tmp/appearance/Windows-modern-${v}/widgets/tasks.svg"
+        if ! cp "$task_source" "$tasks_tmp/${v}.svg" ||
+           ! python3 -I scripts/theme/tasks-frames.py "$tasks_tmp/${v}.svg" >/dev/null ||
+           ! cmp -s "$tasks_tmp/${v}.svg" "$task_source"; then
+            drift+=" ${v}"
+        fi
+    done
+    if [ -z "$drift" ]; then
+        pass "Task frames match scripts/theme/tasks-frames.py"
+    else
+        fail "tasks.svg differs from its generator (${drift# }) — run: scripts/theme/tasks-frames.py plasma/desktoptheme/Windows-modern-dark/widgets/tasks.svg"
+    fi
 else
-    fail "tasks.svg differs from its generator (${drift# }) — run: scripts/theme/tasks-frames.py plasma/desktoptheme/*/widgets/tasks.svg"
+    fail "Shared appearance packages could not be materialized"
 fi
+rm -rf "$tasks_tmp"
 
 # ── Layout ──────────────────────────────────────────────────────────
 echo ""

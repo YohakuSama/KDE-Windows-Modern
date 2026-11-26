@@ -17,9 +17,9 @@ PACKAGE = "org.kde.windowsmodern.dark"
 LIGHT_PACKAGE = "org.kde.windowsmodern.light"
 
 
-# These existing light variants differ from the shared SVGs only in color
-# literals. Keep their geometry, element IDs, opacity and fallback palette
-# exactly as before. This is packaging-time color separation, not a new
+# These existing light variants share their SVG geometry. Keep their
+# original element IDs, palette and mode-specific paint/opacity exactly
+# as before. This is packaging-time appearance separation, not a new
 # Windows brush or dynamic-accent mapping.
 LIGHT_ACCENT = {b"#4CC2FF": b"#0067C0"}
 LIGHT_WIDGET_COLORS = {
@@ -43,6 +43,13 @@ LIGHT_WIDGET_COLORS = {
     "margins-highlight": {b"#2C2C2C": b"#eff0f1"},
     "toolbar": {b"#3D3D3D": b"#fcfcfc"},
     "viewitem": {},
+    "frame": {},
+    "lineedit": LIGHT_ACCENT,
+    "listitem": {b"#3D3D3D": b"#fcfcfc"},
+    "tasks": {b"#3D3D3D": b"#e5e5e5", b"#FFFFFF": b"#000000", **LIGHT_ACCENT},
+    "translucentbackground": {b"#2C2C2C": b"#F9F9F9", b"#3F3F3F": b"#E5E5E5"},
+    "solid/widgets/background": {},
+    "translucent/widgets/background": {b"#2C2C2C": b"#eff0f1"},
 }
 SVG_HEX_COLOR = re.compile(rb"#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
 
@@ -78,6 +85,27 @@ LIGHT_VIEW_ROLES = {
     b"ViewText": b"#777777", b"ButtonBackground": b"#fefefe",
     b"ButtonFocus": b"#3DAEE6",
 }
+LIGHT_EDIT_ROLES = {
+    **LIGHT_PLAIN_ROLES, b"Text": b"#333333", b"Background": b"#ffffff",
+    b"ViewText": b"#333333", b"ViewHover": b"#888888", b"ViewFocus": b"#3476CF",
+    b"ButtonText": b"#333333", b"ButtonBackground": b"#ffffff",
+    b"ButtonHover": b"#888888", b"ButtonFocus": b"#3476CF",
+}
+LIGHT_TASK_ROLES = {
+    **LIGHT_GRADIENT_ROLES, b"Text": b"#333333", b"ViewText": b"#333333",
+    b"ButtonText": b"#333333",
+}
+LIGHT_SURFACE_ROLES = {
+    b"Text": b"#1E1E1E", b"Background": b"#F9F9F9", b"Highlight": b"#0078D4",
+    b"ViewText": b"#1E1E1E", b"ViewBackground": b"#FFFFFF",
+    b"ViewHover": b"#E9E9E9", b"ViewFocus": b"#0078D4",
+    b"ButtonText": b"#1E1E1E", b"ButtonBackground": b"#F3F3F3",
+    b"ButtonHover": b"#E9E9E9", b"ButtonFocus": b"#0078D4",
+}
+LIGHT_TRANSLUCENT_ROLES = {
+    **LIGHT_SURFACE_ROLES, b"Highlight": b"#0067C0",
+    b"ViewFocus": b"#0067C0", b"ButtonFocus": b"#0067C0",
+}
 LIGHT_WIDGET_ROLES = {
     **{name: (LIGHT_GRADIENT_ROLES, LIGHT_GRADIENT_STOPS) for name in (
         "bar_meter_horizontal", "bar_meter_vertical", "busywidget", "button",
@@ -87,14 +115,36 @@ LIGHT_WIDGET_ROLES = {
     "tabbar": (LIGHT_PLAIN_ROLES, {}),
     "margins-highlight": (LIGHT_MARGIN_ROLES, {}),
     "viewitem": (LIGHT_VIEW_ROLES, {}),
+    "frame": (LIGHT_GRADIENT_ROLES, LIGHT_GRADIENT_STOPS),
+    "lineedit": (LIGHT_EDIT_ROLES, {}),
+    "listitem": (LIGHT_PLAIN_ROLES, {}),
+    "tasks": (LIGHT_TASK_ROLES, {}),
+    "translucentbackground": (LIGHT_TRANSLUCENT_ROLES, LIGHT_TRANSLUCENT_ROLES),
+    "solid/widgets/background": (LIGHT_SURFACE_ROLES, LIGHT_GRADIENT_STOPS),
+    # The original translucent background contains two identical role tables.
+    "translucent/widgets/background": (LIGHT_SURFACE_ROLES, {}, 2),
+}
+# Preserve non-geometric paint differences without modifying XML structure.
+# Require the reviewed number of occurrences so new states cannot silently
+# inherit an unrelated opacity or fill change.
+LIGHT_WIDGET_PAINT = {
+    "frame": ((b"fill:#2C2C2C;", b"fill:currentColor;", 2),),
+    "lineedit": ((b'opacity:0.04"', b'opacity:0.03"', 2),),
+    "listitem": ((b'fill:#2C2C2C"', b'fill:currentColor"', 1),),
+    "tasks": ((b'fill-opacity="0.06"', b'fill-opacity="0.035"', 1),),
+    "translucentbackground": ((b"(translucent dark)", b"(translucent light)", 1),),
+    "solid/widgets/background": (
+        (b'fill="#2C2C2C"', b'fill="#F3F3F3"', 16),
+        (b'color="#2C2C2C"', b'color="#eff0f1"', 2),
+    ),
 }
 SVG_COLOR_ROLE = re.compile(rb"(\.ColorScheme-([A-Za-z]+)\s*\{)([^{}]*)(\})")
 CSS_COLOR = re.compile(rb"((?<![\w-])color\s*:\s*)#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
 CSS_STOP_COLOR = re.compile(rb"((?<![\w-])stop-color\s*:\s*)#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
 
 
-def apply_light_roles(data, relative, roles, stops):
-    seen = set()
+def apply_light_roles(data, relative, roles, stops, copies=1):
+    seen = {}
 
     def replace_declaration(body, pattern, color, role):
         result, count = pattern.subn(lambda match: match[1] + color, body)
@@ -106,24 +156,24 @@ def apply_light_roles(data, relative, roles, stops):
         start, role, body, end = match.groups()
         if role not in roles:
             return match[0]
-        if role in seen:
+        seen[role] = seen.get(role, 0) + 1
+        if seen[role] > copies:
             raise ValueError(f"Duplicate CSS role in {relative}: {role.decode('ascii')}")
-        seen.add(role)
         body = replace_declaration(body, CSS_COLOR, roles[role], role)
         if role in stops:
             body = replace_declaration(body, CSS_STOP_COLOR, stops[role], role)
         return start + body + end
 
     result = SVG_COLOR_ROLE.sub(substitute, data)
-    if seen != roles.keys():
-        missing = ", ".join(sorted(role.decode("ascii") for role in roles.keys() - seen))
-        raise ValueError(f"Missing shared SVG CSS role in {relative}: {missing}")
+    missing = [role.decode("ascii") for role in roles if seen.get(role, 0) != copies]
+    if missing:
+        raise ValueError(f"Missing shared SVG CSS role in {relative}: {', '.join(sorted(missing))}")
     return result
 
 
 def apply_light_widget_colors(target, overlay):
     for name, colors in LIGHT_WIDGET_COLORS.items():
-        relative = Path("widgets") / (name + ".svg")
+        relative = Path(name + ".svg") if "/" in name else Path("widgets") / (name + ".svg")
         if (overlay / relative).exists():
             raise ValueError(f"Duplicate light widget source: {relative}")
         path = target / relative
@@ -144,6 +194,10 @@ def apply_light_widget_colors(target, overlay):
         if seen != colors.keys():
             missing = ", ".join(sorted(value.decode("ascii") for value in colors.keys() - seen))
             raise ValueError(f"Missing shared SVG color in {relative}: {missing}")
+        for source, replacement, count in LIGHT_WIDGET_PAINT.get(name, ()):
+            if result.count(source) != count:
+                raise ValueError(f"Unexpected shared SVG paint count in {relative}: {source!r}")
+            result = result.replace(source, replacement)
         path.write_bytes(result)
 
 

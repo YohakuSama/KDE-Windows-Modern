@@ -421,11 +421,24 @@ mapping. All 12 previous light SVGs are reproduced byte for byte. The
 same dark color may map to different light colors depending on its role;
 do not combine these mappings into a single global substitution.
 
-There are still 21 separate Plasma style files in the light source tree,
-two color schemes, and fixed-color Aurorae/Kvantum artwork. Retain those
-differences until their actual Windows brush roles and geometry are
-resolved. Future shared geometry should live in the common source/generator,
-with only the necessary light/dark values separated. KDE supports adaptive SVG colors via the current-color-scheme
+Seven more SVG pairs share geometry and element IDs but also have
+mode-specific paint or opacity. Their light outputs now use the same
+materializer with explicit role and paint overrides, including tasks.svg
+(all taskbar edges and states), frame, line edit, list item, and three
+background resources. Preserve the old light hover opacity, fill choices,
+and existing fallback colors byte for byte. Edit the shared tasks.svg
+and regenerate its derived states with scripts/theme/tasks-frames.py;
+the repository health check examines both complete staged variants.
+
+The light Plasma source tree now has 14 separate files: ten files covered
+by the existing popup, panel and switch generators (including the panel's
+separate solid source artwork), one renderer metadata file,
+and three other SVGs with structural differences (configuration icons,
+line and plasmoid heading). Do not force the remaining material or
+structural differences into global color substitutions. Two color
+schemes and fixed-color Aurorae/Kvantum artwork also remain. Future
+shared geometry should live in the common source/generator, with only
+the necessary light/dark values separated. KDE supports adaptive SVG colors via the current-color-scheme
 stylesheet (https://develop.kde.org/docs/plasma/theme/theme-colors/);
 do not automatically substitute fixed Windows material colors or
 opacity with unrelated palette roles. This first consolidation does not
