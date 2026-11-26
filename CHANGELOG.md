@@ -6,6 +6,9 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Separate the primary-only window material snapshot from multi-display automatic accent; validate all wallpaper inputs before decoding and recheck stale snapshots even on failed decoding or unchanged caches.
+- Cancel drag and caption Snap Layouts state on focus, desktop, output and interactive-operation changes, and revalidate open caption pickers when the work area or window constraints change.
+
 - Recognize resized native quick tiles from their relative edges for Win+Up/Down, distinguish the custom tile tree, and reject shortcut interference with active moves/resizes.
 - Add the native Dolphin New Tab action to the desktop tab strip in the isolated build, respect tab visibility, and avoid migrating the command-bar hamburger menu to the navigation bar a second time.
 

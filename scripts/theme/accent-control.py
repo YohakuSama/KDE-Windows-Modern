@@ -73,21 +73,22 @@ def active_activity():
                       "org.kde.ActivityManager.Activities", "CurrentActivity")
 
 
-def live_wallpaper_snapshot(activity):
+def live_wallpaper_snapshot(activity, primary_only=False):
     # The tray bridge reads the committed, loaded image from the native
     # Plasma 6.8 ImageStackView. No package ranking or DPI guess is needed.
     return json.loads(bus_string(
         "org.kde.plasmashell", "/WindowsModernWallpaper",
-        "org.kde.WindowsModern.Wallpaper", "snapshot", "s", activity))
+        "org.kde.WindowsModern.Wallpaper",
+        "primarySnapshot" if primary_only else "snapshot", "s", activity))
 
 
 def wallpaper_fingerprint(path):
     return {"path": str(path), **SYNC["wallpaper_file_identity"](path)}
 
 
-def discover_wallpapers():
+def discover_wallpapers(primary_only=False):
     activity = active_activity()
-    snapshot = live_wallpaper_snapshot(activity)
+    snapshot = live_wallpaper_snapshot(activity, primary_only=True) if primary_only else live_wallpaper_snapshot(activity)
     if not isinstance(snapshot, dict):
         raise ValueError("Invalid live wallpaper snapshot")
     if "error" in snapshot:
@@ -97,6 +98,8 @@ def discover_wallpapers():
     if (type(count) is not int or not 1 <= count <= MAX_SCREENS
             or not isinstance(images, list) or len(images) != count):
         raise ValueError("Incomplete live wallpaper snapshot")
+    if primary_only and count != 1:
+        raise ValueError("Expected a primary-only wallpaper snapshot")
     wallpapers = []
     for screen, image in enumerate(images):
         if (not isinstance(image, dict) or type(image.get("screen")) is not int
@@ -119,10 +122,10 @@ def discover_wallpapers():
     return {"activity": activity, "wallpapers": wallpapers}
 
 
-def require_wallpaper_snapshot(state):
+def require_wallpaper_snapshot(state, primary_only=False):
     expected = {key: state[key] for key in ("activity", "wallpapers")}
     try:
-        current = discover_wallpapers()
+        current = discover_wallpapers(primary_only=True) if primary_only else discover_wallpapers()
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         raise WallpaperChangedError("Previously accepted wallpaper is no longer ready") from error
     if current != expected:
@@ -141,6 +144,11 @@ def automatic_state(previous):
             [Path(image["path"]) for image in snapshot["wallpapers"]])["palette"]
     except SYNC["WallpaperFileChangedError"] as error:
         raise WallpaperChangedError(str(error)) from error
+    except (OSError, ValueError):
+        # The selected URL/activity or an input file may have changed even
+        # before the analyzer captured its own fingerprints.
+        require_wallpaper_snapshot(snapshot)
+        raise
     state = {"schema_version": 1, "source": "automatic", "analysis_revision": revision,
              "palette": palette, **snapshot}
     require_wallpaper_snapshot(state)
@@ -328,6 +336,8 @@ def synchronize(mode, action, inputs):
     scheme = directory / (scheme_name(mode) + ".colors")
     refresh = (desired is None or scheme in pending or not live_matches(mode, fixed, desired, scheme))
     if not pending and not refresh and desired_raw == raw:
+        if fresh_state is not None:
+            require_wallpaper_snapshot(fresh_state)
         return False
 
     # Do not revalidate the deliberately retained ramp on a failed

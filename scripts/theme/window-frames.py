@@ -396,7 +396,7 @@ def sync_live_material(mode, control):
     sync["owned_file"](config / "kdeglobals")
     changed_error = control["WallpaperChangedError"]
     try:
-        snapshot = control["discover_wallpapers"]()
+        snapshot = control["discover_wallpapers"](primary_only=True)
     except changed_error:
         raise
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
@@ -408,20 +408,23 @@ def sync_live_material(mode, control):
     raw = read(MATERIAL_GROUP, MATERIAL_KEY)
     state = live_material_state(snapshot, raw, sync)
     if state is None:
+        # A decode failure after accepting a snapshot must not hide a
+        # replacement race. Stable unsupported images retain the old tint.
+        control["require_wallpaper_snapshot"](snapshot, primary_only=True)
         return "retained"
     desired = json.dumps(state, separators=(",", ":"), sort_keys=True)
     pending = plan_local(aurorae, kvantum, state["colors"], sync["owned_file"])
 
     def validate():
-        control["require_wallpaper_snapshot"](snapshot)
+        control["require_wallpaper_snapshot"](snapshot, primary_only=True)
         if not live_material_enabled(mode, control) or read(MATERIAL_GROUP, MATERIAL_KEY) != raw:
             raise ValueError("Appearance changed during material synchronization")
 
     # Re-plan on cache hits: upgrades and accent changes can replace SVGs
     # even when the wallpaper itself is unchanged.
+    validate()
     if not pending and desired == raw:
         return "unchanged"
-    validate()
     written = sync["write_pending"](pending)
     state_write_attempted = False
     try:
@@ -538,9 +541,9 @@ def main():
                 # crossfade or activity change. A global SVG cannot be
                 # different on each screen; use the existing screen-0 policy.
                 control = runpy.run_path(str(Path(__file__).with_name("accent-control.py")))
-                snapshot = control["discover_wallpapers"]()
+                snapshot = control["discover_wallpapers"](primary_only=True)
                 selected = Path(snapshot["wallpapers"][0]["path"])
-                validate_selection = lambda: control["require_wallpaper_snapshot"](snapshot)
+                validate_selection = lambda: control["require_wallpaper_snapshot"](snapshot, primary_only=True)
             if args.wallpaper_config and selected is None:
                 print("No unambiguous local image wallpaper; using neutral window bases.")
             apply_local(args.aurorae_dir, args.kvantum_dir, selected, validate_selection, transparency)

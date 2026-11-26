@@ -32,11 +32,11 @@ Item {
         }
         win.interactiveMoveResizeStarted.connect(() => {
             root.hideCaptionPicker();
+            captionRequest.win = null;
             root.clearPendingSnap();
-            if (win.move && root.canSnap(win)) {
-                root.resetPicker();
+            root.cancelDrag();
+            if (win.move && root.canSnap(win))
                 root.movingWindow = win;
-            }
         });
         win.interactiveMoveResizeStepped.connect(() => {
             if (root.movingWindow === win) {
@@ -56,8 +56,13 @@ Item {
         bar.visible = false;
     }
 
+    function cancelDrag() {
+        movingWindow = null;
+        resetPicker();
+    }
+
     function sameRect(a, b) {
-        return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+        return a && b && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
     }
 
     function canSnap(win) {
@@ -66,8 +71,8 @@ Item {
     }
 
     function update(win) {
-        if (!canSnap(win)) {
-            resetPicker();
+        if (!canSnap(win) || win !== Workspace.activeWindow) {
+            cancelDrag();
             return;
         }
         bar.minimumWindowSize = win.minSize;
@@ -89,6 +94,10 @@ Item {
         if (!bar.visible && !nearTop) return;
         if (!bar.visible) bar.showOn(screen, area);
         if (!bar.visible) return;
+        if (!Layouts.hasFittingCell(area, win.minSize, win.maxSize)) {
+            resetPicker();
+            return;
+        }
         const hit = bar.cellAt(cursor.x, cursor.y);
         if (hit) {
             const rect = Layouts.cellRect(bar.workArea, Layouts.layouts[hit.layout][hit.cell]);
@@ -116,9 +125,9 @@ Item {
             && output && sameRect(bar.workArea, Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop))
             ? target : null;
         const area = bar.workArea;
-        resetPicker();
-        movingWindow = null;
-        if (!chosen || !canSnap(win) || !fitsWindow(win, chosen.rect)) return;
+        cancelDrag();
+        if (!chosen || !canSnap(win) || win !== Workspace.activeWindow
+            || !fitsWindow(win, chosen.rect)) return;
         // After KWin has handled the release (it may maximize at the top edge).
         // Keep the actual target output's work area, even for a drag.
         snapTimer.win = win;
@@ -150,6 +159,7 @@ Item {
 
     function hideCaptionPicker() {
         captionWindow = null;
+        captionGeometry = Qt.rect(0, 0, 0, 0);
         captionPicker.visible = false;
     }
 
@@ -244,8 +254,9 @@ Item {
         onCellChosen: (layout, cell) => {
             const win = root.captionWindow;
             const area = workArea;
+            const frame = root.captionGeometry;
             root.hideCaptionPicker();
-            if (!root.captionCandidate(win) || !root.sameRect(root.captionGeometry, win.frameGeometry)
+            if (!root.captionCandidate(win) || !root.sameRect(frame, win.frameGeometry)
                 || !Layouts.layouts[layout] || !Layouts.layouts[layout][cell])
                 return;
             const output = Workspace.screenAt(Qt.point(area.x + area.width / 2, area.y + area.height / 2));
@@ -257,7 +268,7 @@ Item {
             snapTimer.win = win;
             snapTimer.rect = rect;
             snapTimer.workArea = area;
-            snapTimer.captionFrame = root.captionGeometry;
+            snapTimer.captionFrame = frame;
             snapTimer.restart();
         }
     }
@@ -267,9 +278,22 @@ Item {
         repeat: true
         running: captionPicker.visible
         onTriggered: {
-            if (!root.captionCandidate(root.captionWindow)
-                || !root.sameRect(root.captionGeometry, root.captionWindow.frameGeometry)
-                || !captionPicker.containsPointer(Workspace.cursorPos))
+            const win = root.captionWindow;
+            if (!root.captionCandidate(win) || !root.sameRect(root.captionGeometry, win.frameGeometry)
+                || !captionPicker.containsPointer(Workspace.cursorPos)) {
+                root.hideCaptionPicker();
+                return;
+            }
+            // A panel strut can change without a screen-added/removed signal.
+            const area = captionPicker.workArea;
+            const output = Workspace.screenAt(Qt.point(area.x + area.width / 2, area.y + area.height / 2));
+            if (!output || !root.sameRect(area, Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop))) {
+                root.hideCaptionPicker();
+                return;
+            }
+            captionPicker.minimumWindowSize = win.minSize;
+            captionPicker.maximumWindowSize = win.maxSize;
+            if (!Layouts.hasFittingCell(area, win.minSize, win.maxSize))
                 root.hideCaptionPicker();
         }
     }
@@ -326,14 +350,14 @@ Item {
                 root.hideCaptionPicker();
             if (captionRequest.win === win)
                 captionRequest.win = null;
-            if (root.movingWindow === win) {
-                root.movingWindow = null;
-                root.resetPicker();
-            }
+            if (root.movingWindow === win)
+                root.cancelDrag();
             if (snapTimer.win === win)
                 root.clearPendingSnap();
         }
         function onWindowActivated(win) {
+            if (root.movingWindow && root.movingWindow !== win)
+                root.cancelDrag();
             if (snapTimer.win && snapTimer.win !== win)
                 root.clearPendingSnap();
             if (root.captionWindow && root.captionWindow !== win)
@@ -343,14 +367,14 @@ Item {
         }
         function onCurrentDesktopChanged() {
             root.clearPendingSnap();
-            root.resetPicker();
+            root.cancelDrag();
             root.hideCaptionPicker();
             captionRequest.win = null;
         }
         function onScreensChanged() {
             root.hideCaptionPicker();
             captionRequest.win = null;
-            root.resetPicker();
+            root.cancelDrag();
             root.clearPendingSnap();
         }
     }

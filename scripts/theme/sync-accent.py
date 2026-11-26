@@ -722,20 +722,13 @@ def analyze_wallpapers(paths):
     configuration. The two mode accents are WinUI reference roles, not
     values already transformed by KDE's color applicator.
     """
-    def statistics():
-        # Reuse the bounded per-image statistics for a repeated path but
-        # still merge it once per occurrence, in the original screen order.
-        cache = {}
-        for path in paths:
-            path = Path(path)
-            if path not in cache:
-                identity = wallpaper_file_identity(path)
-                stats = _bitmap_wallpaper_statistics(*decode_wallpaper_bitmap(path))
-                cache[path] = (identity, stats)
-            yield cache[path][1]
-        # Explicit fixed-wallpaper analysis also needs a consistent set
-        # of input files, including ones decoded earlier in this batch.
-        for path, (identity, _) in cache.items():
+    paths = tuple(Path(path) for path in paths)
+    # Fingerprint the complete input set before decoding the first image.
+    # Otherwise a later screen's file could change before its first read.
+    identities = {path: wallpaper_file_identity(path) for path in dict.fromkeys(paths)}
+
+    def validate():
+        for path, identity in identities.items():
             try:
                 current = wallpaper_file_identity(path)
             except (OSError, ValueError) as error:
@@ -743,7 +736,22 @@ def analyze_wallpapers(paths):
             if current != identity:
                 raise WallpaperFileChangedError("Wallpaper changed during color analysis")
 
-    result = _reduce_weighted_wallpaper_statistics(statistics())
+    def statistics():
+        # Reuse bounded statistics, but merge each occurrence in screen order.
+        cache = {}
+        for path in paths:
+            if path not in cache:
+                cache[path] = _bitmap_wallpaper_statistics(*decode_wallpaper_bitmap(path))
+            yield cache[path]
+
+    try:
+        result = _reduce_weighted_wallpaper_statistics(statistics())
+    except (OSError, ValueError):
+        # A concurrent replacement can itself cause a decoder failure.
+        # Distinguish that retryable race from a stable unsupported image.
+        validate()
+        raise
+    validate()
     if result is None:
         raise ValueError("No valid wallpaper color group")
     seed, alpha = result

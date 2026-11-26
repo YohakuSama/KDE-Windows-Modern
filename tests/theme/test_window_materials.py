@@ -183,6 +183,33 @@ class WindowMaterialTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "activity changed"):
                         discover()
 
+    def test_primary_wallpaper_snapshot_is_independent(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        discover = control["discover_wallpapers"]
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "primary.png"
+            image.write_bytes(b"image")
+            primary = {"screens": 1, "images": [{"screen": 0, "path": str(image)}]}
+
+            def source(activity, primary_only=False):
+                self.assertEqual(activity, "current")
+                return primary if primary_only else {"error": "Secondary screen is not ready"}
+
+            with patch.dict(discover.__globals__, {"active_activity": lambda: "current",
+                                                    "live_wallpaper_snapshot": source}):
+                state = discover(primary_only=True)
+                self.assertEqual(len(state["wallpapers"]), 1)
+                control["require_wallpaper_snapshot"](state, primary_only=True)
+                with self.assertRaisesRegex(ValueError, "Secondary screen"):
+                    discover()
+                image.write_bytes(b"replacement")
+                with self.assertRaises(control["WallpaperChangedError"]):
+                    control["require_wallpaper_snapshot"](state, primary_only=True)
+                primary["screens"] = 2
+                primary["images"].append({"screen": 1, "path": str(image)})
+                with self.assertRaisesRegex(ValueError, "primary-only"):
+                    discover(primary_only=True)
+
     def test_automatic_wallpaper_cache_and_discovery(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
         discover = control["discover_wallpapers"]
@@ -261,6 +288,36 @@ class WindowMaterialTests(unittest.TestCase):
             with patch.dict(analyze.__globals__, {"decode_wallpaper_bitmap": decode}):
                 with self.assertRaises(sync["WallpaperFileChangedError"]):
                     analyze([first, second, first])
+
+    def test_wallpaper_analysis_rejects_early_replacement_and_failed_decode(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        analyze = sync["analyze_wallpapers"]
+        with tempfile.TemporaryDirectory() as tmp:
+            first = Path(tmp) / "first.png"
+            second = Path(tmp) / "second.png"
+            first.write_bytes(b"first")
+            second.write_bytes(b"second")
+
+            def replace_later(path):
+                if path == first:
+                    second.write_bytes(b"new second")
+                return (1, 1, bytes((88, 88, 188, 255)))
+
+            with patch.dict(analyze.__globals__, {"decode_wallpaper_bitmap": replace_later}):
+                with self.assertRaises(sync["WallpaperFileChangedError"]):
+                    analyze([first, second])
+
+            def failed_decode(path):
+                path.write_bytes(b"truncated replacement")
+                raise OSError("decoder failed")
+
+            with patch.dict(analyze.__globals__, {"decode_wallpaper_bitmap": failed_decode}):
+                with self.assertRaises(sync["WallpaperFileChangedError"]):
+                    analyze([first, second])
+            with patch.dict(analyze.__globals__, {"decode_wallpaper_bitmap": Mock(side_effect=ValueError("unsupported"))}):
+                with self.assertRaisesRegex(ValueError, "unsupported") as caught:
+                    analyze([first, second])
+                self.assertNotIsInstance(caught.exception, sync["WallpaperFileChangedError"])
 
     def test_windows_accent_state_validation(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
@@ -1628,6 +1685,45 @@ class WindowMaterialTests(unittest.TestCase):
             control["active_mode"].return_value = False
             self.assertEqual(frames.sync_live_material("dark", control), "skipped")
             discover.assert_not_called()
+
+    def test_live_material_validates_failed_sample_and_unchanged_cache(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config, data = root / "config", root / "data"
+            config.mkdir()
+            (config / "kdeglobals").touch()
+            aurorae = data / "aurorae/themes"
+            kvantum = config / "Kvantum/Windows-modern"
+            kvantum.mkdir(parents=True)
+            for mode, name in (("dark", "Windows-modernDark"), ("light", "Windows-modern")):
+                deco = aurorae / f"windows-modern-{mode}-aurorae" / "decoration.svg"
+                deco.parent.mkdir(parents=True)
+                deco.write_text(frames.render(mode))
+                (kvantum / (name + ".svg")).write_text(SVG)
+            sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+            class Changed(ValueError):
+                pass
+            snapshot = {"activity": "one", "wallpapers": [{"path": "/primary.png"}]}
+            state = {"colors": dict(frames.BASE_COLORS)}
+            raw = json.dumps(state, separators=(",", ":"), sort_keys=True)
+            discover = Mock(return_value=snapshot)
+            validate = Mock(side_effect=Changed("stale"))
+            control = {"CONFIG": config, "DATA": data, "SYNC": sync,
+                       "WallpaperChangedError": Changed, "discover_wallpapers": discover,
+                       "require_wallpaper_snapshot": validate, "read": lambda *args: raw}
+            with patch.object(frames, "live_material_enabled", return_value=True), \
+                 patch.object(frames, "live_material_state", return_value=None):
+                with self.assertRaises(Changed):
+                    frames.sync_live_material("dark", control)
+                discover.assert_called_once_with(primary_only=True)
+                validate.assert_called_once_with(snapshot, primary_only=True)
+            validate.reset_mock()
+            with patch.object(frames, "live_material_enabled", return_value=True), \
+                 patch.object(frames, "live_material_state", return_value=state), \
+                 patch.object(frames, "plan_local", return_value={}):
+                with self.assertRaises(Changed):
+                    frames.sync_live_material("dark", control)
+                validate.assert_called_once_with(snapshot, primary_only=True)
 
     def test_material_selection_change_rolls_back(self):
         with tempfile.TemporaryDirectory() as tmp:

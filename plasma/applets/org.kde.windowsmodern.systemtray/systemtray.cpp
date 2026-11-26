@@ -123,16 +123,30 @@ public:
 public Q_SLOTS:
     Q_SCRIPTABLE QString snapshot(const QString &activity)
     {
+        return snapshotImpl(activity, false);
+    }
+
+    Q_SCRIPTABLE QString primarySnapshot(const QString &activity)
+    {
+        return snapshotImpl(activity, true);
+    }
+
+private:
+    QString snapshotImpl(const QString &activity, bool primaryOnly)
+    {
         refreshConnections();
         const uint count = m_shell->numScreens();
         if (count == 0 || count > 16) {
             return failure(u"Desktop screen count is unavailable"_s);
         }
+        // Global SVG material uses only screen 0. Automatic accent still
+        // requires a settled image for every active screen.
+        const uint selectedCount = primaryOnly ? 1u : count;
         const bool noActivity = activity.isEmpty()
             || activity == u"00000000-0000-0000-0000-000000000000";
         QHash<uint, Plasma::Containment *> desktops;
         for (auto *containment : m_shell->containments()) {
-            if (!isDesktop(containment) || containment->screen() >= count) {
+            if (!isDesktop(containment) || containment->screen() >= selectedCount) {
                 continue;
             }
             const auto id = containment->activity();
@@ -151,7 +165,7 @@ public Q_SLOTS:
             desktops.insert(containment->screen(), containment);
         }
         QJsonArray images;
-        for (uint screen = 0; screen < count; ++screen) {
+        for (uint screen = 0; screen < selectedCount; ++screen) {
             auto *desktop = desktops.value(screen, nullptr);
             if (!desktop) {
                 return failure(u"Active wallpaper is not ready on screen %1"_s.arg(screen));
@@ -161,6 +175,9 @@ public Q_SLOTS:
                 return failure(u"Unsupported wallpaper plugin on screen %1"_s.arg(screen));
             }
             auto *root = wallpaperRoot(desktop);
+            if (!root || !root->isVisible() || !root->window() || !root->window()->isVisible()) {
+                return failure(u"Active wallpaper is not ready on screen %1"_s.arg(screen));
+            }
             auto *config = root->property("configuration").value<QObject *>();
             const auto loading = root->property("loading");
             if (!config || !loading.isValid() || loading.toBool()) {
@@ -198,7 +215,7 @@ public Q_SLOTS:
             QString path;
             if (selected.fragment() == u"day-night") {
                 auto *endpoint = scheduledEndpoint(qobject_cast<QQuickItem *>(current));
-                if (!endpoint) {
+                if (!endpoint || !endpoint->window()) {
                     return failure(u"Scheduled wallpaper is between stable images on screen %1"_s.arg(screen));
                 }
                 const auto source = endpoint->property("source").toUrl();
@@ -213,7 +230,7 @@ public Q_SLOTS:
             }
             images.append(QJsonObject{{u"screen"_s, int(screen)}, {u"path"_s, file.absoluteFilePath()}});
         }
-        return json(QJsonObject{{u"screens"_s, int(count)}, {u"images"_s, images}});
+        return json(QJsonObject{{u"screens"_s, int(selectedCount)}, {u"images"_s, images}});
     }
 
 Q_SIGNALS:
