@@ -211,6 +211,24 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual(set(sync["derive_custom_palette"]("#808080")),
                          set(order))
 
+    def test_automatic_wallpaper_shade_reference(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        reference = json.loads((ROOT / "docs/windows11-26h2-accent-captures.json").read_text(
+            encoding="utf-8"))
+        name = "automatic_blue_light_registry"
+        sample = reference["captures"][name]
+        self.assertEqual(sample["accent_mode_registry"], "Automatic")
+        observed = sample["appearance"]["colors_argb"]
+        expected = {role: "#" + observed[role][3:] for role in (
+            "Accent", *sync["PRESET_SHADE_ROLES"])}
+        # This observed base reproduces the automatic Bloom ramp via the
+        # custom calculation. The unobserved extraction input is not proven.
+        self.assertEqual(sync["derive_custom_palette"](expected["Accent"]), expected)
+        self.assertNotIn(expected["Accent"], sync["PRESET_SHADES"])
+        self.assertEqual(reference["wallpaper_reference_matches"][name][
+            "registered_wallpaper_sha256"],
+            sample["appearance"]["registered_wallpaper_sha256"])
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')

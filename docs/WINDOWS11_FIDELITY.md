@@ -531,6 +531,77 @@ measurements and automatic palette generation are open. The original automatic w
 index, so do not ask the maintainer to export the same image again.
 No repeat of the existing color captures is needed.
 
+### Automatic shade generation and extraction
+
+An independent calculation using the existing CIELAB formula and the
+observed Bloom automatic base #2475CE produces all seven captured RGB
+roles exactly. The existing regression suite now includes that vector.
+This is evidence that the custom shade calculation can reproduce one
+automatic ramp once its base is known. It is not proof of the original
+extraction input, a general automatic formula, or preset-table behavior
+in automatic mode. Keep the manual input and observed output distinction.
+
+Microsoft's [US8897552B2](https://patents.google.com/patent/US8897552B2/en)
+and [US8847973B2](https://patents.google.com/patent/US8847973B2/en) describe
+historical, differing image-color selection techniques. Neither establishes
+which implementation, parameters or image preprocessing Windows 11 26H2
+uses. Do not substitute a historical algorithm, KDE's clustering or an
+image-hash lookup and label it as the native Windows extractor.
+
+Plasma 6.8.3's
+[wallpaper metadata reader](https://github.com/KDE/plasma-workspace/blob/v6.8.3/wallpapers/image/plugin/utils/mediaproxy.cpp)
+supports mode-specific wallpaper accent colors but falls back to the
+light metadata value when the dark value is absent. Its
+[color applicator](https://github.com/KDE/plasma-workspace/blob/v6.8.3/kcms/colors/colorsapplicator.h)
+also blends the supplied accent at 70% opacity over the view or button
+background for those selection roles. Thus even a measured WinUI fill
+placed in the metadata is not necessarily the effective KDE selection
+RGB. Do not set partial Bloom metadata, overwrite the native palette
+from a tray applet, or compensate with guessed inverse RGB values.
+A later integration must distinguish raw input, the seven WinUI roles,
+and the effective KDE renderer palette.
+
+### Controlled wallpaper probes
+
+The optional [wallpaper probe collector](../scripts/capture-windows-wallpaper-probes.ps1)
+reuses the existing read-only accent capture script (schema 2 or newer)
+to obtain several observations in one maintainer session. Run it only
+in the reference Windows VM, with a single display, a static Picture
+background and Automatic accent mode. It creates six uncompressed
+24-bit BMP fixtures at the reported display size: solid purple, orange,
+gray and blue, plus a pair of identical-color-area purple rectangles
+on orange backgrounds, one centered and one in a corner. The pair
+separates area-based selection from spatial weighting; the solid probes
+separate color normalization from image selection. The intervening
+gray image reduces ambiguity from successive equal palettes.
+
+The opt-in script temporarily changes the wallpaper using the documented
+IDesktopWallpaper API. It does not write accent settings, change display
+mode, restart the shell, or import any external wallpaper. It refuses
+non-automatic or changing appearance context and requires matching
+UISettings/Explorer slots, two stable observations and the requested
+wallpaper path. Samples with unchanged registered image or palette
+evidence remain inconclusive, even if stable. The original image is
+restored in a finally block when the current path is still owned by the
+collection. The report distinguishes image restoration from palette
+reproduction. Windows may update its recent wallpaper/theme history;
+the script cannot restore that history and must not be used on a desktop
+whose personalization history must remain unchanged.
+
+In the folder containing both scripts, execute:
+
+```powershell
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily
+```
+
+Submit only the generated wallpaper-probes.json. Keep the local
+restore-original-path.txt private; it is a recovery path if the
+collection or restoration is interrupted. The report contains the
+original capture, each exact synthetic image specification and SHA-256,
+and the restoration observation, not the original absolute file path.
+The tool is a reference collection utility, not an automated KDE
+acceptance test, and is not installed into the Linux runtime theme.
+
 ### Capture procedure
 
 For maintainer acceptance, use a single display and a static picture in
