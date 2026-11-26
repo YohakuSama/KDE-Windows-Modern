@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary')]
+    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary')]
     [string]$ProbeSet = 'Basic',
     [switch]$IncludeNativeWallpaperColor
 )
@@ -14,9 +14,10 @@ $ErrorActionPreference = 'Stop'
 if (-not $ApplyTemporarily) {
     throw 'This collection temporarily changes the wallpaper. Use -ApplyTemporarily in the reference VM.'
 }
-$isolated = $ProbeSet -in @('CacheIsolation', 'BitmapBoundary')
+$isolated = $ProbeSet -in @('CacheIsolation', 'BitmapBoundary', 'DecodeBoundary')
+$wicProbe = $ProbeSet -in @('BitmapBoundary', 'DecodeBoundary')
 if ($isolated -and -not $IncludeNativeWallpaperColor) {
-    throw 'CacheIsolation and BitmapBoundary require -IncludeNativeWallpaperColor.'
+    throw 'Isolated probes require -IncludeNativeWallpaperColor.'
 }
 $captureScript = Join-Path $PSScriptRoot 'capture-windows-accent.ps1'
 if (-not (Test-Path -LiteralPath $captureScript -PathType Leaf)) {
@@ -33,8 +34,8 @@ $height = $screens[0].Bounds.Height
 if ($width -lt 64 -or $height -lt 64 -or ([long]$width * $height) -gt 16000000) {
     throw 'Unsupported display size for the controlled images.'
 }
-if ($ProbeSet -eq 'BitmapBoundary' -and ($width -ne 1280 -or $height -ne 800)) {
-    throw 'BitmapBoundary reproduces the recorded 1280x800 reference. Set that display size before collecting.'
+if ($wicProbe -and ($width -ne 1280 -or $height -ne 800)) {
+    throw 'WIC boundary probes require the recorded 1280x800 display size.'
 }
 
 # Only the first two IDesktopWallpaper methods are needed. Use the public
@@ -102,7 +103,7 @@ namespace WindowsModern.Reference
 
 # Public WIC recreation for unrotated synthetic probes only.
 # This is not an interception of shell32's internal bitmap.
-if ($ProbeSet -eq 'BitmapBoundary' -and -not ('WindowsModern.Reference.WicBoundary' -as [type])) {
+if ($wicProbe -and -not ('WindowsModern.Reference.WicV2.WicBoundary' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
 using System.IO;
@@ -110,8 +111,9 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
+using System.Text;
 
-namespace WindowsModern.Reference
+namespace WindowsModern.Reference.WicV2
 {
     // The inherited bitmap-source slots are explicitly repeated for COM.
     [ComImport, Guid("00000120-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -198,7 +200,7 @@ namespace WindowsModern.Reference
     public sealed class WicBuffer
     {
         public uint SourceWidth, SourceHeight, Width, Height;
-        public string Sha256, GzipBase64;
+        public string Sha256, GzipBase64, SourceFormat, ScaledFormat, DecodedBgraSha256;
     }
 
     public static class WicBoundary
@@ -209,7 +211,7 @@ namespace WindowsModern.Reference
             [MarshalAs(UnmanagedType.Bool)] bool create, IStream template,
             out IStream stream);
 
-        public static WicBuffer Read(string path)
+        public static WicBuffer Read(string path, bool inspectFrame)
         {
             IStream stream = null;
             IWicFactory factory = null;
@@ -227,13 +229,26 @@ namespace WindowsModern.Reference
                 factory.CreateDecoderFromStream(stream, IntPtr.Zero, 0, out decoder);
                 decoder.GetFrame(0, out frame);
                 uint sw, sh;
+                Guid sourceFormat, scaledFormat;
+                frame.GetPixelFormat(out sourceFormat);
                 frame.GetSize(out sw, out sh);
                 if (sw != 1280 || sh != 800)
                     throw new InvalidDataException("Unexpected WIC source dimensions.");
+                string decodedBgraHash = null;
+                // Record the native PNG frame before scaling only if the
+                // decoder really exposes straight BGRA. No format guess.
+                if (inspectFrame && sourceFormat == new Guid("6fddc324-4e03-4bfe-b185-3d77768dc90f"))
+                {
+                    byte[] framePixels = new byte[checked((int)(sw * sh * 4))];
+                    frame.CopyPixels(IntPtr.Zero, sw * 4, (uint)framePixels.Length, framePixels);
+                    using (var sha = SHA256.Create())
+                        decodedBgraHash = BitConverter.ToString(sha.ComputeHash(framePixels)).Replace("-", "");
+                }
                 uint w = Math.Min(256u, sw), h = Math.Min(256u, sh);
                 factory.CreateBitmapScaler(out scaler);
                 // The target shell passes WICBitmapInterpolationModeLinear (1).
                 scaler.Initialize((IWicSource)frame, w, h, 1);
+                scaler.GetPixelFormat(out scaledFormat);
                 factory.CreateFormatConverter(out converter);
                 Guid format = new Guid("6fddc324-4e03-4bfe-b185-3d77768dc90e");
                 converter.Initialize((IWicSource)scaler, ref format, 0, IntPtr.Zero, 0, 0);
@@ -256,13 +271,134 @@ namespace WindowsModern.Reference
                     compressed = Convert.ToBase64String(memory.ToArray());
                 }
                 return new WicBuffer { SourceWidth=sw, SourceHeight=sh,
-                    Width=w, Height=h, Sha256=hash, GzipBase64=compressed };
+                    Width=w, Height=h, Sha256=hash, GzipBase64=compressed,
+                    SourceFormat=sourceFormat.ToString(), ScaledFormat=scaledFormat.ToString(),
+                    DecodedBgraSha256=decodedBgraHash };
             }
             finally
             {
                 foreach (object item in new object[] { converter, scaler, frame, decoder, factory, stream })
                     if (item != null) Marshal.ReleaseComObject(item);
             }
+        }
+    }
+
+    // Generate straight RGBA PNG without GDI+ compositing, encoder color
+    // conversion, or loss of hidden RGB at alpha zero. The fixed profiles
+    // are synthetic Little CMS RGB profiles, not display/user profiles.
+    public static class SyntheticPng
+    {
+        private static void UInt32BE(Stream stream, uint value)
+        {
+            stream.WriteByte((byte)(value >> 24));
+            stream.WriteByte((byte)(value >> 16));
+            stream.WriteByte((byte)(value >> 8));
+            stream.WriteByte((byte)value);
+        }
+
+        private static uint Crc(uint crc, byte[] bytes)
+        {
+            foreach (byte value in bytes)
+            {
+                crc ^= value;
+                for (int bit = 0; bit < 8; ++bit)
+                    crc = (crc >> 1) ^ ((crc & 1) != 0 ? 0xedb88320u : 0u);
+            }
+            return crc;
+        }
+
+        private static void Chunk(Stream stream, string type, byte[] data)
+        {
+            byte[] name = Encoding.ASCII.GetBytes(type);
+            UInt32BE(stream, (uint)data.Length);
+            stream.Write(name, 0, name.Length);
+            stream.Write(data, 0, data.Length);
+            UInt32BE(stream, Crc(Crc(0xffffffffu, name), data) ^ 0xffffffffu);
+        }
+
+        private static byte[] Zlib(byte[] raw)
+        {
+            using (var stream = new MemoryStream())
+            {
+                // .NET Framework DeflateStream emits raw RFC 1951 deflate.
+                // PNG requires the RFC 1950 header and Adler-32 trailer.
+                stream.WriteByte(0x78);
+                stream.WriteByte(0x9c);
+                using (var deflate = new DeflateStream(stream, CompressionMode.Compress, true))
+                    deflate.Write(raw, 0, raw.Length);
+                uint a = 1, b = 0;
+                foreach (byte value in raw)
+                {
+                    a = (a + value) % 65521u;
+                    b = (b + a) % 65521u;
+                }
+                UInt32BE(stream, (b << 16) | a);
+                return stream.ToArray();
+            }
+        }
+
+        public static string Write(string path, int width, int height, int patchHeight,
+                                   string background, string patch, int alpha, string profile)
+        {
+            if (width != 1280 || height != 800 || patchHeight <= 0 ||
+                patchHeight >= height * 7 / 8 || alpha < 0 || alpha > 255)
+                throw new ArgumentException("Invalid controlled PNG geometry or alpha.");
+            uint bg = Convert.ToUInt32(background.TrimStart('#'), 16);
+            uint fg = Convert.ToUInt32(patch.TrimStart('#'), 16);
+            int stride = checked(width * 4 + 1);
+            byte[] raw = new byte[checked(stride * height)];
+            byte[] bgra = new byte[checked(width * height * 4)];
+            for (int y = 0; y < height; ++y)
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    bool isPatch = y < patchHeight;
+                    bool marker = y >= height * 7 / 8 && x < width / 8;
+                    uint rgb = marker ? 0xff00ffu : (isPatch ? fg : bg);
+                    byte a = (byte)(isPatch ? alpha : 255);
+                    int pos = y * stride + 1 + x * 4;
+                    raw[pos] = (byte)(rgb >> 16);
+                    raw[pos + 1] = (byte)(rgb >> 8);
+                    raw[pos + 2] = (byte)rgb;
+                    raw[pos + 3] = a;
+                    int frame = (y * width + x) * 4;
+                    bgra[frame] = raw[pos + 2];
+                    bgra[frame + 1] = raw[pos + 1];
+                    bgra[frame + 2] = raw[pos];
+                    bgra[frame + 3] = a;
+                }
+            }
+            using (var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write))
+            {
+                byte[] signature = new byte[] {137, 80, 78, 71, 13, 10, 26, 10};
+                output.Write(signature, 0, signature.Length);
+                using (var header = new MemoryStream())
+                {
+                    UInt32BE(header, (uint)width);
+                    UInt32BE(header, (uint)height);
+                    // 8-bit straight RGBA, standard compression/filter, non-interlaced.
+                    byte[] fields = new byte[] {8, 6, 0, 0, 0};
+                    header.Write(fields, 0, fields.Length);
+                    Chunk(output, "IHDR", header.ToArray());
+                }
+                if (!String.IsNullOrEmpty(profile))
+                {
+                    using (var iccp = new MemoryStream())
+                    {
+                        byte[] name = Encoding.ASCII.GetBytes("WindowsModernProbe");
+                        byte[] compressed = Convert.FromBase64String(profile);
+                        iccp.Write(name, 0, name.Length);
+                        iccp.WriteByte(0);
+                        iccp.WriteByte(0); // iCCP compression method
+                        iccp.Write(compressed, 0, compressed.Length);
+                        Chunk(output, "iCCP", iccp.ToArray());
+                    }
+                }
+                Chunk(output, "IDAT", Zlib(raw));
+                Chunk(output, "IEND", new byte[0]);
+            }
+            using (var sha = SHA256.Create())
+                return BitConverter.ToString(sha.ComputeHash(bgra)).Replace("-", "");
         }
     }
 }
@@ -284,7 +420,7 @@ function Read-WicBoundaryBuffer([string]$Path, [string]$ExpectedHash) {
     } finally {
         $image.Dispose()
     }
-    $buffer = [WindowsModern.Reference.WicBoundary]::Read($Path)
+    $buffer = [WindowsModern.Reference.WicV2.WicBoundary]::Read($Path, ($ProbeSet -eq 'DecodeBoundary'))
     if ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -cne $ExpectedHash) {
         throw 'The WIC input changed while reading.'
     }
@@ -296,6 +432,9 @@ function Read-WicBoundaryBuffer([string]$Path, [string]$ExpectedHash) {
         height = $buffer.Height
         interpolation_mode = 1
         pixel_format = '32bppBGR'
+        source_format_guid = $buffer.SourceFormat
+        scaled_format_guid = $buffer.ScaledFormat
+        decoded_bgra_sha256 = $buffer.DecodedBgraSha256
         order = 'top-down BGRX'
         bitmap_sha256 = $buffer.Sha256
         gzip_base64 = $buffer.GzipBase64
@@ -335,6 +474,53 @@ function Read-WicBoundaryEvidence([string]$Path, [string]$ExpectedHash, $Probe, 
     }
 }
 
+# The original cache collector requires matching background and patch.
+# Transparent/profile probes deliberately change the patch on decoding.
+# Use two independently colored, opaque reference regions instead; never
+# export cache pixels without a matching registered source and new cache.
+function Read-DecodeBoundaryEvidence([string]$Path, [string]$ExpectedHash, $Probe, $Result) {
+    $source = Read-WicBoundaryBuffer $Path $ExpectedHash
+    $Probe.pixel_validation.decoded_bgra_sha256 = $source.decoded_bgra_sha256
+    if ($source.decoded_bgra_sha256) {
+        $Probe.pixel_validation.decoded_bgra_matches = (
+            $source.decoded_bgra_sha256 -ceq $Probe.pixel_validation.expected_bgra_sha256)
+    }
+    $evidence = [ordered]@{
+        source = $source
+        transcoded = $null
+        transcoded_status = 'unverified'
+    }
+    $cache = $Result.cache_observation.transcoded
+    $reference = $Result.isolation_reference.caches.transcoded
+    if ($Result.capture.appearance.registered_wallpaper_sha256 -cne $ExpectedHash -or
+        $cache.status -ne 'ok' -or -not $cache.is_jpeg -or
+        $reference.status -ne 'ok' -or $cache.sha256 -ceq $reference.sha256 -or
+        $cache.width -ne $width -or $cache.height -ne $height) {
+        return $evidence
+    }
+    try {
+        Assert-ProbeCacheColor $cache.marker_rgb '#FF00FF'
+        try {
+            Assert-ProbeCacheColor $cache.background_rgb $Probe.background
+        } catch {
+            # Linear sRGB encoded values 20,138,20 map to approximately
+            # 79,194,79 under an ordinary sRGB transfer curve.
+            if ($Probe.icc_profile -ne 'linear-srgb') { throw }
+            Assert-ProbeCacheColor $cache.background_rgb '#4FC24F'
+        }
+    } catch {
+        return $evidence
+    }
+    $cachePath = Join-Path $env:APPDATA 'Microsoft\Windows\Themes\TranscodedWallpaper'
+    try {
+        $evidence.transcoded = Read-WicBoundaryBuffer $cachePath $cache.sha256
+        $evidence.transcoded_status = 'matched-controlled-opaque-regions'
+    } catch {
+        $evidence.transcoded_status = 'changed-or-unreadable'
+    }
+    return $evidence
+}
+
 function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     $captureArguments = @{
         AccentMode = 'Automatic'
@@ -347,8 +533,8 @@ function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary') -and $sample.schema_version -lt 4) {
-        throw 'Refinement, Extraction, Boundary, Scoring, ScoringRefinement, CacheIsolation and BitmapBoundary require capture-windows-accent.ps1 schema 4 or newer.'
+    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary') -and $sample.schema_version -lt 4) {
+        throw 'This probe set requires capture-windows-accent.ps1 schema 4 or newer.'
     }
     if ($WithNativeWallpaperColor -and $sample.schema_version -lt 5) {
         throw 'Native wallpaper diagnostics require capture-windows-accent.ps1 schema 5 or newer.'
@@ -446,6 +632,36 @@ function New-ProbeImage([string]$Path, $Probe) {
     }
 }
 
+# Fixed zlib-compressed ICC payloads made with Little CMS. The linear
+# profile uses D65, sRGB primaries and gamma 1.0, ICC v4.3. The sRGB
+# control uses cmsCreate_sRGBProfile. Neither profile is machine-specific.
+function New-DecodeProbeImage([string]$Path, $Probe) {
+    $profiles = @{
+        'srgb' = @{
+            sha256 = '47FDA5236B74B9F11DA23C9834FAE1DBF0C0E195DEBEB22EFD147268C1CEC98C'
+            payload = 'eNqVkTtLw2AUhp/WS8UqHXQQceig4qAgCuKodehSRKqCt6VN01ZI2pC0SHEVXBwKDqKLt8F/oKvgqiAIiiDi7OhtkRLPZwotooNfODkPb/IeTt6AP2ZoptM4AWauYMejkfDC4lI48EyQbqlmxhKaY03OzMT483zc4lP9ZkjN4n8nmNIdDXwtwmOaZReEZRtiawVL8ZZwp5ZNpIQPhAdtWVD4UulJj58UZzx+U2zPxafAr2aGM3WcrGMta5vCA8K9plHUqvuoL2nTc/Oz0rulenCIEyVCmCRFVjEoMCQ9J5n97hv+9k2TF48md4sStjgyZMU7KGpRpurS06LrchmUVO4/83TSoyPe9LYIND267msfBLahUnbdz0PXrRxBwwOc52r+vOQ0/i56uab17kNoA04valpyB842oeveStiJb6lByp9Ow8sJtC9CxzW0LntZVZ9zfAdz6/KLrmB3D/rl/dDKFyRSaBo='
+        }
+        'linear-srgb' = @{
+            sha256 = 'BC77188D9AABAF2F17730FBE0C3B3954579190954C6E273C35C33D52CFB193B6'
+            payload = 'eNqVkb1Lw1AUxU8/pEoLOnSQ4tChOrVQ1KGDi3XoUqTUCiouyWvaCkkakhQproKOBQdRBL/+B10FFxcnQRHEP8BJEF2kxPOM2CJ08Ib37o/DOzfv3gcEc7ownHAWMEzXLhfyyZXVtWTkBVEkuEaQUIRjzZdKRQyMj3sEZL7LyFr4X0SrmiOAwDB5Vli2S54jFzddS/IuOS4aSpV8RE7bvCD5Ruqqz0+S6z6/SrYr5QUgGCaP1ftY7WPRsA1ynJwy9Jb4uY/sJKaZy0vM41wTKKOAPJJQ0cIGdLjIMJsDPNlvzyKadAjuFtqweb6OBp1pqi040Jhr1DV+Otpy5n9n6dRmpv3qsTww9Ox5b5NAZA/odjzv89TzumdAiL1fmT1/8wTIvVPv9LTUMTC6DVxc9zR1H7jcYYuPlmIrv6/Bf/tzYYTkdv4AVLb4HLfAwSEwVWOt9S9b0GLn'
+        }
+    }
+    $profileEntry = $profiles[$Probe.icc_profile]
+    if ($Probe.icc_profile -ne 'none' -and $null -eq $profileEntry) {
+        throw 'Unknown synthetic ICC profile.'
+    }
+    $payload = if ($null -eq $profileEntry) { '' } else { [string]$profileEntry.payload }
+    $expected = [WindowsModern.Reference.WicV2.SyntheticPng]::Write(
+        $Path, $width, $height, $Probe.rectangle.height, $Probe.background,
+        $Probe.rectangle.color, $Probe.patch_alpha, $payload)
+    return [ordered]@{
+        expected_bgra_sha256 = $expected
+        decoded_bgra_sha256 = $null
+        decoded_bgra_matches = $null
+        icc_profile_sha256 = if ($null -eq $profileEntry) { $null } else { $profileEntry.sha256 }
+    }
+}
+
 function Get-ProbePixelValidation([string]$Path, $Probe) {
     $bitmap = [System.Drawing.Bitmap]::new($Path)
     try {
@@ -507,6 +723,11 @@ function Read-WallpaperCache([string]$Path, $Probe) {
                 $by = [int][Math]::Floor($bitmap.Height * 0.875)
                 $pixel = $bitmap.GetPixel($bx, $by)
                 $info.background_rgb = '#{0:X2}{1:X2}{2:X2}' -f $pixel.R, $pixel.G, $pixel.B
+                if ($ProbeSet -eq 'DecodeBoundary') {
+                    $marker = $bitmap.GetPixel(([int][Math]::Floor($bitmap.Width / 16)),
+                        ([int][Math]::Floor($bitmap.Height * 15 / 16)))
+                    $info.marker_rgb = '#{0:X2}{1:X2}{2:X2}' -f $marker.R, $marker.G, $marker.B
+                }
                 if ($Probe.rectangle) {
                     $px = [int][Math]::Floor(($Probe.rectangle.x + $Probe.rectangle.width / 2.0) * $bitmap.Width / $width)
                     $py = [int][Math]::Floor(($Probe.rectangle.y + $Probe.rectangle.height / 2.0) * $bitmap.Height / $height)
@@ -848,6 +1069,27 @@ try {
             @{name='alpha-l50-span-49'; background='#9B6A6A'; rectangle=$null},
             @{name='alpha-l50-span-52'; background='#9D6969'; rectangle=$null}
         )
+    } elseif ($ProbeSet -eq 'DecodeBoundary') {
+        # Identical geometry and encoded RGB across the profile controls.
+        # Vary only patch alpha or the hidden RGB at zero alpha. The small
+        # opaque bottom-left magenta region identifies the generated cache.
+        $variants = @(
+            @{name='decode-opaque'; alpha=255; color='#E13030'; profile='none'},
+            @{name='decode-srgb'; alpha=255; color='#E13030'; profile='srgb'},
+            @{name='decode-linear'; alpha=255; color='#E13030'; profile='linear-srgb'},
+            @{name='decode-alpha-128'; alpha=128; color='#E13030'; profile='none'},
+            @{name='decode-alpha-1'; alpha=1; color='#E13030'; profile='none'},
+            @{name='decode-alpha-0-red'; alpha=0; color='#E13030'; profile='none'},
+            @{name='decode-alpha-0-blue'; alpha=0; color='#3030E1'; profile='none'}
+        )
+        $probes = @(foreach ($variant in $variants) {
+            @{
+                name=$variant.name; background='#148A14'; patch_alpha=$variant.alpha;
+                icc_profile=$variant.profile; marker='#FF00FF';
+                marker_rectangle=@{x=0; y=700; width=160; height=100};
+                rectangle=@{color=$variant.color; x=0; y=0; width=$width; height=281}
+            }
+        })
     } elseif ($isolated) {
         # Recheck the winner interval in both directions and rotate the
         # split. All rectangles leave a background region at bottom right.
@@ -898,10 +1140,15 @@ try {
             @{name='solid-blue'; background='#2475CE'; rectangle=$null}
         )
     }
+    $extension = if ($ProbeSet -eq 'DecodeBoundary') { '.png' } else { '.bmp' }
     foreach ($probe in $probes) {
-        $path = Join-Path $folder ($probe.name + '.bmp')
-        New-ProbeImage $path $probe
-        $probe.pixel_validation = Get-ProbePixelValidation $path $probe
+        $path = Join-Path $folder ($probe.name + $extension)
+        if ($ProbeSet -eq 'DecodeBoundary') {
+            $probe.pixel_validation = New-DecodeProbeImage $path $probe
+        } else {
+            New-ProbeImage $path $probe
+            $probe.pixel_validation = Get-ProbePixelValidation $path $probe
+        }
         $probePaths += $path
         $probeHashes[$path] = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
     }
@@ -914,7 +1161,7 @@ try {
         }
     }
     foreach ($probe in $probes) {
-        $path = Join-Path $folder ($probe.name + '.bmp')
+        $path = Join-Path $folder ($probe.name + $extension)
         $active = $desktop.GetPath()
         if ($active -ine $original -and $probePaths -inotcontains $active) {
             throw 'Wallpaper changed outside this collection.'
@@ -960,18 +1207,27 @@ try {
         }
         if ($isolated) {
             Assert-NativeColorEvidence $result.capture
-            if ($result.capture.appearance.registered_wallpaper_sha256 -cne $expectedHash) {
+            if ($ProbeSet -ne 'DecodeBoundary' -and
+                $result.capture.appearance.registered_wallpaper_sha256 -cne $expectedHash) {
                 throw 'Registered wallpaper does not match the generated probe.'
+            }
+            if ($ProbeSet -eq 'DecodeBoundary') {
+                $result.registered_source_matches = (
+                    $result.capture.appearance.registered_wallpaper_sha256 -ceq $expectedHash)
             }
             $result.isolation_reference = $reference
             $result.native_argb_changed_from_reference = (
                 $result.capture.native_wallpaper_color_api.argb -cne $reference.native_argb)
             $result.cache_observation = Read-WallpaperCaches $probe
-            if ($ProbeSet -eq 'BitmapBoundary') {
+            if ($wicProbe) {
                 if ($desktop.GetPath() -ine $path) {
                     throw 'Wallpaper changed before reading WIC buffers.'
                 }
-                $result.wic_boundary = Read-WicBoundaryEvidence $path $expectedHash $probe $result
+                if ($ProbeSet -eq 'DecodeBoundary') {
+                    $result.wic_boundary = Read-DecodeBoundaryEvidence $path $expectedHash $probe $result
+                } else {
+                    $result.wic_boundary = Read-WicBoundaryEvidence $path $expectedHash $probe $result
+                }
             }
             if ($desktop.GetPath() -ine $path) {
                 throw 'Wallpaper changed while reading probe caches.'
