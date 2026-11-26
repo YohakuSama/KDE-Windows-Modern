@@ -35,3 +35,33 @@ On the six active gray/primary channel ramps (1,536 channel samples per profile)
 ## Remaining boundary
 
 Microsoft documents finite-precision color shifts in [CreateColorTransformW](https://learn.microsoft.com/en-us/windows/win32/api/icm/nf-icm-createcolortransformw) and the [WCS RGB virtual device model](https://learn.microsoft.com/en-us/windows/win32/wcs/wcs-color-device-model-profile-schema-and-algorithms). Neither document identifies the wallpaper shell's destination profile, intent, transform flags or quantization implementation on this build. Next discriminate ICC/WCS transform precision and actual destination configuration using native API evidence before introducing any replacement algorithm. Mixed RGB colors, tagged transparency and desktop runtime acceptance remain open. Do not fit or bundle sample-specific corrections. Runtime revision 2 is unchanged.
+
+
+## Native API discrimination (next measurement)
+
+A separate offline experiment reused the hash-verified flat calibration rows (1,024 distinct RGB inputs). The exact embedded ICC colorant matrix and chromatic adaptation matrix were used to test XYZ and Lab intermediate quantization under D50 and D65. Uniform 8–16-bit quantization, two grid scales, three intermediate rounding modes and two final rounding modes gave 432 candidates for each tagged profile (864 total). These were limited models, not Microsoft's actual CMM. For standard sRGB the best total absolute channel error remained 541, matching the ideal-transfer baseline; for linear sRGB the best was 460 versus 462. No candidate reproduced either profile. This does not rule out quantization in another domain, a nonuniform multidimensional LUT, or other CMM behavior. Do not change runtime quantization based on these results.
+
+Microsoft documents a sampled multidimensional LUT and interpolation in [WCS Transform Creation Algorithms](https://learn.microsoft.com/en-us/windows/win32/wcs/wcs-transform-creation-algorithms). [CreateMultiProfileTransform](https://learn.microsoft.com/en-us/windows/win32/api/icm/nf-icm-createmultiprofiletransform) accepts quality flags and WCS_ALWAYS, the latter forcing the WCS path even for all-ICC transforms. [GetStandardColorSpaceProfileW](https://learn.microsoft.com/en-us/windows/win32/api/icm/nf-icm-getstandardcolorspaceprofilew) identifies the registered standard profile, with current-user and system fallback. The [WIC color transform](https://learn.microsoft.com/en-us/windows/win32/api/wincodec/nf-wincodec-iwiccolortransform-initialize) takes explicit source and destination contexts and output pixel format. None of these public APIs identifies the shell's actual parameters by itself.
+
+The standalone [native probe](../scripts/capture-windows-icc-native.ps1) uses the same two synthetic ICC profiles and all 1,024 original calibration RGB colors, independently of wallpaper installation. It compares:
+
+- Registered sRGB/Windows color-space profiles, the installed standard sRGB ICC when present, and the synthetic sRGB target. Identical profile hashes are deduplicated and aliases recorded.
+- WIC color-context transforms for opaque BGR24, BGR32 and BGRA32, including an EXIF-sRGB destination.
+- CreateMultiProfileTransform and TranslateBitmapBits using default and WCS_ALWAYS paths, all four rendering intents, four quality-flag choices and RGB24/BGRX32 bitmap formats.
+- Successes and native errors. Only synthetic RGB inputs/outputs, target-profile hashes, flags, error codes and Windows build are exported, not installed profile contents or paths.
+
+Run in the reference VM using Windows PowerShell:
+
+```powershell
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\capture-windows-icc-native.ps1
+```
+
+The report is written to the Desktop as windows-icc-native.json. No wallpaper is applied, no registry value is changed, and no profile is installed.
+
+On Linux:
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc.py --native-report /path/to/windows-icc-native.json
+```
+
+The comparator requires build 26300.9974, exact input colors and source ICC hashes, and valid output hashes. It reconstructs full candidate BGRX buffers with the existing resize helper, checks all six archived reference buffers, and ranks candidates by total absolute error. Unsupported API/format combinations stay visible as failures. A fixture-only local test derived candidate colors from the archived buffers; both reconstructed buffers matched their original SHA-256, and a deliberately incorrect output hash was rejected. This verifies the comparison plumbing, not a native transform match. Python syntax was checked locally on the isolated reconstruction. The PowerShell/C# collector has been reviewed against published SDK signatures but has not been compiled or executed on Windows; no native results are claimed. An exact candidate on the calibration set would still need independent mixed-color and transparency validation. Runtime revision 2 remains unchanged.

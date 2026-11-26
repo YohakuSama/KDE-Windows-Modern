@@ -71,7 +71,7 @@ def metrics(actual, reference):
             "max_channel_error": max(errors, default=0)}
 
 
-def analyze(root, target_paths):
+def reference_data(root):
     report = json.loads((root / "docs/windows11-26h2-wallpaper-probes-decode-profile.json").read_text(encoding="utf-8-sig"))
     if report["probe_set"] != "DecodeProfile" or report["baseline"]["windows_build"] != "26300.9974":
         raise ValueError("Unexpected calibration capture")
@@ -98,6 +98,11 @@ def analyze(root, target_paths):
         references[name] = checked_buffer(boundary["transcoded"])
     if references["none"] != untagged:
         raise ValueError("Untagged source and cache differ")
+    return samples, collector, prepare, rows, layout, colors, source_hash, untagged, references
+
+
+def analyze(root, target_paths):
+    samples, collector, prepare, rows, layout, colors, source_hash, untagged, references = reference_data(root)
     targets = [("generated-srgb", ImageCms.createProfile("sRGB"), None)]
     for path in target_paths:
         data = path.read_bytes()
@@ -128,11 +133,60 @@ def analyze(root, target_paths):
     return result
 
 
+def compare_native(root, report_path):
+    samples, _, prepare, rows, layout, colors, _, _, references = reference_data(root)
+    report = json.loads(report_path.read_text(encoding="utf-8-sig"))
+    if report["schema_version"] != 1 or report["windows_build"] != "26300.9974":
+        raise ValueError("Unexpected native report schema or Windows build")
+    raw = b"".join(bytes(color) for color in colors)
+    if (report["color_count"] != len(colors) or report["input_rgb_sha256"] != sha(raw)
+            or base64.b64decode(report["input_rgb_base64"], validate=True) != raw):
+        raise ValueError("Native report input colors differ from the calibration source")
+    expected = {name: samples[name]["image"]["pixel_validation"]["icc_profile_sha256"] for name in NAMES[1:]}
+    if report["sources"] != expected:
+        raise ValueError("Native report source ICC hashes differ from the calibration source")
+    targets = report["targets"]
+    result = {"windows_build": report["windows_build"], "verified_buffers": 6,
+              "verified_input_colors": len(colors), "targets": targets, "candidates": [], "failures": []}
+    cached = {}
+    seen = set()
+    for candidate in report["candidates"]:
+        source, target = candidate["source"], candidate["target"]
+        if source not in expected or target not in targets or targets[target]["status"] != "ok":
+            raise ValueError("Unexpected native candidate source or target")
+        if candidate["target_sha256"] != targets[target]["sha256"]:
+            raise ValueError("Native candidate target hash mismatch")
+        metadata = {k: v for k, v in candidate.items() if k not in ("output_rgb_base64", "output_rgb_sha256")}
+        identity = (source, target, candidate["api"], candidate["format"], candidate["intent"], candidate["flags"])
+        if identity in seen:
+            raise ValueError("Duplicate native candidate")
+        seen.add(identity)
+        if candidate["status"] == "error":
+            result["failures"].append(metadata)
+            continue
+        if candidate["status"] != "ok":
+            raise ValueError("Unexpected native candidate status")
+        data = base64.b64decode(candidate["output_rgb_base64"], validate=True)
+        if len(data) != len(raw) or sha(data) != candidate["output_rgb_sha256"]:
+            raise ValueError("Native candidate output failed integrity check")
+        key = (source, data)
+        if key not in cached:
+            mapping = {color: data[3*i:3*i+3] for i, color in enumerate(colors)}
+            cached[key] = metrics(bitmap(rows, layout, mapping, prepare), references[source])
+        result["candidates"].append({**metadata, "output_rgb_sha256": sha(data), **cached[key]})
+    result["candidates"].sort(key=lambda item: (item["source"], item["absolute_error_sum"], item["max_channel_error"]))
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target", action="append", type=Path, default=[], help="Optional local ICC target (never bundled)")
+    parser.add_argument("--native-report", type=Path, help="Compare a read-only Windows native API capture")
     args = parser.parse_args()
-    print(json.dumps(analyze(ROOT, args.target), indent=2))
+    if args.native_report and args.target:
+        parser.error("--native-report and --target are mutually exclusive")
+    result = compare_native(ROOT, args.native_report) if args.native_report else analyze(ROOT, args.target)
+    print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":
