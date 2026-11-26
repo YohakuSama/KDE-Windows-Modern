@@ -27,13 +27,15 @@ write_key() {
     fi
 }
 find_data() {
-    local relative="$1" directory
+    local relative directory
     local -a dirs
     IFS=: read -r -a dirs <<< "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
     for directory in "$data" "${dirs[@]}"; do
-        if [ -n "$directory" ] && [ -f "$directory/$relative" ]; then
-            return 0
-        fi
+        [ -n "$directory" ] || continue
+        for relative in "$@"; do
+            [ -f "$directory/$relative" ] || continue 2
+        done
+        return 0
     done
     return 1
 }
@@ -101,8 +103,12 @@ for asset in "color-schemes/$scheme.colors" "plasma/desktoptheme/$plasma/metadat
     "icons/$icons/index.theme" "aurorae/themes/windows-modern-$mode-aurorae/metadata.desktop"; do
     find_data "$asset" || fail "Missing installed appearance component: $asset"
 done
-if [ ! -f "$config/Kvantum/Windows-modern/$kvconfig" ]; then
-    find_data "Kvantum/Windows-modern/$kvconfig" || fail "Missing Kvantum mode artwork."
+kvdir="$config/Kvantum/Windows-modern"
+kvsvg="${kvconfig%.kvconfig}.svg"
+if [ -f "$kvdir/$kvconfig" ] || [ -f "$kvdir/$kvsvg" ]; then
+    [ -f "$kvdir/$kvconfig" ] && [ -f "$kvdir/$kvsvg" ] || fail "Incomplete user Kvantum mode artwork."
+else
+    find_data "Kvantum/Windows-modern/$kvconfig" "Kvantum/Windows-modern/$kvsvg" || fail "Missing Kvantum mode artwork."
 fi
 
 # Record only the settings owned by this switch, never copy or replace the

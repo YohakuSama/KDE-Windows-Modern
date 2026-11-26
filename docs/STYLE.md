@@ -541,11 +541,16 @@ Location: `Kvantum/Windows-modern/`
 
 SVG-based Qt widget theme. The shared `Windows-modern.kvconfig.in`
 template defines layout, behavior and control states for both modes.
-The appearance materializer resolves its mode-specific color roles and
-stages `Windows-modern.kvconfig` and `Windows-modernDark.kvconfig`
-with their existing SVGs. KDE selects the installed light/dark variants
-through the `kvantum` and `kvantum-dark` widget styles. The slider frame
-uses 2 px on all four sides in both modes, without duplicate keys.
+The shared `Windows-modern.svg.in` defines the same element IDs, geometry
+and state structure for both modes. The appearance materializer resolves
+the configuration and SVG paint roles, then stages the two native engine
+configurations and SVGs under their existing filenames. KDE selects the
+installed light/dark variants through the `kvantum` and `kvantum-dark`
+widget styles. The slider frame uses 2 px on all four sides. The shared
+artwork retains transparent light checked-indicator cutouts, the dark
+glyph backing, mode-specific selection opacities and slider outlines.
+The focused input corners and normal tab-frame corner slices use matching
+geometry in both modes.
 Based on the **Fluent** Kvantum theme by
 Vince Liuice (itself derived from KvAdapta by Tsu Jan), with colors
 remapped to authentic Win11 values. The Fluent base was chosen over

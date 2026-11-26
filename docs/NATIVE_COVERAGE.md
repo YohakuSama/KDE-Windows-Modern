@@ -466,13 +466,22 @@ shadow geometry are unchanged. Normal installation, NixOS transactional
 staging and Store exports use this same source. Actual fractional-scale
 caption rendering needs owner acceptance.
 
-Kvantum now shares one configuration template. The appearance materializer
-stages both native engine configurations alongside their existing SVGs.
-All previous color values are retained; the three duplicate light slider
-frame keys are removed so both modes use the same 2 px slices. The SVG
-artwork still has mode-specific structure, including checked indicators,
-and must be reconciled separately without losing state feedback.
-The two KDE color schemes also remain for separate consolidation.
+Kvantum now shares one configuration template and one SVG geometry
+template. The appearance materializer stages both native engine
+configurations and artwork under the existing installed filenames.
+The three duplicate light slider frame keys are removed so both modes
+use the same 2 px slices. All 616 SVG IDs and their internal references
+are retained. Mode-specific colors and opacity remain paint roles, not
+separate geometry. Checked, mixed and radio indicators share compound
+contours and backing paths; the light backing stays transparent and the
+dark backing stays white. Menu indicators use the common compound
+contour instead of two differently structured drawings. Focused input
+corners, normal tab-frame corners, flat-button atlas placement and menu
+shadow hints have common geometry. The existing selection opacities,
+slider outline and window material update path remain intact. Exact Qt
+SVG antialiasing and fractional-scale rendering need desktop acceptance;
+these are existing Qt theme resources, not newly verified native artwork.
+The two KDE color schemes remain for separate consolidation.
 KDE supports adaptive SVG colors via the current-color-scheme
 stylesheet (https://develop.kde.org/docs/plasma/theme/theme-colors/);
 do not automatically substitute fixed Windows material colors or

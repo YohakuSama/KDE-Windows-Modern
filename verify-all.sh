@@ -47,6 +47,7 @@ check_file "scripts/theme/light-store-dependencies.json"    "Mode-specific Store
 check_file "scripts/theme/appearance-packages.py"            "Shared appearance package materializer"
 check_file "scripts/theme/switch-mode.sh"                    "Appearance-only mode switch"
 check_file "Kvantum/Windows-modern/Windows-modern.kvconfig.in" "Shared Kvantum configuration source"
+check_file "Kvantum/Windows-modern/Windows-modern.svg.in"      "Shared Kvantum artwork source"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"
 check_file "icons/windows-modern/index.theme"               "Icon pack"
 store_icons=(icons/windows-modern/apps/discover.svg icons/windows-modern/apps/org.kde.discover.svg icons/windows-modern/apps/plasma-discover.svg icons/windows-modern/apps/plasmadiscover.svg icons/windows-modern/apps/muondiscover.svg)

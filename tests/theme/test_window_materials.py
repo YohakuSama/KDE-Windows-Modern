@@ -11,7 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('window_frames', ROOT / 'scripts/theme/window-frames.py')
 frames = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(frames)
-render_kvantum_config = runpy.run_path(str(ROOT / 'scripts/theme/appearance-packages.py'))['render_kvantum_config']
+appearance = runpy.run_path(str(ROOT / 'scripts/theme/appearance-packages.py'))
+render_kvantum_config = appearance['render_kvantum_config']
+render_kvantum_svg = appearance['render_kvantum_svg']
 SVG = ('<svg xmlns="http://www.w3.org/2000/svg">'
        '<path id="window-normal" fill="#ffffff" opacity=".8" d="M0 0"/>'
        '<path id="window-normal-inactive" fill="#ffffff" opacity=".8" d="M1 1"/>'
@@ -54,9 +56,8 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual(frames.patch_window_svg(result, '#123456', '#202020'), result)
 
     def test_real_window_and_toolbar_have_shared_opaque_tint(self):
-        theme = ROOT / 'Kvantum/Windows-modern'
-        for name in ('Windows-modern', 'Windows-modernDark'):
-            source = (theme / (name + '.svg')).read_text()
+        for mode in ('light', 'dark'):
+            source = render_kvantum_svg(ROOT, mode)
             patched = frames.patch_window_svg(source, '#345678', '#202020')
             self.assertEqual(frames.patch_window_svg(patched, '#345678', '#202020'), patched)
             nodes = elements(patched)
@@ -71,11 +72,10 @@ class WindowMaterialTests(unittest.TestCase):
                              ET.tostring(elements(source)['menu-normal']))
 
     def test_real_kvantum_menu_slices(self):
-        theme = ROOT / 'Kvantum/Windows-modern'
-        for name, color, border in (('Windows-modern', '#F9F9F9', '#DADADA'),
-                                    ('Windows-modernDark', '#2C2C2C', '#454545')):
-            with self.subTest(name=name):
-                svg = elements((theme / (name + '.svg')).read_text())
+        for mode, color, border in (('light', '#F9F9F9', '#DADADA'),
+                                    ('dark', '#2C2C2C', '#454545')):
+            with self.subTest(mode=mode):
+                svg = elements(render_kvantum_svg(ROOT, mode))
                 self.assertEqual(svg['menu-normal'].get('fill'), color)
                 self.assertEqual(svg['menu-normal'].get('opacity'), '.98')
                 for part in ('top', 'bottom', 'left', 'right', 'topleft', 'topright',
@@ -84,7 +84,6 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertEqual(len(item), 2)
                     self.assertEqual([x.get('fill') for x in item], [border, color])
                     self.assertTrue(all(x.get('opacity') == '.98' for x in item))
-                mode = 'dark' if name.endswith('Dark') else 'light'
                 config = render_kvantum_config(ROOT, mode)
                 menu = config.split('[Menu]\n', 1)[1].split('[MenuItem]', 1)[0]
                 for side in ('top', 'bottom', 'left', 'right'):
@@ -92,6 +91,41 @@ class WindowMaterialTests(unittest.TestCase):
                 items = config.split('[MenuItem]\n', 1)[1].split('[MenuBar]', 1)[0]
                 self.assertIn('text.margin.top=3', items)
                 self.assertIn('text.margin.bottom=3', items)
+
+    def test_kvantum_shared_artwork_geometry_and_states(self):
+        paint = {'fill', 'stroke', 'opacity', 'fill-opacity', 'stroke-opacity',
+                 'stop-color', 'stop-opacity'}
+
+        def geometry(svg):
+            return [(node.tag, {key: value for key, value in node.attrib.items()
+                               if key not in paint}, len(node))
+                    for node in ET.fromstring(svg).iter()]
+
+        dark = render_kvantum_svg(ROOT, 'dark')
+        light = render_kvantum_svg(ROOT, 'light')
+        self.assertEqual(geometry(dark), geometry(light))
+        for mode, svg, accent, backing in (
+                ('dark', dark, '#4CC2FF', '#FFFFFF'),
+                ('light', light, '#0067C0', 'none')):
+            with self.subTest(mode=mode):
+                nodes = elements(svg)
+                self.assertEqual(len(nodes), sum(1 for node in ET.fromstring(svg).iter()
+                                                 if node.get('id')))
+                for prefix in ('', 'menu-'):
+                    for kind in ('checkbox-checked', 'checkbox-tristate', 'radio-checked'):
+                        for state in ('normal', 'focused'):
+                            item = nodes[prefix + kind + '-' + state]
+                            self.assertEqual(item[1].get('fill'), backing)
+                            self.assertEqual(item[2].get('fill'), accent)
+                            if state == 'focused':
+                                self.assertEqual(item[3].get('opacity'), '.15')
+                for prefix in ('slidercursor-', 'slidercursor-tickless-'):
+                    for state in ('normal', 'pressed', 'focused', 'disabled'):
+                        item = nodes[prefix + state]
+                        ring = next(child for child in item if child.get('r') == '7')
+                        self.assertEqual(ring.get('stroke-width'), '1')
+                        self.assertEqual(ring.get('stroke'),
+                                         'none' if mode == 'dark' else '#D5D5D5')
 
     def test_qt_control_spacing_matches_both_themes(self):
         for mode in ('light', 'dark'):

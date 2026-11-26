@@ -48,7 +48,7 @@ remain open tasks.
 | `plasma/applets/` | Applets. `startmenu`, `showdesktop`, `digitalclock` and the optional `search` / `taskview` buttons are pure QML; `systemtray` and `icontasks` are C++ forks of upstream Plasma applets. |
 | `plasma/look-and-feel/`, `plasma/desktoptheme/` | Shared global theme and Plasma style sources. Generate both renderer modes with the appearance materializer. |
 | `aurorae/` | Shared window decoration and caption states. Generate both native decoration packages with the appearance materializer. |
-| `Kvantum/` | Shared Qt style configuration template and mode-specific SVG artwork; install through the appearance materializer. |
+| `Kvantum/` | Shared Qt style configuration and SVG geometry templates; generate both modes through the appearance materializer. |
 | `color-schemes/` | Mode-specific palettes. |
 | `plasma/layout-templates/` | The "Add Panel → Windows Modern Panel" template. |
 | `plasma/windowswitcher/` | The Alt+Tab switcher (a KWin window-switcher layout). |

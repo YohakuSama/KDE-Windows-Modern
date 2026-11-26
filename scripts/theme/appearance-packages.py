@@ -13,6 +13,7 @@ import re
 import runpy
 import shutil
 from string import Template
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "org.kde.windowsmodern.dark"
@@ -408,16 +409,83 @@ def render_kvantum_config(root, mode):
     return Template(source.read_text(encoding="utf-8")).substitute(KVANTUM_CONFIG_COLORS[mode])
 
 
+# The common SVG contains only geometry and mode-independent paint.
+# These roles retain the previously reviewed mode-specific fills and state
+# opacities, including transparent light indicator cutouts and the opaque
+# dark glyph backing. Shared config roles (accent, text, window, button
+# and disabled text) come from KVANTUM_CONFIG_COLORS above.
+KVANTUM_SVG_PAINT = {
+    "dark": {
+        "control_surface": "#2C2C2C",
+        "contrast_ink": "#FFFFFF",
+        "splitter_ink": "#5A5A5A",
+        "splitter_focus_ink": "#3F3F3F",
+        "slider_track": "#6E6E6E",
+        "muted_surface": "#3F3F3F",
+        "header_hover_surface": "#2C2C2C",
+        "glyph_ink": "#FFFFFF",
+        "popup_surface": "#2C2C2C",
+        "dock_focus_surface": "#3F3F3F",
+        "frame_border": "#FFFFFF",
+        "indicator_hover_surface": "#FFFFFF",
+        "popup_border": "#454545",
+        "dock_border": "#FFFFFF",
+        "checked_backing": "#FFFFFF",
+        "slider_outline": "none",
+        "dial_major_opacity": ".8",
+        "dial_minor_opacity": ".35",
+        "frame_border_opacity": ".15",
+        "dock_border_opacity": ".15",
+        "selection_press_opacity": ".32",
+        "selection_toggle_opacity": ".24",
+        "selection_focus_opacity": ".1",
+    },
+    "light": {
+        "control_surface": "#FFFFFF",
+        "contrast_ink": "#000000",
+        "splitter_ink": "#1E1E1E",
+        "splitter_focus_ink": "#1E1E1E",
+        "slider_track": "#8B8B8B",
+        "muted_surface": "#E5E5E5",
+        "header_hover_surface": "#E9E9E9",
+        "glyph_ink": "#444444",
+        "popup_surface": "#F9F9F9",
+        "dock_focus_surface": "#FFFFFF",
+        "frame_border": "#E5E5E5",
+        "indicator_hover_surface": "#F9F9F9",
+        "popup_border": "#DADADA",
+        "dock_border": "#A0A0A0",
+        "checked_backing": "none",
+        "slider_outline": "#D5D5D5",
+        "dial_major_opacity": "1",
+        "dial_minor_opacity": "1",
+        "frame_border_opacity": "1",
+        "dock_border_opacity": "1",
+        "selection_press_opacity": "1",
+        "selection_toggle_opacity": ".9",
+        "selection_focus_opacity": ".07",
+    },
+}
+
+
+def render_kvantum_svg(root, mode):
+    source = root / "Kvantum/Windows-modern/Windows-modern.svg.in"
+    values = {**KVANTUM_CONFIG_COLORS[mode], **KVANTUM_SVG_PAINT[mode]}
+    svg = Template(source.read_text(encoding="utf-8")).substitute(values)
+    # Preserve the atlas markup and attribute order for window-frames.py.
+    # Parsing here rejects broken generated SVG before installation.
+    ET.fromstring(svg)
+    return svg
+
+
 def kvantum(root, destination):
-    source = root / "Kvantum/Windows-modern"
     target = destination / "Windows-modern"
     target.mkdir(parents=True)
     for mode, name in (("light", "Windows-modern"), ("dark", "Windows-modernDark")):
         (target / (name + ".kvconfig")).write_text(
             render_kvantum_config(root, mode), encoding="utf-8")
-        # Preserve the existing mode-specific SVG geometry and paint until
-        # their structural differences have been reconciled.
-        shutil.copy2(source / (name + ".svg"), target / (name + ".svg"))
+        (target / (name + ".svg")).write_text(
+            render_kvantum_svg(root, mode), encoding="utf-8")
     return target
 
 
