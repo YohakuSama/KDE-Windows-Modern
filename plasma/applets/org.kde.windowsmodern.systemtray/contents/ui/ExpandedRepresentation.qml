@@ -20,20 +20,12 @@ import org.kde.plasma.private.mpris as Mpris
 
 import "components" as Components
 import "js/trayMetrics.js" as TrayMetrics
-import "js/colorType.js" as ColorType
 
 Item {
     id: popup
 
-    readonly property color paletteAccent: Kirigami.Theme.highlightColor
-    readonly property bool darkPalette: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    property color shellAccent: paletteAccent
-    function refreshShellAccent() {
-        shellAccent = typeof Plasmoid.wallpaperAccent === "function"
-            ? Plasmoid.wallpaperAccent(paletteAccent, darkPalette) : paletteAccent;
-    }
-    onPaletteAccentChanged: Qt.callLater(refreshShellAccent)
-    onDarkPaletteChanged: Qt.callLater(refreshShellAccent)
+    // Use the same native accent palette as every other shell surface.
+    readonly property color shellAccent: Kirigami.Theme.highlightColor
 
     // Never derive the window's initial size from an effectively hidden
     // QQuickLayout. The native popup is sized before the window is mapped.

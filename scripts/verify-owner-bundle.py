@@ -128,7 +128,7 @@ def verify(revision, filename):
             "scripts/set-wallpaper.sh",
             "scripts/theme/window-frames.py", "scripts/theme/palette.json",
             "color-schemes/WindowsModern.colors.in",
-            "scripts/theme/appearance-packages.py",
+            "scripts/theme/appearance-packages.py", "scripts/theme/sync-accent.py",
             "translations/zh_CN.json",
             "config/kxmlgui5/dolphin/dolphinui.rc",
             "config/kxmlgui5/konsole/sessionui.rc",

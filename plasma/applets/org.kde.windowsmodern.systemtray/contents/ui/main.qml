@@ -10,6 +10,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
+import QtCore
+import org.kde.plasma.plasma5support as Plasma5Support
 
 import org.kde.draganddrop as DnD
 import org.kde.kirigami as Kirigami
@@ -37,6 +39,56 @@ ContainmentItem {
     onPanelGeometryChanged: {
         if (dialog && dialog.visible) systemTrayState.expanded = false;
         if (runLoader.item) runLoader.item.close();
+    }
+
+    // Debounce native palette changes; reread the effective selection color
+    // in the helper. The helper serializes with the appearance mode switch.
+    readonly property color nativeAccent: Kirigami.Theme.highlightColor
+    readonly property color nativeBackground: Kirigami.Theme.backgroundColor
+    readonly property string accentScript: {
+        const url = String(StandardPaths.locate(StandardPaths.GenericDataLocation,
+            "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/scripts/switch-mode.sh"));
+        return url.startsWith("file:///") ? decodeURIComponent(url.slice(7))
+            : url.startsWith("/") ? url : "";
+    }
+    property bool accentReady: false
+    property bool accentDirty: false
+    property string accentCommand: ""
+
+    function scheduleAccentSync() {
+        if (!accentReady || accentScript.length === 0) return;
+        accentDirty = true;
+        accentTimer.restart();
+    }
+
+    onNativeAccentChanged: scheduleAccentSync()
+    onNativeBackgroundChanged: scheduleAccentSync()
+
+    Timer {
+        id: accentTimer
+        interval: 350
+        repeat: false
+        onTriggered: {
+            if (!root.accentDirty || root.accentCommand.length !== 0) return;
+            root.accentDirty = false;
+            const script = "'" + root.accentScript.replace(/'/g, "'\\''") + "'";
+            root.accentCommand = "bash " + script + " --sync-accent";
+            accentExec.connectSource(root.accentCommand);
+        }
+    }
+
+    Plasma5Support.DataSource {
+        id: accentExec
+        engine: "executable"
+        connectedSources: []
+        onNewData: function (sourceName, data) {
+            if (sourceName !== root.accentCommand || data["exit code"] === undefined) return;
+            disconnectSource(sourceName);
+            root.accentCommand = "";
+            if (data["exit code"] !== 0)
+                console.warn("Windows Modern accent synchronization failed:", data["stderr"]);
+            if (root.accentDirty) accentTimer.restart();
+        }
     }
 
     function panelAnchorForApplet(applet) {
@@ -99,6 +151,8 @@ ContainmentItem {
         hiddenInstantiator.active = true;
         Plasmoid.registerClipboardShortcut();
         Plasmoid.registerRunShortcut();
+        accentReady = true;
+        scheduleAccentSync();
     }
 
     Connections {
@@ -533,7 +587,6 @@ ContainmentItem {
                 } else {
                     expandedSync.stop();
                     dialog.requestActivate();
-                    expandedRepresentation.refreshShellAccent();
                     Qt.callLater(expandedRepresentation.focusCurrentPage);
                     Qt.callLater(expandedRepresentation.scheduleSplitBlur);
                 }

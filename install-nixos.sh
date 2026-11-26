@@ -553,26 +553,33 @@ fi
 
 # Apply the opaque material on both install and upgrade, using the
 # user's saved wallpaper rather than replacing it with the bundled image.
-material_args=(--apply-local --aurorae-dir "$DATA/aurorae/themes"
-               --kvantum-dir "$CONFIG/Kvantum/Windows-modern")
-if [ -f "$HOME/.local/share/windows-modern/transparency-off" ] || [ -f "$DATA/windows-modern/transparency-off" ]; then
-    # An upgrade copies fresh theme files. Reapply the existing off choice.
-    for theme in "$CONFIG/Kvantum/Windows-modern/"*.kvconfig; do
-        [ -f "$theme" ] || continue
-        sed -i -E 's/^(blurring|popup_blurring|blur_translucent)=.*/\1=false/' "$theme"
-    done
-    for variant in dark light; do
-        theme="$DATA/plasma/desktoptheme/Windows-modern-$variant"
-        for role in dialogs/background.svg widgets/panel-background.svg; do
-            for folder in "" translucent/; do
-                [ -f "$theme/$folder$role" ] && cp "$theme/solid/$role" "$theme/$folder$role"
+(
+    # The running tray may synchronize its palette during installation.
+    if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+        exec 8>"$XDG_RUNTIME_DIR/windows-modern-appearance.lock"
+        flock -w 8 8
+    fi
+    material_args=(--apply-local --aurorae-dir "$DATA/aurorae/themes"
+                   --kvantum-dir "$CONFIG/Kvantum/Windows-modern")
+    if [ -f "$HOME/.local/share/windows-modern/transparency-off" ] || [ -f "$DATA/windows-modern/transparency-off" ]; then
+        # An upgrade copies fresh theme files. Reapply the existing off choice.
+        for theme in "$CONFIG/Kvantum/Windows-modern/"*.kvconfig; do
+            [ -f "$theme" ] || continue
+            sed -i -E 's/^(blurring|popup_blurring|blur_translucent)=.*/\1=false/' "$theme"
+        done
+        for variant in dark light; do
+            theme="$DATA/plasma/desktoptheme/Windows-modern-$variant"
+            for role in dialogs/background.svg widgets/panel-background.svg; do
+                for folder in "" translucent/; do
+                    [ -f "$theme/$folder$role" ] && cp "$theme/solid/$role" "$theme/$folder$role"
+                done
             done
         done
-    done
-else
-    material_args+=(--wallpaper-config "$CONFIG/plasma-org.kde.plasma.desktop-appletsrc")
-fi
-"$PYTHON" "$ROOT/scripts/theme/window-frames.py" "${material_args[@]}"
+    else
+        material_args+=(--wallpaper-config "$CONFIG/plasma-org.kde.plasma.desktop-appletsrc")
+    fi
+    "$PYTHON" "$ROOT/scripts/theme/window-frames.py" "${material_args[@]}"
+)
 busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 
 # Install just the new native clipboard binding on both fresh installs and
@@ -587,6 +594,8 @@ if [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromW
 fi
 
 "$PYTHON" "$ROOT/scripts/app-appearance.py" apply
+# Refresh after artwork and wallpaper installation; retain local materials.
+bash "$ROOT/scripts/theme/switch-mode.sh" --sync-accent || echo "Kvantum accent synchronization incomplete." >&2
 
 # Do not report success with stock fallback applets or a stale C++ plugin.
 layout="$CONFIG/plasma-org.kde.plasma.desktop-appletsrc"

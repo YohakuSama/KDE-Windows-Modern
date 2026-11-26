@@ -220,6 +220,105 @@ def apply_light_widget_colors(target):
         path.write_bytes(result)
 
 
+# Only reviewed accent-painted widget elements. Brand artwork and neutral
+# state fills are intentionally excluded. The light conversion runs first
+# so both generated modes have the same native palette-role bindings.
+NATIVE_ACCENT_FILLS = {
+    "action-overlays": 3, "actionbutton": 2, "analog_meter": 1,
+    "clock": 4, "containment-controls": 12, "glowbar": 1,
+    "notes": 1, "pager": 18, "bar_meter_horizontal": 9,
+    "bar_meter_vertical": 9, "busywidget": 3, "button": 30,
+    "calendar": 1, "checkmarks": 3, "radiobutton": 4,
+    "tabbar": 10, "lineedit": 3, "tasks": 2,
+    "slider": 0, "switch": 0,
+}
+SCHEME_STYLESHEET = re.compile(
+    rb'<style\b[^>]*\bid="current-color-scheme"[^>]*>[\s\S]*?</style>')
+SVG_SHAPE = re.compile(rb'<(?:path|rect|circle|ellipse|g|polygon|polyline|line)\b[^>]*>')
+CLASS_ATTRIBUTE = re.compile(rb'\bclass="([^"]*)"')
+STYLE_ATTRIBUTE = re.compile(rb'\bstyle="([^"]*)"')
+INLINE_COLOR = re.compile(rb'(?<![\w-])color\s*:\s*#[0-9a-fA-F]{6}\s*;?')
+
+
+def native_accent_widget(data, accent, expected, fallback=None):
+    """Replace explicit reviewed accent fills, not arbitrary matching colors."""
+    literal_fill = re.compile(
+        rb'(?<![\w-])(fill\s*:\s*|fill=")' + re.escape(accent)
+        + rb'(?=[;"\s])', re.IGNORECASE)
+    count = 0
+
+    def shape(match):
+        nonlocal count
+        tag, changed = literal_fill.subn(lambda m: m[1] + b'currentColor', match[0])
+        if not changed:
+            return tag
+        if changed != 1:
+            raise ValueError("Ambiguous accent paint in SVG shape")
+        count += changed
+
+        def classes(m):
+            roles = [part for part in m[1].split()
+                     if not part.startswith(b'ColorScheme-')]
+            return b'class="' + b' '.join(roles + [b'ColorScheme-Highlight']) + b'"'
+
+        tag, had_class = CLASS_ATTRIBUTE.subn(classes, tag)
+        if not had_class:
+            tag = re.sub(rb'^<[\w-]+', lambda m: m[0] + b' class="ColorScheme-Highlight"',
+                         tag, count=1)
+        # An inline color declaration would override KSVG's class color.
+        tag = STYLE_ATTRIBUTE.sub(
+            lambda m: b'style="' + INLINE_COLOR.sub(b'', m[1]) + b'"', tag)
+        tag = re.sub(rb'\scolor="#[0-9a-fA-F]{6}"', b'', tag)
+        return tag
+
+    data = SVG_SHAPE.sub(shape, data)
+    if count != expected:
+        raise ValueError(f"Expected {expected} native accent fills, got {count}")
+
+    fallback = fallback or accent
+    rule = b'.ColorScheme-Highlight { color:' + fallback + b'; }'
+
+    def stylesheet(match):
+        found = False
+
+        def update(role):
+            nonlocal found
+            if role[2] != b'Highlight':
+                return role[0]
+            found = True
+            body, n = CSS_COLOR.subn(lambda m: m[1] + fallback, role[3])
+            if n != 1:
+                raise ValueError("Invalid highlight fallback declaration")
+            return role[1] + body + role[4]
+
+        result = SVG_COLOR_ROLE.sub(update, match[0])
+        if not found:
+            result = result.replace(b'</style>', b'\n' + rule + b'\n</style>')
+        return result
+
+    data, stylesheets = SCHEME_STYLESHEET.subn(stylesheet, data)
+    if not stylesheets:
+        style = b'<style id="current-color-scheme" type="text/css">' + rule + b'</style>'
+        data, n = re.subn(rb'<defs(?:\s[^>]*)?>', lambda m: m[0] + style, data, count=1)
+        if not n:
+            data, n = re.subn(rb'<svg\b[^>]*>', lambda m: m[0] + b'<defs>' + style + b'</defs>',
+                              data, count=1)
+            if n != 1:
+                raise ValueError("Missing SVG root")
+    ET.fromstring(data)
+    return data
+
+
+def apply_native_accent_roles(root, target, mode):
+    accent = load_palette(root, mode)["accent"].encode("ascii")
+    # Existing source accent literals are fixed inputs, not the runtime choice.
+    source_accent = b"#4CC2FF" if mode == "dark" else b"#0067C0"
+    for name, count in NATIVE_ACCENT_FILLS.items():
+        path = target / "widgets" / (name + ".svg")
+        data = native_accent_widget(path.read_bytes(), source_accent, count, accent)
+        path.write_bytes(data)
+
+
 def desktoptheme(root, destination, mode):
     source = root / "plasma/desktoptheme"
     target = destination / ("Windows-modern-" + mode)
@@ -239,6 +338,7 @@ def desktoptheme(root, destination, mode):
         for name in ("popup-frames.py", "panel-frames.py"):
             write_frames = runpy.run_path(str(generators / name))["write_frames"]
             write_frames(target, mode)
+    apply_native_accent_roles(root, target, mode)
     return target
 
 
@@ -363,7 +463,8 @@ def lookfeel(root, destination, mode):
                            encoding="utf-8")
         scripts = target / "contents/scripts"
         scripts.mkdir()
-        shutil.copy2(root / "scripts/theme/switch-mode.sh", scripts / "switch-mode.sh")
+        for name in ("switch-mode.sh", "sync-accent.py"):
+            shutil.copy2(root / "scripts/theme" / name, scripts / name)
     return target
 
 
@@ -472,11 +573,25 @@ def render_kvantum_svg(root, mode):
 def kvantum(root, destination):
     target = destination / "Windows-modern"
     target.mkdir(parents=True)
+    binding_builder = runpy.run_path(str(root / "scripts/theme/sync-accent.py"))["make_bindings"]
+    source = root / "Kvantum/Windows-modern"
+    manifest = {}
     for mode, name in (("light", "Windows-modern"), ("dark", "Windows-modernDark")):
-        (target / (name + ".kvconfig")).write_text(
-            render_kvantum_config(root, mode), encoding="utf-8")
-        (target / (name + ".svg")).write_text(
-            render_kvantum_svg(root, mode), encoding="utf-8")
+        values = {**load_palette(root, mode), **KVANTUM_SVG_PAINT[mode]}
+        files = {}
+        for extension, render in ((".kvconfig", render_kvantum_config),
+                                  (".svg", render_kvantum_svg)):
+            filename = name + extension
+            template = (source / ("Windows-modern" + extension + ".in")).read_text(encoding="utf-8")
+            data = render(root, mode)
+            (target / filename).write_text(data, encoding="utf-8")
+            files[filename] = binding_builder(template, data, values)
+        manifest[mode] = {"defaults": {role: values[role] for role in
+                          ("accent", "highlight_text", "selected_item_text",
+                           "checked_backing", "button_accent_text")},
+                          "files": files}
+    (target / "accent-bindings.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return target
 
 

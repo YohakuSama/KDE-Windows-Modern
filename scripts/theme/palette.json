@@ -30,7 +30,8 @@
         "selection_positive": "#004624",
         "selection_visited": "#3D2158",
         "wm_inactive_background": "#2C2C2C",
-        "wm_blend": "#3F3F3F"
+        "wm_blend": "#3F3F3F",
+        "button_accent_text": "#ffffff"
     },
     "light": {
         "window": "#F9F9F9",
@@ -63,6 +64,7 @@
         "selection_positive": "#FFFFFF",
         "selection_visited": "#FFFFFF",
         "wm_inactive_background": "#ECECEC",
-        "wm_blend": "#E9E9E9"
+        "wm_blend": "#E9E9E9",
+        "button_accent_text": "#ffffff"
     }
 }

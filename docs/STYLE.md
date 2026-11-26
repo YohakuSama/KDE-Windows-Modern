@@ -588,7 +588,7 @@ The Fluent neutrals were replaced with authentic Win11 values sourced
 from WinUI 3. Win11 uses different accent shades per mode:
 `SystemAccentColorLight2` (`#4CC2FF`) in dark mode and
 `SystemAccentColorDark1` (`#0067C0`) in light mode — both derived from
-the base `SystemAccentColor` (`#0078D4`). The accent is baked into the
+the base `SystemAccentColor` (`#0078D4`). The default accent is embedded in the
 SVG indicator elements (checkbox marks, radio dots, progressbar fill,
 focus rings).
 
@@ -938,3 +938,7 @@ Reference:
 - https://learn.microsoft.com/en-us/windows/apps/design/signature-experiences/materials
 - https://learn.microsoft.com/en-us/windows/apps/develop/platform/xaml/xaml-theme-resources
 - https://blogs.windows.com/windows-insider/2026/08/27/releasing-windows-11-version-26h2-to-the-release-preview-channel/
+
+### System accent propagation
+
+Reviewed Plasma widget fills are generated with KSVG's native Highlight role. Kvantum uses the installed accent binding manifest and reads the effective KDE selection color on appearance changes. The shared palette provides the defaults, not a replacement for KDE's current accent selection. Gradient paints and the exact Windows wallpaper accent algorithm remain separate verification items.

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import configparser
+import json
 import importlib.util
 from pathlib import Path
 import runpy
@@ -28,6 +29,36 @@ def elements(svg):
 
 
 class WindowMaterialTests(unittest.TestCase):
+    def test_native_accent_widgets(self):
+        materialize = appearance["desktoptheme"]
+        with tempfile.TemporaryDirectory() as tmp:
+            for mode in ("dark", "light"):
+                target = materialize(ROOT, Path(tmp), mode)
+                for name in appearance["NATIVE_ACCENT_FILLS"]:
+                    data = (target / "widgets" / (name + ".svg")).read_bytes()
+                    root = ET.fromstring(data)
+                    self.assertIn(b"ColorScheme-Highlight", data)
+                    self.assertIn(b"current-color-scheme", data)
+                    self.assertIsNotNone(root)
+
+    def test_kvantum_accent_bindings_preserve_materials(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        with tempfile.TemporaryDirectory() as tmp:
+            target = appearance["kvantum"](ROOT, Path(tmp))
+            manifest = json.loads((target / "accent-bindings.json").read_text())
+            for mode, entry in manifest.items():
+                custom = sync["accent_values"](mode, entry["defaults"], "190,80,130")
+                for name, spec in entry["files"].items():
+                    original = (target / name).read_text()
+                    patched = sync["patch"](original, spec, custom)
+                    self.assertIn("#BE5082", patched)
+                    self.assertEqual(sync["patch"](patched, spec, entry["defaults"]), original)
+                    before = original.splitlines()
+                    after = patched.splitlines()
+                    owned = {binding[0] for binding in spec["bindings"]}
+                    self.assertTrue(all(x == y for i, (x, y) in
+                                        enumerate(zip(before, after)) if i not in owned))
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')

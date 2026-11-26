@@ -28,8 +28,11 @@ cp -- "$appearance_stage/color-schemes/"*.colors "$SCHEMES_DIR/"
 
 step "Kvantum themes"
 ensure_dir "$KVANTUM_DIR"
-rm -rf "$KVANTUM_DIR/Windows-modern"*
-cp -r "$appearance_stage/Kvantum/Windows-modern" "$KVANTUM_DIR/"
+(
+    lock_appearance_writes || exit 1
+    rm -rf "$KVANTUM_DIR/Windows-modern"*
+    cp -r "$appearance_stage/Kvantum/Windows-modern" "$KVANTUM_DIR/"
+)
 # Keep "Transparency effects: off" (./install.sh transparency) across reinstalls.
 if [ -f "$TRANSPARENCY_OFF_FILE" ]; then
     kvantum_transparency false
@@ -125,4 +128,5 @@ if ! is_batch && [ "$UID" -ne 0 ]; then
     apply_kvantum_engine "$mode"
     if command -v plasma-apply-desktoptheme &>/dev/null; then plasma-apply-desktoptheme "Windows-modern-$mode" 2>/dev/null || true; fi
     bash "$SRC_DIR/scripts/set-wallpaper.sh" || exit 1
+    bash "$SRC_DIR/scripts/theme/switch-mode.sh" --sync-accent || warn "Kvantum accent synchronization incomplete."
 fi

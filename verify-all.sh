@@ -44,6 +44,7 @@ check_dir  "plasma/look-and-feel/org.kde.windowsmodern.dark" "Shared global them
 check_file "scripts/theme/light-store-dependencies.json"    "Mode-specific Store dependencies"
 check_file "scripts/theme/appearance-packages.py"            "Shared appearance package materializer"
 check_file "scripts/theme/switch-mode.sh"                    "Appearance-only mode switch"
+check_file "scripts/theme/sync-accent.py"                    "Kvantum accent synchronization helper"
 check_file "Kvantum/Windows-modern/Windows-modern.kvconfig.in" "Shared Kvantum configuration source"
 check_file "Kvantum/Windows-modern/Windows-modern.svg.in"      "Shared Kvantum artwork source"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"
@@ -73,6 +74,8 @@ if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance"; then
     shared="$tasks_tmp/appearance/look-and-feel/org.kde.windowsmodern.dark"
     check_file "$shared/metadata.json" "Unified global theme metadata"
     check_file "$shared/contents/scripts/switch-mode.sh" "Installed appearance switch"
+    check_file "$shared/contents/scripts/sync-accent.py" "Installed accent synchronization helper"
+    check_file "$tasks_tmp/appearance/Kvantum/Windows-modern/accent-bindings.json" "Installed Kvantum accent bindings"
     if [ -e "$tasks_tmp/appearance/look-and-feel/org.kde.windowsmodern.light" ]; then
         fail "Obsolete light global theme in runtime appearance"
     fi

@@ -9,8 +9,8 @@ data="${XDG_DATA_HOME:-$HOME/.local/share}"
 missing="__windows_modern_missing_appearance_key__"
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 [ "$EUID" -ne 0 ] || fail "Switch appearance as the desktop user, not root."
-[ "$#" -eq 1 ] || fail "Usage: switch-mode.sh light|dark|--migrate"
-case "$1" in light|dark|--migrate) ;; *) fail "Unknown appearance mode: $1" ;; esac
+[ "$#" -eq 1 ] || fail "Usage: switch-mode.sh light|dark|--migrate|--sync-accent"
+case "$1" in light|dark|--migrate|--sync-accent) ;; *) fail "Unknown appearance mode: $1" ;; esac
 for cmd in kreadconfig6 kwriteconfig6; do
     command -v "$cmd" >/dev/null || fail "Missing command: $cmd"
 done
@@ -59,7 +59,7 @@ fi
 if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
     command -v flock >/dev/null || fail "Missing command: flock"
     exec 9>"$XDG_RUNTIME_DIR/windows-modern-appearance.lock"
-    flock -n 9 || fail "An appearance change is already running."
+    flock -w 8 9 || fail "An appearance change is already running."
 elif [ "$1" != --migrate ]; then
     fail "No desktop runtime directory."
 fi
@@ -84,6 +84,45 @@ if [ "$1" = --migrate ]; then
     fi
     write_key kdeglobals KDE LookAndFeelPackage "$theme_id"
     exit 0
+fi
+
+# KDE's effective selection palette is authoritative. Never change its
+# wallpaper accent setting, other themes or system-managed Kvantum assets.
+sync_accent() {
+    local current_scheme current_style current_theme current_mode selection python result
+    current_scheme="$(read_key kdeglobals General ColorScheme)"
+    current_style="$(read_key kdeglobals KDE widgetStyle)"
+    current_theme="$(read_key Kvantum/kvantum.kvconfig General theme)"
+    [ "$current_theme" = Windows-modern ] || return 0
+    case "$current_scheme:$current_style" in
+        WindowsModernDark:kvantum-dark) current_mode=dark ;;
+        WindowsModernLight:kvantum) current_mode=light ;;
+        *) return 0 ;;
+    esac
+    local kvdir="$config/Kvantum/Windows-modern"
+    [ -d "$kvdir" ] || return 0
+    [ -f "$kvdir/accent-bindings.json" ] || {
+        echo "Missing accent bindings; reinstall Windows Modern theme assets." >&2
+        return 1
+    }
+    selection="$(read_key kdeglobals Colors:Selection BackgroundNormal)"
+    [ "$selection" != "$missing" ] || return 0
+    python="$(command -v python3 || true)"
+    if [ -z "$python" ]; then
+        python="${XDG_STATE_HOME:-$HOME/.local/state}/windows-modern-nixos-test/runtime/bin/python3"
+    fi
+    [ -x "$python" ] || { echo "Python 3 is unavailable for Kvantum accent synchronization." >&2; return 1; }
+    result="$("$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/sync-accent.py" "$kvdir" "$current_mode" "$selection")" || return 1
+    if [ "$result" = changed ]; then
+        # Existing applications may cache Kvantum SVGs until reopened.
+        busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
+    fi
+}
+
+if [ "$1" = --sync-accent ]; then
+    [ "$active" = "$theme_id" ] || exit 0
+    sync_accent
+    exit $?
 fi
 
 [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."
@@ -164,4 +203,5 @@ if ! apply_mode; then
     [ "$restored" = true ] || echo "Some appearance settings could not be restored; reselect the desired mode." >&2
     exit 1
 fi
+sync_accent || echo "Appearance switched; Kvantum accent synchronization remains incomplete." >&2
 printf 'Windows Modern appearance: %s\n' "$mode"

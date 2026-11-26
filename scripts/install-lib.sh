@@ -368,9 +368,19 @@ apply_appearance_mode() {
 # they are off, holding the blur setting to restore.
 TRANSPARENCY_OFF_FILE="$HOME/.local/share/windows-modern/transparency-off"
 
+# Serialize local writes to the same Kvantum files as switch-mode.sh.
+# System-wide installation does not modify the user's Kvantum files.
+lock_appearance_writes() {
+    [ "$UID" -ne 0 ] && [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] || return 0
+    command -v flock >/dev/null || { warn "Missing flock for appearance changes."; return 1; }
+    exec 8>"$XDG_RUNTIME_DIR/windows-modern-appearance.lock" || return 1
+    flock -w 8 8 || { warn "An appearance change is already running."; return 1; }
+}
+
 # Long-lived application windows stay opaque in both modes. KWin supplies
 # live blur/noise only to the existing translucent popup surfaces.
-kvantum_transparency() {
+kvantum_transparency() (
+    lock_appearance_writes || return 1
     local value="$1" f
     for f in "$KVANTUM_DIR"/Windows-modern/*.kvconfig; do
         [ -f "$f" ] || continue
@@ -378,13 +388,14 @@ kvantum_transparency() {
             -e 's/^(translucent_windows|transparent_dolphin_view|transparent_pcmanfm_sidepane|transparent_pcmanfm_view)=.*/\1=false/' \
             -e "s/^(blurring|popup_blurring|blur_translucent)=.*/\1=${value}/" "$f"
     done
-}
+)
 
 # Reuse the existing frame generator and installed wallpaper package. No
 # extra effect, daemon or system-wide palette changes. Missing Pillow or
 # wallpaper yields the stock solid backgrounds.
-apply_window_materials() {
+apply_window_materials() (
     [ "$UID" -ne 0 ] || return 0
+    lock_appearance_writes || return 1
     local args=(--apply-local --aurorae-dir "$AURORAE_DIR"
                 --kvantum-dir "$KVANTUM_DIR/Windows-modern")
     if [ "$1" = true ]; then
@@ -396,7 +407,7 @@ apply_window_materials() {
     fi
     python3 -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" \
         || warn "Window material update failed; reinstall themes to restore the stock artwork."
-}
+)
 
 # A panel may explicitly select translucent artwork even when blur is
 # disabled. Use the already shipped solid native frames in the installed
