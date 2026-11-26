@@ -637,26 +637,63 @@ DWM registry values, so do not use DWM as the sole source for current
 shell color or assert that its value always equals a palette input.
 
 The near-gray probe returns the full default blue UISettings ramp even
-though DWM and Explorer AccentColorMenu retain a grayish color. The
-Windows fallback criterion is not known. The two rectangle observations
-are identical despite their different positions, but differ from the
-solid orange observation. This excludes a pure largest-pixel-color
-lookup for these results, not all possible spatial weighting methods.
-Solid colored images also demonstrate hue/chroma changes before shade
+though its pre-shade candidate is #7E6E79. A second near-gray candidate
+#8C6783 is accepted and normalizes to #8E6985. Their HSL saturations are
+0.0678 and 0.1523 respectively. A provisional 0.15 fallback boundary
+matches both observations and the existing custom CIELAB eligibility
+rule, but the exact Windows cutoff is not established.
+
+The Basic center/corner rectangle observations are identical despite
+their different positions. The Refinement set also shows orange selected
+when it occupies 25% against purple, 50% against purple, and 6.25%
+against gray. These results exclude a pure largest-area-color lookup,
+but do not identify the full selection or saliency algorithm. Solid
+colored images also demonstrate hue/chroma changes before shade
 generation: the image pixel RGB is not the intermediate RGB. No
 historical patent supplies confirmed 26H2 extraction parameters.
 
-The existing accent module now exposes derive_automatic_palette():
-chromatic preprocessed candidates reuse the CIELAB function, and an
-explicit no-eligible-color result (None) selects the default ramp.
-An extraction error or an unsupported chromatic input is not a
-no-eligible-color result. No gray threshold, pixel-to-candidate
-transform, spatial weights or preset matching for automatic image
-pixels is assumed. The existing regression suite records all seven
-observations, including exact seed/output separation and the observed
-fallback. This function remains disconnected from runtime until the
-extractor and global palette ownership are resolved. The current
-samples do not establish the Windows image-to-intermediate algorithm.
+The accent module's derive_automatic_palette() now applies the
+provisional HSL saturation gate before the CIELAB shade calculation.
+None and candidates below 0.15 return the default blue palette. A
+candidate with adequate saturation but outside the reviewed HSL
+lightness range raises an error rather than silently falling back.
+The threshold is a measured candidate, not a confirmed native constant.
+
+The refinement report is preserved in
+[windows11-26h2-wallpaper-probes-refinement.json](windows11-26h2-wallpaper-probes-refinement.json).
+Across its baseline and eight probes, the low 24 bits of the raw
+HKCU\\Control Panel\\Desktop\\ImageColor DWORD match the low 24 bits
+of DWM ColorizationColor. ColorizationAfterglow also matches
+ColorizationColor in every capture. The upper ImageColor byte varies
+from 0x8A to 0xAF; its meaning is unknown and the implementation does
+not interpret it. This is the first measured link between the shell's
+wallpaper candidate and the seven-color calculation.
+
+For eight chromatic captures, passing the ImageColor low 24-bit RGB
+through derive_automatic_palette() reproduces all seven UISettings
+roles exactly (56 role colors, 168 RGB channel values). The low
+saturation purple-muted-05 candidate is the single fallback. The
+#8C6783 sample is the closest accepted sample above the provisional
+threshold. The AccentPalette's first seven slots match the same API
+colors in their established order. All probes had two stable captures,
+and the original wallpaper path and palette were restored.
+
+LiteStep's [reverse-engineered private wallpaper interface](https://github.com/lsdev/LiteStep/blob/master/litestep/DesktopWallpaper.cpp)
+reads ImageColor in its GetWallpaperColor method, but the source itself
+labels the interface private and contains a TODO about computing the DWM
+colorization value. This corroborates the registry read path only. It
+does not document how Windows selects ImageColor from wallpaper pixels.
+Microsoft's [TS_ACCENTCOLOR protocol structure](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-rdperp/bc6975ee-c630-4414-ba10-04eecbb6fccc)
+documents the DWM ColorizationColor, Afterglow and AccentPalette fields,
+not the ImageColor extraction formula.
+
+The automatic shade stage is now validated against nine settled
+observations including the baseline. The wallpaper pixel-to-ImageColor
+selection algorithm, exact saturation cutoff, and spatial/color
+weighting remain unresolved. Keep derive_automatic_palette()
+disconnected from runtime until the image extractor and global palette
+ownership are resolved. An extraction error must never be converted
+into a default-blue no-candidate result.
 
 ### Extraction refinement
 
@@ -684,7 +721,8 @@ without assuming a byte order or alpha interpretation for ImageColor.
 
 The existing collector accepts -ProbeSet Refinement, which requires
 schema 4 and produces eight new controlled images without repeating
-the Basic set:
+the Basic set. The maintainer supplied the complete report, which is
+preserved in the curated fixture linked above:
 
 | Probe | Purpose |
 | --- | --- |

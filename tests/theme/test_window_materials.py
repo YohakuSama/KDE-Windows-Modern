@@ -280,10 +280,9 @@ class WindowMaterialTests(unittest.TestCase):
                 if name == "solid-gray":
                     self.assertEqual(seed, "#6E7373")
                     self.assertEqual(expected["Accent"], "#0078D4")
-                    # Explicit measured fallback; do not infer its threshold.
+                    # Measured low-saturation candidate selects default blue.
+                    self.assertEqual(derive(seed), expected)
                     self.assertEqual(derive(None), expected)
-                    with self.assertRaises(ValueError):
-                        derive(seed)
                 else:
                     self.assertEqual(derive(seed), expected)
         for probe in probes.values():
@@ -313,6 +312,71 @@ class WindowMaterialTests(unittest.TestCase):
                          (0, 0))
         self.assertNotEqual(center["observation"]["capture"]["appearance"]["source_wallpaper_sha256"],
                             corner["observation"]["capture"]["appearance"]["source_wallpaper_sha256"])
+
+    def test_refinement_automatic_wallpaper_candidates(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        derive = sync["derive_automatic_palette"]
+        reference = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes-refinement.json").read_text(
+            encoding="utf-8"))
+        self.assertEqual(reference["windows_build"], "26300.9974")
+        self.assertTrue(reference["restoration"]["wallpaper_path_verified"])
+        self.assertTrue(reference["restoration"]["palette_matches_baseline"])
+        slot_roles = ("AccentLight3", "AccentLight2", "AccentLight1", "Accent",
+                      "AccentDark1", "AccentDark2", "AccentDark3")
+        captures = [("baseline", reference["baseline"])] + [
+            (sample["name"], sample) for sample in reference["samples"]]
+        default = sync["derive_manual_palette"]("#0078D4")
+        accepted = []
+        fallback = []
+        for name, sample in captures:
+            with self.subTest(name=name):
+                self.assertEqual(sample["source_wallpaper_sha256"],
+                                 sample["registered_wallpaper_sha256"])
+                self.assertGreaterEqual(sample["stable_captures"], 2)
+                self.assertTrue(sample["palette_changed_since_previous"])
+                self.assertTrue(sample["registered_wallpaper_changed_since_previous"])
+                image_color = int(sample["image_color_dword"], 16)
+                colorization = int(sample["dwm_colorization_dword"], 16)
+                afterglow = int(sample["dwm_colorization_afterglow_dword"], 16)
+                # The upper ImageColor byte is intentionally uninterpreted.
+                self.assertEqual(image_color & 0xFFFFFF, colorization & 0xFFFFFF)
+                self.assertEqual(colorization, afterglow)
+                candidate = "#{:06X}".format(image_color & 0xFFFFFF)
+                channels = tuple(bytes.fromhex(candidate[1:]))
+                _, saturation = sync["custom_hsl_coordinates"](channels)
+                palette = sample["palette"]
+                self.assertEqual(set(palette), {"Accent", *slot_roles})
+                if saturation < sync["CUSTOM_LAB_MIN_SATURATION"]:
+                    self.assertEqual(derive(candidate), default)
+                    self.assertEqual(palette, default)
+                    fallback.append((name, float(saturation)))
+                else:
+                    self.assertEqual(derive(candidate), palette)
+                    accepted.append((name, float(saturation)))
+                raw = bytes.fromhex(sample["accent_palette_hex"])
+                self.assertEqual(len(raw), 32)
+                for index, role in enumerate(slot_roles):
+                    self.assertEqual("#" + raw[index * 4:index * 4 + 3].hex().upper(),
+                                     palette[role])
+                    self.assertEqual(raw[index * 4 + 3], 0)
+        self.assertEqual([name for name, _ in fallback], ["purple-muted-05"])
+        self.assertEqual(len(accepted), 8)
+        self.assertLess(fallback[0][1], 0.15)
+        accepted_low = min(value for _, value in accepted)
+        self.assertGreater(accepted_low, 0.15)
+        self.assertEqual(derive(None), default)
+
+        by_name = {sample["name"]: sample for sample in reference["samples"]}
+        self.assertEqual(by_name["quarter-orange"]["palette"]["Accent"], "C7510A")
+        self.assertEqual(by_name["half-purple"]["palette"]["Accent"], "BB5900")
+        self.assertEqual(by_name["small-orange-on-gray"]["palette"]["Accent"], "B75B00")
+        self.assertEqual(by_name["purple-muted-12"]["palette"]["Accent"], "8E6985")
+        quarter = by_name["quarter-orange"]["image"]["rectangle"]
+        half = by_name["half-purple"]["image"]["rectangle"]
+        small = by_name["small-orange-on-gray"]["image"]["rectangle"]
+        self.assertEqual(quarter["width"] * quarter["height"], 1280 * 800 // 4)
+        self.assertEqual(half["width"] * half["height"], 1280 * 800 // 2)
+        self.assertEqual(small["width"] * small["height"], 1280 * 800 // 16)
 
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')

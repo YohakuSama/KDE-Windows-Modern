@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "probe_set": "Refinement",
+  "windows_build": "26300.9974",
+  "display_version": "26H2",
+  "description": "Curated exact observations from the uploaded Windows 11 26H2 refinement report. ImageColor upper-byte semantics are unknown. Palette fields store RGB without the opaque FF prefix.",
+  "baseline": {
+    "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+    "source_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+    "image_color_dword": "0xAF2475CE",
+    "dwm_colorization_dword": "0x002475CE",
+    "dwm_colorization_afterglow_dword": "0x002475CE",
+    "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800",
+    "palette": {
+      "Accent": "2475CE",
+      "AccentDark1": "1C5CB2",
+      "AccentDark2": "123C8E",
+      "AccentDark3": "061864",
+      "AccentLight1": "398BDC",
+      "AccentLight2": "85C5EA",
+      "AccentLight3": "AEE6F6"
+    }
+  },
+  "samples": [
+    {
+      "name": "purple-dark",
+      "image": {
+        "background": "#512E48",
+        "rectangle": null
+      },
+      "registered_wallpaper_sha256": "BACFD6DB97BFE92811BF59704B74951BC007459E5EEA9BF92347AB72F107CC93",
+      "source_wallpaper_sha256": "BACFD6DB97BFE92811BF59704B74951BC007459E5EEA9BF92347AB72F107CC93",
+      "image_color_dword": "0x9FB25197",
+      "dwm_colorization_dword": "0x00B25197",
+      "dwm_colorization_afterglow_dword": "0x00B25197",
+      "accent_palette_hex": "F1C4EC00DFA2D300BE67A800B2519700963F7D0072295D00490F370088179800",
+      "palette": {
+        "Accent": "B25197",
+        "AccentDark1": "963F7D",
+        "AccentDark2": "72295D",
+        "AccentDark3": "490F37",
+        "AccentLight1": "BE67A8",
+        "AccentLight2": "DFA2D3",
+        "AccentLight3": "F1C4EC"
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    },
+    {
+      "name": "purple-muted-05",
+      "image": {
+        "background": "#83767F",
+        "rectangle": null
+      },
+      "registered_wallpaper_sha256": "666D12FA4DAA21863F48C03551CEFBA150CE6AF5D081B4A243831D678C2F934A",
+      "source_wallpaper_sha256": "666D12FA4DAA21863F48C03551CEFBA150CE6AF5D081B4A243831D678C2F934A",
+      "image_color_dword": "0x8A7E6E79",
+      "dwm_colorization_dword": "0x007E6E79",
+      "dwm_colorization_afterglow_dword": "0x007E6E79",
+      "accent_palette_hex": "99EBFF004CC2FF000091F8000078D4000067C000003E9200001A680088179800",
+      "palette": {
+        "Accent": "0078D4",
+        "AccentDark1": "0067C0",
+        "AccentDark2": "003E92",
+        "AccentDark3": "001A68",
+        "AccentLight1": "0091F8",
+        "AccentLight2": "4CC2FF",
+        "AccentLight3": "99EBFF"
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    },
+    {
+      "name": "quarter-orange",
+      "image": {
+        "background": "#9F5A8C",
+        "rectangle": {
+          "color": "#FF8C00",
+          "x": 320,
+          "y": 200,
+          "width": 640,
+          "height": 400
+        }
+      },
+      "registered_wallpaper_sha256": "1C7863F087A25ABBECF631A60032C01343DF8ED921660D5161F2E46625845AF3",
+      "source_wallpaper_sha256": "1C7863F087A25ABBECF631A60032C01343DF8ED921660D5161F2E46625845AF3",
+      "image_color_dword": "0xAFC7510A",
+      "dwm_colorization_dword": "0x00C7510A",
+      "dwm_colorization_afterglow_dword": "0x00C7510A",
+      "accent_palette_hex": "F8C27600F6A04900E5630B00C7510A00AA3F0800852905005B0F020088179800",
+      "palette": {
+        "Accent": "C7510A",
+        "AccentDark1": "AA3F08",
+        "AccentDark2": "852905",
+        "AccentDark3": "5B0F02",
+        "AccentLight1": "E5630B",
+        "AccentLight2": "F6A049",
+        "AccentLight3": "F8C276"
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    },
+    {
+      "name": "purple-bright",
+      "image": {
+        "background": "#D1AEC7",
+        "rectangle": null
+      },
+      "registered_wallpaper_sha256": "ED6A35080FE2ACDE60B56940325B2C204B9CBCD10D63A7BBD244B19CA61FFAF2",
+      "source_wallpaper_sha256": "ED6A35080FE2ACDE60B56940325B2C204B9CBCD10D63A7BBD244B19CA61FFAF2",
+      "image_color_dword": "0x9F916586",
+      "dwm_colorization_dword": "0x00916586",
+      "dwm_colorization_afterglow_dword": "0x00916586",
+      "accent_palette_hex": "ECD7EA00D2B6CD00A47D9B00936788007A506F005A34500035132B0088179800",
+      "palette": {
+        "Accent": "936788",
+        "AccentDark1": "7A506F",
+        "AccentDark2": "5A3450",
+        "AccentDark3": "35132B",
+        "AccentLight1": "A47D9B",
+        "AccentLight2": "D2B6CD",
+        "AccentLight3": "ECD7EA"
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    },
+    {
+      "name": "purple-muted-12",
+      "image": {
+        "background": "#8B6E83",
+        "rectangle": null
+      },
+      "registered_wallpaper_sha256": "387E12146381A3F902863AE3F606D30E124667F9C1002CA52A75C55DC400A19F",
+      "source_wallpaper_sha256": "387E12146381A3F902863AE3F606D30E124667F9C1002CA52A75C55DC400A19F",
+      "image_color_dword": "0x9A8C6783",
+      "dwm_colorization_dword": "0x008C6783",
+      "dwm_colorization_afterglow_dword": "0x008C6783",
+      "accent_palette_hex": "EBDAE900D0B9CC00A07F99008E69850075526C0056354D003113290088179800",
+      "palette": {
+        "Accent": "8E6985",
+        "AccentDark1": "75526C",
+        "AccentDark2": "56354D",
+        "AccentDark3": "311329",
+        "AccentLight1": "A07F99",
+        "AccentLight2": "D0B9CC",
+        "AccentLight3": "EBDAE9"
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    },
+    {
+      "name": "half-purple",
+      "image": {
+        "background": "#FF8C00",
+        "rectangle": {
+          "color": "#9F5A8C",
+          "x": 0,
+          "y": 0,
+          "width": 640,
+          "height": 800
+        }
+      },
+      "registered_wallpaper_sha256": "075036D8850378DFAA7AAB298594FC27598012DA79104962294508228A3A4E85",
+      "source_wallpaper_sha256": "075036D8850378DFAA7AAB298594FC27598012DA79104962294508228A3A4E85",
+      "image_color_dword": "0xAFBB5900",
+      "dwm_colorization_dword": "0x00BB5900",
+      "dwm_colorization_afterglow_dword": "0x00BB5900",
+      "accent_palette_hex": "FFCD6800FFAE3500DD6F0000BB590000A04500007D2D00005510000088179800",
+      "palette": {
+        "Accent": "BB5900",
+        "AccentDark1": "A04500",
+        "AccentDark2": "7D2D00",
+        "AccentDark3": "551000",
+        "AccentLight1": "DD6F00",
+        "AccentLight2": "FFAE35",
+        "AccentLight3": "FFCD68"
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    },
+    {
+      "name": "purple-strong",
+      "image": {
+        "background": "#C1389B",
+        "rectangle": null
+      },
+      "registered_wallpaper_sha256": "199997A1CB3FCCDB7A8B155E48ADCC4D4DC1047E39D6CB2C24366D9731F13198",
+      "source_wallpaper_sha256": "199997A1CB3FCCDB7A8B155E48ADCC4D4DC1047E39D6CB2C24366D9731F13198",
+      "image_color_dword": "0xAFD81EBC",
+      "dwm_colorization_dword": "0x00D81EBC",
+      "dwm_colorization_afterglow_dword": "0x00D81EBC",
+      "accent_palette_hex": "F7A0F300EF77E400E629CC00D519BA00B6149E008E0D7A006005510088179800",
+      "palette": {
+        "Accent": "D519BA",
+        "AccentDark1": "B6149E",
+        "AccentDark2": "8E0D7A",
+        "AccentDark3": "600551",
+        "AccentLight1": "E629CC",
+        "AccentLight2": "EF77E4",
+        "AccentLight3": "F7A0F3"
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    },
+    {
+      "name": "small-orange-on-gray",
+      "image": {
+        "background": "#808482",
+        "rectangle": {
+          "color": "#FF8C00",
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 200
+        }
+      },
+      "registered_wallpaper_sha256": "C3B0DB95850070FC2C76344D2767493612A09136D40E30D37B729A6FEE14B839",
+      "source_wallpaper_sha256": "C3B0DB95850070FC2C76344D2767493612A09136D40E30D37B729A6FEE14B839",
+      "image_color_dword": "0x90B75B00",
+      "dwm_colorization_dword": "0x00B75B00",
+      "dwm_colorization_afterglow_dword": "0x00B75B00",
+      "accent_palette_hex": "FFD06800FFB13500DA720000B75B00009C4700007A2E00005310000088179800",
+      "palette": {
+        "Accent": "B75B00",
+        "AccentDark1": "9C4700",
+        "AccentDark2": "7A2E00",
+        "AccentDark3": "531000",
+        "AccentLight1": "DA7200",
+        "AccentLight2": "FFB135",
+        "AccentLight3": "FFD068"
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    }
+  ],
+  "restoration": {
+    "wallpaper_path_verified": true,
+    "palette_matches_baseline": true
+  }
+}

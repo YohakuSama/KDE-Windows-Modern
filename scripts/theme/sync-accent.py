@@ -123,10 +123,13 @@ def custom_hsl_coordinates(channels):
     return lightness, saturation
 
 
+CUSTOM_LAB_MIN_SATURATION = Fraction(3, 20)
+
+
 def uses_custom_lab(channels):
     lightness, saturation = custom_hsl_coordinates(channels)
     return (Fraction(1, 4) <= lightness <= Fraction(3, 4)
-            and saturation >= Fraction(3, 20))
+            and saturation >= CUSTOM_LAB_MIN_SATURATION)
 
 
 # Candidate for the central custom-color branch, not the preset lookup
@@ -247,19 +250,26 @@ def derive_manual_palette(selection):
 
 
 def derive_automatic_palette(candidate):
-    """Stage the automatic shade calculation, not the image extractor.
+    """Derive shades from the shell's pre-shade wallpaper color candidate.
 
-    Pass a preprocessed chromatic candidate, not a pixel RGB, observed
-    final Accent, or KDE's effective selection color. None represents
-    an explicit no-eligible-color result, not an extraction error.
-    The rejection threshold and preprocessing are not established.
+    Pass the low 24 RGB bits of ImageColor (or the matching DWM
+    ColorizationColor), never the wallpaper pixel or final UISettings
+    Accent. None and candidates below the measured saturation boundary
+    select the default blue ramp. The 0.15 boundary is provisional:
+    current samples bracket it but do not establish the exact cutoff.
     """
     if candidate is None:
         return derive_manual_palette("#0078D4")
-    # The chromatic automatic captures use the CIELAB branch even when
-    # their source image is a preset color. Never dispatch on the image
-    # pixel's manual preset identity or use the manual HSL fallback.
-    return derive_custom_lab_palette(candidate)
+    color = rgb(candidate)
+    channels = tuple(bytes.fromhex(color[1:]))
+    lightness, saturation = custom_hsl_coordinates(channels)
+    if saturation < CUSTOM_LAB_MIN_SATURATION:
+        return derive_manual_palette("#0078D4")
+    if not Fraction(1, 4) <= lightness <= Fraction(3, 4):
+        raise ValueError("Automatic candidate outside the reviewed CIELAB range")
+    # Automatic image candidates always use CIELAB, including RGB values
+    # that happen to equal a manual preset. Do not apply preset lookup.
+    return derive_custom_lab_palette(color)
 
 
 def contrast_ink(color):
