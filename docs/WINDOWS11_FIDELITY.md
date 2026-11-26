@@ -310,7 +310,7 @@ implementation; it is not evidence of Windows-equivalent colors.
 
 ### Captured Windows 11 26H2 baseline
 
-The maintainer supplied four UISettings captures from build 26300.9974,
+The maintainer supplied five UISettings captures from build 26300.9974,
 preserved in [the runtime accent reference](windows11-26h2-accent-captures.json).
 The original blue samples were produced with the v1 script argument
 Automatic, but the Settings screenshot and the owner's correction
@@ -397,10 +397,41 @@ accent role. The existing shared-palette regression check compares the
 raw bytes with the independent API capture. Keep the remaining extraction,
 role propagation and live renderer refresh work open.
 
-The next capture should use Automatic in the actual Settings UI, preferably
-with the current known original wallpaper path supplied to SourceWallpaper.
-A manual-only sample cannot validate wallpaper extraction. The existing
-orange sample does not need to be collected again.
+### Registry palette observation (automatic blue)
+
+The v2 automatic sample reports 1 at both AutoColor locations, with no
+conflict. The registered wallpaper hash, placement and reported display
+size match the preceding manual orange sample. Its API Accent is #2475CE.
+The first seven RGB slots again match the API; the eighth slot is #881798
+and remains unassigned. Explorer AccentColorMenu encodes #2475CE
+(0xFFCE7524), and StartColorMenu encodes #1C5CB2 (0xFFB25C1C).
+DWM AccentColor and ColorizationColor retain the previous orange values.
+Consequently, those DWM registry values alone are not a reliable source
+for the current shell accent. Do not treat their persistence as a failure
+of the automatic palette capture.
+
+The matching registered wallpaper hash establishes a controlled
+manual-to-automatic comparison for the cached file, not its original
+image identity or a general wallpaper extraction algorithm.
+
+### Manual palette generation research
+
+The third-party [Windows Accent Colors analysis](https://gist.github.com/cnbluefire/7ffa04c493c57b8a67f6a8baa2c726f7)
+describes a preset palette lookup and separate custom-color generation
+paths. Its listed blue and orange presets match the measured seven-color
+ramps exactly, but this does not validate its custom-color algorithm on
+26H2. It explicitly excludes wallpaper automatic colorization.
+Treat it as a research lead, not a Microsoft implementation or a
+dependency. No third-party code or preset table is imported.
+
+The capture script v3 preserves the entered custom RGB value and the
+observed base Accent separately, even when they differ. The previous
+v2 cross-check rejected mismatches, preventing normalization analysis.
+The next manual reference should use a custom non-preset color
+(e.g. #9F5A8C) entered through Windows Settings, with ManualColor recording
+that exact input. For wallpaper extraction, obtain the original image or
+its source hash separately; the current automatic sample does not have it.
+No repeat of the default blue or orange captures is required.
 
 ### Capture procedure
 
@@ -436,11 +467,12 @@ green, purple and neutral images. Keep the display and wallpaper
 placement fixed. Use a unique JSON filename for each capture. For manual
 accent references, select a known color in Windows and run the following
 command. The script records the actual base Accent from UISettings;
-the optional ManualColor argument is only a cross-check:
+the optional ManualColor argument records the operator-entered RGB. The
+v3 script reports a match or mismatch without rejecting the capture:
 
 ```powershell
-.\capture-windows-accent.ps1 -AccentMode Manual |
-    Set-Content -Encoding UTF8 accent-manual.json
+.\capture-windows-accent.ps1 -AccentMode Manual -ManualColor '#9F5A8C' |
+    Set-Content -Encoding UTF8 accent-manual-custom.json
 ```
 
 Repeat manual captures for several distinct hues and the default blue,
@@ -449,8 +481,9 @@ wallpaper-to-base-color extraction from base-to-shade generation. Compare
 Windows AccentLight2 in dark mode and AccentDark1 in light mode against
 the live KDE selection role and screenshots. Do not fit a purported
 native algorithm from only the default blue example. Record unseen images
-and manual colors separately for eventual acceptance. Until actual samples
-are available, retain KDE's own extraction and do not claim equivalence.
+and manual colors separately for eventual acceptance. Until the extraction
+and custom-color generation algorithms are independently validated,
+retain KDE's own extraction and do not claim equivalence.
 
 On KDE, keep Dolphin and Konsole open during a manual accent change, a
 wallpaper change, and both dark/light switches. Verify slider, checkbox,

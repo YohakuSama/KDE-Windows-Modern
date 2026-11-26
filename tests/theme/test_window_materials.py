@@ -205,9 +205,17 @@ class WindowMaterialTests(unittest.TestCase):
             appearance = sample["appearance"]
             mode = "light" if appearance["apps_use_light_theme"] else "dark"
             colors = appearance["colors_argb"]
-            self.assertEqual(sample["verified_settings_mode"], "Manual")
-            self.assertEqual(sample["manual_color_observed_from_ui_settings"], colors["Accent"])
-            self.assertEqual(sample["manual_color_argument"], "")
+            settings_mode = sample["verified_settings_mode"]
+            self.assertIn(settings_mode, ("Manual", "Automatic"))
+            if settings_mode == "Manual":
+                self.assertEqual(sample["manual_color_observed_from_ui_settings"],
+                                 colors["Accent"])
+            else:
+                self.assertIsNone(sample["manual_color_observed_from_ui_settings"])
+            if sample["script_schema_version"] >= 2:
+                self.assertEqual(sample["accent_mode_registry"], settings_mode)
+                self.assertFalse(sample["accent_mode_registry_conflict"])
+                self.assertEqual(sample["accent_observed_from_ui_settings"], colors["Accent"])
             for role in ("Accent", "AccentDark1", "AccentDark2", "AccentDark3",
                          "AccentLight1", "AccentLight2", "AccentLight3"):
                 self.assertRegex(colors[role], r"^#FF[0-9A-F]{6}$")
@@ -254,6 +262,40 @@ class WindowMaterialTests(unittest.TestCase):
                          0xFF0077E3)
         self.assertEqual(registry["dwm_colorization_color_raw"] & 0xFFFFFFFF,
                          0xC4FF8C00)
+
+        automatic_sample = captured[observation["automatic_capture"]]
+        automatic_appearance = automatic_sample["appearance"]
+        automatic_registry = automatic_appearance["registry"]
+        automatic_colors = automatic_appearance["colors_argb"]
+        self.assertEqual(automatic_sample["accent_mode_registry"], "Automatic")
+        self.assertEqual(automatic_registry["control_panel_auto_colorization_raw"], 1)
+        self.assertEqual(automatic_registry["themes_history_auto_color_raw"], 1)
+        self.assertEqual(automatic_colors["Accent"], "#FF2475CE")
+        for key in ("registered_wallpaper_sha256", "wallpaper_style_raw",
+                    "tile_wallpaper_raw", "reported_display_width",
+                    "reported_display_height"):
+            self.assertEqual(automatic_appearance[key], registry_appearance[key])
+        self.assertIsNone(automatic_appearance["source_wallpaper_sha256"])
+        raw_auto = bytes.fromhex(automatic_registry["accent_palette_hex"])
+        self.assertEqual(len(raw_auto), automatic_registry["accent_palette_length_bytes"])
+        self.assertEqual(len(raw_auto), 32)
+        for index, role in enumerate(order):
+            slot = raw_auto[index * 4:index * 4 + 4]
+            self.assertEqual("#FF" + slot[:3].hex().upper(), automatic_colors[role])
+            self.assertEqual(slot[3], 0)
+        self.assertEqual("#" + raw_auto[28:31].hex().upper(),
+                         observation["automatic_unassigned_slot_rgb"])
+        self.assertEqual(raw_auto[31], 0)
+        self.assertEqual(automatic_registry["explorer_accent_color_menu_raw"] & 0xFFFFFFFF,
+                         0xFFCE7524)
+        self.assertEqual(automatic_registry["explorer_start_color_menu_raw"] & 0xFFFFFFFF,
+                         0xFFB25C1C)
+        # Automatic mode updates Explorer and UISettings but not these DWM
+        # values in the measured transition. Keep the distinction explicit.
+        for key in ("dwm_accent_color_raw", "dwm_colorization_color_raw"):
+            self.assertEqual(automatic_registry[key], registry[key])
+        self.assertNotEqual(automatic_registry["dwm_accent_color_raw"],
+                            automatic_registry["explorer_accent_color_menu_raw"])
 
         schemes = {}
         for mode in ('dark', 'light'):

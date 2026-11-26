@@ -1,7 +1,7 @@
 {
   "windows_build": "26300.9974",
   "display_version": "26H2",
-  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In every sample, the observed manual base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1. The v2 orange capture independently records the registry mode and raw palette, with the same seven UISettings colors as the v1 orange capture.",
+  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In every sample, the observed manual base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1. The v2 orange capture independently records the registry mode and raw palette, with the same seven UISettings colors as the v1 orange capture. The v2 automatic sample reports Automatic at both registry locations; unlike the manual captures, the current API/Explorer palette differs from DWM's unchanged manual orange values.",
   "winui_roles": {
     "dark": {
       "primary_fill": "AccentLight2",
@@ -162,6 +162,48 @@
           "accent_palette_hex": "FFD15500FFB63400FF991000FF8C0000E3770000A1460000651900000063B100"
         }
       }
+    },
+    "automatic_blue_light_registry": {
+      "script_schema_version": 2,
+      "script_mode_argument": "Automatic",
+      "verified_settings_mode": "Automatic",
+      "accent_mode_registry": "Automatic",
+      "accent_mode_registry_conflict": false,
+      "manual_color_argument": "",
+      "accent_observed_from_ui_settings": "#FF2475CE",
+      "manual_color_observed_from_ui_settings": null,
+      "appearance": {
+        "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+        "source_wallpaper_sha256": null,
+        "wallpaper_style_raw": "10",
+        "tile_wallpaper_raw": "0",
+        "apps_use_light_theme": 1,
+        "system_uses_light_theme": 1,
+        "transparency_raw": 1,
+        "reported_display_width": 1280,
+        "reported_display_height": 800,
+        "colors_argb": {
+          "Accent": "#FF2475CE",
+          "AccentDark1": "#FF1C5CB2",
+          "AccentDark2": "#FF123C8E",
+          "AccentDark3": "#FF061864",
+          "AccentLight1": "#FF398BDC",
+          "AccentLight2": "#FF85C5EA",
+          "AccentLight3": "#FFAEE6F6",
+          "Background": "#FFFFFFFF",
+          "Foreground": "#FF000000"
+        },
+        "registry": {
+          "control_panel_auto_colorization_raw": 1,
+          "themes_history_auto_color_raw": 1,
+          "dwm_accent_color_raw": -16741121,
+          "dwm_colorization_color_raw": -989885440,
+          "explorer_accent_color_menu_raw": -3246812,
+          "explorer_start_color_menu_raw": -5088228,
+          "accent_palette_length_bytes": 32,
+          "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
+        }
+      }
     }
   },
   "registry_palette_observation": {
@@ -180,6 +222,8 @@
     ],
     "unassigned_slot_index": 7,
     "unassigned_slot_rgb": "#0063B1",
-    "limitations": "Observed on build 26300.9974 with one manual accent. The eighth slot and fourth byte semantics are not established; this observation does not specify the Windows palette-generation algorithm."
+    "limitations": "Observed on build 26300.9974 with one manual accent and one automatic accent. The eighth slot and fourth byte semantics are not established; these observations do not specify the Windows palette-generation algorithm.",
+    "automatic_capture": "automatic_blue_light_registry",
+    "automatic_unassigned_slot_rgb": "#881798"
   }
 }

@@ -144,21 +144,23 @@ $manualColorObserved = $null
 if ($registryMode -eq 'Manual') {
     $manualColorObserved = $accentObserved
 }
+# The entered color may be normalized by Windows. Preserve both values
+# instead of rejecting exactly the samples needed to study normalization.
+$manualColorMatches = $null
 if ($ManualColor) {
     $expectedManualColor = '#FF' + $ManualColor.Substring(1).ToUpperInvariant()
-    if ($accentObserved -ne $expectedManualColor) {
-        throw "ManualColor does not match the UISettings Accent value ($accentObserved)."
-    }
+    $manualColorMatches = $accentObserved -eq $expectedManualColor
 }
 
 [ordered]@{
-    schema_version = 2
+    schema_version = 3
     windows_build = "$($build.CurrentBuildNumber).$($build.UBR)"
     display_version = $build.DisplayVersion
     accent_mode_argument = $AccentMode
     accent_mode_registry = $registryMode
     accent_mode_registry_conflict = $registryModeConflict
     manual_color_argument = $ManualColor
+    manual_color_matches_observed = $manualColorMatches
     accent_observed_from_ui_settings = $accentObserved
     manual_color_observed_from_ui_settings = $manualColorObserved
     appearance = $second
