@@ -46,7 +46,7 @@ check_dir  "plasma/look-and-feel/org.kde.windowsmodern.dark" "Shared global them
 check_file "scripts/theme/light-store-dependencies.json"    "Mode-specific Store dependencies"
 check_file "scripts/theme/appearance-packages.py"            "Shared appearance package materializer"
 check_file "scripts/theme/switch-mode.sh"                    "Appearance-only mode switch"
-check_dir  "Kvantum/Windows-modern"                         "Kvantum theme"
+check_file "Kvantum/Windows-modern/Windows-modern.kvconfig.in" "Shared Kvantum configuration source"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"
 check_file "icons/windows-modern/index.theme"               "Icon pack"
 store_icons=(icons/windows-modern/apps/discover.svg icons/windows-modern/apps/org.kde.discover.svg icons/windows-modern/apps/plasma-discover.svg icons/windows-modern/apps/plasmadiscover.svg icons/windows-modern/apps/muondiscover.svg)
@@ -82,6 +82,10 @@ if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance"; then
     else
         fail "Staged Aurorae window frame drift"
     fi
+    for name in Windows-modern Windows-modernDark; do
+        check_file "$tasks_tmp/appearance/Kvantum/Windows-modern/$name.kvconfig" "Kvantum configuration $name"
+        check_file "$tasks_tmp/appearance/Kvantum/Windows-modern/$name.svg" "Kvantum artwork $name"
+    done
     drift=""
     for v in dark light; do
         decoration="$tasks_tmp/appearance/aurorae/windows-modern-${v}-aurorae"

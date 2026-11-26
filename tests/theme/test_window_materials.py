@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import importlib.util
 from pathlib import Path
+import runpy
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -10,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('window_frames', ROOT / 'scripts/theme/window-frames.py')
 frames = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(frames)
+render_kvantum_config = runpy.run_path(str(ROOT / 'scripts/theme/appearance-packages.py'))['render_kvantum_config']
 SVG = ('<svg xmlns="http://www.w3.org/2000/svg">'
        '<path id="window-normal" fill="#ffffff" opacity=".8" d="M0 0"/>'
        '<path id="window-normal-inactive" fill="#ffffff" opacity=".8" d="M1 1"/>'
@@ -82,7 +84,8 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertEqual(len(item), 2)
                     self.assertEqual([x.get('fill') for x in item], [border, color])
                     self.assertTrue(all(x.get('opacity') == '.98' for x in item))
-                config = (theme / (name + '.kvconfig')).read_text()
+                mode = 'dark' if name.endswith('Dark') else 'light'
+                config = render_kvantum_config(ROOT, mode)
                 menu = config.split('[Menu]\n', 1)[1].split('[MenuItem]', 1)[0]
                 for side in ('top', 'bottom', 'left', 'right'):
                     self.assertIn('frame.' + side + '=8', menu)
@@ -91,10 +94,9 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertIn('text.margin.bottom=3', items)
 
     def test_qt_control_spacing_matches_both_themes(self):
-        theme = ROOT / 'Kvantum/Windows-modern'
-        for name in ('Windows-modern', 'Windows-modernDark'):
-            with self.subTest(name=name):
-                config = (theme / (name + '.kvconfig')).read_text()
+        for mode in ('light', 'dark'):
+            with self.subTest(mode=mode):
+                config = render_kvantum_config(ROOT, mode)
                 def section(name):
                     return dict(line.split('=', 1) for line in
                                 config.split('[' + name + ']\n', 1)[1].split('\n[', 1)[0].splitlines()
@@ -105,6 +107,11 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertEqual(general['tree_branch_line'], 'false')
                 self.assertEqual(section('Hacks')['force_size_grip'], 'false')
                 self.assertEqual(section('TitleBar')['text.italic'], 'false')
+                slider = config.split('[Slider]\n', 1)[1].split('\n[', 1)[0].splitlines()
+                for side in ('top', 'bottom', 'left', 'right'):
+                    key = 'frame.' + side
+                    self.assertEqual([line for line in slider if line.startswith(key + '=')],
+                                     [key + '=2'])
                 for control in ('LineEdit', 'ComboBox'):
                     values = section(control)
                     for side, size in (('top', '4'), ('bottom', '4'), ('left', '8'), ('right', '8')):

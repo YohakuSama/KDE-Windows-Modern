@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import runpy
 import shutil
+from string import Template
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "org.kde.windowsmodern.dark"
@@ -365,10 +366,65 @@ def lookfeel(root, destination, mode):
     return target
 
 
+# Kvantum's geometry, behavior and state keys are shared. Keep its existing
+# palette roles separate: a literal used for a surface may have a different
+# light-mode value than the same literal used for text.
+KVANTUM_CONFIG_COLORS = {
+    "dark": {
+        "window": "#202020",
+        "base": "#191919",
+        "alternate_base": "#1E1E1E",
+        "button": "#2C2C2C",
+        "light_surface": "#3F3F3F",
+        "dark_surface": "#1F1F1F",
+        "mid_surface": "#2C2C2C",
+        "accent": "#4CC2FF",
+        "text": "#FFFFFF",
+        "text_lower": "#ffffff",
+        "disabled_text": "#5A5A5A",
+        "highlight_text": "#1E1E1E",
+        "selected_item_text": "#FFFFFF",
+    },
+    "light": {
+        "window": "#F9F9F9",
+        "base": "#FFFFFF",
+        "alternate_base": "#F8F8F8",
+        "button": "#F3F3F3",
+        "light_surface": "#E9E9E9",
+        "dark_surface": "#E5E5E5",
+        "mid_surface": "#E5E5E5",
+        "accent": "#0067C0",
+        "text": "#1E1E1E",
+        "text_lower": "#1E1E1E",
+        "disabled_text": "#A0A0A0",
+        "highlight_text": "#ffffff",
+        "selected_item_text": "#ffffff",
+    },
+}
+
+
+def render_kvantum_config(root, mode):
+    source = root / "Kvantum/Windows-modern/Windows-modern.kvconfig.in"
+    return Template(source.read_text(encoding="utf-8")).substitute(KVANTUM_CONFIG_COLORS[mode])
+
+
+def kvantum(root, destination):
+    source = root / "Kvantum/Windows-modern"
+    target = destination / "Windows-modern"
+    target.mkdir(parents=True)
+    for mode, name in (("light", "Windows-modern"), ("dark", "Windows-modernDark")):
+        (target / (name + ".kvconfig")).write_text(
+            render_kvantum_config(root, mode), encoding="utf-8")
+        # Preserve the existing mode-specific SVG geometry and paint until
+        # their structural differences have been reconciled.
+        shutil.copy2(source / (name + ".svg"), target / (name + ".svg"))
+    return target
+
+
 def materialize(root, output, component="runtime"):
     output = output.resolve()
     if any(output.is_relative_to((root / source).resolve()) for source in
-           ("plasma/desktoptheme", "plasma/look-and-feel", "aurorae")):
+           ("plasma/desktoptheme", "plasma/look-and-feel", "aurorae", "Kvantum")):
         raise ValueError("Stage appearance packages outside their source directories")
     output.mkdir(parents=True, exist_ok=True)
     if component in ("runtime", "themes"):
@@ -379,6 +435,7 @@ def materialize(root, output, component="runtime"):
         for mode in ("dark", "light"):
             desktoptheme(root, desktop, mode)
             aurorae(root, decorations, mode)
+        kvantum(root, output / "Kvantum")
         if component == "runtime":
             global_theme = output / "look-and-feel"
             global_theme.mkdir()

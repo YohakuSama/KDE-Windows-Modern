@@ -539,10 +539,13 @@ Rewritten with minimal 1px border elements:
 
 Location: `Kvantum/Windows-modern/`
 
-SVG-based Qt widget theme. The directory contains the base light theme
-(`Windows-modern.kvconfig` / `.svg`) and its dark variant
-(`Windows-modernDark.kvconfig` / `.svg`). KDE switches between them
-automatically by using the `kvantum` and `kvantum-dark` widget styles.
+SVG-based Qt widget theme. The shared `Windows-modern.kvconfig.in`
+template defines layout, behavior and control states for both modes.
+The appearance materializer resolves its mode-specific color roles and
+stages `Windows-modern.kvconfig` and `Windows-modernDark.kvconfig`
+with their existing SVGs. KDE selects the installed light/dark variants
+through the `kvantum` and `kvantum-dark` widget styles. The slider frame
+uses 2 px on all four sides in both modes, without duplicate keys.
 Based on the **Fluent** Kvantum theme by
 Vince Liuice (itself derived from KvAdapta by Tsu Jan), with colors
 remapped to authentic Win11 values. The Fluent base was chosen over

@@ -466,7 +466,13 @@ shadow geometry are unchanged. Normal installation, NixOS transactional
 staging and Store exports use this same source. Actual fractional-scale
 caption rendering needs owner acceptance.
 
-Two color schemes and Kvantum artwork remain for separate consolidation.
+Kvantum now shares one configuration template. The appearance materializer
+stages both native engine configurations alongside their existing SVGs.
+All previous color values are retained; the three duplicate light slider
+frame keys are removed so both modes use the same 2 px slices. The SVG
+artwork still has mode-specific structure, including checked indicators,
+and must be reconciled separately without losing state feedback.
+The two KDE color schemes also remain for separate consolidation.
 KDE supports adaptive SVG colors via the current-color-scheme
 stylesheet (https://develop.kde.org/docs/plasma/theme/theme-colors/);
 do not automatically substitute fixed Windows material colors or
