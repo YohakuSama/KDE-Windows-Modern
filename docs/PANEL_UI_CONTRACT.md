@@ -9,7 +9,11 @@ Current implementation values are provisional until verified on the desktop.
 - Standard panel height: 48 logical pixels. Start, Search, Task View and
   tasks use a 30px icon canvas constrained by their cells, with a 4px
   total inset. Preserve aspect ratio and optical padding. Let Qt apply
-  fractional scaling; do not crop app artwork.
+  fractional scaling; do not crop app artwork. Constrain the canvas by both
+  cell dimensions and hide it when no usable extent remains. Task stripes
+  use the available applet extent rather than their own grid's size. Check
+  zero-task and first-task transitions, narrow/vertical panels, and manual
+  multi-stripe settings without invalid or negative layout hints.
 - Default tray glyph box: 16px. Ordinary cells: 32px. Core grouped cells:
   24px. Keep state-family scale, actual status, user spacing preferences,
   independent click targets, RTL and the native fallback representation.

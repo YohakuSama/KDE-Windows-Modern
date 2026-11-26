@@ -9,8 +9,11 @@ function popupGap() { return gap; }
 
 function normalOffset(edge, panel, anchor) {
     const valid = panel && anchor && Number.isFinite(panel.x) && Number.isFinite(panel.y)
-        && panel.width > 0 && panel.height > 0 && Number.isFinite(anchor.x) && Number.isFinite(anchor.y)
-        && anchor.width > 0 && anchor.height > 0;
+        && Number.isFinite(panel.width) && panel.width > 0
+        && Number.isFinite(panel.height) && panel.height > 0
+        && Number.isFinite(anchor.x) && Number.isFinite(anchor.y)
+        && Number.isFinite(anchor.width) && anchor.width > 0
+        && Number.isFinite(anchor.height) && anchor.height > 0;
     const result = {x: 0, y: 0};
     switch (edge) {
     case "bottom":

@@ -35,17 +35,17 @@ FloatingToolTipArea {
                     ? TaskManagerApplet.LayoutMetrics.preferredHeightInPopup()
                     : (tasksRoot.vertical
                         ? TaskManagerApplet.LayoutMetrics.preferredMinHeight()
-                        : Math.max(tasksRoot.height / Plasmoid.configuration.maxStripes,
+                        : Math.max(tasksRoot.height / Math.max(1, Plasmoid.configuration.maxStripes),
                              TaskManagerApplet.LayoutMetrics.preferredMinHeight()))
     implicitWidth: tasksRoot.vertical
-        ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Math.min(TaskManagerApplet.LayoutMetrics.preferredMaxWidth(), tasksRoot.width / Plasmoid.configuration.maxStripes))
+        ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Math.min(TaskManagerApplet.LayoutMetrics.preferredMaxWidth(), tasksRoot.width / Math.max(1, Plasmoid.configuration.maxStripes)))
         : 0
 
     Layout.fillWidth: true
     Layout.fillHeight: !inPopup
     Layout.maximumWidth: tasksRoot.vertical
         ? -1
-        : ((model.IsLauncher && !tasksRoot.iconsOnly) ? tasksRoot.height / taskList.rows : TaskManagerApplet.LayoutMetrics.preferredMaxWidth())
+        : ((!inPopup && model.IsLauncher && !tasksRoot.iconsOnly) ? tasksRoot.height / Math.max(1, taskList.rows) : TaskManagerApplet.LayoutMetrics.preferredMaxWidth())
     Layout.maximumHeight: tasksRoot.vertical ? TaskManagerApplet.LayoutMetrics.preferredMaxHeight() : -1
 
     required property var model
@@ -565,7 +565,7 @@ FloatingToolTipArea {
         id: iconBox
 
         readonly property bool panelIconOnly: !task.inPopup && task.tasksRoot.iconsOnly
-        readonly property real panelIconSize: Math.max(1, Math.min(30, task.width - 4, task.height - 4))
+        readonly property real panelIconSize: Math.max(0, Math.min(30, Math.floor(Math.min(task.width, task.height) - 4)))
 
         anchors {
             left: parent.left
@@ -579,7 +579,7 @@ FloatingToolTipArea {
             : task.inPopup ? Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium)
             : Math.min(task.parent?.minimumWidth ?? 0, task.height)
         height: panelIconOnly || task.inPopup ? width
-            : (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)
+            : Math.max(0, parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)
                  - adjustMargin(false, parent.height, taskFrame.margins.bottom))
 
         asynchronous: true
@@ -588,14 +588,14 @@ FloatingToolTipArea {
         source: "TaskBadgeOverlay.qml"
 
         function adjustMargin(isVertical: bool, size: real, margin: real): real {
-            if (!size) {
-                return margin;
+            if (size <= 0) {
+                return 0;
             }
 
             var margins = isVertical ? TaskManagerApplet.LayoutMetrics.horizontalMargins() : TaskManagerApplet.LayoutMetrics.verticalMargins();
 
             if ((size - margins) < Kirigami.Units.iconSizes.small) {
-                return Math.ceil((margin * (Kirigami.Units.iconSizes.small / size)) / 2);
+                return Math.min(size / 2, Math.ceil((margin * (Kirigami.Units.iconSizes.small / size)) / 2));
             }
 
             return margin;
@@ -633,9 +633,9 @@ FloatingToolTipArea {
                 PropertyChanges {
                     iconBox.anchors.leftMargin: 0
                     iconBox.width: iconBox.panelIconOnly ? iconBox.panelIconSize
-                        : Math.min(task.parent.minimumWidth, tasksRoot.height)
+                        : Math.max(0, Math.min(task.parent.minimumWidth ?? 0, tasksRoot.height)
                         - iconBox.adjustMargin(true, task.width, taskFrame.margins.left)
-                        - iconBox.adjustMargin(true, task.width, taskFrame.margins.right)
+                        - iconBox.adjustMargin(true, task.width, taskFrame.margins.right))
                 }
             }
         ]

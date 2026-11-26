@@ -23,39 +23,42 @@ GridLayout {
     }
 
     required property int count
+    // The immediate parent's size follows this grid, so it cannot be used
+    // to decide how many stripes the grid itself needs.
+    required property real availableWidth
+    required property real availableHeight
 
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
 
-    readonly property real minimumWidth: children
-        .filter(item => item.visible && item.width > 0)
-        .reduce((minimumWidth, item) => Math.min(minimumWidth, item.width), Infinity)
+    readonly property real minimumWidth: {
+        const minimum = children
+            .filter(item => item.visible && Number.isFinite(item.width) && item.width > 0)
+            .reduce((value, item) => Math.min(value, item.width), Infinity);
+        return Number.isFinite(minimum) ? minimum : 0;
+    }
 
     readonly property int stripeCount: {
-        if (Plasmoid.configuration.maxStripes === 1) {
+        const configured = Math.max(1, Plasmoid.configuration.maxStripes);
+        if (configured === 1 || count <= 0) {
             return 1;
         }
         if (Plasmoid.configuration.forceStripes) {
-            return Plasmoid.configuration.maxStripes;
+            return configured;
         }
 
-        // The maximum number of stripes allowed by the applet's size
-        const stripeSizeLimit = vertical
-            ? Math.floor(parent.width / children[0].implicitWidth)
-            : Math.floor(parent.height / children[0].implicitHeight)
-        const maxStripes = Math.min(Plasmoid.configuration.maxStripes, stripeSizeLimit)
+        const minWidth = Math.max(1, TaskManagerApplet.LayoutMetrics.preferredMinWidth());
+        const minHeight = Math.max(1, TaskManagerApplet.LayoutMetrics.preferredMinHeight());
+        const width = Math.max(0, availableWidth);
+        const height = Math.max(0, availableHeight);
 
-
-        // The number of tasks that will fill a "stripe" before starting the next one
-        const maxTasksPerStripe = vertical
-            ? Math.ceil(parent.height / TaskManagerApplet.LayoutMetrics.preferredMinHeight())
-            : Math.ceil(parent.width / TaskManagerApplet.LayoutMetrics.preferredMinWidth())
-
-        return Math.min(Math.ceil(count / maxTasksPerStripe), maxStripes)
+        // Use the applet's available extent and existing minimum cell sizes,
+        // including when the model or its delegates are not yet ready.
+        const stripeSizeLimit = Math.max(1, Math.floor(vertical ? width / minWidth : height / minHeight));
+        const maxTasksPerStripe = Math.max(1, Math.ceil(vertical ? height / minHeight : width / minWidth));
+        return Math.max(1, Math.min(Math.ceil(count / maxTasksPerStripe), configured, stripeSizeLimit));
     }
 
-    readonly property int orthogonalCount: {
-        return Math.ceil(count / stripeCount);
-    }
+    readonly property int orthogonalCount: Math.max(1, Math.ceil(count / stripeCount))
 
     rows: vertical ? orthogonalCount : stripeCount
     columns: vertical ? stripeCount : orthogonalCount

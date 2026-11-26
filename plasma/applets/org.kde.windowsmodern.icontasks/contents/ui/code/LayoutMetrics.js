@@ -22,8 +22,12 @@ function verticalMargins() {
 function adjustMargin(height, margin) {
     const available = height - verticalMargins();
 
+    if (available <= 0) {
+        return 0;
+    }
     if (available < Kirigami.Units.iconSizes.small) {
-        return Math.floor((margin * (Kirigami.Units.iconSizes.small / available)) / 3);
+        return Math.min(Math.floor(height / 2),
+            Math.floor((margin * (Kirigami.Units.iconSizes.small / available)) / 3));
     }
 
     return margin;
@@ -33,7 +37,7 @@ function maxStripes() {
     const length = tasks.vertical ? tasks.width : tasks.height;
     const minimum = tasks.vertical ? preferredMinWidth() : preferredMinHeight();
 
-    return Math.min(tasks.plasmoid.configuration.maxStripes, Math.max(1, Math.floor(length / minimum)));
+    return Math.max(1, Math.min(tasks.plasmoid.configuration.maxStripes, Math.floor(length / Math.max(1, minimum))));
 }
 
 function optimumCapacity(width, height) {
@@ -154,8 +158,8 @@ function spaceRequiredToShowText() {
 function preferredMinLauncherWidth() {
     const baseWidth = tasks.vertical ? preferredMinHeight() : Math.min(tasks.height, Kirigami.Units.iconSizes.small * 3);
 
-    return (baseWidth + horizontalMargins())
-        - (adjustMargin(baseWidth, taskFrame.margins.top) + adjustMargin(baseWidth, taskFrame.margins.bottom));
+    return Math.max(1, baseWidth + horizontalMargins()
+        - adjustMargin(baseWidth, taskFrame.margins.top) - adjustMargin(baseWidth, taskFrame.margins.bottom));
 }
 
 function maximumContextMenuTextWidth() {

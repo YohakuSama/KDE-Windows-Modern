@@ -33,6 +33,15 @@ TestCase {
         verify(search.width >= start.width);
     }
 
+    function test_unsettledSurfaceGeometry() {
+        const missing = PopupPosition.surfaceSize(0, null, 48, false, 28, false);
+        compare(missing.width, 560);
+        compare(missing.height, 640);
+        const invalid = PopupPosition.surfaceSize(0, {width: Infinity, height: 720}, Infinity, false, NaN, true);
+        compare(invalid.width, 680);
+        compare(invalid.height, 640);
+    }
+
     function test_taskbarSearchAnchor() {
         const screen = {x: 0, width: 1920};
         const panel = {x: 0, width: 1920};
@@ -80,7 +89,9 @@ TestCase {
             {tag: "bottom unpadded group", edge: "bottom", panel: {x:0,y:900,width:1920,height:48}, anchor: {x:1600,y:900,width:120,height:48}, x:0,y:-12},
             {tag: "top", edge: "top", panel: {x:0,y:0,width:1920,height:48}, anchor: {x:200,y:4,width:48,height:40}, x:0,y:16},
             {tag: "left negative screen", edge: "left", panel: {x:-1920,y:0,width:48,height:1080}, anchor: {x:-1916,y:200,width:40,height:48}, x:16,y:0},
-            {tag: "right", edge: "right", panel: {x:1872,y:0,width:48,height:1080}, anchor: {x:1876,y:200,width:40,height:48}, x:-16,y:0}
+            {tag: "right", edge: "right", panel: {x:1872,y:0,width:48,height:1080}, anchor: {x:1876,y:200,width:40,height:48}, x:-16,y:0},
+            {tag: "unsettled panel height", edge: "top", panel: {x:0,y:0,width:1920,height:Infinity}, anchor: {x:200,y:4,width:48,height:40}, x:0,y:12},
+            {tag: "unsettled anchor width", edge: "left", panel: {x:0,y:0,width:48,height:1080}, anchor: {x:4,y:200,width:Infinity,height:48}, x:12,y:0}
         ];
     }
 

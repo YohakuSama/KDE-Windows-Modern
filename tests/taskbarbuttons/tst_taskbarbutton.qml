@@ -103,6 +103,8 @@ Item {
         // narrower than the canvas plus the frame's borders.
         function test_glyphSize_data() {
             return [
+                { tag: "zero-sized cell", cell: 0, expected: 0 },
+                { tag: "cell smaller than inset", cell: 3, expected: 0 },
                 { tag: "24px panel", cell: 24, expected: 20 },
                 { tag: "30px panel", cell: 30, expected: 26 },
                 { tag: "36px panel", cell: 36, expected: 30 },
@@ -135,6 +137,12 @@ Item {
         function test_glyphFollowsShorterSide() {
             const button = makeButton({ width: 120, height: 30 });
             compare(button.glyphSize, 26);
+            button.width = 12;
+            button.height = 48;
+            compare(button.glyphSize, 8);
+            button.width = 0;
+            compare(button.glyphSize, 0);
+            verify(!findChild(button, "taskbarButtonIcon").visible);
         }
 
         function test_states() {

@@ -4,19 +4,23 @@
 // Search home and results have the same wider size, independent of the query.
 // Clamp both modes to the same available logical screen geometry.
 function surfaceSize(mode, screen, panelExtent, vertical, margin, searching) {
-    const large = mode === 2 || (mode === 0 && screen.width >= 1440);
+    const screenWidth = screen && Number.isFinite(screen.width) ? screen.width : 0;
+    const screenHeight = screen && Number.isFinite(screen.height) ? screen.height : 0;
+    const large = mode === 2 || (mode === 0 && screenWidth >= 1440);
     const startWidth = large ? 768 : 560;
     // Owner reference: Search is about 1.21 times the Start width.
     const searchWidth = large ? 928 : 680;
     const wantedWidth = searching ? searchWidth : startWidth;
     const wantedHeight = large ? 720 : 640;
-    const panel = Math.max(0, Number(panelExtent) || 0);
-    const inset = 2 * Math.max(0, Number(margin) || 0);
+    const panelValue = Number(panelExtent);
+    const marginValue = Number(margin);
+    const panel = Number.isFinite(panelValue) ? Math.max(0, panelValue) : 0;
+    const inset = Number.isFinite(marginValue) ? 2 * Math.max(0, marginValue) : 0;
     return {
-        width: Math.max(1, Math.floor(Math.min(wantedWidth, screen.width > 0
-            ? screen.width - (vertical ? panel : 0) - inset : wantedWidth))),
-        height: Math.max(1, Math.floor(Math.min(wantedHeight, screen.height > 0
-            ? screen.height - (vertical ? 0 : panel) - inset : wantedHeight)))
+        width: Math.max(1, Math.floor(Math.min(wantedWidth, screenWidth > 0
+            ? screenWidth - (vertical ? panel : 0) - inset : wantedWidth))),
+        height: Math.max(1, Math.floor(Math.min(wantedHeight, screenHeight > 0
+            ? screenHeight - (vertical ? 0 : panel) - inset : wantedHeight)))
     };
 }
 

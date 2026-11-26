@@ -59,7 +59,7 @@ MouseArea {
 
     // Match the fixed logical canvas of Start and icon-only tasks. Do not
     // snap 30 to a different icon size at fractional output scaling.
-    readonly property int glyphSize: Math.max(1, Math.min(30, Math.floor(Math.min(width, height) - 2 * tileInset)))
+    readonly property int glyphSize: Math.max(0, Math.min(30, Math.floor(Math.min(width, height) - 2 * tileInset)))
 
     hoverEnabled: true
     activeFocusOnTab: true
@@ -128,7 +128,7 @@ MouseArea {
         roundToIconSize: false
         source: button.effectiveIconName
         fallback: ""
-        visible: button.effectiveIconName.length > 0
+        visible: button.glyphSize > 0 && button.effectiveIconName.length > 0
         isMask: button.effectiveIconIsMask
         color: Kirigami.Theme.textColor
         scale: button.showPressed ? 0.9 : 1

@@ -461,25 +461,35 @@ PlasmoidItem {
                 }
 
                 count: tasksModel.count
+                availableWidth: tasks.width
+                availableHeight: tasks.height
 
-                readonly property real widthOccupation: taskRepeater.count / columns
-                readonly property real heightOccupation: taskRepeater.count / rows
+                readonly property real widthOccupation: taskRepeater.count / Math.max(1, columns)
+                readonly property real heightOccupation: taskRepeater.count / Math.max(1, rows)
 
                 Layout.maximumWidth: {
+                    if (widthOccupation <= 0) {
+                        return 0;
+                    }
                     const totalMaxWidth = children.reduce((accumulator, child) => {
-                            if (!isFinite(child.Layout.maximumWidth)) {
+                            const maximum = child.Layout.maximumWidth;
+                            if (!Number.isFinite(maximum) || maximum < 0) {
                                 return accumulator;
                             }
-                            return accumulator + child.Layout.maximumWidth
+                            return accumulator + maximum
                         }, 0);
                     return Math.round(totalMaxWidth / widthOccupation);
                 }
                 Layout.maximumHeight: {
+                    if (heightOccupation <= 0) {
+                        return 0;
+                    }
                     const totalMaxHeight = children.reduce((accumulator, child) => {
-                            if (!isFinite(child.Layout.maximumHeight)) {
+                            const maximum = child.Layout.maximumHeight;
+                            if (!Number.isFinite(maximum) || maximum < 0) {
                                 return accumulator;
                             }
-                            return accumulator + child.Layout.maximumHeight
+                            return accumulator + maximum
                         }, 0);
                     return Math.round(totalMaxHeight / heightOccupation);
                 }
