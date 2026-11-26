@@ -47,7 +47,8 @@ remain open tasks.
 | `scripts/install-lib.sh` | Shared helpers (paths, logging, apply/restart). Every installer sources it. |
 | `plasma/applets/` | Applets. `startmenu`, `showdesktop`, `digitalclock` and the optional `search` / `taskview` buttons are pure QML; `systemtray` and `icontasks` are C++ forks of upstream Plasma applets. |
 | `plasma/look-and-feel/`, `plasma/desktoptheme/` | Shared global theme and Plasma style sources. Generate both renderer modes with the appearance materializer. |
-| `aurorae/`, `Kvantum/`, `color-schemes/` | Mode-specific renderer assets and palettes. |
+| `aurorae/` | Shared window decoration and caption states. Generate both native decoration packages with the appearance materializer. |
+| `Kvantum/`, `color-schemes/` | Mode-specific renderer assets and palettes. |
 | `plasma/layout-templates/` | The "Add Panel → Windows Modern Panel" template. |
 | `plasma/windowswitcher/` | The Alt+Tab switcher (a KWin window-switcher layout). |
 | `tests/` | Headless regression tests, previews, and separate live desktop tests. |

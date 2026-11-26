@@ -7,10 +7,19 @@ source "$(dirname "$0")/install-lib.sh"
 
 info "Installing themes..."
 
+# Prepare both renderer modes before replacing any installed files.
+appearance_stage="$(mktemp -d)"
+trap 'rm -rf -- "$appearance_stage"' EXIT
+python3 "$SRC_DIR/scripts/theme/appearance-packages.py" "$appearance_stage" --component themes
+
 step "Window decorations (Aurorae)"
 ensure_dir "$AURORAE_DIR"
 rm -rf "$AURORAE_DIR/Windows-modern"* "$AURORAE_DIR/__aurorae__svg__windows-modern"*
-cp -r "$SRC_DIR/aurorae/"* "$AURORAE_DIR/"
+for mode in dark light; do
+    package="windows-modern-$mode-aurorae"
+    rm -rf "$AURORAE_DIR/$package"
+    cp -r "$appearance_stage/aurorae/$package" "$AURORAE_DIR/"
+done
 
 step "Color schemes"
 ensure_dir "$SCHEMES_DIR"
@@ -50,16 +59,12 @@ fi
 
 step "Plasma desktop themes"
 ensure_dir "$PLASMA_DIR"
-appearance_stage="$(mktemp -d)"
-if ! python3 "$SRC_DIR/scripts/theme/appearance-packages.py" "$appearance_stage" --component desktopthemes; then
-    rm -rf "$appearance_stage"
-    exit 1
-fi
 for mode in dark light; do
     rm -rf "$PLASMA_DIR/Windows-modern-$mode"
-    cp -r "$appearance_stage/Windows-modern-$mode" "$PLASMA_DIR/"
+    cp -r "$appearance_stage/desktoptheme/Windows-modern-$mode" "$PLASMA_DIR/"
 done
 rm -rf "$appearance_stage"
+trap - EXIT
 
 # The global themes name this cursor theme.
 install_cursor_theme

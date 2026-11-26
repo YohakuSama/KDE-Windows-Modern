@@ -132,10 +132,10 @@ def plan(root, state, profile):
         for path in sorted(source.iterdir()):
             if path.is_dir() or path.suffix == ".colors":
                 result[destination / path.name] = path
-    packages(root / "aurorae", DATA / "aurorae/themes")
     packages(root / "color-schemes", DATA / "color-schemes")
     packages(root / "Kvantum", CONFIG / "Kvantum")
     appearance = state / "staged-appearance"
+    packages(appearance / "aurorae", DATA / "aurorae/themes")
     packages(appearance / "desktoptheme", DATA / "plasma/desktoptheme")
     packages(appearance / "look-and-feel", DATA / "plasma/look-and-feel")
     for kind, dest in (("layout-templates", "plasma/layout-templates"),
@@ -385,12 +385,15 @@ def main():
     if args.action == "verify-sources":
         verify_sources(args.root)
         appearance = args.state / "staged-appearance"
-        # Desktop-theme SVGs are intentionally overridden later when
-        # transparency effects are disabled. Verify them before that step.
-        kinds = ("desktoptheme", "look-and-feel") if args.before_materials else ("look-and-feel",)
-        for kind in kinds:
+        # Desktop and Aurorae SVGs may be overridden by local material
+        # settings. Verify their full staged contents before that step.
+        destinations = {"look-and-feel": DATA / "plasma/look-and-feel"}
+        if args.before_materials:
+            destinations.update({"desktoptheme": DATA / "plasma/desktoptheme",
+                                 "aurorae": DATA / "aurorae/themes"})
+        for kind, destination in destinations.items():
             for source in (appearance / kind).iterdir():
-                if not same_payload(source, DATA / "plasma" / kind / source.name):
+                if not same_payload(source, destination / source.name):
                     raise RuntimeError("Installed appearance package differs from staged source: " + source.name)
         if any(exists(path) for path in retired_global_themes()):
             raise RuntimeError("Legacy global theme was not retired")

@@ -38,9 +38,9 @@ echo ""
 echo " Themes:"
 for v in dark light; do
     V="$(tr '[:lower:]' '[:upper:]' <<< "${v:0:1}")${v:1}"
-    check_dir  "aurorae/windows-modern-${v}-aurorae"      "Aurorae ${v}"
     check_file "color-schemes/WindowsModern${V}.colors"    "Color scheme ${v}"
 done
+check_dir  "aurorae/windows-modern-dark-aurorae"           "Shared Aurorae source"
 check_dir  "plasma/desktoptheme/Windows-modern-dark"        "Shared Plasma theme source"
 check_dir  "plasma/look-and-feel/org.kde.windowsmodern.dark" "Shared global theme source"
 check_file "scripts/theme/light-store-dependencies.json"    "Mode-specific Store dependencies"
@@ -63,7 +63,7 @@ else
     fail "popup frames differ from their generator — run scripts/theme/popup-frames.py"
 fi
 if python3 -I scripts/theme/window-frames.py --check >/dev/null; then
-    pass "Aurorae window frame generator (dark/light, active/inactive, maximized)"
+    pass "Shared Aurorae window frame source (active/inactive, maximized)"
 else
     fail "Aurorae window frames differ from their generator — run scripts/theme/window-frames.py"
 fi
@@ -77,8 +77,16 @@ if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance"; then
     if [ -e "$tasks_tmp/appearance/look-and-feel/org.kde.windowsmodern.light" ]; then
         fail "Obsolete light global theme in runtime appearance"
     fi
+    if python3 -I scripts/theme/window-frames.py --check --directory "$tasks_tmp/appearance/aurorae" >/dev/null; then
+        pass "Both staged Aurorae window frames match the generator"
+    else
+        fail "Staged Aurorae window frame drift"
+    fi
     drift=""
     for v in dark light; do
+        decoration="$tasks_tmp/appearance/aurorae/windows-modern-${v}-aurorae"
+        check_file "$decoration/metadata.desktop" "Aurorae metadata ${v}"
+        check_file "$decoration/windows-modern-${v}-auroraerc" "Aurorae layout ${v}"
         renderer="$tasks_tmp/appearance/desktoptheme/Windows-modern-${v}"
         check_file "$renderer/metadata.desktop" "Plasma renderer metadata ${v}"
         if ! python3 -I scripts/theme/popup-frames.py --check --directory "$renderer" --mode "$v" >/dev/null ||

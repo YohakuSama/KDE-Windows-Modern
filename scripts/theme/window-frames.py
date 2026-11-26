@@ -240,6 +240,7 @@ def main():
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--check', action='store_true')
     action.add_argument('--apply-local', action='store_true')
+    parser.add_argument('--directory', type=Path, help='Complete staged Aurorae packages')
     parser.add_argument('--aurorae-dir', type=Path)
     parser.add_argument('--kvantum-dir', type=Path)
     wallpaper = parser.add_mutually_exclusive_group()
@@ -247,6 +248,8 @@ def main():
     wallpaper.add_argument('--wallpaper-config', type=Path)
     args = parser.parse_args()
     if args.apply_local:
+        if args.directory:
+            parser.error('--directory cannot be used with --apply-local')
         if os.geteuid() == 0 or not args.aurorae_dir or not args.kvantum_dir:
             parser.error('--apply-local requires a normal user and both installed theme paths')
         selected = (configured_wallpaper(args.wallpaper_config)
@@ -257,15 +260,17 @@ def main():
         return
     if args.aurorae_dir or args.kvantum_dir or args.wallpaper_package or args.wallpaper_config:
         parser.error('Installed theme arguments require --apply-local')
-    for mode in ('dark', 'light'):
-        path = ROOT / 'aurorae' / f'windows-modern-{mode}-aurorae' / 'decoration.svg'
+    directory = args.directory or ROOT / 'aurorae'
+    modes = ('dark', 'light') if args.directory else ('dark',)
+    for mode in modes:
+        path = directory / f'windows-modern-{mode}-aurorae' / 'decoration.svg'
         expected = render(mode)
         if args.check:
             if path.read_text(encoding='utf-8') != expected:
                 parser.exit(1, f'Stale window frame: {path}\n')
         else:
             path.write_text(expected, encoding='utf-8')
-    print('Aurorae dark/light window frames consistent.')
+    print('Aurorae ' + '/'.join(modes) + ' window frames consistent.')
 
 
 if __name__ == '__main__':

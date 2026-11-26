@@ -456,8 +456,18 @@ when exporting. The old package ID is retained only at the external
 Store/migration boundary. The installer ignores obsolete source copies,
 migrates existing settings and removes the old installed package.
 
-Two color schemes and fixed-color Aurorae/Kvantum artwork remain for
-separate consolidation. KDE supports adaptive SVG colors via the current-color-scheme
+Aurorae now has one caption-button and layout source. The appearance
+materializer generates both native decoration packages, including the
+mode-specific text colors, metadata and neutral frame rendered by
+window-frames.py. Nine light caption SVGs retain their old contents
+exactly; maximize adopts the common crisp-edge rendering hints for
+every state. Layout, button sizes, state opacities, warning red and
+shadow geometry are unchanged. Normal installation, NixOS transactional
+staging and Store exports use this same source. Actual fractional-scale
+caption rendering needs owner acceptance.
+
+Two color schemes and Kvantum artwork remain for separate consolidation.
+KDE supports adaptive SVG colors via the current-color-scheme
 stylesheet (https://develop.kde.org/docs/plasma/theme/theme-colors/);
 do not automatically substitute fixed Windows material colors or
 opacity with unrelated palette roles. This first consolidation does not

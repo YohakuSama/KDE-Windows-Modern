@@ -240,6 +240,54 @@ def desktoptheme(root, destination, mode):
     return target
 
 
+def aurorae(root, destination, mode):
+    shared = root / "aurorae/windows-modern-dark-aurorae"
+    target = destination / f"windows-modern-{mode}-aurorae"
+    shutil.copytree(shared, target)
+    if mode == "dark":
+        return target
+
+    # The caption geometry and all states share one source. Keep the
+    # close-button warning colors and state opacities unchanged. The
+    # maximize button also shares the same crisp-edge hint in both modes.
+    for name in ("alldesktops", "close", "excludefromcapture", "help",
+                 "keepabove", "keepbelow", "maximize", "minimize", "restore", "shade"):
+        # Some KDE-specific buttons keep their original background
+        # literal in both modes. Only the four native caption controls
+        # use the mode-specific background substitution.
+        colors = {b"#ffffff": b"#1E1E1E"}
+        if name in ("close", "maximize", "minimize", "restore"):
+            colors[b"#202020"] = b"#F9F9F9"
+        path = target / (name + ".svg")
+        data = path.read_bytes()
+        if b"#ffffff" not in data:
+            raise ValueError(f"Missing shared caption foreground: {path}")
+        path.write_bytes(SVG_HEX_COLOR.sub(lambda match: colors.get(match[0], match[0]), data))
+
+    # Reuse the window material generator rather than substituting the
+    # border, shadow or active/inactive frame colors heuristically.
+    render = runpy.run_path(str(root / "scripts/theme/window-frames.py"))["render"]
+    (target / "decoration.svg").write_text(render(mode), encoding="utf-8")
+    for name in ("metadata.desktop", "metadata.json"):
+        path = target / name
+        data = path.read_bytes()
+        path.write_bytes(data.replace(b"Windows Modern Dark", b"Windows Modern Light")
+                         .replace(b"windows-modern-dark-aurorae", b"windows-modern-light-aurorae"))
+
+    rc = target / "windows-modern-dark-auroraerc"
+    data = rc.read_bytes()
+    for dark, light in (
+        (b"ActiveTextColor=255,255,255,255", b"ActiveTextColor=30,30,30,255"),
+        (b"InactiveTextColor=255,255,255,128", b"InactiveTextColor=30,30,30,128"),
+    ):
+        if data.count(dark) != 1:
+            raise ValueError(f"Unexpected shared caption text color: {rc}")
+        data = data.replace(dark, light)
+    rc.unlink()
+    (target / "windows-modern-light-auroraerc").write_bytes(data)
+    return target
+
+
 def light_lookfeel_dependencies(root, dependencies):
     # Store product IDs are an external compatibility contract, not a
     # second global theme source. Only mode-specific IDs are overridden.
@@ -319,18 +367,22 @@ def lookfeel(root, destination, mode):
 
 def materialize(root, output, component="runtime"):
     output = output.resolve()
-    if output.is_relative_to((root / "plasma/desktoptheme").resolve()) or \
-            output.is_relative_to((root / "plasma/look-and-feel").resolve()):
+    if any(output.is_relative_to((root / source).resolve()) for source in
+           ("plasma/desktoptheme", "plasma/look-and-feel", "aurorae")):
         raise ValueError("Stage appearance packages outside their source directories")
     output.mkdir(parents=True, exist_ok=True)
-    if component == "runtime":
+    if component in ("runtime", "themes"):
         desktop = output / "desktoptheme"
-        global_theme = output / "look-and-feel"
+        decorations = output / "aurorae"
         desktop.mkdir()
-        global_theme.mkdir()
+        decorations.mkdir()
         for mode in ("dark", "light"):
             desktoptheme(root, desktop, mode)
-        lookfeel(root, global_theme, "unified")
+            aurorae(root, decorations, mode)
+        if component == "runtime":
+            global_theme = output / "look-and-feel"
+            global_theme.mkdir()
+            lookfeel(root, global_theme, "unified")
     elif component == "desktopthemes":
         for mode in ("dark", "light"):
             desktoptheme(root, output, mode)
@@ -338,6 +390,8 @@ def materialize(root, output, component="runtime"):
         lookfeel(root, output, "unified")
     elif component.startswith("desktoptheme-"):
         desktoptheme(root, output, component.removeprefix("desktoptheme-"))
+    elif component.startswith("aurorae-"):
+        aurorae(root, output, component.removeprefix("aurorae-"))
     elif component.startswith("lookfeel-"):
         lookfeel(root, output, component.removeprefix("lookfeel-"))
     else:
@@ -348,8 +402,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--component", default="runtime",
-                        choices=("runtime", "desktopthemes", "lookfeel",
+                        choices=("runtime", "themes", "desktopthemes", "lookfeel",
                                  "desktoptheme-dark", "desktoptheme-light",
+                                 "aurorae-dark", "aurorae-light",
                                  "lookfeel-dark", "lookfeel-light"))
     args = parser.parse_args()
     materialize(ROOT, args.output, args.component)

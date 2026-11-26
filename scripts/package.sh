@@ -50,7 +50,7 @@ COMPONENTS=(
     "color-schemes|$SRC_DIR/color-schemes|colorschemes|Color Schemes"
     "icons|$SRC_DIR/icons/windows-modern|index.theme|Icons"
     "aurorae-dark|$SRC_DIR/aurorae/windows-modern-dark-aurorae|metadata.desktop|Aurorae Themes"
-    "aurorae-light|$SRC_DIR/aurorae/windows-modern-light-aurorae|metadata.desktop|Aurorae Themes"
+    "aurorae-light|$SRC_DIR/aurorae/windows-modern-dark-aurorae|metadata.desktop|Aurorae Themes"
     "desktoptheme-dark|$SRC_DIR/plasma/desktoptheme/Windows-modern-dark|metadata.desktop|Plasma 6 Themes"
     "desktoptheme-light|$SRC_DIR/plasma/desktoptheme/Windows-modern-dark|metadata.desktop|Plasma 6 Themes"
     "wallpaper|$SRC_DIR/wallpaper/Windows-modern|metadata.json|Wallpapers"
@@ -114,13 +114,14 @@ build_one() {
             return 1
         fi
         rm -rf "$icon_stage"
-    elif [[ "$name" == desktoptheme-* || "$name" == lookfeel-* ]]; then
+    elif [[ "$name" == desktoptheme-* || "$name" == lookfeel-* || "$name" == aurorae-* ]]; then
         # Legacy Store product IDs remain stable, but the shared source is
         # materialized before archiving. Both renderer modes use one source.
         local appearance_stage package_dir
         appearance_stage="$(mktemp -d)"
         package_dir="$(basename "$dir")"
         case "$name" in
+            aurorae-light) package_dir="windows-modern-light-aurorae" ;;
             desktoptheme-light) package_dir="Windows-modern-light" ;;
             lookfeel-light) package_dir="org.kde.windowsmodern.light" ;;
         esac
