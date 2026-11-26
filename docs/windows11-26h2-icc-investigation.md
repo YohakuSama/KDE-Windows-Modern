@@ -1008,3 +1008,92 @@ exports and SHA-256 identities, before deriving another candidate.
 Keep these Windows binaries private; do not add them to the theme,
 its dependencies or the public repository. The present change
 does not modify the runtime or enable a fitted matrix.
+
+## Independent staged matrix CLUT construction
+
+The owner supplied the reference build's x86-64 CMM modules. Both PE
+file version strings identify 10.0.26100.9974. Local SHA-256 identities:
+
+- icm32.dll: D26B0BC6D06B908C74B1D78F60FF2EABDC27C67CACE523C80E07D96CFF2E9B0A
+- mscms.dll: 8827BCEA2308695A181F18EA2049C611000E174A95F03B63C7F3AD854E9087E1
+
+Only static disassembly was used; no Windows binary was executed or
+included in the repository. The public symbol server could not be
+reached. The following reference-image RVAs identify useful static
+inspection boundaries, not symbol names: 0x12BC8 (common transform
+creation), 0x13570 (RGB matrix/TRC setup), 0x14314 (ICC colorant loading
+with half-range scaling and optional inverse at 0x151B0), 0xD020
+(initial grid preparation), 0x1950 (fixed-point matrix and curve
+processing), and 0x13050 (internal 1024-entry identity curve).
+
+The independently reconstructed matrix-only path is a pair of
+matrix operations separated by quantized 16-bit words. The input
+grid uses the repeated five-bit pattern rather than rational
+nearest rounding. The internal linear curve interpolations must
+not be confused with the exported source/target tone curves.
+For grid index n, 0 through 31:
+
+    word = (n << 11) | (n << 6) | (n << 1) | (n >> 4)
+
+For each matrix stage, let M be half the source ICC colorant
+matrix or the inverse of half the destination colorant matrix.
+Compute the following independently for each input channel and
+then for each matrix output:
+
+    linear = ((word - (word >> 8)) * 257) >> 8
+    input14 = (linear + 2) >> 2
+    coefficient = round_half_away_from_zero(M * 16368)
+    coordinate = clamp((dot(input14, coefficient) + 511) >> 10, 0, 261888)
+    identity[i] = min(65535, (2047 + 262396*i) >> 12)
+    i, f = coordinate >> 8, coordinate & 255
+    output_word = (identity[i]*(256-f) + identity[min(i+1,1023)]*f) >> 8
+
+Pass the first stage's output words to the second stage without
+combining matrices or eliminating the input interpolation. The
+one-unit difference introduced by that interpolation is important:
+omitting it fails even the diagonal control. The new generator
+bounds the input colorants, inverse and signed 32-bit accumulation
+rather than extending the observed branch to unreviewed profiles.
+
+Numerical archive comparisons of an isolated transcription against
+all nine measured matrix pairs give zero differing CLUT entries,
+including the two nearly identical perturbation matrices and the
+registered sRGB destination. The destination ICC was retrieved
+from the earlier recorded public reference and its SHA-256 was
+checked against the native report (2B3AA1645779A9E634744FAF9B01E9102B0C9B88FD6DECED7934DF86B949AF7E).
+
+| Evidence | Generated entries compared | Different entries |
+| --- | ---: | ---: |
+| Nine controlled matrix grids | 884,736 | 0 |
+| Four full-domain source curve tables | 3,072 | 0 |
+| Four full-domain CLUTs | 393,216 | 0 |
+| Four full-domain destination curve tables | 12,288 | 0 |
+
+The four complete sets of generated tables (408,576 entries
+including repeated tables) are byte-identical to the captured
+relative-colorimetric tables. This includes the two synthetic
+per-channel/shared-gamma sources and the two original sources.
+The common source-to-registered-sRGB generated CLUT SHA-256 is
+61A243BB0A50A4B0346873DA3D9C6F20FDDC7EC2945DD8946B6DD2E8D93658B2.
+Identical tables and the previously verified deterministic RGB8
+replay imply identical outputs across the full measured domain.
+No new full-domain enumeration or repository regression suite
+was run in this change.
+
+The existing controlled matrix analyzer now reports generated
+CLUT metrics and fully generated RGB8 metrics. The generation
+analyzer retains the historical approximations for comparison,
+uses the staged model for its schema 2 independent generation,
+and reports exact equality of all three generated tables. Its
+optional exhaustive comparison uses the staged model.
+
+This establishes independent generation for the measured
+matrix/TRC configurations, not arbitrary ICC profile families,
+arbitrary matrix ranges, high-bit execution or every CMM branch.
+The installed runtime still uses the previously verified local
+replay bundles. Next integrate the new generator into the
+standard-library runtime with a hash-verified local destination
+profile, while preserving measured replay priority, cache
+identity and unsupported-profile behavior. No DLL, native
+device-link payload, new runtime dependency or cache revision
+is introduced by this research change.

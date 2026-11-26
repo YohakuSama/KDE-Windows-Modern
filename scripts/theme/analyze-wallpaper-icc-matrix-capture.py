@@ -143,13 +143,17 @@ def analyze(root, report, target_path):
         source_curve = input_tables[src]
         output_curve = output_tables[dst]
         generated = p['execute_rgb8_tables'](source_curve,tables[1],output_curve,pixels)
+        generated_grid = gen['staged_matrix_grid'](matrices[src],matrices[dst])
+        fully_generated = p['execute_rgb8_tables'](source_curve,generated_grid,output_curve,pixels)
         table_sets[pair] = tables
         grids[pair] = tables[1].reshape(-1,3)
         results[pair] = {'rgb8_sha256':sha(direct),'clut_sha256':sha(tables[1].astype('>u2').tobytes()),
                          'matching_rgb8_colors':len(pixels),
                          'generated_input_curve':gen['table_metrics'](source_curve,tables[0],sha),
                          'generated_output_curve':gen['table_metrics'](output_curve,tables[2],sha),
-                         'generated_curves_native_grid':p['metric'](generated,p['rgb'](direct,8))}
+                         'generated_curves_native_grid':p['metric'](generated,p['rgb'](direct,8)),
+                         'generated_clut':gen['table_metrics'](generated_grid,tables[1],sha),
+                         'fully_generated_rgb8':p['metric'](fully_generated,p['rgb'](direct,8))}
     control = next(s for s in evidence['samples'] if s['source']=='linear-srgb')
     if results[PAIRS[0]]['rgb8_sha256'] != control['output_rgb_sha256']:
         raise ValueError('Original calibration control mismatch')

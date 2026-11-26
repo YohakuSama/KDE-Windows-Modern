@@ -201,8 +201,56 @@ def integer_fixed14_grid(source, target):
     return raw.clip(0,65535).reshape(32,32,32,3)
 
 
+def staged_matrix_grid(source, target):
+    """Reconstruct the measured two-stage RGB matrix/TRC CLUT.
+
+    Each matrix stage uses an internal identity curve on both sides. The
+    source matrix operates in half-range PCS; the destination applies its
+    inverse. Keep the intermediate words and both interpolation steps.
+    Verified for the reference 32-cube, 16-bit matrix-only path.
+    """
+    for matrix in (source, target):
+        if (matrix.shape != (3, 3) or not np.isfinite(matrix).all()
+                or np.any(np.abs(matrix) > 2)
+                or np.any(matrix * 65536 != np.rint(matrix * 65536))):
+            raise ValueError('Expected small signed 16.16 ICC colorants')
+    if np.linalg.det(target) <= 0:
+        raise ValueError('Expected a positive destination determinant')
+    try:
+        inverse = np.linalg.inv(target * 0.5)
+    except np.linalg.LinAlgError as error:
+        raise ValueError('Singular destination matrix') from error
+    if not np.isfinite(inverse).all() or np.any(np.abs(inverse) > 16):
+        raise ValueError('Destination inverse exceeds diagnostic bounds')
+
+    axis = np.arange(32, dtype=np.int64)
+    axis = (axis << 11) | (axis << 6) | (axis << 1) | (axis >> 4)
+    nodes = axis[np.indices((32, 32, 32)).transpose(1, 2, 3, 0)]
+    identity = np.minimum(65535, (2047 + np.arange(1024, dtype=np.int64) * 262396) >> 12)
+
+    def stage(words, matrix):
+        # Expand the linear 256-entry input curve at an 8-bit fraction.
+        # Subtract the high byte before interpolation, not afterwards.
+        linear = ((words - (words >> 8)) * 257) >> 8
+        q14 = (linear + 2) >> 2
+        scaled = matrix * (1023 * 16)
+        coefficients = np.trunc(scaled + np.where(scaled > 0, 0.5, -0.5)).astype(np.int64)
+        # The observed native multiply/accumulate is signed 32-bit. Do
+        # not silently extend this candidate to overflowing profiles.
+        low = np.minimum(coefficients, 0).sum(axis=1) * 16384 + 511
+        high = np.maximum(coefficients, 0).sum(axis=1) * 16384 + 511
+        if np.any(low < -(1 << 31)) or np.any(high >= (1 << 31)):
+            raise ValueError('Matrix accumulator exceeds signed 32-bit range')
+        coordinate = ((q14 @ coefficients.T + 511) >> 10).clip(0, 1023 * 256)
+        index, fraction = coordinate >> 8, coordinate & 255
+        return ((identity[index] * (256 - fraction)
+                 + identity[np.minimum(index + 1, 1023)] * fraction) >> 8)
+
+    return stage(stage(nodes, source * 0.5), inverse)
+
+
 def candidate_grids(source, target):
-    """Independent matrix-derived candidates, none is a verified CMM."""
+    """Compare historical approximations with the measured staged model."""
     nodes = np.indices((32,32,32)).reshape(3,-1).T/31
     inverse = np.linalg.inv(target)
     direct = np.floor(nodes@source.T@inverse.T*65535+0.5)
@@ -213,7 +261,8 @@ def candidate_grids(source, target):
     fixed = np.floor(xyz@inverse_q.T*65535)
     return {**{name:value.clip(0,65535).astype(np.int64).reshape(32,32,32,3)
                for name,value in (('matrix',direct),('fixed13',fixed))},
-            'fixed14_integer':integer_fixed14_grid(source,target)}
+            'fixed14_integer':integer_fixed14_grid(source,target),
+            'staged_matrix':staged_matrix_grid(source,target)}
 
 
 def table_metrics(actual, reference, sha):
@@ -369,7 +418,7 @@ def analyze(root, report, target_path, full_rgb8=False):
             max_vertex_error = row['grids'][model]['table']['max_error']
             if max_vertex_error < 64:
                 row['grids'][model]['rgb8_error_bound'] = int(np.abs(np.diff(destination>>8,axis=1)).max())
-            if full_rgb8 and model=='fixed14_integer':
+            if full_rgb8 and model=='staged_matrix':
                 row['grids'][model]['full_rgb8_replay_comparison'] = exhaustive_rgb8(
                     (source,grid,destination),(source,native_grid,destination),execute)
         result['sources'][name] = row
@@ -440,7 +489,7 @@ def analyze_full_generation(root, report, target_path, source_paths, full_rgb8=F
             continue
         try:
             source = input_curves(profile,decode)
-            grid = integer_fixed14_grid(matrix(profile),target_matrix)
+            grid = staged_matrix_grid(matrix(profile),target_matrix)
         except (KeyError,ValueError,struct.error) as error:
             row.update(status='unsupported-matrix-profile',reason=str(error))
             continue
@@ -462,8 +511,11 @@ def analyze_full_generation(root, report, target_path, source_paths, full_rgb8=F
                    source_curve_channels={
                        channel:table_metrics(source[i],native_source[i],sha)
                        for i,channel in enumerate(('red','green','blue'))},
+                   clut_model='staged_matrix',
                    clut=table_metrics(grid,native_grid,sha),
                    output_curve=table_metrics(destination,native_destination,sha),
+                   all_tables_identical=all(np.array_equal(a,b) for a,b in zip(
+                       (source,grid,destination),(native_source,native_grid,native_destination))),
                    calibration_and_mixed={key:partitions(execute(*tables,pixels),reference,n)
                                           for key,tables in stages.items()})
         if full_rgb8:
