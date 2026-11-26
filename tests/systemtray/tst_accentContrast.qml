@@ -27,6 +27,38 @@ TestCase {
         compare(ColorType.quickTileStroke(false, false), "#0F000000");
     }
 
+    function test_switchAndSliderStateBrushes() {
+        for (const dark of [true, false]) {
+            const accent = Qt.color(dark ? "#4CC2FF" : "#0067C0");
+            compare(ColorType.accentStateBrush(dark, accent, true, false, false), accent);
+            compare(ColorType.accentStateBrush(dark, accent, true, true, false),
+                    Qt.rgba(accent.r, accent.g, accent.b, 0.9));
+            compare(ColorType.accentStateBrush(dark, accent, true, true, true),
+                    Qt.rgba(accent.r, accent.g, accent.b, 0.8));
+            compare(ColorType.accentStateBrush(dark, accent, false, true, true),
+                    Qt.color(dark ? "#28FFFFFF" : "#37000000"));
+            compare(ColorType.switchOffFill(dark, true, false, false),
+                    Qt.color(dark ? "#19000000" : "#06000000"));
+            compare(ColorType.switchOffFill(dark, true, true, false),
+                    Qt.color(dark ? "#0BFFFFFF" : "#0F000000"));
+            compare(ColorType.switchOffFill(dark, true, true, true),
+                    Qt.color(dark ? "#12FFFFFF" : "#18000000"));
+            compare(ColorType.switchOffFill(dark, false, true, true).a, 0);
+            compare(ColorType.switchOffStroke(dark, false),
+                    Qt.color(dark ? "#28FFFFFF" : "#37000000"));
+            compare(ColorType.switchKnobFill(dark, false, true, accent),
+                    Qt.color(dark ? "#C5FFFFFF" : "#9E000000"));
+            compare(ColorType.switchKnobFill(dark, true, false, accent),
+                    Qt.color(dark ? "#87FFFFFF" : "#FFFFFF"));
+            compare(ColorType.sliderTrackBrush(dark, false),
+                    Qt.color(dark ? "#3FFFFFFF" : "#51000000"));
+            compare(ColorType.sliderTrackBrush(dark, true),
+                    Qt.color(dark ? "#8BFFFFFF" : "#72000000"));
+            compare(ColorType.sliderOuterThumbBrush(dark),
+                    Qt.color(dark ? "#454545" : "#FFFFFF"));
+        }
+    }
+
     function test_foreground_data() {
         return [
             { tag: "dark theme accent", accent: "#4CC2FF", expected: "#000000" },

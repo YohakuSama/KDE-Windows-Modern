@@ -123,8 +123,9 @@ Item {
             focusPolicy: Qt.StrongFocus
             wheelEnabled: false
             enabled: root.trackEnabled
-            opacity: enabled ? 1 : 0.45
             hoverEnabled: true
+            readonly property color valueBrush: ColorType.accentStateBrush(root.dark, root.accent,
+                enabled, hovered, pressed)
             leftPadding: 0
             rightPadding: 0
             Accessible.name: root.sliderAccessibleName || root.iconSource
@@ -150,14 +151,14 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
-                    color: ColorType.trackFill(root.dark)
+                    color: ColorType.sliderTrackBrush(root.dark, slider.enabled)
                 }
                 Rectangle {
                     width: parent.width * slider.position
                     height: parent.height
                     x: slider.mirrored ? parent.width - width : 0
                     radius: height / 2
-                    color: root.accent
+                    color: slider.valueBrush
                 }
             }
 
@@ -167,7 +168,7 @@ Item {
                 width: root.thumbExtent
                 height: root.thumbExtent
                 radius: width / 2
-                color: root.dark ? "#383838" : "#FFFFFF"
+                color: ColorType.sliderOuterThumbBrush(root.dark)
                 border.width: 1
                 border.color: root.dark ? "#454545" : "#D6D6D6"
                 Rectangle {
@@ -175,7 +176,7 @@ Item {
                     width: Math.max(6, Math.round((slider.pressed ? 10 : 12) * root.controlScale))
                     height: width
                     radius: width / 2
-                    color: root.accent
+                    color: slider.valueBrush
                 }
             }
 

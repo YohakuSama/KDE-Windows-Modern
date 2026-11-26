@@ -75,6 +75,40 @@ function blendOver(ink, base, opacity) {
         ink.b * opacity + base.b * (1 - opacity), 1);
 }
 
+// WinUI common theme resources and the Slider/ToggleSwitch state tables.
+// Keep brush opacity separate from the control's geometry and input state.
+// Alpha is composited by Qt against the actual surface, not a guessed ink.
+function accentBrushOpacity(hovered, pressed) {
+    return pressed ? 0.8 : hovered ? 0.9 : 1;
+}
+function accentStateBrush(dark, accent, enabled, hovered, pressed) {
+    if (!enabled) return Qt.color(dark ? "#28FFFFFF" : "#37000000");
+    return Qt.rgba(accent.r, accent.g, accent.b, accentBrushOpacity(hovered, pressed));
+}
+function switchOffFill(dark, enabled, hovered, pressed) {
+    if (!enabled) return Qt.color("#00FFFFFF");
+    return Qt.color(dark ? (pressed ? "#12FFFFFF" : hovered ? "#0BFFFFFF" : "#19000000")
+        : (pressed ? "#18000000" : hovered ? "#0F000000" : "#06000000"));
+}
+function switchOffStroke(dark, enabled) {
+    return Qt.color(dark ? (enabled ? "#8BFFFFFF" : "#28FFFFFF")
+        : (enabled ? "#72000000" : "#37000000"));
+}
+function switchKnobFill(dark, checked, enabled, accent) {
+    // Preserve contrast-aware foregrounds for native KDE custom accents.
+    if (enabled && checked) return Qt.color(contrastingForeground(accent));
+    if (checked) return Qt.color(dark ? "#87FFFFFF" : "#FFFFFF");
+    return Qt.color(dark ? (enabled ? "#C5FFFFFF" : "#5DFFFFFF")
+        : (enabled ? "#9E000000" : "#5C000000"));
+}
+function sliderTrackBrush(dark, enabled) {
+    return Qt.color(dark ? (enabled ? "#8BFFFFFF" : "#3FFFFFFF")
+        : (enabled ? "#72000000" : "#51000000"));
+}
+function sliderOuterThumbBrush(dark) {
+    return Qt.color(dark ? "#454545" : "#FFFFFF");
+}
+
 function quickTileSurface(dark) {
     return Qt.color(cardFill(dark, false));
 }
@@ -82,7 +116,7 @@ function quickTileSurface(dark) {
 function quickTileFill(dark, active, hovered, pressed, accent) {
     const base = quickTileSurface(dark);
     if (active)
-        return blendOver(accent, base, pressed ? 0.8 : hovered ? 0.9 : 1);
+        return blendOver(accent, base, accentBrushOpacity(hovered, pressed));
     const ink = dark ? Qt.color("#FFFFFF")
         : Qt.color(pressed || hovered ? "#F9F9F9" : "#FFFFFF");
     const alpha = dark ? (pressed ? 0x08 : hovered ? 0x15 : 0x0F)

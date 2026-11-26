@@ -941,6 +941,24 @@ Reference:
 
 ### System accent propagation
 
+The detail switches and brightness/volume sliders now consume the enabled,
+hovered, pressed and disabled brush roles in Microsoft's public
+[ToggleSwitch theme](https://github.com/microsoft/microsoft-ui-xaml/blob/main/controls/dev/CommonStyles/ToggleSwitch_themeresources.xaml),
+[Slider theme](https://github.com/microsoft/microsoft-ui-xaml/blob/main/controls/dev/CommonStyles/Slider_themeresources.xaml)
+and [common theme resources](https://github.com/microsoft/microsoft-ui-xaml/blob/main/controls/dev/CommonStyles/Common_themeresources_any.xaml).
+Enabled accent fills use opacity 1/0.9/0.8, respectively; disabled fills
+use the independent neutral AccentFillColorDisabled brush. The off switch
+uses the ControlAltFill, ControlStrongStroke and TextFillSecondary state
+roles; the slider's unfilled track and outer thumb use ControlStrongFill
+and ControlSolidFillDefault. Disabled state is painted per role instead of
+dimming the entire control, so an unavailable audio track does not alter
+the separate output action. Existing contrast-aware ink for custom KDE
+accents is retained. The shared QML color helper remains identical in all
+three applet packages. This maps public WinUI brush inputs, not verified
+26H2 shell-specific composited pixels; geometry, timing, focus rendering,
+high-contrast themes and runtime state parity remain separate acceptance
+items. No input, value, sizing, animation or backend logic changes.
+
 Reviewed Plasma widget fills are generated with KSVG's native Highlight role. All nine reviewed accent gradient stops follow that role. The five margins-highlight editor paths retain their native ButtonFocus role without the old inline blue override; their opacity and geometry are unchanged. The KDE-only analog meter and containment editor use a uniform accent instead of historical teal companion stops; the glow bar retains its opacity gradient. Their inherited-color rendering still needs desktop comparison.
 
 KDE's native accent mode remains the default. To opt into the Windows ramp, first select "From current color scheme" in KDE Colors, with Windows Modern active and its user-local Kvantum assets installed. Use the existing appearance switch:
