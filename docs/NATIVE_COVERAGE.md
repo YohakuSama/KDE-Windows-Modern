@@ -282,6 +282,54 @@ Resolve runtime resource selection and state transitions before adopting
 additional geometry, color or animation values. Maintain Qt logical pixels
 and preserve the existing compositor adaptation until it is source-grounded.
 
+### Paginated Quick Settings and media layout consumers
+
+A second pass through the original, hash-matched XBF payloads resolved
+specific consumers rather than combining unrelated constants. In ShellCommon's
+paginatedcontrolcenterview.xbf, TogglesGroup and SlidersGroup explicitly
+reference PaginatedControlCenterViewWidth (376), and the L2Frame references
+the same template's local L2FrameMinHeight (400). The footer has both
+Height and MinHeight set to 48; the root MaxWidth is 380. The ordinary
+ControlCenterWidth resource is 360. The KDE paginated card now uses 376
+as its shared width and 400 as its detail-page minimum, preserving a
+larger home height and clamping to the actual available work area. The
+376px inner view is used as the KDE outer card because its host frame is
+different. Overflow and non-Quick Settings applets retain their existing
+widths. The logical measurements are multiplied only by the existing
+optional applet UI scale; Qt owns output scaling.
+
+The ControlCenter SplitTogglePaginatedTemplate explicitly uses
+SplitToggleSecondaryWidth (48 in the light and dark dictionaries).
+Use that width for the details target, clamped to half the cell in narrow
+layouts, rather than forcing equal halves at every width. Keep a single
+shared border and preserve the two independent actions. The high-contrast
+variant and exact Windows hit-test/overlap behavior remain unresolved.
+The existing 48 toggle and footer, 4 slider track and 178 media height
+are now named in one tray geometry module.
+
+The original MediaTransportControls.xbf declares F8AC and F8AD for
+PreviousButton and NextButton. Its IconRepeatButtonStyle sets Segoe
+Fluent Icons, 16 font size, 40 minimum width and height. The play/pause
+style inherits IconButtonStyle with the same 40 minimum and 16 font size;
+the play/pause control has a 26px margin on either side. The KDE media
+row now uses these measurements and private, original-font role paths,
+replacing its hand-painted triangles and bars. F5B0 PlaySolid and F8AE
+PauseBold are verified original-font semantic choices for the two
+states (see the [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font));
+the exact runtime AnimatedIcon state selection and animation are not
+established. No global media aliases or MPRIS commands are changed.
+
+The tray resources also establish four logical pixels of horizontal
+padding on several icon content templates, and 16px in the ordinary
+battery and image content definitions. Do not arbitrarily enlarge the
+existing 16px tray slot solely to match screenshots. The optical
+normalized glyphs, actual content geometry and small-taskbar variants
+need separate validation before changing the visible tray scale.
+
+See the source hashes, property offsets and usage records in
+windows11-26h2-ui-parameters.json. No Windows binaries are added.
+Live acceptance and runtime resource selection remain open.
+
 ### Same-name theme alternatives
 
 The owner's pre-supplement installed audit lists 16 names with 16 additional

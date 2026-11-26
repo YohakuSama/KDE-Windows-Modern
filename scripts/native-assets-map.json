@@ -289,7 +289,11 @@
     "e672": "status/network-wireless-60-locked status/network-wireless-60-locked-symbolic",
     "e673": "status/network-wireless-80-locked status/network-wireless-80-locked-symbolic status/network-wireless-100-locked status/network-wireless-100-locked-symbolic",
     "eddb": "actions/wm-quick-page-up-symbolic",
-    "eddc": "actions/wm-quick-page-down-symbolic"
+    "eddc": "actions/wm-quick-page-down-symbolic",
+    "f8ac": "actions/wm-media-previous-symbolic",
+    "f8ad": "actions/wm-media-next-symbolic",
+    "f5b0": "actions/wm-media-play-symbolic",
+    "f8ae": "actions/wm-media-pause-symbolic"
   },
   "wallpapers": [
     [

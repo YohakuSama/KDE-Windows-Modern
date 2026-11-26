@@ -140,11 +140,34 @@ function anchorRun(runs, point, vertical, mirrored) {
 }
 
 
-// All quick settings routes share an outer logical width and card height.
-// Native frame margins are used only by overflow/unsupported applets.
-function flyoutWidth(availableWidth, scale, overflow, frameWidth) {
-    return Math.max(1, Math.min(availableWidth, Math.round((overflow ? 216 : 360) * scale)) - frameWidth);
+// Windows 26300.9974 paginatedcontrolcenterview.xbf and controlcenterstyles.xbf.
+// See docs/windows11-26h2-ui-parameters.json for literal and consumer evidence.
+// Values are logical pixels; scale is the existing optional applet UI scale,
+// not the screen devicePixelRatio.
+const quickPanelWidth = 376;
+const standardFlyoutWidth = 360;
+const quickDetailMinimumHeight = 400;
+const quickFooterHeight = 48;
+const quickToggleHeight = 48;
+const splitSecondaryExtent = 48;
+const sliderTrackHeight = 4;
+const mediaCardHeight = 178;
+const mediaCardGap = 12;
+const mediaButtonExtent = 40;
+const mediaGlyphExtent = 16;
+const mediaPlayPauseMargin = 26;
+
+function splitSecondaryWidth(width, scale) {
+    // Clamp for a narrow cell; retain both targets with one shared border.
+    return Math.max(0, Math.min(width / 2, Math.round(splitSecondaryExtent * scale)));
 }
-function quickSettingsHeight(availableHeight, nominalHeight) {
-    return Math.max(1, Math.min(availableHeight, nominalHeight));
+
+// The KDE card contains the paginated view without the outer Windows host
+// frame. Overflow and other applet routes retain their existing widths.
+function flyoutWidth(availableWidth, scale, overflow, frameWidth, paginated = true) {
+    const base = overflow ? 216 : paginated ? quickPanelWidth : standardFlyoutWidth;
+    return Math.max(1, Math.min(availableWidth, Math.round(base * scale)) - frameWidth);
+}
+function quickSettingsHeight(availableHeight, nominalHeight, detailMinimum = 0) {
+    return Math.max(1, Math.min(availableHeight, Math.max(nominalHeight, detailMinimum)));
 }

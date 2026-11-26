@@ -11,6 +11,7 @@ import org.kde.kcmutils
 import "../lib" as Lib
 import "." as Components
 import "../js/colorType.js" as ColorType
+import "../js/trayMetrics.js" as TrayMetrics
 
 Rectangle {
     id: footer
@@ -25,7 +26,7 @@ Rectangle {
     signal batteryClicked
 
     color: "transparent"
-    implicitHeight: Math.round(48 * uiScale)
+    implicitHeight: Math.round(TrayMetrics.quickFooterHeight * uiScale)
 
     // One subtle tint over the native/custom base. Extend it into the
     // native frame inset without painting over the one-pixel outline.

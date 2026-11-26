@@ -16,6 +16,7 @@ import "components" as Components
 import "lib" as Lib
 import "js/quickSettingsOrder.js" as Order
 import "js/colorType.js" as ColorType
+import "js/trayMetrics.js" as TrayMetrics
 
 ColumnLayout {
     id: actionPanel
@@ -39,7 +40,7 @@ ColumnLayout {
     readonly property int sliderBottomInset: Math.round(16 * uiScale)
     readonly property int sliderGap: Math.round(24 * uiScale)
     readonly property int sliderHeight: Math.max(36, Math.round(36 * uiScale))
-    readonly property int footerHeight: Math.max(24, Math.round(48 * uiScale) - Math.round(frameInset))
+    readonly property int footerHeight: Math.max(24, Math.round(TrayMetrics.quickFooterHeight * uiScale) - Math.round(frameInset))
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
     Layout.fillWidth: true
@@ -55,7 +56,7 @@ ColumnLayout {
     readonly property int sliderBlockHeight: sliderRowCount > 0 ? sliderTopInset + sliderBottomInset
         + sliderRowCount * sliderHeight + (sliderRowCount - 1) * sliderGap : 0
     readonly property int nominalFixedHeight: edgeInset + gridBottomGap + sliderBlockHeight
-        + Math.max(24, Math.round(48 * uiScale))
+        + Math.max(24, Math.round(TrayMetrics.quickFooterHeight * uiScale))
     readonly property int gridHeight: Math.max(Math.round(64 * uiScale), toggleViewport.viewportHeight)
     readonly property int nominalHomeHeight: nominalFixedHeight + gridHeight
     readonly property int homeHeight: contentInset + gridHeight + gridBottomGap + sliderBlockHeight + footerHeight
@@ -303,7 +304,7 @@ ColumnLayout {
                     id: networkTile
                     orderKey: "network"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: true
                     visible: included
                     onArrowClicked: actionPanel.requestPage("network")
@@ -312,7 +313,7 @@ ColumnLayout {
                     id: bluetoothTile
                     orderKey: "bluetooth"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: available
                     visible: included
                     onArrowClicked: actionPanel.requestPage("bluetooth")
@@ -321,7 +322,7 @@ ColumnLayout {
                     id: airplaneTile
                     orderKey: "airplane"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: Plasmoid.configuration.showAirplane && available
                     visible: included
                 }
@@ -329,7 +330,7 @@ ColumnLayout {
                     id: batterySaverTile
                     orderKey: "battery-saver"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: Plasmoid.configuration.showBatterySaver && available
                     visible: included
                     onRightClicked: actionPanel.requestPage("battery")
@@ -338,7 +339,7 @@ ColumnLayout {
                     id: nightLightTile
                     orderKey: "night-light"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: Plasmoid.configuration.showNightLight && available
                     visible: included
                 }
@@ -346,7 +347,7 @@ ColumnLayout {
                     id: colorSchemeTile
                     orderKey: "color-scheme"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: Plasmoid.configuration.showColorScheme
                     visible: included
                 }
@@ -354,7 +355,7 @@ ColumnLayout {
                     id: micTile
                     orderKey: "microphone"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: Plasmoid.configuration.showMicMute && available
                     visible: included
                 }
@@ -362,7 +363,7 @@ ColumnLayout {
                     id: castTile
                     orderKey: "cast"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: Plasmoid.castAvailable
                     checkable: false
                     label: i18n("Cast")
@@ -373,7 +374,7 @@ ColumnLayout {
                     id: accessibilityTile
                     orderKey: "accessibility"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     checkable: false
                     included: Plasmoid.accessibilityAvailable
                     label: i18n("Accessibility")
@@ -384,7 +385,7 @@ ColumnLayout {
                     id: hotspotTile
                     orderKey: "hotspot"
                     orderView: toggleViewport
-                    buttonHeight: Math.round(48 * actionPanel.uiScale)
+                    buttonHeight: Math.round(TrayMetrics.quickToggleHeight * actionPanel.uiScale)
                     included: Plasmoid.configuration.showHotspot && (hotspotSupported || hotspotActive)
                     visible: included
                 }

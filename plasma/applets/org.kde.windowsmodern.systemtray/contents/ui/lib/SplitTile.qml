@@ -4,6 +4,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../js/trayMetrics.js" as TrayMetrics
 import "../components" as Components
 
 ColumnLayout {
@@ -18,7 +19,7 @@ ColumnLayout {
     property string orderKey: ""
     property Item orderView: null
     property real buttonHeight: -1
-    readonly property real uiScale: buttonHeight > 0 ? buttonHeight / 48 : 1
+    readonly property real uiScale: buttonHeight > 0 ? buttonHeight / TrayMetrics.quickToggleHeight : 1
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
     readonly property int captionHeight: Math.max(Math.round(30 * uiScale), Math.ceil(2 * captionMetrics.lineSpacing))
     FontMetrics { id: captionMetrics; font: caption.font }
@@ -143,7 +144,7 @@ ColumnLayout {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * 0.5
+            width: Math.max(0, parent.width - arrowMA.width)
             acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -163,7 +164,7 @@ ColumnLayout {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * 0.5
+            width: TrayMetrics.splitSecondaryWidth(parent.width, tile.uiScale)
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             activeFocusOnTab: true

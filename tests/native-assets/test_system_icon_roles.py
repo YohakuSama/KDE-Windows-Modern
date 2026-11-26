@@ -239,3 +239,11 @@ class SystemIconRolesTests(unittest.TestCase):
         self.assertNotIn("wifiLocked", MAPPING["panel_glyph_center_groups"])
         self.assertIn("actions/wm-quick-page-up-symbolic", MAPPING["icons"]["eddb"].split())
         self.assertIn("actions/wm-quick-page-down-symbolic", MAPPING["icons"]["eddc"].split())
+
+    def test_media_transport_original_roles(self):
+        for glyph, path in (
+                ("f8ac", "actions/wm-media-previous-symbolic"),
+                ("f8ad", "actions/wm-media-next-symbolic"),
+                ("f5b0", "actions/wm-media-play-symbolic"),
+                ("f8ae", "actions/wm-media-pause-symbolic")):
+            self.assertIn(path, MAPPING["icons"][glyph].split())

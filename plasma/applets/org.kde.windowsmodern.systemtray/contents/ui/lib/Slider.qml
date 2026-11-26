@@ -7,6 +7,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../js/trayMetrics.js" as TrayMetrics
 import "../components" as Components
 
 Item {
@@ -25,7 +26,7 @@ Item {
     property real controlScale: 1
     readonly property int trackGap: reserveDetailsSpace ? 0 : Math.round(8 * controlScale)
     readonly property int thumbExtent: Math.max(12, Math.round(18 * controlScale))
-    readonly property int trackThickness: Math.max(2, Math.round(4 * controlScale))
+    readonly property int trackThickness: Math.max(2, Math.round(TrayMetrics.sliderTrackHeight * controlScale))
     readonly property int alignedSideWidth: Math.max(iconSize, Math.round(27 * controlScale))
     readonly property int leadingWidth: reserveDetailsSpace ? alignedSideWidth : iconSize
     readonly property int detailsWidth: reserveDetailsSpace ? alignedSideWidth

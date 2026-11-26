@@ -58,7 +58,10 @@ Item {
             verify(split.captionHeight >= 20);
             split.buttonHeight = 48;
         }
-        function test_equalSplitGeometryAndTargets() {
+        function test_sourceSizedSplitGeometryAndTargets() {
+            split.width = 120;
+            toggle.clear();
+            details.clear();
             const surface = findChild(split, "wmQuickTileSurface");
             const glyph = findChild(split, "wmQuickTileGlyph");
             const arrow = findChild(split, "wmQuickTileDetailsGlyph");
@@ -67,14 +70,16 @@ Item {
             tryCompare(surface, "height", 48);
             compare(other.height, surface.height);
             compare(glyph.width, 16);
-            verify(Math.abs(glyph.x + glyph.width/2 - surface.width/4) <= 1);
-            verify(Math.abs(arrow.x + arrow.width/2 - 3*surface.width/4) <= 1);
-            mouseClick(surface, surface.width/4, surface.height/2);
+            tryCompare(surface, "width", 120);
+            verify(Math.abs(glyph.x + glyph.width/2 - 36) <= 1);
+            verify(Math.abs(arrow.x + arrow.width/2 - 96) <= 1);
+            mouseClick(surface, 36, surface.height/2);
             compare(toggle.count, 1);
             compare(details.count, 0);
-            mouseClick(surface, 3*surface.width/4, surface.height/2);
+            mouseClick(surface, 96, surface.height/2);
             compare(details.count, 1);
             compare(toggle.count, 1);
+            split.width = 96;
         }
     }
 }

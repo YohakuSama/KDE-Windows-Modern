@@ -119,12 +119,21 @@ TestCase {
     function test_sharedFlyoutGeometry() {
         for (const scale of [0.75, 1, 1.25, 1.5, 2]) {
             const width = Metrics.flyoutWidth(900, scale, false, 0);
-            compare(width, Math.round(360 * scale));
+            compare(width, Math.round(376 * scale));
+            compare(Metrics.flyoutWidth(900, scale, false, 0, false), Math.round(360 * scale));
+            compare(Metrics.flyoutWidth(900, scale, true, 0), Math.round(216 * scale));
             const height = Metrics.quickSettingsHeight(700, Math.round(376 * scale));
             compare(height, Math.min(700, Math.round(376 * scale)));
         }
         compare(Metrics.flyoutWidth(280, 1, false, 0), 280);
         compare(Metrics.quickSettingsHeight(310, 420), 310);
+        compare(Metrics.quickSettingsHeight(700, 376, 400), 400);
+        compare(Metrics.quickSettingsHeight(350, 376, 400), 350);
+        compare(Metrics.quickSettingsHeight(700, 430, 400), 430);
+        compare(Metrics.flyoutWidth(900, 1, false, 12), 364);
+        compare(Metrics.splitSecondaryWidth(120, 1), 48);
+        compare(Metrics.splitSecondaryWidth(72, 1), 36);
+        compare(Metrics.splitSecondaryWidth(180, 1.5), 72);
     }
     function test_systemGroup() {
         verify(Metrics.isQuickSettings("org.kde.plasma.networkmanagement"));

@@ -8,6 +8,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.mpris as Mpris
 import "../js/colorType.js" as ColorType
 import "../js/mediaSource.js" as MediaSource
+import "../js/trayMetrics.js" as TrayMetrics
 
 Rectangle {
     id: card
@@ -29,8 +30,8 @@ Rectangle {
     readonly property color surfaceColor: ColorType.cardFill(dark, acrylic)
     readonly property color outlineColor: ColorType.cardBorder(dark)
 
-    implicitWidth: Math.round(360 * uiScale)
-    implicitHeight: Math.round(178 * uiScale)
+    implicitWidth: Math.round(TrayMetrics.quickPanelWidth * uiScale)
+    implicitHeight: Math.round(TrayMetrics.mediaCardHeight * uiScale)
     radius: Math.round(8 * uiScale)
     color: surfaceColor
     border.width: 1
@@ -51,8 +52,11 @@ Rectangle {
     component Transport: QQC2.ToolButton {
         id: control
         required property string kind
-        implicitWidth: Math.round(48 * card.uiScale)
-        implicitHeight: Math.round(36 * card.uiScale)
+        readonly property string nativeRole: kind === "previous" ? "wm-media-previous-symbolic"
+            : kind === "next" ? "wm-media-next-symbolic"
+            : kind === "pause" ? "wm-media-pause-symbolic" : "wm-media-play-symbolic"
+        implicitWidth: Math.max(1, Math.round(TrayMetrics.mediaButtonExtent * card.uiScale))
+        implicitHeight: implicitWidth
         padding: 0
         display: QQC2.AbstractButton.IconOnly
         background: Rectangle {
@@ -61,53 +65,14 @@ Rectangle {
                            control.down ? 0.12 : control.hovered || control.activeFocus ? 0.07 : 0)
         }
         contentItem: Item {
-            Canvas {
-                id: glyph
+            NativeGlyph {
+                objectName: "wmMediaTransportGlyph"
                 anchors.centerIn: parent
-                width: Math.round(20 * card.uiScale)
+                width: Math.max(1, Math.round(TrayMetrics.mediaGlyphExtent * card.uiScale))
                 height: width
                 opacity: control.enabled ? 1 : 0.32
-                readonly property string kind: control.kind
-                readonly property color ink: card.foreground
-                onKindChanged: requestPaint()
-                onInkChanged: requestPaint()
-                onWidthChanged: requestPaint()
-                onHeightChanged: requestPaint()
-                Component.onCompleted: requestPaint()
-                onPaint: {
-                    const c = getContext("2d");
-                    c.reset();
-                    c.clearRect(0, 0, width, height);
-                    c.scale(width / 20, height / 20);
-                    c.fillStyle = ink;
-                    if (kind === "pause") {
-                        c.fillRect(4, 3, 4, 14);
-                        c.fillRect(12, 3, 4, 14);
-                        return;
-                    }
-                    c.beginPath();
-                    if (kind === "previous") {
-                        c.moveTo(15, 3);
-                        c.lineTo(5, 10);
-                        c.lineTo(15, 17);
-                        c.closePath();
-                        c.fill();
-                        c.fillRect(3, 3, 2, 14);
-                    } else if (kind === "next") {
-                        c.moveTo(5, 3);
-                        c.lineTo(15, 10);
-                        c.lineTo(5, 17);
-                        c.closePath();
-                        c.fill();
-                        c.fillRect(15, 3, 2, 14);
-                    } else {
-                        c.moveTo(5, 3);
-                        c.lineTo(17, 10);
-                        c.lineTo(5, 17);
-                        c.closePath();
-                        c.fill();
-                    }
-                }
+                roleName: control.nativeRole
+                foreground: card.foreground
             }
         }
     }
@@ -201,7 +166,7 @@ Rectangle {
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: Math.round(18 * card.uiScale)
+            spacing: 0
             Transport {
                 objectName: "wmMediaPrevious"
                 kind: "previous"
@@ -212,6 +177,8 @@ Rectangle {
             }
             Transport {
                 objectName: "wmMediaPlayPause"
+                Layout.leftMargin: Math.round(TrayMetrics.mediaPlayPauseMargin * card.uiScale)
+                Layout.rightMargin: Layout.leftMargin
                 kind: card.playing ? "pause" : "play"
                 text: card.playing ? i18n("Pause") : i18n("Play")
                 Accessible.name: text

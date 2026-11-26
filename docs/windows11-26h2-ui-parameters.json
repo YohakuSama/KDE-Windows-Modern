@@ -20,7 +20,9 @@
     "limitations": [
       "All 1481 non-placeholder XBF payloads were matched to the archived candidate hash and size; only selected named dictionaries were decoded.",
       "Separate ControlCenter and ShellCommon implementations are retained; the resource values do not establish which branch is active at runtime.",
-      "Named brush tint and luminosity values are not the Windows compositor's final output. ThemeResource references, dynamic accent selection, Mica behavior, state selection and runtime positioning require further analysis."
+      "Named brush tint and luminosity values are not the Windows compositor's final output. ThemeResource references, dynamic accent selection, Mica behavior, state selection and runtime positioning require further analysis.",
+      "The paginated view width and L2 frame minimum are directly referenced in the same ShellCommon template. KDE uses the inner 376px view width as its single card width, retains the existing home height when larger than the detail minimum, and clips to available work area. This is a documented host-layout adaptation, not proof of Windows outer window positioning.",
+      "The exact previous/next glyphs are declared in the media template; play/pause solid glyphs are reviewed original-font semantic candidates, not a decoded Windows runtime or AnimatedIcon state selection. Imported SVG geometry preserves the project's existing normalization rather than asserting exact font-em raster equivalence."
     ]
   },
   "sources": [
@@ -317,8 +319,32 @@
             "value": "4",
             "xbf_offset": 49503
           }
+        },
+        "IconButtonStyle": {
+          "FrameworkElement.MinHeight": {
+            "value": 40,
+            "xbf_offset": 50248
+          },
+          "FrameworkElement.MinWidth": {
+            "value": 40,
+            "xbf_offset": 50256
+          },
+          "Control.FontSize": {
+            "value": 16,
+            "xbf_offset": 50276
+          }
         }
-      }
+      },
+      "reviewed_usages": [
+        {
+          "template": "SplitTogglePaginatedTemplate",
+          "template_offset": 53253,
+          "node_section": 156,
+          "property": "FrameworkElement.Width",
+          "resource": "SplitToggleSecondaryWidth",
+          "xbf_offset": 92824
+        }
+      ]
     },
     {
       "pri_path": "SystemResources/Windows.UI.ShellCommon/Windows.UI.ShellCommon.pri",
@@ -384,9 +410,41 @@
           "CollapsedAnimationDuration": {
             "value": 0.16699999570846558,
             "xbf_offset": 31300
+          },
+          "ControlCenterWidth": {
+            "value": 360,
+            "xbf_offset": 31161,
+            "type": "GridLength:Pixel"
+          },
+          "PaginatedControlCenterWidth": {
+            "value": 376,
+            "xbf_offset": 31183,
+            "type": "GridLength:Pixel"
+          },
+          "MediaTransportControlsHeight": {
+            "value": 178,
+            "xbf_offset": 31205
           }
         }
-      }
+      },
+      "reviewed_usages": [
+        {
+          "consumer": "Files\\QuickActions\\ControlCenter\\paginatedcontrolcenterview.xbf",
+          "resource": "PaginatedControlCenterViewWidth",
+          "properties": [
+            {
+              "element": "TogglesGroup",
+              "property": "FrameworkElement.Width",
+              "xbf_offset": 1951
+            },
+            {
+              "element": "SlidersGroup",
+              "property": "FrameworkElement.Width",
+              "xbf_offset": 1990
+            }
+          ]
+        }
+      ]
     },
     {
       "pri_path": "SystemResources/Windows.UI.Logon/Windows.UI.Logon.pri",
@@ -486,6 +544,173 @@
         "value_source": "CredentialControlsWidth",
         "kde_adaptation": "Use 296 logical pixels as the maximum width of the credential panel; allow the existing layout to shrink on smaller screens."
       }
+    },
+    {
+      "pri_path": "SystemResources/Windows.UI.ShellCommon/Windows.UI.ShellCommon.pri",
+      "pri_sha256": "98f34192ec2d03d73eeba5123a7ad2e11b86eb93272e8ab2702d5728b18f0b8a",
+      "resource": "Files\\QuickActions\\ControlCenter\\paginatedcontrolcenterview.xbf",
+      "xbf_sha256": "1fa5e1d85cb857f51281550a07961c27ea38e9dc96fafa9f33c0716403497ad0",
+      "resource_values": {
+        "root": {
+          "FrameworkElement.MaxWidth": {
+            "value": 380,
+            "xbf_offset": 1728
+          }
+        },
+        "FooterGrid": {
+          "FrameworkElement.MinHeight": {
+            "value": 48,
+            "xbf_offset": 2021
+          },
+          "FrameworkElement.Height": {
+            "value": 48,
+            "xbf_offset": 2029
+          }
+        },
+        "root_resources": {
+          "L2FrameMinHeight": {
+            "value": 400,
+            "xbf_offset": 2181
+          }
+        }
+      },
+      "reviewed_usages": [
+        {
+          "node_section": 2,
+          "element": "L2Frame",
+          "property": "FrameworkElement.MinHeight",
+          "resource": "L2FrameMinHeight",
+          "xbf_offset": 2265
+        }
+      ]
+    },
+    {
+      "pri_path": "SystemResources/Windows.UI.ControlCenter/Windows.UI.ControlCenter.pri",
+      "pri_sha256": "b6c11035a2011487516cda4f3b8e7bc2651d55a8a8fd58840a8c0456b574043b",
+      "resource": "Files\\ControlCenter\\MediaTransportControls.xbf",
+      "xbf_sha256": "d55476dec88b3cb7a5adbb2e978457c25c08018304fe633d855c94ca28820504",
+      "resource_values": {
+        "PreviousButton": {
+          "ContentControl.Content": {
+            "value": "U+F8AC",
+            "xbf_offset": 4126
+          }
+        },
+        "NextButton": {
+          "ContentControl.Content": {
+            "value": "U+F8AD",
+            "xbf_offset": 4206
+          }
+        },
+        "PlayPauseButton": {
+          "FrameworkElement.Margin": {
+            "value": [
+              26,
+              0,
+              26,
+              0
+            ],
+            "xbf_offset": 4157
+          }
+        }
+      },
+      "reviewed_usages": [
+        {
+          "node_section": 0,
+          "element": "MediaTransportControlsRegion",
+          "property": "FrameworkElement.Height",
+          "resource": "MediaTransportControlsHeight",
+          "xbf_offset": 2775
+        },
+        {
+          "element": "PreviousButton",
+          "property": "FrameworkElement.Style",
+          "resource": "IconRepeatButtonStyle",
+          "xbf_offset": 4120
+        },
+        {
+          "element": "NextButton",
+          "property": "FrameworkElement.Style",
+          "resource": "IconRepeatButtonStyle",
+          "xbf_offset": 4200
+        },
+        {
+          "element": "PlayPauseButton",
+          "property": "FrameworkElement.Style",
+          "resource": "IconButtonPlayPauseStyle",
+          "xbf_offset": 4151
+        }
+      ]
+    },
+    {
+      "pri_path": "SystemResources/Windows.UI.ControlCenter/Windows.UI.ControlCenter.pri",
+      "pri_sha256": "b6c11035a2011487516cda4f3b8e7bc2651d55a8a8fd58840a8c0456b574043b",
+      "resource": "Files\\ControlCenter\\MediaTransportControlsResources.xbf",
+      "xbf_sha256": "47489ab4bb0e7b6468106230f5c8faf0cc236a45f06bba540025ffe25440a859",
+      "resource_values": {
+        "IconRepeatButtonStyle": {
+          "FrameworkElement.MinHeight": {
+            "value": 40,
+            "xbf_offset": 5196
+          },
+          "FrameworkElement.MinWidth": {
+            "value": 40,
+            "xbf_offset": 5204
+          },
+          "Control.FontFamily": {
+            "value": "Segoe Fluent Icons",
+            "xbf_offset": 5220
+          },
+          "Control.FontSize": {
+            "value": 16,
+            "xbf_offset": 5226
+          }
+        },
+        "IconButtonPlayPauseStyle": {
+          "Style.BasedOn": {
+            "value": "IconButtonStyle",
+            "xbf_offset": 5250
+          }
+        }
+      },
+      "reviewed_usages": [
+        {
+          "dictionary_ref_offset": 4522,
+          "template": "IconRepeatButtonStyle",
+          "template_offset": 5162
+        },
+        {
+          "dictionary_ref_offset": 4522,
+          "template": "IconButtonPlayPauseStyle",
+          "template_offset": 5247
+        }
+      ]
     }
-  ]
+  ],
+  "media_glyph_review": {
+    "font_sha256": "031ada497ddcc9bf3f2536efba2f4bd53f12a0dead44460a4a934b06a952dd2b",
+    "font_family": "Segoe Fluent Icons",
+    "roles": [
+      {
+        "codepoint": "U+F8AC",
+        "path": "actions/wm-media-previous-symbolic",
+        "status": "template_literal_verified"
+      },
+      {
+        "codepoint": "U+F8AD",
+        "path": "actions/wm-media-next-symbolic",
+        "status": "template_literal_verified"
+      },
+      {
+        "codepoint": "U+F5B0",
+        "path": "actions/wm-media-play-symbolic",
+        "status": "original_font_semantic_candidate"
+      },
+      {
+        "codepoint": "U+F8AE",
+        "path": "actions/wm-media-pause-symbolic",
+        "status": "original_font_semantic_candidate"
+      }
+    ]
+  }
 }

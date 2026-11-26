@@ -46,7 +46,8 @@ Item {
     // The configured scale is a ceiling. Small work areas shrink the grid
     // before mapping, without using physical DPI or depending on panel length.
     readonly property real uiScale: Math.max(0.35, Math.min(Plasmoid.configuration.scale / 100,
-        availableWidth / 360, availableHeight / 400))
+        availableWidth / (quickHome || quickDetail ? TrayMetrics.quickPanelWidth : TrayMetrics.standardFlyoutWidth),
+        availableHeight / TrayMetrics.quickDetailMinimumHeight))
     readonly property bool quickHome: !systemTrayState.activeApplet && !systemTrayState.overflowMode
     // One rounded settings card for home and all themed detail pages. Never
     // switch between KSVG frame insets and our card when navigating.
@@ -54,16 +55,19 @@ Item {
     readonly property bool quickDetail: themedActive && systemTrayState.quickSettingsRoute
     readonly property int frameWidth: customCard ? 0 : Math.round(dialog.margins.left + dialog.margins.right)
     readonly property int frameHeight: customCard ? 0 : Math.round(dialog.margins.top + dialog.margins.bottom)
-    readonly property int popupWidth: TrayMetrics.flyoutWidth(availableWidth, uiScale, overflowHome, frameWidth)
+    readonly property int popupWidth: TrayMetrics.flyoutWidth(availableWidth, uiScale,
+        overflowHome, frameWidth, quickHome || quickDetail)
     readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
         * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
         + Math.round(16 * uiScale)
     Mpris.Mpris2Model { id: mediaModel }
-    readonly property int mediaGap: Math.round(12 * uiScale)
-    readonly property int mediaHeight: Math.round(178 * uiScale)
+    readonly property int mediaGap: Math.round(TrayMetrics.mediaCardGap * uiScale)
+    readonly property int mediaHeight: Math.round(TrayMetrics.mediaCardHeight * uiScale)
     readonly property bool separatedMedia: !systemTrayState.activeApplet && !systemTrayState.overflowMode
         && mediaCard.hasSession && availableHeight >= actionPanel.nominalHomeHeight + mediaGap + mediaHeight
-    readonly property int quickCardHeight: TrayMetrics.quickSettingsHeight(availableHeight, actionPanel.nominalHomeHeight)
+    readonly property int quickCardHeight: TrayMetrics.quickSettingsHeight(availableHeight,
+        actionPanel.nominalHomeHeight, quickDetail
+            ? Math.round(TrayMetrics.quickDetailMinimumHeight * uiScale) : 0)
     readonly property int popupHeight: Math.max(1, Math.min(availableHeight - frameHeight,
         overflowHome ? overflowHeight
         : quickHome || quickDetail ? quickCardHeight + (separatedMedia ? mediaGap + mediaHeight : 0)
