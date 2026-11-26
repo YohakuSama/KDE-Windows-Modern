@@ -87,6 +87,54 @@ def describe_link(data):
     return result
 
 
+def replay_rgb8(data, pixels):
+    """Execute the measured RGB8 mft2 device-link path; not a LUT generator."""
+    description = describe_link(data)
+    if (description['input_space'], description['output_space']) != ('RGB ', 'RGB '):
+        raise ValueError('Expected RGB-to-RGB device link')
+    count = len(description['tags'])
+    matches = [(off, size) for sig, off, size in
+               (struct.unpack_from('>4sII', data, 132+12*i) for i in range(count))
+               if sig == b'A2B0']
+    if len(matches) != 1:
+        raise ValueError('Expected one A2B0 tag')
+    off, size = matches[0]
+    tag = data[off:off+size]
+    if len(tag) < 52 or tag[:4] != b'mft2' or tag[8:11] != bytes((3,3,32)):
+        raise ValueError('Unexpected mft2 dimensions')
+    if struct.unpack_from('>9i', tag, 12) != (65536,0,0,0,65536,0,0,0,65536):
+        raise ValueError('Expected identity matrix')
+    ni, no = struct.unpack_from('>HH', tag, 48)
+    if (ni,no) != (256,1024) or len(tag) != 52+6*ni+6*32**3+6*no:
+        raise ValueError('Unexpected mft2 table length')
+    source = np.frombuffer(tag[52:52+6*ni], '>u2').reshape(3,ni).astype(np.int64)
+    grid = np.frombuffer(tag[52+6*ni:-6*no], '>u2').reshape(32,32,32,3).astype(np.int64)
+    target = np.frombuffer(tag[-6*no:], '>u2').reshape(3,no).astype(np.int64)
+    if pixels.ndim != 2 or pixels.shape[1] != 3 or np.any(pixels<0) or np.any(pixels>255):
+        raise ValueError('Expected RGB8 pixels')
+    # 16-bit curve samples -> 5-bit grid coordinate and 11-bit fraction.
+    p = (source[np.arange(3),pixels.astype(np.int64)]*31)>>5
+    cell, frac = p>>11, p&2047
+    order = np.argsort(-frac, axis=1)
+    fractions = np.take_along_axis(frac, order, axis=1)
+    q = cell.copy()
+    rows = np.arange(len(q))
+    prev = grid[q[:,0],q[:,1],q[:,2]]
+    numerator = prev*2048
+    for j in range(3):
+        q[rows,order[:,j]] += 1
+        node = grid[q[:,0],q[:,1],q[:,2]]
+        numerator += (node-prev)*fractions[:,j,None]
+        prev = node
+    # Accumulate without intermediate rounding. Drop 11 fraction bits and
+    # six low CLUT-output bits together, then take the curve's high byte.
+    idx = (numerator>>17).clip(0,1023)
+    pred = (target[np.arange(3),idx]>>8).astype(np.uint8)
+    return pred, {'input_curve_sha256':sha(source.astype('>u2').tobytes()),
+                  'clut_sha256':sha(grid.astype('>u2').tobytes()),
+                  'output_curve_sha256':sha(target.astype('>u2').tobytes())}
+
+
 def measure(entry, count, reference, n):
     if set(entry['outputs'])!=set(FORMATS):
         raise ValueError('Missing or unexpected native output formats')
@@ -101,13 +149,14 @@ def measure(entry, count, reference, n):
         else:
             buffers[key]=rgb(data,bits)
     result['failures']=failures
-    result['rgb8_vs_wic']={k:partitions(v,reference,n) for k,v in buffers.items() if FORMATS[k]==8}
+    result['rgb8_vs_wic']={k:partitions(v,reference,n) for k,v in buffers.items() if k=='8to8'}
+    result['packing_note']='16-bit raw channel order is unresolved on this capture; no cross-depth precision inference from 16-bit input/output.'
     result['downconversion']={}
     # Compare high-bit outputs against 8-bit output from the same input format.
     # These are diagnostic comparisons, not a claim that the paths share precision.
     for key,bits in FORMATS.items():
         baseline=key.split('to')[0]+'to8'
-        if bits==8 or key not in buffers or baseline not in buffers:
+        if key!='8to10' or key not in buffers or baseline not in buffers:
             continue
         x=buffers[key]; y=buffers[baseline]; maxval=(1<<bits)-1
         reduced={'shift':x>>(bits-8),'round255':(x*255+maxval//2)//maxval,
@@ -149,6 +198,11 @@ def analyze(report, evidence):
             link=checked(entry['link_profile'])
             result['device_link']=entry['link_profile'] if link is None else describe_link(link)
             if link is not None:
+                prediction, tables = replay_rgb8(link, rgb(calibration+mixed,8))
+                result['portable_rgb8'] = {**tables, 'output_sha256':sha(prediction.tobytes()),
+                                           'vs_wic':partitions(prediction,reference,n)}
+                if '8to8' in direct:
+                    result['portable_rgb8']['vs_direct']=partitions(prediction,direct['8to8'],n)
                 replay=entry['link_replay']
                 if replay.get('status')=='error':
                     result['link_replay']=replay

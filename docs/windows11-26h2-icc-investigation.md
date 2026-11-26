@@ -134,3 +134,37 @@ python3 scripts/theme/analyze-wallpaper-icc-precision.py /path/to/windows-icc-pr
 The NumPy-based comparator verifies input/source/target identity and all successful output hashes, requires the original WIC calibration to match, separates mixed and calibration metrics, compares four high-bit downconversion rules with the matching input-format RGB8 path, and reports device-link tag types/grid dimensions and replay differences. Agreement of downconversion rules would be evidence about output packing, not proof of the internal CMM representation.
 
 Local validation: Python syntax compilation, exact prior calibration-input hash and 4,096 disjoint mixed inputs, synthetic RGB8/10/16 test buffers, synthetic ICC link-header parsing and replay metrics, rejection of tampered output hashes and of a nonmatching WIC baseline. The synthetic test does not establish native high-bit behavior or valid generated ICC link contents. The Windows PowerShell/C# code has been reviewed against the documented API signatures but cannot be executed in this Linux container. No actual CMM ID, high-bit results, or device-link availability is claimed until the new measurement returns. Runtime revision 2, main and CI are unchanged.
+
+
+## Native precision result and exact portable RGB8 device-link execution
+
+Reference build 26300.9974; original precision report SHA-256 `42F2C3D2FEBE30FC65B8F04F931CD154AFA520116DD5A40356C62AF9B5BDA76A`. All 81 binary payloads passed size and SHA-256 validation (one input, two WIC outputs, 36 direct outputs, six device links, and 36 replay outputs). All six transforms and links succeeded. GetCMMInfo reported CMM signature 0x57696E20 ("Win "), DLL version 65536 and Win version 262144, for every direct and replay transform. These are CMM-reported API versions, not the installed Windows build.
+
+All three intents for each source returned identical direct RGB8 data; native WIC matched on all 5,120 colors, including the previously unseen 4,096 mixed inputs. Native replay matched the direct raw buffers for all six format combinations, across all six transforms.
+
+All device links are 205,204-byte ICC v2.1 RGB-to-RGB profiles. A2B0 contains an mft2 tag with an identity matrix, three 256-entry 16-bit input tables, a 32 x 32 x 32 three-output 16-bit CLUT, and three 1,024-entry 16-bit output tables. The A2B0 contents are identical across the three intents within each source. The CLUT and output tables are identical between sources; input curves differ. Table hashes and reference output hashes (no captured tables or profile bytes are bundled):
+
+| Component | SHA-256 |
+| --- | --- |
+| sRGB input curves | 888A2852424F361D9A87E68B17365304A7B49CFE4FCA63D22A0EFF13620F0ED3 |
+| Linear sRGB input curves | 8B814990ADF93775BF8BFAF2C3A54DCEDE47D1F68E81809388E7E1D9624B24D6 |
+| Shared CLUT | 61A243BB0A50A4B0346873DA3D9C6F20FDDC7EC2945DD8946B6DD2E8D93658B2 |
+| Shared output curves | 1943A4178D0F62F28694CE524D529A944F04CBB4E7E9FC4722ABC906A13BF216 |
+| sRGB RGB8 output | EE7B6683A8D6C9395DCF89DBEF9E1016C8EC6D1B2DBCC07B651367AF4F64878F |
+| Linear sRGB RGB8 output | F35265C39A8D89B7B0AF1ED7755758084064601F017E65804EF6295BA00B2725 |
+
+The prior shared matrix-based model was tested without refitting. It produced absolute channel error sums of 1,239 and 1,447 on the two independent mixed-color sets, versus 107 and 141 on the original calibration inputs. It is not a verified runtime algorithm.
+
+A device-link replay experiment using the captured tables compared 2,304 shared interpolation/quantization models, then 896 shared fractional-precision/rounding models. Ranking used only the original calibration errors; the mixed set was evaluated separately. The best fixed-point model was exact on both sets. Implemented using integer operations only:
+
+1. Read each RGB8 code from its 256-entry input curve (unsigned 16-bit).
+2. Compute p = (curve_value * 31) >> 5. The high bits p >> 11 select a cell; p & 2047 is its 11-bit fractional coordinate.
+3. Sort fractions descending, follow the corresponding tetrahedron's three edges, and accumulate the first grid vertex times 2048 plus each signed edge delta times its fraction. Do not round individual terms.
+4. Shift the accumulated numerator right by 17 (11 interpolation bits + six low output bits) to index the 1,024-entry output table.
+5. Return the high byte of each output table value.
+
+The revised precision comparator implements this execution directly from the supplied device links and verifies the old WIC calibration, input identity, all successful buffer hashes, portable RGB8 output against WIC and direct ICM, and native replay versus direct output. All six portable runs matched on all 5,120 input colors, giving zero differing channels and identical output hashes; the two distinct sources account for 10,240 colors and 30,720 channel values, without counting repeated intents as independent tests. The report remains external to the repository. No native code is called by the portable execution helper.
+
+High-bit caveat: despite the documented BM_16b_RGB byte ordering, the captured 8-to-16 raw output shows red/blue reversal (e.g. input (0,0,1) yields the first 16-bit word nonzero rather than the third), and 16-bit inputs show swapped output red/blue. Exact raw replay remains valid, but this invalidates interpreting the earlier raw cross-depth comparisons as rounding measurements. The updated analyzer restricts cross-depth comparisons to 8-to-10 and labels the 16-bit packing issue unresolved. Do not infer 16-bit interpolation from these raw buffers.
+
+**Remaining implementation boundary:** execution of measured RGB8 device-link tables is reproduced; generation of equivalent tables from arbitrary ICC profiles is not. The direct matrix model differed from the shared native CLUT by up to 41 units at 16-bit grid nodes; direct sampled TRC inversion also differed. Next reproduce the source-curve, CLUT and output-curve construction, rather than packaging the captured tables. Tagged transparency and independent ICC profile families still need validation. No runtime change, new runtime dependency, CI or main change. Local syntax compilation and end-to-end analyzer execution used the supplied precision report and the archived calibration evidence from the isolated research directory; no full repository build or KDE desktop test was performed.
