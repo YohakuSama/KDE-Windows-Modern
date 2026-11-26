@@ -267,12 +267,56 @@ def derive_wallpaper_alpha(range_sum, pixel_count):
 
 # The weighted-RGB branch was recovered from shell32 10.0.26100.9974.
 # These functions consume already prepared analysis buffers. Source-file
-# decoding and exact WIC bilinear resampling are separate work.
+# decoding and full WIC bilinear parity remain separate work.
 WALLPAPER_ANALYSIS_LIMIT = 256
 
 
 def _f32(value):
     return struct.unpack("<f", struct.pack("<f", value))[0]
+
+
+def _wallpaper_axis_samples(source, target):
+    # Pixel-center mapping: (i + 0.5) * source / target - 0.5.
+    # Integer coordinates retain the fractional weight without float drift.
+    denominator = 2 * target
+    for i in range(target):
+        low, fraction = divmod((2 * i + 1) * source - target, denominator)
+        yield (max(0, min(source - 1, low)),
+               max(0, min(source - 1, low + 1)),
+               denominator - fraction, fraction)
+
+
+def prepare_opaque_wallpaper_bitmap(pixels, width, height):
+    """Prepare a candidate top-down BGRX analysis bitmap from packed RGB8.
+
+    The caller supplies decoded, oriented, opaque RGB bytes. Dimensions
+    are capped independently; there is no forced JPEG re-encoding.
+    Pixel-center bilinear interpolation with truncation matches the
+    three measured WIC BMP buffers byte for byte. This is not a claim
+    of universal WIC decoder, format-conversion or rounding parity.
+    """
+    if (any(type(n) is not int or n <= 0 for n in (width, height))
+            or not isinstance(pixels, bytes) or len(pixels) != width * height * 3):
+        raise ValueError("Expected a tightly packed opaque RGB8 image")
+    w, h = min(width, WALLPAPER_ANALYSIS_LIMIT), min(height, WALLPAPER_ANALYSIS_LIMIT)
+    xs = [(left * 3, right * 3, a, b)
+          for left, right, a, b in _wallpaper_axis_samples(width, w)]
+    denominator = 4 * w * h
+    output = bytearray(w * h * 4)
+    offset = 0
+    for top, bottom, c, d in _wallpaper_axis_samples(height, h):
+        top *= width * 3
+        bottom *= width * 3
+        for left, right, a, b in xs:
+            weights = a * c, b * c, a * d, b * d
+            positions = top + left, top + right, bottom + left, bottom + right
+            for channel in range(3):
+                value = sum(pixels[position + channel] * weight
+                            for position, weight in zip(positions, weights)) // denominator
+                output[offset + 2 - channel] = value
+            output[offset + 3] = 255
+            offset += 4
+    return w, h, bytes(output)
 
 
 def _wallpaper_analysis_count(width, height):

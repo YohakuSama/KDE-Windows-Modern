@@ -1,0 +1,595 @@
+{
+  "schema_version": 2,
+  "probe_set": "BitmapBoundary",
+  "description": "Controlled Windows automatic accent observations. Unchanged palette/image evidence is inconclusive.",
+  "baseline": {
+    "schema_version": 5,
+    "windows_build": "26300.9974",
+    "display_version": "26H2",
+    "accent_mode_argument": "Automatic",
+    "accent_mode_registry": "Automatic",
+    "accent_mode_registry_conflict": false,
+    "manual_color_argument": "",
+    "manual_color_matches_observed": null,
+    "native_wallpaper_color_api": {
+      "status": "ok",
+      "hresult": "0x00000000",
+      "argb": "0xAF2475CE",
+      "alpha": 175,
+      "image_color_argb": "0xAF2475CE",
+      "image_color_alpha": 175,
+      "image_color_after_api_argb": "0xAF2475CE",
+      "image_color_changed_by_api": false,
+      "argb_matches_image_color": true,
+      "alpha_matches_image_color": true,
+      "argb_matches_image_color_after_api": true,
+      "alpha_matches_image_color_after_api": true,
+      "rgb_matches_image_color": true,
+      "rgb_matches_dwm_colorization": true,
+      "error_type": null
+    },
+    "accent_observed_from_ui_settings": "#FF2475CE",
+    "manual_color_observed_from_ui_settings": null,
+    "appearance": {
+      "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+      "source_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+      "wallpaper_style_raw": "10",
+      "tile_wallpaper_raw": "0",
+      "apps_use_light_theme": 1,
+      "system_uses_light_theme": 1,
+      "transparency_raw": 1,
+      "reported_display_width": 1280,
+      "reported_display_height": 800,
+      "colors_argb": {
+        "Accent": "#FF2475CE",
+        "AccentDark1": "#FF1C5CB2",
+        "AccentDark2": "#FF123C8E",
+        "AccentDark3": "#FF061864",
+        "AccentLight1": "#FF398BDC",
+        "AccentLight2": "#FF85C5EA",
+        "AccentLight3": "#FFAEE6F6",
+        "Background": "#FFFFFFFF",
+        "Foreground": "#FF000000"
+      },
+      "registry": {
+        "control_panel_auto_colorization_raw": 1,
+        "desktop_image_color_raw": -1356565042,
+        "themes_history_auto_color_raw": 1,
+        "dwm_accent_color_raw": -3246812,
+        "dwm_colorization_color_raw": 2389454,
+        "dwm_colorization_afterglow_raw": 2389454,
+        "explorer_accent_color_menu_raw": -3246812,
+        "explorer_start_color_menu_raw": -5088228,
+        "accent_palette_length_bytes": 32,
+        "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
+      }
+    }
+  },
+  "samples": [
+    {
+      "image": {
+        "pixel_validation": {
+          "background_expected_rgb": "#148A14",
+          "background_actual_rgb": "#148A14",
+          "background_matches": true,
+          "patch_expected_rgb": "#E13030",
+          "patch_actual_rgb": "#E13030",
+          "patch_matches": true
+        },
+        "background": "#148A14",
+        "name": "isolated-red-high-left",
+        "rectangle": {
+          "y": 0,
+          "color": "#E13030",
+          "width": 448,
+          "height": 800,
+          "x": 0
+        }
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAFD24444",
+            "alpha": 175,
+            "image_color_argb": "0xAFD24444",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAFD24444",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FFD24444",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "0507BA429B71036514326DBF03921012FD5CC257E985CC1763F61A62F1577149",
+            "source_wallpaper_sha256": "0507BA429B71036514326DBF03921012FD5CC257E985CC1763F61A62F1577149",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FFD24444",
+              "AccentDark1": "#FFBB2D2D",
+              "AccentDark2": "#FF8C2222",
+              "AccentDark3": "#FF5E0C0C",
+              "AccentLight1": "#FFD95B58",
+              "AccentLight2": "#FFEC968E",
+              "AccentLight3": "#FFF7B8AD",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1345174460,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -12303150,
+              "dwm_colorization_color_raw": 13780036,
+              "dwm_colorization_afterglow_raw": 13780036,
+              "explorer_accent_color_menu_raw": -12303150,
+              "explorer_start_color_menu_raw": -13816389,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "F7B8AD00EC968E00D95B5800D2444400BB2D2D008C2222005E0C0C0088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "256377B9B951969D73C5E5E4E6F70A905B83F929E07D961D7D9C953FF9ECA1D2",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": true,
+            "background_rgb": "#148914",
+            "patch_rgb": "#E03030"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "0507BA429B71036514326DBF03921012FD5CC257E985CC1763F61A62F1577149",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "37065589240E819AD2AC8D56657F0DADA47664A4317ADD9CB2BD6852FDB93781",
+            "gzip_base64": "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"
+          },
+          "transcoded": {
+            "source_sha256": "256377B9B951969D73C5E5E4E6F70A905B83F929E07D961D7D9C953FF9ECA1D2",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "3A65645D528324E06FC8C92095696FD4A6917CF5555BFA8962ACE9ABC30C661C",
+            "gzip_base64": "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"
+          }
+        }
+      }
+    },
+    {
+      "image": {
+        "pixel_validation": {
+          "background_expected_rgb": "#E13030",
+          "background_actual_rgb": "#E13030",
+          "background_matches": true,
+          "patch_expected_rgb": "#148A14",
+          "patch_actual_rgb": "#148A14",
+          "patch_matches": true
+        },
+        "background": "#E13030",
+        "name": "isolated-red-high-right",
+        "rectangle": {
+          "y": 0,
+          "color": "#148A14",
+          "width": 832,
+          "height": 800,
+          "x": 0
+        }
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAF008700",
+            "alpha": 175,
+            "image_color_argb": "0xAF008700",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAF008700",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FF038801",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "8F4053868A759C39A13F41D0640528649F68CC498AC6F4D270F2BBD0DBF745A3",
+            "source_wallpaper_sha256": "8F4053868A759C39A13F41D0640528649F68CC498AC6F4D270F2BBD0DBF745A3",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF038801",
+              "AccentDark1": "#FF027001",
+              "AccentDark2": "#FF025201",
+              "AccentDark3": "#FF012F00",
+              "AccentLight1": "#FF0AB301",
+              "AccentLight2": "#FF44FD27",
+              "AccentLight3": "#FF85FE66",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1358919936,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16742656,
+              "dwm_colorization_color_raw": 34560,
+              "dwm_colorization_afterglow_raw": 34560,
+              "explorer_accent_color_menu_raw": -16742656,
+              "explorer_start_color_menu_raw": -16683006,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "85FE660044FD27000AB30100038801000270010002520100012F000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "5FC8791BAB8F5F2560099AAFEEEC2097E92D52CAB7AA1261AC1138402BE686BB",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": true,
+            "background_rgb": "#E03030",
+            "patch_rgb": "#148914"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "8F4053868A759C39A13F41D0640528649F68CC498AC6F4D270F2BBD0DBF745A3",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "95F4583606F70D86FBC62232564F946270F2B7EAF0EAC1DA09810B6FE538DEB8",
+            "gzip_base64": "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"
+          },
+          "transcoded": {
+            "source_sha256": "5FC8791BAB8F5F2560099AAFEEEC2097E92D52CAB7AA1261AC1138402BE686BB",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "8AF8F26180D77C15B8083C6080B16D1467B2EFE83B8C539769E29FBEB85658DA",
+            "gzip_base64": "H4sIAAAAAAAEAO3TSQ2AQADAQBNrgh8q8IYYPOFkMcCXI+k8RkHTsY854GeW7ZjrevKwrzvDHf/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u//ufLv/7ny7/+58u/7/jAl74Qm4AAAQA"
+          }
+        }
+      }
+    },
+    {
+      "image": {
+        "pixel_validation": {
+          "background_expected_rgb": "#148A14",
+          "background_actual_rgb": "#148A14",
+          "background_matches": true,
+          "patch_expected_rgb": "#E13030",
+          "patch_actual_rgb": "#E13030",
+          "patch_matches": true
+        },
+        "background": "#148A14",
+        "name": "isolated-red-high-top",
+        "rectangle": {
+          "y": 0,
+          "color": "#E13030",
+          "width": 1280,
+          "height": 280,
+          "x": 0
+        }
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAF008700",
+            "alpha": 175,
+            "image_color_argb": "0xAF008700",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAF008700",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FF038801",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "7321D3A476D95CEA7927367F8B5687D643F2D8930C6A59F999D2D84EBA16A028",
+            "source_wallpaper_sha256": "7321D3A476D95CEA7927367F8B5687D643F2D8930C6A59F999D2D84EBA16A028",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF038801",
+              "AccentDark1": "#FF027001",
+              "AccentDark2": "#FF025201",
+              "AccentDark3": "#FF012F00",
+              "AccentLight1": "#FF0AB301",
+              "AccentLight2": "#FF44FD27",
+              "AccentLight3": "#FF85FE66",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1358919936,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16742656,
+              "dwm_colorization_color_raw": 34560,
+              "dwm_colorization_afterglow_raw": 34560,
+              "explorer_accent_color_menu_raw": -16742656,
+              "explorer_start_color_menu_raw": -16683006,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "85FE660044FD27000AB30100038801000270010002520100012F000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "ADDBBE9980815E2727D965F83DBCDA6D80FF4D6137E787C6D5D9D78EF11D001C",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": true,
+            "background_rgb": "#148914",
+            "patch_rgb": "#E03030"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "7321D3A476D95CEA7927367F8B5687D643F2D8930C6A59F999D2D84EBA16A028",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "8933F94EAC5AB3F04E81F427D99B7EEC42088BD704D469D19ABD4B0C2C4C7F4B",
+            "gzip_base64": "H4sIAAAAAAAEAO3DQREAEBQFwBI/hdOLIJ9I2khCB0d2ZzZZO6qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpeb32qn65Rqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqr67AMVvtfoAAAEAA=="
+          },
+          "transcoded": {
+            "source_sha256": "ADDBBE9980815E2727D965F83DBCDA6D80FF4D6137E787C6D5D9D78EF11D001C",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "C889928BCEB75FF96E2C67597B5B791B21F6F91FEE3FE751F487E9EAEC3B9A8A",
+            "gzip_base64": "H4sIAAAAAAAEAO3UURVAQBQFwA6sBhvgHUXUIsKmQxKE8HfnYypM1fUUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/uoFQa51AqL4NINR0NCDUvC9AqPYdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACleiGQsEAAABAA="
+          }
+        }
+      }
+    }
+  ],
+  "restoration": {
+    "wallpaper_path_verified": true,
+    "palette_matches_baseline": true,
+    "observation": {
+      "capture": {
+        "schema_version": 5,
+        "windows_build": "26300.9974",
+        "display_version": "26H2",
+        "accent_mode_argument": "Automatic",
+        "accent_mode_registry": "Automatic",
+        "accent_mode_registry_conflict": false,
+        "manual_color_argument": "",
+        "manual_color_matches_observed": null,
+        "native_wallpaper_color_api": {
+          "status": "ok",
+          "hresult": "0x00000000",
+          "argb": "0xAF2475CE",
+          "alpha": 175,
+          "image_color_argb": "0xAF2475CE",
+          "image_color_alpha": 175,
+          "image_color_after_api_argb": "0xAF2475CE",
+          "image_color_changed_by_api": false,
+          "argb_matches_image_color": true,
+          "alpha_matches_image_color": true,
+          "argb_matches_image_color_after_api": true,
+          "alpha_matches_image_color_after_api": true,
+          "rgb_matches_image_color": true,
+          "rgb_matches_dwm_colorization": true,
+          "error_type": null
+        },
+        "accent_observed_from_ui_settings": "#FF2475CE",
+        "manual_color_observed_from_ui_settings": null,
+        "appearance": {
+          "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "source_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "wallpaper_style_raw": "10",
+          "tile_wallpaper_raw": "0",
+          "apps_use_light_theme": 1,
+          "system_uses_light_theme": 1,
+          "transparency_raw": 1,
+          "reported_display_width": 1280,
+          "reported_display_height": 800,
+          "colors_argb": {
+            "Accent": "#FF2475CE",
+            "AccentDark1": "#FF1C5CB2",
+            "AccentDark2": "#FF123C8E",
+            "AccentDark3": "#FF061864",
+            "AccentLight1": "#FF398BDC",
+            "AccentLight2": "#FF85C5EA",
+            "AccentLight3": "#FFAEE6F6",
+            "Background": "#FFFFFFFF",
+            "Foreground": "#FF000000"
+          },
+          "registry": {
+            "control_panel_auto_colorization_raw": 1,
+            "desktop_image_color_raw": -1356565042,
+            "themes_history_auto_color_raw": 1,
+            "dwm_accent_color_raw": -16742656,
+            "dwm_colorization_color_raw": 2389454,
+            "dwm_colorization_afterglow_raw": 2389454,
+            "explorer_accent_color_menu_raw": -3246812,
+            "explorer_start_color_menu_raw": -5088228,
+            "accent_palette_length_bytes": 32,
+            "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
+          }
+        }
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    }
+  }
+}

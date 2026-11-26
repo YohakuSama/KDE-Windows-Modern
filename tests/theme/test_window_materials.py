@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+import base64
 import configparser
+import gzip
+import hashlib
 import json
 import importlib.util
 from pathlib import Path
@@ -547,6 +550,85 @@ class WindowMaterialTests(unittest.TestCase):
             with self.subTest(buffers=buffers):
                 with self.assertRaises(ValueError):
                     derive(buffers)
+
+    def test_opaque_wallpaper_bitmap_preparation(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        prepare = sync["prepare_opaque_wallpaper_bitmap"]
+        self.assertEqual(prepare(bytes((1, 2, 3, 4, 5, 6)), 2, 1),
+                         (2, 1, bytes((3, 2, 1, 255, 6, 5, 4, 255))))
+        for pixels, width, height in ((b"", 1, 1), (b"", 0, 1),
+                                      (b"123", True, 1), (bytearray(3), 1, 1)):
+            with self.subTest(width=width, height=height):
+                with self.assertRaises(ValueError):
+                    prepare(pixels, width, height)
+
+    def test_wic_bitmap_boundary_reference(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        prepare = sync["prepare_opaque_wallpaper_bitmap"]
+        report = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes-bitmap-boundary.json").read_text(
+            encoding="utf-8"))
+        self.assertEqual(report["probe_set"], "BitmapBoundary")
+        self.assertTrue(report["restoration"]["wallpaper_path_verified"])
+        self.assertTrue(report["restoration"]["palette_matches_baseline"])
+        native_results = {}
+        for sample in report["samples"]:
+            image = sample["image"]
+            observation = sample["observation"]
+            capture = observation["capture"]
+            native = capture["native_wallpaper_color_api"]
+            with self.subTest(name=image["name"]):
+                self.assertEqual((sample["width"], sample["height"]), (1280, 800))
+                self.assertEqual(observation["stable_captures"], 2)
+                self.assertTrue(observation["native_argb_changed_from_reference"])
+                self.assertEqual(native["hresult"], "0x00000000")
+                self.assertEqual(native["argb"], native["image_color_argb"])
+                self.assertEqual(native["argb"], native["image_color_after_api_argb"])
+                self.assertFalse(native["image_color_changed_by_api"])
+                self.assertTrue(native["rgb_matches_dwm_colorization"])
+                buffers = {}
+                for kind, item in observation["wic_boundary"].items():
+                    self.assertEqual((item["width"], item["height"]), (256, 256))
+                    self.assertEqual(item["interpolation_mode"], 1)
+                    self.assertEqual(item["pixel_format"], "32bppBGR")
+                    self.assertEqual(item["order"], "top-down BGRX")
+                    raw = gzip.decompress(base64.b64decode(item["gzip_base64"], validate=True))
+                    self.assertEqual(len(raw), 256 * 256 * 4)
+                    self.assertEqual(hashlib.sha256(raw).hexdigest().upper(), item["bitmap_sha256"])
+                    self.assertEqual(set(raw[3::4]), {255})
+                    buffers[kind] = raw
+                self.assertEqual(set(buffers), {"source", "transcoded"})
+                self.assertEqual(observation["wic_boundary"]["source"]["source_sha256"],
+                                 capture["appearance"]["source_wallpaper_sha256"])
+                self.assertEqual(observation["wic_boundary"]["transcoded"]["source_sha256"],
+                                 observation["cache_observation"]["transcoded"]["sha256"])
+                # Rebuild the authored opaque RGB image, not the Windows JPEG.
+                width, height = sample["width"], sample["height"]
+                rect = image["rectangle"]
+                bg = bytes.fromhex(image["background"][1:])
+                fg = bytes.fromhex(rect["color"][1:])
+                row = bg * width
+                patch = (bg * rect["x"] + fg * rect["width"]
+                         + bg * (width - rect["x"] - rect["width"]))
+                source = (row * rect["y"] + patch * rect["height"]
+                          + row * (height - rect["y"] - rect["height"]))
+                self.assertEqual(prepare(source, width, height), (256, 256, buffers["source"]))
+                # Alpha reduction and shade generation are independent of
+                # the unresolved representative-color mismatch. Do not
+                # assert that all six buffers reproduce native RGB.
+                for raw in buffers.values():
+                    self.assertEqual(sync["derive_weighted_wallpaper_bitmaps"]([(256, 256, raw)])[1],
+                                     native["alpha"])
+                roles = ("Accent", *sync["PRESET_SHADE_ROLES"])
+                expected = {role: "#" + capture["appearance"]["colors_argb"][role][3:]
+                            for role in roles}
+                self.assertEqual(sync["derive_automatic_palette"]("#" + native["argb"][-6:]), expected)
+                native_results[image["name"]] = native["argb"]
+        self.assertEqual(len(report["samples"]), 3)
+        self.assertEqual(native_results, {
+            "isolated-red-high-left": "0xAFD24444",
+            "isolated-red-high-right": "0xAF008700",
+            "isolated-red-high-top": "0xAF008700",
+        })
 
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')

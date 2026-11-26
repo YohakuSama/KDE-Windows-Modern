@@ -1414,6 +1414,71 @@ Submit the new wallpaper-probes.json; there is no need to repeat
 the other 16-probe or 29-probe collections. The original Windows
 DLL and symbols remain outside the repository.
 
+### WIC bitmap boundary results
+
+The maintainer supplied the complete
+[BitmapBoundary report](windows11-26h2-wallpaper-probes-bitmap-boundary.json).
+All three targets were independently settled, native ARGB matched
+the registry, and the original wallpaper and palette were restored.
+All six gzip payloads decode to exactly 262,144 bytes; their SHA-256
+values match the captured hashes. All 393,216 fourth bytes are 255.
+This rules out skipped pixels or source-alpha handling for these
+specific publicly recreated WIC buffers.
+
+The source BMP buffers are reproduced exactly by a pixel-center
+four-point bilinear sampler. For destination coordinate i, source
+extent S and destination extent D, use (i + 0.5)*S/D - 0.5,
+clamp the two neighboring source indices, and truncate the final
+interpolated RGB value. Each dimension is capped independently at
+256; do not preserve aspect ratio at this stage. Offline integer
+arithmetic on the three original image recipes reproduces all
+196,608 source-buffer pixels and all three SHA-256 values. In
+particular the top boundary contains one row of #BA402A, rather
+than #BB412B from round-to-nearest. This confirms this resampling
+contract for the three opaque controlled BMPs, not for arbitrary
+formats, color profiles or scaling ratios.
+
+The portable `prepare_opaque_wallpaper_bitmap(pixels, width, height)`
+function stages this bounded pixel-center interpolation on packed,
+already oriented, opaque RGB8 bytes. It emits top-down BGRX with
+marker 255 and has no decoder, JPEG encoder or runtime side effects.
+The existing theme suite contains regression cases for the captured
+source buffers, both sets of hashes, marker values, Alpha and the
+independent native seven-shade palette. The suite has not been run
+during routine development.
+
+The six actual WIC buffers still give a different winner from one
+native observation under the reconstructed weighted arithmetic.
+All contain 65,536 valid positions; the stride is 65 and the sample
+count is 1,009. The following are offline group-weight calculations
+from the captured cache bytes, not weights measured inside shell32.
+
+| Position of 35% red | Red samples | Green samples | Red weight | Green weight | Predicted group | Native ARGB |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| Left | 356 | 653 | 1593.03 | 1614.38 | Green | 0xAFD24444 |
+| Right | 353 | 656 | 1579.55 | 1621.80 | Green | 0xAF008700 |
+| Top | 355 | 654 | 1586.14 | 1616.81 | Green | 0xAF008700 |
+
+The source BMP buffers also select green in all three orientations.
+This establishes that replacing the Linux resize filter alone cannot
+explain the remaining counterexample. The public WIC recreation
+does not identify the private renderer's actual image objects or
+their cached statistics. Static inspection at 0x4F8414 enumerates
+renderer-owned image objects, and 0x226A48 caches per-image analysis
+data at object offset 0x248. A different image stream, dimensions,
+processing branch or reuse of stored statistics remains unresolved.
+A synthetic aspect-preserving 256x160 analysis gives red sample
+fractions of 37.5%, 34.375%, and about 35.06% (left/right/top), which
+would explain the observed winners, but that geometry is NOT proven
+to occur in Windows and is not implemented.
+
+Keep the orientation counterexample as an explicit open issue.
+No change to the group weights, stride, JPEG policy, installed
+palette ownership or rendering behavior is warranted by these
+observations alone. Further work should trace the renderer's input
+image-object construction and feature selection using the supplied
+module, rather than asking the maintainer to repeat this capture.
+
 ### Native automatic-color diagnostic
 
 OpenGlass reverse-engineers the private
