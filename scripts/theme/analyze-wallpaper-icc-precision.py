@@ -87,8 +87,8 @@ def describe_link(data):
     return result
 
 
-def replay_rgb8(data, pixels):
-    """Execute the measured RGB8 mft2 device-link path; not a LUT generator."""
+def read_rgb8_tables(data):
+    """Read the validated measured RGB8 mft2 tables."""
     description = describe_link(data)
     if (description['input_space'], description['output_space']) != ('RGB ', 'RGB '):
         raise ValueError('Expected RGB-to-RGB device link')
@@ -110,6 +110,15 @@ def replay_rgb8(data, pixels):
     source = np.frombuffer(tag[52:52+6*ni], '>u2').reshape(3,ni).astype(np.int64)
     grid = np.frombuffer(tag[52+6*ni:-6*no], '>u2').reshape(32,32,32,3).astype(np.int64)
     target = np.frombuffer(tag[-6*no:], '>u2').reshape(3,no).astype(np.int64)
+    return source, grid, target
+
+
+def execute_rgb8_tables(source, grid, target, pixels):
+    """Run the verified fixed-point RGB8 lookup on validated or generated tables."""
+    for table, shape in ((source, (3,256)), (grid, (32,32,32,3)), (target, (3,1024))):
+        if table.shape != shape or table.dtype.kind not in "ui" or np.any(table<0) or np.any(table>65535):
+            raise ValueError("Invalid RGB8 table")
+    source, grid, target = (table.astype(np.int64, copy=False) for table in (source, grid, target))
     if pixels.ndim != 2 or pixels.shape[1] != 3 or np.any(pixels<0) or np.any(pixels>255):
         raise ValueError('Expected RGB8 pixels')
     # 16-bit curve samples -> 5-bit grid coordinate and 11-bit fraction.
@@ -130,6 +139,13 @@ def replay_rgb8(data, pixels):
     # six low CLUT-output bits together, then take the curve's high byte.
     idx = (numerator>>17).clip(0,1023)
     pred = (target[np.arange(3),idx]>>8).astype(np.uint8)
+    return pred
+
+
+def replay_rgb8(data, pixels):
+    """Execute the measured RGB8 mft2 device-link path; not a LUT generator."""
+    source, grid, target = read_rgb8_tables(data)
+    pred = execute_rgb8_tables(source, grid, target, pixels)
     return pred, {'input_curve_sha256':sha(source.astype('>u2').tobytes()),
                   'clut_sha256':sha(grid.astype('>u2').tobytes()),
                   'output_curve_sha256':sha(target.astype('>u2').tobytes())}

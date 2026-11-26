@@ -168,3 +168,38 @@ The revised precision comparator implements this execution directly from the sup
 High-bit caveat: despite the documented BM_16b_RGB byte ordering, the captured 8-to-16 raw output shows red/blue reversal (e.g. input (0,0,1) yields the first 16-bit word nonzero rather than the third), and 16-bit inputs show swapped output red/blue. Exact raw replay remains valid, but this invalidates interpreting the earlier raw cross-depth comparisons as rounding measurements. The updated analyzer restricts cross-depth comparisons to 8-to-10 and labels the 16-bit packing issue unresolved. Do not infer 16-bit interpolation from these raw buffers.
 
 **Remaining implementation boundary:** execution of measured RGB8 device-link tables is reproduced; generation of equivalent tables from arbitrary ICC profiles is not. The direct matrix model differed from the shared native CLUT by up to 41 units at 16-bit grid nodes; direct sampled TRC inversion also differed. Next reproduce the source-curve, CLUT and output-curve construction, rather than packaging the captured tables. Tagged transparency and independent ICC profile families still need validation. No runtime change, new runtime dependency, CI or main change. Local syntax compilation and end-to-end analyzer execution used the supplied precision report and the archived calibration evidence from the isolated research directory; no full repository build or KDE desktop test was performed.
+
+
+## Independent curve generation and CLUT construction candidates
+
+The two curve stages have now been independently generated from the original ICC profiles. Neither generator consumes captured table values. The measured source inputs are shared parametric TRCs of types 0 and 3; the destination is the verified shared 1,024-point sampled TRC. This scope does not cover arbitrary ICC LUT profiles, other parametric types, channel-specific curves, or transparency.
+
+- Source: sample codes 0,4,...,252,255. Multiply by the binary64 reciprocal of 255, evaluate the actual ICC parametric curve, multiply by 65535 and floor. Interpolate between the resulting integer anchors with half-up rounding, including the final three-code interval. Replacing reciprocal multiplication with division changes 24 linear-source samples.
+- Destination: for index i, compute x = floor((65535*i+511)/1023). Find the monotone TRC interval containing x, choosing the preceding interval at exact interior knots. For interval k, calculate floor(65536*k/1023) + floor(65536*(x-TRC[k])/(1023*(TRC[k+1]-TRC[k]))), clamped to 0..65535.
+
+Each generated 768-entry input table and the shared 3,072-entry output table (three channels) exactly matches the native hash recorded above. Replaying with the independently generated curves and the still-native CLUT reproduces all 5,120 RGB8 colors for each source. This is not a fully independent CMM: the CLUT remains an essential native input in that particular comparison.
+
+The RGB8 execution helper now accepts validated integer table arrays separately from device-link parsing. The new diagnostic constructs two experimental CLUTs directly from the profile matrices (no captured table values or per-color corrections) and reports both table-level and final RGB8 errors.
+
+| Generated CLUT | Differing entries / 98,304 | Absolute error sum | Max 16-bit error |
+| --- | ---: | ---: | ---: |
+| Direct matrix | 91,580 | 698,630 | 41 |
+| Quantized matrix/XYZ candidate | 63,513 | 542,583 | 43 |
+
+The quantized candidate uses nearest rounding on the source matrix at 14 fractional bits, XYZ at 13 fractional bits and inverse matrix at 16 fractional bits, then floors the 16-bit output. An exploratory analysis of 27,000 interior native grid points also found a pronounced approximately eight-unit XYZ quantization pattern when applying the target matrix to native output. This is evidence for further investigation, not proof of the internal CMM arithmetic.
+
+| Model | sRGB calibration / mixed differing colors | Linear sRGB calibration / mixed differing colors |
+| --- | ---: | ---: |
+| Generated curves + native CLUT | 0 / 0 | 0 / 0 |
+| All stages generated, direct matrix | 41 / 215 | 33 / 408 |
+| All stages generated, quantized candidate | 50 / 219 | 37 / 370 |
+
+The improved CLUT error does not imply a better final transform on every sample. Neither model passes the zero-error requirement, and neither enters the runtime.
+
+Reproduce with the previous precision report and the verified local target ICC:
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-generation.py /path/to/windows-icc-precision.json --target /path/to/sRGB.icm
+```
+
+Local checks: both Python files compiled, all precision-report buffers and reference inputs were checked by the existing diagnostics, the regenerated curves matched the native table hashes, and invalid curve shapes, out-of-range table entries and incorrect target profiles were rejected. The local directory remains an isolated research reconstruction, not a full repository checkout. No runtime cache revision, new runtime dependency, main change or CI run. Next isolate forward XYZ and inverse matrix fixed-point construction; additional ICC profile families and tagged alpha remain unverified.
