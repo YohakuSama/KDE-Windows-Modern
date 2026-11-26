@@ -288,11 +288,30 @@ try {
         # color proportion or rectangle position.
         $quarterWidth = [int][Math]::Floor($width / 4)
         $quarterHeight = [int][Math]::Floor($height / 4)
+        $halfPercentWidth = [int][Math]::Floor($width / 14)
+        $halfPercentHeight = [int][Math]::Floor($height / 14)
+        $onePercentWidth = [int][Math]::Floor($width / 10)
+        $onePercentHeight = [int][Math]::Floor($height / 10)
+        $twoPercentWidth = [int][Math]::Floor($width / 7)
+        $twoPercentHeight = [int][Math]::Floor($height / 7)
+        $fourPercentWidth = [int][Math]::Floor($width / 5)
+        $fourPercentHeight = [int][Math]::Floor($height / 5)
         $probes = @(
             @{name='solid-red-vivid'; background='#E13030'; rectangle=$null},
             @{name='solid-green-vivid'; background='#148A14'; rectangle=$null},
             @{name='solid-blue-vivid'; background='#6767E9'; rectangle=$null},
             @{name='solid-red-muted'; background='#936E6E'; rectangle=$null},
+            # The patent lead describes a 1% minimum bucket population.
+            # These orange patches are tested against a second chromatic
+            # bucket so the denominator remains the non-filtered image area.
+            @{name='orange-half-percent-on-purple'; background='#9F5A8C'; rectangle=@{
+                color='#FF8C00'; x=0; y=0; width=$halfPercentWidth; height=$halfPercentHeight}},
+            @{name='orange-one-percent-on-purple'; background='#9F5A8C'; rectangle=@{
+                color='#FF8C00'; x=0; y=0; width=$onePercentWidth; height=$onePercentHeight}},
+            @{name='orange-two-percent-on-purple'; background='#9F5A8C'; rectangle=@{
+                color='#FF8C00'; x=0; y=0; width=$twoPercentWidth; height=$twoPercentHeight}},
+            @{name='orange-four-percent-on-purple'; background='#9F5A8C'; rectangle=@{
+                color='#FF8C00'; x=0; y=0; width=$fourPercentWidth; height=$fourPercentHeight}},
             @{name='vivid-red-small-on-muted-red'; background='#936E6E'; rectangle=@{
                 color='#E13030'; x=0; y=0; width=$quarterWidth; height=$quarterHeight}},
             @{name='vivid-red-quarter-on-muted-red'; background='#936E6E'; rectangle=@{

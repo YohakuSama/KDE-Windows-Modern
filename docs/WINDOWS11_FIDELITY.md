@@ -769,13 +769,27 @@ solid red, green and blue inputs have approximately equal CIELAB L* 50
 and HSL saturation 0.75. The muted-red input keeps the red hue and
 approximately the same CIELAB lightness, with HSL saturation 0.15.
 
-The mixed images test vivid-red area ratios of 6.25%, 25%, 50% and 75%
-against muted red. Two additional images compare 25% red with 75% green,
-then reverse the ratio. A final corner-position sample repeats the
-25% red/75% green composition away from the center. These observations
-are intended to distinguish saturation/chroma preference, hue bias,
-area weighting and spatial weighting. They do not assume any of those
-mechanisms is used by Windows.
+A 2010 Microsoft patent, [US8847973B2](https://patents.google.com/patent/US8847973B2/en),
+describes a historical candidate for automatic wallpaper color selection:
+filter near-black, near-white and near-gray pixels, group similar RGB
+pixels into buckets, discard buckets below about 1% of the remaining
+colored pixels, then select the bucket with the greatest average RGB
+channel span. Its example also derives colorization alpha from average
+per-pixel channel span. The patent's example alpha constants differ
+from the values reported by later shell32 reverse engineering. It is a
+research lead, not proof that Windows 11 26H2 uses the same algorithm.
+
+The mixed images test orange area ratios of approximately 0.5%, 1%, 2%
+and 4% against purple to examine the patent's proposed bucket cutoff.
+The other images test vivid-red area ratios of 6.25%, 25%, 50% and 75%
+against muted red. Two images compare 25% red with 75% green, then
+reverse the ratio. A final corner-position sample repeats the 25% red
+and 75% green composition away from the center. The report also
+preserves ImageColor alpha for comparison with the average channel-span
+model. These observations distinguish bucket eligibility, color-span
+ranking, saturation/chroma preference, hue bias, area weighting and
+spatial weighting without assuming any of those mechanisms is used by
+Windows.
 
 The Extraction set requires capture-windows-accent.ps1 schema 4 or newer
 so the report includes ImageColor. It does not call the private native
