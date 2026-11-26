@@ -852,52 +852,99 @@ with the greatest average channel span after a minimum-population filter.
 The patent is a useful historical lead, not a 26H2 implementation
 specification. See [US8847973B2](https://patents.google.com/patent/US8847973B2/en).
 
-A testable alternative is a bucket score proportional to
-`population × average channel span`. Using the exact source RGB values,
-its predicted pairwise tie points are:
+The first candidate score, `population × average channel span`, is
+inconsistent with the Boundary results. For red #E13030 (span 177)
+against green #148A14 (span 118), it predicts a 40% red tie, but the
+37.5% red sample already selects the red candidate. For orange #FF8C00
+(span 255) against purple #9F5A8C (span 69), it predicts a 21.30% orange
+tie, but the 20% orange sample already returns an orange-family color.
+The linear score is therefore rejected for these observations.
 
-| Color pair | Channel spans | Predicted area tie |
-| --- | ---: | ---: |
-| Orange #FF8C00 vs purple #9F5A8C | 255 vs 69 | 21.30% orange |
-| Red #E13030 vs muted red #936E6E | 177 vs 37 | 17.29% red |
-| Red #E13030 vs green #148A14 | 177 vs 118 | 40% red |
+A nonlinear candidate is `population × average channel span²`. It
+predicts a 30.77% red tie against green and a 6.82% orange tie against
+purple. Both values lie inside the observed winner intervals: 25% red
+loses to green while 37.5% red wins; the 4% orange sample remains a
+transitional red-toned color while 20% orange produces an orange-family
+color. This is a better fit, not a recovered Windows algorithm.
 
-The orange/purple and red/green observations fall on the predicted
-sides of these tie points. The red/muted-red pair shares a hue, so its
-6.25% and 25% results do not independently identify a categorical
-winner. This is a hypothesis, not a recovered Windows algorithm. The
-new Boundary probe set brackets all three tie points before any runtime
-implementation is considered.
+The original orange/purple pair has a large lightness mismatch. The
+Scoring probe set adds a second pair with nearly equal CIELAB lightness:
+orange #AB5E0B (L* 47.87, channel span 160) and purple #9F5A8C
+(L* 47.72, channel span 69). Their predicted orange tie is 30.13% for
+linear span weighting and 15.67% for squared-span weighting. The red
+and green pair is also lightness-matched (L* 49.91 and 49.95). These
+independent boundaries help distinguish a squared-span score from
+other nonlinear exponents and from lightness bias.
 
-The 15 registry alpha bytes also fit
-`min(175, 124 + floor(average per-pixel channel span))` exactly when
-the average is calculated from the authored RGB colors and exact patch
-areas. The two uncapped samples are solid muted red (span 37, alpha 161)
-and 6.25% vivid red on muted red (average span 45.75, alpha 169).
-This differs by one from the 125 lower bound documented for other
-reverse-engineered shell32 builds. It may indicate a 26H2 constant
-change or a one-unit difference in the effective analysis pixels.
-Because this report did not call the native COM method, treat the
-124 fit as provisional. The Boundary set includes native COM capture
-to verify the returned alpha and ImageColor before/after relationship.
+The Boundary COM observations also revise the alpha conclusion. The
+native API directly confirms that ImageColor's high byte is its alpha,
+but the three solid-color points do not fit one constant integer offset:
+RGB channel spans 37, 48 and 50 return alpha 161, 173 and 175. An
+offset of 124 fits the first point but misses the latter two by one.
+An offset of 125 fits the latter two but misses the first by one.
+The earlier 15-sample Extraction set appeared to fit the 124 offset,
+but that fit is not general enough to implement. The Scoring set adds
+eight near-L*=50, near-20-degree-red samples with channel spans 12, 24,
+36, 37, 47, 49, 50 and 51. Keep the alpha formula unresolved until
+those points are measured through the native COM method.
+
+### Boundary probe results
+
+The uploaded [Boundary report](windows11-26h2-wallpaper-probes-boundary.json)
+contains 12 settled probes at 1280x800. All 12 private COM calls returned
+HRESULT 0x00000000. Native ARGB matched ImageColor before and after the
+call, native RGB matched DWM ColorizationColor, and the call changed no
+ImageColor value. All source and registered wallpaper hashes match.
+The original wallpaper path and palette were restored.
+
+| Probe | Source channel span or patch area | Native ARGB | Result |
+| --- | ---: | --- | --- |
+| Solid muted red | 37 | 0xA1956767 | alpha 161 |
+| Solid muted red | 48 | 0xADA46161 | alpha 173 |
+| Solid muted red | 50 | 0xAFA75F62 | alpha 175 |
+| Red on green | 37.5% red | 0xAFD24444 | red family |
+| Red on green | 40% red | 0xAFD24444 | red family, unchanged palette |
+| Red on green | 42.5% red | 0xAFD24444 | red family, unchanged palette |
+| Orange on purple | 20% orange | 0xAFC65113 | orange family |
+| Orange on purple | 21.25% orange | 0xAFC55213 | orange family |
+| Orange on purple | 22.5% orange | 0xAFC4530E | orange family |
+
+The red-on-green results move the observed winner boundary below 37.5%,
+not at the linear model's 40% prediction. The orange-on-purple result
+already moves into the orange family at 20%, below the linear model's
+21.30% prediction. Three captures reached 18 stable observations with
+no palette change; these are retained as negative observations rather
+than discarded.
 
 ### Boundary probe set
 
-The collector now accepts `-ProbeSet Boundary`. It tests ratios around
-the three predicted population-times-span tie points and includes
-solid red samples with channel spans 37, 48 and 50 for the alpha check.
-Use the opt-in private COM diagnostic once per settled sample, not during
-the collector's polling loop:
+The collector accepts `-ProbeSet Boundary`. It was designed around the
+earlier linear-score hypothesis and its results reject that hypothesis.
+The three solid colors also supplied direct native-alpha measurements.
+Use `-IncludeNativeWallpaperColor` only in the disposable Windows
+reference VM. The private API is undocumented.
+
+### Scoring probe set
+
+The collector now accepts `-ProbeSet Scoring`. It brackets the squared
+channel-span hypothesis using two hue pairs and adds an equal-lightness
+orange/purple pair to avoid the brightness mismatch in the first set.
+It also adds eight solid colors near CIELAB L*=50 and hue 20 degrees,
+with channel spans 12, 24, 36, 37, 47, 49, 50 and 51 for the alpha study.
+
+Run it in the same disposable Windows VM with Automatic accent and a
+static Picture background. The native COM diagnostic is opt-in and is
+called once per settled sample, not during the polling loop:
 
 ```powershell
-.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet Boundary -IncludeNativeWallpaperColor
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet Scoring -IncludeNativeWallpaperColor
 ```
 
-The collector records the COM HRESULT, native ARGB/alpha, ImageColor
-before and after the call, and DWM RGB. It checks that the appearance
-did not change between the settled capture and the diagnostic. The
-private API remains undocumented and is never called unless the switch
-is explicitly supplied.
+The collector records the HRESULT, native ARGB/alpha, ImageColor before
+and after the call, and DWM RGB. It checks that the appearance did not
+change between the settled capture and the diagnostic. Submit the new
+`wallpaper-probes.json` report. The original wallpaper is restored and
+verified by the collector.
 
 ### Native automatic-color diagnostic
 

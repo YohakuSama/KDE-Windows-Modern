@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary')]
+    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring')]
     [string]$ProbeSet = 'Basic',
     [switch]$IncludeNativeWallpaperColor
 )
@@ -105,8 +105,8 @@ function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary') -and $sample.schema_version -lt 4) {
-        throw 'Refinement, Extraction and Boundary require capture-windows-accent.ps1 schema 4 or newer.'
+    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring') -and $sample.schema_version -lt 4) {
+        throw 'Refinement, Extraction, Boundary and Scoring require capture-windows-accent.ps1 schema 4 or newer.'
     }
     if ($WithNativeWallpaperColor -and $sample.schema_version -lt 5) {
         throw 'Native wallpaper diagnostics require capture-windows-accent.ps1 schema 5 or newer.'
@@ -388,6 +388,46 @@ try {
                 color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
             @{name='red-42_5pct-on-green'; background='#148A14'; rectangle=@{
                 color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.425); height=$height}}
+        )
+    } elseif ($ProbeSet -eq 'Scoring') {
+        # The first pair keeps L* near 50 and varies the red population
+        # around the squared-channel-span prediction (30.77%).
+        # The second pair keeps L* near 48 and varies orange population
+        # around the squared-span prediction (15.67%); this removes the
+        # large lightness mismatch in the earlier orange/purple probes.
+        # The final solid colors keep L* near 50 and hue near 20 degrees
+        # while varying the authored RGB channel span for native-alpha work.
+        $probes = @(
+            @{name='red-30pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.30); height=$height}},
+            @{name='red-31_25pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.3125); height=$height}},
+            @{name='red-32_5pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.325); height=$height}},
+            @{name='red-35pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.35); height=$height}},
+            @{name='red-37_5pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.375); height=$height}},
+            @{name='orange-14pct-on-purple-l48'; background='#9F5A8C'; rectangle=@{
+                color='#AB5E0B'; x=0; y=0; width=[int][Math]::Floor($width * 0.14); height=$height}},
+            @{name='orange-15pct-on-purple-l48'; background='#9F5A8C'; rectangle=@{
+                color='#AB5E0B'; x=0; y=0; width=[int][Math]::Floor($width * 0.15); height=$height}},
+            @{name='orange-16pct-on-purple-l48'; background='#9F5A8C'; rectangle=@{
+                color='#AB5E0B'; x=0; y=0; width=[int][Math]::Floor($width * 0.16); height=$height}},
+            @{name='orange-17_5pct-on-purple-l48'; background='#9F5A8C'; rectangle=@{
+                color='#AB5E0B'; x=0; y=0; width=[int][Math]::Floor($width * 0.175); height=$height}},
+            @{name='orange-20pct-on-purple-l48'; background='#9F5A8C'; rectangle=@{
+                color='#AB5E0B'; x=0; y=0; width=[int][Math]::Floor($width * 0.20); height=$height}},
+            @{name='orange-22_5pct-on-purple-l48'; background='#9F5A8C'; rectangle=@{
+                color='#AB5E0B'; x=0; y=0; width=[int][Math]::Floor($width * 0.225); height=$height}},
+            @{name='alpha-l50-span-12'; background='#807474'; rectangle=$null},
+            @{name='alpha-l50-span-24'; background='#897171'; rectangle=$null},
+            @{name='alpha-l50-span-36'; background='#926E6F'; rectangle=$null},
+            @{name='alpha-l50-span-37'; background='#936E6E'; rectangle=$null},
+            @{name='alpha-l50-span-47'; background='#9A6B6C'; rectangle=$null},
+            @{name='alpha-l50-span-49'; background='#9B6A6B'; rectangle=$null},
+            @{name='alpha-l50-span-50'; background='#9C6A6B'; rectangle=$null},
+            @{name='alpha-l50-span-51'; background='#9D6A6B'; rectangle=$null}
         )
     } else {
         $probes = @(
