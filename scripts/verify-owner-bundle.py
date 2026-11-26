@@ -109,6 +109,7 @@ def verify(revision, filename):
             "app-decorations/konsole/chromeshadow.cpp",
             "scripts/konsole-chrome.sh", "docs/APP_WINDOW_CHROME.md",
             "nix/dolphin-chrome.nix", "app-decorations/dolphin/statusbar-margins.patch",
+            "app-decorations/dolphin/tab-controls.patch",
             "scripts/fix-dolphin-statusbar.sh",
             "plasma/kwinscripts/org.kde.windowsmodern.snaplayouts/contents/ui/CaptionSnapPicker.qml",
             "scripts/import-windows-assets.py", "scripts/native-assets-map.json",

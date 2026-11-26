@@ -6,6 +6,9 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Recognize resized native quick tiles from their relative edges for Win+Up/Down, distinguish the custom tile tree, and reject shortcut interference with active moves/resizes.
+- Add the native Dolphin New Tab action to the desktop tab strip in the isolated build, respect tab visibility, and avoid migrating the command-bar hamburger menu to the navigation bar a second time.
+
 - Share size eligibility and work-area revalidation between both Snap Layouts entry points, cancel stale delayed placements, and invalidate Konsole caption anchors when focus or pointer state changes.
 - Add a version-matched isolated Dolphin derivation for the upstream status-bar spacing fix and reuse its patch in the explicit Fedora repair script.
 

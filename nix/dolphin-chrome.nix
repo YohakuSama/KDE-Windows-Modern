@@ -12,7 +12,10 @@ assert lib.assertMsg (lib.hasPrefix "26.08." dolphinVersion)
   "The status-bar backport targets Dolphin 26.08.x; review newer source before reuse.";
 dolphin.overrideAttrs (old: {
   pname = "windows-modern-dolphin";
-  patches = (old.patches or [ ]) ++ [ ../app-decorations/dolphin/statusbar-margins.patch ];
+  patches = (old.patches or [ ]) ++ [
+    ../app-decorations/dolphin/statusbar-margins.patch
+    ../app-decorations/dolphin/tab-controls.patch
+  ];
   cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DBUILD_TESTING=OFF" ];
   doCheck = false;
   doInstallCheck = false;

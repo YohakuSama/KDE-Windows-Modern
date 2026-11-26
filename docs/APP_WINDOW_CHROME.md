@@ -192,6 +192,17 @@ negative layout margins, preserving the capacity control and native disk
 usage menu. The same patch is reused by the explicit Fedora repair script,
 which no longer treats diff's normal "files differ" exit status as a failure.
 
+The isolated desktop build also adds a native new-tab button in the
+existing QTabWidget corner, only for the Windows Modern command-toolbar
+layout. It uses Dolphin's existing New Tab QAction (including the
+current-location behavior and Ctrl+T shortcut); the tab count and
+AlwaysShowTabBar preference control visibility. The imported tab-new icon
+is resolved through the active theme. The ordinary tab model, closing,
+dragging, detaching and split-view behavior are unchanged. The hamburger
+menu is not migrated a second time when the command toolbar already
+contains it. The phone UI and custom layouts without the Windows Modern
+command toolbar retain their normal behavior.
+
 The Nix expression is `nix/dolphin-chrome.nix`; it requires the installed
 26.08.x version and matching absolute nixpkgs source path, following the
 version gate used for Konsole. It is not in the normal installer/runtime.
@@ -201,5 +212,8 @@ For a maintainer's separate trial, build it explicitly with
 The latter prevents forwarding the request to an already-running stock
 Dolphin process. The stock application and launcher remain installed;
 the trial still shares the normal Dolphin settings/session files.
-No build or desktop validation has been performed. Moving the tabs above
-both toolbars and the persistent Explorer search field remain separate work.
+No build or desktop validation has been performed. The corner button is
+an intermediate native control, not a reproduction of the Explorer
+button immediately after the final tab. Moving the tabs above both
+toolbars, that button placement, the Home target for new tabs and the
+persistent Explorer search field remain separate work.

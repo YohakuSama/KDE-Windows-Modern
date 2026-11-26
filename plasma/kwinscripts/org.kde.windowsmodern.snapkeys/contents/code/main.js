@@ -12,9 +12,10 @@
       top quarter    maximize             back to the half
       bottom quarter back to the half     minimize
 
-    Where the window is comes from its geometry against the work area (KWin's
-    scripting API does not expose the quick-tile mode), with some tolerance
-    for decorations and tile gaps. For windows already snapped, KWin's own
+    For native quick tiles, use the tile's relative edges, not an assumed
+    50/50 split. For explicit Snap Layouts geometry without a native tile,
+    retain the work-area comparison. Do not combine custom KWin tiles with
+    native quick-tile flags. For windows already snapped, KWin's own
     "quick tile top/bottom" combine exactly like Windows (left + bottom =
     bottom-left, top-left + bottom = left), so those are used. KWin's "quick
     tile left" on a window already on the left would move it elsewhere.
@@ -38,8 +39,35 @@ function fits(g, x, y, w, h) {
     return near(g.x, x) && near(g.y, y) && near(g.width, w) && near(g.height, h);
 }
 
+function quickTilePlacement(win) {
+    const tile = win.tile;
+    if (!tile || !win.output || !tile.parent || tile.parent.parent)
+        return null;
+    // Plasma 6.8 exposes the custom root through Workspace.rootTile().
+    // Native quick tiles are direct children of a separate quick root.
+    const customRoot = workspace.rootTile(win.output, workspace.currentDesktop);
+    if (!customRoot || tile.parent === customRoot)
+        return null;
+    const r = tile.relativeGeometry;
+    if (!r || r.width <= 0 || r.height <= 0)
+        return null;
+    const edge = (value, boundary) => Math.abs(value - boundary) <= 1e-6;
+    const left = edge(r.x, 0), right = edge(r.x + r.width, 1);
+    const top = edge(r.y, 0), bottom = edge(r.y + r.height, 1);
+    if (left === right)
+        return null; // Full-width or interior tile.
+    if (top && bottom)
+        return left ? "left" : "right";
+    if (top !== bottom)
+        return top ? (left ? "topLeft" : "topRight")
+                   : (left ? "bottomLeft" : "bottomRight");
+    return null;
+}
+
 function placement(win) {
     if (Number(win.maximizeMode) === MAXIMIZE_FULL) return "maximized";
+    if (win.tile)
+        return quickTilePlacement(win) || "normal";
     const a = workspace.clientArea(KWin.MaximizeArea, win);
     const g = win.frameGeometry;
     if (!a || !g || a.width <= 0 || a.height <= 0) return "normal";
@@ -56,13 +84,17 @@ function placement(win) {
 
 function activeNormalWindow() {
     const win = workspace.activeWindow;
-    return win && win.normalWindow && !win.minimized && !win.fullScreen && !win.deleted ? win : null;
+    return win && win.normalWindow && !win.minimized && !win.fullScreen && !win.deleted
+        && !win.move && !win.resize ? win : null;
 }
 
 function snapUp() {
     const win = activeNormalWindow();
     if (!win) return;
-    switch (placement(win)) {
+    const position = placement(win);
+    if (position !== "normal" && position !== "maximized" && (!win.resizeable || !win.moveable))
+        return;
+    switch (position) {
     case "left": workspace.slotWindowQuickTileTopLeft(); break;
     case "right": workspace.slotWindowQuickTileTopRight(); break;
     case "bottomLeft":
@@ -82,7 +114,10 @@ function snapUp() {
 function snapDown() {
     const win = activeNormalWindow();
     if (!win) return;
-    switch (placement(win)) {
+    const position = placement(win);
+    if (position !== "normal" && position !== "maximized" && (!win.resizeable || !win.moveable))
+        return;
+    switch (position) {
     case "maximized": workspace.slotWindowMaximize(); break; // toggles back
     case "left": workspace.slotWindowQuickTileBottomLeft(); break;
     case "right": workspace.slotWindowQuickTileBottomRight(); break;
