@@ -413,7 +413,15 @@ changes and its light mapping for mode-specific color changes. These are
 existing KDE theme values, not newly decoded Windows brush roles or a
 wallpaper-accent algorithm.
 
-There are still 33 separate Plasma style files in the light source tree,
+Another 12 widget pairs differ only in their embedded CSS role colors
+and, in a few cases, accent or editor palette literals. The materializer
+resolves their existing light CSS colors by role (including the three
+mode-specific gradient stops) before applying the per-widget literal
+mapping. All 12 previous light SVGs are reproduced byte for byte. The
+same dark color may map to different light colors depending on its role;
+do not combine these mappings into a single global substitution.
+
+There are still 21 separate Plasma style files in the light source tree,
 two color schemes, and fixed-color Aurorae/Kvantum artwork. Retain those
 differences until their actual Windows brush roles and geometry are
 resolved. Future shared geometry should live in the common source/generator,

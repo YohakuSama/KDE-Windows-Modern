@@ -26,6 +26,8 @@ LIGHT_WIDGET_COLORS = {
     **{name: LIGHT_ACCENT for name in (
         "action-overlays", "actionbutton", "analog_meter", "clock",
         "containment-controls", "glowbar", "notes", "pager",
+        "bar_meter_horizontal", "bar_meter_vertical", "busywidget", "button",
+        "calendar", "checkmarks",
     )},
     "background": {b"#2C2C2C": b"#F9F9F9", b"#3F3F3F": b"#E5E5E5"},
     "branding": {b"#FFFFFF": b"#eceff4", **LIGHT_ACCENT},
@@ -35,8 +37,88 @@ LIGHT_WIDGET_COLORS = {
     },
     "radiobutton": {b"#2C2C2C": b"#eff0f1", **LIGHT_ACCENT},
     "timer": {b"#3D3D3D": b"#dcdcdc"},
+    "arrows": {},
+    "scrollbar": {},
+    "tabbar": {b"#2C2C2C": b"#eff0f1", **LIGHT_ACCENT},
+    "margins-highlight": {b"#2C2C2C": b"#eff0f1"},
+    "toolbar": {b"#3D3D3D": b"#fcfcfc"},
+    "viewitem": {},
 }
 SVG_HEX_COLOR = re.compile(rb"#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
+
+
+# Preserve the original per-role fallback styles. The same dark literal
+# can represent different light roles, so these are CSS role mappings,
+# not global hex replacements or newly decoded Windows brush values.
+LIGHT_PLAIN_ROLES = {
+    b"Text": b"#31363b", b"Background": b"#eff0f1",
+    b"ViewText": b"#31363b", b"ViewBackground": b"#fcfcfc",
+    b"ViewHover": b"#3daee9", b"ViewFocus": b"#3daee9",
+    b"ButtonText": b"#31363b", b"ButtonBackground": b"#eff0f1",
+    b"ButtonHover": b"#3daee9", b"ButtonFocus": b"#3daee9",
+}
+LIGHT_GRADIENT_ROLES = {
+    **LIGHT_PLAIN_ROLES, b"Highlight": b"#3daee9",
+    b"ViewHover": b"#93cee9", b"ButtonHover": b"#93cee9",
+}
+LIGHT_GRADIENT_STOPS = {
+    b"Background": b"#eff0f1", b"ViewBackground": b"#fcfcfc",
+    b"ButtonBackground": b"#eff0f1",
+}
+LIGHT_MARGIN_ROLES = {
+    b"Text": b"#7B7C7E", b"Background": b"#EFF0F1",
+    b"Highlight": b"#3DAEE6",
+    b"ViewText": b"#7B7C7E", b"ViewBackground": b"#FCFCFC",
+    b"ViewHover": b"#3DAEE6", b"ViewFocus": b"#1E92FF",
+    b"ButtonText": b"#7B7C7E", b"ButtonBackground": b"#EFF0F1",
+    b"ButtonHover": b"#3DAEE6", b"ButtonFocus": b"#1E92FF",
+}
+LIGHT_VIEW_ROLES = {
+    **LIGHT_MARGIN_ROLES, b"Text": b"#242424", b"Background": b"#fefefe",
+    b"ViewText": b"#777777", b"ButtonBackground": b"#fefefe",
+    b"ButtonFocus": b"#3DAEE6",
+}
+LIGHT_WIDGET_ROLES = {
+    **{name: (LIGHT_GRADIENT_ROLES, LIGHT_GRADIENT_STOPS) for name in (
+        "bar_meter_horizontal", "bar_meter_vertical", "busywidget", "button",
+        "calendar", "checkmarks", "scrollbar", "toolbar",
+    )},
+    "arrows": (LIGHT_PLAIN_ROLES, {}),
+    "tabbar": (LIGHT_PLAIN_ROLES, {}),
+    "margins-highlight": (LIGHT_MARGIN_ROLES, {}),
+    "viewitem": (LIGHT_VIEW_ROLES, {}),
+}
+SVG_COLOR_ROLE = re.compile(rb"(\.ColorScheme-([A-Za-z]+)\s*\{)([^{}]*)(\})")
+CSS_COLOR = re.compile(rb"((?<![\w-])color\s*:\s*)#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
+CSS_STOP_COLOR = re.compile(rb"((?<![\w-])stop-color\s*:\s*)#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
+
+
+def apply_light_roles(data, relative, roles, stops):
+    seen = set()
+
+    def replace_declaration(body, pattern, color, role):
+        result, count = pattern.subn(lambda match: match[1] + color, body)
+        if count != 1:
+            raise ValueError(f"Expected one {role.decode('ascii')} color in {relative}")
+        return result
+
+    def substitute(match):
+        start, role, body, end = match.groups()
+        if role not in roles:
+            return match[0]
+        if role in seen:
+            raise ValueError(f"Duplicate CSS role in {relative}: {role.decode('ascii')}")
+        seen.add(role)
+        body = replace_declaration(body, CSS_COLOR, roles[role], role)
+        if role in stops:
+            body = replace_declaration(body, CSS_STOP_COLOR, stops[role], role)
+        return start + body + end
+
+    result = SVG_COLOR_ROLE.sub(substitute, data)
+    if seen != roles.keys():
+        missing = ", ".join(sorted(role.decode("ascii") for role in roles.keys() - seen))
+        raise ValueError(f"Missing shared SVG CSS role in {relative}: {missing}")
+    return result
 
 
 def apply_light_widget_colors(target, overlay):
@@ -55,7 +137,10 @@ def apply_light_widget_colors(target, overlay):
 
         # Work on bytes and replace complete tokens in one pass. Do not
         # reserialize XML, change line endings or cascade color replacements.
-        result = SVG_HEX_COLOR.sub(substitute, path.read_bytes())
+        data = path.read_bytes()
+        if name in LIGHT_WIDGET_ROLES:
+            data = apply_light_roles(data, relative, *LIGHT_WIDGET_ROLES[name])
+        result = SVG_HEX_COLOR.sub(substitute, data)
         if seen != colors.keys():
             missing = ", ".join(sorted(value.decode("ascii") for value in colors.keys() - seen))
             raise ValueError(f"Missing shared SVG color in {relative}: {missing}")
