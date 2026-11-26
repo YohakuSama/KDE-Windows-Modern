@@ -1208,57 +1208,113 @@ automatic-accent parity or enable a guessed extractor.
 
 ### Target-build extraction investigation
 
-The existing theme regression suite now preserves all 16 isolated
-automatic palette observations, the seven uniform-solid Alpha
-observations, the cache collision and the orientation/area
-counterexamples. The Alpha helper's integer rounding, ceiling and
-invalid-input contract have their own cases. These cases must not be
-interpreted as an implementation of the missing extractor or a
-desktop acceptance result.
+The existing theme regression suite preserves all 16 isolated
+automatic palette observations, seven uniform-solid Alpha observations,
+the cache collision and the orientation/area counterexamples.
+The alpha reduction has integer rounding, ceiling and invalid-input
+cases. These are reference-based regression cases, not desktop acceptance.
 
-The pinned OpenFluidGlass analysis identifies
-`CAutoColorization::s_AutoColorEnabled`,
-`CAutoColorImageData::CreateImageColorizationData` and the
-`CDesktopBrowser::_SetDWMAndImmersiveColor` boundary in shell32.
-It describes a legacy analysis path and a weighted-RGB path selected
-by feature 41486951 in 10.0.26100.9549. The analysis dimensions are
-capped at 256 each in that inspected version. See the
-[original analysis](https://github.com/DreY85/OpenFluidGlass/blob/49dd5176acd3afabc03066680a2de2b59296e472/OpenGlassGUI/Configuration.design.md#native-automatic-alpha-and-later-wallpapers).
-This narrows the investigation to image decoding/resampling, the
-representative-color routine and the final RGB normalization. It does
-not establish the enabled feature branch or cap in build 26300.9974.
+The maintainer supplied the exact running x64 shell32.dll from the
+26H2 VM (OS build 26300.9974). Static PE inspection identifies:
 
-The second historical Microsoft patent,
-[US8897552B2](https://patents.google.com/patent/US8897552B2/en), describes
-weighted pixels and combining a dominant color bin with neighboring
-bins. It supplies a plausible reason to investigate color merging but
-does not identify the modern implementation or its constants. The
-orientation counterexample still rules out a simple geometry-independent
-score on the original image. Do not select another exponent on this basis.
+- File version: 10.0.26100.9974 (the component's own version).
+- SHA-256: 10560eff83911e165674adafd31e05450ca827f2b5800e91130823b1e854f5d0.
+- CodeView PDB: shell32.pdb, GUID 64708141-4AA5-C991-B8A9-4F15C5BA6002,
+  age 1.
+- Matching public symbols could not be downloaded in the analysis
+  environment. Names are assigned only where internal diagnostic strings
+  identify them. The following addresses are RVAs in this exact file,
+  not stable API addresses.
 
-As a separate offline calculation on the seven actual sampled uniform
-JPEG cache colors in CacheIsolation, using standard sRGB/D65 CIELAB
-coordinates, the native RGB lightness spans approximately 48.19 to
-48.62, while its hue differs from the decoded cache hue by at most
-about 1.1 degrees. The six low-chroma red inputs show an increased Lab
-chroma (roughly 1.29 to 1.38 times the sampled cache chroma). The cyan
-input instead increases chroma by about 1.07 times. This constrains the
-solid-color normalization, but the data do not establish a constant
-lightness or chroma multiplier. The more saturated archived red/blue
-solids are counterexamples to a universal chroma boost. No such
-formula is added to the runtime.
+The internal diagnostic string for CWallpaperRenderer::ComputeImageColorizationColor
+identifies its entry at RVA 0x4F34D4. It reaches the ImageColor update
+routine at 0x1D340 and the actual calculation at 0x1D448. The per-image
+data routine at 0x1246A4 clamps each analysis dimension separately to
+256 and requests a 32-bit bitmap. The bitmap's exact decoding, scaling
+and storage order still need to be traced. The initialization at
+0x15E978 sets Alpha bounds 125 and 175 and retains the native failure
+default 0xC4FFFFFF. The Alpha reduction includes all analysis pixel
+positions in its denominator; fully transparent pixels are excluded
+from the channel-span sum.
 
-The next evidence should be the exact native x64 shell32 module from
-the running reference VM, not additional wallpaper sweeps or the
-original ISO's potentially older module. Record its file version and
-SHA-256, then use its PE CodeView identity to select matching public
-Microsoft PDB symbols (see [Microsoft's symbol documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/symbols)).
-Inspect the image-data and representative-color call chain statically.
-If public symbols are unavailable, report that limitation rather than
-using a different build as proof. Keep Windows binaries and symbol
-files outside the repository and do not distribute them in theme
-packages. Only independently written portable code, measured data
-and original research notes belong in the repository.
+The branch identified by feature 41486951 is present in this exact
+module. Its weighted-RGB routine (per-image accumulation in 0x1246A4,
+reduction at 0x4F7B30) is materially different from the legacy 64-bin
+path. For the weighted branch, the following is a mathematical description
+of the observed operations:
+
+- Normalize each RGB byte to 0..1.
+- Starting at position zero in the analysis bitmap's storage order,
+  sample every max(1, floor(width * height / 1000)) pixels.
+- Assign a sample to its largest RGB channel, resolving ties in red,
+  green, blue order. Let M = max(r,g,b), D = max(0.01, 3*M-r-g-b).
+  Its weight is (r+g+b+2)*D.
+- Each of the three groups accumulates total weight and all three
+  weighted RGB channels. Select the group with greatest total weight,
+  resolving equal group weights in the same order. Divide the weighted
+  channel sums by that group's weight, multiply by 255 and truncate.
+- Alpha is a separate reduction over the full analysis image, not the
+  sampled RGB subset. Per-pixel weights/products are single precision;
+  the group sums and final division are double precision.
+
+This explains why the same channel span need not give the same weight.
+For the decoded red #BC5858 and cyan #208484, the weights are about
+2.6882 and 1.2395 respectively: an ideal two-solid sample population
+would switch near 68.44% cyan. The 60% and 75% observations bracket this
+prediction. The red #E03030 and green #148914 weights are about 4.4930
+and 2.4722, yielding an ideal tie near 35.49% red. Fixed-stride sampling,
+resampling and boundary pixels can change the sample populations relative
+to the authored areas. The exact 35%-left/right/top counterexample is not
+yet reproduced from the complete native bitmap. Do not add a coordinate
+bias or a fitted exponent.
+
+The post-selection normalization follows RVA 0x1D9BF and the helpers
+at 0x596E04..0x597484. It uses encoded-RGB weighted RMS brightness
+B = sqrt(0.2126*r^2 + 0.7152*g^2 + 0.0722*b^2), distinct from the later
+CIELAB shade stage. Its observed sequence is:
+
+1. Bound B to 0.55..0.65 by proportional channel scaling, with byte
+   clipping and truncation.
+2. Increase each channel's distance from the integer brightness pivot
+   floor(255*B) by a factor of 1.4, then clip and truncate.
+3. Target 3.2:1 contrast against white using linear-light luminance
+   (sRGB transfer threshold 0.03928). Adjust integer HLS lightness
+   through a bounded search while retaining hue and saturation.
+4. Bound encoded-RGB RMS brightness to 0.30..0.45 by proportional
+   scaling again.
+
+The imported HLS functions are confirmed as SHLWAPI.dll ColorRGBToHLS
+and ColorHLSToRGB. They use an integer HLS range of 0..240. Exact
+portable rounding equivalence for every RGB value is not yet established.
+The normalization preserves the separately calculated Alpha byte.
+
+Offline arithmetic on the seven sampled uniform cache observations,
+including weighted single-precision products and truncation of the raw
+representative, reproduces their native RGB results. This numerical
+comparison supports the weighted branch for those observations; it
+does not independently query the VM's live feature state. It also
+does not establish full-image input preparation or exhaustive HLS parity.
+
+The existing sync-accent.py now stages two pure functions:
+`derive_weighted_wallpaper_seed(pixels, width, height)` and
+`normalize_weighted_wallpaper_seed(seed)`. They consume an already
+prepared opaque RGB analysis buffer (up to 256 by 256). The first
+returns raw weighted RGB and Alpha, the second returns normalized
+RGB for the existing derive_automatic_palette() shade stage. Explicit
+binary32 operations retain the observed intermediate quantization.
+No new dependency, decoder, file lookup, display configuration write
+or runtime palette owner is added. The existing regression suite now
+also defines cases for the seven uniform cache references, mixed-color
+selection, fixed-stride buffer order and invalid analysis input.
+Do not treat the synthetic uniform buffers as recorded native pixels.
+
+Next trace the bitmap-producing interface to resolve the actual
+decoder, scale filter, pixel order, transparency and multiple-display
+behavior. Keep the new functions disconnected from the installed theme
+until that contract and renderer color ownership are resolved. A native
+fallback is distinct from an empty or failed Linux decode. The supplied
+Windows DLL remains outside the repository; do not distribute it or
+matching symbols with theme packages.
 
 ### Native automatic-color diagnostic
 

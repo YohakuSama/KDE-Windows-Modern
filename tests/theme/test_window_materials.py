@@ -465,6 +465,51 @@ class WindowMaterialTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     derive(range_sum, count)
 
+    def test_weighted_wallpaper_uniform_cache_reference(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        report = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes-cache-isolation.json").read_text(
+            encoding="utf-8"))
+        count = 0
+        for sample in report["samples"]:
+            if sample["image"]["rectangle"] is not None:
+                continue
+            observation = sample["observation"]
+            cache = observation["cache_observation"]["transcoded"]
+            native = observation["capture"]["native_wallpaper_color_api"]
+            pixel = tuple(bytes.fromhex(cache["background_rgb"][1:]))
+            # A synthetic uniform analysis buffer tests the color math.
+            # It does not establish the native decoder or resampling path.
+            with self.subTest(name=sample["image"]["name"]):
+                seed, alpha = sync["derive_weighted_wallpaper_seed"]([pixel], 1, 1)
+                candidate = sync["normalize_weighted_wallpaper_seed"](seed)
+                self.assertEqual(candidate, "#" + native["argb"][-6:])
+                self.assertEqual(alpha, native["alpha"])
+            count += 1
+        self.assertEqual(count, 7)
+
+    def test_weighted_wallpaper_buffer_order_and_contract(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        derive = sync["derive_weighted_wallpaper_seed"]
+        normalize = sync["normalize_weighted_wallpaper_seed"]
+        red, cyan = (188, 88, 88), (32, 132, 132)
+        self.assertEqual(normalize(derive([red] * 40 + [cyan] * 60, 10, 10)[0]),
+                         "#D44343")
+        self.assertEqual(normalize(derive([red] * 25 + [cyan] * 75, 10, 10)[0]),
+                         "#008181")
+        # At 2,000 pixels the stride is two; the unsampled pixels still
+        # contribute to Alpha, but not to the representative RGB.
+        first, first_alpha = derive([red, cyan] * 1000, 40, 50)
+        second, second_alpha = derive([cyan, red] * 1000, 40, 50)
+        self.assertEqual(normalize(first), "#D44343")
+        self.assertEqual(normalize(second), "#008181")
+        self.assertEqual(first_alpha, second_alpha)
+        self.assertEqual(first_alpha, 175)
+        for pixels, width, height in (([], 1, 1), ([red], 257, 1),
+                                      ([(256, 0, 0)], 1, 1), ([(1, 2, 3, 4)], 1, 1)):
+            with self.subTest(pixels=pixels, width=width, height=height):
+                with self.assertRaises(ValueError):
+                    derive(pixels, width, height)
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')

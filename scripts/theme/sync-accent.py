@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import struct
 from string import Template
 import tempfile
 import xml.etree.ElementTree as ET
@@ -263,6 +264,167 @@ def derive_wallpaper_alpha(range_sum, pixel_count):
             or pixel_count <= 0 or not 0 <= range_sum <= 255 * pixel_count):
         raise ValueError("Invalid wallpaper analysis statistics")
     return min(175, 125 + range_sum // pixel_count)
+
+
+# The weighted-RGB branch was recovered from shell32 10.0.26100.9974.
+# These functions consume an opaque, already prepared analysis buffer. The
+# Windows decoder, resize filter and bitmap orientation are separate work.
+WALLPAPER_ANALYSIS_LIMIT = 256
+
+
+def _f32(value):
+    return struct.unpack("<f", struct.pack("<f", value))[0]
+
+
+def derive_weighted_wallpaper_seed(pixels, width, height):
+    """Return (raw weighted RGB, alpha) before color normalization.
+
+    Supply RGB byte triplets in analysis-buffer order, not original image
+    order. Do not use this opaque-image implementation for transparency,
+    a failed decode, native fallback or multiple monitor images.
+    """
+    if any(type(n) is not int or not 1 <= n <= WALLPAPER_ANALYSIS_LIMIT
+           for n in (width, height)) or len(pixels) != width * height:
+        raise ValueError("Invalid wallpaper analysis dimensions")
+    count = width * height
+    stride = max(1, count // 1000)
+    range_sum = 0
+    totals = [0.0, 0.0, 0.0]
+    sums = [[0.0, 0.0, 0.0] for _ in range(3)]
+    for i, pixel in enumerate(pixels):
+        if (not isinstance(pixel, (tuple, list)) or len(pixel) != 3
+                or any(type(v) is not int or not 0 <= v <= 255 for v in pixel)):
+            raise ValueError("Expected opaque RGB byte triplets")
+        range_sum += max(pixel) - min(pixel)
+        if i % stride:
+            continue
+        r, g, b = channels = tuple(_f32(v / 255) for v in pixel)
+        peak = max(channels)
+        # Ties go to red, then green, then blue. Each sampled pixel
+        # contributes its full weighted RGB to the winning channel group.
+        group = channels.index(peak)
+        distance = max(_f32(0.01), _f32(_f32(_f32(peak - g)
+                                             + _f32(peak - r)) + _f32(peak - b)))
+        weight = _f32(_f32(_f32(_f32(r + g) + b) * distance)
+                      + _f32(distance + distance))
+        totals[group] += weight
+        for channel, value in enumerate(channels):
+            sums[group][channel] += _f32(weight * value)
+    winner = max(range(3), key=totals.__getitem__)
+    seed = bytes(int(min(255, total / totals[winner] * 255))
+                 for total in sums[winner])
+    return "#" + seed.hex().upper(), derive_wallpaper_alpha(range_sum, count)
+
+
+def _wallpaper_brightness(channels):
+    # Native brightness is weighted RMS in encoded RGB, not CIELAB L*.
+    r, g, b = (_f32(v / 255) for v in channels)
+    green = _f32(_f32(g * g) * _f32(0.7152))
+    red = _f32(_f32(r * r) * _f32(0.2126))
+    blue = _f32(_f32(b * b) * _f32(0.0722))
+    return _f32(math.sqrt(_f32(_f32(green + red) + blue)))
+
+
+def _bound_wallpaper_brightness(channels, low, high):
+    current = _wallpaper_brightness(channels)
+    target = max(low, min(high, current))
+    if target == current:
+        return channels
+    if current == 0:
+        return (int(_f32(target * 255)),) * 3
+    scale = _f32(target / current)
+    return tuple(int(_f32(min(1, _f32(scale * _f32(v / 255))) * 255))
+                 for v in channels)
+
+
+def _wallpaper_luminance(channels):
+    # Contrast uses a different, linear-light brightness measurement.
+    def linear(v):
+        value = _f32(v / 255)
+        if value <= _f32(0.03928):
+            return _f32(value / _f32(12.92))
+        return _f32(_f32(_f32(value + _f32(0.055)) / _f32(1.055)) ** _f32(2.4))
+
+    r, g, b = map(linear, channels)
+    return _f32(_f32(_f32(g * _f32(0.7152)) + _f32(r * _f32(0.2126)))
+                + _f32(b * _f32(0.0722)))
+
+
+def _wallpaper_hls(channels):
+    # The native normalizer calls SHLWAPI's integer HLS (0..240) API.
+    # Keep its quantization separate from the later CIELAB palette stage.
+    high, low = max(channels), min(channels)
+    span, total = high - low, high + low
+    light = (total * 240 + 255) // 510
+    if span == 0:
+        return 160, light, 0
+    denominator = total if light <= 120 else 510 - total
+    saturation = (span * 240 + denominator // 2) // denominator
+    rd, gd, bd = (((high - v) * 40 + span // 2) // span for v in channels)
+    if channels[0] == high:
+        hue = bd - gd
+    elif channels[1] == high:
+        hue = 80 + rd - bd
+    else:
+        hue = 160 + gd - rd
+    return hue % 240, light, saturation
+
+
+def _wallpaper_rgb(hue, light, saturation):
+    if saturation == 0:
+        return (light * 255 // 240,) * 3
+    upper = ((light * (240 + saturation) + 120) // 240 if light <= 120
+             else light + saturation - (light * saturation + 120) // 240)
+    lower = 2 * light - upper
+
+    def channel(angle):
+        angle %= 240
+        if angle < 40:
+            level = lower + ((upper - lower) * angle + 20) // 40
+        elif angle < 120:
+            level = upper
+        elif angle < 160:
+            level = lower + ((upper - lower) * (160 - angle) + 20) // 40
+        else:
+            level = lower
+        return (level * 255 + 120) // 240
+
+    return tuple(channel(hue + offset) for offset in (80, 0, -80))
+
+
+def normalize_weighted_wallpaper_seed(seed):
+    """Candidate native RGB normalization, before derive_automatic_palette.
+
+    Input is the weighted seed, never the final Windows UI Accent. The
+    target-build math is known; exact SHLWAPI and decoder/resampler parity
+    for arbitrary image inputs still requires independent verification.
+    """
+    channels = tuple(bytes.fromhex(rgb(seed)[1:]))
+    channels = _bound_wallpaper_brightness(
+        channels, _f32(_f32(0.6) - _f32(0.05)), _f32(_f32(0.6) + _f32(0.05)))
+    pivot = int(_f32(_wallpaper_brightness(channels) * 255))
+    boosted = tuple(int(max(0, min(255, _f32(_f32((v - pivot) * _f32(1.4)) + pivot))))
+                    for v in channels)
+    # The valid contrast target against white is the darker solution.
+    target = _f32(_f32(_f32(1.05) / _f32(3.2)) - _f32(0.05))
+    hue, light, saturation = _wallpaper_hls(boosted)
+    if target > _wallpaper_luminance(boosted):
+        upper, lower, last = 240.0, float(light), 1.0
+    else:
+        upper, lower, last = float(light), 0.0, 0.0
+    while abs(_f32(last - target)) > _f32(0.0001):
+        middle = _f32(_f32(upper + lower) * 0.5)
+        last = _wallpaper_luminance(_wallpaper_rgb(hue, int(middle), saturation))
+        if last > target:
+            upper = middle
+        else:
+            lower = middle
+        if abs(_f32(upper - lower)) < _f32(0.024):
+            break
+    middle = int(_f32(_f32(upper + lower) * 0.5))
+    adjusted = _wallpaper_rgb(hue, middle, saturation)
+    candidate = _bound_wallpaper_brightness(adjusted, _f32(0.3), _f32(0.45))
+    return "#" + bytes(candidate).hex().upper()
 
 
 def derive_automatic_palette(candidate):
