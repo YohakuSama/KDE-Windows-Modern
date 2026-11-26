@@ -329,6 +329,11 @@ class WindowMaterialTests(unittest.TestCase):
         palette = control["SYNC"]["derive_manual_palette"]("#FF8C00")
         state = {"schema_version": 1, "source": "manual", "palette": palette}
         self.assertEqual(control["decode_state"](json.dumps(state)), palette)
+        self.assertEqual(control["decode_state"](json.dumps({**state, "manual_color": "#FF8C00"})),
+                         palette)
+        for invalid_input in (None, 42, "invalid"):
+            with self.assertRaises(ValueError):
+                control["decode_state"](json.dumps({**state, "manual_color": invalid_input}))
         self.assertIsNone(control["decode_state"](None))
         for invalid in ([], None, {"schema_version": True, "source": "manual", "palette": palette},
                         {"schema_version": 1, "source": "manual", "palette": []},
@@ -401,6 +406,58 @@ class WindowMaterialTests(unittest.TestCase):
                  patch.dict(sync, {"write_pending": Mock(side_effect=AssertionError("must not write"))}):
                 self.assertEqual(control["synchronize"]("dark", "initialize", []),
                                  False if stored is not None else None)
+
+    def test_manual_accent_refresh_preserves_original_input(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        sync = control["SYNC"]
+        original = "#9F5A8C"
+        current = sync["derive_manual_palette"](original)
+        self.assertNotEqual(current["Accent"], original)
+        previous = {**current, "AccentDark1": "#000001"}
+        state = {"schema_version": 1, "source": "manual",
+                 "manual_color": original, "palette": previous}
+        for action in ("sync", "reapply"):
+            with self.subTest(action=action), tempfile.TemporaryDirectory() as tmp:
+                config = Path(tmp)
+                (config / "Kvantum/Windows-modern").mkdir(parents=True)
+                scheme = config / "color-schemes/WindowsModernDark.colors"
+                stored = [json.dumps(state)]
+                pending = {scheme: (b"previous", b"next")}
+                plan = Mock(return_value=pending)
+                derive = Mock(wraps=sync["derive_manual_palette"])
+                write = Mock(return_value=[scheme])
+                publish = Mock(side_effect=lambda value: stored.__setitem__(0, value))
+
+                def read(group, key):
+                    return stored[0] if (group, key) == (control["GROUP"], control["KEY"]) else None
+
+                with patch.dict(control["synchronize"].__globals__, {
+                        "CONFIG": config, "DATA": config,
+                        "active_mode": lambda mode: True,
+                        "native_accent": lambda: (False, None),
+                        "read": read, "write_state": publish,
+                        "scheme_inputs": lambda: ("", {}),
+                        "plan_schemes": plan, "apply_current": Mock(),
+                        "live_matches": lambda *args: True, "notify_palette": Mock()}), \
+                     patch.dict(sync, {"derive_manual_palette": derive,
+                                       "owned_file": lambda path: path,
+                                       "plan_kvantum": lambda *args: {},
+                                       "write_pending": write}):
+                    self.assertTrue(control["synchronize"]("dark", action, []))
+                    derive.assert_called_once_with(original)
+                    plan.assert_called_once_with(config / "color-schemes", "", {},
+                                                 previous, current)
+                    write.assert_called_once_with(pending)
+                    publish.assert_called_once()
+                    self.assertEqual(json.loads(stored[0]),
+                                     {**state, "palette": current})
+                    # Once updated, a matching renderer/state is a no-op.
+                    plan.return_value = {}
+                    publish.reset_mock()
+                    write.reset_mock()
+                    self.assertFalse(control["synchronize"]("dark", action, []))
+                    publish.assert_not_called()
+                    write.assert_not_called()
 
     def test_automatic_accent_stale_transaction(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))

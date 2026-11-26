@@ -164,6 +164,12 @@ def automatic_state(previous):
     return state
 
 
+def manual_state(selection):
+    color = SYNC["rgb"](selection)
+    return {"schema_version": 1, "source": "manual", "manual_color": color,
+            "palette": SYNC["derive_manual_palette"](color)}
+
+
 def pending_automatic_state():
     # The default blue is the measured preset, not a sampled wallpaper.
     # A separate pending flag prevents it from being cached as a result.
@@ -182,6 +188,10 @@ def decode_state(raw):
         if state != pending_automatic_state() or state["pending"] is not True:
             raise ValueError("Invalid pending automatic accent state")
         return state["palette"]
+    if state["source"] == "manual" and "manual_color" in state:
+        if not isinstance(state["manual_color"], str):
+            raise ValueError("Invalid original manual accent color")
+        SYNC["rgb"](state["manual_color"])
     if state["source"] == "automatic":
         images = state.get("wallpapers")
         if (not isinstance(state.get("activity"), str) or not isinstance(images, list)
@@ -340,8 +350,7 @@ def synchronize(mode, action, inputs):
             raise ValueError("Select 'From current color scheme' in KDE Colors before using Windows accent control")
         state = {"schema_version": 1, "source": action}
         if action == "manual":
-            state["manual_color"] = SYNC["rgb"](inputs[0])
-            state["palette"] = SYNC["derive_manual_palette"](state["manual_color"])
+            state = manual_state(inputs[0])
         elif action == "wallpaper":
             paths = [Path(path) for path in inputs]
             explicit_files = {path: SYNC["wallpaper_file_identity"](path) for path in paths}
@@ -372,7 +381,14 @@ def synchronize(mode, action, inputs):
     else:
         desired_raw, desired = raw, previous
         state = json.loads(raw)
-        if action == "sync" and state["source"] == "automatic":
+        if state["source"] == "manual" and "manual_color" in state:
+            # Recompute from the original input, not the normalized Accent.
+            # Keep the saved ramp as the ownership/rollback reference.
+            updated = manual_state(state["manual_color"])
+            if updated != state:
+                desired_raw = json.dumps(updated, separators=(",", ":"), sort_keys=True)
+                desired = decode_state(desired_raw)
+        elif action == "sync" and state["source"] == "automatic":
             try:
                 updated = automatic_state(state)
                 candidate_raw = json.dumps(updated, separators=(",", ":"), sort_keys=True)

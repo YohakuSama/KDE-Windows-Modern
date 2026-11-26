@@ -615,3 +615,50 @@ A full desktop installation with neither a stored Windows ramp nor an explicit K
 ### Version-matched live Kvantum reload
 
 The NixOS test runtime uses a narrowly scoped patch against Qt 6 Kvantum V1.1.9 when the pinned package version is exactly 1.1.9. Other versions retain the stock plugin. No system package or declarative configuration is replaced. The appearance writer publishes `live-reload.json` beside the local theme after successful synchronization, including both mode pairs' SHA-256 hashes. The patched style records the actual user configuration and SVG as the normal theme loader opens them. It observes this receipt, acquires a nonblocking shared appearance lock, checks the actual resolved user artwork and reconstructs the same Kvantum style on the GUI thread. It clears the process-local pixmap cache and uses Qt's standard application style replacement, without a temporary Breeze style or app restart. Custom application themes, widget-local styles and application-wide stylesheet proxies are not forcibly replaced. Applications must actually load the patched Qt 6 plugin; stock Qt 5/Qt 6 processes retain their previous behavior. The source has not been built or exercised in a desktop session. Exact arbitrary ICC transforms and universal live reload remain open.
+
+## Dynamic accent source-completion ledger
+
+The target remains Windows 11 26H2 build 26300.9974. This ledger
+replaces informal near-completion estimates. Each row has a distinct
+acceptance scope. A source-complete row means the stated scope has
+an implemented path, not that arbitrary inputs or live KDE behavior
+have passed acceptance. A partial row requires additional implementation,
+reference comparison or both. An open row has a known missing path.
+Diagnostic tools, fixture collection and documentation do not count as
+completed runtime functionality. Do not convert the unweighted row
+count into an overall percentage.
+
+| Acceptance scope | Source status | Remaining evidence or work |
+| --- | --- | --- |
+| Manual preset dispatcher and 48 stored ramps | Partial | Two preset ramps independently measured; compare the remaining 46. |
+| Custom saturated CIELAB and near-gray HSL branches | Partial | Both branches exist; original-input boundary and rounding checks remain. |
+| Weighted bitmap statistics and pooled image reduction | Implemented | Recorded buffer cases match; arbitrary real desktop sources require acceptance. |
+| Automatic candidate normalization and fallback | Partial | Native normalization and seven-role generation are implemented; exact saturation/lightness boundaries remain open. |
+| Colorization strength (alpha) calculation | Implemented | Measured candidate formula exists, distinct from surface opacity; broader image acceptance remains. |
+| Opaque BMP/JPEG/PNG/WebP decoding and orientation | Partial | Supported decode path exists; WIC parity across formats and pixel variants is not established. |
+| Transparent PNG processing | Partial | Shared RGB/GrayAlpha path exists; tagged GrayAlpha and additional pixel modes need reference comparison. |
+| Transparent non-PNG and unreviewed pixel formats | Open | No verified decoder path for these combinations. Establish native handling before enabling. |
+| Reviewed RGB matrix/TRC ICC transforms | Implemented | Independent tables and full-domain evidence for measured controls; broader profile coverage remains outside this scope. |
+| Reviewed D50 Gray8 monitor ICC transforms | Implemented | Independent grid and two measured gamma ramps; extended sampled/v4 curves require reference comparison. |
+| Forward RGB LUT ICC transforms | Open | Input/output curves and measured execution exist; independently generated CLUT and general supported profile dispatch remain open. |
+| Remaining ICC families and profile combinations | Open | Determine the Windows decoder's supported scope; do not silently accept an approximate transform. |
+| Live wallpaper discovery, events and cache invalidation | Implemented | Native Plasma still/slideshow/scheduled-image adapter; multi-screen, scale, activity and file-replacement acceptance pending. |
+| Accent selection ownership and persisted original manual input | Implemented | Native selection precedence, pending automatic state, transactional writes and manual recomputation; legacy states without original input remain unchanged. |
+| Full Windows-style accent selection UI and interaction | Partial | Command-based selection exists; equivalent graphical controls and native interaction coverage not established. |
+| Shared dark/light palette publication, primary fill and link roles | Implemented | Both generated schemes and Kvantum use mode-specific shades; desktop acceptance pending. |
+| Independent selection background, pressed/hover and on-accent roles | Partial | Host selection role currently also supplies the primary fill; audit each renderer rather than changing every KColorScheme Highlight consumer. |
+| Live application refresh | Partial | Version-matched Qt 6 Kvantum path exists; stock/other renderer refresh and actual process behavior unverified. |
+| Full install and mode-switch integration | Implemented | Initialization and synchronization paths exist; full installation, upgrades and live mode switches require owner acceptance. |
+
+At this review there are 19 source acceptance scopes: eight implemented,
+eight partial and three open. No live acceptance is claimed. The
+remaining reference-dependent work should be batched (manual palette,
+format/alpha handling and ICC scope), while renderer-role and UI work
+can proceed separately. Do not spend another development batch only
+adding diagnostics if an independent runtime task is ready.
+
+Manual selections now recompute from the persisted original RGB on
+synchronization and mode reapply. The previous saved palette remains the
+ownership and rollback reference; a normalized Accent is never used as
+a substitute for missing original input. This lets subsequent reference
+corrections reach existing installations without requiring reselection.

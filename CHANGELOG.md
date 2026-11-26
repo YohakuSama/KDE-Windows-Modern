@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Refresh existing manual accent selections from their original saved RGB when palette formulas change. Preserve native ownership and rollback against the previously published ramp. Record a scoped dynamic-accent completion ledger instead of an estimated percentage.
+
 - Share the sampled 16-bit ICC input curve generator with mft2 reference analysis and validate LUT curves using the original profile tables. Forward CLUT normalization remains under investigation.
 
 - Reuse the native shared curve dispatcher for D50 Gray8 v2/v4 monitor profiles and compare partial manual palette capture batches without changing desktop settings. Preserve explicit native verification limits.
