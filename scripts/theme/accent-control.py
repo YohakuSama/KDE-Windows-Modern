@@ -20,6 +20,7 @@ KEY = "Palette"
 MISSING = "__windows_modern_missing_accent_key__"
 MODES = ("dark", "light")
 MODE_ROLES = {"dark": "AccentLight2", "light": "AccentDark1"}
+LINK_ROLES = {"dark": "AccentLight3", "light": "AccentDark2"}
 THEME_ID = "org.kde.windowsmodern.dark"
 MAX_SCREENS = 16
 
@@ -183,9 +184,11 @@ def scheme_inputs():
             json.loads((HERE / "palette.json").read_text(encoding="utf-8")))
 
 
-def render(template, fixed, mode, palette):
+def render(template, fixed, mode, palette, *, legacy=False):
     selection = palette[MODE_ROLES[mode]] if palette is not None else None
-    return SYNC["render_scheme"](template, fixed[mode], mode, selection).encode("utf-8")
+    link = (palette[LINK_ROLES[mode]] if palette is not None and not legacy
+            else selection)
+    return SYNC["render_scheme"](template, fixed[mode], mode, selection, link).encode("utf-8")
 
 
 def plan_schemes(directory, template, fixed, previous, desired):
@@ -198,7 +201,10 @@ def plan_schemes(directory, template, fixed, previous, desired):
         base = render(template, fixed, mode, None)
         # A reinstall may have restored the pristine file. Never overwrite a
         # user's independently edited scheme or an externally managed file.
-        if old not in (base, render(template, fixed, mode, previous)):
+        # Accept the exact previous renderer output during migration.
+        # Independently edited schemes are still rejected.
+        if old not in (base, render(template, fixed, mode, previous),
+                       render(template, fixed, mode, previous, legacy=True)):
             raise ValueError(f"Color scheme differs from the installed Windows Modern palette: {path}")
         new = render(template, fixed, mode, desired)
         if old != new:
@@ -234,7 +240,7 @@ def apply_current(mode, native):
 
 def live_matches(mode, fixed, palette, path):
     selection = palette[MODE_ROLES[mode]]
-    values = SYNC["accent_values"](mode, fixed[mode], selection)
+    values = SYNC["accent_values"](mode, fixed[mode], selection, palette[LINK_ROLES[mode]])
     file_hash = read("General", "ColorSchemeHash")
     if file_hash != hashlib.sha1(path.read_bytes()).hexdigest():
         return False
@@ -244,7 +250,11 @@ def live_matches(mode, fixed, palette, path):
             ("Colors:Selection", "ForegroundNormal", "highlight_text"),
             ("Colors:Window", "DecorationFocus", "accent"),
             ("Colors:Button", "DecorationFocus", "accent"),
-            ("Colors:View", "ForegroundLink", "accent"),
+            ("Colors:Button", "ForegroundLink", "accent_link"),
+            ("Colors:Complementary", "ForegroundLink", "accent_link"),
+            ("Colors:Tooltip", "ForegroundLink", "accent_link"),
+            ("Colors:View", "ForegroundLink", "accent_link"),
+            ("Colors:Window", "ForegroundLink", "accent_link"),
             ("Colors:Window", "BackgroundNormal", "window"),
             ("WM", "activeBackground", "window")):
         color = read(group, key)
@@ -309,7 +319,8 @@ def synchronize(mode, action, inputs):
         raise ValueError("Windows Modern accent control requires user-local Kvantum assets")
     for name in MODES:
         color = desired[MODE_ROLES[name]] if desired is not None else fixed[name]["accent"]
-        prepared = SYNC["plan_kvantum"](kvdir, name, color)
+        link = desired[LINK_ROLES[name]] if desired is not None else color
+        prepared = SYNC["plan_kvantum"](kvdir, name, color, link)
         # In native mode the active shade is only known after KDE applies
         # the base scheme. Validate the active atlas now but update it later.
         if desired is not None or name != mode:

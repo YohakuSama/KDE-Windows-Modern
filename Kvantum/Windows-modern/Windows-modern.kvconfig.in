@@ -90,7 +90,7 @@ button.text.color=${text}
 disabled.text.color=${disabled_text}
 tooltip.text.color=${text}
 highlight.text.color=${highlight_text}
-link.color=${accent}
+link.color=${accent_link}
 link.visited.color=#E040FB
 progress.indicator.text.color=${text}
 

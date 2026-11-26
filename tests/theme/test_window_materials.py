@@ -110,6 +110,33 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertTrue(all(x == y for i, (x, y) in
                                         enumerate(zip(before, after)) if i not in owned))
 
+    def test_kvantum_independent_link_and_legacy_binding(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        with tempfile.TemporaryDirectory() as tmp:
+            target = appearance["kvantum"](ROOT, Path(tmp))
+            manifest_path = target / "accent-bindings.json"
+            manifest = json.loads(manifest_path.read_text())
+            for mode, entry in manifest.items():
+                name = "Windows-modernDark.kvconfig" if mode == "dark" else "Windows-modern.kvconfig"
+                path = target / name
+                original = path.read_text()
+                spec = entry["files"][name]
+                self.assertEqual(sum(role == "accent_link" for _, role, _, _ in spec["bindings"]), 1)
+                for old_manifest in (False, True):
+                    if old_manifest:
+                        entry["defaults"].pop("accent_link")
+                        for binding in spec["bindings"]:
+                            if binding[1] == "accent_link":
+                                binding[1] = "accent"
+                    manifest_path.write_text(json.dumps(manifest))
+                    prepared = sync["plan_kvantum"](target, mode, "#BE5082", "#704060")
+                    updated = prepared[path][1].decode()
+                    self.assertIn("highlight.color=#BE5082", updated)
+                    self.assertIn("link.color=#704060", updated)
+                    self.assertEqual(sync["patch"](updated, spec, entry["defaults"]), original)
+                    native = sync["accent_values"](mode, entry["defaults"], "#BE5082")
+                    self.assertIn("link.color=#BE5082", sync["patch"](original, spec, native))
+
     def test_live_wallpaper_snapshot_contract(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
         discover = control["discover_wallpapers"]
@@ -310,7 +337,16 @@ class WindowMaterialTests(unittest.TestCase):
             scheme.read_string(rendered.decode("utf-8"))
             rgb = lambda value: ",".join(str(int(value[i:i + 2], 16)) for i in (1, 3, 5))
             self.assertEqual(scheme["Colors:Selection"]["BackgroundNormal"], rgb(shade))
-            self.assertEqual(scheme["Colors:View"]["ForegroundLink"], rgb(shade))
+            link = "#FFD155" if mode == "dark" else "#A14600"
+            for group in ("Button", "Complementary", "Tooltip", "View", "Window"):
+                self.assertEqual(scheme["Colors:" + group]["ForegroundLink"], rgb(link))
+            self.assertEqual(scheme["Colors:Selection"]["ForegroundLink"],
+                             rgb(fixed[mode]["selection_link"]))
+            legacy = control["render"](template, fixed, mode, palette, legacy=True)
+            self.assertNotEqual(rendered, legacy)
+            self.assertEqual(legacy, rendered.replace(
+                ("ForegroundLink=" + rgb(link) + "\n").encode(),
+                ("ForegroundLink=" + rgb(shade) + "\n").encode()))
             self.assertEqual(scheme["Colors:Window"]["DecorationFocus"], rgb(shade))
             self.assertEqual(scheme["Colors:Selection"]["ForegroundNormal"],
                              rgb(sync["contrast_ink"](shade)))
@@ -328,6 +364,15 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertEqual(path.read_bytes(), old)
                 path.write_bytes(new)
             self.assertEqual(control["plan_schemes"](directory, template, fixed, palette, palette), {})
+            for mode in ("dark", "light"):
+                path = directory / (control["scheme_name"](mode) + ".colors")
+                path.write_bytes(control["render"](template, fixed, mode, palette, legacy=True))
+            migrated = control["plan_schemes"](directory, template, fixed, palette, palette)
+            self.assertEqual(set(migrated), set(changes))
+            for path, (old, new) in migrated.items():
+                self.assertEqual(path.read_bytes(), old)
+                self.assertEqual(new, changes[path][1])
+                path.write_bytes(new)
             reset = control["plan_schemes"](directory, template, fixed, palette, None)
             self.assertEqual(reset, {path: (new, old) for path, (old, new) in changes.items()})
             path = next(iter(changes))

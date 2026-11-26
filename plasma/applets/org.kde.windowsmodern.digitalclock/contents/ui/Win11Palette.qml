@@ -37,7 +37,7 @@ QtObject {
     function accentForSurface(source, surface, minimum) { return ColorType.accentForSurface(source, surface, minimum); }
     readonly property color accent: accentForSurface(Kirigami.Theme.highlightColor, detachedPanel, isDark ? 4.5 : 3)
     readonly property color accentText: ColorType.contrastingForeground(accent)
-    readonly property color accentLink: accentForSurface(Kirigami.Theme.highlightColor, detachedPanel, 4.5)
+    readonly property color accentLink: accentForSurface(Kirigami.Theme.linkColor, detachedPanel, 4.5)
     readonly property color hover:            isDark ? "#3F3F3F" : "#E9E9E9"
     readonly property color pressed:          isDark ? "#4A4A4A" : "#DADADA"
 }

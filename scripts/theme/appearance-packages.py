@@ -619,7 +619,7 @@ def kvantum(root, destination):
             (target / filename).write_text(data, encoding="utf-8")
             files[filename] = binding_builder(template, data, values)
         manifest[mode] = {"defaults": {role: values[role] for role in
-                          ("accent", "highlight_text", "selected_item_text",
+                          ("accent", "accent_link", "highlight_text", "selected_item_text",
                            "checked_backing", "button_accent_text")},
                           "files": files}
     (target / "accent-bindings.json").write_text(

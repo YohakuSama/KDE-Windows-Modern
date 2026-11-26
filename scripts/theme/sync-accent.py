@@ -17,7 +17,7 @@ import tempfile
 import warnings
 import xml.etree.ElementTree as ET
 
-ROLES = ("accent", "highlight_text", "selected_item_text",
+ROLES = ("accent", "accent_link", "highlight_text", "selected_item_text",
          "checked_backing", "button_accent_text")
 ROLE = re.compile(r"\$\{(" + "|".join(ROLES) + r")\}")
 COLOR = re.compile(r"#[0-9a-fA-F]{6}")
@@ -770,21 +770,23 @@ def contrast_ink(color):
     return "#000000" if luminance > .179 else "#FFFFFF"
 
 
-def accent_values(mode, defaults, selection):
-    # Retain the shipped paint for the original default. On custom
-    # accents, use contrasting solid-selection text and checked glyphs.
+def accent_values(mode, defaults, selection, link=None):
+    # Native mode retains the previous single-accent policy. Windows
+    # mode supplies an independent primary accent text shade.
     color = rgb(selection)
+    link_color = rgb(link) if link is not None else color
     if color == defaults["accent"].upper():
-        return defaults.copy()
+        return {**defaults, "accent_link": link_color}
     ink = contrast_ink(color)
-    return {**defaults, "accent": color, "highlight_text": ink,
+    return {**defaults, "accent": color, "accent_link": link_color, "highlight_text": ink,
             "button_accent_text": ink, "checked_backing": ink,
             "selected_item_text": ink if mode == "light" else defaults["selected_item_text"]}
 
 
-def render_scheme(template, defaults, mode, selection=None):
-    """Render the common KDE roles, including an optional final mode accent."""
-    values = defaults.copy() if selection is None else accent_values(mode, defaults, selection)
+def render_scheme(template, defaults, mode, selection=None, link=None):
+    """Render KDE roles with optional independent fill and link shades."""
+    values = (defaults.copy() if selection is None
+              else accent_values(mode, defaults, selection, link))
     if defaults["button_active_text"].upper() == defaults["accent"].upper():
         values["button_active_text"] = values["accent"]
     channels = {}
@@ -807,6 +809,10 @@ def patch(text, spec, values):
         if index in seen or not 0 <= index < len(lines) or role not in ROLES:
             raise ValueError("Invalid Kvantum accent binding")
         seen.add(index)
+        # Old manifests bound the exact GeneralColors link line to accent.
+        # Interpret that binding without changing offsets or the manifest.
+        if role == "accent" and prefix == "link.color=" and "accent_link" in values:
+            role = "accent_link"
         allowed = r"(?:#[0-9a-fA-F]{6}|none)" if role == "checked_backing" else r"#[0-9a-fA-F]{6}"
         if not re.fullmatch(re.escape(prefix) + allowed + re.escape(suffix), lines[index]):
             raise ValueError(f"Unrecognized Kvantum accent field at line {index + 1}")
@@ -834,14 +840,14 @@ def atomic_write(path, data):
         Path(name).unlink(missing_ok=True)
 
 
-def plan_kvantum(directory, mode, selection):
+def plan_kvantum(directory, mode, selection, link=None):
     if any(p.is_symlink() for p in (directory, directory.parent)):
         raise ValueError("Refusing externally managed Kvantum directory")
     if not directory.is_dir():
         return {}
     manifest = owned_file(directory / "accent-bindings.json")
     entry = json.loads(manifest.read_text(encoding="utf-8"))[mode]
-    values = accent_values(mode, entry["defaults"], selection)
+    values = accent_values(mode, entry["defaults"], selection, link)
     name = "Windows-modernDark" if mode == "dark" else "Windows-modern"
     expected = {name + ".kvconfig", name + ".svg"}
     if set(entry["files"]) != expected:
