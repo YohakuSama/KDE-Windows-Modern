@@ -6,6 +6,10 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Route transparency operations through the reversible NixOS installation, preserve the marker in exact-path backups, and stage both window materials, popup selectors and Kvantum transparency settings together before publication.
+
+- Share bounded wallpaper decoding between window material sampling and automatic accent, reuse duplicate samples across appearance modes, validate source identity through publication, and prefer the native loaded wallpaper for explicit transparency refresh.
+
 - Accumulate fractional slider wheel input, handle pixel gestures and coalesced detents without repeated backend updates, suppress repeated detail-key activation, and share PowerDevil's normalized brightness range with the detail page.
 
 - Open the Start menu's More recommendations in a dedicated list page, preserving the home scroll position and shared search/footer. Avoid Qt's automatic initial selection when changing views.

@@ -154,9 +154,12 @@ library remains separate from the small installable runtime input set.
 See [native asset import](docs/NATIVE_ASSETS.md) and
 [cursor credits](docs/CURSORS.md).
 
-On conventional installations, transparency can be changed with
-`bash install.sh transparency on`, `off` or `refresh`. The normal theme
-does not replace the user's text fonts.
+On conventional installations and complete NixOS test installations,
+transparency can be changed with `bash install.sh transparency on`, `off`
+or `refresh`. Omit the final argument to show the saved state. The NixOS
+command uses the existing runtime and backup; it does not build, reset
+the layout or modify the Nix store. The normal theme does not replace
+the user's text fonts.
 
 ## Optional boot and login appearance
 

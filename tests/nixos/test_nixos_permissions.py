@@ -52,6 +52,25 @@ class Permissions(unittest.TestCase):
         with self.assertRaises(ValueError):
             wm.validate(wm.APP_STATE / "unrelated-state")
         self.assertIn(wm.DATA / "kxmlgui5/konsole/sessionui.rc", wm.all_targets({}))
+        self.assertIn(wm.DATA / "windows-modern/transparency-off", wm.all_targets({}))
+
+    def test_transparency_marker_original_backup_is_preserved(self):
+        marker = wm.DATA / "windows-modern/transparency-off"
+        marker.parent.mkdir()
+        backup = self.root / "backup"
+        wm.snapshot(backup, [marker])
+        marker.write_text("blurEnabled=true\n")
+        wm.snapshot(backup, [marker])
+        wm.restore(backup)
+        self.assertFalse(marker.exists())
+
+        marker.parent.mkdir(exist_ok=True)
+        marker.write_text("blurEnabled=false\n")
+        second = self.root / "second-backup"
+        wm.snapshot(second, [marker])
+        marker.unlink()
+        wm.restore(second)
+        self.assertEqual(marker.read_text(), "blurEnabled=false\n")
 
     def test_install_readonly_store_package(self):
         wm.replace(self.source, self.dst, writable=True)

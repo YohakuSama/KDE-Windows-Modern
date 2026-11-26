@@ -330,6 +330,7 @@ def all_targets(mapping):
         DATA / "konsole/WindowsModern.profile",
         DATA / "konsole/WindowsModern-tabs.css",
         DATA / "windows-modern/backup/app-appearance.json",
+        DATA / "windows-modern/transparency-off",
     ] + [DATA / "locale" / lang / "LC_MESSAGES" / (domain + ".mo")
          for lang in LANGUAGES for domain in DOMAINS]
 
@@ -374,7 +375,7 @@ def verify_sources(root):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["install", "restore", "snapshot-current", "restore-upgrade", "verify-sources"])
+    parser.add_argument("action", choices=["install", "restore", "snapshot-current", "restore-upgrade", "verify-sources", "prepare-transparency"])
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--state", type=Path, required=True)
     parser.add_argument("--profile", type=Path, required=True)
@@ -409,6 +410,11 @@ def main():
         restore(args.upgrade_backup)
         return
     backup = args.state / "original"
+    if args.action == "prepare-transparency":
+        if not (backup / "manifest.json").is_file():
+            raise RuntimeError("No original NixOS desktop backup")
+        snapshot(backup, [DATA / "windows-modern/transparency-off"])
+        return
     if args.action == "restore":
         restore(backup)
         return
@@ -417,7 +423,8 @@ def main():
         snapshot(args.state / "before-uninstall",
                  [Path(key) for key in manifest["entries"]
                   if Path(key).is_relative_to(CONFIG) or key.endswith(("/dolphinui.rc", "/konsoleui.rc",
-                      "/WindowsModern.profile", "/WindowsModern-tabs.css", "/app-appearance.json"))])
+                      "/WindowsModern.profile", "/WindowsModern-tabs.css", "/app-appearance.json",
+                       "/windows-modern/transparency-off"))])
         return
     make_staging(args.root, args.state)
     mapping = plan(args.root, args.state, args.profile)

@@ -16,6 +16,39 @@ mkdir -p "$(dirname "$STATE")"
 exec 9>"$(dirname "$STATE")/.windows-modern-nixos-test.lock"
 flock -n 9 || { echo "另一项 Windows Modern 测试操作正在执行。" >&2; exit 1; }
 action="${1:-}"
+if [ "$action" = transparency ]; then
+    [ "$#" -le 2 ] || { echo "Usage: install.sh transparency [on|off|refresh]" >&2; exit 2; }
+    mode="${2:-status}"
+    case "$mode" in on|off|refresh|status) ;; *) echo "Unknown transparency operation." >&2; exit 2 ;; esac
+    [ ! -L "$STATE" ] && [ -f "$STATE/owned-state" ] && [ -f "$STATE/original/manifest.json" ] &&
+        [ ! -e "$STATE/pending-build" ] && [ ! -L "$STATE/pending-build" ] &&
+        [ -x "$STATE/runtime/bin/python3" ] || {
+        echo "No complete NixOS test installation, or recovery is pending." >&2
+        exit 1
+    }
+    # Do not overwrite a legacy marker outside the active XDG data tree.
+    # The old installer recognized both locations but never migrated them.
+    legacy="$HOME/.local/share/windows-modern/transparency-off"
+    if [ "$legacy" != "$DATA/windows-modern/transparency-off" ] && { [ -e "$legacy" ] || [ -L "$legacy" ]; }; then
+        echo "Legacy transparency marker outside XDG_DATA_HOME; resolve it before changing transparency." >&2
+        exit 1
+    fi
+    if [ "$mode" != status ]; then
+        package="$(kreadconfig6 --file kdeglobals --group KDE --key LookAndFeelPackage)"
+        if [ -z "$package" ] && [ -f "$CONFIG/kdedefaults/package" ]; then
+            package="$(cat "$CONFIG/kdedefaults/package")"
+        fi
+        [ "$package" = org.kde.windowsmodern.dark ] || {
+            echo "Select the Windows Modern appearance first." >&2; exit 1;
+        }
+        # Extend an older installation's original backup before the first
+        # write to the newly managed marker. No build or layout reset.
+        "$STATE/runtime/bin/python3" "$ROOT/scripts/nixos-test-state.py" prepare-transparency \
+            --root "$ROOT" --state "$STATE" --profile "$STATE/runtime"
+    fi
+    export PATH="$STATE/runtime/bin:$PATH"
+    WM_NIXOS_TRANSPARENCY=1 exec bash "$ROOT/scripts/install-transparency.sh" "$mode"
+fi
 variant=dark
 with_konsole=0
 for arg in "$@"; do

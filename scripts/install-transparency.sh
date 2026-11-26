@@ -20,31 +20,58 @@ if [ "$UID" -eq 0 ]; then
     exit 0
 fi
 
-state="$TRANSPARENCY_OFF_FILE"
 mode="${1:-status}"
+if [ "${WM_NIXOS_TRANSPARENCY:-0}" = 1 ]; then
+    data="${XDG_DATA_HOME:-$HOME/.local/share}"
+    config="${XDG_CONFIG_HOME:-$HOME/.config}"
+    AURORAE_DIR="$data/aurorae/themes"
+    PLASMA_DIR="$data/plasma/desktoptheme"
+    KVANTUM_DIR="$config/Kvantum"
+    TRANSPARENCY_OFF_FILE="$data/windows-modern/transparency-off"
+fi
+state="$TRANSPARENCY_OFF_FILE"
 
 # Hold the shared lock across the full explicit operation, not just
 # individual renderer writes. Read the saved state only after acquiring it.
 case "$mode" in
-    on|off|refresh) lock_appearance_writes || exit 1 ;;
+    on|off|refresh)
+        lock_appearance_writes || exit 1
+        if [ -L "$state" ] || [ -L "$(dirname "$state")" ] ||
+           [ -L "${XDG_CONFIG_HOME:-$HOME/.config}" ] || [ -L "${XDG_CONFIG_HOME:-$HOME/.config}/kwinrc" ]; then
+            err "Transparency settings are externally managed."
+            exit 1
+        fi
+        if [ -e "$state" ] && { [ ! -f "$state" ] || [ ! -O "$state" ]; }; then
+            err "Invalid or externally owned transparency state."
+            exit 1
+        fi
+        if [ -f "$state" ]; then
+            saved="$(cat "$state")"
+            case "$saved" in
+                blurEnabled=|blurEnabled=true|blurEnabled=false) previous="${saved#blurEnabled=}" ;;
+                *) err "Invalid saved blur preference."; exit 1 ;;
+            esac
+        fi
+        ;;
 esac
 
 case "$mode" in
     off)
-        if [ -f "$state" ] && [ "$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" = false ]; then
-            info "Transparency effects are already off."
-            exit 0
-        fi
         ensure_dir "$(dirname "$state")"
-        # Validate and apply the window artwork before saving an off
-        # marker. A failed material update must not block a later retry.
-        apply_window_materials false
-        apply_popup_materials false
-        kvantum_transparency false
+        # Even if the marker and blur preference already agree, re-apply
+        # the renderer transaction to repair an interrupted update.
         # Preserve the original setting even if a previous config write
         # failed. Empty means the KWin default was in effect.
         if [ ! -f "$state" ]; then
-            echo "blurEnabled=$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" > "$state"
+            previous="$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)"
+            case "$previous" in ""|true|false) ;; *) err "Invalid blur preference."; exit 1 ;; esac
+            marker="$(mktemp "$(dirname "$state")/.wm-transparency.XXXXXX")"
+            trap 'rm -f -- "$marker"' EXIT
+            printf 'blurEnabled=%s\n' "$previous" > "$marker"
+        fi
+        apply_window_materials false current all
+        if [ -n "${marker:-}" ]; then
+            mv -f -- "$marker" "$state"
         fi
         kwriteconfig6 --notify --file kwinrc --group Plugins --key blurEnabled false
         kwin_reconfigure
@@ -56,10 +83,7 @@ case "$mode" in
             info "Transparency effects are already on."
             exit 0
         fi
-        apply_window_materials true current
-        apply_popup_materials true
-        kvantum_transparency true
-        previous="$(sed -n 's/^blurEnabled=//p' "$state")"
+        apply_window_materials true current all
         if [ -n "$previous" ]; then
             kwriteconfig6 --notify --file kwinrc --group Plugins --key blurEnabled "$previous"
         else

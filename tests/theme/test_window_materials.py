@@ -1491,7 +1491,7 @@ class WindowMaterialTests(unittest.TestCase):
                 deco.parent.mkdir(parents=True)
                 deco.write_text(frames.render(mode))
                 (kvantum / ('Windows-modernDark.svg' if mode == 'dark' else 'Windows-modern.svg')).write_text(SVG)
-            with patch.object(frames, 'wallpaper_color', return_value='#345678'):
+            with patch.object(frames, "wallpaper_tints", return_value=(dict.fromkeys(frames.BASE_COLORS, "#345678"), lambda: None)):
                 frames.apply_local(aurorae, kvantum, root)
             for mode in ('light', 'dark'):
                 deco = aurorae / f'windows-modern-{mode}-aurorae' / 'decoration.svg'
@@ -1518,7 +1518,7 @@ class WindowMaterialTests(unittest.TestCase):
                 paths.extend((deco, svg))
             paths[2].write_text(paths[2].read_text() + "<!-- user edit -->")
             before = {path: path.read_bytes() for path in paths}
-            with patch.object(frames, "wallpaper_color", return_value="#345678"):
+            with patch.object(frames, "wallpaper_tints", return_value=(dict.fromkeys(frames.BASE_COLORS, "#345678"), lambda: None)):
                 with self.assertRaises(ValueError):
                     frames.apply_local(aurorae, kvantum, root)
             self.assertEqual({path: path.read_bytes() for path in paths}, before)
@@ -1537,7 +1537,7 @@ class WindowMaterialTests(unittest.TestCase):
             external.write_text(SVG)
             svg.symlink_to(external)
             before = deco.read_bytes()
-            with patch.object(frames, "wallpaper_color", return_value="#345678"):
+            with patch.object(frames, "wallpaper_tints", return_value=(dict.fromkeys(frames.BASE_COLORS, "#345678"), lambda: None)):
                 with self.assertRaises(ValueError):
                     frames.apply_local(aurorae, kvantum, root)
                 self.assertEqual(deco.read_bytes(), before)
@@ -1549,9 +1549,9 @@ class WindowMaterialTests(unittest.TestCase):
             self.assertEqual(elements(deco.read_text())["decoration-center"][0].get("fill"), "#345678")
 
     def test_missing_wallpaper_fallback(self):
-        self.assertIsNone(frames.wallpaper_color(None, 'dark'))
+        self.assertEqual(frames.wallpaper_tints(None)[0], dict.fromkeys(frames.BASE_COLORS))
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertIsNone(frames.wallpaper_color(Path(tmp), 'light'))
+            self.assertEqual(frames.wallpaper_tints(Path(tmp))[0], dict.fromkeys(frames.BASE_COLORS))
 
     def test_samples_separate_variants(self):
         try:
@@ -1564,11 +1564,86 @@ class WindowMaterialTests(unittest.TestCase):
                 dest = package / 'contents' / folder / '64x64.png'
                 dest.parent.mkdir(parents=True)
                 Image.new('RGB', (64, 64), color).save(dest)
-            self.assertEqual(frames.wallpaper_color(package, 'dark'), frames.tint_color('dark', (0, 0, 255)))
-            self.assertEqual(frames.wallpaper_color(package, 'light'), frames.tint_color('light', (255, 0, 0)))
+            colors, validate = frames.wallpaper_tints(package)
+            self.assertEqual(colors['dark'], frames.tint_color('dark', (0, 0, 255)))
+            self.assertEqual(colors['light'], frames.tint_color('light', (255, 0, 0)))
             (package / 'contents/images_dark/64x64.png').unlink()
-            self.assertEqual(frames.wallpaper_color(package, 'dark'), frames.tint_color('dark', (255, 0, 0)))
+            with self.assertRaises(ValueError):
+                validate()
+            self.assertEqual(frames.wallpaper_tints(package)[0]['dark'],
+                             frames.tint_color('dark', (255, 0, 0)))
 
+    def test_shared_wallpaper_sample_and_alpha(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "wallpaper.png"
+            image.touch()
+            # BGR/alpha: one opaque red, one fully transparent blue.
+            decode = Mock(return_value=(2, 1, bytes((0, 0, 255, 255, 255, 0, 0, 0))))
+            identity = lambda path: path.stat().st_size
+            colors, validate = frames.wallpaper_tints(
+                image, {"wallpaper_file_identity": identity, "decode_wallpaper_bitmap": decode})
+            decode.assert_called_once_with(image)
+            self.assertEqual(colors, {mode: frames.tint_color(mode, (255, 0, 0))
+                                      for mode in frames.BASE_COLORS})
+            image.write_bytes(b"changed")
+            with self.assertRaises(ValueError):
+                validate()
+
+    def test_material_selection_change_rolls_back(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            aurorae, kvantum = root / "aurorae", root / "kvantum"
+            deco = aurorae / "windows-modern-dark-aurorae" / "decoration.svg"
+            deco.parent.mkdir(parents=True)
+            deco.write_text(frames.render("dark"))
+            before = deco.read_bytes()
+            kvantum.mkdir()
+            svg = kvantum / "Windows-modernDark.svg"
+            svg.write_text(SVG)
+            selection = Mock(side_effect=[None, ValueError("Changed wallpaper")])
+            with patch.object(frames, "wallpaper_tints", return_value=(
+                    dict.fromkeys(frames.BASE_COLORS, "#345678"), lambda: None)):
+                with self.assertRaisesRegex(ValueError, "Changed wallpaper"):
+                    frames.apply_local(aurorae, kvantum, validate_selection=selection)
+            self.assertEqual(deco.read_bytes(), before)
+            self.assertEqual(svg.read_text(), SVG)
+
+    def test_explicit_transparency_stages_both_renderers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            kvantum, plasma, source = root / "kvantum", root / "plasma", root / "stage"
+            kvantum.mkdir()
+            for mode, name in (("dark", "Windows-modernDark"), ("light", "Windows-modern")):
+                config = kvantum / (name + ".kvconfig")
+                config.write_text("blurring=true\npopup_blurring=true\nblur_translucent=true\n"
+                                  "translucent_windows=true\ntransparent_dolphin_view=true\n"
+                                  "transparent_pcmanfm_sidepane=true\ntransparent_pcmanfm_view=true\nuntouched=1\n")
+                for variant in ("", "translucent", "solid"):
+                    for role in ("dialogs/background.svg", "widgets/panel-background.svg"):
+                        src = source / ("Windows-modern-" + mode) / variant / role
+                        src.parent.mkdir(parents=True, exist_ok=True)
+                        src.write_text('<svg xmlns="http://www.w3.org/2000/svg" id="' + (variant or "normal") + '"/>')
+                        if variant != "solid":
+                            dst = plasma / ("Windows-modern-" + mode) / variant / role
+                            dst.parent.mkdir(parents=True, exist_ok=True)
+                            dst.write_bytes(src.read_bytes())
+            sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+            pending = frames.plan_transparency(kvantum, plasma, source, False, sync["owned_file"])
+            self.assertEqual(len(pending), 10)
+            sync["write_pending"](pending)
+            for mode, name in (("dark", "Windows-modernDark"), ("light", "Windows-modern")):
+                self.assertEqual((kvantum / (name + ".kvconfig")).read_text(),
+                                 "blurring=false\npopup_blurring=false\nblur_translucent=false\n"
+                                 "translucent_windows=false\ntransparent_dolphin_view=false\n"
+                                 "transparent_pcmanfm_sidepane=false\ntransparent_pcmanfm_view=false\nuntouched=1\n")
+                self.assertEqual((plasma / ("Windows-modern-" + mode) / "dialogs/background.svg").read_bytes(),
+                                 (source / ("Windows-modern-" + mode) / "solid/dialogs/background.svg").read_bytes())
+            self.assertEqual(len(frames.plan_transparency(kvantum, plasma, source, True, sync["owned_file"])), 10)
+            changed = plasma / "Windows-modern-light/dialogs/background.svg"
+            changed.write_text("<svg/>")
+            with self.assertRaisesRegex(ValueError, "differs from the generated selector"):
+                frames.plan_transparency(kvantum, plasma, source, True, sync["owned_file"])
+            self.assertEqual(changed.read_text(), "<svg/>")
 
     def test_current_wallpaper_selection(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1604,10 +1679,9 @@ class WindowMaterialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             image = Path(tmp) / 'wallpaper.png'
             Image.new('RGB', (32, 32), (0, 0, 255)).save(image)
-            self.assertEqual(frames.wallpaper_color(image, 'dark'),
-                             frames.tint_color('dark', (0, 0, 255)))
-            self.assertEqual(frames.wallpaper_color(image, 'light'),
-                             frames.tint_color('light', (0, 0, 255)))
+            colors, _ = frames.wallpaper_tints(image)
+            self.assertEqual(colors['dark'], frames.tint_color('dark', (0, 0, 255)))
+            self.assertEqual(colors['light'], frames.tint_color('light', (0, 0, 255)))
 
 
 if __name__ == '__main__':

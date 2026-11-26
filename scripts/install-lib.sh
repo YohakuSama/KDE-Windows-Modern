@@ -405,12 +405,33 @@ apply_window_materials() (
                 --kvantum-dir "$KVANTUM_DIR/Windows-modern")
     if [ "$1" = true ]; then
         if [ "${2:-package}" = current ]; then
-            args+=(--wallpaper-config "${XDG_CONFIG_HOME:-$HOME/.config}/plasma-org.kde.plasma.desktop-appletsrc")
+            # An installed native bridge can distinguish the settled
+            # displayed image from a preview or scheduled transition.
+            if command -v busctl >/dev/null &&
+               busctl --user --timeout=3s introspect org.kde.plasmashell /WindowsModernWallpaper \
+                   org.kde.WindowsModern.Wallpaper >/dev/null 2>&1; then
+                args+=(--wallpaper-live)
+            else
+                args+=(--wallpaper-config "${XDG_CONFIG_HOME:-$HOME/.config}/plasma-org.kde.plasma.desktop-appletsrc")
+            fi
         elif [ -d "$WALLPAPER_DIR/Windows-modern" ]; then
             args+=(--wallpaper-package "$WALLPAPER_DIR/Windows-modern")
         fi
     fi
-    python3 -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" || {
+    local python="${XDG_STATE_HOME:-$HOME/.local/state}/windows-modern-nixos-test/runtime/bin/python3"
+    [ -x "$python" ] || python=python3
+    # Explicit on/off stages both popup variants, Kvantum config and window
+    # material files in the same checked Python transaction.
+    if [ "${3:-}" = all ]; then
+        local stage
+        stage="$(mktemp -d)" || return 1
+        trap 'rm -rf -- "$stage"' EXIT
+        "$python" -I "$SRC_DIR/scripts/theme/appearance-packages.py" "$stage" --component desktopthemes || return 1
+        local transparency=off
+        [ "$1" != true ] || transparency=on
+        args+=(--plasma-dir "$PLASMA_DIR" --popup-source "$stage" --transparency "$transparency")
+    fi
+    "$python" -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" || {
         warn "Window material update failed; existing artwork was retained where possible."
         return 1
     }
