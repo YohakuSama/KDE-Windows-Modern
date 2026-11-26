@@ -107,10 +107,10 @@ fi
 
 if [ "$UID" -ne 0 ]; then
     if [ -f "$TRANSPARENCY_OFF_FILE" ]; then
-        apply_window_materials false
+        apply_window_materials false || warn "Neutral window material update incomplete."
         apply_popup_materials false
     else
-        apply_window_materials true
+        apply_window_materials true || warn "Optional wallpaper tint update incomplete."
     fi
 fi
 

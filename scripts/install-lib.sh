@@ -406,8 +406,10 @@ apply_window_materials() (
             args+=(--wallpaper-package "$WALLPAPER_DIR/Windows-modern")
         fi
     fi
-    python3 -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" \
-        || warn "Window material update failed; reinstall themes to restore the stock artwork."
+    python3 -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" || {
+        warn "Window material update failed; existing artwork was retained where possible."
+        return 1
+    }
 )
 
 # A panel may explicitly select translucent artwork even when blur is

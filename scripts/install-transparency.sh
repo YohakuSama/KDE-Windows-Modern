@@ -25,18 +25,22 @@ mode="${1:-status}"
 
 case "$mode" in
     off)
-        if [ -f "$state" ]; then
+        if [ -f "$state" ] && [ "$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" = false ]; then
             info "Transparency effects are already off."
             exit 0
         fi
         ensure_dir "$(dirname "$state")"
-        # Stage the common renderer artwork before changing saved state.
-        apply_popup_materials false
-        # Remember the blur setting as it was ("" = never set: KWin's default, on).
-        echo "blurEnabled=$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" > "$state"
-        kvantum_transparency false
+        # Validate and apply the window artwork before saving an off
+        # marker. A failed material update must not block a later retry.
         apply_window_materials false
-        kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled false
+        apply_popup_materials false
+        kvantum_transparency false
+        # Preserve the original setting even if a previous config write
+        # failed. Empty means the KWin default was in effect.
+        if [ ! -f "$state" ]; then
+            echo "blurEnabled=$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" > "$state"
+        fi
+        kwriteconfig6 --notify --file kwinrc --group Plugins --key blurEnabled false
         kwin_reconfigure
         info "Transparency effects off."
         step "Restart open apps; if the panel retains cached artwork, log out and back in."
@@ -46,15 +50,15 @@ case "$mode" in
             info "Transparency effects are already on."
             exit 0
         fi
+        apply_window_materials true current
         apply_popup_materials true
+        kvantum_transparency true
         previous="$(sed -n 's/^blurEnabled=//p' "$state")"
         if [ -n "$previous" ]; then
-            kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled "$previous"
+            kwriteconfig6 --notify --file kwinrc --group Plugins --key blurEnabled "$previous"
         else
-            kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled --delete
+            kwriteconfig6 --notify --file kwinrc --group Plugins --key blurEnabled --delete
         fi
-        kvantum_transparency true
-        apply_window_materials true current
         rm -f "$state"
         kwin_reconfigure
         info "Transparency effects on."

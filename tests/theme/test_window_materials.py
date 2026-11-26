@@ -1503,6 +1503,51 @@ class WindowMaterialTests(unittest.TestCase):
                 svg = kvantum / ('Windows-modernDark.svg' if mode == 'dark' else 'Windows-modern.svg')
                 self.assertEqual(elements(svg.read_text())['window-normal'].get('fill'), base)
 
+    def test_local_material_rejects_modified_frame_before_writing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            aurorae, kvantum = root / "aurorae", root / "kvantum"
+            kvantum.mkdir()
+            paths = []
+            for mode in ("light", "dark"):
+                deco = aurorae / f"windows-modern-{mode}-aurorae" / "decoration.svg"
+                deco.parent.mkdir(parents=True)
+                deco.write_text(frames.render(mode))
+                svg = kvantum / ("Windows-modernDark.svg" if mode == "dark" else "Windows-modern.svg")
+                svg.write_text(SVG)
+                paths.extend((deco, svg))
+            paths[2].write_text(paths[2].read_text() + "<!-- user edit -->")
+            before = {path: path.read_bytes() for path in paths}
+            with patch.object(frames, "wallpaper_color", return_value="#345678"):
+                with self.assertRaises(ValueError):
+                    frames.apply_local(aurorae, kvantum, root)
+            self.assertEqual({path: path.read_bytes() for path in paths}, before)
+
+    def test_local_material_rejects_symlink_and_preserves_permissions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            aurorae, kvantum = root / "aurorae", root / "kvantum"
+            kvantum.mkdir()
+            deco = aurorae / "windows-modern-dark-aurorae" / "decoration.svg"
+            deco.parent.mkdir(parents=True)
+            deco.write_text(frames.render("dark"))
+            deco.chmod(0o640)
+            svg = kvantum / "Windows-modernDark.svg"
+            external = root / "external.svg"
+            external.write_text(SVG)
+            svg.symlink_to(external)
+            before = deco.read_bytes()
+            with patch.object(frames, "wallpaper_color", return_value="#345678"):
+                with self.assertRaises(ValueError):
+                    frames.apply_local(aurorae, kvantum, root)
+                self.assertEqual(deco.read_bytes(), before)
+                self.assertEqual(external.read_text(), SVG)
+                svg.unlink()
+                svg.write_text(SVG)
+                frames.apply_local(aurorae, kvantum, root)
+            self.assertEqual(deco.stat().st_mode & 0o777, 0o640)
+            self.assertEqual(elements(deco.read_text())["decoration-center"][0].get("fill"), "#345678")
+
     def test_missing_wallpaper_fallback(self):
         self.assertIsNone(frames.wallpaper_color(None, 'dark'))
         with tempfile.TemporaryDirectory() as tmp:

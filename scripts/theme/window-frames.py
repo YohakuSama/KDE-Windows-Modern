@@ -6,6 +6,7 @@ import configparser
 import json
 import os
 import re
+import runpy
 import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -217,24 +218,47 @@ def patch_window_svg(svg, active, inactive):
     return svg
 
 
-def apply_local(aurorae_dir, kvantum_dir, package=None):
-    # Prepare both variants before writing; no package or configuration edits.
-    changes = {}
+def plan_local(aurorae_dir, kvantum_dir, package, owned_file):
+    # The same Kvantum SVG carries the accent and material bindings.
+    # Reject externally managed paths and stage all outputs before writing.
+    pending = {}
+    for directory in (aurorae_dir, kvantum_dir):
+        if directory.is_symlink() or directory.parent.is_symlink():
+            raise ValueError(f"Refusing externally managed theme directory: {directory}")
     for mode, base in BASE_COLORS.items():
         active = wallpaper_color(package, mode)
         decoration = aurorae_dir / f"windows-modern-{mode}-aurorae" / "decoration.svg"
         kvantum = kvantum_dir / ("Windows-modernDark.svg" if mode == "dark" else "Windows-modern.svg")
-        if decoration.is_file():
-            changes[decoration] = render(mode, active)
-        if kvantum.is_file():
-            changes[kvantum] = patch_window_svg(kvantum.read_text(encoding="utf-8"), active or base, base)
-        print(f"{mode}: active {active or base}, inactive {base}")
-    for path, value in changes.items():
-        if path.read_text(encoding="utf-8") == value:
-            continue
-        temporary = path.with_name(path.name + ".wm-tmp")
-        temporary.write_text(value, encoding="utf-8")
-        temporary.replace(path)
+        if decoration.parent.is_symlink():
+            raise ValueError(f"Refusing externally managed decoration: {decoration.parent}")
+        if decoration.exists() or decoration.is_symlink():
+            old = owned_file(decoration).read_bytes()
+            # Only replace our generated frame. Recognize either the
+            # pristine neutral frame or an exact prior static-tint output.
+            if old != render(mode).encode("utf-8"):
+                node = ET.fromstring(old).find(".//*[@id='decoration-center']")
+                fill = node[0].get("fill") if node is not None and len(node) else None
+                if not fill or not re.fullmatch(r"#[0-9A-Fa-f]{6}", fill) or old != render(mode, fill).encode("utf-8"):
+                    raise ValueError(f"Decoration differs from the generated window frame: {decoration}")
+            new = render(mode, active).encode("utf-8")
+            if old != new:
+                pending[decoration] = (old, new)
+        if kvantum.exists() or kvantum.is_symlink():
+            old = owned_file(kvantum).read_bytes()
+            new = patch_window_svg(old.decode("utf-8"), active or base, base).encode("utf-8")
+            if old != new:
+                pending[kvantum] = (old, new)
+    return pending
+
+
+def apply_local(aurorae_dir, kvantum_dir, package=None):
+    # Reuse the accent writer's optimistic ownership/byte checks, atomic
+    # replacement and conditional rollback. The shell caller holds the
+    # existing appearance lock. No independently edited lines are lost.
+    sync = runpy.run_path(str(Path(__file__).with_name("sync-accent.py")))
+    pending = plan_local(aurorae_dir, kvantum_dir, package, sync["owned_file"])
+    sync["write_pending"](pending)
+    print(f"Window material update: {len(pending)} file(s) changed.")
 
 
 def main():
@@ -258,7 +282,10 @@ def main():
                     if args.wallpaper_config else args.wallpaper_package)
         if args.wallpaper_config and selected is None:
             print("No unambiguous local image wallpaper; using neutral window bases.")
-        apply_local(args.aurorae_dir, args.kvantum_dir, selected)
+        try:
+            apply_local(args.aurorae_dir, args.kvantum_dir, selected)
+        except (OSError, ValueError, ET.ParseError) as error:
+            parser.exit(1, f"Window material update: {error}\n")
         return
     if args.aurorae_dir or args.kvantum_dir or args.wallpaper_package or args.wallpaper_config:
         parser.error('Installed theme arguments require --apply-local')
