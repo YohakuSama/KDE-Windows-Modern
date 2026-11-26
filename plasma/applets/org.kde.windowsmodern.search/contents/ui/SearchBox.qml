@@ -82,14 +82,17 @@ MouseArea {
     Rectangle {
         id: pill
         objectName: "wmSearchPill"
-        // Wave3 dark brushes have their own original opacity. The light
-        // and focused external theme brushes remain KDE approximations.
+        // Wave3 resource references: resolve the ordinary light rest/hover
+        // and both focused fills via WinUI's common theme dictionary.
+        // Compact Search is a different template; keep its existing paint.
         readonly property bool compact: box.styleMode === 1
         readonly property color restFill: box.darkTheme
-            ? (compact ? "#292929" : Qt.rgba(1, 1, 1, 0.1435)) : "#F3F3F3"
+            ? (compact ? "#292929" : Qt.rgba(1, 1, 1, 0.1435))
+            : (compact ? "#F3F3F3" : "#B3FFFFFF")
         readonly property color hoverFill: box.darkTheme
-            ? (compact ? "#494949" : Qt.rgba(1, 1, 1, 0.1659)) : "#E5E5E5"
-        readonly property color selectedFill: compact ? "#0078D4" : (box.darkTheme ? "#202020" : "#FFFFFF")
+            ? (compact ? "#494949" : Qt.rgba(1, 1, 1, 0.1659))
+            : (compact ? "#E5E5E5" : "#80F9F9F9")
+        readonly property color selectedFill: compact ? "#0078D4" : (box.darkTheme ? "#B31E1E1E" : "#FFFFFF")
         // Inactive-pressed and all active Wave3 states share the focused brush.
         readonly property color pressedFill: compact ? (box.darkTheme ? "#353535" : "#E0E0E0") : selectedFill
         readonly property bool focusedSurface: !compact && (box.selected || box.showPressed)
@@ -114,7 +117,8 @@ MouseArea {
         border.width: width > 0 && height > 0 ? 1 : 0
         border.color: box.selected && compact ? selectedFill
             : box.darkTheme ? (focusedSurface ? Qt.rgba(1, 1, 1, 0.18)
-                : box.showHovered ? "#555555" : "#4B4B4B") : "#D5D5D5"
+                : box.showHovered ? "#555555" : "#4B4B4B")
+            : focusedSurface ? "#0F000000" : "#D5D5D5"
         Behavior on color {
             ColorAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
         }

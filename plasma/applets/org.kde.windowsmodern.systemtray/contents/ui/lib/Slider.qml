@@ -163,6 +163,8 @@ Item {
             }
 
             handle: Rectangle {
+                id: thumb
+                objectName: "wmFluentSliderThumb"
                 x: slider.leftPadding + slider.visualPosition * Math.max(0, slider.availableWidth - width)
                 y: (slider.height - height) / 2
                 width: root.thumbExtent
@@ -171,9 +173,20 @@ Item {
                 color: ColorType.sliderOuterThumbBrush(root.dark)
                 border.width: 1
                 border.color: root.dark ? "#454545" : "#D6D6D6"
+                HoverHandler {
+                    id: thumbHover
+                    enabled: slider.enabled
+                }
                 Rectangle {
+                    objectName: "wmFluentSliderInnerThumb"
                     anchors.centerIn: parent
-                    width: Math.max(6, Math.round((slider.pressed ? 10 : 12) * root.controlScale))
+                    // WinUI SliderInnerThumb state design: 12 normal,
+                    // 14 hovered/disabled, 10 pressed logical pixels.
+                    // Clamp to the existing outer handle on narrow scales.
+                    readonly property int stateExtent: !slider.enabled ? 14
+                        : slider.pressed ? 10 : thumbHover.hovered ? 14 : 12
+                    width: Math.max(0, Math.min(thumb.width - 2,
+                        Math.max(6, Math.round(stateExtent * root.controlScale))))
                     height: width
                     radius: width / 2
                     color: slider.valueBrush

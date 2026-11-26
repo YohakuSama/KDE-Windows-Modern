@@ -957,7 +957,11 @@ accents is retained. The shared QML color helper remains identical in all
 three applet packages. This maps public WinUI brush inputs, not verified
 26H2 shell-specific composited pixels; geometry, timing, focus rendering,
 high-contrast themes and runtime state parity remain separate acceptance
-items. No input, value, sizing, animation or backend logic changes.
+items. The slider now also adopts the public SliderInnerThumb design
+extents of 12 logical pixels at rest, 14 on thumb hover/disabled and 10
+when pressed, clamped inside its existing handle. Native input geometry,
+value ownership, output action and backend logic are preserved. Exact
+Windows shell template geometry and animation timing remain unverified.
 
 Reviewed Plasma widget fills are generated with KSVG's native Highlight role. All nine reviewed accent gradient stops follow that role. The five margins-highlight editor paths retain their native ButtonFocus role without the old inline blue override; their opacity and geometry are unchanged. The KDE-only analog meter and containment editor use a uniform accent instead of historical teal companion stops; the glow bar retains its opacity gradient. Their inherited-color rendering still needs desktop comparison.
 

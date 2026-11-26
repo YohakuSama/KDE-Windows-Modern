@@ -317,7 +317,16 @@ replacing its hand-painted triangles and bars. F5B0 PlaySolid and F8AE
 PauseBold are verified original-font semantic choices for the two
 states (see the [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font));
 the exact runtime AnimatedIcon state selection and animation are not
-established. No global media aliases or MPRIS commands are changed.
+established. Previous/Next now use Qt AbstractButton auto-repeat while
+Play/Pause remains a single action. The existing original template's
+IconRepeatButtonStyle reference is the basis for enabling repeat;
+the 250ms initial delay and interval are the public XAML RepeatButton
+[Delay](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.controls.primitives.repeatbutton.delay)
+and [Interval](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.controls.primitives.repeatbutton.interval)
+defaults, not measured shell-specific timings. Each invocation still
+checks the current MPRIS capability. No global media aliases or backend
+commands are changed. Exact press/release and repeat timing still needs
+side-by-side validation.
 
 The tray resources also establish four logical pixels of horizontal
 padding on several icon content templates, and 16px in the ordinary
@@ -353,10 +362,15 @@ Inactive-pressed and all three active states resolve to
 SearchBoxTextControlBackgroundFocused with the focused border brush.
 The dark idle/hover brushes contain white at opacity 0.1435 and 0.1659;
 the focused border contains white at 0.18. Apply those original inputs
-and make pressed/selected share their current focused fill. The light
-and focused external fill references and the gradient border still
-require framework theme resolution; retain the existing approximations
-for those. Custom, compact, shy-tablet and high-contrast state palettes
+and make pressed/selected share their focused fill. Resolve the light
+idle/hover and light/dark focused brush inputs via the public
+[WinUI common theme dictionary](https://github.com/microsoft/microsoft-ui-xaml/blob/main/controls/dev/CommonStyles/Common_themeresources_any.xaml):
+light #B3FFFFFF/#80F9F9F9, focused #FFFFFFFF/#B31E1E1E (light/dark);
+the light focused ControlStrokeColorDefault is #0F000000. These are
+ARGB brush inputs applied over the current taskbar surface. The ordinary
+idle/hover elevation border gradients and exact shell framework version
+still require review; preserve the existing border approximation.
+Custom, compact, shy-tablet and high-contrast state palettes
 are not inferred from the ordinary full-box states. KWin output still
 needs desktop acceptance.
 

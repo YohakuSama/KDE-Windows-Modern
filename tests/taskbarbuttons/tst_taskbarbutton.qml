@@ -197,9 +197,9 @@ Item {
         function test_fullSearchNeutralStates() {
             const box = makeBox({height: 42});
             const pill = findChild(box, "wmSearchPill");
-            compare(pill.restFill, box.darkTheme ? Qt.rgba(1, 1, 1, 0.1435) : Qt.color("#F3F3F3"));
-            if (box.darkTheme)
-                compare(pill.hoverFill, Qt.rgba(1, 1, 1, 0.1659));
+            compare(pill.restFill, box.darkTheme ? Qt.rgba(1, 1, 1, 0.1435) : Qt.color("#B3FFFFFF"));
+            compare(pill.hoverFill, box.darkTheme ? Qt.rgba(1, 1, 1, 0.1659) : Qt.color("#80F9F9F9"));
+            compare(pill.selectedFill, Qt.color(box.darkTheme ? "#B31E1E1E" : "#FFFFFF"));
             compare(pill.pressedFill, pill.selectedFill);
             box.forceHovered = true;
             tryCompare(pill, "color", pill.hoverFill);
@@ -208,6 +208,7 @@ Item {
             box.forcePressed = false;
             box.selected = true;
             tryCompare(pill, "color", pill.selectedFill);
+            tryCompare(pill.border, "color", box.darkTheme ? Qt.rgba(1, 1, 1, 0.18) : Qt.color("#0F000000"));
         }
 
         function test_originalSearchInsetsAndAnchor() {

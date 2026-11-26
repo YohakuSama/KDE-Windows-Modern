@@ -74,6 +74,35 @@ Item {
             fakeState.iconName = "audio-x-generic";
             tryCompare(card, "applicationName", "Test player");
         }
+        function test_repeatTrackControls() {
+            const previous = findChild(card, "wmMediaPrevious");
+            const next = findChild(card, "wmMediaNext");
+            const play = findChild(card, "wmMediaPlayPause");
+            const before = fakeState.previousCount;
+            fakeState.canGoPrevious = true;
+            fakeState.canGoNext = true;
+            tryCompare(previous, "enabled", true);
+            tryCompare(next, "enabled", true);
+            mousePress(previous);
+            tryVerify(() => fakeState.previousCount >= before + 2, 1800);
+            mouseRelease(previous);
+            const released = fakeState.previousCount;
+            wait(350);
+            compare(fakeState.previousCount, released);
+            fakeState.canGoNext = false;
+            tryCompare(next, "enabled", false);
+            const nextBefore = fakeState.nextCount;
+            mousePress(next);
+            wait(600);
+            mouseRelease(next);
+            compare(fakeState.nextCount, nextBefore);
+            fakeState.canGoNext = true;
+            verify(!play.autoRepeat);
+            // Other cases expect fresh counters.
+            fakeState.previousCount = 0;
+            fakeState.nextCount = 0;
+        }
+
         function test_stateAndControls() {
             verify(card.hasSession);
             compare(card.trackName, "Test track");
@@ -89,6 +118,12 @@ Item {
             compare(previous.nativeRole, "wm-media-previous-symbolic");
             compare(play.nativeRole, "wm-media-play-symbolic");
             compare(next.nativeRole, "wm-media-next-symbolic");
+            verify(previous.autoRepeat && next.autoRepeat);
+            verify(!play.autoRepeat);
+            for (const transport of [previous, next]) {
+                compare(transport.autoRepeatDelay, 250);
+                compare(transport.autoRepeatInterval, 250);
+            }
             mouseClick(previous);
             compare(fakeState.previousCount, 1);
             mouseClick(play);

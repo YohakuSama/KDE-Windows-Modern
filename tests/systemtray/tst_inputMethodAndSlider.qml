@@ -106,6 +106,30 @@ Item {
             tryCompare(track, "width", before);
         }
 
+        function test_thumbStateGeometry() {
+            const control = findChild(volume, "wmFluentSliderTrack");
+            const thumb = findChild(volume, "wmFluentSliderThumb");
+            const inner = findChild(volume, "wmFluentSliderInnerThumb");
+            verify(control && thumb && inner);
+            volume.value = 35;
+            tryCompare(control, "value", 35);
+            try {
+                mouseMove(control, Math.round(control.width * 0.9), 1);
+                tryCompare(inner, "width", 12);
+                mouseMove(thumb, thumb.width / 2, thumb.height / 2);
+                tryCompare(inner, "width", 14);
+                mousePress(thumb, thumb.width / 2, thumb.height / 2);
+                tryCompare(control, "pressed", true);
+                tryCompare(inner, "width", 10);
+                mouseRelease(thumb, thumb.width / 2, thumb.height / 2);
+                volume.trackEnabled = false;
+                tryCompare(inner, "width", 14);
+                compare(thumb.width, volume.thumbExtent);
+            } finally {
+                volume.trackEnabled = true;
+            }
+        }
+
         function test_unavailableVolumeTrackKeepsDetails() {
             const control = findChild(volume, "wmFluentSliderTrack");
             const details = findChild(volume, "wmFluentSliderDetailsSlot");

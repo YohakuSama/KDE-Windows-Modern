@@ -58,6 +58,12 @@ Rectangle {
         implicitWidth: Math.max(1, Math.round(TrayMetrics.mediaButtonExtent * card.uiScale))
         implicitHeight: implicitWidth
         padding: 0
+        // The 26H2 Previous/Next template references IconRepeatButtonStyle.
+        // Use the XAML RepeatButton defaults; no shell-specific delay or
+        // interval has been decoded. Play/Pause must never auto-repeat.
+        autoRepeat: kind === "previous" || kind === "next"
+        autoRepeatDelay: 250
+        autoRepeatInterval: 250
         display: QQC2.AbstractButton.IconOnly
         background: Rectangle {
             radius: 4
