@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Accumulate fractional slider wheel input, handle pixel gestures and coalesced detents without repeated backend updates, suppress repeated detail-key activation, and share PowerDevil's normalized brightness range with the detail page.
+
 - Open the Start menu's More recommendations in a dedicated list page, preserving the home scroll position and shared search/footer. Avoid Qt's automatic initial selection when changing views.
 - Use the original open-source Windows Terminal app artwork for terminal aliases; map tab add/close to Windows 11 Fluent glyphs and tune Konsole tab geometry while retaining native window controls.
 

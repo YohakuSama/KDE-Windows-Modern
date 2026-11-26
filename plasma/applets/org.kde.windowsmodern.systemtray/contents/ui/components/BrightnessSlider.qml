@@ -119,14 +119,18 @@ Lib.Slider {
     onPanelScreenIndexChanged: root.refreshDisplays()
 
     readonly property bool brightnessAvailable: sbControl.isBrightnessAvailable && mainScreen !== null
+        && mainScreen.maxBrightness > 0
     visible: brightnessAvailable
-    from: mainScreen ? (mainScreen.maxBrightness > 100 ? 1 : 0) : 0
+    trackEnabled: brightnessAvailable
+    // The per-display PowerDevil API already subtracts its safe minimum.
+    // Zero is the normalized lower endpoint, as in Plasma's BrightnessItem.
+    from: 0
     to: mainScreen ? mainScreen.maxBrightness : 100
     value: mainScreen ? mainScreen.brightness : 0
     stepSize: mainScreen ? Math.max(1, Math.floor(mainScreen.maxBrightness / 100)) : 1
 
     onMoved: function (v) {
-        if (mainScreen) {
+        if (brightnessAvailable) {
             sbControl.setBrightness(mainScreen.displayName, v);
         }
     }

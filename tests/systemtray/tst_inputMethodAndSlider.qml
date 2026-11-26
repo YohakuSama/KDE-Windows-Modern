@@ -176,6 +176,50 @@ Item {
             }
         }
 
+        function test_fractionalWheelAndBounds() {
+            const control = findChild(volume, "wmFluentSliderTrack");
+            volume.resetWheelInput();
+            volume.value = 35;
+            tryCompare(control, "value", 35);
+            try {
+                volume.handleWheel(0, 30, 0, 0);
+                volume.handleWheel(0, 30, 0, 0);
+                compare(volume.value, 35);
+                volume.handleWheel(0, 60, 0, 0);
+                compare(volume.value, 36);
+                volume.handleWheel(0, 240, 0, 0);
+                compare(volume.value, 38);
+                volume.handleWheel(0, -60, 0, 0);
+                volume.handleWheel(0, 120, 0, 0);
+                compare(volume.value, 39);
+                volume.handleWheel(120, 30, 0, 0);
+                compare(volume.value, 39);
+
+                const half = volume.wheelPixelThreshold / 2;
+                volume.handleWheel(0, 120, 0, half);
+                compare(volume.value, 39);
+                volume.handleWheel(0, 120, 0, half);
+                compare(volume.value, 40);
+                volume.handleWheel(0, 60, 0, 0);
+                volume.trackEnabled = false;
+                volume.handleWheel(0, 120, 0, 0);
+                compare(volume.value, 40);
+                volume.trackEnabled = true;
+                volume.handleWheel(0, 60, 0, 0);
+                compare(volume.value, 40);
+                volume.resetWheelInput();
+                volume.value = 99;
+                tryCompare(control, "value", 99);
+                volume.handleWheel(0, 360, 0, 0);
+                compare(volume.value, 100);
+                volume.handleWheel(0, -240, 0, 0);
+                compare(volume.value, 98);
+            } finally {
+                volume.trackEnabled = true;
+                volume.resetWheelInput();
+            }
+        }
+
         function test_realPointerAndWheel_data() {
             return [{tag: "brightness", row: brightness}, {tag: "volume", row: volume}];
         }

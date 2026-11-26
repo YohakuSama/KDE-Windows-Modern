@@ -61,6 +61,50 @@ Item {
 
     implicitHeight: 36
 
+    // Keep fractional wheel detents per control and per input representation.
+    // Pixel-only gestures use a provisional logical-pixel step, not DPI.
+    property real wheelRemainder: 0
+    property bool wheelUsesPixels: false
+    readonly property int wheelPixelThreshold: 40
+
+    function resetWheelInput() {
+        wheelRemainder = 0;
+        wheelUsesPixels = false;
+    }
+
+    function handleWheel(angleX, angleY, pixelX, pixelY) {
+        if (!visible || !trackEnabled || slider.pressed) return;
+        const hasPixels = pixelX !== 0 || pixelY !== 0;
+        const dx = hasPixels ? pixelX : angleX;
+        const dy = hasPixels ? pixelY : angleY;
+        if (dy === 0 || Math.abs(dx) > Math.abs(dy)) return;
+
+        if (wheelUsesPixels !== hasPixels || wheelRemainder * dy < 0)
+            resetWheelInput();
+        wheelUsesPixels = hasPixels;
+        const threshold = hasPixels ? wheelPixelThreshold : 120;
+        wheelRemainder += dy;
+        const steps = Math.trunc(wheelRemainder / threshold);
+        wheelRemainder %= threshold;
+        const before = slider.value;
+        // Native increase/decrease preserve the slider's value semantics.
+        // Stop at the bound and notify the backend only once per event.
+        for (let remaining = Math.abs(steps); remaining > 0; --remaining) {
+            const previous = slider.value;
+            if (steps > 0) slider.increase();
+            else slider.decrease();
+            if (slider.value === previous) break;
+        }
+        if (slider.value !== before) slider.moved();
+    }
+
+    onTrackEnabledChanged: resetWheelInput()
+    onVisibleChanged: if (!visible) resetWheelInput()
+    onPressedChanged: if (pressed) resetWheelInput()
+    onFromChanged: resetWheelInput()
+    onToChanged: resetWheelInput()
+    onStepSizeChanged: resetWheelInput()
+
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.RightButton | Qt.MiddleButton
@@ -241,9 +285,9 @@ Item {
             Accessible.role: Accessible.Button
             Accessible.name: root.detailsAccessibleName || i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "More")
             Accessible.onPressAction: root.arrowClicked()
-            Keys.onReturnPressed: root.arrowClicked()
-            Keys.onEnterPressed: root.arrowClicked()
-            Keys.onSpacePressed: root.arrowClicked()
+            Keys.onReturnPressed: event => { if (!event.isAutoRepeat) root.arrowClicked(); }
+            Keys.onEnterPressed: event => { if (!event.isAutoRepeat) root.arrowClicked(); }
+            Keys.onSpacePressed: event => { if (!event.isAutoRepeat) root.arrowClicked(); }
 
             Rectangle {
                 anchors.fill: parent
@@ -296,19 +340,14 @@ Item {
     }
 
     WheelHandler {
-        enabled: root.trackEnabled
+        enabled: root.trackEnabled && !slider.pressed
         target: null
         orientation: Qt.Vertical
         acceptedButtons: Qt.NoButton
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        onWheel: function (wheel) {
-            const delta = wheel.angleDelta.y;
-            const before = slider.value;
-            if (delta > 0)
-                slider.increase();
-            else if (delta < 0)
-                slider.decrease();
-            if (slider.value !== before) slider.moved();
-        }
+        activeTimeout: 0.3
+        onActiveChanged: if (!active) root.resetWheelInput()
+        onWheel: wheel => root.handleWheel(wheel.angleDelta.x, wheel.angleDelta.y,
+                                          wheel.pixelDelta.x, wheel.pixelDelta.y)
     }
 }

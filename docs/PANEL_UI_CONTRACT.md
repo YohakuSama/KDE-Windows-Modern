@@ -48,8 +48,12 @@ Current implementation values are provisional until verified on the desktop.
   output button uses the reviewed Speakers E7F5 role. Retain drag, wheel,
   keyboard and native route selection.
 - Follow the Fluent scroll control baseline: 16px input region, 2px
-  indicator, 6px expanded thumb, native attached dragging. Wheel detents
-  accumulate to 120 units; handle continuous pixel gestures correctly.
+  indicator, 6px expanded thumb, native attached dragging. Shared sliders
+  accumulate 120 angle units per detent, use pixels instead when available,
+  and emit one backend update per coalesced event. The 40-pixel gesture
+  threshold and idle reset are provisional input tuning; verify on the
+  target touchpad. Main and detail display sliders use the native normalized
+  PowerDevil zero endpoint and reject unavailable brightness backends.
 - The hidden tray grid and its popup consume one geometry plan: five
   columns, up to three visible rows, a bounded work area, and the existing
   16px scroll rail when needed. Short screens can scroll instead of

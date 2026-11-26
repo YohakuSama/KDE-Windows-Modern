@@ -50,11 +50,15 @@ Lib.Page {
                     Layout.rightMargin: 12
                     sliderAccessibleName: display.label || i18n("Display %1", display.index + 1)
                     iconSource: "brightness-high-symbolic"
+                    trackEnabled: sbControl.isBrightnessAvailable && display.maxBrightness > 0
                     from: 0
                     to: display.maxBrightness
                     value: display.brightness
                     stepSize: Math.max(1, Math.floor(display.maxBrightness / 100))
-                    onMoved: v => sbControl.setBrightness(display.displayName, v)
+                    onMoved: v => {
+                        if (sbControl.isBrightnessAvailable && display.maxBrightness > 0)
+                            sbControl.setBrightness(display.displayName, v);
+                    }
                 }
             }
         }
@@ -80,11 +84,15 @@ Lib.Page {
                     shellAccent: page.shellAccent
                     Layout.fillWidth: true
                     sliderAccessibleName: i18n("Keyboard Backlight")
+                    trackEnabled: keyboardControl.isBrightnessAvailable && keyboardControl.brightnessMax > 0
                     from: 0
                     to: keyboardControl.brightnessMax
                     value: keyboardControl.brightness
                     stepSize: 1
-                    onMoved: v => keyboardControl.brightness = v
+                    onMoved: v => {
+                        if (keyboardControl.isBrightnessAvailable && keyboardControl.brightnessMax > 0)
+                            keyboardControl.brightness = v;
+                    }
                 }
             }
         }
