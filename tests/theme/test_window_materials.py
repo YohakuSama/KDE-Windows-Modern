@@ -1341,10 +1341,32 @@ class WindowMaterialTests(unittest.TestCase):
                         image.save(path, icc_profile=profile)
                     with self.assertRaisesRegex(ValueError, "Gray ICC"):
                         sync["decode_wallpaper_bitmap"](path)
-                    with Image.new("LA", (1, 1), (128, 127)) as image:
+                    # Opaque LA must not be treated as an RGB ICC input.
+                    with Image.frombytes("LA", (512, 1),
+                                         bytes(v for code in list(range(256)) * 2
+                                               for v in (code, 255))) as image:
                         image.save(path, icc_profile=profile)
-                    with self.assertRaisesRegex(ValueError, "RGB8 image mode"):
-                        sync["decode_wallpaper_bitmap"](path)
+                    self.assertEqual(sync["decode_wallpaper_bitmap"](path),
+                                     sync["prepare_opaque_wallpaper_bitmap"](rgb * 2, 512, 1))
+                    # Exercise the composed gray/alpha candidate, including
+                    # hidden colors, fractional coverage and mixed taps.
+                    # These are shared-path invariants, not native WIC
+                    # gray-alpha measurement claims.
+                    gray_alpha = bytes(v for code in list(range(256)) * 2
+                                       for v in (code, (code * 3) % 256))
+                    converted_rgba = bytes(v for gray, alpha in zip(gray_alpha[::2], gray_alpha[1::2])
+                                           for v in (*convert(gray), alpha))
+                    with Image.frombytes("LA", (512, 1), gray_alpha) as image:
+                        image.save(path, icc_profile=profile)
+                    expected = sync["_prepare_wallpaper_bitmap"](
+                        converted_rgba, 512, 1, 4, lambda r, g, b: (r, g, b))
+                    self.assertEqual(sync["decode_wallpaper_bitmap"](path), expected)
+                    # The indexed transparency key must remain single
+                    # channel until after the ICC transform.
+                    with Image.frombytes("L", (2, 1), bytes((128, 129))) as image:
+                        image.save(path, icc_profile=profile, transparency=128)
+                    self.assertEqual(sync["decode_wallpaper_bitmap"](path),
+                                     (2, 1, bytes(4) + bytes((*reversed(convert(129)), 255))))
 
     def test_native_sampled_curve_bounds(self):
         native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))

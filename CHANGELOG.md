@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Preserve Gray ICC samples through opaque LA and GrayAlpha8 PNG preprocessing, sharing the existing alpha resampler. Add a guided manual accent reference batch for the remaining preset rows and custom boundaries; gray-alpha native comparison and independent forward LUT generation remain open.
+
 - Share Gray8 and RGB8 fixed-point execution, independently generate the reviewed v2 single-gamma gray grid and enable opaque Gray8 ICC wallpaper conversion. Add family capture comparison; independent forward RGB LUT generation remains open.
 
 - Fix Qt 6 Kvantum 1.1.9 live accent reload for the installed light and dark user themes. Refresh scheduled wallpaper selection when the desktop window changes output, visibility or device pixel ratio.

@@ -1306,3 +1306,40 @@ regression definitions cover the measured output hashes and image-mode
 boundaries; they have not been executed. No project build or CI was run.
 The forward mft2 RGB LUT still requires its independent input/grid
 normalization; the measured replay is not promoted as a general generator.
+
+## Gray-alpha composition and forward mft2 normalization boundary
+
+The independent gray grid remains hash-identical to the supplied
+reference. Decoder revision 10 now uses the same tap conversion,
+premultiplication, bilinear interpolation and Q16 reciprocal for
+GrayAlpha8 PNG as for RGBA PNG. Gray8 PNG transparency keys expand to
+LA, and opaque LA discards the fully opaque alpha channel without
+expanding the gray samples to RGB. The ICC transform runs only on
+contributing samples and never changes a gray source into RGB before
+ICC conversion. Invalid color-space/mode combinations still fail.
+This is a composed implementation from the separately measured gray
+and RGB-alpha paths, not a new Windows gray-alpha cache measurement.
+The non-PNG transparency guard remains unchanged.
+
+The two measured forward RGB mft2 controls are v2.1 color-space
+profiles with two-entry identity input/output curves and two-point
+identity or channel-permuting CLUTs. Their generated device-link
+grids have SHA-256 identities
+357FDE14468585C277429B10365386A8F7E12A90FCAFFAB53CB9E169A644E052
+and
+9A868B64B7B4D70880C338662E01CE448F66207B58AE7E09DA1F17F3644477FC.
+The grids agree exactly after the first and third input axes are
+exchanged. Offline arithmetic comparison of the identity control
+localized the remaining discrepancy to the forward LUT's input to
+the inverse sRGB matrix stage: feeding the ordinary repeated-bit
+matrix-grid words directly into that stage leaves 22,980 of 98,304
+16-bit output components different (absolute error sum 234,274,
+maximum 26). A diagnostic inference from measured axis and mixed
+points identifies a common 14-bit coordinate sequence that
+reproduces the full measured identity grid. This is not an
+independently reconstructed coordinate generator. Do not embed
+the inferred sequence or a fitted correction in the production
+decoder. The existing exact supplemental RGB receipt path and
+profile eligibility are unchanged. Further native fixed-point
+normalization analysis, rather than another collection of the same
+two controls, is required.

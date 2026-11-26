@@ -439,7 +439,24 @@ are now recorded as reference color data in the existing sync-accent.py
 module (336 RGB values total). No third-party executable code is
 imported. The default blue #0078D4 and orange #FF8C00 rows match the
 target build's independent UISettings captures in every role. The other
-46 rows are reported values, not independently captured on 26H2.
+46 rows are reported values, not independently captured on 26H2. The
+existing accent collector now offers a read-only guided manual batch
+for those 46 rows and 13 independent custom-color boundary controls.
+It verifies stable UISettings and the first seven registry RGB slots,
+requires a matching observed preset base, and separately retains the
+operator-confirmed custom input and normalized output. The two verified
+presets are not requested again by default. The owner selects colors
+in Settings; the collector does not change or restore settings.
+
+```powershell
+.\capture-windows-accent.ps1 -AccentMode Manual -ManualPaletteBatch
+```
+
+The report is saved after each selection on the Desktop as
+`windows-accent-batch-*.json`. Enter records a selection, S skips an
+unavailable input, and Q saves and stops. `-BatchColors` accepts an
+explicit subset (including custom controls); skipped inputs remain
+unverified. No batch capture has been executed yet.
 The older Windows 10 published swatch list used #0078D7; the current
 reference and our measured default use #0078D4. Do not add the older
 color as an alias or generate preset shades using the custom formula.
@@ -1513,10 +1530,12 @@ dimensions, prepares the existing 256-pixel-capped bitmap, combines
 all supplied image statistics, and then derives the normalized RGB,
 Alpha, and seven-role candidate palette. The original file is never
 modified or recompressed. Untagged images use their decoded RGB values.
-Tagged RGB images use one fixed-point RGB8 executor, with independently
-generated matrix/TRC tables or full-domain verified supplemental data.
-The former Little CMS runtime approximation is removed; unsupported ICC
-and non-RGB tagged images are explicit decoder errors. Arbitrary ICC
+Tagged RGB and Gray8 images use one fixed-point RGB8-output executor.
+RGB uses independently generated matrix/TRC tables or full-domain
+verified supplemental data. The reviewed v2 D50 single-gamma Gray8
+monitor profiles use independently generated gray grids. The former
+Little CMS runtime approximation is removed; unsupported profile and
+pixel-format combinations are explicit decoder errors. Arbitrary ICC
 and non-RGB native parity have not been established.
 
 The opt-in command accepts explicitly selected files, not an assumed
@@ -1524,13 +1543,15 @@ primary containment or wallpaper-package directory. A source with
 more than 40 million pixels, animation, unsupported pixel format,
 invalid orientation, unsupported transparency or a failed decode is an
 error, not a request to use a guessed accent. Opaque RGBA and
-indexed/gray images within the supported format contract can be
-converted to RGB. Untagged transparent PNG and transparent RGB PNG
-with a verified supplemental RGB8 table or a supported generated
-matrix/TRC transform use the same executor, premultiplied resampling
-and the measured candidate fixed-point unpremultiplication rule.
-Unsupported tagged transparency and other transparent formats remain
-outside the reviewed contract. Nonzero resized alpha is a validity
+untagged indexed/gray images within the supported format contract can
+be converted to RGB. Tagged Gray8/GrayAlpha8 images retain their
+single-channel samples until ICC conversion. Untagged transparent PNG
+and supported tagged PNG share premultiplied resampling and the
+measured candidate fixed-point unpremultiplication rule. GrayAlpha8
+and Gray8 PNG transparency keys compose the independent gray transform
+with the measured RGB-alpha path; their full Windows decode/cache
+ordering still needs native measurement. Unsupported profile families
+and non-PNG transparency remain outside the reviewed contract. Nonzero resized alpha is a validity
 marker, not a weight in the native analysis loop.
 
 ```bash
