@@ -260,13 +260,91 @@ def analyze(report, evidence):
             'mixed_count':count-n,'results':results}
 
 
+def full_rgb8_hash(tables):
+    """Hash a portable replay of every RGB8 code in the collector's order."""
+    overall = hashlib.sha256()
+    red_slices = []
+    pixels = np.empty((256 * 256, 3), dtype=np.uint8)
+    pixels[:, 1] = np.repeat(np.arange(256, dtype=np.uint8), 256)
+    pixels[:, 2] = np.tile(np.arange(256, dtype=np.uint8), 256)
+    for red in range(256):
+        pixels[:, 0] = red
+        output = execute_rgb8_tables(*tables, pixels).tobytes()
+        overall.update(output)
+        red_slices.append(sha(output))
+    return overall.hexdigest().upper(), red_slices
+
+
+def analyze_full_rgb8(report, evidence):
+    """Verify actual native full-domain WIC hashes, not two portable models."""
+    if report['schema_version'] != 2:
+        raise ValueError('Expected schema 2 full-domain measurement')
+    known = {item['source']: item['source_icc_sha256'] for item in evidence['samples']}
+    profiles = report['sources']
+    if (len(profiles) > len(known) + 4 or set(profiles) != set(report['results'])
+            or any(profiles.get(name) != digest for name, digest in known.items())):
+        raise ValueError('Unexpected full-domain source profiles')
+    for name, digest in profiles.items():
+        if (len(digest) != 64 or any(c not in '0123456789ABCDEF' for c in digest)
+                or (name not in known and name != 'custom-' + digest)):
+            raise ValueError('Invalid source profile identity')
+    baseline = dict(report, schema_version=1, sources=known,
+                    results={name: report['results'][name] for name in known})
+    result = analyze(baseline, evidence)
+    calibration, mixed = inputs()
+    pixels = rgb(calibration + mixed, 8)
+    result['full_rgb8'] = {}
+    for name, item in report['results'].items():
+        full = item['full_rgb8']
+        row = {'source_sha256': profiles[name], 'native': full}
+        result['full_rgb8'][name] = row
+        if full['status'] == 'error':
+            continue
+        if (full['status'], full['color_count'], full['order']) != ('ok', 1 << 24, 'ascending-rgb24'):
+            raise ValueError('Unexpected full-domain measurement')
+        hashes = [full['sha256'], *full['red_slice_sha256']]
+        if (len(hashes) != 257 or any(len(h) != 64 or any(c not in '0123456789ABCDEF' for c in h)
+                                      for h in hashes)):
+            raise ValueError('Invalid full-domain output hashes')
+        wic = checked(item['wic'], len(pixels) * 3)
+        if wic is None:
+            row['status'] = 'missing-calibration'
+            continue
+        entry = item['intents']['1']
+        if entry['status'] != 'ok':
+            row['status'] = 'native-transform-failed'
+            continue
+        link = checked(entry['link_profile'])
+        if link is None:
+            row['status'] = 'native-link-failed'
+            continue
+        row['device_link'] = describe_link(link)
+        try:
+            tables = read_rgb8_tables(link)
+        except ValueError as error:
+            row.update(status='unsupported-link', reason=str(error))
+            continue
+        candidate = execute_rgb8_tables(*tables, pixels)
+        row['calibration_and_mixed'] = metric(candidate, rgb(wic, 8))
+        digest, slices = full_rgb8_hash(tables)
+        different = [i for i, (a, b) in enumerate(zip(slices, full['red_slice_sha256'])) if a != b]
+        row['portable_sha256'] = digest
+        row['different_red_slices'] = different
+        row['matches_full_rgb8'] = (digest == full['sha256'] and not different
+                                   and not row['calibration_and_mixed']['different_colors'])
+        row['status'] = 'compared'
+    return result
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('report',type=Path)
     parser.add_argument('--evidence',type=Path,default=ROOT/'docs/windows11-26h2-icc-native-matches.json')
     args=parser.parse_args()
-    print(json.dumps(analyze(json.loads(args.report.read_text(encoding='utf-8-sig')),
-                             json.loads(args.evidence.read_text())),indent=2))
+    report = json.loads(args.report.read_text(encoding='utf-8-sig'))
+    evidence = json.loads(args.evidence.read_text())
+    analyze_report = analyze_full_rgb8 if report['schema_version'] == 2 else analyze
+    print(json.dumps(analyze_report(report, evidence), indent=2))
 
 
 if __name__=='__main__':

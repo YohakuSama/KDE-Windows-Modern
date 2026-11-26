@@ -178,14 +178,216 @@ def compare_native(root, report_path):
     return result
 
 
+def alpha_probe_rgba(patch_alpha):
+    """Recreate the controlled DecodeAlphaProfile pixels, not a user image."""
+    if patch_alpha not in (1, 128):
+        raise ValueError("Unexpected probe alpha")
+    red, blue, green, purple, magenta = (
+        bytes.fromhex(color) for color in ("E13030", "3030E1", "148A14", "A03CD0", "FF00FF"))
+    rows = []
+    for y in range(800):
+        if y < 281:
+            row = (red + bytes((patch_alpha,))) * 1280
+        elif 450 <= y < 610:
+            band = (y - 450) // 40
+            parts = []
+            for level in range(256):
+                alternate = (y + level) % 2
+                if band < 2:
+                    pixel = (red if band == 0 else blue) + bytes((level,))
+                elif band == 2:
+                    pixel = red + bytes((255,)) if alternate else blue + bytes((0,))
+                else:
+                    pixel = green + bytes((128,)) if alternate else purple + bytes((1,))
+                parts.append(pixel * 5)
+            row = b"".join(parts)
+        elif y >= 700:
+            row = (magenta + bytes((255,))) * 160 + (green + bytes((255,))) * 1120
+        else:
+            row = (green + bytes((255,))) * 1280
+        rows.append(row)
+    return b"".join(rows)
+
+
+def checked_alpha_buffer(entry, expected_source):
+    if ((entry["source_width"], entry["source_height"], entry["width"], entry["height"],
+         entry["order"], entry["pixel_format"], entry["interpolation_mode"])
+            != (1280, 800, 256, 256, "top-down BGRX", "32bppBGR", 1)
+            or entry["source_sha256"] != expected_source):
+        raise ValueError("Unexpected alpha capture dimensions or source identity")
+    limit = 256 * 256 * 4
+    encoded = entry["gzip_base64"]
+    if len(encoded) > 4 * ((limit + 65536 + 2) // 3):
+        raise ValueError("Oversized alpha buffer")
+    with gzip.GzipFile(fileobj=BytesIO(base64.b64decode(encoded, validate=True))) as stream:
+        data = stream.read(limit + 1)
+    if len(data) != limit or sha(data) != entry["bitmap_sha256"]:
+        raise ValueError("Alpha capture buffer failed integrity check")
+    return data
+
+
+def alpha_metrics(actual, reference):
+    return {**metrics(actual, reference),
+            "different_markers": sum(a != b for a, b in zip(actual[3::4], reference[3::4])),
+            "different_rgb_pixels": sum(actual[i:i+3] != reference[i:i+3]
+                                        for i in range(0, len(actual), 4))}
+
+
+def map_alpha_rgb(data, transform, bgr=False):
+    """Apply a candidate straight RGB transform while preserving alpha."""
+    output = bytearray(data)
+    cache = {}
+    for i in range(0, len(data), 4):
+        if not data[i+3]:
+            # Hidden RGB is not observable after premultiplication.
+            continue
+        key = data[i:i+3]
+        if key not in cache:
+            converted = bytes(transform(*(key[::-1] if bgr else key)))
+            cache[key] = converted[::-1] if bgr else converted
+        output[i:i+3] = cache[key]
+    return bytes(output)
+
+
+def alpha_palette_metrics(runtime, bitmap, capture):
+    measured = capture["native_wallpaper_color_api"]
+    argb = measured["argb"]
+    if (measured["status"] != "ok" or not measured["argb_matches_image_color"]
+            or not measured["rgb_matches_dwm_colorization"]
+            or not re.fullmatch(r"0x[0-9A-Fa-f]{8}", argb)):
+        raise ValueError("Missing verified native colorization reference")
+    roles = ("Accent", *runtime["PRESET_SHADE_ROLES"])
+    observed = {}
+    for role in roles:
+        value = capture["appearance"]["colors_argb"][role]
+        if not re.fullmatch(r"#FF[0-9A-Fa-f]{6}", value):
+            raise ValueError("Expected an opaque native shade")
+        observed[role] = "#" + value[3:].upper()
+
+    def shade_difference(candidate):
+        try:
+            palette = runtime["derive_automatic_palette"](candidate)
+        except ValueError as error:
+            return {"status": "outside-reviewed-range", "reason": str(error)}
+        return {"status": "compared", "different_roles": {
+            role: {"candidate": palette[role], "native": observed[role]}
+            for role in roles if palette[role] != observed[role]}}
+
+    # Independently compare shades from native RGB, so a decoder mismatch
+    # cannot be mistaken for a seven-role palette error.
+    result = {"native_argb": argb, "native_rgb_shades": shade_difference("#" + argb[4:])}
+    statistics = runtime["derive_weighted_wallpaper_bitmaps"](((256, 256, bitmap),))
+    if statistics is None:
+        return {**result, "status": "no-sampled-group"}
+    seed, alpha = statistics
+    candidate = runtime["normalize_weighted_wallpaper_seed"](seed)
+    predicted = f"0x{alpha:02X}{candidate[1:]}"
+    return {**result, "status": "compared", "weighted_seed": seed,
+            "candidate_argb": predicted, "matches_native_argb": predicted.upper() == argb.upper(),
+            "candidate_shades": shade_difference(candidate)}
+
+
+def compare_alpha(root, report_path, precision_path):
+    with report_path.open("rb") as stream:
+        raw = stream.read(16 * 1024 * 1024 + 1)
+    if len(raw) > 16 * 1024 * 1024:
+        raise ValueError("Oversized alpha probe report")
+    report = json.loads(raw.decode("utf-8-sig"))
+    if (report["probe_set"] != "DecodeAlphaProfile"
+            or report["baseline"]["windows_build"] != "26300.9974"
+            or not report["restoration"]["wallpaper_path_verified"]
+            or not report["restoration"]["palette_matches_baseline"]):
+        raise ValueError("Unexpected or unrestored alpha probe capture")
+    samples = {(s["image"]["icc_profile"], s["image"]["patch_alpha"]): s
+               for s in report["samples"]}
+    if len(report["samples"]) != 6 or set(samples) != {
+            (name, alpha) for name in NAMES for alpha in (1, 128)}:
+        raise ValueError("Incomplete or duplicate alpha probe set")
+    runtime = runpy.run_path(str(root / "scripts/theme/sync-accent.py"))
+    native = runpy.run_path(str(root / "scripts/theme/wallpaper-icc.py"))
+    # Read the owner's original verified precision report; do not publish
+    # or import any native data into the runtime cache.
+    bundle = native["extract_bundle"](precision_path)
+    links = {}
+    identities = {"none": None}
+    size = native["LINK_SIZE"]
+    for i, (name, digest, _) in enumerate(native["PROFILES"]):
+        links[name] = native["Rgb8Replay"](native["read_rgb8_tables"](bundle[i*size:(i+1)*size])).convert
+        identities[name] = digest
+    result = {"windows_build": report["baseline"]["windows_build"], "samples": {}}
+    for (name, alpha), sample in samples.items():
+        probe, observation = sample["image"], sample["observation"]
+        capture = observation["capture"]
+        source_hash = capture["appearance"]["source_wallpaper_sha256"]
+        boundary = observation["wic_boundary"]
+        validation = probe["pixel_validation"]
+        if ((sample["width"], sample["height"]) != (1280, 800)
+                or capture["windows_build"] != "26300.9974"
+                or not observation["registered_source_matches"]
+                or capture["appearance"]["registered_wallpaper_sha256"] != source_hash
+                or validation["icc_profile_sha256"] != identities[name]
+                or not probe["alpha_calibration"] or probe["profile_calibration"]):
+            raise ValueError("Unexpected alpha probe identity")
+        pixels = alpha_probe_rgba(alpha)
+        with Image.frombytes("RGBA", (1280, 800), pixels) as image:
+            raw_hash = sha(image.tobytes("raw", "BGRA"))
+        if (not validation["decoded_bgra_matches"]
+                or raw_hash != validation["expected_bgra_sha256"]
+                or raw_hash != validation["decoded_bgra_sha256"]
+                or raw_hash != boundary["source"]["decoded_bgra_sha256"]):
+            raise ValueError("Reconstructed alpha probe differs from native source")
+
+        def prepare(data):
+            with Image.frombytes("RGBA", (1280, 800), data) as image:
+                with image.convert("RGBa") as premultiplied:
+                    return runtime["prepare_premultiplied_wallpaper_bitmap"](
+                        premultiplied.tobytes(), 1280, 800)[2]
+
+        untagged = prepare(pixels)
+        source = checked_alpha_buffer(boundary["source"], source_hash)
+        row = {"source_preparation": alpha_metrics(untagged, source),
+               "cache_status": boundary["transcoded_status"]}
+        result["samples"][f"{name}-{alpha}"] = row
+        if boundary["transcoded_status"] != "matched-controlled-opaque-regions":
+            continue
+        cache_hash = observation["cache_observation"]["transcoded"]["sha256"]
+        reference = checked_alpha_buffer(boundary["transcoded"], cache_hash)
+        row["native_cache_analysis"] = alpha_palette_metrics(runtime, reference, capture)
+        if name == "none":
+            candidates = {"untagged": untagged}
+        else:
+            transform = links[name]
+            with Image.frombytes("RGBA", (1280, 800), pixels) as image:
+                with image.convert("RGBa") as premultiplied:
+                    with premultiplied.convert("RGBA") as restored:
+                        roundtrip = restored.tobytes()
+            candidates = {
+                "convert_then_premultiply_and_scale": prepare(map_alpha_rgb(pixels, transform)),
+                "premultiply_roundtrip_then_convert_and_scale": prepare(map_alpha_rgb(roundtrip, transform)),
+                "scale_then_convert": map_alpha_rgb(untagged, transform, bgr=True),
+            }
+        row["candidates"] = {
+            label: {"cache": alpha_metrics(bitmap, reference),
+                    "colorization": alpha_palette_metrics(runtime, bitmap, capture)}
+            for label, bitmap in candidates.items()}
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target", action="append", type=Path, default=[], help="Optional local ICC target (never bundled)")
     parser.add_argument("--native-report", type=Path, help="Compare a read-only Windows native API capture")
+    parser.add_argument("--alpha-report", type=Path, help="Compare combined alpha/profile probe caches")
+    parser.add_argument("--precision-report", type=Path, help="Original verified ICC precision report for alpha comparison")
     args = parser.parse_args()
-    if args.native_report and args.target:
-        parser.error("--native-report and --target are mutually exclusive")
-    result = compare_native(ROOT, args.native_report) if args.native_report else analyze(ROOT, args.target)
+    if args.alpha_report:
+        if not args.precision_report or args.native_report or args.target:
+            parser.error("--alpha-report requires --precision-report and excludes other modes")
+        result = compare_alpha(ROOT, args.alpha_report, args.precision_report)
+    else:
+        if args.precision_report or (args.native_report and args.target):
+            parser.error("Choose a single diagnostic mode")
+        result = compare_native(ROOT, args.native_report) if args.native_report else analyze(ROOT, args.target)
     print(json.dumps(result, indent=2))
 
 

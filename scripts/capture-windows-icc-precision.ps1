@@ -3,7 +3,9 @@
 # display settings, registry writes, administrator rights, or external DLLs.
 [CmdletBinding()]
 param(
-    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('Desktop')) 'windows-icc-precision.json')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('Desktop')) 'windows-icc-precision.json'),
+    [switch]$FullRgb8,
+    [string[]]$SourceProfile = @()
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -11,7 +13,19 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'Run this diagnostic in Windows PowerShell on the reference Windows VM.'
 }
 
-if (-not ('WindowsModern.Reference.IccPrecisionV1.Native' -as [type])) {
+if ($SourceProfile.Count -gt 4 -or ($SourceProfile.Count -gt 0 -and -not $FullRgb8)) {
+    throw 'Specify at most four local RGB profiles, with -FullRgb8.'
+}
+if ($FullRgb8) {
+    if (-not $PSBoundParameters.ContainsKey('OutputPath')) {
+        $OutputPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'windows-icc-full-rgb8.json'
+    }
+    if (Test-Path -LiteralPath $OutputPath) {
+        throw 'Full-domain report already exists. Choose a new OutputPath to preserve previous evidence.'
+    }
+}
+
+if (-not ('WindowsModern.Reference.IccPrecisionV2.Native' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
@@ -21,7 +35,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace WindowsModern.Reference.IccPrecisionV1
+namespace WindowsModern.Reference.IccPrecisionV2
 {
     [ComImport, Guid("00000120-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IWicSource
@@ -354,6 +368,47 @@ namespace WindowsModern.Reference.IccPrecisionV1
 
         public static byte[] Wic(byte[] rgb, byte[] source, byte[] destination, string formatName)
         {
+            return Wic(rgb,source,destination,formatName,(uint)(rgb.Length/3));
+        }
+
+        public static byte[] LocalRgbProfile(string path)
+        {
+            byte[] data=ReadProfile(path);
+            if (data.Length<132 || Encoding.ASCII.GetString(data,36,4)!="acsp" ||
+                Encoding.ASCII.GetString(data,16,4)!="RGB " ||
+                ((uint)data[0]<<24 | (uint)data[1]<<16 | (uint)data[2]<<8 | data[3])!=(uint)data.Length)
+                throw new InvalidDataException("Expected a complete RGB ICC profile.");
+            string kind=Encoding.ASCII.GetString(data,12,4);
+            if (kind!="scnr" && kind!="mntr" && kind!="prtr" && kind!="spac")
+                throw new InvalidDataException("Unsupported source ICC profile class.");
+            return data;
+        }
+
+        public static Dictionary<string,object> FullRgb8(byte[] source, byte[] destination)
+        {
+            // One 4096 x 4096 BGR24 bitmap. Each RGB code occurs once,
+            // in ascending packed RGB order; only its output hash leaves memory.
+            const int count=1<<24;
+            byte[] rgb=new byte[count*3];
+            for (int code=0,j=0;code<count;code++)
+            {
+                rgb[j++]=(byte)(code>>16); rgb[j++]=(byte)(code>>8); rgb[j++]=(byte)code;
+            }
+            byte[] output=Wic(rgb,source,destination,"BGR24",4096);
+            if (output.Length!=rgb.Length) throw new InvalidDataException("Unexpected full RGB8 output length.");
+            string[] redHashes=new string[256];
+            using (SHA256 sha=SHA256.Create())
+                for (int r=0;r<256;r++)
+                    redHashes[r]=BitConverter.ToString(sha.ComputeHash(output,r*256*256*3,256*256*3)).Replace("-","");
+            return new Dictionary<string,object>{{"status","ok"},{"color_count",count},
+                {"order","ascending-rgb24"},{"sha256",Hash(output)},{"red_slice_sha256",redHashes}};
+        }
+
+        private static byte[] Wic(byte[] rgb, byte[] source, byte[] destination, string formatName, uint rowWidth)
+        {
+            if (rgb.Length%3!=0 || rowWidth==0 || (uint)(rgb.Length/3)%rowWidth!=0)
+                throw new ArgumentException("Invalid WIC RGB dimensions");
+            uint rowHeight=(uint)(rgb.Length/3)/rowWidth;
             IWicFactory factory=null; IWicSource bitmap=null; IWicContext src=null,dst=null; IWicTransform transform=null;
             GCHandle inputPin=default(GCHandle), outputPin=default(GCHandle), sourcePin=default(GCHandle), destPin=default(GCHandle);
             try
@@ -367,7 +422,8 @@ namespace WindowsModern.Reference.IccPrecisionV1
                 outputPin=GCHandle.Alloc(output,GCHandleType.Pinned);
                 sourcePin=GCHandle.Alloc(source,GCHandleType.Pinned);
                 factory=(IWicFactory)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("cacaf262-9370-4615-a13b-9f5539da4c0a")));
-                factory.CreateBitmapFromMemory((uint)(rgb.Length/3),1,ref format,(uint)input.Length,
+                uint stride=checked(rowWidth*(uint)channels);
+                factory.CreateBitmapFromMemory(rowWidth,rowHeight,ref format,stride,
                     (uint)input.Length,inputPin.AddrOfPinnedObject(),out bitmap);
                 factory.CreateColorContext(out src);
                 src.InitializeFromMemory(sourcePin.AddrOfPinnedObject(),(uint)source.Length);
@@ -383,9 +439,9 @@ namespace WindowsModern.Reference.IccPrecisionV1
                 transform.Initialize(bitmap,src,dst,ref format);
                 Guid actual; uint width,height;
                 transform.GetPixelFormat(out actual); transform.GetSize(out width,out height);
-                if (actual!=format || width!=(uint)(rgb.Length/3) || height!=1)
+                if (actual!=format || width!=rowWidth || height!=rowHeight)
                     throw new InvalidDataException("Unexpected WIC output format or dimensions.");
-                transform.CopyPixels(IntPtr.Zero,(uint)output.Length,(uint)output.Length,outputPin.AddrOfPinnedObject());
+                transform.CopyPixels(IntPtr.Zero,stride,(uint)output.Length,outputPin.AddrOfPinnedObject());
                 return FromBgr(output,channels,formatName=="BGRA32");
             }
             finally
@@ -413,11 +469,19 @@ $sourceHashes = [ordered]@{
     'srgb' = '47FDA5236B74B9F11DA23C9834FAE1DBF0C0E195DEBEB22EFD147268C1CEC98C'
     'linear-srgb' = 'BC77188D9AABAF2F17730FBE0C3B3954579190954C6E273C35C33D52CFB193B6'
 }
-$nativeType = [WindowsModern.Reference.IccPrecisionV1.Native]
+$nativeType = [WindowsModern.Reference.IccPrecisionV2.Native]
 $sourceProfiles = [ordered]@{}
 foreach ($name in $sourceData.Keys) {
     [byte[]]$data = [Convert]::FromBase64String($sourceData[$name])
     if ($nativeType::Hash($data) -ne $sourceHashes[$name]) { throw 'Synthetic ICC hash mismatch.' }
+    $sourceProfiles[$name] = $data
+}
+foreach ($path in $SourceProfile) {
+    [byte[]]$data = $nativeType::LocalRgbProfile([IO.Path]::GetFullPath($path))
+    $digest = $nativeType::Hash($data)
+    if ($sourceHashes.Values -contains $digest) { continue }
+    $name = 'custom-' + $digest
+    $sourceHashes[$name] = $digest
     $sourceProfiles[$name] = $data
 }
 [byte[]]$rgb = $nativeType::CalibrationColors()
@@ -453,9 +517,13 @@ foreach ($source in $sourceProfiles.Keys) {
         $modes[[string]$intent] = $nativeType::Precision($inputRgb,$sourceProfiles[$source],$target,[uint32]$intent)
     }
     $results[$source] = [ordered]@{wic=$wic;intents=$modes}
+    if ($FullRgb8) {
+        $results[$source].full_rgb8 = try { $nativeType::FullRgb8($sourceProfiles[$source],$target) }
+            catch { [ordered]@{status='error';error=(Get-ProbeError $_)} }
+    }
 }
 $report = [ordered]@{
-    schema_version=1; windows_build=$build; calibration_count=1024; mixed_count=4096;
+    schema_version=$(if ($FullRgb8) { 2 } else { 1 }); windows_build=$build; calibration_count=1024; mixed_count=4096;
     calibration_sha256=$nativeType::Hash($rgb); input_rgb=$nativeType::Pack($inputRgb);
     sources=$sourceHashes; target_sha256=$targetHash; flags=3; results=$results
 }

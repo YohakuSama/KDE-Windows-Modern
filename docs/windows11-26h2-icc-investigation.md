@@ -535,3 +535,71 @@ snapshot, in addition to the KDE scheme hash. This follows Plasma 6.8.3's
 colorsapplicator transparent-accent copy path. Explicit wallpaper input
 and decoder identity are rechecked at publication; automatic and material
 cache entries include the local replay reference identity.
+
+## Full native RGB8-domain and combined alpha/profile diagnostics
+
+The original 5,120-color precision protocol remains available unchanged in
+schema 1. The opt-in schema 2 collection measures the WIC BGR24 transform
+over the entire RGB8 input domain (16,777,216 colors per source), in a
+4096 x 4096 synthetic image ordered by ascending packed RGB. It records
+the output SHA-256 and 256 individual red-slice hashes rather than the
+50,331,648-byte output. The registered sRGB target and reference build
+checks remain mandatory. The two original synthetic profiles are controls;
+up to four explicitly supplied local RGB ICC profiles may be included.
+Only profile identities, diagnostic transforms and output evidence are
+recorded, not the input profile bytes or their paths. Keep reports with
+native device-link payloads private. The new default output name preserves
+the earlier precision report.
+
+Run in Windows PowerShell on the reference VM:
+
+```powershell
+.\capture-windows-icc-precision.ps1 -FullRgb8
+```
+
+Optional additional RGB ICC files use the `-SourceProfile` argument.
+The existing Linux precision analyzer recognizes schema 2, preserves the
+schema 1 control comparisons, and hashes a portable relative-colorimetric
+RGB8 replay in the same order. It reports differing red slices and
+unsupported link shapes rather than silently changing the runtime
+interpolator. A hash match would establish equivalence of the two
+measured outputs for that exact source, destination, format and build;
+it would not establish independent CLUT generation or alpha handling.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-precision.py /path/to/windows-icc-full-rgb8.json
+```
+
+The existing wallpaper collector also has a combined DecodeAlphaProfile
+probe set: the two alpha levels (1 and 128), alpha gradients, and mixed
+opaque/transparent rows under each of the three existing profile controls.
+This must be collected on the single-display 1280x800 Windows reference VM
+with a static Picture background and Automatic accent mode. Use the same
+folder for the two wallpaper/accent collectors:
+
+```powershell
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet DecodeAlphaProfile -IncludeNativeWallpaperColor
+```
+
+The extended offline ICC analyzer reconstructs the six synthetic RGBA
+sources, validates the raw BGRA and analysis-buffer identities, and
+compares their observed source and transcoded cache buffers. It tests
+three candidate sequences: straight RGB conversion before premultiplication
+and scaling; a premultiplication round trip before conversion and scaling;
+and straight RGB conversion after scaling. RGB and marker differences
+are reported separately. The existing private precision report supplies
+the verified RGB8 link tables without installing them or modifying the
+source images. The analyzer compares both the complete pipeline's
+colorization and seven palette roles and the shades calculated directly
+from the observed native colorization RGB. Thus decoder differences are
+distinguished from shade-generation differences.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc.py --alpha-report /path/to/wallpaper-probes.json --precision-report /path/to/windows-icc-precision.json
+```
+
+These are reference-analysis tools only. The full-domain capture,
+combined alpha/profile results and new shade-boundary observations have
+not been collected or verified in this change. The installed decoder,
+private bundle format, cache revision and palette algorithm are unchanged.
+No approximate native conversion or inferred alpha ordering is enabled.
