@@ -737,3 +737,53 @@ have not yet been accepted or measured by Windows. Schema 2 native
 output and combined DecodeAlphaProfile evidence are still required.
 No runtime approximation, native table payload, additional runtime
 dependency or separate theme is introduced.
+
+## Measured full-domain replay and sampled RGB8 source curve
+
+The owner supplied the schema 2 full RGB8 report from Windows build
+26300.9974, SHA-256
+25D40E5C3CE78C0A3715BC38D1FC41777B60F83D2D6BAD46D3E4138BF53636CB.
+All 163 embedded binary payloads passed length and SHA-256 checks. The
+four WIC full-domain measurements are complete. A local numerical
+transcription of the existing vectorized tetrahedral replay reproduced
+all 16,777,216 RGB8 outputs per source, with identical whole-stream
+SHA-256 and all 256 red-slice hashes. All four 5,120-color calibration
+and mixed comparisons were exact. Each source's three intent links have
+byte-identical A2B0 tags (but different complete profile hashes).
+Thus the full-domain check covers four unique sets of conversion tables,
+or 67,108,864 source/color pairs, not twelve independent WIC measurements.
+All four sources also have identical CLUT and output-curve tables.
+
+The new shared gamma (563/256) input matched all 768 source entries.
+The independent-channel profile's red gamma and blue unity matched
+all 512 entries. The previous four-code anchor candidate for its
+33-point green sampled curve differed at 167 of 256 entries, with a
+maximum difference of 10 uint16 units and two mismatching RGB8 colors
+in the 5,120-input comparison using native CLUT/output tables.
+
+The observed sampled-curve result is reproduced by a separate candidate
+integer interpolation, where x is an RGB8 code, N is the ICC sample
+count and S is its uint16 sample array:
+
+    p = x * 257 * (N - 1)
+    i = p >> 16
+    f = p & 65535
+    d = ((S[i + 1] - S[i]) >> 1) << 1
+    result = S[i] + ((d * f + 32767) >> 16)
+
+This differs from the analytic four-code anchor scheme: truncate the
+slope to even integer units, interpolate in Q16 and round an exact
+half down. The 33-point control reproduces every input-curve entry,
+including x=224 (51900) and x=255 (65533). The generator now uses this
+candidate for sampled source curves and reports per-channel differences.
+Combined with the native CLUT and output curves, matching all source
+entries implies identical replay for every RGB8 input in this control.
+No additional native measurement for other sampled curve sizes or
+parametric families has established their exact CMM behavior.
+
+The report does not establish independent CLUT generation. In particular,
+using the observed native grid to isolate source curves must not be
+counted as a fully generated transform. The new sampled interpolation
+remains in the offline diagnostic, not the installed runtime. The
+owner's raw capture and device-link data remain private. Tagged alpha
+ordering still requires the separate DecodeAlphaProfile capture.
