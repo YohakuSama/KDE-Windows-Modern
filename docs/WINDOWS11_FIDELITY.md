@@ -308,32 +308,50 @@ static brush references but does not disclose the shell's wallpaper
 extraction and palette generation formulas. KDE extraction is the current
 implementation; it is not evidence of Windows-equivalent colors.
 
-For maintainer acceptance, set Personalization > Colors > Accent color to
-Automatic in the target Windows VM, select the exact wallpaper used on KDE,
-and wait for the normal Windows wallpaper transition. Read the actual
-palette in Windows PowerShell 5.1 (this only reads system settings):
-
+For maintainer acceptance, use a single display and a static picture in
+the target Windows VM. Set Personalization > Colors > Accent color to
+Automatic, select the exact original wallpaper used on KDE, and let the
+wallpaper transition finish. Run the read-only
+[accent capture script](../scripts/capture-windows-accent.ps1) from
+Windows PowerShell 5.1:
 
 ```powershell
-$build = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-$desktop = Get-ItemProperty 'HKCU:\Control Panel\Desktop'
-$ui = [Windows.UI.ViewManagement.UISettings, Windows.UI.ViewManagement, ContentType=WindowsRuntime]::new()
-$type = [Windows.UI.ViewManagement.UIColorType, Windows.UI.ViewManagement, ContentType=WindowsRuntime]
-"Build: $($build.CurrentBuildNumber).$($build.UBR)"
-"Automatic: $($desktop.AutoColorization)"
-"Wallpaper: $($desktop.WallPaper)"
-foreach ($name in 'Accent','AccentDark1','AccentDark2','AccentDark3','AccentLight1','AccentLight2','AccentLight3') {
-    $color = $ui.GetColorValue([System.Enum]::Parse($type, $name))
-    '{0}: #{1:X2}{2:X2}{3:X2}{4:X2}' -f $name,$color.A,$color.R,$color.G,$color.B
-}
+.\capture-windows-accent.ps1 -AccentMode Automatic -SourceWallpaper 'C:\path\wallpaper.jpg' |
+    Set-Content -Encoding UTF8 accent-automatic.json
 ```
 
-Repeat with the same original image, a warm image, a green image, a purple
-image, and a neutral image. Record each image hash and both appearance
-modes. Repeat with a manual accent and with the color scheme's default
-accent. Compare Windows AccentLight2 in dark mode and AccentDark1 in light
-mode against the live KDE selection role and screenshots. Do not fit a
-purported native algorithm from only the default blue example.
+The script reports the Windows build, both appearance modes, wallpaper
+placement, reported display size and all seven runtime accent colors as
+#AARRGGBB (plus foreground and background). It also hashes both the
+registry-selected wallpaper file and, when supplied, the original image.
+The two hashes may differ because Windows can transcode the wallpaper.
+The original path is operator-supplied; it is not independently proven to
+be the active image. No file paths are included in the JSON. The reported
+accent mode is the operator's selection; the raw registry value is
+recorded independently and must not be interpreted as a verified mode
+when absent or inconsistent. Two identical snapshots one second apart
+reject observed changes but cannot prove the shell has finished updating.
+Use the script only after the visible transition has settled.
+
+Capture the same original image in both modes, then repeat with warm,
+green, purple and neutral images. Keep the display and wallpaper
+placement fixed. Use a unique JSON filename for each capture. For manual
+accent references, select a known color in Windows and record the exact
+entered value, for example:
+
+```powershell
+.\capture-windows-accent.ps1 -AccentMode Manual -ManualColor '#0078D4' |
+    Set-Content -Encoding UTF8 accent-manual-blue.json
+```
+
+Repeat manual captures for several distinct hues and the default blue,
+in both light and dark modes. These independent references separate
+wallpaper-to-base-color extraction from base-to-shade generation. Compare
+Windows AccentLight2 in dark mode and AccentDark1 in light mode against
+the live KDE selection role and screenshots. Do not fit a purported
+native algorithm from only the default blue example. Record unseen images
+and manual colors separately for eventual acceptance. Until actual samples
+are available, retain KDE's own extraction and do not claim equivalence.
 
 On KDE, keep Dolphin and Konsole open during a manual accent change, a
 wallpaper change, and both dark/light switches. Verify slider, checkbox,
