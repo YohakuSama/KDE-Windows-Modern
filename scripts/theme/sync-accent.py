@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Analyze Windows-style colors and synchronize shared scheme and Kvantum roles."""
 import argparse
-import colorsys
 from fractions import Fraction
 from functools import lru_cache
 from io import BytesIO
@@ -138,10 +137,36 @@ def uses_custom_lab(channels):
             and saturation >= CUSTOM_LAB_MIN_SATURATION)
 
 
+def _mix_lab_shade(base, endpoint, percent):
+    """Mix rounded RGB endpoints and restore saturation with exact arithmetic.
+
+    The candidate's nominal decimal weights specify half-up rounding.
+    Keep this byte-domain stage separate from the floating-point LAB
+    conversion and the legacy HSL branch's truncation.
+    """
+    mixed = tuple((x * (100 - percent) + y * percent + 50) // 100
+                  for x, y in zip(base, endpoint))
+    _, base_saturation = custom_hsl_coordinates(base)
+    lightness, saturation = custom_hsl_coordinates(mixed)
+    if saturation >= base_saturation:
+        return mixed
+
+    # Scaling the chroma around the same lightness retains the mixed
+    # RGB hue. For an achromatic mix use hue zero, as colorsys did.
+    lo, hi = min(mixed), max(mixed)
+    span = hi - lo
+    positions = (tuple(Fraction(c - lo, span) for c in mixed)
+                 if span else (Fraction(1), Fraction(0), Fraction(0)))
+    chroma = (1 - abs(2 * lightness - 1)) * base_saturation
+    floor = lightness - chroma / 2
+    return tuple(int(255 * (floor + chroma * p) + Fraction(1, 2))
+                 for p in positions)
+
+
 # Candidate for the central custom-color branch, not the preset lookup
 # or the wallpaper extractor. Mathematical description:
 # https://gist.github.com/cnbluefire/7ffa04c493c57b8a67f6a8baa2c726f7
-# Use standard sRGB/D65 CIELAB conversions and Python's HLS routines.
+# Use standard sRGB/D65 CIELAB conversions and exact byte-domain HSL arithmetic.
 # Keep the original input distinct from the normalized output Accent.
 def derive_custom_lab_palette(selection):
     source = tuple(bytes.fromhex(rgb(selection)[1:]))
@@ -187,23 +212,14 @@ def derive_custom_lab_palette(selection):
 
     base = from_lab(max(49.0, min(50.0, 116 * fy - 16)))
     dark, light = from_lab(0.0), from_lab(100.0)
-    _, _, base_saturation = colorsys.rgb_to_hls(*(x / 255 for x in base))
-
-    def shade(endpoint, weight):
-        mixed = tuple(byte(x * (1 - weight) + y * weight)
-                      for x, y in zip(base, endpoint))
-        h, l, s = colorsys.rgb_to_hls(*(x / 255 for x in mixed))
-        return tuple(byte(255 * x) for x in
-                     colorsys.hls_to_rgb(h, l, max(s, base_saturation)))
-
     colors = {
         "Accent": base,
-        "AccentLight1": shade(light, 0.16),
-        "AccentLight2": shade(light, 0.58),
-        "AccentLight3": shade(light, 0.82),
-        "AccentDark1": shade(dark, 0.22),
-        "AccentDark2": shade(dark, 0.50),
-        "AccentDark3": shade(dark, 0.82),
+        "AccentLight1": _mix_lab_shade(base, light, 16),
+        "AccentLight2": _mix_lab_shade(base, light, 58),
+        "AccentLight3": _mix_lab_shade(base, light, 82),
+        "AccentDark1": _mix_lab_shade(base, dark, 22),
+        "AccentDark2": _mix_lab_shade(base, dark, 50),
+        "AccentDark3": _mix_lab_shade(base, dark, 82),
     }
     return {role: "#" + bytes(channels).hex().upper()
             for role, channels in colors.items()}
@@ -369,7 +385,7 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 # Bump when decoder/analysis semantics change; installed automatic state
 # must not reuse a palette computed by the previous decoder.
-WALLPAPER_ANALYSIS_REVISION = 3
+WALLPAPER_ANALYSIS_REVISION = 4
 
 
 @lru_cache(maxsize=1)

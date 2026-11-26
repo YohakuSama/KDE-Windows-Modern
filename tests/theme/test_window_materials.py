@@ -582,6 +582,32 @@ class WindowMaterialTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     derive(unsupported)
 
+    def test_lab_shade_byte_boundaries(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        mix = sync["_mix_lab_shade"]
+        # Formula-level checks, not new native reference observations.
+        # 25 * 58 / 100 = 14.5; binary float formerly rounded it to 14.
+        self.assertEqual(mix((0, 0, 0), (25, 25, 25), 58), (15, 15, 15))
+        # Restore saturation while preserving the mixed hue and lightness.
+        self.assertEqual(mix((200, 100, 100), (100, 200, 100), 50), (185, 185, 65))
+        # The old HLS hue-zero convention still applies to an achromatic mix.
+        self.assertEqual(mix((200, 100, 100), (100, 200, 200), 50), (200, 100, 100))
+        self.assertEqual(mix((255, 0, 0), (0, 0, 0), 100), (0, 0, 0))
+        self.assertEqual(mix((255, 0, 0), (255, 255, 255), 100), (255, 255, 255))
+        # The provisional branch thresholds remain unchanged.
+        uses_lab = sync["uses_custom_lab"]
+        self.assertFalse(uses_lab((127, 0, 0)))
+        self.assertTrue(uses_lab((128, 0, 0)))
+        self.assertTrue(uses_lab((255, 127, 127)))
+        self.assertFalse(uses_lab((255, 128, 128)))
+        below, exact, above = (137, 103, 103), (138, 102, 102), (139, 101, 101)
+        self.assertFalse(uses_lab(below))
+        self.assertTrue(uses_lab(exact))
+        self.assertTrue(uses_lab(above))
+        derive = sync["derive_automatic_palette"]
+        self.assertEqual(derive("#896767"), sync["derive_manual_palette"]("#0078D4"))
+        self.assertEqual(derive("#8A6666"), sync["derive_custom_lab_palette"]("#8A6666"))
+
     def test_custom_hsl_accent_reference(self):
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
         reference = json.loads((ROOT / "docs/windows11-26h2-accent-captures.json").read_text(
@@ -741,9 +767,11 @@ class WindowMaterialTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(sample["source_wallpaper_sha256"],
                                  sample["registered_wallpaper_sha256"])
-                self.assertGreaterEqual(sample["stable_captures"], 2)
-                self.assertTrue(sample["palette_changed_since_previous"])
-                self.assertTrue(sample["registered_wallpaper_changed_since_previous"])
+                # The archived baseline has no preceding-probe fields.
+                if name != "baseline":
+                    self.assertGreaterEqual(sample["stable_captures"], 2)
+                    self.assertTrue(sample["palette_changed_since_previous"])
+                    self.assertTrue(sample["registered_wallpaper_changed_since_previous"])
                 image_color = int(sample["image_color_dword"], 16)
                 colorization = int(sample["dwm_colorization_dword"], 16)
                 afterglow = int(sample["dwm_colorization_afterglow_dword"], 16)
@@ -753,7 +781,9 @@ class WindowMaterialTests(unittest.TestCase):
                 candidate = "#{:06X}".format(image_color & 0xFFFFFF)
                 channels = tuple(bytes.fromhex(candidate[1:]))
                 _, saturation = sync["custom_hsl_coordinates"](channels)
-                palette = sample["palette"]
+                # This compact reference stores six hex digits without '#'.
+                palette = {role: sync["rgb"]("#" + value)
+                           for role, value in sample["palette"].items()}
                 self.assertEqual(set(palette), {"Accent", *slot_roles})
                 if saturation < sync["CUSTOM_LAB_MIN_SATURATION"]:
                     self.assertEqual(derive(candidate), default)

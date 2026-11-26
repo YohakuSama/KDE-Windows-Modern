@@ -323,6 +323,8 @@ def compare_alpha(root, report_path, precision_path):
         validation = probe["pixel_validation"]
         if ((sample["width"], sample["height"]) != (1280, 800)
                 or capture["windows_build"] != "26300.9974"
+                or capture["accent_mode_registry"] != "Automatic"
+                or capture["accent_mode_registry_conflict"]
                 or not observation["registered_source_matches"]
                 or capture["appearance"]["registered_wallpaper_sha256"] != source_hash
                 or validation["icc_profile_sha256"] != identities[name]
@@ -350,9 +352,30 @@ def compare_alpha(root, report_path, precision_path):
         result["samples"][f"{name}-{alpha}"] = row
         if boundary["transcoded_status"] != "matched-controlled-opaque-regions":
             continue
-        cache_hash = observation["cache_observation"]["transcoded"]["sha256"]
+        cache = observation["cache_observation"]["transcoded"]
+        isolation = observation["isolation_reference"]
+        before = isolation["caches"]["transcoded"]
+        cache_hash = cache["sha256"]
+        baseline = report["baseline"]
+        if (cache["status"] != "ok" or before["status"] != "ok"
+                or cache_hash == before["sha256"]
+                or isolation["wallpaper_sha256"] != baseline["appearance"]["registered_wallpaper_sha256"]
+                or isolation["native_argb"] != baseline["native_wallpaper_color_api"]["argb"]):
+            raise ValueError("Transcoded cache lacks independent isolation evidence")
         reference = checked_alpha_buffer(boundary["transcoded"], cache_hash)
-        row["native_cache_analysis"] = alpha_palette_metrics(runtime, reference, capture)
+        # A settled registered source and changed cache are useful pixel
+        # evidence, but unchanged native colorization may still be stale.
+        palette_verified = (observation["stable_captures"] >= 2
+                            and observation["registered_wallpaper_changed_since_previous"]
+                            and observation["native_argb_changed_from_reference"]
+                            and capture["native_wallpaper_color_api"]["argb"] != isolation["native_argb"])
+
+        def colorization(bitmap):
+            if not palette_verified:
+                return {"status": "inconclusive-native-colorization"}
+            return alpha_palette_metrics(runtime, bitmap, capture)
+
+        row["native_cache_analysis"] = colorization(reference)
         if name == "none":
             candidates = {"untagged": untagged}
         else:
@@ -368,7 +391,7 @@ def compare_alpha(root, report_path, precision_path):
             }
         row["candidates"] = {
             label: {"cache": alpha_metrics(bitmap, reference),
-                    "colorization": alpha_palette_metrics(runtime, bitmap, capture)}
+                    "colorization": colorization(bitmap)}
             for label, bitmap in candidates.items()}
     return result
 

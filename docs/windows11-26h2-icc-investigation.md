@@ -645,3 +645,43 @@ arbitrary ICC generation, other table geometries or tagged transparency.
 The new full-domain import has not been exercised against native schema
 2 data; the added regression definition concerns receipt integrity,
 profile selection and cache invalidation, not native parity.
+
+## Deterministic seven-role shade arithmetic and alpha evidence boundaries
+
+The final byte-domain blend in the candidate CIELAB palette uses nominal
+integer percentages and half-up rounding. For example, the 58% blend of
+byte values 0 and 25 is exactly 14.5 and rounds to 15; a binary floating
+point product can fall just below the half-integer. Saturation restoration
+now scales the exact mixed RGB chroma at its unchanged HSL lightness and
+hue. If saturation is already sufficient, retain the mixed bytes rather
+than doing an unnecessary floating-point round trip. The hue-zero
+convention for achromatic mixed RGB is unchanged. The LAB conversion,
+seven weights, provisional 15% branch threshold, manual presets and
+legacy HSL branch remain unchanged.
+
+An independent numerical transcription of the old and proposed byte
+arithmetic was compared with the existing archives. Among 118 eligible
+automatic sample observations (source and registered image identities
+matched, with native API or recorded registry colorization evidence),
+114 selected the chromatic candidate branch. Together with the
+conditionally identified manual purple input, these are 115 observations
+of 46 distinct chromatic RGB inputs. Both calculations match all seven
+observed roles for those inputs. The nominal exact arithmetic resolves
+implementation-dependent half-integer errors; it is not proof of native
+Windows rounding at unmeasured boundaries. The other four automatic
+observations were outside that comparison. Existing automatic cache
+revision is incremented to 4, so the next normal sync recomputes its
+palette. The shared material cache will also be refreshed once. Saved
+explicit manual and fixed-wallpaper ramps remain selected until the
+owner explicitly reselects them.
+
+The existing regression definitions now cover representative formula
+boundaries and normalize the compact Refinement archive's RGB spelling
+before comparison. The archived baseline has no preceding-probe fields;
+only actual probe samples assert those fields. No reference fixture data
+is changed. The combined ICC/alpha analyzer separately checks changed
+cache identity and baseline isolation. It retains pixel comparisons but
+labels native colorization inconclusive when the native ARGB did not
+change or the observation was not settled. This prevents a stale palette
+from being used as evidence of conversion ordering. No new Windows
+alpha observations or exact ICC generation have been obtained.
