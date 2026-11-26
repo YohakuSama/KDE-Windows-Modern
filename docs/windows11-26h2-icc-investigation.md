@@ -422,3 +422,51 @@ Extending the Q15 output formula directly to 32 equally spaced CLUT coordinates 
 A separate 16-bit axis replay sweep evaluated 222,720 combinations of input/output coordinate scaling, fraction precision and per-stage interpolation rounding, ranking against every fourth sample of the identity green-axis sweep. The leading candidate has 3,249 differing values among all 8,193 identity green-axis samples (maximum two). It does not establish exact RGB16 interpolation, and the independently verified RGB8 tetrahedral execution is unchanged. These exploratory sweeps are not required to reproduce the committed curve and separability diagnostics.
 
 Local review: the baseline analyzer, precision, generation and engine Git blob hashes matched testing; the full analyzer diff was reviewed and Python AST parsing passed. Running the existing diagnostic on the actual matrix and PCS reports verified all 67 PCS payloads, the generated bridge curve results above, and all nine original matrix RGB8 replays. The separate existing precision diagnostic verified all six earlier 5,120-color intent replays. No runtime implementation, new dependency, build, automated project test suite, CI or main change. The complete matrix-only CLUT generation is still unresolved; the new bridge normalization must not be substituted for the verified matrix-profile TRC rules.
+
+
+## Integer fixed14 candidate, full RGB8 domain, and wallpaper colorization impact
+
+The existing generation diagnostic now reproduces the previously explored Q14-coordinate/Q14-source/Q13-PCS/Q16-inverse candidate using integer arithmetic: exact signed ICC 16.16 colorant codes, rounded integer grid coordinates, and the exact destination adjugate/determinant to construct the rounded inverse coefficients. The input/destination colorant range and inverse magnitude are bounded to keep NumPy integer products safe. This is the previous approximate model, not an identified native matrix algorithm. Its shared CLUT SHA-256 is `6D832C2353183C27AA6C5CE817DC2716D6011AF426025A6F2721A90F74CA79A7`, with the previous 61,369 differing entries, absolute error sum 508,403 and maximum 43 raw 16-bit units.
+
+With exact matching input and output curves, the tetrahedral interpolation is a convex combination of the four vertices. A maximum difference of 43 is less than the 64 raw units per output-table index, so the two replays can differ by at most one output index. The largest adjacent difference in the registered sRGB table's high bytes is three. This gives a bound of three RGB8 units for these two measured profiles, independent of the selected color. It does not bound other profiles or native paths.
+
+The optional full-domain comparison enumerates every RGB8 triple in ascending R/G/B order in 262,144-color batches, comparing the generated integer candidate against the portable replay of the captured native table. It is **not** a new native Windows capture over all RGB8 codes. The original calibration and mixed-color references still validate the replay on 5,120 observed colors per profile.
+
+| Profile | Colors compared | Different colors | Different channels | Absolute error sum | Max channel error |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| sRGB | 16,777,216 | 1,049,942 | 1,083,532 | 1,257,602 | 3 |
+| Linear sRGB | 16,777,216 | 647,452 | 659,113 | 777,581 | 3 |
+
+RGB8 error histograms (number of channel values with error 0, 1, 2, 3):
+
+- sRGB: 49,248,116 / 954,755 / 83,484 / 45,293.
+- Linear sRGB: 49,672,535 / 577,917 / 43,924 / 37,272.
+
+The sRGB full-domain replay hashes are `F6A018561FE98663E3FAD255E1A1DD8B837B874A0C7CA212315A5CCD42388EAC` (candidate) and `FD5EEB3579A1F00177FF32350870FB4AB020A76E393B8FD3A432009E0FC0D86F` (native table). The linear sRGB hashes are `609632924A84E66B3D2D6BEB7AB08CD69FA027D05FB6CC2E17C417E6DEDA3300` and `89A60E70F2990F0AC205BB194D59E8074D41A5ED92CA25DF3183F058C3964349`. For example, the candidate transforms (0,3,231) to (0,0,231) rather than (0,3,231) on sRGB, and (0,1,182) to (0,12,220) rather than (0,9,220) on linear sRGB. These counterexamples demonstrate why matching an individual wallpaper's color does not establish exact ICC conversion.
+
+The diagnostic also reconnects the CLUT comparison to the actual theme's colorization goal. It verifies all six archived DecodeProfile BGRX buffers, reconstructs both controlled opaque tagged source images, and compares the current runtime's Little CMS conversion, each independently generated CLUT candidate, and native-table replay using the existing 256x256 bitmap resampling, weighted seed and normalization functions. The two native-table replay cache hashes exactly match the archived transcoded caches.
+
+| Method | sRGB different cache pixels / max channel error | Linear sRGB different cache pixels / max channel error |
+| --- | ---: | ---: |
+| Current runtime Little CMS | 55,098 / 3 | 55,405 / 4 |
+| Direct matrix CLUT | 528 / 2 | 424 / 3 |
+| Q13 candidate | 640 / 2 | 474 / 3 |
+| Integer Q14 candidate | 369 / 1 | 322 / 1 |
+| Native-table replay | 0 / 0 | 0 / 0 |
+
+| Method | sRGB weighted seed / colorization ARGB | Linear sRGB weighted seed / colorization ARGB |
+| --- | --- | --- |
+| Recorded Windows colorization | Not measured / 0xAFD24444 | Not measured / 0xAFD44343 |
+| Current runtime Little CMS | #DC2A2A / 0xAFD44343 | #ED6464 / 0xAFD44343 |
+| Native-table replay | #DC2929 / 0xAFD24444 | #EE6464 / 0xAFD44343 |
+| Each of the three independent candidates | #DC2929 / 0xAFD24444 | #EE6464 / 0xAFD44343 |
+
+All three candidate grids reproduce the observed colorization ARGB on these two tagged synthetic wallpapers, despite differing from their cache pixels. The weighted seeds in this table are calculated by the theme, not independently reported by Windows. No arbitrary-wallpaper, independent profile-family, final shade-ramp, tagged-alpha or desktop acceptance claim follows. The full-domain counterexamples remain; do not install the candidate as an exact CMM or relax the acceptance requirement without approval.
+
+Reproduce the cache/colorization comparison using the existing generation diagnostic; add the optional full-domain flag for the 33,554,432 combined replay comparisons:
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-generation.py /path/to/windows-icc-precision.json --target /path/to/sRGB.icm --full-rgb8
+```
+
+Local review: baseline diagnostic blob hashes matched testing, the complete generation-script diff was reviewed, Python AST parsing passed, the integer CLUT metrics reproduced the previous candidate, and the full-domain enumeration and the extended cache/colorization analysis completed. The isolated research directory contains a reconstruction of the original cache report and the runtime functions relevant to these measurements, including the existing ICC conversion, weighting and normalization; the observed ARGB values were read from the exact repository archive. It is not a full repository checkout. The full-domain enumeration was run before adding the downstream cache colorization metrics; those additions were checked in a separate normal diagnostic execution. No new runtime dependencies, runtime/cache revision change, build, automated project test suite, CI or main change.
