@@ -122,8 +122,11 @@ def execute_rgb8_tables(source, grid, target, pixels):
     if pixels.ndim != 2 or pixels.shape[1] != 3 or np.any(pixels<0) or np.any(pixels>255):
         raise ValueError('Expected RGB8 pixels')
     # 16-bit curve samples -> 5-bit grid coordinate and 11-bit fraction.
-    p = (source[np.arange(3),pixels.astype(np.int64)]*31)>>5
+    values = source[np.arange(3),pixels.astype(np.int64)]
+    p = (values*31)>>5
     cell, frac = p>>11, p&2047
+    # The maximum 16-bit code selects the exact final vertex, not 2047/2048.
+    frac = np.where(values == 65535, 2048, frac)
     order = np.argsort(-frac, axis=1)
     fractions = np.take_along_axis(frac, order, axis=1)
     q = cell.copy()

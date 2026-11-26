@@ -236,3 +236,36 @@ powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\capture-windows-i
 ```
 
 Output: windows-icc-matrix.json on the Desktop. This is a focused measurement to isolate both matrix stages and low-bit coefficient sensitivity; it is not a repeat of the wallpaper capture. The PowerShell wrapper and synthetic ICC inputs have been inspected locally, but the new combinations have not been run on Windows. Python syntax compilation and the full matrix diagnostic passed using the actual supplied precision report in the isolated research checkout. Runtime revision 2, main and CI remain unchanged.
+
+
+## Controlled matrix capture results and RGB8 endpoint correction
+
+The controlled matrix probe completed on build 26300.9974. Report SHA-256: `8D746E6AD1BD358F46245612B4D824A098BF8304C664535A95B36D2C2D97B55A`. All 32 binary payloads verified (one calibration input, four synthetic profiles, nine device links, nine direct RGB8 outputs and nine native link-replay outputs). All nine ICM transforms and device links succeeded, reported CMM "Win ", and matched their native replay. The original linear-sRGB control also matched the prior RGB8 hash.
+
+The previous portable execution had three differing colors in each of the mixed-to-diagonal and mixed-delta-to-diagonal cases, all involving maximum input codes: (0,0,255), (255,0,0), and (255,0,255). With a source curve code of 65535, the ordinary coordinate calculation gives 63487 (cell 30, fraction 2047) instead of the exact final vertex. Treat that endpoint as fraction 2048 in cell 30. This correction produces exact RGB8 hashes for all nine new transforms (9,216 color evaluations) and preserves exactness for the previous two distinct 5,120-color sets and all six previous intent replays. The new diagnostic contains a synthetic endpoint regression, not a color-specific output adjustment.
+
+Matrix-specific observations:
+
+- The v2 and v4 linear source profiles with the same colorants yield identical input curves, CLUT and output curves for the registered sRGB target.
+- Changing the mixed source colorants by 1–4 signed 16.16 codes while preserving the white point changes zero of 98,304 CLUT entries when the target is the diagonal profile. Applying the same perturbation to the destination with the diagonal source changes 58,827 of 98,304 entries. Forward and inverse coefficient handling must be tested separately; the result alone does not establish a particular bit width.
+- With linear sRGB as source, both the diagonal and registered sRGB destinations yield the same inferred XYZ lattice indices at all 29,895 mutually unclipped grid nodes (89,685 channel values). Compute these indices by multiplying each native RGB grid output by its destination colorant matrix, dividing by eight and rounding to the nearest integer. This is consistent with a shared approximately Q13 PCS representation, but the intermediate indices are inferred from native RGB output, not directly captured.
+- The diagonal control has no cross-channel leakage, yet its Y-axis inferred indices at the first two nonzero grid positions are 265 and 529. Round-half-up Q14 coordinate sampling followed by flooring to Q13 yields 264 and 528; the other 30 positions match. A simple uniform quantized coordinate model is therefore insufficient.
+
+The remaining inverse-stage error can be isolated by supplying the inferred diagonal-source PCS indices to the existing approximate Q16 inverse matrix candidate. Evaluate 27,000 interior nodes for each destination:
+
+| Destination | Differing entries / 81,000 | Absolute error sum | Max raw 16-bit error |
+| --- | ---: | ---: | ---: |
+| Diagonal | 16,200 | 16,200 | 1 |
+| Registered sRGB | 20,340 | 20,613 | 2 |
+| Mixed | 31,355 | 32,701 | 2 |
+| Mixed-delta | 36,986 | 38,885 | 2 |
+
+These errors are for an inferred-input diagnostic, not an independently generated CLUT. Exploratory shared forward/inverse rounding sweeps did not find an exact model. In particular, quantizing the source coefficients to nearest Q13 or Q12 makes the mixed perturbation invariant, but the tested invariant candidate worsened the original registered-sRGB CLUT compared with the preceding fixed13 model. Do not infer the native matrix precision solely from the perturbation. No candidate is promoted to runtime. The newly tested linear destination output curve also differs from naive rounded linear sampling at 270 of 1,024 positions; the previously verified output-curve generator was scoped to the registered sampled sRGB target.
+
+Reproduce the controlled capture checks with the local, hash-matching sRGB ICC:
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-matrix-capture.py /path/to/windows-icc-matrix.json --target /path/to/sRGB.icm
+```
+
+The updated diagnostics were compiled and run locally against the actual matrix and previous precision reports, using the isolated repository reconstruction. All nine new and six previous RGB8 replays matched, the synthetic endpoint regression passed, and a tampered link hash was rejected. The new analyzer does not archive the native device-link tables or the full report. Full independent table generation, additional ICC families and tagged alpha remain unresolved. No runtime/cache revision, main or CI change.
