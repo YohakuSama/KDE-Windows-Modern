@@ -466,16 +466,18 @@ def compare_alpha(root, report_path, precision_path):
             candidates = {"untagged": untagged}
         else:
             transform = links[name]
-            converted = map_alpha_rgb(pixels, transform)
-            converted_all = map_alpha_rgb(pixels, transform, preserve_hidden=False)
+            converted_preserved = map_alpha_rgb(pixels, transform)
+            converted = map_alpha_rgb(pixels, transform, preserve_hidden=False)
             restored_converted = map_alpha_rgb(roundtrip, transform)
             frame_candidates.update(
-                straight_convert_preserve_hidden=alpha_decoded_hash(converted),
-                straight_convert_all=alpha_decoded_hash(converted_all),
+                straight_convert_preserve_hidden=alpha_decoded_hash(converted_preserved),
+                straight_convert_all=alpha_decoded_hash(converted),
                 premultiply_roundtrip_then_convert=alpha_decoded_hash(restored_converted),
                 convert_then_premultiply_roundtrip=alpha_decoded_hash(alpha_roundtrip(converted)))
             candidates = {
                 "convert_then_premultiply_and_scale": prepare(converted),
+                "runtime_tap_conversion": runtime["_prepare_wallpaper_bitmap"](
+                    pixels, 1280, 800, 4, transform)[2],
                 "premultiply_roundtrip_then_convert_and_scale": prepare(restored_converted),
                 "scale_then_convert": map_alpha_rgb(untagged, transform, bgr=True),
             }

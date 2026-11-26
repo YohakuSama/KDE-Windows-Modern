@@ -1520,11 +1520,15 @@ and non-RGB source formats have not been established.
 The opt-in command accepts explicitly selected files, not an assumed
 primary containment or wallpaper-package directory. A source with
 more than 40 million pixels, animation, unsupported pixel format,
-invalid orientation, actual transparency or a failed decode is an
+invalid orientation, unsupported transparency or a failed decode is an
 error, not a request to use a guessed accent. Opaque RGBA and
 indexed/gray images within the supported format contract can be
-converted to RGB. This keeps source-alpha handling separate from
-the native analysis bitmap's fourth-byte validity contract.
+converted to RGB. Untagged transparent PNG and transparent RGB PNG
+with a verified local RGB8 ICC replay use premultiplied resampling
+and the measured candidate fixed-point unpremultiplication rule.
+Unmeasured tagged transparency and other transparent formats remain
+unsupported. Nonzero resized alpha is a validity marker, not a
+weight in the native analysis loop.
 
 ```bash
 python3 -I scripts/theme/sync-accent.py --analyze-wallpaper /absolute/path/to/image.jpg
@@ -1540,7 +1544,8 @@ writes. It is shipped in the existing appearance script; no daemon,
 new application or independent color theme is installed. The
 original directory/mode/selection invocation remains unchanged.
 The regression definitions cover EXIF rotation, opaque RGBA,
-transparent RGB/alpha rejection, size bounds, the seven uniform
+transparent PNG gradients and mixed-alpha edges, unverified tagged and
+non-PNG transparency rejection, size bounds, the seven uniform
 reference colors as lossless files, mode-role mapping and pooled
 file analysis. They have not been executed.
 

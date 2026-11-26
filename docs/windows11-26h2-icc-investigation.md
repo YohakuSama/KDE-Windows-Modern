@@ -891,3 +891,64 @@ generation. The measured green-axis output is not a portable
 coordinate formula. No matrix approximation or tagged-alpha path
 enters the runtime in this change. The separate combined alpha
 capture is still outstanding.
+
+## DecodeAlphaProfile: measured ICC ordering and reciprocal unpremultiplication
+
+The supplied six-sample report (Windows build 26300.9974, schema 2
+DecodeAlphaProfile) has SHA-256
+7D6CD1EB2215F2EE6C2B6CE04BE17EC111FF74654ABE2A39F4755DB3E61FC245.
+All six source and six transcoded 262,144-byte buffers pass their
+recorded SHA-256 checks. All six raw reconstructed BGRA sources
+match the measured full decoded frames. Registered source, changed
+cache, native colorization and restoration evidence are present.
+
+Using the measured RGB8 tables from the earlier full-domain report,
+the four tagged full decoded cache frame hashes match exactly when
+ICC conversion is applied to straight RGB including hidden RGB at
+alpha zero, leaving alpha unchanged. Preserving hidden RGB or
+round-tripping premultiplication before conversion does not match.
+Both untagged cache frame hashes match their unchanged source.
+
+After conversion, premultiply each RGB component with
+(c * alpha + 127) // 255. The existing bilinear interpolation and
+alpha truncation reproduce every measured alpha byte. However, exact
+integer unpremultiplication (c * 255 // alpha) was one unit too high
+at some integer boundaries: 180 pixels in each untagged buffer,
+156 in each sRGB cache and 286 in each linear-sRGB cache.
+A truncated fixed-point reciprocal reproduces all the observed bytes:
+
+    reciprocal = (255 << 16) // alpha
+    component = min(255, (premultiplied_component * reciprocal) >> 16)
+
+A zero alpha remains zero RGB. Q15 and several higher precisions
+also agree on these observations; Q16 is a deterministic equivalent
+candidate, not proof of the precise native register width. For
+example, premultiplied 5 at alpha 25 returns 50 instead of 51.
+This numeric analysis used an independent array transcription of
+the existing resampling and measured replay; no repository test
+suite or desktop was run.
+
+All twelve 256x256 buffers now match in the numerical comparison,
+including both gradient bands and alternating mixed-alpha rows.
+The six native ARGB measurements all equal 0xAFD24444. The existing
+weighted statistics and normalization formulas reproduce that value
+from every measured cache buffer. The measured shade roles are
+identical for all six probes. The raw source buffers also produce
+that same normalized result, so the palette alone does not prove
+which bitmap the shell colorization API chose.
+
+The runtime uses this reciprocal for the existing transparent PNG
+path and accepts tagged transparent RGB PNG only when the private
+RGB8 replay lookup supplies a verified transform. Transform only the
+four contributing straight RGB taps, then premultiply before
+interpolation. Fully transparent taps may omit conversion because
+their contribution is zero; this optimization does not rewrite the
+source or construct a cache image. Untagged opaque decoding and
+opaque ICC fallback are unchanged. Transparent non-PNG images,
+unverified ICC profiles and non-RGB tagged transparency remain
+outside the contract. Automatic analysis revision 5 invalidates the
+old cached result; no new dependency, service or public native table
+is introduced. Regression definitions use the six observed buffer
+hashes and five observed RGB probe mappings, not the private reports.
+General independent CLUT generation and broader transparent format
+parity remain unresolved.

@@ -308,13 +308,16 @@ def _wallpaper_axis_samples(source, target):
 
 
 def _prepare_wallpaper_bitmap(pixels, width, height, channels, transform=None):
-    """Resample packed RGB or premultiplied RGBa bytes into B/G/R/marker."""
+    """Resample packed RGB, premultiplied RGBa or ICC-tagged straight RGBA.
+
+    With a measured RGB8 transform, convert contributing straight RGB
+    samples before premultiplying and interpolating. Without a transform,
+    four-channel input must already be premultiplied.
+    """
     if (any(type(n) is not int or n <= 0 for n in (width, height))
             or channels not in (3, 4)
             or not isinstance(pixels, bytes) or len(pixels) != width * height * channels):
         raise ValueError("Expected tightly packed RGB8 or premultiplied RGBa8")
-    if transform is not None and channels != 3:
-        raise ValueError("Native ICC replay requires opaque RGB8")
     w, h = min(width, WALLPAPER_ANALYSIS_LIMIT), min(height, WALLPAPER_ANALYSIS_LIMIT)
     xs = [(left * channels, right * channels, a, b)
           for left, right, a, b in _wallpaper_axis_samples(width, w)]
@@ -332,8 +335,22 @@ def _prepare_wallpaper_bitmap(pixels, width, height, channels, transform=None):
             # interpolation. Only the four contributing RGB taps are
             # transformed, not the entire full-resolution image.
             if transform is not None:
-                samples = [transform(*pixels[position:position + 3]) if weight else (0, 0, 0)
-                           for position, weight in zip(positions, weights)]
+                if channels == 4:
+                    samples = []
+                    for position, weight in zip(positions, weights):
+                        marker = pixels[position + 3]
+                        if weight and marker:
+                            converted = transform(*pixels[position:position + 3])
+                            samples.append(tuple((value * marker + 127) // 255
+                                                 for value in converted) + (marker,))
+                        else:
+                            # Hidden RGB is converted in the Windows cache,
+                            # but a zero-alpha tap contributes no premultiplied
+                            # color. Avoid needless ICC work on invisible taps.
+                            samples.append((0, 0, 0, marker))
+                else:
+                    samples = [transform(*pixels[position:position + 3]) if weight else (0, 0, 0)
+                               for position, weight in zip(positions, weights)]
 
                 def interpolate(channel):
                     return sum(sample[channel] * weight
@@ -345,12 +362,14 @@ def _prepare_wallpaper_bitmap(pixels, width, height, channels, transform=None):
 
             alpha = interpolate(3) if channels == 4 else 255
             if alpha:
+                # DecodeAlphaProfile matches a truncated fixed-point
+                # reciprocal, not exact integer division. Q16 matches
+                # all measured gradients and mixed-alpha edges.
+                reciprocal = (255 << 16) // alpha if channels == 4 else 0
                 for channel in range(3):
                     value = interpolate(channel)
                     if channels == 4:
-                        # The measured WIC RGBA scaler/converter preserves
-                        # alpha and truncates the unpremultiplied component.
-                        value = min(255, value * 255 // alpha)
+                        value = min(255, (value * reciprocal) >> 16)
                     output[offset + 2 - channel] = value
             output[offset + 3] = alpha
             offset += 4
@@ -374,7 +393,9 @@ def prepare_premultiplied_wallpaper_bitmap(pixels, width, height):
     (225,48,48,128) becoming (225,47,47,128), alpha 1 becoming
     (255,0,0,1), and alpha zero becoming (0,0,0,0). Interpolate
     premultiplied channels and alpha before undoing premultiplication.
-    Mixed-alpha interpolation edges and other formats remain unmeasured.
+    DecodeAlphaProfile additionally measures gradients and mixed-alpha
+    edges. The Q16 reciprocal candidate reproduces all six source and
+    six transcoded buffers. Other formats and geometries are not proven.
     """
     return _prepare_wallpaper_bitmap(pixels, width, height, 4)
 
@@ -385,7 +406,7 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 # Bump when decoder/analysis semantics change; installed automatic state
 # must not reuse a palette computed by the previous decoder.
-WALLPAPER_ANALYSIS_REVISION = 4
+WALLPAPER_ANALYSIS_REVISION = 5
 
 
 @lru_cache(maxsize=1)
@@ -465,7 +486,8 @@ def decode_wallpaper_bitmap(path):
     replay when available and the standard ICC transform otherwise.
     General WCS table generation remains unresolved. For untagged
     transparent PNG use Pillow's premultiplied RGBa path. Tagged
-    transparent images remain outside the reviewed contract.
+    transparent RGB PNG uses a privately imported verified RGB8 link
+    before premultiplication. Unmeasured tagged transparency is rejected.
     Do not re-encode or alter the source.
     """
     try:
@@ -498,8 +520,18 @@ def decode_wallpaper_bitmap(path):
                         rgba = image if image.mode == "RGBA" else image.convert("RGBA")
                         try:
                             if rgba.getextrema()[3] != (255, 255):
-                                if source.format != "PNG" or profile is not None:
-                                    raise ValueError("Transparent wallpaper outside the reviewed untagged PNG contract")
+                                if source.format != "PNG":
+                                    raise ValueError("Transparent wallpaper outside the reviewed PNG contract")
+                                if profile is not None:
+                                    if image.mode not in ("RGB", "RGBA", "P"):
+                                        raise ValueError("Transparent tagged PNG requires an RGB8 source")
+                                    if not isinstance(profile, bytes) or not profile:
+                                        raise ValueError("Invalid embedded wallpaper ICC profile")
+                                    transform = _native_icc_module()["transform_for_profile"](profile)
+                                    if transform is None:
+                                        raise ValueError("Transparent tagged PNG requires a verified RGB8 ICC replay")
+                                    return _prepare_wallpaper_bitmap(
+                                        rgba.tobytes(), rgba.width, rgba.height, 4, transform)
                                 with rgba.convert("RGBa") as premultiplied:
                                     return prepare_premultiplied_wallpaper_bitmap(
                                         premultiplied.tobytes(), premultiplied.width,

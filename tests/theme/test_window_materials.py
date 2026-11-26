@@ -1112,7 +1112,7 @@ class WindowMaterialTests(unittest.TestCase):
             self.assertEqual(decode(rgba), (1, 1, bytes(4)))
             with Image.new("RGBA", (1, 1), (10, 20, 30, 128)) as image:
                 image.save(rgba, icc_profile=b"unreviewed")
-            with self.assertRaisesRegex(ValueError, "untagged PNG"):
+            with self.assertRaisesRegex(ValueError, "verified RGB8 ICC replay"):
                 decode(rgba)
             with Image.new("RGBA", (1, 1), (10, 20, 30, 128)) as image:
                 webp = root / "transparent.webp"
@@ -1121,12 +1121,70 @@ class WindowMaterialTests(unittest.TestCase):
                 except OSError:
                     pass  # Pillow builds without a WebP encoder.
                 else:
-                    with self.assertRaisesRegex(ValueError, "untagged PNG"):
+                    with self.assertRaisesRegex(ValueError, "reviewed PNG contract"):
                         decode(webp)
             with self.assertRaises(ValueError):
                 decode(root)
             with self.assertRaises(ValueError):
                 decode(root / "missing.jpg")
+
+    def test_windows_icc_alpha_boundary(self):
+        try:
+            from PIL import Image, ImageCms
+        except ImportError:
+            self.skipTest("optional Pillow/ImageCms unavailable")
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        diagnostic = runpy.run_path(str(ROOT / "scripts/theme/analyze-wallpaper-icc.py"))
+        decode = sync["decode_wallpaper_bitmap"]
+        # DecodeAlphaProfile, build 26300.9974. Keep only observed hashes
+        # and the five RGB probe mappings, not the private native links.
+        source_colors = ("E13030", "3030E1", "148A14", "A03CD0", "FF00FF")
+        mappings = {
+            "none": source_colors,
+            "srgb": ("E12F2F", "2F2FE1", "138A13", "A03CD0", "FF00FF"),
+            "linear-srgb": ("F27878", "7878F2", "4FC34F", "D085EA", "FF00FF"),
+        }
+        references = {
+            "none": (
+                "B680F4F8DE0864BE46402D9BD5CB49242CDBB49DA6304202F43FA680A3648C60",
+                "8B1C73D05DF30B5F6F8E50210FEDAC0A74806E07203D3EAF9164FAC9509C76F0"),
+            "srgb": (
+                "8C14697FA78CED9ACC23931474A221FA0D8B214F393EA8DC9B26D0D8938D8201",
+                "FB33CAC0B86A24DF8C5D995C60EE99E17758D0AC3B42F961D0A4A7CBBBC9D930"),
+            "linear-srgb": (
+                "C69D82958AD2352F2E436E000B1E00B6EE199424489F7406CA3FF6E8A85A000E",
+                "75D9D57184D101C41D0FEFEEE06909516FA911125AE5AA51E39B1B2863EFD778"),
+        }
+        source_hashes = {
+            128: "2AF67953C10E628B9A2E7161FACED2D903082AE245AA64C9B91C0C8218F54701",
+            1: "E75E23430D2A0C0DCBC8AA6BBB416D297C1ABE7C44B5BDE81CFFE9E7895D8B9C",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, colors in mappings.items():
+                mapping = {bytes.fromhex(a): tuple(bytes.fromhex(b))
+                           for a, b in zip(source_colors, colors)}
+                transform = lambda r, g, b: mapping[bytes((r, g, b))]
+                # Stub only the private replay lookup; the actual decoder,
+                # pointwise conversion, resampler and reducer are exercised.
+                profile = None if name == "none" else b"synthetic-alpha-probe"
+                native = {"transform_for_profile":
+                          lambda data: transform if data == profile else None}
+                for alpha, expected in zip((128, 1), references[name]):
+                    with self.subTest(profile=name, alpha=alpha):
+                        pixels = diagnostic["alpha_probe_rgba"](alpha)
+                        self.assertEqual(diagnostic["alpha_decoded_hash"](pixels), source_hashes[alpha])
+                        path = Path(tmp) / f"{name}-{alpha}.png"
+                        with Image.frombytes("RGBA", (1280, 800), pixels) as image:
+                            image.save(path, **({"icc_profile": profile} if profile else {}))
+                        original = path.read_bytes()
+                        with patch.dict(decode.__globals__, {"_native_icc_module": lambda: native}):
+                            w, h, bitmap = decode(path)
+                        self.assertEqual((w, h), (256, 256))
+                        self.assertEqual(hashlib.sha256(bitmap).hexdigest().upper(), expected)
+                        self.assertEqual(path.read_bytes(), original)
+                        seed, marker = sync["derive_weighted_wallpaper_bitmaps"](((w, h, bitmap),))
+                        normalized = sync["normalize_weighted_wallpaper_seed"](seed)
+                        self.assertEqual(f"0x{marker:02X}{normalized[1:]}", "0xAFD24444")
 
     def test_windows_png_decoder_boundary(self):
         try:
