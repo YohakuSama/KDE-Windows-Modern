@@ -135,7 +135,8 @@ sync_mode_accent() {
 sync_renderer_accent() {
     local current_mode="$1" action="$2" python result
     shift 2
-    if [ "$action" = sync ] && [ "$(read_key kdeglobals WindowsModernAccent Palette)" = "$missing" ]; then
+    if { [ "$action" = sync ] || [ "$action" = reapply ]; } &&
+       [ "$(read_key kdeglobals WindowsModernAccent Palette)" = "$missing" ]; then
         sync_mode_accent "$current_mode"
         return $?
     fi
@@ -238,9 +239,10 @@ notify_appearance() {
 }
 apply_mode() {
     plasma-apply-colorscheme "$scheme" || return 1
-    # Apply the destination mode's accent before publishing widgetStyle.
-    # Otherwise a newly created Kvantum style loads the previous atlas.
-    sync_renderer_accent "$mode" sync >/dev/null || return 1
+    # Stage the saved destination accent before publishing widgetStyle.
+    # Automatic mode must wait for the native wallpaper's new image to
+    # load instead of sampling the previous mode's image during the switch.
+    sync_renderer_accent "$mode" reapply >/dev/null || return 1
     plasma-apply-desktoptheme "$plasma" || return 1
     local i
     for i in "${!keys[@]}"; do
@@ -267,9 +269,9 @@ if ! apply_mode; then
     # for the same reason that the normal switch stages its destination.
     case "$old_scheme:${old_values[0]}:${old_values[3]}" in
         WindowsModernDark:kvantum-dark:Windows-modern)
-            sync_renderer_accent dark sync >/dev/null || restored=false ;;
+            sync_renderer_accent dark reapply >/dev/null || restored=false ;;
         WindowsModernLight:kvantum:Windows-modern)
-            sync_renderer_accent light sync >/dev/null || restored=false ;;
+            sync_renderer_accent light reapply >/dev/null || restored=false ;;
     esac
     for i in "${!keys[@]}"; do
         write_key "${files[i]}" "${groups[i]}" "${keys[i]}" "${old_values[i]}" || restored=false
@@ -278,4 +280,7 @@ if ! apply_mode; then
     [ "$restored" = true ] || echo "Some appearance settings could not be restored; reselect the desired mode." >&2
     exit 1
 fi
+# The tray also observes subsequent native image-load notifications.
+# Request a refresh once now in case the image stayed the same.
+sync_accent sync || echo "Appearance switched; accent refresh incomplete." >&2
 printf 'Windows Modern appearance: %s\n' "$mode"

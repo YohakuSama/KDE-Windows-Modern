@@ -6,11 +6,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import runpy
 import subprocess
 import sys
-from urllib.parse import unquote, urlsplit
 import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
@@ -54,90 +52,28 @@ def native_accent():
     return wallpaper in ("true", "1"), accent
 
 
-def plasma_call(method, reply_type, *args):
+def bus_string(service, path, interface, method, *args):
     result = json.loads(subprocess.check_output(
         ["busctl", "--user", "--json=short", "--timeout=3s", "call",
-         "org.kde.plasmashell", "/PlasmaShell", "org.kde.PlasmaShell",
-         method, *args], text=True, timeout=5))
-    if (not isinstance(result, dict) or result.get("type") != reply_type
-            or not isinstance(result.get("data"), list) or len(result["data"]) != 1):
-        raise ValueError("Unexpected Plasma wallpaper API reply")
+         service, path, interface, method, *args], text=True, timeout=5))
+    if (not isinstance(result, dict) or result.get("type") != "s"
+            or not isinstance(result.get("data"), list) or len(result["data"]) != 1
+            or not isinstance(result["data"][0], str)):
+        raise ValueError("Unexpected desktop D-Bus reply")
     return result["data"][0]
 
 
-def desktop_snapshot():
-    # A fixed read-only script supplies the current activity and actual
-    # Plasma screen count. Do not infer active screens from saved containments.
-    script = "print(JSON.stringify({activity:currentActivity(),screens:screenCount}));"
-    info = json.loads(plasma_call("evaluateScript", "s", "s", script))
-    count = info["screens"]
-    if type(count) is not int or not 1 <= count <= MAX_SCREENS or not isinstance(info["activity"], str):
-        raise ValueError("Plasma desktop topology is unavailable")
-    return info
+def active_activity():
+    return bus_string("org.kde.ActivityManager", "/ActivityManager/Activities",
+                      "org.kde.ActivityManager.Activities", "CurrentActivity")
 
 
-def string_parameter(parameters, key, default=None):
-    value = parameters.get(key)
-    if value is None:
-        return default
-    if (not isinstance(value, dict) or value.get("type") != "s"
-            or not isinstance(value.get("data"), str)):
-        raise ValueError("Unexpected Plasma wallpaper parameter: " + key)
-    return value["data"]
-
-
-def package_image(package, mode, fragment):
-    if not ((package / "metadata.json").is_file() or (package / "metadata.desktop").is_file()):
-        raise ValueError("Wallpaper directory is not a recognized Plasma image package")
-    light = package / "contents/images"
-    dark = package / "contents/images_dark"
-    if not light.is_dir():
-        raise ValueError("Wallpaper package has no light image directory")
-
-    def entries(directory):
-        # Plasma's package finder considers image entries with WxH names.
-        # Keep its recognized formats in the candidate set, even if our
-        # decoder cannot read all of them; never select a different image
-        # just because it is easier for the accent algorithm to decode.
-        suffixes = {".avif", ".bmp", ".gif", ".heif", ".heic", ".jpeg", ".jpg",
-                    ".png", ".svg", ".svgz", ".tif", ".tiff", ".webp"}
-        return sorted(path for path in directory.iterdir()
-                      if path.is_file() and path.suffix.lower() in suffixes
-                      and re.fullmatch(r"[1-9]\d*x[1-9]\d*", path.stem)) if directory.is_dir() else []
-
-    # Follow the same variant policy as MediaProxy for an unambiguous
-    # single-image package. Multi-resolution ranking is not guessed.
-    light_images = entries(light)
-    if not light_images:
-        raise ValueError("Wallpaper package has no selectable light image")
-    use_dark = fragment == "dark" or (fragment == "" and mode == "dark")
-    candidates = entries(dark) if use_dark else []
-    if not candidates:
-        candidates = light_images
-    if len(candidates) != 1:
-        raise ValueError("Wallpaper package has no unambiguous selected image")
-    return candidates[0]
-
-
-def resolve_wallpaper(image, mode):
-    if not image:
-        raise ValueError("Plasma has not supplied an explicit wallpaper")
-    path = Path(image)
-    fragment = ""
-    if not path.is_absolute() or not path.exists():
-        url = urlsplit(image)
-        if url.scheme != "file" or url.netloc not in ("", "localhost") or url.query:
-            raise ValueError("Only local file wallpapers are supported")
-        path = Path(unquote(url.path, errors="strict"))
-        fragment = url.fragment
-    if not path.is_absolute() or fragment not in ("", "light", "dark"):
-        raise ValueError("Wallpaper selection is not a supported static image")
-    if path.is_dir():
-        path = package_image(path, mode, fragment)
-    path = path.resolve(strict=True)
-    if not path.is_file():
-        raise ValueError("Wallpaper image is unavailable")
-    return path
+def live_wallpaper_snapshot(activity):
+    # The tray bridge reads the committed, loaded image from the native
+    # Plasma 6.8 ImageStackView. No package ranking or DPI guess is needed.
+    return json.loads(bus_string(
+        "org.kde.plasmashell", "/WindowsModernWallpaper",
+        "org.kde.WindowsModern.Wallpaper", "snapshot", "s", activity))
 
 
 def wallpaper_fingerprint(path):
@@ -146,32 +82,44 @@ def wallpaper_fingerprint(path):
             "size": info.st_size, "mtime_ns": info.st_mtime_ns, "ctime_ns": info.st_ctime_ns}
 
 
-def discover_wallpapers(mode):
-    desktop = desktop_snapshot()
+def discover_wallpapers():
+    activity = active_activity()
+    snapshot = live_wallpaper_snapshot(activity)
+    if not isinstance(snapshot, dict):
+        raise ValueError("Invalid live wallpaper snapshot")
+    if "error" in snapshot:
+        raise ValueError(str(snapshot["error"]))
+    count = snapshot.get("screens")
+    images = snapshot.get("images")
+    if (type(count) is not int or not 1 <= count <= MAX_SCREENS
+            or not isinstance(images, list) or len(images) != count):
+        raise ValueError("Incomplete live wallpaper snapshot")
     wallpapers = []
-    for screen in range(desktop["screens"]):
-        parameters = plasma_call("wallpaper", "a{sv}", "u", str(screen))
-        if not isinstance(parameters, dict) or string_parameter(parameters, "wallpaperPlugin") != "org.kde.image":
-            raise ValueError(f"Screen {screen} has no supported static image wallpaper")
-        if string_parameter(parameters, "PreviewImage", "null") not in ("", "null"):
-            raise ValueError(f"Screen {screen} is previewing a wallpaper")
-        image = resolve_wallpaper(string_parameter(parameters, "Image"), mode)
-        # Retain screen multiplicity: identical images on two displays
-        # contribute twice, while disconnected screens contribute nothing.
-        wallpapers.append(wallpaper_fingerprint(image))
-    if desktop != desktop_snapshot():
-        raise ValueError("Desktop topology changed during wallpaper discovery")
-    return {"activity": desktop["activity"], "wallpapers": wallpapers}
+    for screen, image in enumerate(images):
+        if (not isinstance(image, dict) or type(image.get("screen")) is not int
+                or image["screen"] != screen or not isinstance(image.get("path"), str)):
+            raise ValueError("Invalid or duplicate live wallpaper screen")
+        path = Path(image["path"])
+        if not path.is_absolute():
+            raise ValueError("Expected a local absolute wallpaper image path")
+        path = path.resolve(strict=True)
+        if not path.is_file():
+            raise ValueError("Wallpaper image is unavailable")
+        # Preserve one occurrence per active screen, even for identical paths.
+        wallpapers.append(wallpaper_fingerprint(path))
+    if activity != active_activity():
+        raise ValueError("Desktop activity changed during wallpaper discovery")
+    return {"activity": activity, "wallpapers": wallpapers}
 
 
-def automatic_state(mode, previous):
-    snapshot = discover_wallpapers(mode)
+def automatic_state(previous):
+    snapshot = discover_wallpapers()
     if previous and previous["source"] == "automatic" and all(
             previous.get(key) == value for key, value in snapshot.items()):
         return previous
     palette = SYNC["analyze_wallpapers"](
         [Path(image["path"]) for image in snapshot["wallpapers"]])["palette"]
-    if snapshot != discover_wallpapers(mode):
+    if snapshot != discover_wallpapers():
         raise ValueError("Desktop wallpaper changed during color analysis")
     return {"schema_version": 1, "source": "automatic", "palette": palette, **snapshot}
 
@@ -282,7 +230,7 @@ def synchronize(mode, action, inputs):
         raise ValueError("Select the active Windows Modern appearance first")
     raw = read(GROUP, KEY)
     previous = decode_state(raw)
-    if action in ("sync", "native") and previous is None:
+    if action in ("sync", "reapply", "native") and previous is None:
         return None
     native = native_accent()
     if action in ("manual", "wallpaper", "automatic"):
@@ -295,7 +243,7 @@ def synchronize(mode, action, inputs):
         elif action == "wallpaper":
             state["palette"] = SYNC["analyze_wallpapers"]([Path(path) for path in inputs])["palette"]
         else:
-            state = automatic_state(mode, json.loads(raw) if raw is not None else None)
+            state = automatic_state(json.loads(raw) if raw is not None else None)
         desired_raw = json.dumps(state, separators=(",", ":"), sort_keys=True)
         desired = decode_state(desired_raw)
     elif action == "native" or any(native):
@@ -304,9 +252,9 @@ def synchronize(mode, action, inputs):
     else:
         desired_raw, desired = raw, previous
         state = json.loads(raw)
-        if state["source"] == "automatic":
+        if action == "sync" and state["source"] == "automatic":
             try:
-                updated = automatic_state(mode, state)
+                updated = automatic_state(state)
                 candidate_raw = json.dumps(updated, separators=(",", ":"), sort_keys=True)
                 desired_raw, desired = candidate_raw, decode_state(candidate_raw)
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
@@ -387,12 +335,12 @@ def synchronize(mode, action, inputs):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=MODES)
-    parser.add_argument("action", choices=("sync", "manual", "wallpaper", "automatic", "native"))
+    parser.add_argument("action", choices=("sync", "reapply", "manual", "wallpaper", "automatic", "native"))
     parser.add_argument("inputs", nargs="*")
     args = parser.parse_args()
     if ((args.action == "manual" and len(args.inputs) != 1)
             or (args.action == "wallpaper" and not args.inputs)
-            or (args.action in ("sync", "automatic", "native") and args.inputs)):
+            or (args.action in ("sync", "reapply", "automatic", "native") and args.inputs)):
         parser.error("manual requires one RGB value; wallpaper requires one or more image paths")
     if os.geteuid() == 0:
         parser.error("Run accent control as the desktop user")

@@ -36,12 +36,14 @@
 #include <QRegion>
 #include <QMetaMethod>
 #include <QMetaObject>
+#include <QMetaProperty>
 #include <QPointer>
 #include <QQueue>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QScreen>
 #include <QTimer>
+#include <QVariant>
 
 #include <Plasma/Applet>
 #include <Plasma/Corona>
@@ -65,6 +67,225 @@
 #include <KWindowEffects>
 
 using namespace Qt::StringLiterals;
+
+// Read-only, shell-local adapter for Plasma 6.8's native image wallpaper.
+// Its QML property contract is checked at runtime. An unknown plugin,
+// incomplete load, preview or non-file provider must fail closed.
+class WallpaperAccentSource final : public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.kde.WindowsModern.Wallpaper")
+public:
+    explicit WallpaperAccentSource(Plasma::Corona *shell)
+        : QObject(shell), m_shell(shell)
+    {
+        setObjectName(u"windowsModernWallpaperAccentSource"_s);
+        connect(shell, &Plasma::Corona::containmentAdded, this, &WallpaperAccentSource::refresh, Qt::QueuedConnection);
+        connect(shell, &Plasma::Corona::configSynced, this, &WallpaperAccentSource::refresh);
+        refreshConnections();
+    }
+
+    static WallpaperAccentSource *forShell(Plasma::Corona *shell)
+    {
+        if (auto *existing = shell->findChild<WallpaperAccentSource *>(
+                u"windowsModernWallpaperAccentSource"_s, Qt::FindDirectChildrenOnly)) {
+            return existing;
+        }
+        auto *source = new WallpaperAccentSource(shell);
+        if (!QDBusConnection::sessionBus().registerObject(
+                u"/WindowsModernWallpaper"_s, source, QDBusConnection::ExportScriptableSlots)) {
+            delete source;
+            return nullptr;
+        }
+        return source;
+    }
+
+public Q_SLOTS:
+    Q_SCRIPTABLE QString snapshot(const QString &activity)
+    {
+        refreshConnections();
+        const uint count = m_shell->numScreens();
+        if (count == 0 || count > 16) {
+            return failure(u"Desktop screen count is unavailable"_s);
+        }
+        const bool noActivity = activity.isEmpty()
+            || activity == u"00000000-0000-0000-0000-000000000000";
+        QHash<uint, Plasma::Containment *> desktops;
+        for (auto *containment : m_shell->containments()) {
+            if (!isDesktop(containment) || containment->screen() >= count) {
+                continue;
+            }
+            const auto id = containment->activity();
+            if (!id.isEmpty() && (noActivity
+                    ? id != u"00000000-0000-0000-0000-000000000000"
+                    : id != activity)) {
+                continue;
+            }
+            auto *root = wallpaperRoot(containment);
+            if (!root || !root->isVisible() || !root->window() || !root->window()->isVisible()) {
+                continue;
+            }
+            if (desktops.contains(containment->screen())) {
+                return failure(u"Ambiguous active desktop wallpaper"_s);
+            }
+            desktops.insert(containment->screen(), containment);
+        }
+        QJsonArray images;
+        for (uint screen = 0; screen < count; ++screen) {
+            auto *desktop = desktops.value(screen, nullptr);
+            if (!desktop) {
+                return failure(u"Active wallpaper is not ready on screen %1"_s.arg(screen));
+            }
+            const auto plugin = desktop->wallpaperPlugin();
+            if (plugin != u"org.kde.image" && plugin != u"org.kde.slideshow") {
+                return failure(u"Unsupported wallpaper plugin on screen %1"_s.arg(screen));
+            }
+            auto *root = wallpaperRoot(desktop);
+            auto *config = root->property("configuration").value<QObject *>();
+            const auto loading = root->property("loading");
+            if (!config || !loading.isValid() || loading.toBool()) {
+                return failure(u"Wallpaper is loading on screen %1"_s.arg(screen));
+            }
+            // The image plugin has PreviewImage; the native slideshow
+            // plugin intentionally has no such config entry and does not
+            // use the preview source in its rendering branch.
+            if (plugin == u"org.kde.image") {
+                const auto preview = config->property("PreviewImage");
+                if (!preview.isValid() || (!preview.toString().isEmpty() && preview.toString() != u"null")) {
+                    return failure(u"Wallpaper preview or unknown configuration on screen %1"_s.arg(screen));
+                }
+            }
+            auto *stack = imageStack(root);
+            if (!stack || stack->property("pendingImage").value<QObject *>()) {
+                return failure(u"Wallpaper image is not settled on screen %1"_s.arg(screen));
+            }
+            auto *current = stack->property("currentItem").value<QObject *>();
+            auto *proxy = stack->property("mediaProxy").value<QObject *>();
+            // Plasma deliberately blocks the modelImage notify signal on
+            // theme changes. Read MediaProxy directly, as loadImage does,
+            // rather than the potentially stale QML binding on the stack.
+            const auto selected = proxy->property("modelImage").toUrl();
+            // Image.Ready and TransientImage.Ready are both 1. Require the
+            // loaded component to agree with the actual native selection.
+            if (!current || current->property("status").toInt() != 1
+                || current->property("source").toUrl() != selected) {
+                return failure(u"Wallpaper selection is changing on screen %1"_s.arg(screen));
+            }
+            if (!selected.isLocalFile() || (!selected.host().isEmpty() && selected.host() != u"localhost")
+                || selected.fragment() == u"day-night") {
+                return failure(u"Wallpaper is not a supported local still image on screen %1"_s.arg(screen));
+            }
+            const QFileInfo file(selected.toLocalFile());
+            if (!file.isAbsolute() || !file.isFile()) {
+                return failure(u"Selected wallpaper file is unavailable on screen %1"_s.arg(screen));
+            }
+            images.append(QJsonObject{{u"screen"_s, int(screen)}, {u"path"_s, file.absoluteFilePath()}});
+        }
+        return json(QJsonObject{{u"screens"_s, int(count)}, {u"images"_s, images}});
+    }
+
+Q_SIGNALS:
+    void changed();
+
+private:
+    static bool isDesktop(Plasma::Containment *containment)
+    {
+        const auto type = containment->containmentType();
+        return type == Plasma::Containment::Desktop || type == Plasma::Containment::Custom
+            || type == Plasma::Containment::NoContainment;
+    }
+
+    static QQuickItem *wallpaperRoot(Plasma::Containment *containment)
+    {
+        return qobject_cast<QQuickItem *>(containment->property("wallpaperGraphicsObject").value<QObject *>());
+    }
+
+    static QQuickItem *imageStack(QQuickItem *root)
+    {
+        if (!root) {
+            return nullptr;
+        }
+        QQuickItem *result = nullptr;
+        for (auto *child : root->childItems()) {
+            if (child->property("wallpaperInterface").value<QObject *>() != root
+                || !child->property("mediaProxy").value<QObject *>()
+                || !child->property("modelImage").isValid()
+                || child->metaObject()->indexOfProperty("currentItem") < 0
+                || child->metaObject()->indexOfProperty("pendingImage") < 0) {
+                continue;
+            }
+            if (result) {
+                return nullptr;
+            }
+            result = child;
+        }
+        return result;
+    }
+
+    void observe(QObject *object, const char *name)
+    {
+        if (!object) {
+            return;
+        }
+        const auto *meta = object->metaObject();
+        const int index = meta->indexOfProperty(name);
+        if (index >= 0 && meta->property(index).hasNotifySignal()) {
+            QObject::connect(object, meta->property(index).notifySignal(), this,
+                             QMetaMethod::fromSignal(&WallpaperAccentSource::changed), Qt::UniqueConnection);
+        }
+    }
+
+    void refreshConnections()
+    {
+        for (auto *desktop : m_shell->containments()) {
+            if (!isDesktop(desktop)) {
+                continue;
+            }
+            connect(desktop, &Plasma::Containment::wallpaperGraphicsObjectChanged,
+                    this, &WallpaperAccentSource::refresh,
+                    Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
+            connect(desktop, &Plasma::Containment::screenChanged,
+                    this, &WallpaperAccentSource::changed, Qt::UniqueConnection);
+            auto *root = wallpaperRoot(desktop);
+            if (!root) {
+                continue;
+            }
+            connect(root, &QQuickItem::childrenChanged, this, &WallpaperAccentSource::refresh,
+                    Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
+            observe(root, "loading");
+            observe(root, "accentColor");
+            observe(root, "visible");
+            auto *stack = imageStack(root);
+            observe(stack, "modelImage");
+            observe(stack, "currentItem");
+            observe(stack, "pendingImage");
+            if (stack) {
+                observe(stack->property("mediaProxy").value<QObject *>(), "modelImage");
+                // Re-arm after replacement. TransientImage can enter
+                // Loading again during resize, then become Ready later.
+                observe(stack->property("currentItem").value<QObject *>(), "status");
+            }
+        }
+    }
+
+    void refresh()
+    {
+        refreshConnections();
+        Q_EMIT changed();
+    }
+
+    static QString json(const QJsonObject &value)
+    {
+        return QString::fromUtf8(QJsonDocument(value).toJson(QJsonDocument::Compact));
+    }
+
+    static QString failure(const QString &message)
+    {
+        return json(QJsonObject{{u"error"_s, message}});
+    }
+
+    Plasma::Corona *const m_shell;
+};
 
 SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args)
     : Plasma::Containment(parent, data, args)
@@ -358,6 +579,11 @@ void SystemTray::init()
     // Wallpaper changes through the shell API and ordinary desktop config
     // saves both reach this path, as do activity and screen changes.
     if (auto *shell = corona()) {
+        if (auto *source = WallpaperAccentSource::forShell(shell)) {
+            connect(source, &WallpaperAccentSource::changed, this, &SystemTray::scheduleWallpaperAccentSync);
+        } else {
+            qWarning("Windows Modern: could not register live wallpaper source");
+        }
         connect(shell, &Plasma::Corona::configSynced, this, &SystemTray::scheduleWallpaperAccentSync);
         connect(shell, &Plasma::Corona::screenAdded, this, &SystemTray::scheduleWallpaperAccentSync);
         connect(shell, &Plasma::Corona::screenRemoved, this, &SystemTray::scheduleWallpaperAccentSync);
