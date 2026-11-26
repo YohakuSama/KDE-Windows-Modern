@@ -20,7 +20,7 @@ WM_BACKUP_KEEP=5
 
 # Everything the installer or plasma-apply-lookandfeel may write.
 WM_BACKUP_CONFIG=(
-    kdeglobals kdedefaults kwinrc kscreenlockerrc plasmarc plasmashellrc
+    kdeglobals kdedefaults kwinrc kscreenlockerrc plasmarc plasmashellrc kcmicons
     plasma-org.kde.plasma.desktop-appletsrc kcminputrc ksplashrc
     kglobalshortcutsrc Kvantum/kvantum.kvconfig gtk-3.0/settings.ini
     gtk-4.0/settings.ini xsettingsd/xsettingsd.conf mimeapps.list

@@ -135,9 +135,10 @@ def plan(root, state, profile):
     packages(root / "aurorae", DATA / "aurorae/themes")
     packages(root / "color-schemes", DATA / "color-schemes")
     packages(root / "Kvantum", CONFIG / "Kvantum")
-    for kind, dest in (("desktoptheme", "plasma/desktoptheme"),
-                       ("layout-templates", "plasma/layout-templates"),
-                       ("look-and-feel", "plasma/look-and-feel"),
+    appearance = state / "staged-appearance"
+    packages(appearance / "desktoptheme", DATA / "plasma/desktoptheme")
+    packages(appearance / "look-and-feel", DATA / "plasma/look-and-feel")
+    for kind, dest in (("layout-templates", "plasma/layout-templates"),
                        ("windowswitcher", "kwin/tabbox"),
                        ("kwinscripts", "kwin/scripts")):
         packages(root / "plasma" / kind, DATA / dest)
@@ -246,6 +247,10 @@ def restore(backup):
                 pass
 
 def make_staging(root, state):
+    appearance = state / "staged-appearance"
+    remove(appearance)
+    subprocess.run([sys.executable, str(root / "scripts/theme/appearance-packages.py"),
+                    str(appearance)], check=True)
     native = state / "native"
     icons = state / "staged-icons"
     remove(icons)
@@ -309,8 +314,14 @@ def compiled_overrides():
     return [DATA / "plasma/plasmoids" / name for name in COMPILED_IDS]
 
 
+def retired_global_themes():
+    # This exact legacy package is no longer installed separately. Keep its
+    # original contents in the existing NixOS backup/rollback transaction.
+    return [DATA / "plasma/look-and-feel/org.kde.windowsmodern.light"]
+
+
 def all_targets(mapping):
-    return list(mapping) + compiled_overrides() + [CONFIG / name for name in CONFIG_NAMES] + [
+    return list(mapping) + compiled_overrides() + retired_global_themes() + [CONFIG / name for name in CONFIG_NAMES] + [
         DATA / "kxmlgui5/dolphin/dolphinui.rc",
         DATA / "kxmlgui5/konsole/konsoleui.rc",
         DATA / "kxmlgui5/konsole/sessionui.rc",
@@ -368,9 +379,21 @@ def main():
     parser.add_argument("--state", type=Path, required=True)
     parser.add_argument("--profile", type=Path, required=True)
     parser.add_argument("--upgrade-backup", type=Path)
+    parser.add_argument("--before-materials", action="store_true",
+                        help="verify complete staged desktop themes before local material overrides")
     args = parser.parse_args()
     if args.action == "verify-sources":
         verify_sources(args.root)
+        appearance = args.state / "staged-appearance"
+        # Desktop-theme SVGs are intentionally overridden later when
+        # transparency effects are disabled. Verify them before that step.
+        kinds = ("desktoptheme", "look-and-feel") if args.before_materials else ("look-and-feel",)
+        for kind in kinds:
+            for source in (appearance / kind).iterdir():
+                if not same_payload(source, DATA / "plasma" / kind / source.name):
+                    raise RuntimeError("Installed appearance package differs from staged source: " + source.name)
+        if any(exists(path) for path in retired_global_themes()):
+            raise RuntimeError("Legacy global theme was not retired")
         if (args.profile / "wm-konsole-package").is_file():
             if not same_payload(args.state / "staged-launchers" / KONSOLE_LAUNCHER,
                                 DATA / "applications" / KONSOLE_LAUNCHER):
@@ -406,7 +429,7 @@ def main():
         previous = json.loads((backup / "manifest.json").read_text())
         snapshot(args.upgrade_backup, targets + [Path(key) for key in previous["entries"]])
     snapshot(backup, targets)
-    for path in compiled_overrides():
+    for path in compiled_overrides() + retired_global_themes():
         remove(validate(path))
     # Make writable local copies of file-level configuration symlinks. The
     # original link is restored on uninstall; no Nix configuration is edited.

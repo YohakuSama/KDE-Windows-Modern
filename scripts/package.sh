@@ -114,6 +114,21 @@ build_one() {
             return 1
         fi
         rm -rf "$icon_stage"
+    elif [[ "$name" == desktoptheme-* || "$name" == lookfeel-* ]]; then
+        # Legacy Store product IDs remain stable, but the shared source is
+        # materialized before archiving. Never zip a sparse light overlay.
+        local appearance_stage
+        appearance_stage="$(mktemp -d)"
+        if ! (set -e
+            python3 "$SCRIPT_DIR/theme/appearance-packages.py" "$appearance_stage" --component "$name" &&
+            cd "$appearance_stage" &&
+            zip -qr "$outpath" "$(basename "$dir")" \
+                -x '*/build/*' '*/build-*/*' '*/CMakeFiles/*' '*/dev.sh' '*/BUILD.md' '*.orig' '*.rej'
+        ); then
+            rm -rf "$appearance_stage" "$outpath"
+            return 1
+        fi
+        rm -rf "$appearance_stage"
     elif [[ "$meta" == "colorschemes" ]]; then
         # Discover unpacks color schemes straight into color-schemes/, so the
         # .colors files must sit at the top of the zip, not in a folder.

@@ -356,6 +356,12 @@ apply_kvantum_engine() {
     kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle "$style"
 }
 
+# Apply only appearance modes after the shared global theme has been selected.
+apply_appearance_mode() {
+    [ "$UID" -ne 0 ] || return 0
+    bash "$SRC_DIR/scripts/theme/switch-mode.sh" "$1"
+}
+
 # Ask the running KWin to reload kwinrc. dbus-send defaults to sending a
 # *signal*, which KWin ignores, so --type=method_call is required.
 # Transparency effects (install-transparency.sh): this file exists while
@@ -482,11 +488,11 @@ ask_theme_variant() {
     fi
     echo "" >&2
     echo -e "${BOLD}┌──────────────────────────────────────────────────────┐${RESET}" >&2
-    echo -e "${BOLD}│  Choose the Windows Modern theme variant             │${RESET}" >&2
+    echo -e "${BOLD}│  Choose the Windows Modern appearance mode             │${RESET}" >&2
     echo -e "${BOLD}└──────────────────────────────────────────────────────┘${RESET}" >&2
     echo "" >&2
-    echo -e "  ${BOLD}1${RESET}) Light  (org.kde.windowsmodern.light)" >&2
-    echo -e "  ${BOLD}2${RESET}) Dark   (org.kde.windowsmodern.dark)" >&2
+    echo -e "  ${BOLD}1${RESET}) Light" >&2
+    echo -e "  ${BOLD}2${RESET}) Dark" >&2
     echo "" >&2
     echo -e "  Type ${BOLD}1${RESET} for Light, ${BOLD}2${RESET} for Dark, or press ${BOLD}Enter${RESET} for Dark." >&2
     echo "" >&2
@@ -498,10 +504,8 @@ ask_theme_variant() {
     esac
 }
 
-# Map a variant name to the look-and-feel package id.
+# One package ID; the historical suffix preserves compatibility with the
+# greeter and existing Plasma configuration. The mode is applied separately.
 lookfeel_id() {
-    case "$1" in
-        light) echo "org.kde.windowsmodern.light" ;;
-        *)     echo "org.kde.windowsmodern.dark" ;;
-    esac
+    echo "org.kde.windowsmodern.dark"
 }

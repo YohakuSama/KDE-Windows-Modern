@@ -372,6 +372,51 @@ small variant need further review. Separate normal, small and tablet
 taskbar hit margins are now recorded, but are not blindly applied to
 all task buttons.
 
+### Shared appearance and mode-specific rendering
+
+The full installer now materializes one visible global theme, Windows
+Modern. Its existing package ID (org.kde.windowsmodern.dark) is retained
+for Plasma settings and the patched boot greeter; it does not select the
+active color mode. The canonical package owns the desktop layout,
+session splash and login resources. The old light package contains only
+the metadata, defaults and previews needed for the legacy Store export.
+The NixOS transaction backs up and retires the old installed light
+package; an active legacy light identity is migrated before the shell
+starts, without reapplying defaults or changing the current mode.
+
+The 120 byte-identical Plasma style files and four duplicate light
+layout/splash files now have one source. The appearance materializer
+builds complete dark/light renderer packages from the common base and
+sparse light overrides. It copies real files, so installed KPackage
+resources never depend on source-tree symlinks. The existing Store
+product IDs remain compatible exports of that source. No publishing
+or version change is involved.
+
+Switch the mode using the Quick Settings Dark Mode tile or
+scripts/theme/switch-mode.sh light|dark. The helper changes the KDE
+palette, renderer style, icon theme, Kvantum style and Aurorae decoration
+using the native palette/theme utilities and KDE notifications. It never
+applies a global theme, resets layout, changes wallpaper, rewrites
+shortcuts or restarts the session. It retains the current accent choice
+rather than generating a new accent. Missing assets are detected before
+switching; a failed switch attempts to restore the previous appearance
+settings. Existing applications that do not accept live style changes
+may need to be reopened.
+
+There are still mode-specific renderer assets: 46 different Plasma
+style files, two color schemes, and fixed-color Aurorae/Kvantum
+artwork. Retain those differences until their actual Windows brush roles
+and geometry are resolved. Future shared geometry should live in the
+common source/generator, with only the necessary light/dark values
+separated. KDE supports adaptive SVG colors via the current-color-scheme
+stylesheet (https://develop.kde.org/docs/plasma/theme/theme-colors/);
+do not automatically substitute fixed Windows material colors or
+opacity with unrelated palette roles. This first consolidation does not
+claim that selecting an arbitrary color scheme in KDE's native Colors
+page automatically changes every fixed-color renderer. Use the shared
+mode switch for coordinated changes. Exact live rendering remains for
+owner acceptance.
+
 ### Same-name theme alternatives
 
 The owner's pre-supplement installed audit lists 16 names with 16 additional

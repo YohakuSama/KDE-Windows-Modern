@@ -19,7 +19,6 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
-THEMES = HERE.parents[1] / "plasma/desktoptheme"
 QML = next((q for q in ("/usr/lib64/qt6/bin/qml", "/usr/lib/qt6/bin/qml", shutil.which("qml6") or "",
                         shutil.which("qml") or "") if q and os.access(q, os.X_OK)), None)
 SWITCH_W, PITCH, X0 = 40, 52, 6   # Switches.qml layout
@@ -28,7 +27,10 @@ SWITCH_W, PITCH, X0 = 40, 52, 6   # Switches.qml layout
 def render(theme, png, bg):
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
-        shutil.copytree(THEMES / theme, tmp / "data/plasma/desktoptheme/WMTEST")
+        stage = tmp / "appearance"
+        subprocess.run([sys.executable, str(HERE.parents[1] / "scripts/theme/appearance-packages.py"),
+                        str(stage), "--component", "desktoptheme-" + theme.rsplit("-", 1)[-1]], check=True)
+        shutil.copytree(stage / theme, tmp / "data/plasma/desktoptheme/WMTEST")
         (tmp / "config").mkdir()
         (tmp / "config/plasmarc").write_text("[Theme]\nname=WMTEST\n")
         env = dict(os.environ, XDG_DATA_HOME=str(tmp / "data"), XDG_CONFIG_HOME=str(tmp / "config"),

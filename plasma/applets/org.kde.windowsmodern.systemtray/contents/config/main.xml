@@ -103,12 +103,6 @@
     <entry name="showKeyboardBrightness" type="Bool">
       <default>true</default>
     </entry>
-    <entry name="darkTheme" type="String">
-      <default>org.kde.windowsmodern.dark</default>
-    </entry>
-    <entry name="lightTheme" type="String">
-      <default>org.kde.windowsmodern.light</default>
-    </entry>
   </group>
 
 </kcfg>

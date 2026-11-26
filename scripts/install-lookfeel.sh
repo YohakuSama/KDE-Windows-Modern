@@ -1,6 +1,6 @@
 #!/bin/bash
 # ───────────────────────────────────────────────────────────────────
-#  install-lookfeel.sh — Global themes (dark & light)
+#  install-lookfeel.sh — One global theme with light/dark modes
 #
 #  Standalone: asks Light/Dark, then applies the chosen theme with a
 #  layout reset (so panels/widgets are rebuilt) + wallpaper + Kvantum.
@@ -10,20 +10,26 @@
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
 
-info "Installing global themes (look-and-feel)..."
+info "Installing the shared Windows Modern global theme..."
 
-step "Dark theme"
 ensure_dir "$LOOKFEEL_DIR"
+appearance_stage="$(mktemp -d)"
+if ! python3 "$SRC_DIR/scripts/theme/appearance-packages.py" "$appearance_stage" --component lookfeel; then
+    rm -rf "$appearance_stage"
+    exit 1
+fi
+# The existing dark ID is retained for the boot greeter and old settings.
 rm -rf "$LOOKFEEL_DIR/org.kde.windowsmodern.dark"
-cp -r "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark" "$LOOKFEEL_DIR/"
-
-step "Light theme"
+cp -r "$appearance_stage/org.kde.windowsmodern.dark" "$LOOKFEEL_DIR/"
+rm -rf "$appearance_stage"
+if [ "$UID" -ne 0 ]; then
+    bash "$SRC_DIR/scripts/theme/switch-mode.sh" --migrate
+fi
 rm -rf "$LOOKFEEL_DIR/org.kde.windowsmodern.light"
-cp -r "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.light" "$LOOKFEEL_DIR/"
 # Keep the shipped sign-in portrait. The imageres account-control icon
 # is not the current Windows sign-in screen's default account picture.
 
-# Both global themes name the modern multi-size cursor: make sure it exists, or
+# The shared global theme names the modern multi-size cursor: make sure it exists, or
 # applying a theme would leave the cursor on a fallback.
 install_cursor_theme
 
@@ -49,7 +55,7 @@ fi
 if ! is_interactive; then
     info "Non-interactive install. Theme files are in place."
     info "To apply:  plasma-apply-lookandfeel -a org.kde.windowsmodern.dark --resetLayout"
-    info "       or:  plasma-apply-lookandfeel -a org.kde.windowsmodern.light --resetLayout"
+    info "Switch mode afterwards: bash $SRC_DIR/scripts/theme/switch-mode.sh light (or dark)"
     info "Then set the wallpaper:  bash $SRC_DIR/scripts/set-wallpaper.sh"
     exit 0
 fi
@@ -58,7 +64,7 @@ variant="$(ask_theme_variant)"
 theme="$(lookfeel_id "$variant")"
 
 apply_lookandfeel "$theme" reset
-apply_kvantum_engine "$variant"
+apply_appearance_mode "$variant"
 # Let the layout script finish writing panels before restarting Plasma.
 sleep 1
 restart_plasmashell

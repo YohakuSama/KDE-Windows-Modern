@@ -114,7 +114,6 @@ class WindowMaterialTests(unittest.TestCase):
         layouts = [
             'plasma/layout-templates/org.kde.windowsmodern.panel/contents/layout.js',
             'plasma/look-and-feel/org.kde.windowsmodern.dark/contents/layouts/org.kde.plasma.desktop-layout.js',
-            'plasma/look-and-feel/org.kde.windowsmodern.light/contents/layouts/org.kde.plasma.desktop-layout.js',
         ]
         for path in layouts:
             with self.subTest(path=path):

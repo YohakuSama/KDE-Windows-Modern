@@ -290,7 +290,7 @@ for required in nix/test-runtime.nix scripts/nixos-test-state.py scripts/verify-
 done
 
 for cmd in nix-build nix systemctl busctl plasmashell plasma-apply-lookandfeel plasma-apply-wallpaperimage \
-           kwriteconfig6 kreadconfig6 kbuildsycoca6; do
+           plasma-apply-colorscheme plasma-apply-desktoptheme kwriteconfig6 kreadconfig6 kbuildsycoca6; do
     command -v "$cmd" >/dev/null || { echo "缺少当前 Plasma 系统命令：$cmd" >&2; exit 1; }
 done
 systemctl --user is-active --quiet "$SERVICE" || { echo "Plasma 桌面服务未运行。" >&2; exit 1; }
@@ -481,7 +481,11 @@ fi
 echo "正在自动备份原始桌面配置和将被替换的资源……"
 stop_shell
 "$PYTHON" "$ROOT/scripts/nixos-test-state.py" install --root "$ROOT" --state "$STATE" --profile "$PROFILE" "${upgrade_args[@]}"
-"$PYTHON" "$ROOT/scripts/nixos-test-state.py" verify-sources --root "$ROOT" --state "$STATE" --profile "$PROFILE"
+"$PYTHON" "$ROOT/scripts/nixos-test-state.py" verify-sources --root "$ROOT" --state "$STATE" --profile "$PROFILE" --before-materials
+if [ "$upgrading" -eq 1 ]; then
+    # Migrate the old light package identity before Plasma starts reading it.
+    bash "$ROOT/scripts/theme/switch-mode.sh" --migrate
+fi
 ln -sfn "$PROFILE" "$STATE/runtime"
 configure_desktop_menu() {
     "$PYTHON" "$ROOT/scripts/desktop-contextmenu.py" \
@@ -500,13 +504,8 @@ if [ -z "$(kreadconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled
     kwriteconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled true
 fi
 if [ "$upgrading" -eq 0 ]; then
-    plasma-apply-lookandfeel -a "org.kde.windowsmodern.$variant" --resetLayout
-    kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle "$( [ "$variant" = dark ] && echo kvantum-dark || echo kvantum )"
-kwriteconfig6 --file Kvantum/kvantum.kvconfig --group General --key theme Windows-modern
-icon_theme=windows-modern
-[ "$variant" != light ] || icon_theme=windows-modern-light
-kwriteconfig6 --file kdeglobals --group Icons --key Theme "$icon_theme"
-kwriteconfig6 --file kcmicons --group Icons --key Theme "$icon_theme"
+    plasma-apply-lookandfeel -a org.kde.windowsmodern.dark --resetLayout
+    bash "$ROOT/scripts/theme/switch-mode.sh" "$variant"
 kwriteconfig6 --file kdeglobals --group Sounds --key Theme windows-modern
 kwriteconfig6 --file kscreenlockerrc --group Greeter --key Theme --delete
 kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key BorderSize Tiny

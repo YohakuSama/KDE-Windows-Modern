@@ -111,7 +111,7 @@ install_everything() {
     post_kwin_per_monitor_alt_tab
     post_kwin_alt_tab_switcher
     apply_lookandfeel "$theme" reset
-    apply_kvantum_engine "$variant"
+    apply_appearance_mode "$variant"
     # Let the layout script finish writing panels before restarting Plasma.
     sleep 1
     restart_plasmashell
@@ -176,7 +176,7 @@ install_preview() {
     fi
     # Deliberately omit --resetLayout; keep the user's existing panel.
     apply_lookandfeel "$(lookfeel_id "$variant")"
-    apply_kvantum_engine "$variant"
+    apply_appearance_mode "$variant"
     restart_plasmashell
     bash "$SRC_DIR/scripts/set-wallpaper.sh" || FAILED_COMPONENTS+=(wallpaper)
     info "Preview installed. Add Windows Modern Start, Search, Task View and Digital Clock through Add Widgets."

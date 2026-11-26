@@ -50,8 +50,16 @@ fi
 
 step "Plasma desktop themes"
 ensure_dir "$PLASMA_DIR"
-rm -rf "$PLASMA_DIR/Windows-modern"*
-cp -r "$SRC_DIR/plasma/desktoptheme/"* "$PLASMA_DIR/"
+appearance_stage="$(mktemp -d)"
+if ! python3 "$SRC_DIR/scripts/theme/appearance-packages.py" "$appearance_stage" --component desktopthemes; then
+    rm -rf "$appearance_stage"
+    exit 1
+fi
+for mode in dark light; do
+    rm -rf "$PLASMA_DIR/Windows-modern-$mode"
+    cp -r "$appearance_stage/Windows-modern-$mode" "$PLASMA_DIR/"
+done
+rm -rf "$appearance_stage"
 
 # The global themes name this cursor theme.
 install_cursor_theme
@@ -104,7 +112,12 @@ info "Themes installed."
 # end, so we only apply here when running standalone.
 if ! is_batch && [ "$UID" -ne 0 ]; then
     step "Applying Kvantum engine & desktop theme"
-    apply_kvantum_engine dark
-    if command -v plasma-apply-desktoptheme &>/dev/null; then plasma-apply-desktoptheme Windows-modern-dark 2>/dev/null || true; fi
+    mode=dark
+    if command -v kreadconfig6 &>/dev/null &&
+       [ "$(kreadconfig6 --file kdeglobals --group General --key ColorScheme)" = WindowsModernLight ]; then
+        mode=light
+    fi
+    apply_kvantum_engine "$mode"
+    if command -v plasma-apply-desktoptheme &>/dev/null; then plasma-apply-desktoptheme "Windows-modern-$mode" 2>/dev/null || true; fi
     bash "$SRC_DIR/scripts/set-wallpaper.sh" || exit 1
 fi

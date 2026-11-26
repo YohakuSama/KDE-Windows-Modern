@@ -33,7 +33,7 @@ echo ""
 echo -e "${BOLD}Windows Modern — Project Health Check${RESET}"
 echo "======================================"
 
-# ── Themes (every component ships dark + light) ─────────────────────
+# ── Theme source (shared base + mode-specific renderer overlays) ─────
 echo ""
 echo " Themes:"
 for v in dark light; do
@@ -43,6 +43,8 @@ for v in dark light; do
     check_dir  "plasma/desktoptheme/Windows-modern-${v}"   "Plasma theme ${v}"
     check_dir  "plasma/look-and-feel/org.kde.windowsmodern.${v}" "Global theme ${v}"
 done
+check_file "scripts/theme/appearance-packages.py"            "Shared appearance package materializer"
+check_file "scripts/theme/switch-mode.sh"                    "Appearance-only mode switch"
 check_dir  "Kvantum/Windows-modern"                         "Kvantum theme"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"
 check_file "icons/windows-modern/index.theme"               "Icon pack"
@@ -85,21 +87,22 @@ fi
 echo ""
 echo " Layout:"
 LAYOUT_TPL="plasma/layout-templates/org.kde.windowsmodern.panel/contents/layout.js"
-LAYOUT_DARK="plasma/look-and-feel/org.kde.windowsmodern.dark/contents/layouts/org.kde.plasma.desktop-layout.js"
-LAYOUT_LIGHT="plasma/look-and-feel/org.kde.windowsmodern.light/contents/layouts/org.kde.plasma.desktop-layout.js"
+LAYOUT_SHARED="plasma/look-and-feel/org.kde.windowsmodern.dark/contents/layouts/org.kde.plasma.desktop-layout.js"
 check_file "$LAYOUT_TPL" "Panel layout template"
 # Applying a global theme replaces all panels (one per screen); "Add Panel"
 # adds one. Only the widget section is shared — it must not drift.
 widget_section() { sed -n '/--- Widgets/,$p' "$1" | sed 's/^ *//' | grep -v '^}$'; }
-if cmp -s "$LAYOUT_DARK" "$LAYOUT_LIGHT"; then
-    pass "Dark and light global-theme layouts are identical"
+check_file "$LAYOUT_SHARED" "Shared global-theme layout"
+if [ ! -e "plasma/look-and-feel/org.kde.windowsmodern.light/contents/layouts" ] &&
+   [ ! -e "plasma/look-and-feel/org.kde.windowsmodern.light/contents/splash" ]; then
+    pass "Legacy light packaging shares the canonical layout and splash"
 else
-    fail "Dark and light global-theme layouts differ"
+    fail "Duplicate light layout or splash source"
 fi
-if diff -q <(widget_section "$LAYOUT_TPL") <(widget_section "$LAYOUT_DARK") >/dev/null; then
+if diff -q <(widget_section "$LAYOUT_TPL") <(widget_section "$LAYOUT_SHARED") >/dev/null; then
     pass "Panel template and global-theme layout add the same widgets"
 else
-    fail "Widget section of $LAYOUT_TPL has drifted from $LAYOUT_DARK"
+    fail "Widget section of $LAYOUT_TPL has drifted from $LAYOUT_SHARED"
 fi
 
 # ── Applets ─────────────────────────────────────────────────────────
@@ -231,7 +234,6 @@ for pair in \
     "$LOCK/NetworkStatusIcon.qml $LOGIN/NetworkStatusIcon.qml" \
     "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
     "$LOGIN/SignInProgress.qml plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash/SignInProgress.qml" \
-    "$LOGIN/SignInProgress.qml plasma/look-and-feel/org.kde.windowsmodern.light/contents/splash/SignInProgress.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml" \
     "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml" \

@@ -215,3 +215,9 @@ Based on Win11OS-kde by yeyushengfan258 and Windows Modern by Jeysef, with
 components derived from KDE Plasma, Zren, Eleven, Fluent and other projects.
 See [AUTHORS](AUTHORS), [ATTRIBUTION.md](ATTRIBUTION.md) and [LICENSE](LICENSE).
 The original authors and upstream license notices are retained.
+
+### One Windows Modern theme, two appearance modes
+
+The full installer installs one global theme named Windows Modern. Its historical package ID is retained for greeter compatibility. Use the Dark Mode tile in Quick Settings, or run `bash scripts/theme/switch-mode.sh light` / `bash scripts/theme/switch-mode.sh dark` in the desktop session. Changing mode does not reapply the global theme or reset the desktop layout.
+
+The dark source directories hold the shared base; the light Plasma style and look-and-feel source directories contain only their differences. Install or package through the provided scripts, which materialize complete renderer packages. Do not copy a sparse light source directory directly into Plasma. See [appearance implementation notes](docs/NATIVE_COVERAGE.md#shared-appearance-and-mode-specific-rendering) for the remaining renderer-specific differences.

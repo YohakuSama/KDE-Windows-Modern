@@ -9,11 +9,9 @@ Item {
     TestCase {
         name: "WindowsSessionSplash"
         when: windowShown
-        function test_ringCenteredAndAnimated_data() {
-            return [{tag:"dark", mode:"dark"}, {tag:"light", mode:"light"}];
-        }
-        function test_ringCenteredAndAnimated(data) {
-            const path = "../../plasma/look-and-feel/org.kde.windowsmodern." + data.mode + "/contents/splash/Splash.qml";
+        function test_ringCenteredAndAnimated() {
+            // Both modes use the same session startup component.
+            const path = "../../plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash/Splash.qml";
             const component = Qt.createComponent(path);
             tryVerify(() => component.status !== Component.Loading);
             verify(component.status === Component.Ready, component.errorString());
