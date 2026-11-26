@@ -253,12 +253,11 @@ def derive_manual_palette(selection):
 def derive_wallpaper_alpha(range_sum, pixel_count):
     """Candidate colorization strength for already-preprocessed analysis pixels.
 
-    range_sum is the sum of max(R,G,B)-min(R,G,B) across opaque pixels.
-    pixel_count is the number of analysis pixels, not the source image size.
-    This stage does not choose a representative RGB or decode/resize images.
-    Transparent pixels, native fallbacks and multi-display analysis are
-    outside the reviewed opaque-image contract. Do not use this value as
-    the alpha of a Plasma, Qt or KWin surface.
+    range_sum is the sum of max(R,G,B)-min(R,G,B) across valid bitmap pixels.
+    pixel_count includes every analysis position, including skipped pixels.
+    Sum both statistics across images before division. This stage does
+    not decode/resize images or represent native fallback results.
+    Do not use this value as the alpha of a Plasma, Qt or KWin surface.
     """
     if (type(range_sum) is not int or type(pixel_count) is not int
             or pixel_count <= 0 or not 0 <= range_sum <= 255 * pixel_count):
@@ -267,8 +266,8 @@ def derive_wallpaper_alpha(range_sum, pixel_count):
 
 
 # The weighted-RGB branch was recovered from shell32 10.0.26100.9974.
-# These functions consume an opaque, already prepared analysis buffer. The
-# Windows decoder, resize filter and bitmap orientation are separate work.
+# These functions consume already prepared analysis buffers. Source-file
+# decoding and exact WIC nearest-neighbor coordinates are separate work.
 WALLPAPER_ANALYSIS_LIMIT = 256
 
 
@@ -276,25 +275,30 @@ def _f32(value):
     return struct.unpack("<f", struct.pack("<f", value))[0]
 
 
-def derive_weighted_wallpaper_seed(pixels, width, height):
-    """Return (raw weighted RGB, alpha) before color normalization.
-
-    Supply RGB byte triplets in analysis-buffer order, not original image
-    order. Do not use this opaque-image implementation for transparency,
-    a failed decode, native fallback or multiple monitor images.
-    """
+def _wallpaper_analysis_count(width, height):
     if any(type(n) is not int or not 1 <= n <= WALLPAPER_ANALYSIS_LIMIT
-           for n in (width, height)) or len(pixels) != width * height:
+           for n in (width, height)):
         raise ValueError("Invalid wallpaper analysis dimensions")
-    count = width * height
+    return width * height
+
+
+def _opaque_wallpaper_pixels(pixels):
+    for pixel in pixels:
+        if (not isinstance(pixel, (tuple, list)) or len(pixel) != 3
+                or any(type(v) is not int or not 0 <= v <= 255 for v in pixel)):
+            raise ValueError("Expected opaque RGB byte triplets")
+        yield pixel, True
+
+
+def _weighted_wallpaper_statistics(pixels, count):
     stride = max(1, count // 1000)
     range_sum = 0
     totals = [0.0, 0.0, 0.0]
     sums = [[0.0, 0.0, 0.0] for _ in range(3)]
-    for i, pixel in enumerate(pixels):
-        if (not isinstance(pixel, (tuple, list)) or len(pixel) != 3
-                or any(type(v) is not int or not 0 <= v <= 255 for v in pixel)):
-            raise ValueError("Expected opaque RGB byte triplets")
+    for i, (pixel, valid) in enumerate(pixels):
+        # A zero fourth bitmap byte skips the pixel, not its position.
+        if not valid:
+            continue
         range_sum += max(pixel) - min(pixel)
         if i % stride:
             continue
@@ -310,10 +314,69 @@ def derive_weighted_wallpaper_seed(pixels, width, height):
         totals[group] += weight
         for channel, value in enumerate(channels):
             sums[group][channel] += _f32(weight * value)
+    return totals, sums, range_sum, count
+
+
+def _reduce_weighted_wallpaper_statistics(statistics):
+    totals = [0.0, 0.0, 0.0]
+    sums = [[0.0, 0.0, 0.0] for _ in range(3)]
+    range_sum = count = 0
+    for weights, channels, span, size in statistics:
+        range_sum += span
+        count += size
+        # Native reduction merges per-image group accumulators before
+        # choosing a winner. Sampling starts at zero for each image.
+        for group in range(3):
+            totals[group] += weights[group]
+            for channel in range(3):
+                sums[group][channel] += channels[group][channel]
+    if count == 0:
+        raise ValueError("No wallpaper analysis buffers")
     winner = max(range(3), key=totals.__getitem__)
+    if totals[winner] == 0:
+        # No sampled group: native keeps its fallback color. The caller
+        # must not normalize a fabricated seed or confuse this with a
+        # failed decode. Do not apply the normal Alpha formula here.
+        return None
     seed = bytes(int(min(255, total / totals[winner] * 255))
                  for total in sums[winner])
     return "#" + seed.hex().upper(), derive_wallpaper_alpha(range_sum, count)
+
+
+def derive_weighted_wallpaper_seed(pixels, width, height):
+    """Return (raw weighted RGB, alpha) from an opaque RGB analysis buffer."""
+    count = _wallpaper_analysis_count(width, height)
+    if len(pixels) != count:
+        raise ValueError("Invalid wallpaper analysis dimensions")
+    return _reduce_weighted_wallpaper_statistics((
+        _weighted_wallpaper_statistics(_opaque_wallpaper_pixels(pixels), count),))
+
+
+def _bitmap_wallpaper_statistics(width, height, bitmap):
+    count = _wallpaper_analysis_count(width, height)
+    if not isinstance(bitmap, bytes) or len(bitmap) != count * 4:
+        raise ValueError("Expected a tightly packed 32-bit analysis bitmap")
+    # Top-down rows, B/G/R/fourth byte. The final byte is a validity
+    # check in the native loop, not a contract for original PNG alpha.
+    pixels = (((r, g, b), marker != 0)
+              for b, g, r, marker in struct.iter_unpack("4B", bitmap))
+    return _weighted_wallpaper_statistics(pixels, count)
+
+
+def derive_weighted_wallpaper_bitmaps(bitmaps):
+    """Reduce one or more prepared bitmaps, yielding a seed/alpha or None.
+
+    Each entry is (width, height, bytes), with tightly packed top-down
+    B/G/R/fourth-byte pixels. Input dimensions are already capped at 256.
+    RGB is consumed as stored, without unpremultiplication or weighting
+    by the fourth byte. Every position contributes to the denominator;
+    positions with a zero fourth byte do not contribute to the sums.
+    None means no sampled group. Invalid or empty input raises ValueError.
+    A decoder failure must remain an error, not a no-candidate result.
+    """
+    return _reduce_weighted_wallpaper_statistics(
+        _bitmap_wallpaper_statistics(width, height, bitmap)
+        for width, height, bitmap in bitmaps)
 
 
 def _wallpaper_brightness(channels):

@@ -1230,12 +1230,12 @@ The internal diagnostic string for CWallpaperRenderer::ComputeImageColorizationC
 identifies its entry at RVA 0x4F34D4. It reaches the ImageColor update
 routine at 0x1D340 and the actual calculation at 0x1D448. The per-image
 data routine at 0x1246A4 clamps each analysis dimension separately to
-256 and requests a 32-bit bitmap. The bitmap's exact decoding, scaling
-and storage order still need to be traced. The initialization at
+256 and requests a 32-bit bitmap. Its producer and storage contract are
+documented below. The initialization at
 0x15E978 sets Alpha bounds 125 and 175 and retains the native failure
 default 0xC4FFFFFF. The Alpha reduction includes all analysis pixel
-positions in its denominator; fully transparent pixels are excluded
-from the channel-span sum.
+positions in its denominator; pixels whose final bitmap fourth byte
+is zero are excluded from the channel-span sum.
 
 The branch identified by feature 41486951 is present in this exact
 module. Its weighted-RGB routine (per-image accumulation in 0x1246A4,
@@ -1295,7 +1295,7 @@ comparison supports the weighted branch for those observations; it
 does not independently query the VM's live feature state. It also
 does not establish full-image input preparation or exhaustive HLS parity.
 
-The existing sync-accent.py now stages two pure functions:
+The existing sync-accent.py stages the following single-image functions:
 `derive_weighted_wallpaper_seed(pixels, width, height)` and
 `normalize_weighted_wallpaper_seed(seed)`. They consume an already
 prepared opaque RGB analysis buffer (up to 256 by 256). The first
@@ -1308,13 +1308,68 @@ also defines cases for the seven uniform cache references, mixed-color
 selection, fixed-stride buffer order and invalid analysis input.
 Do not treat the synthetic uniform buffers as recorded native pixels.
 
-Next trace the bitmap-producing interface to resolve the actual
-decoder, scale filter, pixel order, transparency and multiple-display
-behavior. Keep the new functions disconnected from the installed theme
-until that contract and renderer color ownership are resolved. A native
-fallback is distinct from an empty or failed Linux decode. The supplied
-Windows DLL remains outside the repository; do not distribute it or
-matching symbols with theme packages.
+### Target-build bitmap preparation and multi-image reduction
+
+Further static analysis of the same SHA-256-identified shell32 file
+traces the image object constructor (RVA 0x22B270), its vtable at
+0x60A8C8, size method at 0x1AE40, and bitmap method at 0x1AF90.
+The decoder path at 0x4F7D34 creates a WIC decoder from a stream,
+obtains frame zero, and obtains the image size through the oriented
+bitmap source. The path also reads System.Photo.Orientation
+(0x1B5BC) and maps orientation values to WIC flip/rotate flags.
+This is not an unconditional image rotation on every format.
+
+The per-image analysis routine invokes the bitmap method with the
+independently capped dimensions and interpolation argument zero.
+The bitmap method creates IWICBitmapScaler and initializes it with
+that argument. The Windows SDK defines zero as nearest-neighbor
+interpolation; see [WICBitmapInterpolationMode](https://learn.microsoft.com/en-us/windows/win32/api/wincodec/ne-wincodec-wicbitmapinterpolationmode).
+It requests the format whose GUID is
+6fddc324-4e03-4bfe-b185-3d77768dc90e, identified in the
+[Microsoft SDK header](https://github.com/microsoft/win32metadata/blob/main/generation/WinSDK/RecompiledIdlHeaders/um/wincodec.h)
+as GUID_WICPixelFormat32bppBGR, not 32bppPBGRA. At 0x1B106 it
+constructs a 32-bit BI_RGB DIB with negative height; at 0x1B23F it
+copies pixels with stride width*4. The native reader at 0x1248AD
+through 0x124CCE walks four bytes per pixel, across top-down rows,
+using offsets 2, 1 and 0 as R, G and B. It skips positions whose
+fourth byte is zero, but advances the sampling index even for those
+positions. The weighted path does not unpremultiply the stored RGB,
+unlike the legacy path. The requested BGR pixel format does not
+establish how WIC populates the fourth byte for every source format.
+Do not equate that byte to the original file's alpha channel.
+
+At 0x4F7B30 the weighted reduction iterates the available image
+objects and sums all four doubles in each of three groups before
+selecting the overall largest group. It separately sums image area
+and channel spans, so it must not average per-image Alpha or
+normalized colors. Each bitmap starts its own sampling index at
+zero. The reducer leaves the native fallback untouched if no group
+has a positive accumulated weight. Failed image acquisition is not
+a successful blank bitmap.
+
+The staged portable function derive_weighted_wallpaper_bitmaps()
+now accepts one or more tightly packed top-down 32-bit analysis
+buffers, preserves the fourth-byte validity check, and reduces
+per-image statistics. It reuses exactly the same weight arithmetic
+as the existing opaque RGB entry point. It returns None for no
+weighted group, and rejects empty input or invalid bitmap dimensions
+and byte lengths. This explicit no-group result must not be fed to
+the RGB normalizer. The function does not implement source alpha
+conversion, monitor enumeration or native decoder fallback policy.
+
+An offline calculation on the nine mixed CacheIsolation recipes
+using a locally recreated quality-85 JPEG and Pillow nearest-neighbor
+resampling to 256x256 predicts eight of nine winning color groups.
+The 35%-red-left probe still selects green in this calculation,
+where the native result was red. The local JPEG is not the actual
+Windows cache, and Pillow nearest-neighbor coordinates are not
+verified equivalent to WIC. This is a concrete remaining discrepancy,
+not a reason to introduce a position-dependent score. Exact decoded
+bitmap bytes, including orientation and the fourth-byte values, are
+needed to discriminate decoding, resampling coordinates and input
+image selection. Keep the installed renderer unchanged until these
+are resolved and renderer palette ownership is verified. The original
+DLL and symbols remain outside the repository.
 
 ### Native automatic-color diagnostic
 

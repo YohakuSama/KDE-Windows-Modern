@@ -510,6 +510,44 @@ class WindowMaterialTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     derive(pixels, width, height)
 
+    def test_weighted_wallpaper_bitmap_contract(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        opaque = sync["derive_weighted_wallpaper_seed"]
+        derive = sync["derive_weighted_wallpaper_bitmaps"]
+        # Stored B/G/R/marker, not source RGBA. A nonzero marker does not
+        # scale the stored RGB; zero skips a pixel without changing count.
+        red = bytes((88, 88, 188, 255))
+        red_partial = bytes((88, 88, 188, 1))
+        cyan = bytes((132, 132, 32, 255))
+        absent = bytes((255, 255, 0, 0))
+        seed, _ = opaque([(188, 88, 88)], 1, 1)
+        self.assertEqual(derive([(4, 1, red_partial + absent * 3)]),
+                         (seed, 150))
+        self.assertEqual(derive([(1, 1, red), (3, 1, absent * 3)]),
+                         (seed, 150))
+        self.assertIsNone(derive([(1, 1, absent)]))
+        # Positions still advance for skipped pixels. Only the odd
+        # positions contain RGB here, while stride two samples even ones.
+        self.assertIsNone(derive([(40, 50, (absent + red) * 1000)]))
+        # Group weights are pooled before the winner is selected.
+        for red_count, cyan_count in ((40, 60), (25, 75)):
+            with self.subTest(red_count=red_count, cyan_count=cyan_count):
+                separate = [(red_count, 1, red * red_count),
+                            (cyan_count, 1, cyan * cyan_count)]
+                together = [(100, 1, red * red_count + cyan * cyan_count)]
+                self.assertEqual(derive(separate), derive(together))
+        # Restart stride for each bitmap instead of flattening the list.
+        # The first buffer has an odd count and stride two, so the first
+        # sample in the second buffer must still be at its own position 0.
+        first = (43, 47, absent * (43 * 47))
+        second = (40, 50, (red + absent) * 1000)
+        self.assertEqual(derive([first, second]), (seed, 149))
+        for buffers in ([], [(1, 1, b"")], [(257, 1, red * 257)],
+                        [(1, 1, [88, 88, 188, 255])]):
+            with self.subTest(buffers=buffers):
+                with self.assertRaises(ValueError):
+                    derive(buffers)
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')
