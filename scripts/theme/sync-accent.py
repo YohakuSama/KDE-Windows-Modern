@@ -335,7 +335,9 @@ def _opaque_wallpaper_pixels(pixels):
 
 
 def _weighted_wallpaper_statistics(pixels, count):
-    stride = max(1, count // 1000)
+    # shell32 0x124870..0x124885: unsigned reciprocal multiply and shift.
+    # (count * 0x10624dd3) >> 36 equals count // 250 for analysis sizes.
+    stride = max(1, count // 250)
     range_sum = 0
     totals = [0.0, 0.0, 0.0]
     sums = [[0.0, 0.0, 0.0] for _ in range(3)]

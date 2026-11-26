@@ -499,10 +499,11 @@ class WindowMaterialTests(unittest.TestCase):
                          "#D44343")
         self.assertEqual(normalize(derive([red] * 25 + [cyan] * 75, 10, 10)[0]),
                          "#008181")
-        # At 2,000 pixels the stride is two; the unsampled pixels still
-        # contribute to Alpha, but not to the representative RGB.
-        first, first_alpha = derive([red, cyan] * 1000, 40, 50)
-        second, second_alpha = derive([cyan, red] * 1000, 40, 50)
+        # At 2,000 pixels the native stride is eight. These patterns
+        # distinguish it from the incorrectly reconstructed stride two.
+        # Unsampled pixels still contribute to Alpha.
+        first, first_alpha = derive(([red] + [cyan] * 7) * 250, 40, 50)
+        second, second_alpha = derive(([cyan] + [red] * 7) * 250, 40, 50)
         self.assertEqual(normalize(first), "#D44343")
         self.assertEqual(normalize(second), "#008181")
         self.assertEqual(first_alpha, second_alpha)
@@ -530,7 +531,7 @@ class WindowMaterialTests(unittest.TestCase):
                          (seed, 150))
         self.assertIsNone(derive([(1, 1, absent)]))
         # Positions still advance for skipped pixels. Only the odd
-        # positions contain RGB here, while stride two samples even ones.
+        # positions contain RGB here, while stride eight samples even ones.
         self.assertIsNone(derive([(40, 50, (absent + red) * 1000)]))
         # Group weights are pooled before the winner is selected.
         for red_count, cyan_count in ((40, 60), (25, 75)):
@@ -540,7 +541,7 @@ class WindowMaterialTests(unittest.TestCase):
                 together = [(100, 1, red * red_count + cyan * cyan_count)]
                 self.assertEqual(derive(separate), derive(together))
         # Restart stride for each bitmap instead of flattening the list.
-        # The first buffer has an odd count and stride two, so the first
+        # The first buffer has an odd count and stride eight, so the first
         # sample in the second buffer must still be at its own position 0.
         first = (43, 47, absent * (43 * 47))
         second = (40, 50, (red + absent) * 1000)
@@ -612,12 +613,15 @@ class WindowMaterialTests(unittest.TestCase):
                 source = (row * rect["y"] + patch * rect["height"]
                           + row * (height - rect["y"] - rect["height"]))
                 self.assertEqual(prepare(source, width, height), (256, 256, buffers["source"]))
-                # Alpha reduction and shade generation are independent of
-                # the unresolved representative-color mismatch. Do not
-                # assert that all six buffers reproduce native RGB.
-                for raw in buffers.values():
-                    self.assertEqual(sync["derive_weighted_wallpaper_bitmaps"]([(256, 256, raw)])[1],
-                                     native["alpha"])
+                # Both independently recreated WIC inputs reproduce the
+                # native ARGB with the corrected 250-pixel sampling divisor.
+                # This does not prove which stream the renderer selected.
+                for kind, raw in buffers.items():
+                    with self.subTest(input_kind=kind):
+                        seed, alpha = sync["derive_weighted_wallpaper_bitmaps"]([(256, 256, raw)])
+                        normalized = sync["normalize_weighted_wallpaper_seed"](seed)
+                        self.assertEqual("0x{:02X}{}".format(alpha, normalized[1:]),
+                                         native["argb"])
                 roles = ("Accent", *sync["PRESET_SHADE_ROLES"])
                 expected = {role: "#" + capture["appearance"]["colors_argb"][role][3:]
                             for role in roles}

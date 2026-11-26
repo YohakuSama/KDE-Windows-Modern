@@ -1245,7 +1245,9 @@ of the observed operations:
 
 - Normalize each RGB byte to 0..1.
 - Starting at position zero in the analysis bitmap's storage order,
-  sample every max(1, floor(width * height / 1000)) pixels.
+  sample every max(1, floor(width * height / 250)) pixels. The
+  divisor is recovered from the unsigned reciprocal multiply and shift;
+  see the corrected boundary analysis below.
 - Assign a sample to its largest RGB channel, resolving ties in red,
   green, blue order. Let M = max(r,g,b), D = max(0.01, 3*M-r-g-b).
   Its weight is (r+g+b+2)*D.
@@ -1264,9 +1266,9 @@ would switch near 68.44% cyan. The 60% and 75% observations bracket this
 prediction. The red #E03030 and green #148914 weights are about 4.4930
 and 2.4722, yielding an ideal tie near 35.49% red. Fixed-stride sampling,
 resampling and boundary pixels can change the sample populations relative
-to the authored areas. The exact 35%-left/right/top counterexample is not
-yet reproduced from the complete native bitmap. Do not add a coordinate
-bias or a fitted exponent.
+to the authored areas. The corrected sampling divisor now reproduces
+all three 35%-left/right/top observations from both captured WIC inputs.
+Do not add a coordinate bias or a fitted exponent.
 
 The post-selection normalization follows RVA 0x1D9BF and the helpers
 at 0x596E04..0x597484. It uses encoded-RGB weighted RMS brightness
@@ -1360,17 +1362,13 @@ and byte lengths. This explicit no-group result must not be fed to
 the RGB normalizer. The function does not implement source alpha
 conversion, monitor enumeration or native decoder fallback policy.
 
-Recalculating the nine mixed CacheIsolation recipes with a local
-quality-85 JPEG and either Pillow BILINEAR or a four-point bilinear
-pixel-center calculation gives the same eight of nine winner
-agreement as the earlier nearest-neighbor approximation. In particular,
-the four-point approximation of the 35%-red-left probe yields red
-weight about 1593.27 and green weight about 1614.38; Windows returns
-red. These are offline synthetic calculations, not WIC observations
-or project test results. Pillow BILINEAR uses a wider filter for
-downsampling, so neither approximation establishes WIC parity.
-The actual source chosen by the native extractor also remains
-unresolved. Do not fit an exponent or a position bias.
+The earlier offline approximations of the nine mixed CacheIsolation
+recipes gave eight of nine winner agreement. They used the incorrect
+sampling divisor 1000, so that discrepancy cannot establish a decoder
+or resampler mismatch. Pillow BILINEAR uses a wider filter for
+downsampling than the measured four-point interpolation. The actual
+stream selected by the native extractor remains unproven. The following
+captured-buffer analysis isolates the arithmetic from source preparation.
 
 ### Focused WIC bitmap boundary capture
 
@@ -1399,10 +1397,9 @@ This is a public API recreation, not an interception of the private
 shell analysis buffer: the decoder's internal stream selection,
 orientation and any feature-dependent handling may still differ.
 Comparing the actual WIC bytes for the two input paths with the
-measured native ARGB can distinguish a decoder/resampling mismatch
-from a remaining selection or normalization mismatch. Keep the
-existing runtime disconnected until this evidence and palette
-ownership are resolved.
+measured native ARGB distinguishes arithmetic from source preparation.
+The results below resolve the orientation counterexample. The runtime
+remains disconnected pending source decoding and palette ownership.
 
 Run from the folder containing the two capture scripts:
 
@@ -1447,37 +1444,63 @@ source buffers, both sets of hashes, marker values, Alpha and the
 independent native seven-shade palette. The suite has not been run
 during routine development.
 
-The six actual WIC buffers still give a different winner from one
-native observation under the reconstructed weighted arithmetic.
-All contain 65,536 valid positions; the stride is 65 and the sample
-count is 1,009. The following are offline group-weight calculations
-from the captured cache bytes, not weights measured inside shell32.
+### Corrected weighted sampling divisor
 
-| Position of 35% red | Red samples | Green samples | Red weight | Green weight | Predicted group | Native ARGB |
-| --- | ---: | ---: | ---: | ---: | --- | --- |
-| Left | 356 | 653 | 1593.03 | 1614.38 | Green | 0xAFD24444 |
-| Right | 353 | 656 | 1579.55 | 1621.80 | Green | 0xAF008700 |
-| Top | 355 | 654 | 1586.14 | 1616.81 | Green | 0xAF008700 |
+The previous reconstruction misread the reciprocal integer division.
+Reinspection of the SHA-256-identified target shell32 confirms the
+unsigned 32-bit pixel-count multiplication at RVA 0x124870..0x12487E:
+the multiplier is 0x10624DD3, the high 32 bits of the product are
+shifted right by four, and the result is clamped to at least one at
+0x124882..0x124885. For the supported analysis area (1..65,536),
+this is exactly floor(pixel_count / 250), not /1000. In particular,
+65,536 positions give a stride of 262 and 251 samples, including
+index zero. The loop increments the index at 0x124CCB even for a
+skipped pixel. No color weight, normalization or Alpha constant
+needs to change.
 
-The source BMP buffers also select green in all three orientations.
-This establishes that replacing the Linux resize filter alone cannot
-explain the remaining counterexample. The public WIC recreation
-does not identify the private renderer's actual image objects or
-their cached statistics. Static inspection at 0x4F8414 enumerates
-renderer-owned image objects, and 0x226A48 caches per-image analysis
-data at object offset 0x248. A different image stream, dimensions,
-processing branch or reuse of stored statistics remains unresolved.
-A synthetic aspect-preserving 256x160 analysis gives red sample
-fractions of 37.5%, 34.375%, and about 35.06% (left/right/top), which
-would explain the observed winners, but that geometry is NOT proven
-to occur in Windows and is not implemented.
+Using this corrected divisor on the three captured JPEG WIC buffers
+gives the following offline weights. These are calculated from the
+recorded bytes, not internal accumulator readings from shell32.
 
-Keep the orientation counterexample as an explicit open issue.
-No change to the group weights, stride, JPEG policy, installed
-palette ownership or rendering behavior is warranted by these
-observations alone. Further work should trace the renderer's input
-image-object construction and feature selection using the supplied
-module, rather than asking the maintainer to repeat this capture.
+| Red orientation | Red samples | Green samples | Red weight | Green weight | Winner |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Left | 90 | 161 | 404.37 | 398.03 | Red |
+| Right | 85 | 166 | 378.66 | 410.39 | Green |
+| Top | 88 | 163 | 393.13 | 402.97 | Green |
+
+The weighted RGB and existing normalization also reproduce the
+complete native ARGB on all six recorded WIC buffers:
+
+| Red orientation | Source BMP seed | JPEG seed | Source BMP ARGB | JPEG ARGB | Native ARGB |
+| --- | --- | --- | --- | --- | --- |
+| Left | #E13030 | #DF3030 | 0xAFD24444 | 0xAFD24444 | 0xAFD24444 |
+| Right | #148A14 | #148914 | 0xAF008700 | 0xAF008700 | 0xAF008700 |
+| Top | #148A14 | #148813 | 0xAF008700 | 0xAF008700 | 0xAF008700 |
+
+The previously unresolved orientation counterexample is resolved by
+the native sampling divisor, with no aspect-ratio change, cache
+invalidation hypothesis, arbitrary position bias or fitted exponent.
+The synthetic 256x160 alternative proposed earlier is not needed
+and is not implemented. Both input streams produce identical final
+ARGB for these three targets, so this does not identify the renderer's
+actual stream or prove decoder equivalence for all images.
+
+The correction is shared by the opaque RGB and BGRX/multi-image entry
+points. The existing regression definitions now distinguish stride
+eight from stride two at 2,000 positions, and compare the full native
+ARGB for each of the six recorded buffers. The suite has not been
+executed. The recorded fixture is unchanged.
+
+The staged weighted color calculation, normalization, full-image
+Alpha and seven-shade generation now have direct captured-buffer
+support for the previously failing orientation case. Further work
+should connect source decoding and orientation handling without
+unconditionally re-encoding input images, establish the actual
+automatic-accent ownership contract, and preserve manual and
+wallpaper-following behavior across the KDE renderers. Exact parity
+for arbitrary images, transparency, multi-monitor source selection,
+and live application color refresh remains unverified. No installed
+theme behavior changes in this correction.
 
 ### Native automatic-color diagnostic
 
