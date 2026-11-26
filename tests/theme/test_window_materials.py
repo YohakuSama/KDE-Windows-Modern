@@ -199,7 +199,29 @@ class WindowMaterialTests(unittest.TestCase):
         reference = json.loads((ROOT / "docs/windows11-26h2-accent-captures.json").read_text(
             encoding="utf-8"))
         captured = reference["captures"]
-        fill_roles = {"dark": "AccentLight2", "light": "AccentDark1"}
+        roles = reference["winui_roles"]
+        blue_palettes = {}
+        for name, sample in captured.items():
+            appearance = sample["appearance"]
+            mode = "light" if appearance["apps_use_light_theme"] else "dark"
+            colors = appearance["colors_argb"]
+            self.assertEqual(sample["verified_settings_mode"], "Manual")
+            self.assertEqual(sample["manual_color_observed_from_ui_settings"], colors["Accent"])
+            self.assertEqual(sample["manual_color_argument"], "")
+            for role in ("Accent", "AccentDark1", "AccentDark2", "AccentDark3",
+                         "AccentLight1", "AccentLight2", "AccentLight3"):
+                self.assertRegex(colors[role], r"^#FF[0-9A-F]{6}$")
+            primary_fill = roles[mode]["primary_fill"]
+            self.assertRegex(colors[primary_fill], r"^#FF[0-9A-F]{6}$")
+            if name.startswith("manual_blue_"):
+                blue_palettes[mode] = [colors[role] for role in
+                    ("Accent", "AccentDark1", "AccentDark2", "AccentDark3",
+                     "AccentLight1", "AccentLight2", "AccentLight3")]
+        self.assertEqual(blue_palettes["dark"], blue_palettes["light"])
+        orange = captured["manual_orange_light"]["appearance"]["colors_argb"]
+        self.assertEqual(orange["Accent"], "#FFFF8C00")
+        self.assertEqual(orange[roles["light"]["primary_fill"]], "#FFE37700")
+
         schemes = {}
         for mode in ('dark', 'light'):
             with self.subTest(mode=mode):
@@ -208,8 +230,9 @@ class WindowMaterialTests(unittest.TestCase):
                 config = configparser.ConfigParser(interpolation=None)
                 config.read_string(render_kvantum_config(ROOT, mode))
                 colors = config['GeneralColors']
-                # WinUI primary accent fill, measured on the target Windows build.
-                observed = captured[mode]["appearance"]["colors_argb"][fill_roles[mode]]
+                # The default blue fill uses WinUI's theme-specific shade role.
+                observed = captured["manual_blue_" + mode]["appearance"]["colors_argb"][
+                    roles[mode]["primary_fill"]]
                 self.assertRegex(observed, r"^#FF[0-9A-F]{6}$")
                 observed_rgb = "#" + observed[3:]
                 self.assertEqual(colors['highlight.color'].upper(), observed_rgb)

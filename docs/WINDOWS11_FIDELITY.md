@@ -310,43 +310,73 @@ implementation; it is not evidence of Windows-equivalent colors.
 
 ### Captured Windows 11 26H2 baseline
 
-The maintainer supplied two captures from build 26300.9974, preserved in
-[the runtime accent reference](windows11-26h2-accent-captures.json).
-The seven accent colors are identical in the two captures:
+The maintainer supplied three UISettings captures from build 26300.9974,
+preserved in [the runtime accent reference](windows11-26h2-accent-captures.json).
+The original blue samples were produced with the v1 script argument
+Automatic, but the Settings screenshot and the owner's correction
+confirm the visible setting was Manual. The archive preserves the
+original argument and the verified UI mode separately. The orange sample
+was captured with Manual selected.
 
-| UISettings role | Observed RGB |
-| --- | --- |
-| Accent | #0078D4 |
-| AccentDark1 | #0067C0 |
-| AccentDark2 | #003E92 |
-| AccentDark3 | #001A68 |
-| AccentLight1 | #0091F8 |
-| AccentLight2 | #4CC2FF |
-| AccentLight3 | #99EBFF |
+The blue ramp is the same in dark and light modes. The manual orange
+sample adds a second base color:
 
-The Windows foreground/background roles invert between modes. These are
-system color roles, not the final Mica or control surface colors.
+| UISettings role | Blue | Orange |
+| --- | --- | --- |
+| Accent | #0078D4 | #FF8C00 |
+| AccentDark1 | #0067C0 | #E37700 |
+| AccentDark2 | #003E92 | #A14600 |
+| AccentDark3 | #001A68 | #651900 |
+| AccentLight1 | #0091F8 | #FF9910 |
+| AccentLight2 | #4CC2FF | #FFB634 |
+| AccentLight3 | #99EBFF | #FFD155 |
+
+The Windows foreground/background roles invert between modes. The accent
+ramp itself remained unchanged between the two blue captures. The orange
+sample is currently light mode only.
+
+### WinUI accent role mapping
+
 The [upstream WinUI resource dictionary](https://github.com/microsoft/microsoft-ui-xaml/blob/main/controls/dev/CommonStyles/Common_themeresources_any.xaml)
-uses AccentLight2 for the dark primary accent fill and AccentDark1 for
-the light primary fill. The existing shared theme palette uses exactly
-these values for its default fill/Highlight role; no runtime palette
-change is needed for this baseline. WinUI also uses separate accent text
-roles and the base accent for selected text background. KDE's shared
-Highlight role is a host-renderer adaptation, not proof that all of
-those WinUI roles are implemented.
+defines the accent brushes separately for its Default (dark) and Light
+theme dictionaries:
 
-The registry-selected wallpaper hashes differ, the original image hashes
-were not supplied, and AutoColorization is null in both samples.
-Do not treat these as a controlled same-wallpaper automatic-mode pair or
-infer shade generation from them. The existing shared-palette regression
-check now compares the default KDE and Kvantum colors against the recorded
-mode-specific accent fills.
+| WinUI role | Dark | Light |
+| --- | --- | --- |
+| Primary accent fill | AccentLight2 | AccentDark1 |
+| Secondary fill | AccentLight2 at 90% | AccentDark1 at 90% |
+| Tertiary fill | AccentLight2 at 80% | AccentDark1 at 80% |
+| Primary accent text | AccentLight3 | AccentDark2 |
+| Secondary accent text | AccentLight3 | AccentDark3 |
+| Tertiary accent text | AccentLight2 | AccentDark1 |
+| Selected-text background | Accent | Accent |
+| Primary text on accent fill | #000000 | #FFFFFF |
 
-The next useful reference is a distinctly non-blue ramp. In the Windows
-VM, either select a warm-colored static wallpaper with Automatic
-explicitly selected, or select a known non-blue manual accent. Capture
-the actual palette after the visible color change. If all seven values
-remain identical to the blue baseline, it is not a new ramp.
+The existing blue defaults in palette.json already match the primary
+fill roles: dark uses #4CC2FF and light uses #0067C0. The orange sample
+confirms that a manual Accent of #FF8C00 must use #FFB634 for a dark-mode
+primary fill and #E37700 for a light-mode primary fill. The current
+accentForSurface() helpers consume one Kirigami highlight color and
+adjust it to a contrast threshold. They do not select the WinUI shade
+roles or distinguish the base Accent used for selected-text backgrounds.
+This is a confirmed implementation gap for non-default accents.
+
+Microsoft documents that the Windows shell generates the six shades, but
+does not publish the generation formula in the reviewed API documentation.
+Two base colors are useful reference points, not enough to claim an exact
+reconstruction. Do not fit a fixed HSL transform or hard-code the orange
+sample as a general solution.
+
+The original wallpaper hashes for the blue dark and light captures differ.
+The light blue and orange captures share a registered wallpaper hash, but
+the original image hash was not supplied. The v1 script's AutoColorization
+field was null, and its mode field merely echoed the command argument.
+Those fields do not establish the registry mode or wallpaper algorithm.
+The v2 capture script now records both known AutoColor registry locations,
+the raw Explorer AccentPalette binary value, and the manual base color
+observed through UISettings. Its raw palette bytes must be compared against
+the seven API values before using the registry layout as an implementation
+contract.
 
 ### Capture procedure
 
@@ -363,27 +393,29 @@ Windows PowerShell 5.1:
 ```
 
 The script reports the Windows build, both appearance modes, wallpaper
-placement, reported display size and all seven runtime accent colors as
-#AARRGGBB (plus foreground and background). It also hashes both the
+placement, display size, all seven runtime accent colors, and raw values
+from both known AutoColor registry locations. It also records the raw
+Explorer AccentPalette bytes, DWM/Explorer accent DWORDs, and the base
+Accent observed through UISettings when Manual is selected. It hashes the
 registry-selected wallpaper file and, when supplied, the original image.
 The two hashes may differ because Windows can transcode the wallpaper.
 The original path is operator-supplied; it is not independently proven to
-be the active image. No file paths are included in the JSON. The reported
-accent mode is the operator's selection; the raw registry value is
-recorded independently and must not be interpreted as a verified mode
-when absent or inconsistent. Two identical snapshots one second apart
-reject observed changes but cannot prove the shell has finished updating.
-Use the script only after the visible transition has settled.
+be the active image. No file paths are included in the JSON. The command
+argument and registry-derived mode are separate fields. A missing or
+conflicting registry value remains unknown. Two identical snapshots one
+second apart reject observed changes but cannot prove the shell has
+finished updating. Use the script only after the visible transition has
+settled.
 
 Capture the same original image in both modes, then repeat with warm,
 green, purple and neutral images. Keep the display and wallpaper
-placement fixed. Use a unique JSON filename for each capture. For manual
-accent references, select a known color in Windows and record the exact
-entered value, for example:
+placement fixed. Use a unique JSON filename for each capture. For manual accent references, select a known color in Windows and run the
+same command. The script records the actual base Accent from UISettings;
+the optional ManualColor argument is only a cross-check:
 
 ```powershell
-.\capture-windows-accent.ps1 -AccentMode Manual -ManualColor '#0078D4' |
-    Set-Content -Encoding UTF8 accent-manual-blue.json
+.\capture-windows-accent.ps1 -AccentMode Manual |
+    Set-Content -Encoding UTF8 accent-manual.json
 ```
 
 Repeat manual captures for several distinct hues and the default blue,

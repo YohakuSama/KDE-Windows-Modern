@@ -1,12 +1,42 @@
 {
-  "description": "Operator-provided UISettings.GetColorValue captures. The accent mode is reported, not independently verified. The registered wallpaper hashes differ and neither original wallpaper hash was supplied. These captures establish one observed accent ramp in two appearance modes, not a wallpaper extraction or shade-generation algorithm.",
-  "captures": {
+  "windows_build": "26300.9974",
+  "display_version": "26H2",
+  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In every sample, the observed manual base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1.",
+  "winui_roles": {
     "dark": {
-      "schema_version": 1,
-      "windows_build": "26300.9974",
-      "display_version": "26H2",
-      "accent_mode_reported_by_operator": "Automatic",
-      "manual_color_reported_by_operator": "",
+      "primary_fill": "AccentLight2",
+      "secondary_fill": "AccentLight2",
+      "secondary_opacity": 0.9,
+      "tertiary_fill": "AccentLight2",
+      "tertiary_opacity": 0.8,
+      "accent_text_primary": "AccentLight3",
+      "accent_text_secondary": "AccentLight3",
+      "accent_text_tertiary": "AccentLight2",
+      "selected_text_background": "Accent",
+      "text_on_accent_primary": "#FF000000",
+      "text_on_accent_secondary": "#80000000"
+    },
+    "light": {
+      "primary_fill": "AccentDark1",
+      "secondary_fill": "AccentDark1",
+      "secondary_opacity": 0.9,
+      "tertiary_fill": "AccentDark1",
+      "tertiary_opacity": 0.8,
+      "accent_text_primary": "AccentDark2",
+      "accent_text_secondary": "AccentDark3",
+      "accent_text_tertiary": "AccentDark1",
+      "selected_text_background": "Accent",
+      "text_on_accent_primary": "#FFFFFFFF",
+      "text_on_accent_secondary": "#B3FFFFFF"
+    }
+  },
+  "captures": {
+    "manual_blue_dark": {
+      "script_schema_version": 1,
+      "script_mode_argument": "Automatic",
+      "verified_settings_mode": "Manual",
+      "manual_color_argument": "",
+      "manual_color_observed_from_ui_settings": "#FF0078D4",
       "appearance": {
         "registered_wallpaper_sha256": "D54262032574B15CCF541E40FA13475FFB39D8682C19383E917F3ED5E8BBCA71",
         "source_wallpaper_sha256": null,
@@ -31,12 +61,12 @@
         }
       }
     },
-    "light": {
-      "schema_version": 1,
-      "windows_build": "26300.9974",
-      "display_version": "26H2",
-      "accent_mode_reported_by_operator": "Automatic",
-      "manual_color_reported_by_operator": "",
+    "manual_blue_light": {
+      "script_schema_version": 1,
+      "script_mode_argument": "Automatic",
+      "verified_settings_mode": "Manual",
+      "manual_color_argument": "",
+      "manual_color_observed_from_ui_settings": "#FF0078D4",
       "appearance": {
         "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
         "source_wallpaper_sha256": null,
@@ -56,6 +86,36 @@
           "AccentLight1": "#FF0091F8",
           "AccentLight2": "#FF4CC2FF",
           "AccentLight3": "#FF99EBFF",
+          "Background": "#FFFFFFFF",
+          "Foreground": "#FF000000"
+        }
+      }
+    },
+    "manual_orange_light": {
+      "script_schema_version": 1,
+      "script_mode_argument": "Manual",
+      "verified_settings_mode": "Manual",
+      "manual_color_argument": "",
+      "manual_color_observed_from_ui_settings": "#FFFF8C00",
+      "appearance": {
+        "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+        "source_wallpaper_sha256": null,
+        "wallpaper_style_raw": "10",
+        "tile_wallpaper_raw": "0",
+        "auto_colorization_raw": null,
+        "apps_use_light_theme": 1,
+        "system_uses_light_theme": 1,
+        "transparency_raw": 1,
+        "reported_display_width": 1280,
+        "reported_display_height": 800,
+        "colors_argb": {
+          "Accent": "#FFFF8C00",
+          "AccentDark1": "#FFE37700",
+          "AccentDark2": "#FFA14600",
+          "AccentDark3": "#FF651900",
+          "AccentLight1": "#FFFF9910",
+          "AccentLight2": "#FFFFB634",
+          "AccentLight3": "#FFFFD155",
           "Background": "#FFFFFFFF",
           "Foreground": "#FF000000"
         }
