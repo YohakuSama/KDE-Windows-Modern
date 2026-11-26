@@ -5,12 +5,15 @@ import gzip
 import hashlib
 import json
 import importlib.util
+from io import BytesIO
 from pathlib import Path
+import re
 import runpy
 import tempfile
 import unittest
 from unittest.mock import patch
 import xml.etree.ElementTree as ET
+import zlib
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('window_frames', ROOT / 'scripts/theme/window-frames.py')
@@ -143,6 +146,10 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertEqual(control["decode_state"](json.dumps(state)), palette)
                 with patch.dict(control["SYNC"], {"analyze_wallpapers": lambda paths: self.fail("decoded cached images")}):
                     self.assertIs(automatic(state), state)
+                legacy = dict(state)
+                del legacy["analysis_revision"]
+                self.assertEqual(automatic(legacy), state)
+                self.assertEqual(state["analysis_revision"], control["SYNC"]["WALLPAPER_ANALYSIS_REVISION"])
                 image.write_bytes(b"replacement image")
                 self.assertNotEqual(automatic(state)["wallpapers"], state["wallpapers"])
                 # A native package or slideshow selects a new actual file.
@@ -882,6 +889,93 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual(references["decode-opaque"][0], references["decode-linear"][0])
         self.assertNotEqual(references["decode-opaque"][1], references["decode-linear"][1])
         self.assertEqual(references["decode-alpha-0-red"], references["decode-alpha-0-blue"])
+
+    def test_icc_wallpaper_conversion(self):
+        try:
+            from PIL import Image, ImageCms
+        except ImportError:
+            self.skipTest("optional Pillow ImageCms unavailable")
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        decode = sync["decode_wallpaper_bitmap"]
+        # Reuse the exact synthetic linear profile embedded in the Windows
+        # collector; no device or Windows-owned profile is bundled.
+        collector = (ROOT / "scripts/capture-windows-wallpaper-probes.ps1").read_text(encoding="utf-8-sig")
+        match = re.search(r"'linear-srgb' = @\{\s+sha256 = '([0-9A-F]{64})'\s+payload = '([^']+)'",
+                          collector)
+        self.assertIsNotNone(match)
+        profile = zlib.decompress(base64.b64decode(match[2], validate=True))
+        self.assertEqual(hashlib.sha256(profile).hexdigest().upper(), match[1])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "linear.png"
+            with Image.new("RGB", (512, 1)) as image:
+                # Every output pixel mixes two different encoded colors.
+                # Color conversion must precede, not follow, resampling.
+                image.putdata([(20, 138, 20), (225, 48, 48)] * 256)
+                image.save(path, icc_profile=profile)
+                with ImageCms.profileToProfile(
+                        image, ImageCms.ImageCmsProfile(BytesIO(profile)),
+                        ImageCms.createProfile("sRGB"),
+                        renderingIntent=ImageCms.Intent.RELATIVE_COLORIMETRIC,
+                        outputMode="RGB") as converted:
+                    expected = sync["prepare_opaque_wallpaper_bitmap"](
+                        converted.tobytes(), converted.width, converted.height)
+                raw = sync["prepare_opaque_wallpaper_bitmap"](image.tobytes(), image.width, image.height)
+                self.assertNotEqual(expected, raw)
+            before = path.read_bytes()
+            self.assertEqual(decode(path), expected)
+            self.assertEqual(path.read_bytes(), before)
+            invalid = Path(tmp) / "invalid.png"
+            with Image.new("RGB", (1, 1), (20, 138, 20)) as image:
+                image.save(invalid, icc_profile=b"invalid ICC")
+            with self.assertRaisesRegex(ValueError, "ICC conversion failed"):
+                decode(invalid)
+
+    def test_windows_icc_profile_boundary(self):
+        report = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes-decode-profile.json").read_text(
+            encoding="utf-8-sig"))
+        self.assertEqual(report["probe_set"], "DecodeProfile")
+        self.assertEqual(report["baseline"]["windows_build"], "26300.9974")
+        self.assertTrue(report["restoration"]["wallpaper_path_verified"])
+        self.assertTrue(report["restoration"]["palette_matches_baseline"])
+        observations = {}
+        for sample in report["samples"]:
+            probe, observation = sample["image"], sample["observation"]
+            capture = observation["capture"]
+            native = capture["native_wallpaper_color_api"]
+            boundary = observation["wic_boundary"]
+            with self.subTest(profile=probe["icc_profile"]):
+                self.assertTrue(observation["registered_source_matches"])
+                self.assertTrue(observation["native_argb_changed_from_reference"])
+                self.assertTrue(probe["pixel_validation"]["decoded_bgra_matches"])
+                self.assertTrue(native["argb_matches_image_color"])
+                self.assertTrue(native["rgb_matches_dwm_colorization"])
+                self.assertEqual(boundary["transcoded_status"], "matched-controlled-opaque-regions")
+                self.assertEqual(boundary["source"]["source_sha256"],
+                                 capture["appearance"]["registered_wallpaper_sha256"])
+                self.assertEqual(boundary["transcoded"]["source_sha256"],
+                                 observation["cache_observation"]["transcoded"]["sha256"])
+                buffers = {}
+                for kind in ("source", "transcoded"):
+                    item = boundary[kind]
+                    self.assertEqual((item["width"], item["height"]), (256, 256))
+                    self.assertEqual(item["order"], "top-down BGRX")
+                    data = gzip.decompress(base64.b64decode(item["gzip_base64"], validate=True))
+                    self.assertEqual(len(data), 256 * 256 * 4)
+                    self.assertEqual(hashlib.sha256(data).hexdigest().upper(), item["bitmap_sha256"])
+                    self.assertEqual(set(data[3::4]), {255})
+                    buffers[kind] = data
+                observations[probe["icc_profile"]] = (buffers, native["argb"])
+        self.assertEqual(set(observations), {"none", "srgb", "linear-srgb"})
+        untagged, native = observations["none"]
+        srgb, srgb_native = observations["srgb"]
+        linear, linear_native = observations["linear-srgb"]
+        self.assertEqual(untagged["source"], untagged["transcoded"])
+        self.assertEqual(untagged["source"], srgb["source"])
+        self.assertEqual(untagged["source"], linear["source"])
+        self.assertNotEqual(untagged["transcoded"], srgb["transcoded"])
+        self.assertNotEqual(untagged["transcoded"], linear["transcoded"])
+        self.assertEqual((native, srgb_native, linear_native),
+                         ("0xAFD44343", "0xAFD24444", "0xAFD44343"))
 
     def test_wallpaper_file_to_reference_palette(self):
         try:

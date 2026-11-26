@@ -114,14 +114,17 @@ def discover_wallpapers():
 
 def automatic_state(previous):
     snapshot = discover_wallpapers()
-    if previous and previous["source"] == "automatic" and all(
-            previous.get(key) == value for key, value in snapshot.items()):
+    revision = SYNC["WALLPAPER_ANALYSIS_REVISION"]
+    if (previous and previous["source"] == "automatic"
+            and previous.get("analysis_revision") == revision
+            and all(previous.get(key) == value for key, value in snapshot.items())):
         return previous
     palette = SYNC["analyze_wallpapers"](
         [Path(image["path"]) for image in snapshot["wallpapers"]])["palette"]
     if snapshot != discover_wallpapers():
         raise ValueError("Desktop wallpaper changed during color analysis")
-    return {"schema_version": 1, "source": "automatic", "palette": palette, **snapshot}
+    return {"schema_version": 1, "source": "automatic", "analysis_revision": revision,
+            "palette": palette, **snapshot}
 
 
 def decode_state(raw):

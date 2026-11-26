@@ -4,6 +4,7 @@
 import argparse
 import colorsys
 from fractions import Fraction
+from io import BytesIO
 import json
 import math
 import os
@@ -350,16 +351,59 @@ def prepare_premultiplied_wallpaper_bitmap(pixels, width, height):
 # limit. 40 million pixels allow conventional 8K still images.
 WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
+# Bump when decoder/analysis semantics change; installed automatic state
+# must not reuse a palette computed by the previous decoder.
+WALLPAPER_ANALYSIS_REVISION = 2
+
+
+def _icc_rgb_bitmap(image, profile_bytes):
+    """Convert an opaque tagged RGB/gray image to the standard sRGB space.
+
+    This is the color-managed baseline, not a reconstruction of WCS's
+    integer quantization. Use the embedded profile and a fixed relative
+    colorimetric intent before the existing analysis resampling step.
+    """
+    if not isinstance(profile_bytes, bytes) or not profile_bytes:
+        raise ValueError("Invalid embedded wallpaper ICC profile")
+    try:
+        from PIL import ImageCms
+    except ImportError as error:
+        raise ValueError("Pillow ImageCms is required for tagged wallpapers") from error
+    try:
+        profile = ImageCms.ImageCmsProfile(BytesIO(profile_bytes))
+        space = profile.profile.xcolor_space.strip()
+        if space == "RGB" and image.mode in ("RGB", "RGBA", "P"):
+            input_mode = "RGB"
+        elif space == "GRAY" and image.mode in ("1", "L", "LA"):
+            input_mode = "L"
+        else:
+            raise ValueError("Embedded ICC color space does not match the reviewed image format")
+
+        def convert(decoded):
+            with ImageCms.profileToProfile(
+                    decoded, profile, ImageCms.createProfile("sRGB"),
+                    renderingIntent=ImageCms.Intent.RELATIVE_COLORIMETRIC,
+                    outputMode="RGB") as managed:
+                return prepare_opaque_wallpaper_bitmap(
+                    managed.tobytes(), managed.width, managed.height)
+
+        if image.mode == input_mode:
+            return convert(image)
+        with image.convert(input_mode) as decoded:
+            return convert(decoded)
+    except (ImportError, OSError, TypeError, ImageCms.PyCMSError) as error:
+        raise ValueError("Wallpaper ICC conversion failed: " + str(error)) from error
 
 
 def decode_wallpaper_bitmap(path):
     """Decode a local still image into the candidate WIC analysis buffer.
 
-    Preserve the existing opaque RGB path. For untagged transparent PNG,
-    use Pillow's premultiplied RGBa conversion before the shared resampler.
-    Do not re-encode or alter the source. ICC-managed extraction is still
-    unresolved: opaque embedded profiles remain unconverted as before,
-    and transparent images carrying an ICC profile are not accepted.
+    Preserve the untagged opaque RGB path. Convert tagged opaque RGB or
+    grayscale images to sRGB before resampling, using the standard ICC
+    transform; WCS byte-level parity remains unresolved. For untagged
+    transparent PNG use Pillow's premultiplied RGBa path. Tagged
+    transparent images remain outside the reviewed contract.
+    Do not re-encode or alter the source.
     """
     try:
         from PIL import Image, ImageOps
@@ -382,17 +426,20 @@ def decode_wallpaper_bitmap(path):
                 orientation = source.getexif().get(274, 1)
                 if orientation not in range(1, 9):
                     raise ValueError("Invalid wallpaper orientation")
+                profile = source.info.get("icc_profile")
                 image = ImageOps.exif_transpose(source) if orientation != 1 else source
                 try:
                     if "A" in image.getbands() or "transparency" in image.info:
                         with image.convert("RGBA") as rgba:
                             if rgba.getextrema()[3] != (255, 255):
-                                if source.format != "PNG" or source.info.get("icc_profile"):
+                                if source.format != "PNG" or profile is not None:
                                     raise ValueError("Transparent wallpaper outside the reviewed untagged PNG contract")
                                 with rgba.convert("RGBa") as premultiplied:
                                     return prepare_premultiplied_wallpaper_bitmap(
                                         premultiplied.tobytes(), premultiplied.width,
                                         premultiplied.height)
+                    if profile is not None:
+                        return _icc_rgb_bitmap(image, profile)
                     if image.mode == "RGB":
                         return prepare_opaque_wallpaper_bitmap(
                             image.tobytes(), image.width, image.height)
