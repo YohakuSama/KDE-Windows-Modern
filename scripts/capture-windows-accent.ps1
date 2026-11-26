@@ -78,9 +78,11 @@ function Read-AccentSnapshot {
 
     $registry = [ordered]@{
         control_panel_auto_colorization_raw = Get-RegistryValue 'HKCU:\Control Panel\Desktop' 'AutoColorization'
+        desktop_image_color_raw = Get-RegistryValue 'HKCU:\Control Panel\Desktop' 'ImageColor'
         themes_history_auto_color_raw = Get-RegistryValue 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\History' 'AutoColor'
         dwm_accent_color_raw = Get-RegistryValue 'HKCU:\Software\Microsoft\Windows\DWM' 'AccentColor'
         dwm_colorization_color_raw = Get-RegistryValue 'HKCU:\Software\Microsoft\Windows\DWM' 'ColorizationColor'
+        dwm_colorization_afterglow_raw = Get-RegistryValue 'HKCU:\Software\Microsoft\Windows\DWM' 'ColorizationAfterglow'
         explorer_accent_color_menu_raw = Get-RegistryValue 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Accent' 'AccentColorMenu'
         explorer_start_color_menu_raw = Get-RegistryValue 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Accent' 'StartColorMenu'
         accent_palette_length_bytes = $accentPaletteLength
@@ -153,7 +155,7 @@ if ($ManualColor) {
 }
 
 [ordered]@{
-    schema_version = 3
+    schema_version = 4
     windows_build = "$($build.CurrentBuildNumber).$($build.UBR)"
     display_version = $build.DisplayVersion
     accent_mode_argument = $AccentMode

@@ -3,7 +3,11 @@
 # Requires a static Picture background, one display and Automatic accent color.
 #Requires -Version 5.1
 [CmdletBinding()]
-param([switch]$ApplyTemporarily)
+param(
+    [switch]$ApplyTemporarily,
+    [ValidateSet('Basic', 'Refinement')]
+    [string]$ProbeSet = 'Basic'
+)
 
 $ErrorActionPreference = 'Stop'
 if (-not $ApplyTemporarily) {
@@ -92,6 +96,9 @@ function Read-Capture([string]$Path) {
     $sample = & $captureScript -AccentMode Automatic -SourceWallpaper $Path | ConvertFrom-Json
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
+    }
+    if ($ProbeSet -eq 'Refinement' -and $sample.schema_version -lt 4) {
+        throw 'Refinement requires capture-windows-accent.ps1 schema 4 or newer.'
     }
     return $sample
 }
@@ -227,7 +234,8 @@ $reportPath = $null
 $probePaths = @()
 $probeHashes = @{}
 $report = [ordered]@{
-    schema_version = 1
+    schema_version = 2
+    probe_set = $ProbeSet
     description = 'Controlled Windows automatic accent observations. Unchanged palette/image evidence is inconclusive.'
     baseline = $null
     samples = @()
@@ -254,16 +262,37 @@ try {
     $rh = [int][Math]::Floor($height / 2)
     $cx = [int][Math]::Floor(($width - $rw) / 2)
     $cy = [int][Math]::Floor(($height - $rh) / 2)
-    $probes = @(
-        @{name='solid-purple'; background='#9F5A8C'; rectangle=$null},
-        @{name='solid-orange'; background='#FF8C00'; rectangle=$null},
-        @{name='center-purple'; background='#FF8C00'; rectangle=@{
-            color='#9F5A8C'; x=$cx; y=$cy; width=$rw; height=$rh}},
-        @{name='solid-gray'; background='#808482'; rectangle=$null},
-        @{name='corner-purple'; background='#FF8C00'; rectangle=@{
-            color='#9F5A8C'; x=0; y=0; width=$rw; height=$rh}},
-        @{name='solid-blue'; background='#2475CE'; rectangle=$null}
-    )
+    if ($ProbeSet -eq 'Refinement') {
+        # The Basic samples established the shade stage. These vary one
+        # image property at a time relative to the archived Basic inputs.
+        # Interleave distinct hues to reduce unchanged-palette ambiguity.
+        $probes = @(
+            @{name='purple-dark'; background='#512E48'; rectangle=$null},
+            @{name='purple-muted-05'; background='#83767F'; rectangle=$null},
+            @{name='quarter-orange'; background='#9F5A8C'; rectangle=@{
+                color='#FF8C00'; x=$cx; y=$cy; width=$rw; height=$rh}},
+            @{name='purple-bright'; background='#D1AEC7'; rectangle=$null},
+            @{name='purple-muted-12'; background='#8B6E83'; rectangle=$null},
+            @{name='half-purple'; background='#FF8C00'; rectangle=@{
+                color='#9F5A8C'; x=0; y=0; width=$rw; height=$height}},
+            @{name='purple-strong'; background='#C1389B'; rectangle=$null},
+            @{name='small-orange-on-gray'; background='#808482'; rectangle=@{
+                color='#FF8C00'; x=0; y=0;
+                width=[int][Math]::Floor($width / 4);
+                height=[int][Math]::Floor($height / 4)}}
+        )
+    } else {
+        $probes = @(
+            @{name='solid-purple'; background='#9F5A8C'; rectangle=$null},
+            @{name='solid-orange'; background='#FF8C00'; rectangle=$null},
+            @{name='center-purple'; background='#FF8C00'; rectangle=@{
+                color='#9F5A8C'; x=$cx; y=$cy; width=$rw; height=$rh}},
+            @{name='solid-gray'; background='#808482'; rectangle=$null},
+            @{name='corner-purple'; background='#FF8C00'; rectangle=@{
+                color='#9F5A8C'; x=0; y=0; width=$rw; height=$rh}},
+            @{name='solid-blue'; background='#2475CE'; rectangle=$null}
+        )
+    }
     foreach ($probe in $probes) {
         $path = Join-Path $folder ($probe.name + '.bmp')
         New-ProbeImage $path $probe

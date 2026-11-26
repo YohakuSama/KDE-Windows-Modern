@@ -658,6 +658,63 @@ fallback. This function remains disconnected from runtime until the
 extractor and global palette ownership are resolved. The current
 samples do not establish the Windows image-to-intermediate algorithm.
 
+### Extraction refinement
+
+The Basic captures constrain the image-to-intermediate stage but do not
+identify its function. For example, normalizing the pure purple and
+orange pixel colors through the existing custom CIELAB function yields
+#A25D8F and #C15A00, not the measured automatic intermediates #B25098
+and #B75B00. The pure blue pixel #2475CE is unchanged by that custom
+normalization but gives #0876CF in automatic DWM colorization.
+The five distinct chromatic intermediate colors (including Bloom)
+have CIELAB L* values near 49, although the source pixels differ in
+lightness and chroma. This constrains a candidate normalization stage,
+not its precise formula. The raw area-weighted mean RGB of the
+orange/quarter-purple images is about #E78023, unlike the observed
+#BB5900; a subsequent nonlinear transform or clustering stage remains
+possible.
+
+A [third-party shell implementation](https://github.com/lsdev/LiteStep/blob/master/litestep/DesktopWallpaper.cpp)
+uses the registry value HKCU\\Control Panel\\Desktop\\ImageColor
+as its wallpaper-color readout. This is a research lead, not a
+documented Windows 26H2 contract. The read-only capture script schema 4
+records ImageColor and DWM ColorizationAfterglow in addition to the
+existing fields, preserving missing values as null and raw DWORDs
+without assuming a byte order or alpha interpretation for ImageColor.
+
+The existing collector accepts -ProbeSet Refinement, which requires
+schema 4 and produces eight new controlled images without repeating
+the Basic set:
+
+| Probe | Purpose |
+| --- | --- |
+| #512E48 and #D1AEC7 | Change lightness at approximately the original purple's hue and saturation |
+| #83767F and #8B6E83 | Low HSL saturation near 0.05 and 0.12 at the original purple's lightness |
+| #C1389B | Higher saturation near 0.55 at the original lightness |
+| Quarter orange on purple | Reverse the 25/75 area ratio of the Basic pair |
+| Half purple on orange | Equal area competition |
+| Small orange on gray | Test a colored region near 6.25% against a near-gray background |
+
+The image recipes use exact 8-bit RGB and integer rectangle bounds.
+The stated HSL coordinates and area fractions are approximate after
+rounding. No threshold is inferred before the results are observed.
+The Basic mode remains available for old captures; new reports use
+schema 2 with a probe_set field. The refinement uses the same original
+wallpaper restoration, integrity and stable-observation logic.
+
+Run both updated scripts from the same VM folder, with Automatic accent
+and a static Picture background:
+
+```powershell
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet Refinement
+```
+
+Submit only the new wallpaper-probes.json. Do not replace or recapture
+the completed Basic report. If ImageColor is absent, the report still
+provides the remaining observations. Do not make a runtime extractor
+or calibrate an image-specific lookup until the candidate transform
+has been checked against independent samples.
+
 ### Capture procedure
 
 For maintainer acceptance, use a single display and a static picture in
@@ -693,7 +750,7 @@ placement fixed. Use a unique JSON filename for each capture. For manual
 accent references, select a known color in Windows and run the following
 command. The script records the actual base Accent from UISettings;
 the optional ManualColor argument records the operator-entered RGB. The
-v3 script reports a match or mismatch without rejecting the capture:
+schema 3 and later report a match or mismatch without rejecting the capture:
 
 ```powershell
 .\capture-windows-accent.ps1 -AccentMode Manual -ManualColor '#9F5A8C' |
