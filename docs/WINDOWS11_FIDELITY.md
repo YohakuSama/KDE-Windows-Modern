@@ -310,7 +310,7 @@ implementation; it is not evidence of Windows-equivalent colors.
 
 ### Captured Windows 11 26H2 baseline
 
-The maintainer supplied three UISettings captures from build 26300.9974,
+The maintainer supplied four UISettings captures from build 26300.9974,
 preserved in [the runtime accent reference](windows11-26h2-accent-captures.json).
 The original blue samples were produced with the v1 script argument
 Automatic, but the Settings screenshot and the owner's correction
@@ -367,16 +367,40 @@ Two base colors are useful reference points, not enough to claim an exact
 reconstruction. Do not fit a fixed HSL transform or hard-code the orange
 sample as a general solution.
 
-The original wallpaper hashes for the blue dark and light captures differ.
+The registered wallpaper hashes for the blue dark and light captures differ.
 The light blue and orange captures share a registered wallpaper hash, but
 the original image hash was not supplied. The v1 script's AutoColorization
 field was null, and its mode field merely echoed the command argument.
 Those fields do not establish the registry mode or wallpaper algorithm.
 The v2 capture script now records both known AutoColor registry locations,
 the raw Explorer AccentPalette binary value, and the manual base color
-observed through UISettings. Its raw palette bytes must be compared against
-the seven API values before using the registry layout as an implementation
-contract.
+observed through UISettings.
+
+### Registry palette observation (manual orange)
+
+The v2 orange capture reports Themes\\History\\AutoColor = 0, a Manual
+registry mode with no detected conflict, and the same seven API colors as
+its v1 predecessor. The 32-byte Explorer AccentPalette has eight four-byte
+slots. In this capture each slot is RGB followed by 00. The first seven
+slots exactly match UISettings in this order: AccentLight3, AccentLight2,
+AccentLight1, Accent, AccentDark1, AccentDark2, AccentDark3. The last slot
+is #0063B1; its meaning and the fourth byte's semantics are not established.
+DWM AccentColor and Explorer AccentColorMenu both encode the base orange
+as AABBGGRR (0xFF008CFF); StartColorMenu encodes AccentDark1 as 0xFF0077E3.
+DWM ColorizationColor is recorded separately as the raw value 0xC4FF8C00.
+These are observations, not a cross-version registry contract.
+
+The format stores already-generated colors. It does not expose the
+wallpaper extraction or seven-color generation formula. Do not infer the
+formula from registry byte order or substitute the eighth slot for a WinUI
+accent role. The existing shared-palette regression check compares the
+raw bytes with the independent API capture. Keep the remaining extraction,
+role propagation and live renderer refresh work open.
+
+The next capture should use Automatic in the actual Settings UI, preferably
+with the current known original wallpaper path supplied to SourceWallpaper.
+A manual-only sample cannot validate wallpaper extraction. The existing
+orange sample does not need to be collected again.
 
 ### Capture procedure
 
@@ -409,8 +433,9 @@ settled.
 
 Capture the same original image in both modes, then repeat with warm,
 green, purple and neutral images. Keep the display and wallpaper
-placement fixed. Use a unique JSON filename for each capture. For manual accent references, select a known color in Windows and run the
-same command. The script records the actual base Accent from UISettings;
+placement fixed. Use a unique JSON filename for each capture. For manual
+accent references, select a known color in Windows and run the following
+command. The script records the actual base Accent from UISettings;
 the optional ManualColor argument is only a cross-check:
 
 ```powershell

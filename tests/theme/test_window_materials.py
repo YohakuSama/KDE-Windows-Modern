@@ -222,6 +222,39 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual(orange["Accent"], "#FFFF8C00")
         self.assertEqual(orange[roles["light"]["primary_fill"]], "#FFE37700")
 
+        registry_sample = captured["manual_orange_light_registry"]
+        registry_appearance = registry_sample["appearance"]
+        registry = registry_appearance["registry"]
+        observation = reference["registry_palette_observation"]
+        self.assertEqual(registry_sample["accent_mode_registry"], "Manual")
+        self.assertFalse(registry_sample["accent_mode_registry_conflict"])
+        self.assertEqual(registry["themes_history_auto_color_raw"], 0)
+        self.assertEqual(registry_appearance["colors_argb"], orange)
+        raw = bytes.fromhex(registry["accent_palette_hex"])
+        self.assertEqual(len(raw), registry["accent_palette_length_bytes"])
+        self.assertEqual(len(raw), 32)
+        self.assertEqual(observation["slot_size_bytes"], 4)
+        self.assertEqual(observation["slot_count"], 8)
+        order = ("AccentLight3", "AccentLight2", "AccentLight1", "Accent",
+                 "AccentDark1", "AccentDark2", "AccentDark3")
+        self.assertEqual(observation["ui_settings_roles_in_slot_order"], list(order))
+        for index, role in enumerate(order):
+            slot = raw[index * 4:index * 4 + 4]
+            self.assertEqual("#FF" + slot[:3].hex().upper(), orange[role])
+            self.assertEqual(slot[3], 0)
+        # Preserve the unknown eighth slot without treating it as an accent role.
+        self.assertEqual(observation["unassigned_slot_index"], 7)
+        self.assertEqual("#" + raw[28:31].hex().upper(),
+                         observation["unassigned_slot_rgb"])
+        self.assertEqual(raw[31], 0)
+        self.assertEqual(registry["dwm_accent_color_raw"] & 0xFFFFFFFF, 0xFF008CFF)
+        self.assertEqual(registry["explorer_accent_color_menu_raw"] & 0xFFFFFFFF,
+                         0xFF008CFF)
+        self.assertEqual(registry["explorer_start_color_menu_raw"] & 0xFFFFFFFF,
+                         0xFF0077E3)
+        self.assertEqual(registry["dwm_colorization_color_raw"] & 0xFFFFFFFF,
+                         0xC4FF8C00)
+
         schemes = {}
         for mode in ('dark', 'light'):
             with self.subTest(mode=mode):
