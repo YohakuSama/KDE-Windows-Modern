@@ -31,8 +31,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Trust the exact checked-out repository in this container
+        id: checkout
+        run: |
+          # checkout sets safe.directory in its temporary HOME; subsequent
+          # container steps use a different HOME. Trust only this workspace.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git status --short
       - name: Install static analysis dependencies
         id: deps
+        if: steps.checkout.outcome == 'success'
         run: |
           dnf install -y --setopt=install_weak_deps=False \
             ShellCheck python3 nix-legacy qt6-qtdeclarative-devel \
@@ -42,9 +51,20 @@ jobs:
       - name: Shell syntax and lint
         if: steps.deps.outcome == 'success' && !cancelled()
         run: |
-          mapfile -d '' -t scripts < <(git ls-files -z -- '*.sh')
-          for file in "${scripts[@]}"; do bash -n "$file"; done
-          shellcheck -x "${scripts[@]}"
+          # A process substitution can hide a git ls-files failure from
+          # Bash's errexit. Complete the inventory before starting checks.
+          inventory="$(mktemp)"
+          trap 'rm -f -- "$inventory"' EXIT
+          git ls-files -z -- '*.sh' > "$inventory"
+          mapfile -d '' -t scripts < "$inventory"
+          [ "${#scripts[@]}" -gt 0 ]
+          echo "Checking ${#scripts[@]} tracked Shell scripts"
+          failed=0
+          for file in "${scripts[@]}"; do
+            bash -n "$file" || failed=1
+          done
+          shellcheck -x "${scripts[@]}" || failed=1
+          exit "$failed"
       - name: JSON, XML and SVG parsing
         if: steps.deps.outcome == 'success' && !cancelled()
         run: |
@@ -81,14 +101,22 @@ jobs:
       - name: Nix syntax only
         if: steps.deps.outcome == 'success' && !cancelled()
         run: |
-          while IFS= read -r -d '' file; do
+          inventory="$(mktemp)"
+          trap 'rm -f -- "$inventory"' EXIT
+          git ls-files -z -- '*.nix' > "$inventory"
+          mapfile -d '' -t expressions < "$inventory"
+          [ "${#expressions[@]}" -gt 0 ]
+          failed=0
+          for file in "${expressions[@]}"; do
             echo "Parsing $file"
-            nix-instantiate --parse "$file" >/dev/null
-          done < <(git ls-files -z -- '*.nix')
+            nix-instantiate --parse "$file" >/dev/null || failed=1
+          done
+          echo "Checked ${#expressions[@]} Nix expressions"
+          exit "$failed"
       - name: Parse all QML using Qt
         if: steps.deps.outcome == 'success' && !cancelled()
         run: bash scripts/check-qml-syntax.sh
-      - name: QML lint for the new Snap Layouts UI
+      - name: QML lint diagnostics for Snap Layouts
         if: steps.deps.outcome == 'success' && !cancelled()
         run: |
           tool=/usr/lib64/qt6/bin/qmllint
@@ -97,7 +125,19 @@ jobs:
           # Keep unresolved imports and other diagnostics visible; do not
           # disable warnings or claim full semantic coverage in that case.
           "$tool" --version
-          "$tool" plasma/kwinscripts/org.kde.windowsmodern.snaplayouts/contents/ui/{main,CaptionSnapPicker,SnapBar}.qml
+          log="$(mktemp)"
+          trap 'rm -f -- "$log"' EXIT
+          result=0
+          "$tool" plasma/kwinscripts/org.kde.windowsmodern.snaplayouts/contents/ui/{main,CaptionSnapPicker,SnapBar}.qml 2>&1 | tee "$log" || result=$?
+          if grep -q 'Failed to import org.kde.kwin' "$log"; then
+            echo "::warning::KWin type metadata unavailable; QML semantic analysis is incomplete."
+            echo 'QML semantic analysis is incomplete: org.kde.kwin type metadata is unavailable outside the KWin process.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if grep -q '^Warning:' "$log"; then
+            echo "::warning::qmllint emitted warnings; review the diagnostics, even if its exit status is zero."
+            echo 'qmllint emitted warnings; see the job log.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$result"
       - name: Read-only resource reference audit
         if: steps.deps.outcome == 'success' && !cancelled()
         run: |
