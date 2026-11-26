@@ -1,0 +1,596 @@
+{
+  "format": "windows-modern-resource-audit-v1",
+  "date": "2026-11-26",
+  "windows": {
+    "edition": "Professional",
+    "display_version": "26H2",
+    "build": "26300.9974",
+    "build_source": "Offline SOFTWARE registry",
+    "image_index": 5,
+    "imported_output_count": 45,
+    "output_groups": {
+      "battery": 38,
+      "search": 4,
+      "task_view": 2,
+      "account": 1
+    },
+    "shell_manifest_sha256": "7eddcf65ca02a85071a17d66e6950cf3b9d4001f45c2100511a391be527826e6",
+    "source_sha256": {
+      "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/SystemTray/Assets/Sysbatt.ttf": "73e35fd2c0a58ecd295b979a89e9297326c525d02a1b5de3df0921ce18607630",
+      "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOnLight.scale-400.png": "01d4af667ecf7ef756f61f3f2dcb04ef60ca24897f46ced448d5a41bf6f4de34",
+      "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOffLight.scale-400.png": "0053e473ae3fbfcf6a1c9a756fcce9b29affa3a96f8573780879fc111a09dd69",
+      "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOnDark.scale-400.png": "e71b4307fd3d6740e543e35cda684c4acc3dfdc87269cf980c1942b5a9986052",
+      "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOffDark.scale-400.png": "c55a0aa7b3afdc897887c9279a82df6aa47654935a0d9b4bec706b5ba4e2a063",
+      "SystemResources/Windows.UI.SettingsAppThreshold/Windows.UI.SettingsAppThreshold.pri": "e6de3f2f2307a6ffb59d38d2625d9d4c4d310239e174e89e4aacb44dfd3a6095",
+      "ProgramData/Microsoft/User Account Pictures/user.png": "d380f2b9ade9c812c49cf83f84c096da3427c09a0a84e4be603febdf083e469a"
+    },
+    "font_candidates_sha256": {
+      "Fonts/SegoeIcons.ttf": "031ada497ddcc9bf3f2536efba2f4bd53f12a0dead44460a4a934b06a952dd2b",
+      "SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/InputApp/Assets/Fonts/AXPIcons.ttf": "5e4c6965ea18d6ffea4b1d3f847391e5ea68ad93751d1f3c4ab5d5bf2b0bfbcc",
+      "SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/VisualAssist/Assets/Fonts/SettingsIcons.ttf": "924049695fd0d99c4512f3a4163b462477f0097736cafdb5a1972215d1aee986",
+      "SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/VisualAssist/VisualAssist/Assets/Fonts/SettingsIcons.ttf": "924049695fd0d99c4512f3a4163b462477f0097736cafdb5a1972215d1aee986",
+      "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/SystemTray/Assets/AXPIcons.ttf": "54361b0283fc3319aa0ee4d172a009fabd4e80e20743b5b30eb9361967275687",
+      "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/ValueBanner/Assets/Fonts/SettingsIcons.ttf": "b6032510ec9c2fb9cc10f1979e6eb54b58da861c4f8130a7400100dfb4b1e056",
+      "SystemApps/SxS/MicrosoftWindows.61869836.InpApp_cw5n1h2txyewy/InputApp/Assets/Fonts/AXPIcons.ttf": "5e4c6965ea18d6ffea4b1d3f847391e5ea68ad93751d1f3c4ab5d5bf2b0bfbcc",
+      "SystemResources/Windows.UI.ControlCenter/Assets/AXPIcons.ttf": "e1089c89254011d8ec2b5632fd5091da135e579a49721f73af811758b347026a",
+      "SystemResources/Windows.UI.SettingsAppThreshold/SystemSettings/Assets/Fonts/AXPIcons.ttf": "54361b0283fc3319aa0ee4d172a009fabd4e80e20743b5b30eb9361967275687",
+      "SystemResources/Windows.UI.SettingsAppThreshold/SystemSettings/Assets/Fonts/SettingsIcons.ttf": "f1927b478be29fe775b643ab67fbf2496acf9f211ef9675f0f17299a53fd43e9",
+      "SystemResources/Windows.UI.ShellCommon/NetworkUX/Assets/Fonts/SettingsIcons.ttf": "1a28db67f57f2e7d512e49188b451deae26ea4c6b01307257374c47e5a1c0e2a",
+      "SystemResources/Windows.UI.ShellCommon/QuickActions/Assets/AXPIcons.ttf": "e1089c89254011d8ec2b5632fd5091da135e579a49721f73af811758b347026a"
+    }
+  },
+  "kde": {
+    "plasma_version": "6.8.3",
+    "metadata_log_sha256": "ec43a8a84221589ecc1df06f9564034efc58a8fa8cd625ebe8bb884c62d2099b",
+    "installed_audit_sha256": "b7d153665f4340636f56a92402b8ed027319032542940a59bbbab56af6c7f0b3",
+    "module_count": 98,
+    "unique_icon_names": 84,
+    "previous_module_status_counts": {
+      "native_hash_verified": 41,
+      "bundled_not_native_verified": 3,
+      "not_in_previous_audit": 54
+    },
+    "shared_icon_names": {
+      "system-run": [
+        "kcm_autostart",
+        "kcm_solid_actions"
+      ],
+      "preferences-system-time": [
+        "kcm_clock",
+        "kcm_recentFiles"
+      ],
+      "preferences-desktop-color": [
+        "kcm_colord",
+        "kcm_colors"
+      ],
+      "video-display": [
+        "kcm_edid",
+        "kcm_egl",
+        "kcm_glx",
+        "kcm_opencl",
+        "kcm_vaapi",
+        "kcm_vulkan"
+      ],
+      "preferences-system-windows-actions": [
+        "kcm_kwin_scripts",
+        "kcm_kwinoptions",
+        "kcm_kwinrules"
+      ],
+      "xorg": [
+        "kcm_kwinxwayland",
+        "kcm_xserver"
+      ],
+      "preferences-desktop": [
+        "kcm_landingpage",
+        "kcm_workspace"
+      ],
+      "preferences-system-power-management": [
+        "kcm_mobile_power",
+        "kcm_powerdevilprofilesconfig"
+      ],
+      "preferences-desktop-locale": [
+        "kcm_qtquicksettings",
+        "kcm_regionandlang"
+      ]
+    },
+    "modules": [
+      {
+        "module": "kcm_about-distro",
+        "declared_icon": "ktip",
+        "category": "system-administration"
+      },
+      {
+        "module": "kcm_access",
+        "declared_icon": "preferences-desktop-accessibility",
+        "category": "input-devices"
+      },
+      {
+        "module": "kcm_activities",
+        "declared_icon": "preferences-desktop-activities",
+        "category": "applications"
+      },
+      {
+        "module": "kcm_animations",
+        "declared_icon": "preferences-desktop-animations",
+        "category": "appearance"
+      },
+      {
+        "module": "kcm_audio_information",
+        "declared_icon": "audio-card",
+        "category": ""
+      },
+      {
+        "module": "kcm_autostart",
+        "declared_icon": "system-run",
+        "category": "system-administration"
+      },
+      {
+        "module": "kcm_baloofile",
+        "declared_icon": "preferences-desktop-baloo",
+        "category": "search"
+      },
+      {
+        "module": "kcm_block_devices",
+        "declared_icon": "drive-multidisk",
+        "category": ""
+      },
+      {
+        "module": "kcm_bluetooth",
+        "declared_icon": "preferences-system-bluetooth",
+        "category": "hardware"
+      },
+      {
+        "module": "kcm_cellular_network",
+        "declared_icon": "smartphone",
+        "category": "network"
+      },
+      {
+        "module": "kcm_clock",
+        "declared_icon": "preferences-system-time",
+        "category": "regionalsettings"
+      },
+      {
+        "module": "kcm_colord",
+        "declared_icon": "preferences-desktop-color",
+        "category": "hardware"
+      },
+      {
+        "module": "kcm_colors",
+        "declared_icon": "preferences-desktop-color",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_componentchooser",
+        "declared_icon": "preferences-desktop-default-applications",
+        "category": "applications-defaults"
+      },
+      {
+        "module": "kcm_cpu",
+        "declared_icon": "preferences-devices-cpu",
+        "category": ""
+      },
+      {
+        "module": "kcm_cursortheme",
+        "declared_icon": "preferences-desktop-cursors",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_desktoppaths",
+        "declared_icon": "system-file-manager",
+        "category": "session"
+      },
+      {
+        "module": "kcm_desktoptheme",
+        "declared_icon": "preferences-desktop-plasma-theme",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_device_automounter",
+        "declared_icon": "drive-removable-media",
+        "category": "removable-storage"
+      },
+      {
+        "module": "kcm_edid",
+        "declared_icon": "video-display",
+        "category": ""
+      },
+      {
+        "module": "kcm_egl",
+        "declared_icon": "video-display",
+        "category": ""
+      },
+      {
+        "module": "kcm_energyinfo",
+        "declared_icon": "battery",
+        "category": ""
+      },
+      {
+        "module": "kcm_fcitx5",
+        "declared_icon": "fcitx",
+        "category": "regionalsettings"
+      },
+      {
+        "module": "kcm_feedback",
+        "declared_icon": "preferences-desktop-feedback",
+        "category": "security-privacy"
+      },
+      {
+        "module": "kcm_filetypes",
+        "declared_icon": "preferences-desktop-filetype-association",
+        "category": "applications-defaults"
+      },
+      {
+        "module": "kcm_firmware_security",
+        "declared_icon": "preferences-security",
+        "category": ""
+      },
+      {
+        "module": "kcm_fontinst",
+        "declared_icon": "preferences-desktop-font-installer",
+        "category": "font"
+      },
+      {
+        "module": "kcm_fonts",
+        "declared_icon": "preferences-desktop-font",
+        "category": "font"
+      },
+      {
+        "module": "kcm_gamecontroller",
+        "declared_icon": "preferences-desktop-gaming",
+        "category": "input-devices"
+      },
+      {
+        "module": "kcm_glx",
+        "declared_icon": "video-display",
+        "category": ""
+      },
+      {
+        "module": "kcm_icons",
+        "declared_icon": "preferences-desktop-icons",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_interrupts",
+        "declared_icon": "cpu",
+        "category": ""
+      },
+      {
+        "module": "kcm_kded",
+        "declared_icon": "preferences-system-session-services",
+        "category": ""
+      },
+      {
+        "module": "kcm_keyboard",
+        "declared_icon": "preferences-desktop-keyboard",
+        "category": "keyboard"
+      },
+      {
+        "module": "kcm_keys",
+        "declared_icon": "preferences-desktop-keyboard-shortcut",
+        "category": "keyboard"
+      },
+      {
+        "module": "kcm_krdpserver",
+        "declared_icon": "preferences-system-network-remote",
+        "category": "security-privacy"
+      },
+      {
+        "module": "kcm_kscreen",
+        "declared_icon": "preferences-desktop-display-randr",
+        "category": "display"
+      },
+      {
+        "module": "kcm_kwallet5",
+        "declared_icon": "kwalletmanager",
+        "category": "security-privacy"
+      },
+      {
+        "module": "kcm_kwin_effects",
+        "declared_icon": "preferences-desktop-effects",
+        "category": "windowmanagement"
+      },
+      {
+        "module": "kcm_kwin_scripts",
+        "declared_icon": "preferences-system-windows-actions",
+        "category": "windowmanagement"
+      },
+      {
+        "module": "kcm_kwin_virtualdesktops",
+        "declared_icon": "preferences-desktop-virtual",
+        "category": "windowmanagement"
+      },
+      {
+        "module": "kcm_kwindecoration",
+        "declared_icon": "preferences-desktop-theme-windowdecorations",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_kwinoptions",
+        "declared_icon": "preferences-system-windows-actions",
+        "category": "windowmanagement"
+      },
+      {
+        "module": "kcm_kwinrules",
+        "declared_icon": "preferences-system-windows-actions",
+        "category": "windowmanagement"
+      },
+      {
+        "module": "kcm_kwinscreenedges",
+        "declared_icon": "preferences-desktop-gestures-screenedges",
+        "category": "display"
+      },
+      {
+        "module": "kcm_kwinsupportinfo",
+        "declared_icon": "kwin",
+        "category": ""
+      },
+      {
+        "module": "kcm_kwintabbox",
+        "declared_icon": "preferences-system-tabbox",
+        "category": "windowmanagement"
+      },
+      {
+        "module": "kcm_kwintouchscreen",
+        "declared_icon": "preferences-desktop-gestures-touch",
+        "category": "hardware-input-touchscreen"
+      },
+      {
+        "module": "kcm_kwinxwayland",
+        "declared_icon": "xorg",
+        "category": "applications-permissions"
+      },
+      {
+        "module": "kcm_landingpage",
+        "declared_icon": "preferences-desktop",
+        "category": "rootcategory"
+      },
+      {
+        "module": "kcm_lookandfeel",
+        "declared_icon": "preferences-desktop-theme-global",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_memory",
+        "declared_icon": "memory",
+        "category": ""
+      },
+      {
+        "module": "kcm_mobile_hotspot",
+        "declared_icon": "network-wireless-hotspot",
+        "category": "network"
+      },
+      {
+        "module": "kcm_mobile_power",
+        "declared_icon": "preferences-system-power-management",
+        "category": "system-administration"
+      },
+      {
+        "module": "kcm_mobile_wifi",
+        "declared_icon": "network-wireless-symbolic",
+        "category": "network"
+      },
+      {
+        "module": "kcm_mobile_wired",
+        "declared_icon": "network-wired-symbolic",
+        "category": "network"
+      },
+      {
+        "module": "kcm_mouse",
+        "declared_icon": "preferences-desktop-mouse",
+        "category": "pointing-devices"
+      },
+      {
+        "module": "kcm_netpref",
+        "declared_icon": "preferences-system-network-connection",
+        "category": "networksettings"
+      },
+      {
+        "module": "kcm_network",
+        "declared_icon": "network-card",
+        "category": ""
+      },
+      {
+        "module": "kcm_networkmanagement",
+        "declared_icon": "preferences-system-network",
+        "category": "networksettings"
+      },
+      {
+        "module": "kcm_nightlight",
+        "declared_icon": "redshift-status-on",
+        "category": "display"
+      },
+      {
+        "module": "kcm_nighttime",
+        "declared_icon": "lighttable",
+        "category": "regionalsettings"
+      },
+      {
+        "module": "kcm_notifications",
+        "declared_icon": "preferences-desktop-notification-bell",
+        "category": "applications"
+      },
+      {
+        "module": "kcm_opencl",
+        "declared_icon": "video-display",
+        "category": ""
+      },
+      {
+        "module": "kcm_pci",
+        "declared_icon": "hwinfo",
+        "category": ""
+      },
+      {
+        "module": "kcm_plasmakeyboard",
+        "declared_icon": "input-keyboard",
+        "category": "keyboard"
+      },
+      {
+        "module": "kcm_plasmasearch",
+        "declared_icon": "plasma-search",
+        "category": "search"
+      },
+      {
+        "module": "kcm_powerdevilprofilesconfig",
+        "declared_icon": "preferences-system-power-management",
+        "category": "system-administration"
+      },
+      {
+        "module": "kcm_printer_manager",
+        "declared_icon": "preferences-devices-printer",
+        "category": "hardware"
+      },
+      {
+        "module": "kcm_proxy",
+        "declared_icon": "preferences-system-network-proxy",
+        "category": "networksettings"
+      },
+      {
+        "module": "kcm_pulseaudio",
+        "declared_icon": "preferences-desktop-sound",
+        "category": "input-devices"
+      },
+      {
+        "module": "kcm_push_notifications",
+        "declared_icon": "network-connect",
+        "category": "network"
+      },
+      {
+        "module": "kcm_qtquicksettings",
+        "declared_icon": "preferences-desktop-locale",
+        "category": ""
+      },
+      {
+        "module": "kcm_recentFiles",
+        "declared_icon": "preferences-system-time",
+        "category": "security-privacy"
+      },
+      {
+        "module": "kcm_regionandlang",
+        "declared_icon": "preferences-desktop-locale",
+        "category": "regionalsettings"
+      },
+      {
+        "module": "kcm_samba",
+        "declared_icon": "preferences-system-network-sharing",
+        "category": ""
+      },
+      {
+        "module": "kcm_screenlocker",
+        "declared_icon": "preferences-desktop-user-password",
+        "category": "security-privacy"
+      },
+      {
+        "module": "kcm_sensors",
+        "declared_icon": "temperature-normal",
+        "category": ""
+      },
+      {
+        "module": "kcm_smserver",
+        "declared_icon": "system-log-out",
+        "category": "session"
+      },
+      {
+        "module": "kcm_solid_actions",
+        "declared_icon": "system-run",
+        "category": "removable-storage"
+      },
+      {
+        "module": "kcm_soundtheme",
+        "declared_icon": "emblem-music-symbolic",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_spellchecking",
+        "declared_icon": "tools-check-spelling",
+        "category": "regionalsettings"
+      },
+      {
+        "module": "kcm_splashscreen",
+        "declared_icon": "preferences-system-splash",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_style",
+        "declared_icon": "preferences-desktop-theme-applications",
+        "category": "themes"
+      },
+      {
+        "module": "kcm_tablet",
+        "declared_icon": "preferences-desktop-tablet",
+        "category": "input-devices"
+      },
+      {
+        "module": "kcm_touchpad",
+        "declared_icon": "preferences-desktop-touchpad",
+        "category": "pointing-devices"
+      },
+      {
+        "module": "kcm_touchscreen",
+        "declared_icon": "preferences-desktop-touchscreen",
+        "category": "hardware-input-touchscreen"
+      },
+      {
+        "module": "kcm_updates",
+        "declared_icon": "system-software-update",
+        "category": "system-administration"
+      },
+      {
+        "module": "kcm_usb",
+        "declared_icon": "drive-removable-media-usb-pendrive",
+        "category": ""
+      },
+      {
+        "module": "kcm_users",
+        "declared_icon": "preferences-system-users",
+        "category": "system-administration"
+      },
+      {
+        "module": "kcm_vaapi",
+        "declared_icon": "video-display",
+        "category": ""
+      },
+      {
+        "module": "kcm_virtualkeyboard",
+        "declared_icon": "input-keyboard-virtual",
+        "category": "keyboard"
+      },
+      {
+        "module": "kcm_vulkan",
+        "declared_icon": "video-display",
+        "category": ""
+      },
+      {
+        "module": "kcm_wallpaper",
+        "declared_icon": "preferences-desktop-wallpaper",
+        "category": "appearance"
+      },
+      {
+        "module": "kcm_wayland",
+        "declared_icon": "wayland",
+        "category": ""
+      },
+      {
+        "module": "kcm_webshortcuts",
+        "declared_icon": "preferences-web-browser-shortcuts",
+        "category": ""
+      },
+      {
+        "module": "kcm_workspace",
+        "declared_icon": "preferences-desktop",
+        "category": "workspace"
+      },
+      {
+        "module": "kcm_xserver",
+        "declared_icon": "xorg",
+        "category": ""
+      }
+    ]
+  },
+  "limitations": [
+    "Metadata only, derived from the owner's local audit reports; no proprietary payload.",
+    "Windows source and output hashes are reported by the local importer, not independently verified against binary files.",
+    "The previous audit did not include all KCM names. Unlisted names are not necessarily absent from the theme.",
+    "KCM names are declared metadata, not runtime-resolved icons. Shared names do not establish functional equivalence.",
+    "No new glyph IDs are asserted until the exact source font, artwork and role have been reviewed."
+  ]
+}

@@ -254,11 +254,97 @@ def classify(name, names, expected, actual):
     return "not_in_theme"
 
 
+KCM_METADATA = re.compile(
+    r"(?m)^qt\.core\.plugin\.loader: Found metadata in lib ([^\r\n]+), metadata=\s*"
+)
+
+
+def kcm_candidates(log):
+    """Read declared KCM names from Qt's plugin metadata log without loading plugins."""
+    decoder = json.JSONDecoder()
+    modules = defaultdict(set)
+    log_text = log.read_text(encoding="utf-8", errors="replace")
+    for match in KCM_METADATA.finditer(log_text):
+        path = match.group(1)
+        if "/plasma/kcms/" not in path or not path.endswith(".so"):
+            continue
+        # A malformed KCM record fails the audit rather than silently
+        # reducing the inventory. Never copy host paths into the report.
+        payload, _ = decoder.raw_decode(log_text, match.end())
+        metadata = payload.get("MetaData", {})
+        plugin = metadata.get("KPlugin", {})
+        icon = plugin.get("Icon", "")
+        category = metadata.get("X-KDE-System-Settings-Parent-Category", "")
+        if not isinstance(icon, str) or not isinstance(category, str):
+            raise ValueError("Invalid KCM icon or category metadata: " + Path(path).stem)
+        modules[Path(path).stem].add((icon, category))
+    if not modules:
+        raise ValueError("No KDE KCM metadata records found")
+    return dict(modules)
+
+
+def kcm_inventory(modules, names, expected, actual):
+    by_icon = defaultdict(set)
+    rows = []
+    for module, variants in sorted(modules.items()):
+        for icon, category in sorted(variants):
+            if icon:
+                by_icon[icon].add(module)
+            rows.append({"module": module, "declared_icon": icon, "category": category,
+                         "status": classify(icon, names, expected, actual)
+                         if icon else "no_icon_declared"})
+    return {
+        "module_count": len(modules),
+        "unique_icon_names": len(by_icon),
+        "modules": rows,
+        "shared_icon_names": {icon: sorted(ids) for icon, ids in sorted(by_icon.items())
+                              if len(ids) > 1},
+        "conflicting_metadata": sorted(module for module, variants in modules.items()
+                                       if len(variants) > 1),
+    }
+
+
+def shell_inventory(manifest_path):
+    """Verify private shell output files separately from the global icon theme."""
+    if not manifest_path.is_file():
+        return {"manifest_present": False}
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("format") != "windows-modern-shell-assets-v1":
+        raise ValueError("Unsupported shell artwork manifest")
+    root = manifest_path.parent.resolve()
+    outputs = manifest["outputs"]
+    required = {f"battery/{code:04x}.svg"
+                for code in (*range(0xf849, 0xf852), *range(0xf8d0, 0xf8ed))}
+    required.update({"search/light-on.png", "search/light-off.png",
+                     "search/dark-on.png", "task-view/light.svg", "task-view/dark.svg"})
+    verified, changed = [], []
+    for relative, record in sorted(outputs.items()):
+        target = Path(relative)
+        if target.is_absolute() or ".." in target.parts or not target.parts:
+            raise ValueError("Invalid shell artwork output path")
+        path = root / target
+        if (not path.resolve().is_relative_to(root) or not path.is_file()
+                or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]):
+            changed.append(relative)
+        else:
+            verified.append(relative)
+    return {
+        "manifest_present": True,
+        "declared_source_build": manifest.get("declared_source_build"),
+        "declared_output_count": len(outputs),
+        "verified_outputs": verified,
+        "missing_or_changed_outputs": changed,
+        "required_outputs_missing_from_manifest": sorted(required - outputs.keys()),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--installed", action="store_true", help="Audit installed icons and XDG desktop entries")
     parser.add_argument("--theme", type=Path, help="Override icon theme path")
     parser.add_argument("--manifest", type=Path, help="Override local import manifest")
+    parser.add_argument("--kcm-metadata", type=Path, help="Read a Qt plugin metadata log from kcmshell6 --list")
+    parser.add_argument("--shell-manifest", type=Path, help="Override the private shell artwork manifest path")
     args = parser.parse_args()
     data_home = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
     theme = args.theme or (data_home / "icons/windows-modern" if args.installed else ROOT / "icons/windows-modern")
@@ -272,8 +358,17 @@ def main():
     desktop = desktop_candidates([data_home] + [
         Path(p) for p in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":") if p
     ]) if args.installed else {}
+    kcm = (kcm_inventory(kcm_candidates(args.kcm_metadata), names, expected, actual)
+           if args.kcm_metadata is not None else None)
+    by_kcm_icon = defaultdict(list)
+    if kcm is not None:
+        for row in kcm["modules"]:
+            if row["declared_icon"]:
+                by_kcm_icon[row["declared_icon"]].append(row["module"])
+    shell = shell_inventory(args.shell_manifest or
+                            data_home / "windows-modern/shell-assets/manifest.json")
     report = defaultdict(list)
-    for name in sorted(set(qml) | set(desktop) | set(expected)):
+    for name in sorted(set(qml) | set(desktop) | set(expected) | set(by_kcm_icon)):
         status = classify(name, names, expected, actual)
         report[status].append({
             "name": name,
@@ -282,6 +377,7 @@ def main():
             "theme_files": names.get(name, []),
             "qml_candidates": qml.get(name, []),
             "desktop_ids": desktop.get(name, []),
+            "kcm_modules": sorted(set(by_kcm_icon.get(name, []))),
         })
     print(json.dumps({
         "mode": "installed" if args.installed else "repository",
@@ -294,6 +390,8 @@ def main():
         "native_output_missing_or_changed": mismatched,
         "counts": {k: len(v) for k, v in sorted(report.items())},
         "references": dict(sorted(report.items())),
+        "kcm_metadata": kcm,
+        "shell_artwork": shell,
         "source_reference_counts": {kind: len(rows) for kind, rows in sources.items()},
         "source_references": sources,
         "limitations": [
@@ -301,7 +399,9 @@ def main():
             "Bundled does not establish Windows origin; verify the resource before replacing.",
             "QML source and C++ literal scans are heuristic, not complete expression or data-flow analysis.",
             "Exact private role mapping proves a declared source, not local asset presence; direct artwork, native controls and dynamic pixmaps require provenance and live review.",
-            "A verified output hash establishes local import parity, not semantic identity or Windows version."
+            "A verified output hash establishes local import parity, not semantic identity or Windows version.",
+            "KCM metadata lists declared icons, not the runtime-resolved theme file or category and page-internal controls.",
+            "Private shell manifest hashes establish output parity, not independent verification of the declared Windows build."
         ],
     }, indent=2, ensure_ascii=False))
 

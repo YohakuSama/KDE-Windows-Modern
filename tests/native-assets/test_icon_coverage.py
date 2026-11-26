@@ -71,6 +71,48 @@ class CoverageTests(unittest.TestCase):
             self.assertEqual(result["cpp_theme_name"][0]["value"], "old")
             self.assertTrue(any(row["value"] == "model.icon" for row in result["dynamic_qml_candidate"]))
 
+    def test_kcm_metadata_and_shared_icons(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "metadata.txt"
+            prefix = "qt.core.plugin.loader: Found metadata in lib "
+            one = ('/nix/store/example/lib/qt-6/plugins/plasma/kcms/kcm_one.so, metadata=\n'
+                   '{"MetaData":{"KPlugin":{"Icon":"shared"},'
+                   '"X-KDE-System-Settings-Parent-Category":"first"}}\n')
+            two = ('/nix/store/example/lib/qt-6/plugins/plasma/kcms/systemsettings/kcm_two.so, metadata=\n'
+                   '{"MetaData":{"KPlugin":{"Icon":"shared"}}}\n')
+            empty = ('/nix/store/example/lib/qt-6/plugins/plasma/kcms/kcm_empty.so, metadata=\n'
+                     '{"MetaData":{"KPlugin":{}}}\n')
+            log.write_text(prefix + one + prefix + one + prefix + two + prefix + empty)
+            modules = audit.kcm_candidates(log)
+            self.assertEqual(len(modules), 3)
+            report = audit.kcm_inventory(modules, {"shared": ["apps/shared.svg"]}, {}, {})
+            self.assertEqual(report["unique_icon_names"], 1)
+            self.assertEqual(report["shared_icon_names"], {"shared": ["kcm_one", "kcm_two"]})
+            self.assertEqual(report["conflicting_metadata"], [])
+            self.assertEqual(report["modules"][0]["status"], "no_icon_declared")
+            self.assertEqual(report["modules"][1]["status"], "bundled_not_native_verified")
+
+    def test_shell_manifest_verifies_private_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "manifest.json"
+            (root / "task-view").mkdir()
+            artwork = b"<svg/>"
+            (root / "task-view/light.svg").write_bytes(artwork)
+            manifest.write_text(audit.json.dumps({
+                "format": "windows-modern-shell-assets-v1",
+                "declared_source_build": "26300.9974",
+                "outputs": {
+                    "task-view/light.svg": {"sha256": hashlib.sha256(artwork).hexdigest()},
+                    "task-view/dark.svg": {"sha256": "bad"},
+                },
+            }))
+            report = audit.shell_inventory(manifest)
+            self.assertEqual(report["verified_outputs"], ["task-view/light.svg"])
+            self.assertEqual(report["missing_or_changed_outputs"], ["task-view/dark.svg"])
+            self.assertIn("battery/f8d0.svg", report["required_outputs_missing_from_manifest"])
+            self.assertNotIn("search/dark-off.png", report["required_outputs_missing_from_manifest"])
+
     def test_desktop_precedence(self):
         with tempfile.TemporaryDirectory() as tmp:
             paths = [Path(tmp) / name for name in ("first", "second")]

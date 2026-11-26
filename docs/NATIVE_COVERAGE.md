@@ -68,6 +68,62 @@ that a glyph exists in the staged font. Remaining gaps include confirming the Hi
 
 The official Fluent Person 48 Filled SVG path already exists in the Start menu fallback; it is distinct from an actual Windows default account picture. Microsoft documents the default picture location under `%ProgramData%/Microsoft/User Account Pictures` ([policy reference](https://learn.microsoft.com/windows/client-management/mdm/policy-csp-admx-cpls)). The shell importer supports that location on a clean local image.
 
+## Owner audit: 26H2 build 26300.9974 and Plasma 6.8.3
+
+The metadata-only [resource audit snapshot](windows11-26h2-resource-audit.json)
+records the owner's extracted Professional image (offline registry build
+26300.9974), seven original input hashes and 45 successful shell artwork
+outputs: 38 battery SVGs, all four Search states, both Task View variants
+and the default account portrait. This is evidence from the owner's local
+manifest, not independent verification of the binary contents or desktop
+acceptance. The older reference/runtime resource pins are unchanged.
+
+The extraction output used a separate staging directory; to activate the
+already-supported shell artwork, reimport the complete local image as the
+desktop user into the default XDG destination:
+
+```sh
+python3 scripts/import-shell-assets.py /path/to/extracted/image --build 26300.9974
+```
+
+The coverage report now includes a separate private shell manifest check.
+With an existing Qt metadata log, also include KCM plugin declarations:
+
+```sh
+python3 scripts/icon-coverage.py --installed --kcm-metadata /path/to/KDE-KCM-Metadata.txt
+```
+
+The reviewed log lists 98 distinct KCM modules and 84 distinct icon names.
+The earlier installed-theme report verified mapped files for 41 modules,
+listed three more as bundled without verified provenance, and did not list
+54 modules. That last count is an audit gap, not proof that 54 icons are
+absent. Nine names are shared by 23 modules. Preserve separate module
+semantics (e.g. clock vs. recent files and language vs. renderer); do not
+globally overwrite a shared name until every consumer has been reviewed.
+KCM category icons, internal controls, and Qt's resolved icon paths still
+need review. Third-party and platform identities remain distinct.
+
+To inspect the exact Settings Fluent Icons, AXP Fluent Icons and Segoe
+Fluent Icons from that build, use the existing shell inspector's private
+font-review mode. It scans the live component paths under Fonts,
+SystemApps and SystemResources, deduplicates by SHA-256, and generates
+labeled review sheets and a glyph catalog without copying font files.
+It requires Pillow and fontTools. The review images remain local/private;
+the repository records source paths, hashes and approved semantic mappings,
+not proprietary artwork or fonts. The recorded audit identifies four
+different Settings font hashes and three AXP font hashes, so do not treat
+identically named fonts as interchangeable.
+
+```sh
+python3 scripts/inspect-shell-resources.py /path/to/extracted/image/Windows /path/to/new/private/font-review --font-review
+```
+
+The review sheets and glyph names are candidates, not proof of the
+role used by a particular Windows component. Confirm the relevant
+PRI/XBF or live Windows UI before mapping. Settings page icons, tray
+states, Hibernate, Start animation and newer context-menu resources
+remain unverified. Do not add guessed glyph IDs.
+
 ## Runtime assets and NixOS
 
 NixOS uses the reversible desktop installer and builds the tray, taskbar and
