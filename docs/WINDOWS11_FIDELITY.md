@@ -429,7 +429,27 @@ paths. Its listed blue and orange presets match the measured seven-color
 ramps exactly, but this does not validate its custom-color algorithm on
 26H2. It explicitly excludes wallpaper automatic colorization.
 Treat it as a research lead, not a Microsoft implementation or a
-dependency. No third-party code or preset table is imported.
+dependency.
+
+### Manual preset lookup
+
+The 48 preset base RGB values and their six reported Windows shades
+are now recorded as reference color data in the existing sync-accent.py
+module (336 RGB values total). No third-party executable code is
+imported. The default blue #0078D4 and orange #FF8C00 rows match the
+target build's independent UISettings captures in every role. The other
+46 rows are reported values, not independently captured on 26H2.
+The older Windows 10 published swatch list used #0078D7; the current
+reference and our measured default use #0078D4. Do not add the older
+color as an alias or generate preset shades using the custom formula.
+
+The staged derive_manual_palette() entry point accepts an original
+manual RGB input, checks exact preset identity first, and otherwise
+uses the existing CIELAB/HSL dispatcher. It returns a new seven-role
+mapping; the fixed reference rows are not mutated. Regression assertions
+cover table shape, exact matching, the two measured preset colors and
+the custom paths. The table stays in the existing installed module,
+so no new packaging dependency or runtime file lookup is required.
 
 The capture script v3 preserves the entered custom RGB value and the
 observed base Accent separately, even when they differ. The previous
@@ -499,15 +519,15 @@ captures. The eighth slot stays #881798 followed by 00. Preserve these
 observations without interpreting the fourth byte as alpha or the eighth
 slot as a color role. The regression fixture records the original
 requested input provenance and the separate byte pattern. No
-third-party source code or additional dependency is imported.
+third-party executable code or additional dependency is imported.
 
 This is a staged calculation core, not a change to the installed
 accent propagation: KDE's effective selection color remains authoritative
 for Plasma and Kvantum. Applying the new ramp only to Kvantum or custom
 QML while leaving KColorScheme unchanged would break color consistency.
-Both custom calculation branches are now staged. Preset handling,
-independent boundary validation and automatic palette generation are
-open. The original automatic wallpaper is identified in the resource
+Both custom calculation branches and the manual preset dispatcher are
+now staged. Independent boundary validation, the remaining preset
+measurements and automatic palette generation are open. The original automatic wallpaper is identified in the resource
 index, so do not ask the maintainer to export the same image again.
 No repeat of the existing color captures is needed.
 

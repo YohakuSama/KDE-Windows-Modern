@@ -20,6 +20,65 @@ ROLE = re.compile(r"\$\{(" + "|".join(ROLES) + r")\}")
 COLOR = re.compile(r"#[0-9a-fA-F]{6}")
 
 
+# Windows preset RGB measurements reported in the public analysis below.
+# Blue and orange were independently matched against build 26300.9974.
+# Other rows remain third-party reference values pending target validation.
+# https://gist.github.com/cnbluefire/7ffa04c493c57b8a67f6a8baa2c726f7
+# Order: Light3, Light2, Light1, Dark1, Dark2, Dark3. The key is Accent.
+PRESET_SHADE_ROLES = ("AccentLight3", "AccentLight2", "AccentLight1",
+                      "AccentDark1", "AccentDark2", "AccentDark3")
+PRESET_SHADES = {
+    "#0063B1": ("#9CEBFF", "#40BDFF", "#007FDC", "#0055A1", "#00337C", "#00145A"),
+    "#0078D4": ("#99EBFF", "#4CC2FF", "#0091F8", "#0067C0", "#003E92", "#001A68"),
+    "#0099BC": ("#7AF7FF", "#30E5FF", "#00B8DF", "#0085A6", "#005573", "#002A45"),
+    "#00B294": ("#67FFEE", "#21FFE0", "#00D3B1", "#009B7E", "#00664A", "#00361B"),
+    "#00B7C3": ("#69FCFF", "#29F7FF", "#00D5E1", "#009FAA", "#006770", "#00343B"),
+    "#00CC6A": ("#5FFFA5", "#26FF8E", "#00E775", "#00B25A", "#007635", "#003F13"),
+    "#018574": ("#77FEF7", "#1AFDE9", "#01B09C", "#017463", "#014E3A", "#002A15"),
+    "#038387": ("#7CFBFC", "#21F6FA", "#04ADB2", "#037276", "#024B4E", "#01282A"),
+    "#107C10": ("#95EF81", "#45E532", "#19A115", "#0E6D0E", "#084B08", "#032B03"),
+    "#10893E": ("#89F1A5", "#3AE872", "#14AE4C", "#0E7835", "#08521F", "#032E0B"),
+    "#2D7D9A": ("#A7E8ED", "#6FC4D5", "#3598B7", "#266C88", "#17455F", "#08213A"),
+    "#486860": ("#C7E4E1", "#94B5AF", "#5B837A", "#3D5A52", "#243930", "#0D1B11"),
+    "#498205": ("#C1F96C", "#99F618", "#61A907", "#3E7204", "#254B03", "#0D2801"),
+    "#4A5459": ("#D6E0E1", "#9EABAE", "#616F75", "#3F484D", "#252B32", "#0D1118"),
+    "#4C4A48": ("#DFDEDC", "#A6A5A1", "#686562", "#413F3D", "#272524", "#100D0D"),
+    "#515C6B": ("#D7E2E4", "#A0AEB7", "#657486", "#454E5E", "#292F40", "#0F1224"),
+    "#525E54": ("#D7E2D9", "#A3AFA5", "#69786B", "#465147", "#29312A", "#0F150F"),
+    "#567C73": ("#C5E7E4", "#9ABEB8", "#66948A", "#496B62", "#2B443A", "#0F2015"),
+    "#5D5A58": ("#E2E1DE", "#AEACAA", "#767370", "#504D4B", "#302D2C", "#141010"),
+    "#647C64": ("#D3E7D2", "#A8BEA7", "#779177", "#556B55", "#324332", "#121E12"),
+    "#68768A": ("#D9E6EA", "#ADBBC5", "#7C8A9C", "#586579", "#343C51", "#13172D"),
+    "#69797E": ("#D8E7E8", "#ADBCBF", "#7C8E92", "#59676D", "#353F45", "#131920"),
+    "#6B69D6": ("#E4D8F8", "#B5ADEB", "#817DDC", "#4F4DCE", "#2C2B9E", "#13136A"),
+    "#744DA9": ("#E6CEF0", "#BA9CD4", "#8963B8", "#654199", "#402775", "#1F0E54"),
+    "#767676": ("#E6E6E6", "#BBBBBA", "#8B8B8B", "#646464", "#3B3B3B", "#151515"),
+    "#7A7574": ("#E7E5E4", "#BDB9B8", "#8E8988", "#696363", "#403B3A", "#1B1515"),
+    "#7E735F": ("#E8E5CE", "#BFB8A3", "#948971", "#6D6251", "#473A30", "#241511"),
+    "#847545": ("#E9E5B0", "#C2B986", "#9D8D52", "#74633B", "#4E3B23", "#2B150C"),
+    "#8764B8": ("#E9D4F2", "#C3A8DC", "#9979C3", "#744FAC", "#4B3279", "#241251"),
+    "#881798": ("#EFACF2", "#D95BE6", "#AB1DBE", "#7B148B", "#5B0C6D", "#3F0451"),
+    "#8E8CD8": ("#E8E3F8", "#C5C1EC", "#9F9CDE", "#6D6BCD", "#36349B", "#1A1956"),
+    "#9A0089": ("#FF97FA", "#FF35EE", "#C800B3", "#8C007C", "#6B005E", "#4C0042"),
+    "#B146C2": ("#F1BBF4", "#D88DE1", "#BD5BCB", "#9E3AB0", "#6F2382", "#460D5A"),
+    "#BF0077": ("#FF97EE", "#FF43C8", "#E60094", "#AD0069", "#830048", "#5C0029"),
+    "#C239B3": ("#F4B2F1", "#E183D9", "#CB4FBF", "#AE30A0", "#7F1D75", "#540A4D"),
+    "#C30052": ("#FF97D1", "#FF459D", "#EA0065", "#B10046", "#860029", "#5F000F"),
+    "#CA5010": ("#F5C07C", "#F09346", "#E46012", "#B6440E", "#872808", "#5C0E03"),
+    "#D13438": ("#F7B1A5", "#E8807A", "#D84B4C", "#BE2B2E", "#8D1A1C", "#61090A"),
+    "#DA3B01": ("#FEB16C", "#FE7E34", "#F44801", "#C53201", "#931E01", "#660B00"),
+    "#E3008C": ("#FF94EE", "#FF4FCB", "#FF04A4", "#CD007B", "#990053", "#69002E"),
+    "#E74856": ("#FBB4B7", "#F38A91", "#EB5C68", "#E32938", "#A6161E", "#650D0F"),
+    "#E81123": ("#FB9D8B", "#F46762", "#EF2733", "#D20E1E", "#9E0912", "#6F0306"),
+    "#EA005E": ("#FF95CA", "#FF529F", "#FF0A6F", "#D30050", "#9E002F", "#6D0011"),
+    "#EF6950": ("#FCC2A3", "#F7A083", "#F1795F", "#EC492D", "#B12210", "#670E09"),
+    "#F7630C": ("#FEBD68", "#FB9A44", "#F8741D", "#E05307", "#A13105", "#691202"),
+    "#FF4343": ("#FFAB9B", "#FF8279", "#FF5653", "#FF1F1F", "#C90000", "#7C0000"),
+    "#FF8C00": ("#FFD155", "#FFB634", "#FF9910", "#E37700", "#A14600", "#651900"),
+    "#FFB900": ("#FFE845", "#FFD52A", "#FFC20D", "#E19D00", "#9B5D00", "#5C2100"),
+}
+
+
 def make_bindings(template, rendered, values):
     source = template.splitlines(keepends=True)
     lines = rendered.splitlines(keepends=True)
@@ -172,6 +231,19 @@ def derive_custom_palette(selection):
         channels = (int(255 * (floor + chroma * p)) for p in positions)
         result[role] = "#" + bytes(channels).hex().upper()
     return result
+
+
+def derive_manual_palette(selection):
+    """Return the candidate seven-role ramp for an original manual RGB input.
+
+    A preset is matched by exact normalized RGB, before custom derivation.
+    Do not pass a wallpaper-derived color or a previously derived Accent.
+    """
+    color = rgb(selection)
+    shades = PRESET_SHADES.get(color)
+    if shades is not None:
+        return {"Accent": color, **dict(zip(PRESET_SHADE_ROLES, shades))}
+    return derive_custom_palette(color)
 
 
 def contrast_ink(color):

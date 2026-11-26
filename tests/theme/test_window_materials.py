@@ -91,6 +91,47 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertTrue(all(x == y for i, (x, y) in
                                         enumerate(zip(before, after)) if i not in owned))
 
+    def test_manual_preset_accent_reference(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        derive = sync["derive_manual_palette"]
+        presets = sync["PRESET_SHADES"]
+        roles = sync["PRESET_SHADE_ROLES"]
+        self.assertEqual(len(presets), 48)
+        self.assertEqual(len(roles), 6)
+        self.assertEqual(set(roles), {
+            "AccentLight3", "AccentLight2", "AccentLight1",
+            "AccentDark1", "AccentDark2", "AccentDark3"})
+        for base, shades in presets.items():
+            with self.subTest(base=base):
+                self.assertRegex(base, r"^#[0-9A-F]{6}$")
+                self.assertEqual(len(shades), len(roles))
+                for shade in shades:
+                    self.assertRegex(shade, r"^#[0-9A-F]{6}$")
+                self.assertEqual(derive(base.lower()),
+                                 {"Accent": base, **dict(zip(roles, shades))})
+
+        reference = json.loads((ROOT / "docs/windows11-26h2-accent-captures.json").read_text(
+            encoding="utf-8"))
+        captured = reference["captures"]
+        for name in ("manual_blue_dark", "manual_blue_light",
+                     "manual_orange_light", "manual_orange_light_registry"):
+            with self.subTest(capture=name):
+                observed = captured[name]["appearance"]["colors_argb"]
+                expected = {role: "#" + observed[role][3:]
+                            for role in ("Accent", *roles)}
+                self.assertEqual(derive(expected["Accent"]), expected)
+                self.assertNotEqual(sync["derive_custom_palette"](expected["Accent"]),
+                                    expected)
+        # Known custom references must continue through the non-preset path.
+        for name in ("manual_custom_light_registry",
+                     "manual_custom_low_saturation_light_registry"):
+            with self.subTest(capture=name):
+                sample = captured[name]
+                selection = sample["requested_manual_color"]
+                self.assertNotIn(selection, presets)
+                self.assertEqual(derive(selection),
+                                 sync["derive_custom_palette"](selection))
+
     def test_custom_lab_accent_reference(self):
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
         derive = sync["derive_custom_lab_palette"]
