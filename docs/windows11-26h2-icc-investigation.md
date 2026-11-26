@@ -402,3 +402,23 @@ python3 scripts/theme/analyze-wallpaper-icc-matrix-capture.py /path/to/windows-i
 ```
 
 Local static Python AST parsing and offline comparison of the actual supplied matrix, precision and PCS reports succeeded in a writable isolated reconstruction of the repository. The original matrix curve comparisons and six precision intent replays remain exact. No runtime changes, new dependencies, repository build, automated test suite, CI or main change. Next investigate the measured identity-link normalization and matrix-only sampling stages; the public bridge measurements are additional evidence, not an independently generated CLUT.
+
+
+## Q15 normalization of the synthetic mft2 bridge curves
+
+The three hash-verified synthetic PCS bridge profiles use unity two-point input/output tables in both A2B0 and B2A0. Unlike the previously measured matrix-profile TRCs, their generated device-link curves follow a distinct two-stage normalization. For each sample index i in a table of N entries, independently compute q = floor((2*i*32768 + N-1)/(2*(N-1))). The 16-bit exported value is floor((q*S + 16384)/32768), with the final entry set to 65535. Input uses N=256 and S=65534; output uses N=1024 and S=65535. These are integer operations, not stored native curve values. The 15 fractional bits refer to the intermediate normalization in this observed formula, not a proven precision for every CMM stage.
+
+| Generated curve | Transform instances | Entries checked (including repeated tables) | Different entries |
+| --- | ---: | ---: | ---: |
+| Bridge input | 14 | 10,752 | 0 |
+| Bridge output | 12 | 36,864 | 0 |
+
+Input table SHA-256: `6C61F33985621A47ACF0628A58E168E4A1215FE3BE5369CDDE2E1F4A94919605`. Output table SHA-256: `4404EC04FB9473830A5F4F24502FF3144BF7ACD7DCE6629803F26BCE890DC517`. The existing PCS diagnostic now checks the two-point mft2 curve structure and regenerates these tables from the verified synthetic profiles, reporting errors and hashes separately. It does not extend this rule to arbitrary mft2 LUTs.
+
+The three identity/permutation controls and three diagonal controls (diagonal-to-diagonal, diagonal-to-XYZ and XYZ-to-diagonal) have exactly axis-separable CLUTs after correcting the intentional ZYX permutation. Each complete native grid is reconstructed from its measured axis samples for this diagnostic. This is evidence of separability, not independent grid generation. No cross-channel leakage occurs in those six controls.
+
+Extending the Q15 output formula directly to 32 equally spaced CLUT coordinates does not reproduce the identity CLUT: 92,160 of 98,304 entries differ, with an absolute error sum of 479,232 and maximum error of eight. A separate exploratory enumeration of up to five sequential integer normalization stages (scales 8191, 8192, 16383, 16384, 32767, 32768, 65534, 65535 and 65536; floor, half-up or ceil; deduplicated intermediate vectors) evaluated 197,153 full-range candidates on the 32-point identity axis, enforcing the full-scale endpoint. The best axis candidate differs at 19 of 32 entries, with a sum of 24 and maximum error of two. None is exact. This search is local exploratory work, not a committed generator or a proof that all staged normalization formulas fail.
+
+A separate 16-bit axis replay sweep evaluated 222,720 combinations of input/output coordinate scaling, fraction precision and per-stage interpolation rounding, ranking against every fourth sample of the identity green-axis sweep. The leading candidate has 3,249 differing values among all 8,193 identity green-axis samples (maximum two). It does not establish exact RGB16 interpolation, and the independently verified RGB8 tetrahedral execution is unchanged. These exploratory sweeps are not required to reproduce the committed curve and separability diagnostics.
+
+Local review: the baseline analyzer, precision, generation and engine Git blob hashes matched testing; the full analyzer diff was reviewed and Python AST parsing passed. Running the existing diagnostic on the actual matrix and PCS reports verified all 67 PCS payloads, the generated bridge curve results above, and all nine original matrix RGB8 replays. The separate existing precision diagnostic verified all six earlier 5,120-color intent replays. No runtime implementation, new dependency, build, automated project test suite, CI or main change. The complete matrix-only CLUT generation is still unresolved; the new bridge normalization must not be substituted for the verified matrix-profile TRC rules.

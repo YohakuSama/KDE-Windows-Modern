@@ -6,6 +6,7 @@ import base64
 import json
 from pathlib import Path
 import runpy
+import struct
 
 import numpy as np
 
@@ -170,6 +171,43 @@ def table_difference(a,b):
             'absolute_error_sum':int(error.sum()),'max_error':int(error.max())}
 
 
+def bridge_curve_tables(profile):
+    """Generate the measured unity curves of the synthetic mft2 bridges.
+
+    The CLUT (identity or ZYX) is separate. Do not generalize this sampling
+    rule to arbitrary LUT profiles or matrix-profile tone curves.
+    """
+    identity_matrix = (65536,0,0,0,65536,0,0,0,65536)
+    for sig in (b'A2B0',b'B2A0'):
+        tag = profile[sig]
+        if (len(tag)!=124 or tag[:4]!=b'mft2' or tag[8:11]!=bytes((3,3,2))
+                or struct.unpack_from('>9i',tag,12)!=identity_matrix
+                or struct.unpack_from('>HH',tag,48)!=(2,2)):
+            raise ValueError('Expected the measured two-point mft2 bridge')
+        for raw in (tag[52:64],tag[-12:]):
+            if struct.unpack('>6H',raw)!=(0,65535)*3:
+                raise ValueError('Expected full-range unity bridge curves')
+    def sample(count, scale):
+        # Round to Q15 first, then round the ICC export. The input and
+        # output paths have distinct scale factors; preserve full white.
+        i = np.arange(count,dtype=np.int64)
+        q = (2*i*32768+count-1)//(2*(count-1))
+        values = (q*scale+16384)//32768
+        values[-1] = 65535
+        return np.tile(values,(3,1))
+    return sample(256,65534), sample(1024,65535)
+
+
+def separable_grid(grid, reverse_output=False):
+    """Measure, not generate, an axis-separable native grid."""
+    logical = grid[...,::-1] if reverse_output else grid
+    reconstructed = np.empty_like(logical)
+    for c in range(3):
+        axis = np.moveaxis(logical[...,c],c,0)[:,0,0]
+        np.moveaxis(reconstructed[...,c],c,0)[...] = axis[:,None,None]
+    return table_difference(reconstructed,logical)
+
+
 def analyze_pcs(root, report, matrix_report):
     """Validate isolated PCS boundary captures against the prior matrix report."""
     p = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-precision.py'))
@@ -194,6 +232,9 @@ def analyze_pcs(root, report, matrix_report):
                 raise ValueError('Synthetic profile hash mismatch')
             e['tags'](data)
             profiles[name] = data
+    bridge_curves = {name:bridge_curve_tables(e['tags'](profiles[name]))
+                     for name in PCS_PROFILES}
+    generated_curves = {}
     pixels = pcs_inputs()
     raw = checked(report['input16'],pixels.nbytes)
     if raw != pixels.tobytes() or sha(raw) != 'CE19EB355E773C647F28C7A7DD9FDE12B756955FC590C0B4CD51996B2ACD9997':
@@ -237,6 +278,17 @@ def analyze_pcs(root, report, matrix_report):
                 row['bitmap16_raw_vs_color16'] = p['metric'](b[8:],colors[pair][8:])
                 row['bitmap16_bgr_vs_color16'] = p['metric'](b[8:,::-1],colors[pair][perm])
                 bitmap_comparisons += 1
+        src,dst = pair.split('|')
+        generated = {}
+        for name,profile,table_index,curve_index in (
+                ('input',src,0,0),('output',dst,2,1)):
+            if profile in bridge_curves:
+                predicted = bridge_curves[profile][curve_index]
+                generated[name] = {**table_difference(predicted,tables[pair][table_index]),
+                                   'entries':int(predicted.size),
+                                   'sha256':sha(predicted.astype('>u2').tobytes())}
+        if generated:
+            generated_curves[pair] = generated
         results[pair] = row
 
     def compare_tables(a,b):
@@ -248,6 +300,16 @@ def analyze_pcs(root, report, matrix_report):
                 'tables':compare_tables(tables[a],tables[b])}
 
     identity = 'xyz-identity|xyz-identity'
+    # Test the tempting extension of the independently generated output
+    # normalization to the CLUT, keeping a distinct metric for each stage.
+    codes = np.arange(32,dtype=np.int64)
+    q15 = (2*codes*32768+31)//62
+    axis = (q15*65535+16384)//32768
+    nodes = np.indices((32,32,32)).transpose(1,2,3,0)
+    identity_q15 = table_difference(axis[nodes],tables[identity][1])
+    separability = {name:separable_grid(tables[name][1],name=='rgb-pcs|rgb-pcs-zyx')
+                    for name in (identity,'rgb-pcs|rgb-pcs','rgb-pcs|rgb-pcs-zyx',
+                                 'diagonal|diagonal','diagonal|xyz-identity','xyz-identity|diagonal')}
     identity_paths = {name:compare_paths(identity,name) for name in (
         'rgb-pcs|rgb-pcs','xyz-identity|rgb-pcs','rgb-pcs|xyz-identity')}
     bridges = {}
@@ -310,6 +372,8 @@ def analyze_pcs(root, report, matrix_report):
             'packing_comparison_colors_per_pair':len(perm),'links':len(tables),
             'results':results,'identity_vs_ideal':p['metric'](colors[identity],pixels),
             'identity_grid_vs_ideal':table_difference(tables[identity][1].reshape(-1,3),pixels[8:32776]),
+            'generated_bridge_curves':generated_curves,
+            'identity_grid_q15_candidate':identity_q15,'separable_control_grids':separability,
             'identity_paths':identity_paths,'bridges':bridges,'permutation':permutation,
             'prior_control_tables':prior,'bridge_vs_inferred_pcs':inferred,
             'public_diagonal_composition':composition}
