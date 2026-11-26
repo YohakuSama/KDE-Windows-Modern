@@ -53,11 +53,13 @@ ContainmentItem {
     }
     property bool accentReady: false
     property bool accentDirty: false
+    property int accentRetries: 0
     property string accentCommand: ""
 
     function scheduleAccentSync() {
         if (!accentReady || accentScript.length === 0) return;
         accentDirty = true;
+        accentRetries = 0;
         accentTimer.restart();
     }
 
@@ -85,10 +87,17 @@ ContainmentItem {
             if (sourceName !== root.accentCommand || data["exit code"] === undefined) return;
             disconnectSource(sourceName);
             root.accentCommand = "";
-            if (data["exit code"] !== 0)
+            const exitCode = Number(data["exit code"]);
+            // Only a stale accepted snapshot or lock conflict is retryable.
+            // Do not poll unsupported wallpapers or permanent failures.
+            if (exitCode === 75 && !root.accentDirty && root.accentRetries < 3) {
+                ++root.accentRetries;
+                root.accentDirty = true;
+            } else if (exitCode !== 0) {
                 console.warn("Windows Modern accent synchronization failed:", data["stderr"]);
-            else if (String(data["stderr"] || "").trim().length > 0)
+            } else if (String(data["stderr"] || "").trim().length > 0) {
                 console.warn("Windows Modern accent synchronization:", data["stderr"]);
+            }
             if (root.accentDirty) accentTimer.restart();
         }
     }

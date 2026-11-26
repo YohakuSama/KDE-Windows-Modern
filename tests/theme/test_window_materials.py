@@ -11,7 +11,7 @@ import re
 import runpy
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import xml.etree.ElementTree as ET
 import zlib
 
@@ -144,6 +144,7 @@ class WindowMaterialTests(unittest.TestCase):
                  patch.dict(control["SYNC"], {"analyze_wallpapers": lambda paths: {"palette": palette}}):
                 state = automatic(None)
                 self.assertEqual(control["decode_state"](json.dumps(state)), palette)
+                control["require_wallpaper_snapshot"](state)
                 with patch.dict(control["SYNC"], {"analyze_wallpapers": lambda paths: self.fail("decoded cached images")}):
                     self.assertIs(automatic(state), state)
                 legacy = dict(state)
@@ -151,6 +152,8 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertEqual(automatic(legacy), state)
                 self.assertEqual(state["analysis_revision"], control["SYNC"]["WALLPAPER_ANALYSIS_REVISION"])
                 image.write_bytes(b"replacement image")
+                with self.assertRaises(control["WallpaperChangedError"]):
+                    control["require_wallpaper_snapshot"](state)
                 self.assertNotEqual(automatic(state)["wallpapers"], state["wallpapers"])
                 # A native package or slideshow selects a new actual file.
                 next_image = Path(tmp) / "next slide.png"
@@ -188,12 +191,63 @@ class WindowMaterialTests(unittest.TestCase):
         state = {"schema_version": 1, "source": "manual", "palette": palette}
         self.assertEqual(control["decode_state"](json.dumps(state)), palette)
         self.assertIsNone(control["decode_state"](None))
+        for invalid in ([], None, {"schema_version": True, "source": "manual", "palette": palette},
+                        {"schema_version": 1, "source": "manual", "palette": []},
+                        {"schema_version": 1, "source": "manual",
+                         "palette": {**palette, "AccentDark1": None}}):
+            with self.assertRaises(ValueError):
+                control["decode_state"](json.dumps(invalid))
         state["palette"] = {**palette, "AccentDark1": "invalid"}
         with self.assertRaises(ValueError):
             control["decode_state"](json.dumps(state))
         state["palette"] = {"Accent": "#FF8C00"}
         with self.assertRaisesRegex(ValueError, "Incomplete"):
             control["decode_state"](json.dumps(state))
+
+    def test_automatic_accent_stale_transaction(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        sync = control["SYNC"]
+        palette = sync["derive_manual_palette"]("#FF8C00")
+        raw = json.dumps({"schema_version": 1, "source": "manual", "palette": palette})
+        state = {"schema_version": 1, "source": "automatic", "activity": "active",
+                 "analysis_revision": sync["WALLPAPER_ANALYSIS_REVISION"],
+                 "wallpapers": [{"path": "/wallpaper.png"}], "palette": palette}
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp)
+            (config / "Kvantum/Windows-modern").mkdir(parents=True)
+            path = config / "color-schemes/WindowsModernDark.colors"
+            pending = {path: (b"previous", b"next")}
+            for late in (False, True):
+                stale = control["WallpaperChangedError"]("stale wallpaper")
+                verify = Mock(side_effect=[None, stale] if late else [stale])
+                write = Mock(return_value=[path])
+                restore = Mock()
+                publish = Mock()
+                apply = Mock()
+                notify = Mock()
+                with patch.dict(control["synchronize"].__globals__, {
+                        "CONFIG": config, "DATA": config, "active_mode": lambda mode: True,
+                        "native_accent": lambda: (False, None), "read": lambda group, key: raw,
+                        "automatic_state": lambda previous: state,
+                        "require_wallpaper_snapshot": verify, "write_state": publish,
+                        "scheme_inputs": lambda: ("", {}),
+                        "plan_schemes": lambda *args: pending,
+                        "apply_current": apply, "live_matches": lambda *args: True,
+                        "notify_palette": notify}), \
+                     patch.dict(sync, {"owned_file": lambda p: p, "plan_kvantum": lambda *args: {},
+                                       "write_pending": write, "restore_pending": restore}):
+                    with self.assertRaises(control["WallpaperChangedError"]):
+                        control["synchronize"]("dark", "automatic", [])
+                publish.assert_not_called()
+                if late:
+                    write.assert_called_once_with(pending)
+                    restore.assert_any_call(pending, [path])
+                    self.assertEqual(apply.call_count, 2)
+                    notify.assert_called_once()
+                else:
+                    write.assert_not_called()
+                    restore.assert_not_called()
+                    apply.assert_not_called()
 
     def test_windows_accent_scheme_transaction(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))

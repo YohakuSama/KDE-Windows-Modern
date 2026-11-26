@@ -89,6 +89,10 @@ public:
         setObjectName(u"windowsModernWallpaperAccentSource"_s);
         connect(shell, &Plasma::Corona::containmentAdded, this, &WallpaperAccentSource::refresh, Qt::QueuedConnection);
         connect(shell, &Plasma::Corona::configSynced, this, &WallpaperAccentSource::refresh);
+        // Reconnect to newly created nested QML objects before notifying
+        // the tray, even when automatic mode has no snapshot in flight.
+        connect(this, &WallpaperAccentSource::structureChanged,
+                this, &WallpaperAccentSource::refresh, Qt::QueuedConnection);
         refreshConnections();
     }
 
@@ -178,13 +182,16 @@ public Q_SLOTS:
             }
             auto *current = stack->property("currentItem").value<QObject *>();
             auto *proxy = stack->property("mediaProxy").value<QObject *>();
+            if (!current || !proxy) {
+                return failure(u"Wallpaper selection is not ready on screen %1"_s.arg(screen));
+            }
             // Plasma deliberately blocks the modelImage notify signal on
             // theme changes. Read MediaProxy directly, as loadImage does,
             // rather than the potentially stale QML binding on the stack.
             const auto selected = proxy->property("modelImage").toUrl();
             // Image.Ready and TransientImage.Ready are both 1. Require the
             // loaded component to agree with the actual native selection.
-            if (!current || current->property("status").toInt() != 1
+            if (current->property("status").toInt() != 1
                 || current->property("source").toUrl() != selected) {
                 return failure(u"Wallpaper selection is changing on screen %1"_s.arg(screen));
             }
@@ -211,6 +218,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void changed();
+    void structureChanged();
 
 private:
     static bool isDesktop(Plasma::Containment *containment)
@@ -384,7 +392,7 @@ private:
         return light.isEmpty() ? QString() : package.filePath("preferred");
     }
 
-    void observe(QObject *object, const char *name)
+    void observe(QObject *object, const char *name, bool rebind = false)
     {
         if (!object) {
             return;
@@ -392,8 +400,9 @@ private:
         const auto *meta = object->metaObject();
         const int index = meta->indexOfProperty(name);
         if (index >= 0 && meta->property(index).hasNotifySignal()) {
+            const auto signal = rebind ? &WallpaperAccentSource::structureChanged : &WallpaperAccentSource::changed;
             QObject::connect(object, meta->property(index).notifySignal(), this,
-                             QMetaMethod::fromSignal(&WallpaperAccentSource::changed), Qt::UniqueConnection);
+                             QMetaMethod::fromSignal(signal), Qt::UniqueConnection);
         }
     }
 
@@ -417,10 +426,12 @@ private:
             observe(root, "loading");
             observe(root, "accentColor");
             observe(root, "visible");
+            observe(root, "configuration", true);
             observe(root->property("configuration").value<QObject *>(), "PreviewImage");
             auto *stack = imageStack(root);
             observe(stack, "modelImage");
-            observe(stack, "currentItem");
+            observe(stack, "currentItem", true);
+            observe(stack, "mediaProxy", true);
             observe(stack, "pendingImage");
             observe(stack, "busy");
             if (stack) {
@@ -429,12 +440,19 @@ private:
                 // Loading again during resize, then become Ready later.
                 auto *current = qobject_cast<QQuickItem *>(stack->property("currentItem").value<QObject *>());
                 observe(current, "status");
+                observe(current, "source");
+                if (current) {
+                    connect(current, &QQuickItem::childrenChanged, this, &WallpaperAccentSource::refresh,
+                            Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
+                }
                 auto *view = dayNightView(current);
-                observe(view, "currentItem");
-                observe(view, "nextItem");
+                observe(view, "currentItem", true);
+                observe(view, "nextItem", true);
                 observe(view, "busy");
                 observe(view, "status");
                 if (auto *image = dayNightImage(view)) {
+                    connect(image, &QQuickItem::childrenChanged, this, &WallpaperAccentSource::refresh,
+                            Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
                     observe(image, "bottomUrl");
                     observe(image, "topUrl");
                     observe(image, "status");
@@ -444,6 +462,10 @@ private:
                         if (child->property("source").isValid() && child->property("status").isValid()) {
                             observe(child, "source");
                             observe(child, "status");
+                            // Package ranking uses the loaded endpoint's
+                            // physical size; a resize may keep its URL.
+                            observe(child, "width");
+                            observe(child, "height");
                         }
                     }
                 }

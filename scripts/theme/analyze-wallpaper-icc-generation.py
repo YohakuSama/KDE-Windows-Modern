@@ -190,13 +190,27 @@ def analyze(root, report, target_path, full_rgb8=False):
         result = cache['metrics'](bitmap,cache_refs[name])
         seed, alpha = runtime['derive_weighted_wallpaper_bitmaps'](((256,256,bitmap),))
         candidate = runtime['normalize_weighted_wallpaper_seed'](seed)
-        measured = samples[name]['observation']['capture']['native_wallpaper_color_api']
+        capture = samples[name]['observation']['capture']
+        measured = capture['native_wallpaper_color_api']
         if measured['status'] != 'ok':
             raise ValueError('Missing native colorization reference')
         argb = f'0x{alpha:02X}{candidate[1:]}'
+        palette = runtime['derive_automatic_palette'](candidate)
+        native_palette = {}
+        for role in ('Accent', *runtime['PRESET_SHADE_ROLES']):
+            value = capture['appearance']['colors_argb'][role]
+            if len(value)!=9 or value[:3].upper()!='#FF':
+                raise ValueError('Expected opaque native shade')
+            native_palette[role] = runtime['rgb']('#'+value[3:])
+        differences = {role:{'candidate':palette[role],'native':value}
+                       for role,value in native_palette.items() if palette[role]!=value}
         return {**result,'weighted_seed':seed,'colorization_argb':argb,
                 'native_colorization_argb':measured['argb'],
-                'matches_native_colorization':argb==measured['argb']}
+                'matches_native_colorization':argb==measured['argb'],
+                'palette':palette,'native_palette':native_palette,
+                'different_palette_roles':differences,
+                'mode_accent_matches':{'dark':palette['AccentLight2']==native_palette['AccentLight2'],
+                                       'light':palette['AccentDark1']==native_palette['AccentDark1']}}
 
     def cache_metrics(prediction,name):
         mapping = {color:bytes(pixel) for color,pixel in zip(colors,prediction[:n])}

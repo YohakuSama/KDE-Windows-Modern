@@ -24,6 +24,10 @@ THEME_ID = "org.kde.windowsmodern.dark"
 MAX_SCREENS = 16
 
 
+class WallpaperChangedError(ValueError):
+    """A previously accepted wallpaper snapshot became stale; retry the event."""
+
+
 def read(group, key):
     value = subprocess.check_output(["kreadconfig6", "--file", "kdeglobals",
                                      "--group", group, "--key", key,
@@ -108,8 +112,18 @@ def discover_wallpapers():
         # Preserve one occurrence per active screen, even for identical paths.
         wallpapers.append(wallpaper_fingerprint(path))
     if activity != active_activity():
-        raise ValueError("Desktop activity changed during wallpaper discovery")
+        raise WallpaperChangedError("Desktop activity changed during wallpaper discovery")
     return {"activity": activity, "wallpapers": wallpapers}
+
+
+def require_wallpaper_snapshot(state):
+    expected = {key: state[key] for key in ("activity", "wallpapers")}
+    try:
+        current = discover_wallpapers()
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+        raise WallpaperChangedError("Previously accepted wallpaper is no longer ready") from error
+    if current != expected:
+        raise WallpaperChangedError("Desktop wallpaper changed during color analysis or publication")
 
 
 def automatic_state(previous):
@@ -121,27 +135,29 @@ def automatic_state(previous):
         return previous
     palette = SYNC["analyze_wallpapers"](
         [Path(image["path"]) for image in snapshot["wallpapers"]])["palette"]
-    if snapshot != discover_wallpapers():
-        raise ValueError("Desktop wallpaper changed during color analysis")
-    return {"schema_version": 1, "source": "automatic", "analysis_revision": revision,
-            "palette": palette, **snapshot}
+    state = {"schema_version": 1, "source": "automatic", "analysis_revision": revision,
+             "palette": palette, **snapshot}
+    require_wallpaper_snapshot(state)
+    return state
 
 
 def decode_state(raw):
     if raw is None:
         return None
     state = json.loads(raw)
-    if state["schema_version"] != 1 or state["source"] not in ("manual", "wallpaper", "automatic"):
+    if (not isinstance(state, dict) or type(state.get("schema_version")) is not int
+            or state["schema_version"] != 1 or state.get("source") not in ("manual", "wallpaper", "automatic")):
         raise ValueError("Unrecognized Windows accent state")
     if state["source"] == "automatic":
-        images = state["wallpapers"]
-        if (not isinstance(state["activity"], str) or not isinstance(images, list)
+        images = state.get("wallpapers")
+        if (not isinstance(state.get("activity"), str) or not isinstance(images, list)
                 or not 1 <= len(images) <= MAX_SCREENS
                 or any(not isinstance(image, dict) or not isinstance(image.get("path"), str)
                        or not Path(image["path"]).is_absolute() for image in images)):
             raise ValueError("Invalid automatic wallpaper accent state")
-    palette = state["palette"]
-    if set(palette) != {"Accent", *SYNC["PRESET_SHADE_ROLES"]}:
+    palette = state.get("palette")
+    if (not isinstance(palette, dict) or set(palette) != {"Accent", *SYNC["PRESET_SHADE_ROLES"]}
+            or any(not isinstance(value, str) for value in palette.values())):
         raise ValueError("Incomplete Windows accent ramp")
     return {role: SYNC["rgb"](value) for role, value in palette.items()}
 
@@ -236,6 +252,7 @@ def synchronize(mode, action, inputs):
     if action in ("sync", "reapply", "native") and previous is None:
         return None
     native = native_accent()
+    fresh_state = None
     if action in ("manual", "wallpaper", "automatic"):
         if any(native):
             raise ValueError("Select 'From current color scheme' in KDE Colors before using Windows accent control")
@@ -247,6 +264,7 @@ def synchronize(mode, action, inputs):
             state["palette"] = SYNC["analyze_wallpapers"]([Path(path) for path in inputs])["palette"]
         else:
             state = automatic_state(json.loads(raw) if raw is not None else None)
+            fresh_state = state
         desired_raw = json.dumps(state, separators=(",", ":"), sort_keys=True)
         desired = decode_state(desired_raw)
     elif action == "native" or any(native):
@@ -260,6 +278,11 @@ def synchronize(mode, action, inputs):
                 updated = automatic_state(state)
                 candidate_raw = json.dumps(updated, separators=(",", ":"), sort_keys=True)
                 desired_raw, desired = candidate_raw, decode_state(candidate_raw)
+                fresh_state = updated
+            except WallpaperChangedError:
+                # An accepted snapshot became stale while being analyzed.
+                # Preserve the prior state and let the bounded tray retry run.
+                raise
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
                 # A missing/unsupported or transiently changing wallpaper
                 # is not a reason to erase the last verified ramp or block
@@ -283,16 +306,22 @@ def synchronize(mode, action, inputs):
         if desired is not None or name != mode:
             pending.update(prepared)
     scheme = directory / (scheme_name(mode) + ".colors")
-    if not active_mode(mode) or native_accent() != native:
-        raise ValueError("KDE appearance changed while preparing the accent")
-    if read(GROUP, KEY) != raw:
-        raise ValueError("Windows accent selection changed while preparing the accent")
     refresh = (desired is None or scheme in pending or not live_matches(mode, fixed, desired, scheme))
     if not pending and not refresh and desired_raw == raw:
         return False
 
+    # Do not revalidate the deliberately retained ramp on a failed
+    # discovery or a mode-switch reapply. Only a fresh automatic result
+    # must still refer to the currently loaded wallpaper.
+    if fresh_state is not None:
+        require_wallpaper_snapshot(fresh_state)
+    if not active_mode(mode) or native_accent() != native:
+        raise ValueError("KDE appearance changed while preparing the accent")
+    if read(GROUP, KEY) != raw:
+        raise ValueError("Windows accent selection changed while preparing the accent")
     written = SYNC["write_pending"](pending)
     native_pending, native_written = {}, []
+    state_write_attempted = False
     try:
         if refresh:
             apply_current(mode, native)
@@ -307,9 +336,14 @@ def synchronize(mode, action, inputs):
                 raise ValueError("Missing effective KDE selection color")
             native_pending = SYNC["plan_kvantum"](kvdir, mode, selection)
             native_written = SYNC["write_pending"](native_pending)
+        if fresh_state is not None:
+            require_wallpaper_snapshot(fresh_state)
         if native_accent() != native or not active_mode(mode):
             raise ValueError("KDE appearance changed while committing the accent")
+        if read(GROUP, KEY) != raw:
+            raise ValueError("Windows accent selection changed during accent synchronization")
         if desired_raw != raw:
+            state_write_attempted = True
             write_state(desired_raw)
             if read(GROUP, KEY) != desired_raw:
                 raise ValueError("Windows accent state was not saved")
@@ -324,7 +358,7 @@ def synchronize(mode, action, inputs):
             except (OSError, ValueError) as error:
                 print(f"Accent asset rollback incomplete: {error}", file=sys.stderr)
         try:
-            if desired_raw != raw and read(GROUP, KEY) == desired_raw:
+            if state_write_attempted and read(GROUP, KEY) == desired_raw:
                 write_state(raw)
             if active_mode(mode):
                 apply_current(mode, native_accent())
@@ -349,6 +383,8 @@ def main():
         parser.error("Run accent control as the desktop user")
     try:
         changed = synchronize(args.mode, args.action, args.inputs)
+    except WallpaperChangedError as error:
+        parser.exit(75, f"Windows accent control: {error}\n")
     except (OSError, ValueError, KeyError, TypeError, ET.ParseError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Windows accent control: {error}\n")
     print("native" if changed is None else "changed" if changed else "unchanged")

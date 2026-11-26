@@ -470,3 +470,15 @@ python3 scripts/theme/analyze-wallpaper-icc-generation.py /path/to/windows-icc-p
 ```
 
 Local review: baseline diagnostic blob hashes matched testing, the complete generation-script diff was reviewed, Python AST parsing passed, the integer CLUT metrics reproduced the previous candidate, and the full-domain enumeration and the extended cache/colorization analysis completed. The isolated research directory contains a reconstruction of the original cache report and the runtime functions relevant to these measurements, including the existing ICC conversion, weighting and normalization; the observed ARGB values were read from the exact repository archive. It is not a full repository checkout. The full-domain enumeration was run before adding the downstream cache colorization metrics; those additions were checked in a separate normal diagnostic execution. No new runtime dependencies, runtime/cache revision change, build, automated project test suite, CI or main change.
+
+
+## Downstream seven-role palette comparison
+
+The existing generation diagnostic now compares the entire calculated seven-role UISettings ramp against each archived DecodeProfile observation, not only the colorization ARGB. It also reports the two theme mode accents separately. Native replay and all three independent CLUT candidates match all seven roles on both measured tagged images. The existing Little CMS path differs on all seven sRGB roles and both mode accents, but matches all seven linear-sRGB roles.
+
+| Profile | Native dark-mode role | Native light-mode role | Current Little CMS matching roles | Integer Q14 matching roles |
+| --- | --- | --- | ---: | ---: |
+| sRGB | #EC968E | #BB2D2D | 0/7 | 7/7 |
+| Linear sRGB | #ED958D | #BE2B2B | 7/7 | 7/7 |
+
+The diagnostic ran on the actual precision report and the isolated cache reconstruction, with the seven-role observations transcribed from the exact repository archive and the relevant existing runtime shade functions. Its Python source passed AST parsing. This is not a full repository checkout or a desktop acceptance test. The first local invocation exposed missing appearance fields in the minimal local archive reconstruction; after including those recorded fields, the comparison completed. The source archive already contains those fields and does not need a modification. The full-domain differences and arbitrary-profile limits from the previous section remain; no approximate ICC candidate is installed. The related runtime synchronization changes are independent of this ICC investigation and do not change the analysis algorithm revision.

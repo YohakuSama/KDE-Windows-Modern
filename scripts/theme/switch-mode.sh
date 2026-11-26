@@ -65,7 +65,15 @@ fi
 if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
     command -v flock >/dev/null || fail "Missing command: flock"
     exec 9>"$XDG_RUNTIME_DIR/windows-modern-appearance.lock"
-    flock -w 8 9 || fail "An appearance change is already running."
+    # Exit 75 denotes a transient conflict; the tray retries it, not a
+    # permanent configuration/decoder error.
+    if flock -w 8 -E 75 9; then
+        :
+    else
+        status=$?
+        printf '%s\n' "Unable to acquire the appearance lock." >&2
+        exit "$status"
+    fi
 elif [ "$1" != --migrate ]; then
     fail "No desktop runtime directory."
 fi
@@ -142,7 +150,7 @@ sync_renderer_accent() {
     fi
     guard_config kdeglobals
     python="$(accent_python)" || return 1
-    result="$("$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/accent-control.py" "$current_mode" "$action" -- "$@")" || return 1
+    result="$("$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/accent-control.py" "$current_mode" "$action" -- "$@")" || return $?
     case "$result" in
         native) sync_mode_accent "$current_mode" ;;
         changed|unchanged) printf '%s\n' "$result" ;;
@@ -167,7 +175,7 @@ sync_accent() {
             [ "$action" = sync ] && return 0
             fail "Select a Windows Modern appearance mode first." ;;
     esac
-    result="$(sync_renderer_accent "$current_mode" "$action" "$@")" || return 1
+    result="$(sync_renderer_accent "$current_mode" "$action" "$@")" || return $?
     if [ "$result" = changed ]; then
         # This is a best-effort notification. Plasma-integration deliberately
         # skips recreating a QStyle when its name has not changed.
