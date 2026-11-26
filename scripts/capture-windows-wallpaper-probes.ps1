@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary', 'DecodeProfile')]
+    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary', 'DecodeProfile', 'DecodeAlphaProfile')]
     [string]$ProbeSet = 'Basic',
     [switch]$IncludeNativeWallpaperColor
 )
@@ -14,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 if (-not $ApplyTemporarily) {
     throw 'This collection temporarily changes the wallpaper. Use -ApplyTemporarily in the reference VM.'
 }
-$decodeProbe = $ProbeSet -in @('DecodeBoundary', 'DecodeProfile')
+$decodeProbe = $ProbeSet -in @('DecodeBoundary', 'DecodeProfile', 'DecodeAlphaProfile')
 $isolated = $decodeProbe -or $ProbeSet -in @('CacheIsolation', 'BitmapBoundary')
 $wicProbe = $decodeProbe -or $ProbeSet -eq 'BitmapBoundary'
 if ($isolated -and -not $IncludeNativeWallpaperColor) {
@@ -104,7 +104,7 @@ namespace WindowsModern.Reference
 
 # Public WIC recreation for unrotated synthetic probes only.
 # This is not an interception of shell32's internal bitmap.
-if ($wicProbe -and -not ('WindowsModern.Reference.WicV3.WicBoundary' -as [type])) {
+if ($wicProbe -and -not ('WindowsModern.Reference.WicV4.WicBoundary' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
 using System.IO;
@@ -114,7 +114,7 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace WindowsModern.Reference.WicV3
+namespace WindowsModern.Reference.WicV4
 {
     // The inherited bitmap-source slots are explicitly repeated for COM.
     [ComImport, Guid("00000120-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -339,7 +339,8 @@ namespace WindowsModern.Reference.WicV3
         }
 
         public static string Write(string path, int width, int height, int patchHeight,
-                                   string background, string patch, int alpha, string profile, bool calibration)
+                                   string background, string patch, int alpha, string profile, bool calibration,
+                                   bool alphaCalibration)
         {
             if (width != 1280 || height != 800 || patchHeight <= 0 ||
                 patchHeight >= height * 7 / 8 || alpha < 0 || alpha > 255)
@@ -368,6 +369,30 @@ namespace WindowsModern.Reference.WicV3
                               band == 2 ? level << 8 : level;
                     }
                     byte a = (byte)(isPatch ? alpha : 255);
+                    // Keep the reference background and marker opaque.
+                    // Alpha gradients expose the 8-bit conversion, while
+                    // alternating rows expose vertical fractional sampling.
+                    if (alphaCalibration && y >= 450 && y < 610)
+                    {
+                        int band = (y - 450) / 40;
+                        int level = x / 5;
+                        bool alternate = ((y + level) & 1) != 0;
+                        if (band < 2)
+                        {
+                            rgb = band == 0 ? 0xe13030u : 0x3030e1u;
+                            a = (byte)level;
+                        }
+                        else if (band == 2)
+                        {
+                            rgb = alternate ? 0xe13030u : 0x3030e1u;
+                            a = (byte)(alternate ? 255 : 0);
+                        }
+                        else
+                        {
+                            rgb = alternate ? 0x148a14u : 0xa03cd0u;
+                            a = (byte)(alternate ? 128 : 1);
+                        }
+                    }
                     int pos = y * stride + 1 + x * 4;
                     raw[pos] = (byte)(rgb >> 16);
                     raw[pos + 1] = (byte)(rgb >> 8);
@@ -432,7 +457,7 @@ function Read-WicBoundaryBuffer([string]$Path, [string]$ExpectedHash) {
     } finally {
         $image.Dispose()
     }
-    $buffer = [WindowsModern.Reference.WicV3.WicBoundary]::Read($Path, $decodeProbe)
+    $buffer = [WindowsModern.Reference.WicV4.WicBoundary]::Read($Path, $decodeProbe)
     if ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -cne $ExpectedHash) {
         throw 'The WIC input changed while reading.'
     }
@@ -509,7 +534,8 @@ function Read-DecodeBoundaryEvidence([string]$Path, [string]$ExpectedHash, $Prob
     if ($Result.capture.appearance.registered_wallpaper_sha256 -cne $ExpectedHash -or
         $cache.status -ne 'ok' -or -not $supportedCache -or
         $reference.status -ne 'ok' -or $cache.sha256 -ceq $reference.sha256 -or
-        $cache.width -ne $width -or $cache.height -ne $height) {
+        $cache.width -ne $width -or $cache.height -ne $height -or
+        $cache.background_alpha -ne 255 -or $cache.marker_alpha -ne 255) {
         return $evidence
     }
     try {
@@ -547,7 +573,7 @@ function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary', 'DecodeProfile') -and $sample.schema_version -lt 4) {
+    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary', 'DecodeProfile', 'DecodeAlphaProfile') -and $sample.schema_version -lt 4) {
         throw 'This probe set requires capture-windows-accent.ps1 schema 4 or newer.'
     }
     if ($WithNativeWallpaperColor -and $sample.schema_version -lt 5) {
@@ -665,9 +691,21 @@ function New-DecodeProbeImage([string]$Path, $Probe) {
         throw 'Unknown synthetic ICC profile.'
     }
     $payload = if ($null -eq $profileEntry) { '' } else { [string]$profileEntry.payload }
-    $expected = [WindowsModern.Reference.WicV3.SyntheticPng]::Write(
+    $expected = [WindowsModern.Reference.WicV4.SyntheticPng]::Write(
         $Path, $width, $height, $Probe.rectangle.height, $Probe.background,
-        $Probe.rectangle.color, $Probe.patch_alpha, $payload, [bool]$Probe.profile_calibration)
+        $Probe.rectangle.color, $Probe.patch_alpha, $payload, [bool]$Probe.profile_calibration,
+        [bool]$Probe.alpha_calibration)
+    if ($Probe.alpha_calibration) {
+        # Independently calculated raw source hashes; profile tagging
+        # must not change the synthetic straight RGBA pixel data.
+        $expectedByAlpha = @{
+            '128' = '2AF67953C10E628B9A2E7161FACED2D903082AE245AA64C9B91C0C8218F54701'
+            '1' = 'E75E23430D2A0C0DCBC8AA6BBB416D297C1ABE7C44B5BDE81CFFE9E7895D8B9C'
+        }
+        if ($expected -cne $expectedByAlpha[[string]$Probe.patch_alpha]) {
+            throw 'Unexpected combined alpha/profile probe pixels.'
+        }
+    }
     return [ordered]@{
         expected_bgra_sha256 = $expected
         decoded_bgra_sha256 = $null
@@ -1103,12 +1141,26 @@ try {
         )
         if ($ProbeSet -eq 'DecodeProfile') {
             $variants = @($variants | Where-Object { $_.alpha -eq 255 })
+        } elseif ($ProbeSet -eq 'DecodeAlphaProfile') {
+            $variants = @(foreach ($profile in @('none', 'srgb', 'linear-srgb')) {
+                foreach ($alpha in @(128, 1)) {
+                    @{name=('decode-alpha-{0}-{1}' -f $profile, $alpha);
+                      alpha=$alpha; color='#E13030'; profile=$profile}
+                }
+            })
         }
         $probes = @(foreach ($variant in $variants) {
             @{
                 name=$variant.name; background='#148A14'; patch_alpha=$variant.alpha;
                 icc_profile=$variant.profile; marker='#FF00FF';
                 profile_calibration=($ProbeSet -eq 'DecodeProfile');
+                alpha_calibration=($ProbeSet -eq 'DecodeAlphaProfile');
+                alpha_bands=if ($ProbeSet -eq 'DecodeAlphaProfile') {
+                    @{first_y=450; band_height=40; step_width=5;
+                      order=@('red-alpha-gradient','blue-alpha-gradient','red-opaque-blue-zero','green-128-purple-1');
+                      colors=@('#E13030','#3030E1','#148A14','#A03CD0');
+                      phase='(y + floor(x/5)) mod 2'}
+                } else { $null };
                 calibration_bands=if ($ProbeSet -eq 'DecodeProfile') {
                     @{first_y=450; band_height=40; step_width=5; order=@('gray','red','green','blue')}
                 } else { $null };

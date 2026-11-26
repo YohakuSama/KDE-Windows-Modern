@@ -820,9 +820,10 @@ void SystemTray::init()
         rearm();
         auto after = m_wallpaperWatch.files();
         after.sort();
-        // Ignore unrelated writes in the config directory (including our
-        // own kdeglobals transactions). A reappearing watched file is relevant.
-        if (path != QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) || before != after) {
+        // Ignore unrelated config writes unless a selected wallpaper
+        // also lives here or the watched file inventory changed.
+        if (path != QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
+            || before != after || m_configWallpaperParent) {
             scheduleWallpaperAccentSync();
         }
     });
@@ -840,6 +841,7 @@ void SystemTray::refreshWallpaperWatch(const KConfigGroup &group)
 {
     const auto state = QJsonDocument::fromJson(group.readEntry("Palette", QString()).toUtf8()).object();
     m_automaticWallpaperAccent = state.value(u"source"_s).toString() == u"automatic";
+    m_configWallpaperParent = false;
     QSet<QString> wanted;
     if (m_automaticWallpaperAccent) {
         // Some wallpaper KCM paths sync the containment config directly
@@ -855,17 +857,23 @@ void SystemTray::refreshWallpaperWatch(const KConfigGroup &group)
         const auto images = state.value(u"wallpapers"_s).toArray();
         if (images.size() <= 16) {
             for (const auto &image : images) {
-                const QFileInfo file(image.toObject().value(u"path"_s).toString());
-                if (!file.isAbsolute()) {
-                    continue;
-                }
-                if (file.isFile()) {
-                    wanted.insert(file.absoluteFilePath());
-                }
-                // Watch the parent as well so an atomic replacement or
-                // temporary deletion can be detected and the file rearmed.
-                if (QFileInfo(file.absolutePath()).isDir()) {
-                    wanted.insert(file.absolutePath());
+                const auto entry = image.toObject();
+                // The selected alias and its resolved file may live in
+                // different directories. Watch both when supplied.
+                for (const auto &key : {u"path"_s, u"source_path"_s}) {
+                    const QFileInfo file(entry.value(key).toString());
+                    if (!file.isAbsolute()) {
+                        continue;
+                    }
+                    if (file.isFile()) {
+                        wanted.insert(file.absoluteFilePath());
+                    }
+                    // The parent detects replacement or temporary deletion.
+                    const auto parent = file.absolutePath();
+                    if (QFileInfo(parent).isDir()) {
+                        wanted.insert(parent);
+                        m_configWallpaperParent |= parent == configDir;
+                    }
                 }
             }
         }

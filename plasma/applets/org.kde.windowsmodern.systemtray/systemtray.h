@@ -102,6 +102,7 @@ private:
     QFileSystemWatcher m_wallpaperWatch;
     QPointer<WallpaperAccentSource> m_wallpaperAccentSource;
     bool m_automaticWallpaperAccent = false;
+    bool m_configWallpaperParent = false;
     bool m_xwaylandClientsScale = true;
 
     QPointer<SystemTraySettings> m_settings;

@@ -79,6 +79,19 @@ class WindowMaterialTests(unittest.TestCase):
                                 new.get("stop-color", "").replace("currentColor", "#4CC2FF"),
                                 old.get("stop-color", ""))
 
+    def test_margin_focus_uses_native_palette_role(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for mode in ("dark", "light"):
+                target = appearance["desktoptheme"](ROOT, Path(tmp), mode)
+                root = ET.parse(target / "widgets/margins-highlight.svg").getroot()
+                paths = [node for node in root.iter() if node.get("class") == "ColorScheme-ButtonFocus"]
+                self.assertEqual({node.get("id") for node in paths},
+                                 {"fill", "path4131", "path4155", "path4131-3", "path4155-5"})
+                for node in paths:
+                    self.assertIn("fill:currentColor", node.get("style", ""))
+                    self.assertIn("opacity:0.3", node.get("style", ""))
+                    self.assertNotRegex(node.get("style", ""), r"(?<![\w-])color\s*:")
+
     def test_kvantum_accent_bindings_preserve_materials(self):
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
         with tempfile.TemporaryDirectory() as tmp:
@@ -112,6 +125,21 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertEqual(result["activity"], "current")
                 self.assertEqual(len(result["wallpapers"]), 2)
                 self.assertEqual(result["wallpapers"][0], result["wallpapers"][1])
+                alias = Path(tmp) / "selected.jpg"
+                alias.symlink_to(image)
+                snapshot["images"][1]["path"] = str(alias)
+                linked = discover()["wallpapers"][1]
+                self.assertEqual(linked["source_path"], str(alias))
+                self.assertEqual(linked["path"], str(image.resolve()))
+                replacement = Path(tmp) / "next.jpg"
+                replacement.write_bytes(b"next")
+                alias.unlink()
+                alias.symlink_to(replacement)
+                changed = discover()["wallpapers"][1]
+                self.assertEqual(changed["source_path"], str(alias))
+                self.assertEqual(changed["path"], str(replacement.resolve()))
+                self.assertNotEqual(linked, changed)
+                snapshot["images"][1]["path"] = str(image)
                 snapshot["images"][1]["screen"] = 0
                 with self.assertRaisesRegex(ValueError, "duplicate"):
                     discover()
@@ -178,12 +206,34 @@ class WindowMaterialTests(unittest.TestCase):
         def decode(path):
             calls.append(path)
             return (1, 1, bytes((88, 88, 188, 255)))
-        with patch.dict(analyze.__globals__, {"decode_wallpaper_bitmap": decode}):
-            path = Path("/wallpaper.png")
-            single = analyze([path])
-            repeated = analyze([path, path])
-        self.assertEqual(calls, [path, path])
-        self.assertEqual(single, repeated)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "wallpaper.png"
+            path.write_bytes(b"source")
+            with patch.dict(analyze.__globals__, {"decode_wallpaper_bitmap": decode}):
+                single = analyze([path])
+                repeated = analyze([path, path])
+            self.assertEqual(calls, [path, path])
+            self.assertEqual(single, repeated)
+
+    def test_wallpaper_analysis_rejects_changed_input_batch(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        analyze = sync["analyze_wallpapers"]
+        with tempfile.TemporaryDirectory() as tmp:
+            first = Path(tmp) / "first.png"
+            second = Path(tmp) / "second.png"
+            first.write_bytes(b"original")
+            second.write_bytes(b"second")
+
+            def decode(path):
+                if path == second:
+                    replacement = first.with_suffix(".new")
+                    replacement.write_bytes(b"replacement")
+                    replacement.replace(first)
+                return (1, 1, bytes((88, 88, 188, 255)))
+
+            with patch.dict(analyze.__globals__, {"decode_wallpaper_bitmap": decode}):
+                with self.assertRaises(sync["WallpaperFileChangedError"]):
+                    analyze([first, second, first])
 
     def test_windows_accent_state_validation(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))

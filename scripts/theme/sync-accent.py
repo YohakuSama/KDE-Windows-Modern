@@ -395,6 +395,19 @@ def _icc_rgb_bitmap(image, profile_bytes):
         raise ValueError("Wallpaper ICC conversion failed: " + str(error)) from error
 
 
+class WallpaperFileChangedError(ValueError):
+    """An image changed after its initial file identity was captured."""
+
+
+def wallpaper_file_identity(path):
+    """Identity of the current local file, shared by analysis and caching."""
+    info = path.stat()
+    if not stat.S_ISREG(info.st_mode):
+        raise ValueError("Expected a local wallpaper image file")
+    return {"device": info.st_dev, "inode": info.st_ino, "size": info.st_size,
+            "mtime_ns": info.st_mtime_ns, "ctime_ns": info.st_ctime_ns}
+
+
 def decode_wallpaper_bitmap(path):
     """Decode a local still image into the candidate WIC analysis buffer.
 
@@ -430,7 +443,10 @@ def decode_wallpaper_bitmap(path):
                 image = ImageOps.exif_transpose(source) if orientation != 1 else source
                 try:
                     if "A" in image.getbands() or "transparency" in image.info:
-                        with image.convert("RGBA") as rgba:
+                        # A decoded RGBA image already has the required
+                        # channels. Avoid a second full-size RGBA buffer.
+                        rgba = image if image.mode == "RGBA" else image.convert("RGBA")
+                        try:
                             if rgba.getextrema()[3] != (255, 255):
                                 if source.format != "PNG" or profile is not None:
                                     raise ValueError("Transparent wallpaper outside the reviewed untagged PNG contract")
@@ -438,6 +454,9 @@ def decode_wallpaper_bitmap(path):
                                     return prepare_premultiplied_wallpaper_bitmap(
                                         premultiplied.tobytes(), premultiplied.width,
                                         premultiplied.height)
+                        finally:
+                            if rgba is not image:
+                                rgba.close()
                     if profile is not None:
                         return _icc_rgb_bitmap(image, profile)
                     if image.mode == "RGB":
@@ -710,8 +729,19 @@ def analyze_wallpapers(paths):
         for path in paths:
             path = Path(path)
             if path not in cache:
-                cache[path] = _bitmap_wallpaper_statistics(*decode_wallpaper_bitmap(path))
-            yield cache[path]
+                identity = wallpaper_file_identity(path)
+                stats = _bitmap_wallpaper_statistics(*decode_wallpaper_bitmap(path))
+                cache[path] = (identity, stats)
+            yield cache[path][1]
+        # Explicit fixed-wallpaper analysis also needs a consistent set
+        # of input files, including ones decoded earlier in this batch.
+        for path, (identity, _) in cache.items():
+            try:
+                current = wallpaper_file_identity(path)
+            except (OSError, ValueError) as error:
+                raise WallpaperFileChangedError("Wallpaper disappeared during color analysis") from error
+            if current != identity:
+                raise WallpaperFileChangedError("Wallpaper changed during color analysis")
 
     result = _reduce_weighted_wallpaper_statistics(statistics())
     if result is None:

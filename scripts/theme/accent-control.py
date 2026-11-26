@@ -81,9 +81,7 @@ def live_wallpaper_snapshot(activity):
 
 
 def wallpaper_fingerprint(path):
-    info = path.stat()
-    return {"path": str(path), "device": info.st_dev, "inode": info.st_ino,
-            "size": info.st_size, "mtime_ns": info.st_mtime_ns, "ctime_ns": info.st_ctime_ns}
+    return {"path": str(path), **SYNC["wallpaper_file_identity"](path)}
 
 
 def discover_wallpapers():
@@ -106,11 +104,15 @@ def discover_wallpapers():
         path = Path(image["path"])
         if not path.is_absolute():
             raise ValueError("Expected a local absolute wallpaper image path")
-        path = path.resolve(strict=True)
-        if not path.is_file():
-            raise ValueError("Wallpaper image is unavailable")
+        source = path
+        path = source.resolve(strict=True)
+        fingerprint = wallpaper_fingerprint(path)
+        # Retain the selected path as well as its resolved file. Watching
+        # only the latter misses replacement of a selected symbolic link.
+        if source != path:
+            fingerprint["source_path"] = str(source)
         # Preserve one occurrence per active screen, even for identical paths.
-        wallpapers.append(wallpaper_fingerprint(path))
+        wallpapers.append(fingerprint)
     if activity != active_activity():
         raise WallpaperChangedError("Desktop activity changed during wallpaper discovery")
     return {"activity": activity, "wallpapers": wallpapers}
@@ -133,8 +135,11 @@ def automatic_state(previous):
             and previous.get("analysis_revision") == revision
             and all(previous.get(key) == value for key, value in snapshot.items())):
         return previous
-    palette = SYNC["analyze_wallpapers"](
-        [Path(image["path"]) for image in snapshot["wallpapers"]])["palette"]
+    try:
+        palette = SYNC["analyze_wallpapers"](
+            [Path(image["path"]) for image in snapshot["wallpapers"]])["palette"]
+    except SYNC["WallpaperFileChangedError"] as error:
+        raise WallpaperChangedError(str(error)) from error
     state = {"schema_version": 1, "source": "automatic", "analysis_revision": revision,
              "palette": palette, **snapshot}
     require_wallpaper_snapshot(state)
@@ -153,7 +158,11 @@ def decode_state(raw):
         if (not isinstance(state.get("activity"), str) or not isinstance(images, list)
                 or not 1 <= len(images) <= MAX_SCREENS
                 or any(not isinstance(image, dict) or not isinstance(image.get("path"), str)
-                       or not Path(image["path"]).is_absolute() for image in images)):
+                       or not Path(image["path"]).is_absolute()
+                       or ("source_path" in image
+                           and (not isinstance(image["source_path"], str)
+                                or not Path(image["source_path"]).is_absolute()))
+                       for image in images)):
             raise ValueError("Invalid automatic wallpaper accent state")
     palette = state.get("palette")
     if (not isinstance(palette, dict) or set(palette) != {"Accent", *SYNC["PRESET_SHADE_ROLES"]}
