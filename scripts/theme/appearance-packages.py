@@ -3,13 +3,14 @@
 """Materialize one Windows Modern theme and its renderer compatibility outputs.
 
 The historical dark source directory is the shared base, not a second
-editable theme. Light directories contain only differences. Installed
-KPackages and Store archives receive real files, never source symlinks.
+editable theme. Both Plasma renderer packages are materialized from it.
+Installed KPackages and Store archives receive real files, never source symlinks.
 """
 import argparse
 import json
 from pathlib import Path
 import re
+import runpy
 import shutil
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +51,11 @@ LIGHT_WIDGET_COLORS = {
     "translucentbackground": {b"#2C2C2C": b"#F9F9F9", b"#3F3F3F": b"#E5E5E5"},
     "solid/widgets/background": {},
     "translucent/widgets/background": {b"#2C2C2C": b"#eff0f1"},
+    "configuration-icons": {b"#2C2C2C": b"#eff0f1"},
+    "line": {b"#2C2C2C": b"#eff0f1"},
+    "plasmoidheading": {b"#2C2C2C": b"#eff0f1"},
+    "solid/widgets/panel-background": {},
+    "switch": {},
 }
 SVG_HEX_COLOR = re.compile(rb"#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
 
@@ -123,6 +129,11 @@ LIGHT_WIDGET_ROLES = {
     "solid/widgets/background": (LIGHT_SURFACE_ROLES, LIGHT_GRADIENT_STOPS),
     # The original translucent background contains two identical role tables.
     "translucent/widgets/background": (LIGHT_SURFACE_ROLES, {}, 2),
+    "configuration-icons": (LIGHT_GRADIENT_ROLES, LIGHT_GRADIENT_STOPS),
+    "line": (LIGHT_PLAIN_ROLES, {}),
+    "solid/widgets/panel-background": (LIGHT_GRADIENT_ROLES, LIGHT_GRADIENT_STOPS),
+    "switch": ({b"Text": b"#232629", b"Background": b"#eff0f1",
+                b"Highlight": b"#5e81ac"}, {}),
 }
 # Preserve non-geometric paint differences without modifying XML structure.
 # Require the reviewed number of occurrences so new states cannot silently
@@ -136,6 +147,14 @@ LIGHT_WIDGET_PAINT = {
     "solid/widgets/background": (
         (b'fill="#2C2C2C"', b'fill="#F3F3F3"', 16),
         (b'color="#2C2C2C"', b'color="#eff0f1"', 2),
+    ),
+    "solid/widgets/panel-background": (
+        (b"color:#1C1C1C", b"color:#eff0f1", 4),
+        (b"fill:#1C1C1C", b"fill:#F3F3F3", 3),
+    ),
+    "switch": (
+        (b'opacity="0.55"', b'opacity="0.45"', 3),
+        (b'opacity="0.79"', b'opacity="0.62"', 1),
     ),
 }
 SVG_COLOR_ROLE = re.compile(rb"(\.ColorScheme-([A-Za-z]+)\s*\{)([^{}]*)(\})")
@@ -171,11 +190,9 @@ def apply_light_roles(data, relative, roles, stops, copies=1):
     return result
 
 
-def apply_light_widget_colors(target, overlay):
+def apply_light_widget_colors(target):
     for name, colors in LIGHT_WIDGET_COLORS.items():
         relative = Path(name + ".svg") if "/" in name else Path("widgets") / (name + ".svg")
-        if (overlay / relative).exists():
-            raise ValueError(f"Duplicate light widget source: {relative}")
         path = target / relative
         seen = set()
 
@@ -206,23 +223,71 @@ def desktoptheme(root, destination, mode):
     target = destination / ("Windows-modern-" + mode)
     shutil.copytree(source / "Windows-modern-dark", target)
     if mode == "light":
-        overlay = source / "Windows-modern-light"
-        shutil.copytree(overlay, target, dirs_exist_ok=True)
-        apply_light_widget_colors(target, overlay)
+        # Never read an old light source directory, even if an incremental
+        # checkout left one on disk. Generate only from the shared source.
+        apply_light_widget_colors(target)
+        metadata = target / "metadata.desktop"
+        data = metadata.read_bytes()
+        metadata.write_bytes(data.replace(b"Windows-modern-dark", b"Windows-modern-light")
+                             .replace(b"Windows Modern Dark desktop theme",
+                                      b"Windows Modern Light desktop theme"))
+        generators = root / "scripts/theme"
+        # Use the existing material generators, including their validation
+        # of the frame IDs and masks. Do not duplicate their geometry.
+        for name in ("popup-frames.py", "panel-frames.py"):
+            write_frames = runpy.run_path(str(generators / name))["write_frames"]
+            write_frames(target, mode)
     return target
 
 
+def light_lookfeel_dependencies(root, dependencies):
+    # Store product IDs are an external compatibility contract, not a
+    # second global theme source. Only mode-specific IDs are overridden.
+    overrides = json.loads((root / "scripts/theme/light-store-dependencies.json").read_text(encoding="utf-8"))
+    if not overrides.keys() <= set(dependencies):
+        raise ValueError("Light Store dependency overrides do not match the shared metadata")
+    return [overrides.get(dep, dep) for dep in dependencies]
+
+
 def lookfeel(root, destination, mode):
-    source = root / "plasma/look-and-feel"
-    base = source / PACKAGE
-    overlay = source / LIGHT_PACKAGE
+    base = root / "plasma/look-and-feel" / PACKAGE
     if mode == "light":
-        # Legacy Store product: share layout and splash, retain its metadata,
-        # defaults, and previews. Do not add the unrelated boot greeter.
+        # Export the historical Store product from the common package.
+        # Copy only the original Store payload, not login/boot resources.
         target = destination / LIGHT_PACKAGE
-        shutil.copytree(overlay, target)
+        contents = target / "contents"
+        contents.mkdir(parents=True)
         for name in ("layouts", "splash"):
-            shutil.copytree(base / "contents" / name, target / "contents" / name)
+            shutil.copytree(base / "contents" / name, contents / name)
+        defaults = (base / "contents/defaults").read_text(encoding="utf-8")
+        for dark, light in (
+            ("ColorScheme=WindowsModernDark", "ColorScheme=WindowsModernLight"),
+            ("Theme=windows-modern\n", "Theme=windows-modern-light\n"),
+            ("widgetStyle=kvantum-dark", "widgetStyle=kvantum"),
+            ("windows-modern-dark-aurorae", "windows-modern-light-aurorae"),
+            ("name=Windows-modern-dark", "name=Windows-modern-light"),
+            ("Theme=" + PACKAGE, "Theme=" + LIGHT_PACKAGE),
+        ):
+            if defaults.count(dark) != 1:
+                raise ValueError("Unexpected shared global defaults: " + dark)
+            defaults = defaults.replace(dark, light)
+        (contents / "defaults").write_text(defaults, encoding="utf-8")
+        previews = contents / "previews"
+        shutil.copytree(root / "scripts/store/lookfeel-light-previews", previews)
+        shutil.copy2(previews / "preview.png", previews / "splash.png")
+        meta = json.loads((base / "metadata.json").read_text(encoding="utf-8"))
+        plugin = meta["KPlugin"]
+        plugin["Id"] = LIGHT_PACKAGE
+        plugin["Name"] = "Windows Modern Light"
+        plugin["Description"] = plugin["Description"].replace("Windows Modern Dark", "Windows Modern Light", 1)
+        meta["X-KPackage-Dependencies"] = light_lookfeel_dependencies(
+            root, meta.get("X-KPackage-Dependencies", []))
+        (target / "metadata.json").write_text(json.dumps(meta, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
+        desktop = (base / "metadata.desktop").read_text(encoding="utf-8")
+        (target / "metadata.desktop").write_text(
+            desktop.replace("Windows-modern-dark", "Windows-modern-light")
+                   .replace("Windows Modern Dark theme", "Windows Modern Light theme")
+                   .replace(PACKAGE, LIGHT_PACKAGE), encoding="utf-8")
         return target
     target = destination / PACKAGE
     shutil.copytree(base, target)
@@ -236,9 +301,9 @@ def lookfeel(root, destination, mode):
         plugin["Name"] = "Windows Modern"
         plugin["Description"] = ("Windows Modern for KDE Plasma 6, with light and dark appearance modes. "
                                  "Based on Win11OS-kde by yeyushengfan258.")
-        light = json.loads((overlay / "metadata.json").read_text(encoding="utf-8"))
+        deps = meta.get("X-KPackage-Dependencies", [])
         meta["X-KPackage-Dependencies"] = list(dict.fromkeys(
-            meta.get("X-KPackage-Dependencies", []) + light.get("X-KPackage-Dependencies", [])))
+            deps + light_lookfeel_dependencies(root, deps)))
         meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
         desktop = target / "metadata.desktop"
         desktop.write_text(desktop.read_text(encoding="utf-8")

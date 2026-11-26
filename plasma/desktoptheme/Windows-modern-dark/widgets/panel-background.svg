@@ -266,8 +266,10 @@
        width="8.0000181"
        id="rect4152"
        style="color:#1C1C1C;opacity:0.88;fill:#1C1C1C;fill-opacity:1;stroke:none;stroke-width:1.1547"
-       transform="matrix(0,-1,-1,0,0,0)" />
+       transform="matrix(0,-1,-1,0,0,0)"
+       class="ColorScheme-Background" />
     <rect
+       class="ColorScheme-Background"
        transform="matrix(0,-1,-1,0,0,0)"
        style="color:#1C1C1C;opacity:0.08;fill:url(#linearGradient925);fill-opacity:1;stroke:none;stroke-width:0.288684"
        id="rect76"
@@ -280,6 +282,7 @@
      id="topleft"
      transform="translate(31,-904.36218)">
     <path
+       class="ColorScheme-Background"
        sodipodi:nodetypes="cccc"
        style="opacity:0.88;fill:#1C1C1C;fill-opacity:1;stroke:none;stroke-width:2.66667"
        d="m 29,910.36218 c -8.863965,0 -16,7.13604 -16,16 h 16 z"
@@ -292,6 +295,7 @@
        id="path71" />
   </g>
   <rect
+     class="ColorScheme-Background"
      y="22"
      x="59.999954"
      height="12.000099"
@@ -484,6 +488,7 @@
      height="12.000099"
      x="59.999954"
      y="80"
+     class="ColorScheme-Background"
      inkscape:label="#shadow-center" />
   <use
      height="100%"

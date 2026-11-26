@@ -50,26 +50,37 @@ def render(template, mode, role, variant):
     return result
 
 
+def write_frames(directory, mode, check=False):
+    template = TEMPLATE.read_text(encoding="utf-8")
+    stale = []
+    for role in ("dialogs/background.svg", "widgets/tooltip.svg"):
+        for variant in ("", "solid", "translucent"):
+            path = directory / variant / role
+            expected = render(template, mode, role, variant)
+            if check:
+                if not path.is_file() or path.read_text(encoding="utf-8") != expected:
+                    stale.append(str(path))
+            else:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(expected, encoding="utf-8")
+    if stale:
+        raise ValueError("Regenerate popup frames: " + ", ".join(stale))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--directory", type=Path, help="Complete renderer package directory")
+    parser.add_argument("--mode", choices=("dark", "light"), default="dark")
     args = parser.parse_args()
-    template = TEMPLATE.read_text(encoding="utf-8")
-    stale = []
-    for mode in ("dark", "light"):
-        for role in ("dialogs/background.svg", "widgets/tooltip.svg"):
-            for variant in ("", "solid", "translucent"):
-                path = ROOT / "plasma/desktoptheme" / ("Windows-modern-"+mode) / variant / role
-                expected = render(template, mode, role, variant)
-                if args.check:
-                    if not path.is_file() or path.read_text(encoding="utf-8") != expected:
-                        stale.append(str(path.relative_to(ROOT)))
-                else:
-                    path.parent.mkdir(parents=True, exist_ok=True)
-                    path.write_text(expected, encoding="utf-8")
-    if stale:
-        parser.exit(1, "Regenerate popup frames: " + ", ".join(stale) + "\n")
-    print("12 popup frames: geometry and element IDs consistent.")
+    if args.mode == "light" and args.directory is None:
+        parser.error("Light renderer frames require an explicit staged directory")
+    directory = args.directory or ROOT / "plasma/desktoptheme/Windows-modern-dark"
+    try:
+        write_frames(directory, args.mode, args.check)
+    except ValueError as error:
+        parser.exit(1, str(error) + "\n")
+    print(f"6 {args.mode} popup frames: geometry and element IDs consistent.")
 
 
 if __name__ == "__main__":

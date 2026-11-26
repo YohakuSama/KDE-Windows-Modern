@@ -52,7 +52,7 @@ COMPONENTS=(
     "aurorae-dark|$SRC_DIR/aurorae/windows-modern-dark-aurorae|metadata.desktop|Aurorae Themes"
     "aurorae-light|$SRC_DIR/aurorae/windows-modern-light-aurorae|metadata.desktop|Aurorae Themes"
     "desktoptheme-dark|$SRC_DIR/plasma/desktoptheme/Windows-modern-dark|metadata.desktop|Plasma 6 Themes"
-    "desktoptheme-light|$SRC_DIR/plasma/desktoptheme/Windows-modern-light|metadata.desktop|Plasma 6 Themes"
+    "desktoptheme-light|$SRC_DIR/plasma/desktoptheme/Windows-modern-dark|metadata.desktop|Plasma 6 Themes"
     "wallpaper|$SRC_DIR/wallpaper/Windows-modern|metadata.json|Wallpapers"
     "applet-showdesktop|$SRC_DIR/plasma/applets/org.kde.windowsmodern.showdesktop|metadata.json|Plasma 6 Applets"
     "applet-startmenu|$SRC_DIR/plasma/applets/org.kde.windowsmodern.startmenu|metadata.json|Plasma 6 Applets"
@@ -62,7 +62,7 @@ COMPONENTS=(
     "windowswitcher|$SRC_DIR/plasma/windowswitcher/org.kde.windowsmodern.alttab|metadata.json|KWin Switching Layouts"
     "layout-panel|$SRC_DIR/plasma/layout-templates/org.kde.windowsmodern.panel|metadata.json|Plasma 6 Layout Templates"
     "lookfeel-dark|$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark|metadata.json|Global Themes (Plasma 6)"
-    "lookfeel-light|$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.light|metadata.json|Global Themes (Plasma 6)"
+    "lookfeel-light|$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark|metadata.json|Global Themes (Plasma 6)"
 )
 
 list_components() {
@@ -116,13 +116,18 @@ build_one() {
         rm -rf "$icon_stage"
     elif [[ "$name" == desktoptheme-* || "$name" == lookfeel-* ]]; then
         # Legacy Store product IDs remain stable, but the shared source is
-        # materialized before archiving. Never zip a sparse light overlay.
-        local appearance_stage
+        # materialized before archiving. Both renderer modes use one source.
+        local appearance_stage package_dir
         appearance_stage="$(mktemp -d)"
+        package_dir="$(basename "$dir")"
+        case "$name" in
+            desktoptheme-light) package_dir="Windows-modern-light" ;;
+            lookfeel-light) package_dir="org.kde.windowsmodern.light" ;;
+        esac
         if ! (set -e
             python3 "$SCRIPT_DIR/theme/appearance-packages.py" "$appearance_stage" --component "$name" &&
             cd "$appearance_stage" &&
-            zip -qr "$outpath" "$(basename "$dir")" \
+            zip -qr "$outpath" "$package_dir" \
                 -x '*/build/*' '*/build-*/*' '*/CMakeFiles/*' '*/dev.sh' '*/BUILD.md' '*.orig' '*.rej'
         ); then
             rm -rf "$appearance_stage" "$outpath"

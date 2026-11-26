@@ -30,11 +30,12 @@ case "$mode" in
             exit 0
         fi
         ensure_dir "$(dirname "$state")"
+        # Stage the common renderer artwork before changing saved state.
+        apply_popup_materials false
         # Remember the blur setting as it was ("" = never set: KWin's default, on).
         echo "blurEnabled=$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" > "$state"
         kvantum_transparency false
         apply_window_materials false
-        apply_popup_materials false
         kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled false
         kwin_reconfigure
         info "Transparency effects off."
@@ -45,6 +46,7 @@ case "$mode" in
             info "Transparency effects are already on."
             exit 0
         fi
+        apply_popup_materials true
         previous="$(sed -n 's/^blurEnabled=//p' "$state")"
         if [ -n "$previous" ]; then
             kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled "$previous"
@@ -53,7 +55,6 @@ case "$mode" in
         fi
         kvantum_transparency true
         apply_window_materials true current
-        apply_popup_materials true
         rm -f "$state"
         kwin_reconfigure
         info "Transparency effects on."

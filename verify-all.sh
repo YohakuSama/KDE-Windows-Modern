@@ -33,16 +33,17 @@ echo ""
 echo -e "${BOLD}Windows Modern — Project Health Check${RESET}"
 echo "======================================"
 
-# ── Theme source (shared base + mode-specific renderer overlays) ─────
+# ── Theme source (shared base + mode-specific renderer outputs) ──────
 echo ""
 echo " Themes:"
 for v in dark light; do
     V="$(tr '[:lower:]' '[:upper:]' <<< "${v:0:1}")${v:1}"
     check_dir  "aurorae/windows-modern-${v}-aurorae"      "Aurorae ${v}"
     check_file "color-schemes/WindowsModern${V}.colors"    "Color scheme ${v}"
-    check_dir  "plasma/desktoptheme/Windows-modern-${v}"   "Plasma theme ${v}"
-    check_dir  "plasma/look-and-feel/org.kde.windowsmodern.${v}" "Global theme ${v}"
 done
+check_dir  "plasma/desktoptheme/Windows-modern-dark"        "Shared Plasma theme source"
+check_dir  "plasma/look-and-feel/org.kde.windowsmodern.dark" "Shared global theme source"
+check_file "scripts/theme/light-store-dependencies.json"    "Mode-specific Store dependencies"
 check_file "scripts/theme/appearance-packages.py"            "Shared appearance package materializer"
 check_file "scripts/theme/switch-mode.sh"                    "Appearance-only mode switch"
 check_dir  "Kvantum/Windows-modern"                         "Kvantum theme"
@@ -57,7 +58,7 @@ else
     fail "Discover icon aliases differ"
 fi
 if python3 -I scripts/theme/popup-frames.py --check >/dev/null; then
-    pass "popup frame generator (dark/light, solid/acrylic, tooltip)"
+    pass "shared popup frame source (solid/acrylic, tooltip)"
 else
     fail "popup frames differ from their generator — run scripts/theme/popup-frames.py"
 fi
@@ -67,13 +68,24 @@ else
     fail "Aurorae window frames differ from their generator — run scripts/theme/window-frames.py"
 fi
 check_file "plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/ui/main.qml" "Alt+Tab switcher"
-# The task frames share one source. Check both complete renderer packages
-# rather than reading a sparse light source directory.
+# Check the complete runtime appearance from the shared source.
 tasks_tmp="$(mktemp -d)"
-if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance" --component desktopthemes; then
+if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance"; then
+    shared="$tasks_tmp/appearance/look-and-feel/org.kde.windowsmodern.dark"
+    check_file "$shared/metadata.json" "Unified global theme metadata"
+    check_file "$shared/contents/scripts/switch-mode.sh" "Installed appearance switch"
+    if [ -e "$tasks_tmp/appearance/look-and-feel/org.kde.windowsmodern.light" ]; then
+        fail "Obsolete light global theme in runtime appearance"
+    fi
     drift=""
     for v in dark light; do
-        task_source="$tasks_tmp/appearance/Windows-modern-${v}/widgets/tasks.svg"
+        renderer="$tasks_tmp/appearance/desktoptheme/Windows-modern-${v}"
+        check_file "$renderer/metadata.desktop" "Plasma renderer metadata ${v}"
+        if ! python3 -I scripts/theme/popup-frames.py --check --directory "$renderer" --mode "$v" >/dev/null ||
+           ! python3 -I scripts/theme/panel-frames.py --check --directory "$renderer" --mode "$v" >/dev/null; then
+            fail "Popup or panel frame drift in staged renderer ${v}"
+        fi
+        task_source="$renderer/widgets/tasks.svg"
         if ! cp "$task_source" "$tasks_tmp/${v}.svg" ||
            ! python3 -I scripts/theme/tasks-frames.py "$tasks_tmp/${v}.svg" >/dev/null ||
            ! cmp -s "$tasks_tmp/${v}.svg" "$task_source"; then
@@ -87,6 +99,18 @@ if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance" --com
     fi
 else
     fail "Shared appearance packages could not be materialized"
+fi
+if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/store" --component lookfeel-light; then
+    store_theme="$tasks_tmp/store/org.kde.windowsmodern.light"
+    check_file "$store_theme/metadata.json" "Light Store export metadata"
+    check_file "$store_theme/contents/defaults" "Light Store export defaults"
+    if cmp -s "$store_theme/contents/previews/preview.png" "$store_theme/contents/previews/splash.png"; then
+        pass "Light Store export shares the preview image"
+    else
+        fail "Light Store export preview missing or different"
+    fi
+else
+    fail "Light Store export could not be materialized"
 fi
 rm -rf "$tasks_tmp"
 
@@ -264,7 +288,7 @@ fi
 echo ""
 echo " Theme renders:"
 if python3 scripts/theme/panel-frames.py --check; then
-    pass "taskbar frame geometry and material variants agree"
+    pass "shared taskbar frame geometry and material variants agree"
 else
     fail "taskbar frame drift — run: python3 scripts/theme/panel-frames.py"
     FAILED=1

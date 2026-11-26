@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Generate widgets/switch.svg for both Windows Modern Plasma themes.
+"""Generate the shared widgets/switch.svg for Windows Modern.
 
-Usage: scripts/gen-switch-svg.py   (rewrites both themes' switch.svg)
+Usage: scripts/gen-switch-svg.py   (rewrites the shared source switch.svg)
+The appearance materializer applies the light-mode paint values.
 Check: tests/theme/check-switch.py
 
 Geometry follows Plasma's SwitchIndicator.qml (root 40x20 from hint-bar-size):
@@ -104,5 +105,3 @@ root = sys.argv[1] if len(sys.argv) > 1 else str(pathlib.Path(__file__).resolve(
 # Windows 11 strengths: outline = ControlStrongStroke, off knob = TextSecondary.
 pathlib.Path(root, "Windows-modern-dark/widgets/switch.svg").write_text(
     svg("#FFFFFF", "#2C2C2C", "#60CDFF", "0.55", "0.79"))
-pathlib.Path(root, "Windows-modern-light/widgets/switch.svg").write_text(
-    svg("#232629", "#eff0f1", "#5e81ac", "0.45", "0.62"))

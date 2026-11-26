@@ -316,7 +316,8 @@
        id="rect4255"
        style="opacity:1;fill:none;fill-opacity:1;stroke:none" />
     <circle
-       style="color:#2C2C2C;opacity:1;fill:#2C2C2C;fill-opacity:1;stroke:none"
+       class="ColorScheme-Background"
+       style="color:#2C2C2C;opacity:1;fill:currentColor;fill-opacity:1;stroke:none"
        id="path4139"
        cx="25.400003"
        cy="261.0166"

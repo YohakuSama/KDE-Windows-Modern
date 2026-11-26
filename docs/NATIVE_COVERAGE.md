@@ -378,8 +378,8 @@ The full installer now materializes one visible global theme, Windows
 Modern. Its existing package ID (org.kde.windowsmodern.dark) is retained
 for Plasma settings and the patched boot greeter; it does not select the
 active color mode. The canonical package owns the desktop layout,
-session splash and login resources. The old light package contains only
-the metadata, defaults and previews needed for the legacy Store export.
+session splash and login resources. The historical light Store product
+is now generated from this common package, not a second source package.
 The NixOS transaction backs up and retires the old installed light
 package; an active legacy light identity is migrated before the shell
 starts, without reapplying defaults or changing the current mode.
@@ -387,7 +387,7 @@ starts, without reapplying defaults or changing the current mode.
 The 120 byte-identical Plasma style files and four duplicate light
 layout/splash files now have one source. The appearance materializer
 builds complete dark/light renderer packages from the common base and
-sparse light overrides. It copies real files, so installed KPackage
+mode-specific values. It copies real files, so installed KPackage
 resources never depend on source-tree symlinks. The existing Store
 product IDs remain compatible exports of that source. No publishing
 or version change is involved.
@@ -430,15 +430,34 @@ and existing fallback colors byte for byte. Edit the shared tasks.svg
 and regenerate its derived states with scripts/theme/tasks-frames.py;
 the repository health check examines both complete staged variants.
 
-The light Plasma source tree now has 14 separate files: ten files covered
-by the existing popup, panel and switch generators (including the panel's
-separate solid source artwork), one renderer metadata file,
-and three other SVGs with structural differences (configuration icons,
-line and plasmoid heading). Do not force the remaining material or
-structural differences into global color substitutions. Two color
-schemes and fixed-color Aurorae/Kvantum artwork also remain. Future
-shared geometry should live in the common source/generator, with only
-the necessary light/dark values separated. KDE supports adaptive SVG colors via the current-color-scheme
+The final Plasma source overlays have been removed. The configuration
+icons, separators, plasmoid heading and solid taskbar now use the same
+element structure and KDE background color role in both modes. The
+dark configuration icon and separator fills now use currentColor, like
+the existing light assets. Their fallback colors remain unchanged;
+live palette resolution must be checked in both modes. Panel and
+heading fills remain explicit so the material tint is not replaced
+with an unrelated palette color.
+
+All 14 former light source files are now generated: the four shared
+SVGs above, the two derived panel variants, the six popup/tooltip
+variants, switch artwork and renderer metadata. The existing popup and
+panel generators are reused during staging; their source commands
+maintain the common dark artwork. The switch generator also writes only
+the common source. All previous light renderer contents are preserved.
+Transparency toggles restore files from the same appearance materializer
+as installation and packaging; obsolete local light source directories
+are ignored. Store renderer archive names and plugin IDs remain stable
+outputs, not independent themes. The light global-theme Store export
+now derives its metadata, defaults, layout and splash from the common
+global package. Only two mode-specific dependency IDs and two preview
+images remain separate; the identical preview/splash image is copied
+when exporting. The old package ID is retained only at the external
+Store/migration boundary. The installer ignores obsolete source copies,
+migrates existing settings and removes the old installed package.
+
+Two color schemes and fixed-color Aurorae/Kvantum artwork remain for
+separate consolidation. KDE supports adaptive SVG colors via the current-color-scheme
 stylesheet (https://develop.kde.org/docs/plasma/theme/theme-colors/);
 do not automatically substitute fixed Windows material colors or
 opacity with unrelated palette roles. This first consolidation does not

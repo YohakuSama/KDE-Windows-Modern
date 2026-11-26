@@ -402,25 +402,29 @@ apply_window_materials() {
 # disabled. Use the already shipped solid native frames in the installed
 # normal/translucent selectors, and restore exact source art on enable.
 # Preserve panel layout, opacity preferences and inner widget backgrounds.
-apply_popup_materials() {
+apply_popup_materials() (
     [ "$UID" -ne 0 ] || return 0
     local mode variant role source target
+    appearance_stage="$(mktemp -d)" || return 1
+    trap 'rm -rf -- "$appearance_stage"' EXIT
+    # Generate both complete renderers before changing installed artwork.
+    python3 -I "$SRC_DIR/scripts/theme/appearance-packages.py" "$appearance_stage" --component desktopthemes || return 1
     for mode in dark light; do
-        source="$SRC_DIR/plasma/desktoptheme/Windows-modern-$mode"
+        source="$appearance_stage/Windows-modern-$mode"
         target="$PLASMA_DIR/Windows-modern-$mode"
         [ -d "$target" ] || continue
         for variant in "" translucent/; do
             for role in dialogs/background.svg widgets/panel-background.svg; do
                 [ -f "$target/$variant$role" ] || continue
                 if [ "$1" = false ]; then
-                    cp "$source/solid/$role" "$target/$variant$role"
+                    cp "$source/solid/$role" "$target/$variant$role" || return 1
                 else
-                    cp "$source/$variant$role" "$target/$variant$role"
+                    cp "$source/$variant$role" "$target/$variant$role" || return 1
                 fi
             done
         done
     done
-}
+)
 
 kwin_reconfigure() {
     command -v dbus-send &>/dev/null || return 0

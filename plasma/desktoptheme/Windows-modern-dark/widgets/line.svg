@@ -92,9 +92,10 @@
        opacity="0.01"
        id="path5" />
     <path
+       class="ColorScheme-Background"
        d="m 33.969,13.594 v 40 h 1 v -40 z"
        color="#2C2C2C"
-       fill="#2C2C2C"
+       fill="currentColor"
        fill-opacity="0.1"
        id="path7" />
     <path
@@ -117,9 +118,10 @@
        opacity="0.01"
        id="path12" />
     <path
+       class="ColorScheme-Background"
        d="m 75.691,56.529 h -40 v 1 h 40 z"
        color="#2C2C2C"
-       fill="#2C2C2C"
+       fill="currentColor"
        fill-opacity="0.1"
        id="path14" />
     <path

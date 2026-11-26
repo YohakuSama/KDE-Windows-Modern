@@ -27,8 +27,8 @@ err()   { echo -e "${RED}==>${RESET} $*" >&2; }
 # ── Shot plan ──────────────────────────────────────────────────────
 # num|filename|title|instructions
 SHOTS=(
-    "1|View-1.png|Dark desktop overview|Switch to the DARK global theme. Close all windows. Show the panel with taskbar icons and clock. Make sure the wallpaper is visible."
-    "2|View-2.png|Light desktop overview|Switch to the LIGHT global theme. Close all windows. Same clean desktop shot showing the light panel and wallpaper."
+    "1|View-1.png|Dark desktop overview|Switch Windows Modern to dark mode. Close all windows. Show the panel with taskbar icons and clock. Make sure the wallpaper is visible."
+    "2|View-2.png|Light desktop overview|Switch Windows Modern to light mode. Close all windows. Same clean desktop shot showing the light panel and wallpaper."
     "3|View-3.png|Start Menu — Pinned apps (dark)|Switch to DARK. Open the Windows Modern Start Menu — Pinned apps tab. This shows the Win11-style start menu and panel together."
     "4|View-4.png|System Tray / Quick Settings (dark)|DARK theme. Click the system tray icon on the panel to open the quick settings flyout (network, Bluetooth, volume, brightness sliders). This showcases the custom C++ system tray."
     "5|View-5.png|Window decorations (dark)|DARK theme. Open 2-3 windows (e.g. Dolphin, System Settings, a text editor) cascaded so the Win11-style title bar caption buttons (minimize/maximize/close) are clearly visible."

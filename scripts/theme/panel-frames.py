@@ -25,22 +25,32 @@ def render(solid, mode):
     return solid.replace(token, "opacity:" + alpha + ";fill:" + fill)
 
 
+def write_frames(directory, mode, check=False):
+    role = "widgets/panel-background.svg"
+    solid = (directory / "solid" / role).read_text(encoding="utf-8")
+    expected = render(solid, mode)
+    for target in (directory / role, directory / "translucent" / role):
+        if check:
+            if not target.is_file() or target.read_text(encoding="utf-8") != expected:
+                raise ValueError("Panel material drift: " + str(target))
+        else:
+            target.write_text(expected, encoding="utf-8")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--directory", type=Path, help="Complete renderer package directory")
+    parser.add_argument("--mode", choices=tuple(MATERIALS), default="dark")
     args = parser.parse_args()
-    for mode in MATERIALS:
-        base = ROOT / "plasma/desktoptheme" / ("Windows-modern-" + mode)
-        role = "widgets/panel-background.svg"
-        solid = (base / "solid" / role).read_text(encoding="utf-8")
-        expected = render(solid, mode)
-        for target in (base / role, base / "translucent" / role):
-            if args.check:
-                if target.read_text(encoding="utf-8") != expected:
-                    parser.exit(1, "Panel material drift: " + str(target) + "\n")
-            else:
-                target.write_text(expected, encoding="utf-8")
-    print("Taskbar material variants and native masks are consistent.")
+    if args.mode == "light" and args.directory is None:
+        parser.error("Light renderer frames require an explicit staged directory")
+    directory = args.directory or ROOT / "plasma/desktoptheme/Windows-modern-dark"
+    try:
+        write_frames(directory, args.mode, args.check)
+    except ValueError as error:
+        parser.exit(1, str(error) + "\n")
+    print(f"{args.mode.capitalize()} taskbar material variants and native masks are consistent.")
 
 
 if __name__ == "__main__":

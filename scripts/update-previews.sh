@@ -27,7 +27,7 @@ DARK_SRC="$SHOT_DIR/View-10.png"
 LIGHT_SRC="$SHOT_DIR/View-11.png"
 
 DARK_DIR="$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/contents/previews"
-LIGHT_DIR="$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.light/contents/previews"
+LIGHT_DIR="$SCRIPT_DIR/store/lookfeel-light-previews"
 
 # Refuse to regenerate only one variant if the other current capture is absent.
 for src in "$DARK_SRC" "$LIGHT_SRC"; do
@@ -50,8 +50,7 @@ if [[ -f "$LIGHT_SRC" ]]; then
     info "Light global theme previews (from $LIGHT_SRC)..."
     "$CONVERT" "$LIGHT_SRC" -quality 90 -strip "$LIGHT_DIR/fullscreenpreview.jpg"
     "$CONVERT" "$LIGHT_SRC" -resize 172x105^ -gravity center -extent 172x105 "$LIGHT_DIR/preview.png"
-    "$CONVERT" "$LIGHT_SRC" -resize 172x105^ -gravity center -extent 172x105 "$LIGHT_DIR/splash.png"
-    step "fullscreenpreview.jpg + preview.png + splash.png"
+    step "fullscreenpreview.jpg + preview.png (the Store export reuses preview.png for splash.png)"
 else
     err "Missing $LIGHT_SRC — run ./scripts/capture-screenshots.sh first."
     exit 1

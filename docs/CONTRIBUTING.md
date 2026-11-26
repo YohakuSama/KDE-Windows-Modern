@@ -46,7 +46,8 @@ remain open tasks.
 | `install.sh`, `uninstall.sh`, `install-nixos.sh` | User entry points and the reversible NixOS backend. Conventional component installers are in `scripts/`. |
 | `scripts/install-lib.sh` | Shared helpers (paths, logging, apply/restart). Every installer sources it. |
 | `plasma/applets/` | Applets. `startmenu`, `showdesktop`, `digitalclock` and the optional `search` / `taskview` buttons are pure QML; `systemtray` and `icontasks` are C++ forks of upstream Plasma applets. |
-| `plasma/look-and-feel/`, `plasma/desktoptheme/`, `aurorae/`, `Kvantum/`, `color-schemes/` | Theme assets, always in **dark and light** variants. |
+| `plasma/look-and-feel/`, `plasma/desktoptheme/` | Shared global theme and Plasma style sources. Generate both renderer modes with the appearance materializer. |
+| `aurorae/`, `Kvantum/`, `color-schemes/` | Mode-specific renderer assets and palettes. |
 | `plasma/layout-templates/` | The "Add Panel → Windows Modern Panel" template. |
 | `plasma/windowswitcher/` | The Alt+Tab switcher (a KWin window-switcher layout). |
 | `tests/` | Headless regression tests, previews, and separate live desktop tests. |
