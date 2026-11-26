@@ -457,6 +457,23 @@ The report is saved after each selection on the Desktop as
 unavailable input, and Q saves and stops. `-BatchColors` accepts an
 explicit subset (including custom controls); skipped inputs remain
 unverified. No batch capture has been executed yet.
+
+Compare one or more complete or partial reports without changing the
+current palette:
+
+```sh
+python3 scripts/theme/sync-accent.py --compare-manual-palette windows-accent-batch-*.json
+```
+
+The comparison verifies target build, operator input provenance, manual
+registry mode, all seven UISettings/registry RGB slots, and batch
+coverage. Identical repeat observations merge; contradictory observations
+are rejected. The report lists per-role mismatches and remaining
+requested inputs, so interrupted collections need only request the
+remaining colors through `-BatchColors`. Presets absent from these reports
+remain listed separately; this does not invalidate the two earlier
+independent measurements. No captured values are installed automatically.
+
 The older Windows 10 published swatch list used #0078D7; the current
 reference and our measured default use #0078D4. Do not add the older
 color as an alias or generate preset shades using the custom formula.
@@ -1532,9 +1549,12 @@ Alpha, and seven-role candidate palette. The original file is never
 modified or recompressed. Untagged images use their decoded RGB values.
 Tagged RGB and Gray8 images use one fixed-point RGB8-output executor.
 RGB uses independently generated matrix/TRC tables or full-domain
-verified supplemental data. The reviewed v2 D50 single-gamma Gray8
-monitor profiles use independently generated gray grids. The former
-Little CMS runtime approximation is removed; unsupported profile and
+verified supplemental data. D50 Gray8 v2/v4 monitor profiles use the
+independent gray grid and shared input-curve generator. Only the two
+original gray gamma controls have measured native output hashes; the
+sampled and v4 parametric extensions follow the common native curve
+dispatch. The former Little CMS runtime approximation is removed;
+unsupported profile and
 pixel-format combinations are explicit decoder errors. Arbitrary ICC
 and non-RGB native parity have not been established.
 

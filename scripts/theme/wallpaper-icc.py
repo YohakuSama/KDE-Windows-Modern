@@ -266,7 +266,7 @@ def matrix_profile_tags(data, *, gray=False):
             or struct.unpack_from(">I", data)[0] != len(data)
             or data[8] not in (2, 4) or data[12:16] not in (b"mntr", b"scnr")
             or data[16:24] != (b"GRAYXYZ " if gray else b"RGB XYZ ")
-            or (gray and (data[8] != 2 or data[12:16] != b"mntr"))
+            or (gray and data[12:16] != b"mntr")
             or data[36:40] != b"acsp" or struct.unpack_from(">3i", data, 68) != D50):
         raise UnsupportedMatrixProfile("Expected a reviewed D50 matrix or gray monitor profile")
     count = struct.unpack_from(">I", data, 128)[0]
@@ -423,9 +423,9 @@ def build_gray_grid():
     return result
 
 def matrix_input_curve(tag):
-    """Generate the native 256-entry RGB8 curve for supported ICC TRCs."""
+    """Generate the native 256-entry input curve for supported ICC TRCs."""
     if len(tag) < 12:
-        raise UnsupportedMatrixProfile("Truncated RGB tone curve")
+        raise UnsupportedMatrixProfile("Truncated ICC input tone curve")
     if tag[:4] == b"curv":
         count = struct.unpack_from(">I", tag, 8)[0]
         if count >= 8192 or len(tag) != 12 + 2 * count:
@@ -547,10 +547,11 @@ def generate_matrix_tables(profile):
 def generate_gray_tables(profile):
     tags = matrix_profile_tags(profile, gray=True)
     curve = tags.get(b"kTRC", b"")
-    # Only the single-gamma v2 monitor branch is reviewed for gray.
-    if (len(curve) != 14 or curve[:4] != b"curv"
-            or struct.unpack_from(">I", curve, 8)[0] != 1):
-        raise UnsupportedMatrixProfile("Unreviewed gray tone curve")
+    # The native gray monitor setup calls the same 256-entry forward
+    # curve dispatcher as the RGB matrix setup. Parametric curves need
+    # ICC v4; sampled and gamma curves share the curv path.
+    if curve[:4] == b"para" and profile[8] != 4:
+        raise UnsupportedMatrixProfile("Parametric gray tone curve requires ICC v4")
     source = matrix_input_curve(curve)
     expected = GRAY_SOURCE_SHA.get(sha(profile))
     if expected is not None and _table_hash(source) != expected:

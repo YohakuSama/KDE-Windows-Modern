@@ -270,6 +270,112 @@ def derive_manual_palette(selection):
     return derive_custom_palette(color)
 
 
+def compare_manual_palette_reports(paths):
+    """Compare original manual inputs with verified target-build observations.
+
+    Merge partial batches, keep skipped colors unobserved, and retain
+    the operator-confirmed input separately from the measured output.
+    Never publish palettes or change desktop configuration here.
+    """
+    roles = (*PRESET_SHADE_ROLES[:3], "Accent", *PRESET_SHADE_ROLES[3:])
+    requested, observed, identities = {}, {}, []
+
+    def color_list(values):
+        if (not isinstance(values, list)
+                or any(not isinstance(value, str) or not COLOR.fullmatch(value)
+                       for value in values)):
+            raise ValueError("Invalid manual palette color list")
+        colors = [value.upper() for value in values]
+        if len(set(colors)) != len(colors):
+            raise ValueError("Duplicate manual palette color")
+        return colors
+
+    for path in paths:
+        with Path(path).open("rb") as stream:
+            raw = stream.read(8 * 1024 * 1024 + 1)
+        if len(raw) > 8 * 1024 * 1024:
+            raise ValueError("Oversized manual palette report")
+        report = json.loads(raw.decode("utf-8-sig"))
+        if (type(report["schema_version"]) is not int or report["schema_version"] != 1
+                or report["windows_build"] != "26300.9974"
+                or report["probe_set"] != "ManualPaletteBatch"
+                or type(report["completed"]) is not bool):
+            raise ValueError("Unexpected manual palette report identity")
+        targets = color_list(report["requested_colors"])
+        skipped = set(color_list(report["skipped_colors"]))
+        if not targets or not skipped.issubset(targets) or not isinstance(report["samples"], list):
+            raise ValueError("Invalid manual palette batch coverage")
+        requested.update(dict.fromkeys(targets))
+        seen = set()
+        for sample in report["samples"]:
+            selection = color_list([sample["requested_color"]])[0]
+            kind = "preset" if selection in PRESET_SHADES else "custom"
+            capture = sample["capture"]
+            if (selection not in targets or selection in seen or selection in skipped
+                    or sample["input_kind"] != kind
+                    or sample["input_confirmed_by_operator"] is not True
+                    or capture["schema_version"] != 5
+                    or capture["windows_build"] != report["windows_build"]
+                    or capture["accent_mode_argument"] != "Manual"
+                    or capture["accent_mode_registry"] != "Manual"
+                    or capture["accent_mode_registry_conflict"] is not False
+                    or color_list([capture["manual_color_argument"]])[0] != selection):
+                raise ValueError("Inconsistent manual palette sample identity")
+            appearance = capture["appearance"]
+            registry = appearance["registry"]
+            modes = (registry["control_panel_auto_colorization_raw"],
+                     registry["themes_history_auto_color_raw"])
+            if not any(type(value) is int and value == 0 for value in modes) or any(
+                    value is not None and (type(value) is not int or value != 0)
+                    for value in modes):
+                raise ValueError("Manual palette registry mode is not verified")
+            palette_hex = registry["accent_palette_hex"]
+            if (registry["accent_palette_length_bytes"] != 32
+                    or not isinstance(palette_hex, str)
+                    or not re.fullmatch(r"[0-9a-fA-F]{64}", palette_hex)):
+                raise ValueError("Invalid manual palette registry data")
+            ramp = {}
+            for index, role in enumerate(roles):
+                value = appearance["colors_argb"][role]
+                if (not isinstance(value, str) or not re.fullmatch(r"#FF[0-9a-fA-F]{6}", value)
+                        or value[3:].upper() != palette_hex[index * 8:index * 8 + 6].upper()):
+                    raise ValueError("Manual palette UISettings/registry disagreement")
+                ramp[role] = "#" + value[3:].upper()
+            base_argb = "#FF" + ramp["Accent"][1:]
+            if (capture["accent_observed_from_ui_settings"].upper() != base_argb
+                    or capture["manual_color_observed_from_ui_settings"].upper() != base_argb
+                    or capture["manual_color_matches_observed"] is not (ramp["Accent"] == selection)
+                    or (kind == "preset" and ramp["Accent"] != selection)):
+                raise ValueError("Inconsistent observed manual accent")
+            if selection in observed and observed[selection] != ramp:
+                raise ValueError("Conflicting manual palette observations for " + selection)
+            observed[selection] = ramp
+            seen.add(selection)
+        if report["completed"] and seen != set(targets):
+            raise ValueError("Incomplete manual palette report marked complete")
+        identities.append(hashlib.sha256(raw).hexdigest())
+
+    rows = {}
+    for selection, ramp in observed.items():
+        candidate = derive_manual_palette(selection)
+        differences = {role: {"observed": ramp[role], "candidate": candidate[role]}
+                       for role in roles if candidate[role] != ramp[role]}
+        rows[selection] = {
+            "input_kind": "preset" if selection in PRESET_SHADES else "custom",
+            "input_confirmed_by_operator": True,
+            "observed": ramp, "candidate": candidate, "differences": differences,
+        }
+    return {
+        "windows_build": "26300.9974", "report_sha256": identities,
+        "requested_count": len(requested), "observed_count": len(rows),
+        "matched_count": sum(not row["differences"] for row in rows.values()),
+        "mismatched_count": sum(bool(row["differences"]) for row in rows.values()),
+        "remaining_requested_colors": [color for color in requested if color not in rows],
+        "presets_not_observed_in_these_reports": sorted(set(PRESET_SHADES) - rows.keys()),
+        "samples": rows,
+    }
+
+
 def derive_wallpaper_alpha(range_sum, pixel_count):
     """Candidate colorization strength for already-preprocessed analysis pixels.
 
@@ -410,7 +516,7 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 # Bump when decoder/analysis semantics change; installed automatic state
 # must not reuse a palette computed by the previous decoder.
-WALLPAPER_ANALYSIS_REVISION = 10
+WALLPAPER_ANALYSIS_REVISION = 11
 
 
 @lru_cache(maxsize=1)
@@ -1030,11 +1136,23 @@ def main():
     parser.add_argument("directory", type=Path, nargs="?")
     parser.add_argument("mode", choices=("dark", "light"), nargs="?")
     parser.add_argument("selection", nargs="?")
-    parser.add_argument("--analyze-wallpaper", metavar="IMAGE", type=Path, nargs="+",
-                        help="read-only candidate palette from one or more explicit local images")
-    parser.add_argument("--publish-kvantum-reload", type=Path, metavar="DIRECTORY",
-                        help="publish committed local Kvantum asset hashes under the appearance lock")
+    operation = parser.add_mutually_exclusive_group()
+    operation.add_argument("--analyze-wallpaper", metavar="IMAGE", type=Path, nargs="+",
+                           help="read-only candidate palette from one or more explicit local images")
+    operation.add_argument("--compare-manual-palette", metavar="REPORT", type=Path, nargs="+",
+                           help="compare target-build manual palette batch reports without writing settings")
+    operation.add_argument("--publish-kvantum-reload", type=Path, metavar="DIRECTORY",
+                           help="publish committed local Kvantum asset hashes under the appearance lock")
     args = parser.parse_args()
+    if args.compare_manual_palette is not None:
+        if any(value is not None for value in (args.directory, args.mode, args.selection)):
+            parser.error("--compare-manual-palette is a separate operation")
+        try:
+            result = compare_manual_palette_reports(args.compare_manual_palette)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
+            parser.exit(1, f"Manual palette comparison: {error}\n")
+        print(json.dumps(result, indent=2))
+        return
     if args.publish_kvantum_reload is not None:
         if args.analyze_wallpaper is not None or any(value is not None for value in (
                 args.directory, args.mode, args.selection)):

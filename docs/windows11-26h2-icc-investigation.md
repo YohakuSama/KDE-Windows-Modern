@@ -1343,3 +1343,27 @@ decoder. The existing exact supplemental RGB receipt path and
 profile eligibility are unchanged. Further native fixed-point
 normalization analysis, rather than another collection of the same
 two controls, is required.
+
+## Shared gray monitor curve dispatch
+
+Static review of the supplied icm32.dll identifies the gray monitor
+setup at RVA 0x1cad8. It reads kTRC, accepts curv at 0x1cc04 and para
+at 0x1cc10 with an ICC v4 version guard at 0x1cc1c. The forward
+256-entry curve call at 0x1ce32 uses the common dispatcher at
+0x153b0. Its gray XYZ two-point endpoint remains unchanged. The runtime
+therefore removes the single-gamma-only restriction for D50 Gray8
+monitor profiles, reuses the existing bounded monotone sampled and
+analytic TRC routines, and permits v4 parametric curves. Invalid v2
+parametric tags, unsupported white points, LUT transforms, other
+profile classes and unreviewed metadata remain outside the contract.
+Revision 11 invalidates previous decoder cache identities. The two
+original gray gamma controls retain their measured grid/output hashes.
+The newly accepted sampled and parametric variants are based on static
+branch evidence, not a new end-to-end Windows WIC comparison.
+
+Forward mft2 research remains separate from this change. The spac
+RGB control selects A2B0 in the native dispatch, whereas RGB input
+and monitor profiles prefer the relative-intent A2B1 when present.
+The measured LUT grids still have no independently established
+coordinate normalization; the runtime does not embed their inferred
+axis samples or publish a fitted approximation.

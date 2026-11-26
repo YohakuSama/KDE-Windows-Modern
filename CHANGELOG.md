@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Reuse the native shared curve dispatcher for D50 Gray8 v2/v4 monitor profiles and compare partial manual palette capture batches without changing desktop settings. Preserve explicit native verification limits.
+
 - Preserve Gray ICC samples through opaque LA and GrayAlpha8 PNG preprocessing, sharing the existing alpha resampler. Add a guided manual accent reference batch for the remaining preset rows and custom boundaries; gray-alpha native comparison and independent forward LUT generation remain open.
 
 - Share Gray8 and RGB8 fixed-point execution, independently generate the reviewed v2 single-gamma gray grid and enable opaque Gray8 ICC wallpaper conversion. Add family capture comparison; independent forward RGB LUT generation remains open.

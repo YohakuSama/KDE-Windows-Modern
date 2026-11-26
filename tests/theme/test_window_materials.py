@@ -542,6 +542,43 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertEqual(derive(selection),
                                  sync["derive_custom_palette"](selection))
 
+    def test_compare_manual_palette_partial_reports(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        compare = sync["compare_manual_palette_reports"]
+        selection = "#FF8C00"
+        missing = "#0078D4"
+        captured = json.loads((ROOT / "docs/windows11-26h2-accent-captures.json").read_text(
+            encoding="utf-8"))["captures"]["manual_orange_light_registry"]
+        # Wrap an existing measured ramp and registry bytes as a
+        # synthetic batch fixture, not a new target-build capture.
+        captured.update(schema_version=5, accent_mode_argument="Manual",
+                        manual_color_argument=selection, manual_color_matches_observed=True)
+        batch = {"schema_version": 1, "windows_build": "26300.9974",
+                 "probe_set": "ManualPaletteBatch", "requested_colors": [selection, missing],
+                 "completed": False, "skipped_colors": [missing], "samples": [
+                     {"requested_color": selection, "input_kind": "preset",
+                      "input_confirmed_by_operator": True, "capture": captured}]}
+        captured["windows_build"] = batch["windows_build"]
+        with tempfile.TemporaryDirectory() as tmp:
+            first = Path(tmp) / "first.json"
+            second = Path(tmp) / "second.json"
+            first.write_text(json.dumps(batch), encoding="utf-8")
+            second.write_text(json.dumps(batch), encoding="utf-8")
+            result = compare([first, second])
+            self.assertEqual(result["observed_count"], 1)
+            self.assertEqual(result["matched_count"], 1)
+            self.assertEqual(result["remaining_requested_colors"], [missing])
+            self.assertEqual(result["samples"][selection]["differences"], {})
+            batch["completed"] = True
+            second.write_text(json.dumps(batch), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Incomplete"):
+                compare([second])
+            batch["completed"] = False
+            captured["appearance"]["colors_argb"]["AccentLight3"] = "#FF000000"
+            second.write_text(json.dumps(batch), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "registry disagreement"):
+                compare([second])
+
     def test_custom_lab_accent_reference(self):
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
         derive = sync["derive_custom_lab_palette"]
@@ -1367,6 +1404,39 @@ class WindowMaterialTests(unittest.TestCase):
                         image.save(path, icc_profile=profile, transparency=128)
                     self.assertEqual(sync["decode_wallpaper_bitmap"](path),
                                      (2, 1, bytes(4) + bytes((*reversed(convert(129)), 255))))
+
+    def test_gray_profile_uses_shared_curve_dispatcher(self):
+        native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
+        # Minimal synthetic D50 monitor profiles. Verify common curve/grid
+        # dispatch and version restrictions, not new native output hashes.
+        def profile(version, curve):
+            header = bytearray(128)
+            header[8] = version
+            header[12:24] = b"mntrGRAYXYZ "
+            header[36:40] = b"acsp"
+            struct.pack_into(">3i", header, 68, *native["D50"])
+            white = b"XYZ " + bytes(4) + struct.pack(">3i", *native["D50"])
+            directory = struct.pack(">I4sII4sII", 2, b"wtpt", 156, len(white),
+                                    b"kTRC", 176, len(curve))
+            payload = header + directory + white + curve
+            struct.pack_into(">I", payload, 0, len(payload))
+            return bytes(payload)
+
+        curves = [b"curv" + bytes(8),
+                  b"curv" + bytes(4) + struct.pack(">I3H", 3, 0, 24576, 65535),
+                  b"para" + bytes(8) + struct.pack(">i", 65536)]
+        for version, curve in ((2, curves[0]), (2, curves[1]),
+                               (4, curves[1]), (4, curves[2])):
+            with self.subTest(version=version, curve=curve[:4]):
+                data = profile(version, curve)
+                tables = native["generate_gray_tables"](data)
+                self.assertEqual(tables[0], native["matrix_input_curve"](curve))
+                self.assertEqual(tables[1], native["build_gray_grid"]())
+                self.assertEqual(tables[2], native["srgb_output_curve"]())
+                self.assertIsNotNone(native["transform_for_profile"](data))
+        self.assertIsNone(native["transform_for_profile"](profile(2, curves[2])))
+        self.assertIsNone(native["transform_for_profile"](
+            profile(4, b"curv" + bytes(4) + struct.pack(">I2H", 2, 65535, 0))))
 
     def test_native_sampled_curve_bounds(self):
         native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
