@@ -232,6 +232,14 @@ NATIVE_ACCENT_FILLS = {
     "tabbar": 10, "lineedit": 3, "tasks": 2,
     "slider": 0, "switch": 0,
 }
+# These four paint servers contain actual accent stops. The other stop
+# colors in the analog meter and containment controls are distinct
+# historical gradient colors, not occurrences of the accent token.
+NATIVE_ACCENT_GRADIENTS = {
+    "analog_meter": {"linearGradient3857": 1},
+    "containment-controls": {"linearGradient4303": 1, "linearGradient4291": 1},
+    "glowbar": {"a": 3},
+}
 SCHEME_STYLESHEET = re.compile(
     rb'<style\b[^>]*\bid="current-color-scheme"[^>]*>[\s\S]*?</style>')
 SVG_SHAPE = re.compile(rb'<(?:path|rect|circle|ellipse|g|polygon|polyline|line)\b[^>]*>')
@@ -309,6 +317,32 @@ def native_accent_widget(data, accent, expected, fallback=None):
     return data
 
 
+def native_accent_gradients(data, accent, gradients):
+    # Qt SVG resolves stop-color="currentColor" through its inherited
+    # color stack. A class on <stop> alone is not enough: the stop parser
+    # does not push the class's color. Scope the role on a normal SVG
+    # group inside <defs>, without changing paint-server IDs or links.
+    stop_color = re.compile(
+        rb'(?<![\w-])(stop-color\s*:\s*|stop-color=")' + re.escape(accent)
+        + rb'(?=[;"\s])', re.IGNORECASE)
+    for gradient, expected in gradients.items():
+        identifier = re.escape(gradient.encode("ascii"))
+        pattern = re.compile(rb'<linearGradient\b(?=[^>]*\bid="' + identifier
+                             + rb'")[^>]*>[\s\S]*?</linearGradient>')
+
+        def bind(match):
+            paint, count = stop_color.subn(lambda m: m[1] + b'currentColor', match[0])
+            if count != expected:
+                raise ValueError(f"Unexpected accent stops in {gradient}: {count}")
+            return b'<g class="ColorScheme-Highlight">' + paint + b'</g>'
+
+        data, count = pattern.subn(bind, data)
+        if count != 1:
+            raise ValueError(f"Missing or duplicate gradient {gradient}")
+    ET.fromstring(data)
+    return data
+
+
 def apply_native_accent_roles(root, target, mode):
     accent = load_palette(root, mode)["accent"].encode("ascii")
     # Existing source accent literals are fixed inputs, not the runtime choice.
@@ -316,6 +350,8 @@ def apply_native_accent_roles(root, target, mode):
     for name, count in NATIVE_ACCENT_FILLS.items():
         path = target / "widgets" / (name + ".svg")
         data = native_accent_widget(path.read_bytes(), source_accent, count, accent)
+        if name in NATIVE_ACCENT_GRADIENTS:
+            data = native_accent_gradients(data, source_accent, NATIVE_ACCENT_GRADIENTS[name])
         path.write_bytes(data)
 
 

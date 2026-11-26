@@ -40,6 +40,37 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertIn(b"ColorScheme-Highlight", data)
                     self.assertIn(b"current-color-scheme", data)
                     self.assertIsNotNone(root)
+                    if name not in appearance["NATIVE_ACCENT_GRADIENTS"]:
+                        continue
+                    source = ET.parse(ROOT / "plasma/desktoptheme/Windows-modern-dark/widgets"
+                                      / (name + ".svg")).getroot()
+                    original = {node.get("id"): node for node in source.iter() if node.get("id")}
+                    generated = {node.get("id"): node for node in root.iter() if node.get("id")}
+                    self.assertEqual(generated.keys(), original.keys() | {"current-color-scheme"})
+                    self.assertEqual(len(generated), sum(1 for node in root.iter() if node.get("id")))
+                    for gradient_id, count in appearance["NATIVE_ACCENT_GRADIENTS"].get(name, {}).items():
+                        gradient = generated[gradient_id]
+                        parent = next(node for node in root.iter() if gradient in list(node))
+                        self.assertEqual(parent.get("class"), "ColorScheme-Highlight")
+                        stops = [node for node in gradient if node.tag.endswith("}stop")]
+                        dynamic = [node for node in stops if node.get("stop-color") == "currentColor"
+                                   or "stop-color:currentColor" in node.get("style", "")]
+                        self.assertEqual(len(dynamic), count)
+                        original_stops = list(original[gradient_id])
+                        self.assertEqual(gradient.attrib, original[gradient_id].attrib)
+                        self.assertEqual([node.get("offset") for node in stops],
+                                         [node.get("offset") for node in original_stops])
+                        for old, new in zip(original_stops, stops):
+                            self.assertEqual(old.attrib.keys(), new.attrib.keys())
+                            for key in old.attrib:
+                                if key not in ("style", "stop-color"):
+                                    self.assertEqual(old.get(key), new.get(key))
+                            self.assertEqual(
+                                new.get("style", "").replace("stop-color:currentColor", "stop-color:#4CC2FF"),
+                                old.get("style", ""))
+                            self.assertEqual(
+                                new.get("stop-color", "").replace("currentColor", "#4CC2FF"),
+                                old.get("stop-color", ""))
 
     def test_kvantum_accent_bindings_preserve_materials(self):
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))

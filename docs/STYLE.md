@@ -941,4 +941,4 @@ Reference:
 
 ### System accent propagation
 
-Reviewed Plasma widget fills are generated with KSVG's native Highlight role. Kvantum uses the installed accent binding manifest and reads the effective KDE selection color on appearance changes. The shared palette provides the defaults, not a replacement for KDE's current accent selection. Gradient paints and the exact Windows wallpaper accent algorithm remain separate verification items.
+Reviewed Plasma widget fills are generated with KSVG's native Highlight role. Kvantum uses the installed accent binding manifest and reads the effective KDE selection color on appearance changes. The shared palette provides the defaults, not a replacement for KDE's current accent selection. The reviewed accent gradient stops also follow the native Highlight role; their inherited-color rendering and the three distinct companion stops need desktop comparison. The exact Windows wallpaper accent algorithm is unpublished in the reviewed sources, and Kvantum same-mode live reload is limited by the upstream engine.

@@ -298,3 +298,48 @@ real microphone and screen-sharing acceptance remains a desktop test.
 The history merge is an explicit retirement of older alternative source
 trees, not a claim that all of their individual changes were replayed or
 that all visuals were validated. Preserve the two resource branches.
+
+## Dynamic accent acceptance (Windows 11 26H2)
+
+Microsoft documents automatic wallpaper accent selection, and the public
+[UISettings.GetColorValue API](https://learn.microsoft.com/uwp/api/windows.ui.viewmanagement.uisettings.getcolorvalue)
+exposes the actual base accent and six shades. The PRI/XBF archive records
+static brush references but does not disclose the shell's wallpaper
+extraction and palette generation formulas. KDE extraction is the current
+implementation; it is not evidence of Windows-equivalent colors.
+
+For maintainer acceptance, set Personalization > Colors > Accent color to
+Automatic in the target Windows VM, select the exact wallpaper used on KDE,
+and wait for the normal Windows wallpaper transition. Read the actual
+palette in Windows PowerShell 5.1 (this only reads system settings):
+
+
+```powershell
+$build = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+$desktop = Get-ItemProperty 'HKCU:\Control Panel\Desktop'
+$ui = [Windows.UI.ViewManagement.UISettings, Windows.UI.ViewManagement, ContentType=WindowsRuntime]::new()
+$type = [Windows.UI.ViewManagement.UIColorType, Windows.UI.ViewManagement, ContentType=WindowsRuntime]
+"Build: $($build.CurrentBuildNumber).$($build.UBR)"
+"Automatic: $($desktop.AutoColorization)"
+"Wallpaper: $($desktop.WallPaper)"
+foreach ($name in 'Accent','AccentDark1','AccentDark2','AccentDark3','AccentLight1','AccentLight2','AccentLight3') {
+    $color = $ui.GetColorValue([System.Enum]::Parse($type, $name))
+    '{0}: #{1:X2}{2:X2}{3:X2}{4:X2}' -f $name,$color.A,$color.R,$color.G,$color.B
+}
+```
+
+Repeat with the same original image, a warm image, a green image, a purple
+image, and a neutral image. Record each image hash and both appearance
+modes. Repeat with a manual accent and with the color scheme's default
+accent. Compare Windows AccentLight2 in dark mode and AccentDark1 in light
+mode against the live KDE selection role and screenshots. Do not fit a
+purported native algorithm from only the default blue example.
+
+On KDE, keep Dolphin and Konsole open during a manual accent change, a
+wallpaper change, and both dark/light switches. Verify slider, checkbox,
+progress, focus, selection, glow and taskbar indicator colors. Check an
+existing window and a newly opened window separately. The destination
+Kvantum atlas is synchronized before a mode switch, but same-style
+reload is not guaranteed by Qt/Kvantum. Do not mark that condition
+passed until it is observed in the target session. No application
+restarts or temporary fallback-style cycling are part of this check.

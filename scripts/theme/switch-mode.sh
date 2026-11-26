@@ -88,8 +88,36 @@ fi
 
 # KDE's effective selection palette is authoritative. Never change its
 # wallpaper accent setting, other themes or system-managed Kvantum assets.
+sync_mode_accent() {
+    local current_mode="$1" selection python result name
+    local kvdir="$config/Kvantum/Windows-modern"
+    case "$current_mode" in
+        dark) name=Windows-modernDark ;;
+        light) name=Windows-modern ;;
+        *) return 1 ;;
+    esac
+    # A mode installed only in the system data directories is read-only.
+    if [ ! -f "$kvdir/$name.kvconfig" ] && [ ! -f "$kvdir/$name.svg" ]; then
+        printf 'skipped\n'
+        return 0
+    fi
+    [ -f "$kvdir/accent-bindings.json" ] || {
+        echo "Missing accent bindings; reinstall Windows Modern theme assets." >&2
+        return 1
+    }
+    selection="$(read_key kdeglobals Colors:Selection BackgroundNormal)"
+    [ "$selection" != "$missing" ] || { echo "Missing effective KDE selection color." >&2; return 1; }
+    python="$(command -v python3 || true)"
+    if [ -z "$python" ]; then
+        python="${XDG_STATE_HOME:-$HOME/.local/state}/windows-modern-nixos-test/runtime/bin/python3"
+    fi
+    [ -x "$python" ] || { echo "Python 3 is unavailable for Kvantum accent synchronization." >&2; return 1; }
+    result="$("$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/sync-accent.py" "$kvdir" "$current_mode" "$selection")" || return 1
+    printf '%s\n' "$result"
+}
+
 sync_accent() {
-    local current_scheme current_style current_theme current_mode selection python result
+    local current_scheme current_style current_theme current_mode result
     current_scheme="$(read_key kdeglobals General ColorScheme)"
     current_style="$(read_key kdeglobals KDE widgetStyle)"
     current_theme="$(read_key Kvantum/kvantum.kvconfig General theme)"
@@ -99,23 +127,12 @@ sync_accent() {
         WindowsModernLight:kvantum) current_mode=light ;;
         *) return 0 ;;
     esac
-    local kvdir="$config/Kvantum/Windows-modern"
-    [ -d "$kvdir" ] || return 0
-    [ -f "$kvdir/accent-bindings.json" ] || {
-        echo "Missing accent bindings; reinstall Windows Modern theme assets." >&2
-        return 1
-    }
-    selection="$(read_key kdeglobals Colors:Selection BackgroundNormal)"
-    [ "$selection" != "$missing" ] || return 0
-    python="$(command -v python3 || true)"
-    if [ -z "$python" ]; then
-        python="${XDG_STATE_HOME:-$HOME/.local/state}/windows-modern-nixos-test/runtime/bin/python3"
-    fi
-    [ -x "$python" ] || { echo "Python 3 is unavailable for Kvantum accent synchronization." >&2; return 1; }
-    result="$("$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/sync-accent.py" "$kvdir" "$current_mode" "$selection")" || return 1
+    result="$(sync_mode_accent "$current_mode")" || return 1
     if [ "$result" = changed ]; then
-        # Existing applications may cache Kvantum SVGs until reopened.
+        # This is a best-effort notification. Plasma-integration deliberately
+        # skips recreating a QStyle when its name has not changed.
         busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
+        printf '%s\n' "Kvantum accent assets updated; open applications may need reopening."
     fi
 }
 
@@ -174,6 +191,9 @@ notify_appearance() {
 }
 apply_mode() {
     plasma-apply-colorscheme "$scheme" || return 1
+    # Apply the destination mode's accent before publishing widgetStyle.
+    # Otherwise a newly created Kvantum style loads the previous atlas.
+    sync_mode_accent "$mode" >/dev/null || return 1
     plasma-apply-desktoptheme "$plasma" || return 1
     local i
     for i in "${!keys[@]}"; do
@@ -196,6 +216,14 @@ if ! apply_mode; then
         write_key plasmarc Theme name "$missing" || true
         restored=false
     fi
+    # Restore the previous renderer's accent before restoring widgetStyle,
+    # for the same reason that the normal switch stages its destination.
+    case "$old_scheme:${old_values[0]}:${old_values[3]}" in
+        WindowsModernDark:kvantum-dark:Windows-modern)
+            sync_mode_accent dark >/dev/null || restored=false ;;
+        WindowsModernLight:kvantum:Windows-modern)
+            sync_mode_accent light >/dev/null || restored=false ;;
+    esac
     for i in "${!keys[@]}"; do
         write_key "${files[i]}" "${groups[i]}" "${keys[i]}" "${old_values[i]}" || restored=false
     done
@@ -203,5 +231,4 @@ if ! apply_mode; then
     [ "$restored" = true ] || echo "Some appearance settings could not be restored; reselect the desired mode." >&2
     exit 1
 fi
-sync_accent || echo "Appearance switched; Kvantum accent synchronization remains incomplete." >&2
 printf 'Windows Modern appearance: %s\n' "$mode"
