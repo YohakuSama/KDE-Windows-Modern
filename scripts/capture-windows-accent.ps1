@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Read-only reference capture. Run in the interactive Windows desktop.
+# Reference capture. The optional private shell query may refresh its internal cache.
+# Run in the interactive Windows desktop.
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
@@ -10,7 +11,9 @@ param(
     [string]$SourceWallpaper,
 
     [ValidatePattern('^#[0-9a-fA-F]{6}$')]
-    [string]$ManualColor
+    [string]$ManualColor,
+
+    [switch]$IncludeNativeWallpaperColor
 )
 
 $ErrorActionPreference = 'Stop'
@@ -109,6 +112,200 @@ function Read-AccentSnapshot {
     }
 }
 
+
+function Format-RegistryDword([object]$Value) {
+    if ($null -eq $Value) {
+        return $null
+    }
+    $bytes = [BitConverter]::GetBytes([int32]$Value)
+    return '0x{0:X8}' -f [BitConverter]::ToUInt32($bytes, 0)
+}
+
+function Format-RegistryRgb([object]$Value) {
+    if ($null -eq $Value) {
+        return $null
+    }
+    $bytes = [BitConverter]::GetBytes([int32]$Value)
+    $unsigned = [BitConverter]::ToUInt32($bytes, 0)
+    return '0x{0:X6}' -f ($unsigned -band 0x00FFFFFF)
+}
+
+function Get-NativeWallpaperColor($Sample, [string]$Mode, [bool]$ModeConflict) {
+    $result = [ordered]@{
+        status = 'not_requested'
+        hresult = $null
+        argb = $null
+        alpha = $null
+        image_color_argb = $null
+        image_color_alpha = $null
+        image_color_after_api_argb = $null
+        image_color_changed_by_api = $null
+        argb_matches_image_color = $null
+        alpha_matches_image_color = $null
+        argb_matches_image_color_after_api = $null
+        alpha_matches_image_color_after_api = $null
+        rgb_matches_image_color = $null
+        rgb_matches_dwm_colorization = $null
+        error_type = $null
+    }
+    if (-not $IncludeNativeWallpaperColor) {
+        return $result
+    }
+    if ($Mode -ne 'Automatic' -or $ModeConflict) {
+        $result.status = 'skipped_unverified_automatic_mode'
+        return $result
+    }
+
+    try {
+        if (-not ('WindowsModern.Reference.NativeWallpaperColor' -as [type])) {
+            Add-Type -ErrorAction Stop -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+namespace WindowsModern.Reference
+{
+    // Reverse-engineered private shell32 interface. Slots 0..18 are the
+    // public IDesktopWallpaper vtable; private methods occupy slots 19..24.
+    // Only ComputeImageColorizationColor (slot 21) is invoked here.
+    [ComImport, Guid("C182461F-DFAC-4375-AB6E-4CC45AA7F9CC"),
+     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IDesktopWallpaperPrivate
+    {
+        [PreserveSig] int SetWallpaper(
+            [MarshalAs(UnmanagedType.LPWStr)] string monitor,
+            [MarshalAs(UnmanagedType.LPWStr)] string wallpaper);
+        [PreserveSig] int GetWallpaper(
+            [MarshalAs(UnmanagedType.LPWStr)] string monitor, out IntPtr wallpaper);
+        [PreserveSig] int GetMonitorDevicePathAt(uint index, out IntPtr monitor);
+        [PreserveSig] int GetMonitorDevicePathCount(out uint count);
+        [PreserveSig] int GetMonitorRECT(
+            [MarshalAs(UnmanagedType.LPWStr)] string monitor, IntPtr rect);
+        [PreserveSig] int SetBackgroundColor(uint color);
+        [PreserveSig] int GetBackgroundColor(out uint color);
+        [PreserveSig] int SetPosition(int position);
+        [PreserveSig] int GetPosition(out int position);
+        [PreserveSig] int SetSlideshow(IntPtr items);
+        [PreserveSig] int GetSlideshow(out IntPtr items);
+        [PreserveSig] int SetSlideshowOptions(int options, uint interval);
+        [PreserveSig] int GetSlideshowOptions(out int options, out uint interval);
+        [PreserveSig] int AdvanceSlideshow(
+            [MarshalAs(UnmanagedType.LPWStr)] string monitor, int direction);
+        [PreserveSig] int GetStatus(out int state);
+        [PreserveSig] int Enable(int enabled);
+
+        [PreserveSig] int SetWallpaperNoGP(
+            [MarshalAs(UnmanagedType.LPWStr)] string monitor,
+            [MarshalAs(UnmanagedType.LPWStr)] string wallpaper);
+        [PreserveSig] int PaintWallpaperThumbnail(long dc, int width, int height);
+        [PreserveSig] int ComputeImageColorizationColor(out uint color);
+        [PreserveSig] int GetMonitorNumber(
+            [MarshalAs(UnmanagedType.LPWStr)] string monitor, out uint number);
+        [PreserveSig] int Flush();
+        [PreserveSig] int PaintWallpaperBitmapFromShellTask();
+    }
+
+    public static class NativeWallpaperColor
+    {
+        [DllImport("ole32.dll", PreserveSig = true)]
+        private static extern int CoCreateInstance(
+            ref Guid clsid, IntPtr outer, uint context, ref Guid iid, out IntPtr instance);
+
+        public static int Get(out uint color)
+        {
+            color = 0;
+            IntPtr pointer = IntPtr.Zero;
+            object instance = null;
+            try
+            {
+                var clsid = new Guid("C2CF3110-460E-4FC1-B9D0-8A1C0C9CC4BD");
+                var iid = new Guid("C182461F-DFAC-4375-AB6E-4CC45AA7F9CC");
+                int hr = CoCreateInstance(ref clsid, IntPtr.Zero, 0x4, ref iid, out pointer);
+                if (hr < 0) return hr;
+                instance = Marshal.GetObjectForIUnknown(pointer);
+                var wallpaper = (IDesktopWallpaperPrivate)instance;
+                return wallpaper.ComputeImageColorizationColor(out color);
+            }
+            catch (Exception error)
+            {
+                color = 0;
+                return Marshal.GetHRForException(error);
+            }
+            finally
+            {
+                if (instance != null && Marshal.IsComObject(instance))
+                {
+                    try { Marshal.ReleaseComObject(instance); }
+                    catch { }
+                }
+                if (pointer != IntPtr.Zero)
+                {
+                    try { Marshal.Release(pointer); }
+                    catch { }
+                }
+            }
+        }
+    }
+}
+'@
+        }
+
+        [uint32]$nativeArgb = 0
+        $hr = [WindowsModern.Reference.NativeWallpaperColor]::Get([ref]$nativeArgb)
+        $result.hresult = '0x{0:X8}' -f [BitConverter]::ToUInt32(
+            [BitConverter]::GetBytes([int32]$hr), 0)
+        if ($hr -lt 0) {
+            $result.status = 'native_api_failed'
+            return $result
+        }
+
+        $nativeHex = '0x{0:X8}' -f $nativeArgb
+        $nativeRgb = '0x{0:X6}' -f ($nativeArgb -band 0x00FFFFFF)
+        $nativeAlpha = [int](($nativeArgb -shr 24) -band 0xFF)
+        $imageHex = Format-RegistryDword $Sample.registry.desktop_image_color_raw
+        $imageRgb = Format-RegistryRgb $Sample.registry.desktop_image_color_raw
+        $imageAfterHex = Format-RegistryDword (
+            Get-RegistryValue 'HKCU:\Control Panel\Desktop' 'ImageColor')
+        $dwmRgb = Format-RegistryRgb $Sample.registry.dwm_colorization_color_raw
+        $imageAlpha = $null
+        $imageAfterAlpha = $null
+        if ($null -ne $imageHex) {
+            $imageAlpha = [Convert]::ToInt32($imageHex.Substring(2, 2), 16)
+        }
+        if ($null -ne $imageAfterHex) {
+            $imageAfterAlpha = [Convert]::ToInt32($imageAfterHex.Substring(2, 2), 16)
+        }
+
+        $result.status = 'ok'
+        $result.argb = $nativeHex
+        $result.alpha = $nativeAlpha
+        $result.image_color_argb = $imageHex
+        $result.image_color_alpha = $imageAlpha
+        $result.image_color_after_api_argb = $imageAfterHex
+        if ($null -ne $imageHex -and $null -ne $imageAfterHex) {
+            $result.image_color_changed_by_api = $imageHex -ne $imageAfterHex
+        }
+        if ($null -ne $imageHex) {
+            $result.argb_matches_image_color = $nativeHex -eq $imageHex
+            $result.alpha_matches_image_color = $nativeAlpha -eq $imageAlpha
+            $result.rgb_matches_image_color = $nativeRgb -eq $imageRgb
+        }
+        if ($null -ne $imageAfterHex) {
+            $result.argb_matches_image_color_after_api = $nativeHex -eq $imageAfterHex
+            $result.alpha_matches_image_color_after_api = $nativeAlpha -eq $imageAfterAlpha
+        }
+        if ($null -ne $dwmRgb) {
+            $result.rgb_matches_dwm_colorization = $nativeRgb -eq $dwmRgb
+        }
+    } catch {
+        $result.status = 'native_api_unavailable'
+        $result.error_type = $_.Exception.GetType().FullName
+        if ($null -eq $result.hresult) {
+            $result.hresult = Format-RegistryDword $_.Exception.HResult
+        }
+    }
+    return $result
+}
+
 # Reject a snapshot taken during an observed wallpaper or palette transition.
 # This does not prove that a transition has already finished.
 $first = Read-AccentSnapshot
@@ -154,8 +351,10 @@ if ($ManualColor) {
     $manualColorMatches = $accentObserved -eq $expectedManualColor
 }
 
+$nativeWallpaperColor = Get-NativeWallpaperColor $second $registryMode $registryModeConflict
+
 [ordered]@{
-    schema_version = 4
+    schema_version = 5
     windows_build = "$($build.CurrentBuildNumber).$($build.UBR)"
     display_version = $build.DisplayVersion
     accent_mode_argument = $AccentMode
@@ -163,6 +362,7 @@ if ($ManualColor) {
     accent_mode_registry_conflict = $registryModeConflict
     manual_color_argument = $ManualColor
     manual_color_matches_observed = $manualColorMatches
+    native_wallpaper_color_api = $nativeWallpaperColor
     accent_observed_from_ui_settings = $accentObserved
     manual_color_observed_from_ui_settings = $manualColorObserved
     appearance = $second

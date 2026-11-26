@@ -753,6 +753,81 @@ provides the remaining observations. Do not make a runtime extractor
 or calibrate an image-specific lookup until the candidate transform
 has been checked against independent samples.
 
+### Native automatic-color diagnostic
+
+OpenGlass reverse-engineers the private
+`IDesktopWallpaperPrivate::ComputeImageColorizationColor` shell32 method.
+Its implementation obtains a native ARGB result, retains its alpha, then
+requests the Shell's forced wallpaper transition and reads the applied
+DWM RGB. The project explicitly avoids reproducing Windows' image-analysis
+algorithm. See its [private interface declaration](https://github.com/ALTaleX531/OpenGlass/blob/b6dcd558ca5d842ac0b0b065cfcf2d76def9f9d7/Common/DesktopWallpaper.hpp)
+and [color hook](https://github.com/ALTaleX531/OpenGlass/blob/b6dcd558ca5d842ac0b0b065cfcf2d76def9f9d7/OpenGlassThemeExtension/ColorHooks.Shell.cpp).
+Its documented shell32 builds are 10.0.17763.737 and 10.0.26100.9549.
+This is reverse-engineered, undocumented behavior, not a 26H2 API contract.
+
+The refinement captures show a varying high byte in ImageColor, while
+the low 24 bits match DWM ColorizationColor. This is consistent with the
+native ARGB result, but does not yet prove that the registry DWORD and
+private method return the same value on build 26300.9974.
+
+The [accent capture script](../scripts/capture-windows-accent.ps1)
+has an opt-in `-IncludeNativeWallpaperColor` diagnostic. It invokes only
+the private color-computation method, and only after both registry mode
+values confirm Automatic. It does not send the forced Shell refresh
+message, change wallpaper or explicitly write registry values. The
+private method's internal side effects are undocumented, so the capture
+records ImageColor both before and after the call. It also records the
+HRESULT, native ARGB/alpha and comparisons against DWM RGB. Manual or
+conflicting mode is skipped. An unavailable private interface is
+reported without discarding the ordinary capture. This diagnostic is
+not used by the bulk probe collector or the Linux runtime theme.
+
+Run it once on the current Automatic wallpaper:
+
+```powershell
+.\capture-windows-accent.ps1 -AccentMode Automatic -IncludeNativeWallpaperColor
+```
+
+Send the JSON output. An exact match between native ARGB and ImageColor
+will confirm the high byte's role on this build. A matching alpha with
+different RGB will confirm only the strength channel. Neither result
+reveals how Windows selects the RGB from image pixels.
+
+### Native colorization-strength alpha
+
+A second OpenGlass reverse-engineering note describes the native image
+analysis alpha for shell32 10.0.17763.737 and 10.0.26100.9549:
+
+`alpha = min(175, 125 + floor(rangeSum / pixelCount))`
+
+`rangeSum` sums `max(R,G,B) - min(R,G,B)` over nontransparent
+analysis pixels. `pixelCount` uses the full analysis image area, including
+skipped transparent pixels. The inspected implementation caps each
+analysis dimension at 256 pixels and combines sums/counts across images.
+The note distinguishes legacy unpremultiplication from the 26100
+feature-41486951 weighted-RGB path. It also records a native fallback
+alpha of 196 and cached `ImageColor` during initialization. See the
+[reverse-engineered analysis notes](https://github.com/DreY85/OpenFluidGlass/blob/49dd5176acd3afabc03066680a2de2b59296e472/OpenGlassGUI/Configuration.design.md)
+and [native implementation notes](https://github.com/DreY85/OpenFluidGlass/blob/49dd5176acd3afabc03066680a2de2b59296e472/OpenGlassThemeExtension/Design.md).
+
+This describes colorization strength derived from image RGB statistics,
+not the wallpaper file's transparency. It is a third-party reverse
+engineering result for two older shell32 builds, not a guaranteed 26H2
+contract. Our refinement samples support it: the small orange region on
+gray predicts alpha 144 and reports 0x90; the two mixed orange/purple
+images exceed the 175 cap and report 0xAF; the two muted purple samples
+predict 138 and 154 and report 0x8A and 0x9A. The two solid samples with
+channel range 35 report 159 rather than the simple formula's 160, so
+the exact 26H2 preprocessing/rounding remains to be checked. This makes
+the varying ImageColor high byte consistent with native colorization
+strength, not image transparency.
+
+The optional COM diagnostic above is the next direct check. It records
+the native method's returned ARGB and the ImageColor registry value
+both before and after the call. No alpha formula is wired into the
+runtime theme. The wallpaper-to-RGB selection algorithm remains a
+separate unresolved problem.
+
 ### Capture procedure
 
 For maintainer acceptance, use a single display and a static picture in
@@ -769,7 +844,8 @@ Windows PowerShell 5.1:
 
 The script reports the Windows build, both appearance modes, wallpaper
 placement, display size, all seven runtime accent colors, and raw values
-from both known AutoColor registry locations. It also records the raw
+from both known AutoColor registry locations. Its optional native-color
+diagnostic is described above and is disabled by default. It also records the raw
 Explorer AccentPalette bytes, DWM/Explorer accent DWORDs, and the base
 Accent observed through UISettings when Manual is selected. It hashes the
 registry-selected wallpaper file and, when supplied, the original image.
