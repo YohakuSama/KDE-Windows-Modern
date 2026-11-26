@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import re
 import runpy
+import struct
 import zlib
 
 from PIL import Image, ImageCms, __version__ as pillow_version
@@ -233,13 +234,14 @@ def alpha_metrics(actual, reference):
                                         for i in range(0, len(actual), 4))}
 
 
-def map_alpha_rgb(data, transform, bgr=False):
+def map_alpha_rgb(data, transform, bgr=False, preserve_hidden=True):
     """Apply a candidate straight RGB transform while preserving alpha."""
     output = bytearray(data)
     cache = {}
     for i in range(0, len(data), 4):
-        if not data[i+3]:
-            # Hidden RGB is not observable after premultiplication.
+        if preserve_hidden and not data[i+3]:
+            # Hidden RGB is not observable after premultiplication, but
+            # it can distinguish full-resolution cache construction.
             continue
         key = data[i:i+3]
         if key not in cache:
@@ -287,6 +289,89 @@ def alpha_palette_metrics(runtime, bitmap, capture):
             "candidate_shades": shade_difference(candidate)}
 
 
+# Table identities are independent of the generated device-link header.
+# Both the original precision capture and the later full-domain capture
+# contain these exact two RGB8 table sets.
+ALPHA_CONTROL_TABLE_SHA = {
+    "srgb": "97E7346083017BD0E85A33FF4A95B2B358494328EE144C5C1DCCD4551452B283",
+    "linear-srgb": "DFA3F6063DDC61DCDB6D9A221F4BC837377F741EA6DA168B539316824821790D",
+}
+ALPHA_FULL_RGB8_SHA = {
+    "srgb": "FD5EEB3579A1F00177FF32350870FB4AB020A76E393B8FD3A432009E0FC0D86F",
+    "linear-srgb": "89A60E70F2990F0AC205BB194D59E8074D41A5ED92CA25DF3183F058C3964349",
+}
+
+
+def alpha_control_replays(native, precision_path):
+    """Use either measured report without publishing local runtime data.
+
+    For schema 2, require the same exact previously reviewed control tables,
+    not arbitrary generated links or the synthetic curve-control profiles.
+    Recheck the scalar calibration samples. The native whole-domain hashes
+    identify the archived measurements; this is not a fresh exhaustive run.
+    """
+    limit = native["FULL_REPORT_LIMIT"]
+    with precision_path.open("rb") as stream:
+        raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError("Oversized precision report")
+    report = json.loads(raw.decode("utf-8-sig"))
+    profiles = native["PROFILES"]
+    if report["schema_version"] == 1:
+        bundle = native["extract_bundle"](precision_path)
+        size = native["LINK_SIZE"]
+        tables = {name: native["read_rgb8_tables"](bundle[i*size:(i+1)*size])
+                  for i, (name, _, _) in enumerate(profiles)}
+    elif report["schema_version"] == 2:
+        if (report["windows_build"], report["target_sha256"], report["flags"],
+                report["calibration_count"], report["mixed_count"]) != (
+                "26300.9974", native["TARGET_SHA"], 3, 1024, 4096):
+            raise ValueError("Unexpected full-domain precision identity")
+        checked = native["checked_payload"]
+        colors = checked(report["input_rgb"], 5120 * 3, native["INPUT_SHA"])
+        tables = {}
+        for name, digest, _ in profiles:
+            if report["sources"].get(name) != digest:
+                raise ValueError("Unexpected alpha control source: " + name)
+            item = report["results"][name]
+            full = item["full_rgb8"]
+            if (full["status"], full["color_count"], full["order"], full["sha256"]) != (
+                    "ok", 1 << 24, "ascending-rgb24", ALPHA_FULL_RGB8_SHA[name]):
+                raise ValueError("Unexpected alpha control full-domain identity: " + name)
+            entry = item["intents"]["1"]
+            if entry["status"] != "ok":
+                raise ValueError("Missing alpha control relative-colorimetric link")
+            link = entry["link_profile"]
+            data = checked(link, native["LINK_SIZE"], link["sha256"])
+            table = native["read_rgb8_tables"](data)
+            packed = struct.pack(f">{native['TABLE_WORDS']}H", *table[0], *table[1], *table[2])
+            if sha(packed) != ALPHA_CONTROL_TABLE_SHA[name]:
+                raise ValueError("Alpha control conversion table differs from reviewed evidence")
+            replay = native["Rgb8Replay"](table)
+            reference = checked(item["wic"], len(colors), native["WIC_SHA"][name])
+            if b"".join(bytes(replay.convert(*colors[i:i+3]))
+                        for i in range(0, len(colors), 3)) != reference:
+                raise ValueError("Alpha control scalar calibration differs from native WIC")
+            tables[name] = table
+    else:
+        raise ValueError("Unsupported ICC precision report schema")
+    return ({name: native["Rgb8Replay"](table).convert for name, table in tables.items()},
+            {"none": None, **{name: digest for name, digest, _ in profiles}})
+
+
+def alpha_roundtrip(data):
+    """Model the candidate loss of precision through premultiplied RGBa."""
+    with Image.frombytes("RGBA", (1280, 800), data) as image:
+        with image.convert("RGBa") as premultiplied:
+            with premultiplied.convert("RGBA") as restored:
+                return restored.tobytes()
+
+
+def alpha_decoded_hash(data):
+    with Image.frombytes("RGBA", (1280, 800), data) as image:
+        return sha(image.tobytes("raw", "BGRA"))
+
+
 def compare_alpha(root, report_path, precision_path):
     with report_path.open("rb") as stream:
         raw = stream.read(16 * 1024 * 1024 + 1)
@@ -305,15 +390,9 @@ def compare_alpha(root, report_path, precision_path):
         raise ValueError("Incomplete or duplicate alpha probe set")
     runtime = runpy.run_path(str(root / "scripts/theme/sync-accent.py"))
     native = runpy.run_path(str(root / "scripts/theme/wallpaper-icc.py"))
-    # Read the owner's original verified precision report; do not publish
-    # or import any native data into the runtime cache.
-    bundle = native["extract_bundle"](precision_path)
-    links = {}
-    identities = {"none": None}
-    size = native["LINK_SIZE"]
-    for i, (name, digest, _) in enumerate(native["PROFILES"]):
-        links[name] = native["Rgb8Replay"](native["read_rgb8_tables"](bundle[i*size:(i+1)*size])).convert
-        identities[name] = digest
+    # Read the owner's verified control tables from either precision
+    # report. Do not publish or import any native data into the runtime.
+    links, identities = alpha_control_replays(native, precision_path)
     result = {"windows_build": report["baseline"]["windows_build"], "samples": {}}
     for (name, alpha), sample in samples.items():
         probe, observation = sample["image"], sample["observation"]
@@ -331,8 +410,7 @@ def compare_alpha(root, report_path, precision_path):
                 or not probe["alpha_calibration"] or probe["profile_calibration"]):
             raise ValueError("Unexpected alpha probe identity")
         pixels = alpha_probe_rgba(alpha)
-        with Image.frombytes("RGBA", (1280, 800), pixels) as image:
-            raw_hash = sha(image.tobytes("raw", "BGRA"))
+        raw_hash = alpha_decoded_hash(pixels)
         if (not validation["decoded_bgra_matches"]
                 or raw_hash != validation["expected_bgra_sha256"]
                 or raw_hash != validation["decoded_bgra_sha256"]
@@ -376,19 +454,41 @@ def compare_alpha(root, report_path, precision_path):
             return alpha_palette_metrics(runtime, bitmap, capture)
 
         row["native_cache_analysis"] = colorization(reference)
+
+        # The collector also hashes the full decoded cache frame when WIC
+        # exposes straight BGRA. Compare that boundary independently of
+        # the 256x256 scaled buffer. An exact cache-frame match is stronger
+        # evidence of conversion order; a missing frame hash is inconclusive.
+        roundtrip = alpha_roundtrip(pixels)
+        frame_candidates = {"unchanged": raw_hash,
+                            "premultiply_roundtrip": alpha_decoded_hash(roundtrip)}
         if name == "none":
             candidates = {"untagged": untagged}
         else:
             transform = links[name]
-            with Image.frombytes("RGBA", (1280, 800), pixels) as image:
-                with image.convert("RGBa") as premultiplied:
-                    with premultiplied.convert("RGBA") as restored:
-                        roundtrip = restored.tobytes()
+            converted = map_alpha_rgb(pixels, transform)
+            converted_all = map_alpha_rgb(pixels, transform, preserve_hidden=False)
+            restored_converted = map_alpha_rgb(roundtrip, transform)
+            frame_candidates.update(
+                straight_convert_preserve_hidden=alpha_decoded_hash(converted),
+                straight_convert_all=alpha_decoded_hash(converted_all),
+                premultiply_roundtrip_then_convert=alpha_decoded_hash(restored_converted),
+                convert_then_premultiply_roundtrip=alpha_decoded_hash(alpha_roundtrip(converted)))
             candidates = {
-                "convert_then_premultiply_and_scale": prepare(map_alpha_rgb(pixels, transform)),
-                "premultiply_roundtrip_then_convert_and_scale": prepare(map_alpha_rgb(roundtrip, transform)),
+                "convert_then_premultiply_and_scale": prepare(converted),
+                "premultiply_roundtrip_then_convert_and_scale": prepare(restored_converted),
                 "scale_then_convert": map_alpha_rgb(untagged, transform, bgr=True),
             }
+        native_frame_hash = boundary["transcoded"].get("decoded_bgra_sha256")
+        if native_frame_hash is not None:
+            native["digest_bytes"](native_frame_hash)
+        row["decoded_cache_frame"] = {
+            "status": "compared" if native_frame_hash else "unavailable",
+            "native_sha256": native_frame_hash,
+            "candidate_sha256": frame_candidates,
+            "matching_candidates": [label for label, digest in frame_candidates.items()
+                                    if digest == native_frame_hash],
+        }
         row["candidates"] = {
             label: {"cache": alpha_metrics(bitmap, reference),
                     "colorization": colorization(bitmap)}
@@ -401,7 +501,7 @@ def main():
     parser.add_argument("--target", action="append", type=Path, default=[], help="Optional local ICC target (never bundled)")
     parser.add_argument("--native-report", type=Path, help="Compare a read-only Windows native API capture")
     parser.add_argument("--alpha-report", type=Path, help="Compare combined alpha/profile probe caches")
-    parser.add_argument("--precision-report", type=Path, help="Original verified ICC precision report for alpha comparison")
+    parser.add_argument("--precision-report", type=Path, help="Verified ICC precision or full-RGB8 report for alpha comparison")
     args = parser.parse_args()
     if args.alpha_report:
         if not args.precision_report or args.native_report or args.target:

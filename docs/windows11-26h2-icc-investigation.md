@@ -840,3 +840,54 @@ transcription of the existing formulas. It is not a run of the
 modified repository analyzer, a build, or desktop acceptance. Exact
 independent CLUT construction, native tagged-alpha ordering and other
 curve families remain unresolved.
+
+## Reusing the full-domain report for combined alpha evidence
+
+The current schema 2 report and the earlier schema 1 control links have
+different complete ICC device-link hashes but identical conversion
+tables. The two combined table hashes (big-endian input curves, CLUT,
+output curves, in that order) are:
+
+- sRGB: 97E7346083017BD0E85A33FF4A95B2B358494328EE144C5C1DCCD4551452B283
+- Linear sRGB: DFA3F6063DDC61DCDB6D9A221F4BC837377F741EA6DA168B539316824821790D
+
+These were calculated from the owner's actual full-domain report and
+checked against the previously documented individual table hashes.
+Consequently the alpha diagnostic accepts the new full-domain report
+as well as the older precision capture. It checks the original source
+and destination identities, known full-domain hashes, exact table
+identity and the scalar 5,120-color calibration/mixed comparison for
+each control. It does not repeat the exhaustive import or write an
+ICC receipt. The full-domain hashes identify previously reviewed
+measurements; they are not a new exhaustive scalar comparison.
+
+The WIC collector already records a SHA-256 of the full decoded BGRA
+cache frame, when available. The alpha analyzer now compares it with
+the original frame, a premultiply/unpremultiply round trip, straight
+RGB conversion (both with and without hidden RGB at alpha zero), and
+the two orders of conversion and premultiplication round trip.
+These are separate candidate frame identities; the original 256x256
+buffer and native palette comparisons remain. A matching frame hash
+can locate the boundary before resampling; it cannot by itself prove
+the native path for other formats. A missing or unmatched frame hash
+is not silently treated as an exact conversion.
+
+For the next collection use the existing wallpaper probe script
+with the DecodeAlphaProfile option and the accompanying accent
+collector. No updated Windows script or repeat of the complete
+RGB8 capture is needed.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc.py --alpha-report /path/to/wallpaper-probes.json --precision-report /path/to/windows-icc-full-rgb8.json
+```
+
+The matrix report was reopened and its original SHA-256 reproduced.
+In a numerical examination of the diagonal-target grid, using twice
+the inferred green-axis PCS codes in place of the approximate Q14
+coordinates eliminated the green-axis error in the diagonal control,
+but increased the total inferred-lattice errors for the linear-sRGB
+and mixed source controls. This does not establish independent grid
+generation. The measured green-axis output is not a portable
+coordinate formula. No matrix approximation or tagged-alpha path
+enters the runtime in this change. The separate combined alpha
+capture is still outstanding.
