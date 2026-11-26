@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Build against the desktop's own nixpkgs revision, not a global system overlay.
-{ nixpkgsPath, plasmaVersion, buildToken }:
+{ nixpkgsPath, plasmaVersion, buildToken, konsoleVersion ? "" }:
 let
   pkgs = import (builtins.toPath nixpkgsPath) { };
   k = pkgs.kdePackages;
@@ -99,6 +99,13 @@ let
     namespace = "containmentactions";
   };
   python = pkgs.python3.withPackages (p: [ p.pillow p.fonttools p.pygobject3 ]);
+  # Only the explicit full test includes Konsole. Never put its private
+  # libraries or the stock command name in the shared Plasma runtime.
+  konsole = import ./konsole-chrome.nix { inherit nixpkgsPath konsoleVersion; };
+  konsoleLauncher = pkgs.writeShellScriptBin "windows-modern-konsole" ''
+    export WM_KONSOLE_CHROME=1
+    exec ${konsole}/bin/konsole --separate --hide-menubar --hide-toolbars --show-tabbar "$@"
+  '';
 in
 assert lib.assertMsg (builtins.match "[a-zA-Z0-9.-]+" buildToken != null) "Invalid test build token";
 assert lib.assertMsg (k.plasma-workspace.version == plasmaVersion)
@@ -109,10 +116,12 @@ pkgs.symlinkJoin {
     tasks tray contextmenu pkgs.qt6Packages.qtstyleplugin-kvantum pkgs.bibata-cursors
     python pkgs.git pkgs.curl pkgs.gnutar pkgs.zip pkgs.unzip pkgs.dbus
     pkgs.xdg-utils pkgs.haruna k.kate pkgs.mission-center
-  ];
+  ] ++ lib.optional (konsoleVersion != "") konsoleLauncher;
   postBuild = ''
     printf '%s\n' '${buildToken}' > "$out/wm-build-token"
     printf '%s\n' '${prefix}' > "$out/wm-qt-plugin-prefix"
     printf '%s\n' '${lib.getLib pkgs.glib}/lib/girepository-1.0:${pkgs.gobject-introspection}/lib/girepository-1.0' > "$out/wm-gi-typelib-path"
+  '' + lib.optionalString (konsoleVersion != "") ''
+    printf '%s\n' '${konsole}' > "$out/wm-konsole-package"
   '';
 }

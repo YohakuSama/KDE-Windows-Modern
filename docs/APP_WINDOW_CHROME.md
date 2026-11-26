@@ -59,14 +59,30 @@ outer corner rounding is still unresolved for frameless Konsole.
 
 ### Manual NixOS trial
 
-First update the normal theme through its existing reversible upgrade
-flow. The optional Konsole package is **not** built or enabled by that
-flow. The updated Snap Layouts script is part of the normal theme; KWin
+For a complete desktop test, use the reversible NixOS installer with the
+explicit terminal option:
+
+```sh
+bash install.sh menu --with-konsole
+```
+
+Choose 1 for a first installation or 2 for an existing test installation.
+The installer builds the version-matched isolated Konsole, verifies the
+plugin file and required imported glyphs before switching the desktop, and
+adds the separate Windows Modern Terminal launcher. It keeps the stock
+Konsole launcher and system package untouched. Subsequent upgrades retain
+this option; uninstall and failed upgrades restore the previous launcher
+and desktop runtime using the existing backup transaction. No normal
+installation without this option starts a new Konsole trial.
+
+The updated Snap Layouts script is part of the normal theme; KWin
 caches QML, so log out and back in after upgrading it before testing hover
 snapping. If the script is disabled, enable Windows Modern: Snap Layouts
 in System Settings > Window Management > KWin Scripts.
 
-From the theme checkout, as the desktop user:
+After installation, launch Windows Modern Terminal from the application
+menu. For an independent trial instead of the integrated test installer,
+use the following commands from the theme checkout as the desktop user:
 
 ```sh
 ./scripts/konsole-chrome.sh build
@@ -96,7 +112,9 @@ and in the plugin's right-click title menu allows disabling it for a
 window. The right-click menu also exposes the original menu-bar action.
 
 To stop using the plugin, close the isolated Konsole process and launch
-ordinary Konsole. To remove the dedicated build link:
+ordinary Konsole. For the integrated test installer, use option 3 to
+restore the original desktop and remove its test launcher. For the
+independent manual trial only, remove the dedicated build link with:
 
 ```sh
 ./scripts/konsole-chrome.sh remove
@@ -133,8 +151,8 @@ by the developer. Start with disposable terminal sessions. Verify:
 - Missing native glyphs, visible menu/toolbars, dock widgets and native
   frameless settings. The plugin must not make a window inaccessible.
 
-Integrate with the normal theme installation, upgrade and removal only
-after acceptance. Do not overwrite or replace the system Konsole.
+Keep the terminal trial opt-in until acceptance. Do not overwrite or
+replace the system Konsole.
 
 ## Dolphin: Explorer layout boundaries
 

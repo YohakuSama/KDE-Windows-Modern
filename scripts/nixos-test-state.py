@@ -32,6 +32,7 @@ CONFIG_NAMES = (
 APP_IDS = ("org.kde.windowsmodern.startmenu", "org.kde.windowsmodern.showdesktop",
            "org.kde.windowsmodern.digitalclock", "org.kde.windowsmodern.search",
            "org.kde.windowsmodern.taskview")
+KONSOLE_LAUNCHER = "windowsmodern-konsole.desktop"
 
 def exists(path):
     return path.exists() or path.is_symlink()
@@ -174,6 +175,29 @@ def plan(root, state, profile):
             lines.append(line)
         launcher.write_text("\n".join(lines) + "\n", encoding="utf-8")
         result[DATA / "applications" / name] = launcher
+    if (profile / "wm-konsole-package").is_file():
+        binary = profile / "bin/windows-modern-konsole"
+        if not binary.is_file() or not os.access(binary, os.X_OK):
+            raise RuntimeError("Built Windows Modern terminal launcher missing")
+        launcher = state / "staged-launchers" / KONSOLE_LAUNCHER
+        launcher.parent.mkdir(parents=True, exist_ok=True)
+        command = str(binary.resolve())
+        launcher.write_text(
+            "[Desktop Entry]\n"
+            "Type=Application\n"
+            "Name=Windows Modern Terminal\n"
+            "Name[zh_CN]=Windows Modern 终端\n"
+            "Name[zh_TW]=Windows Modern 終端機\n"
+            "Icon=utilities-terminal\n"
+            f"Exec={command}\n"
+            f"TryExec={command}\n"
+            "Terminal=false\n"
+            "DBusActivatable=false\n"
+            "Categories=System;TerminalEmulator;\n",
+            encoding="utf-8",
+        )
+        # The regular snapshot/restore transaction owns this exact new entry.
+        result[DATA / "applications" / KONSOLE_LAUNCHER] = launcher
     return result
 
 def snapshot(backup, targets):
@@ -347,6 +371,11 @@ def main():
     args = parser.parse_args()
     if args.action == "verify-sources":
         verify_sources(args.root)
+        if (args.profile / "wm-konsole-package").is_file():
+            if not same_payload(args.state / "staged-launchers" / KONSOLE_LAUNCHER,
+                                DATA / "applications" / KONSOLE_LAUNCHER):
+                raise RuntimeError("Installed Windows Modern terminal launcher differs from test runtime")
+            print("Verified Windows Modern Terminal launcher")
         return
     if args.action == "restore-upgrade":
         if args.upgrade_backup is None:

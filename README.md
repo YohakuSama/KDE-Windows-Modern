@@ -26,9 +26,10 @@ during normal installation.
 
 An opt-in Konsole integrated title bar and the Dolphin Explorer layout
 boundaries are documented in [application window layouts](docs/APP_WINDOW_CHROME.md).
-The Konsole trial is separate from normal installation:
-`./scripts/konsole-chrome.sh build` and `./scripts/konsole-chrome.sh run`.
-It remains pending manual desktop acceptance.
+The Konsole trial remains opt-in pending manual desktop acceptance.
+For a complete NixOS desktop test including the terminal plugin, run
+`bash install.sh menu --with-konsole` and choose installation or upgrade.
+The isolated manual build/run commands remain available.
 
 ## NixOS
 
@@ -54,7 +55,17 @@ with the light variant selected. Non-interactive actions:
 bash install.sh install --dark
 bash install.sh upgrade
 bash install.sh uninstall
+# Complete testing installation, including the isolated Konsole plugin:
+bash install.sh install --dark --with-konsole
+# Or add the plugin to an existing test installation:
+bash install.sh upgrade --with-konsole
 ```
+
+The terminal test requires installed Konsole 26.08.x and the exact matching
+nixpkgs package. It adds a separate Windows Modern Terminal launcher; the
+stock Konsole and its launcher remain available. Later upgrades retain the
+terminal test and uninstall restores/removes the test-owned launcher.
+A failed build or missing plugin/glyph stops before the desktop is switched.
 
 The installer builds the tray, taskbar and desktop context-menu plugins
 against the running NixOS Plasma/Qt version. It verifies plugin identities, preserves the existing layout on

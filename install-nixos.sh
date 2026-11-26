@@ -17,9 +17,21 @@ exec 9>"$(dirname "$STATE")/.windows-modern-nixos-test.lock"
 flock -n 9 || { echo "另一项 Windows Modern 测试操作正在执行。" >&2; exit 1; }
 action="${1:-}"
 variant=dark
-for arg in "$@"; do case "$arg" in --light) variant=light ;; --dark) variant=dark ;; esac; done
+with_konsole=0
+for arg in "$@"; do
+    case "$arg" in
+        --light) variant=light ;;
+        --dark) variant=dark ;;
+        --with-konsole) with_konsole=1 ;;
+    esac
+done
 if [ -z "$action" ] || [ "$action" = menu ]; then
     printf 'Windows Modern · NixOS 测试\n1. 初次安装（备份、完整构建、安装）\n2. 增量升级（仅更新变化的组件）\n3. 卸载（恢复原桌面、清理测试文件）\n'
+    if [ "$with_konsole" -eq 1 ]; then
+        echo "完整测试：包含 Windows Modern 终端插件。"
+    else
+        echo "使用 --with-konsole 启用终端插件测试；后续升级自动保留。"
+    fi
     read -r -p '请选择 [1/2/3]：' action
 fi
 case "$action" in
@@ -255,6 +267,8 @@ if [ "$action" = upgrade ]; then
     [ -x "$old_profile/bin/python3" ] || { echo "旧测试运行时缺失，保留备份，停止升级。" >&2; exit 1; }
     echo "增量升级：保留现有任务栏及原始卸载备份。"
     echo "当前运行时：$old_profile"
+    # Once enabled, keep the launcher and package in every subsequent runtime.
+    if [ -f "$old_profile/wm-konsole-package" ]; then with_konsole=1; fi
 elif [ -f "$STATE/original/manifest.json" ]; then
     echo "已安装测试版，请选择 2 增量升级，或 3 卸载。" >&2
     exit 1
@@ -280,6 +294,18 @@ for cmd in nix-build nix systemctl busctl plasmashell plasma-apply-lookandfeel p
     command -v "$cmd" >/dev/null || { echo "缺少当前 Plasma 系统命令：$cmd" >&2; exit 1; }
 done
 systemctl --user is-active --quiet "$SERVICE" || { echo "Plasma 桌面服务未运行。" >&2; exit 1; }
+konsole_version=""
+if [ "$with_konsole" -eq 1 ]; then
+    command -v konsole >/dev/null || { echo "缺少系统 Konsole，无法匹配终端插件版本。" >&2; exit 1; }
+    konsole_version="$(LC_ALL=C konsole --version | sed -n 's/^konsole \([0-9][0-9.]*\)$/\1/p')"
+    [[ "$konsole_version" =~ ^26\.08\.[0-9]+$ ]] || {
+        printf '终端插件仅支持 Konsole 26.08.x，当前版本：%s。未修改桌面。\n' "${konsole_version:-unknown}" >&2
+        exit 1
+    }
+    for required in nix/konsole-chrome.nix app-decorations/konsole/{CMakeLists.txt,windowsmodernchrome.cpp,windowsmodernchrome.in.json,captionsnapbridge.cpp,captionsnapbridge.h,chromeshadow.cpp,chromeshadow.h}; do
+        [ -s "$ROOT/$required" ] || { printf '测试包缺少终端源码：%s\n' "$required" >&2; exit 1; }
+    done
+fi
 umask 077
 if [ -e "$STATE" ] && [ ! -f "$STATE/owned-state" ]; then
     echo "测试目录已存在但没有本脚本的所有权记录：$STATE" >&2
@@ -318,7 +344,7 @@ if [ -z "$nixpkgs" ]; then nixpkgs="$(nix-instantiate --find-file nixpkgs 2>/dev
 [ -d "$nixpkgs" ] || { echo "找不到当前系统对应的 nixpkgs。" >&2; exit 1; }
 echo "检查 Plasma $version 构建输入，只构建源码或依赖变化的插件……"
 nix-build "$ROOT/nix/test-runtime.nix" --argstr nixpkgsPath "$nixpkgs" --argstr plasmaVersion "$version" \
-    --argstr buildToken "$BUILD_TOKEN" --out-link "$BUILD_DIR/runtime"
+    --argstr buildToken "$BUILD_TOKEN" --argstr konsoleVersion "$konsole_version" --out-link "$BUILD_DIR/runtime"
 PROFILE="$(readlink -f "$BUILD_DIR/runtime")"
 [ "$(cat "$PROFILE/wm-build-token")" = "$BUILD_TOKEN" ] || { echo "构建编号错误，拒绝旧运行时。" >&2; exit 1; }
 printf '新运行时：%s\n' "$PROFILE"
@@ -333,6 +359,17 @@ export GI_TYPELIB_PATH
 "$PYTHON" "$ROOT/scripts/check-startmenu-keys.py"
 prefix="$(cat "$PROFILE/wm-qt-plugin-prefix")"
 plugin="$PROFILE/$prefix"
+if [ "$with_konsole" -eq 1 ]; then
+    konsole_package="$(cat "$PROFILE/wm-konsole-package")"
+    if [[ "$konsole_package" != /nix/store/* ]] ||
+       [ ! -x "$konsole_package/bin/konsole" ] ||
+       [ ! -x "$PROFILE/bin/windows-modern-konsole" ] ||
+       [ ! -s "$konsole_package/$prefix/konsoleplugins/konsole_windowsmodernchrome.so" ]; then
+        echo "终端程序或插件未完整构建，拒绝切换桌面。" >&2
+        exit 1
+    fi
+    printf '终端测试包：%s\n' "$konsole_package"
+fi
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"
 tasks="$plugin/plasma/applets/org.kde.windowsmodern.icontasks.so"
 menu="$plugin/plasma/containmentactions/org.kde.windowsmodern.contextmenu.so"
@@ -382,6 +419,16 @@ if "$PYTHON" "$ROOT/scripts/check-nixos-assets.py" "$STATE/native" "$input" "$RO
     echo "原版图标、壁纸、音效未变化，跳过导入。"
 else
     WM_NATIVE_RESOURCE_SOURCE="$input" WM_NATIVE_ASSETS_DIR="$STATE/native" bash "$ROOT/scripts/prepare-native-assets.sh"
+fi
+# The titlebar uses these imported SVGs directly, not the stock theme.
+if [ "$with_konsole" -eq 1 ]; then
+    for glyph in window-minimize-symbolic window-maximize-symbolic window-restore-symbolic \
+                 window-close-symbolic tab-new-symbolic go-down-symbolic; do
+        [ -s "$STATE/native/icons/actions/$glyph.svg" ] || {
+            printf '终端插件缺少原版图标：%s.svg\n' "$glyph" >&2
+            exit 1
+        }
+    done
 fi
 # Verify both original wallpaper packages, even on the cached-assets path.
 for name in Windows-modern Windows-modern-lock; do
@@ -597,4 +644,8 @@ if [ -d "$BUILD_DIR/previous" ] && [ ! -L "$BUILD_DIR/previous" ]; then
 fi
 printf '安装完成，当前运行时：%s\n构建编号：%s\n' "$PROFILE" "$BUILD_TOKEN"
 echo "原版壁纸、锁屏、开始菜单、任务栏及快捷设置已更新。"
+if [ "$with_konsole" -eq 1 ]; then
+    echo "终端插件已安装：在开始菜单搜索 Windows Modern Terminal（Windows Modern 终端）。"
+    echo "原版 Konsole 保留；请在重新登录后验收终端及 Snap Layouts。"
+fi
 echo "运行同一脚本：1 初次安装，2 增量升级，3 卸载。"
