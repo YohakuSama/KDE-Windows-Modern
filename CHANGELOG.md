@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Refresh the static window material on settled native wallpaper and appearance events, independently of the accent mode. Cache the primary image sample with file identities and decoder revision, preserve the transparency-off choice, and re-plan both installed renderers without adding a daemon.
+
 - Route transparency operations through the reversible NixOS installation, preserve the marker in exact-path backups, and stage both window materials, popup selectors and Kvantum transparency settings together before publication.
 
 - Share bounded wallpaper decoding between window material sampling and automatic accent, reuse duplicate samples across appearance modes, validate source identity through publication, and prefer the native loaded wallpaper for explicit transparency refresh.

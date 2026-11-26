@@ -77,6 +77,8 @@ def native_inventory(mapping, manifest, theme, names):
     outputs = manifest.get("outputs", {})
     actual = defaultdict(list)
     mismatched = []
+    unindexed = []
+    indexed_paths = {path for paths in names.values() for path in paths}
     for rel, info in sorted(outputs.items()):
         if not rel.startswith("icons/") or not rel.endswith(".svg"):
             continue
@@ -87,9 +89,13 @@ def native_inventory(mapping, manifest, theme, names):
         path = theme / target
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != info["sha256"]:
             mismatched.append(target)
+        elif target not in indexed_paths:
+            # Hash parity alone does not make an icon visible to the theme
+            # loader. Keep valid but unindexed outputs outside coverage.
+            unindexed.append(target)
         else:
             actual[path.stem].append(target)
-    return expected, actual, mismatched
+    return expected, actual, mismatched, unindexed
 
 
 def qml_candidates(root):
@@ -364,7 +370,7 @@ def main():
     manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.is_file() else {}
     mapping = json.loads((ROOT / "scripts/native-assets-map.json").read_text(encoding="utf-8"))
     names, broken, missing_dirs = theme_inventory(theme)
-    expected, actual, mismatched = native_inventory(mapping, manifest, theme, names)
+    expected, actual, mismatched, unindexed = native_inventory(mapping, manifest, theme, names)
     alternates = same_name_alternates(names, actual)
     qml = qml_candidates(ROOT)
     sources = source_candidates(ROOT, expected, names)
@@ -402,6 +408,7 @@ def main():
         "broken_theme_links": broken,
         "missing_index_directories": missing_dirs,
         "native_output_missing_or_changed": mismatched,
+        "native_output_unindexed": unindexed,
         "same_name_alternates": alternates,
         "same_name_alternate_name_count": len(alternates),
         "same_name_alternate_file_count": sum(len(row["unverified_files"]) for row in alternates.values()),
@@ -416,7 +423,7 @@ def main():
             "Bundled does not establish Windows origin; verify the resource before replacing.",
             "QML source and C++ literal scans are heuristic, not complete expression or data-flow analysis.",
             "Exact private role mapping proves a declared source, not local asset presence; direct artwork, native controls and dynamic pixmaps require provenance and live review.",
-            "A verified output hash establishes local import parity, not semantic identity or Windows version.",
+            "A verified output hash in an indexed directory establishes local import parity, not semantic identity, Windows version or actual runtime icon resolution.",
             "Native name counts mean at least one verified path; same-name alternate files may have different contexts or bytes and are not independently verified.",
             "KCM metadata lists declared icons, not the runtime-resolved theme file or category and page-internal controls.",
             "Private shell manifest hashes establish output parity, not independent verification of the declared Windows build."

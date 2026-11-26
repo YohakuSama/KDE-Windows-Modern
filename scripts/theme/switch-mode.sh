@@ -184,10 +184,46 @@ sync_accent() {
     fi
 }
 
+sync_material() {
+    local current_mode python result
+    case "$(read_key kdeglobals General ColorScheme):$(read_key kdeglobals KDE widgetStyle)" in
+        WindowsModernDark:kvantum-dark) current_mode=dark ;;
+        WindowsModernLight:kvantum) current_mode=light ;;
+        *) return 0 ;;
+    esac
+    # Off is independent of the accent mode; avoid launching the decoder.
+    [ ! -e "$data/windows-modern/transparency-off" ] &&
+        [ ! -L "$data/windows-modern/transparency-off" ] &&
+        [ ! -e "$HOME/.local/share/windows-modern/transparency-off" ] &&
+        [ ! -L "$HOME/.local/share/windows-modern/transparency-off" ] || return 0
+    python="$(accent_python)" || return 1
+    result="$("$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/window-frames.py" --sync-live "$current_mode")" || return $?
+    case "$result" in
+        changed)
+            # Do not restart KWin or applications. Same-mode reload is best effort.
+            busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null || true
+            busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
+            printf '%s\n' "Window material assets updated; open applications may need reopening." ;;
+        unchanged|retained|skipped) ;;
+        *) echo "Unexpected window material synchronization result." >&2; return 1 ;;
+    esac
+}
+
+sync_appearance() {
+    local accent_status=0 material_status=0
+    # They share the appearance lock and Kvantum atlas. Finish both paths
+    # even if one fails, then preserve the existing bounded stale retry.
+    sync_accent sync || accent_status=$?
+    sync_material || material_status=$?
+    if [ "$accent_status" -eq 75 ] || [ "$material_status" -eq 75 ]; then return 75; fi
+    [ "$accent_status" -eq 0 ] || return "$accent_status"
+    return "$material_status"
+}
+
 case "$1" in
     --sync-accent)
         [ "$active" = "$theme_id" ] || exit 0
-        sync_accent sync
+        sync_appearance
         exit $? ;;
     --manual-accent|--wallpaper-accent|--automatic-accent|--native-accent)
         [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."
@@ -290,5 +326,5 @@ if ! apply_mode; then
 fi
 # The tray also observes subsequent native image-load notifications.
 # Request a refresh once now in case the image stayed the same.
-sync_accent sync || echo "Appearance switched; accent refresh incomplete." >&2
+sync_appearance || echo "Appearance switched; accent or material refresh incomplete." >&2
 printf 'Windows Modern appearance: %s\n' "$mode"

@@ -779,8 +779,9 @@ void SystemTray::init()
             // Native preferences may change without a different highlight
             // color. Use the existing debounced accent sync in the applet.
             Q_EMIT accentPreferencesChanged();
-        } else if (group.name() == u"WindowsModernAccent" && names.contains(QByteArrayLiteral("Palette"))) {
-            refreshWallpaperWatch(group);
+        } else if ((group.name() == u"WindowsModernAccent" && names.contains(QByteArrayLiteral("Palette")))
+                   || (group.name() == u"WindowsModernMaterial" && names.contains(QByteArrayLiteral("Sample")))) {
+            refreshWallpaperWatch();
         }
     });
 
@@ -816,10 +817,7 @@ void SystemTray::init()
                 u"wallpaperChanged"_s, this, SLOT(scheduleWallpaperAccentSync()));
     bus.connect(u"org.kde.ActivityManager"_s, u"/ActivityManager/Activities"_s, u"org.kde.ActivityManager.Activities"_s,
                 u"CurrentActivityChanged"_s, this, SLOT(scheduleWallpaperAccentSync()));
-    auto rearm = [this] {
-        auto globals = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::NoGlobals);
-        refreshWallpaperWatch(globals->group(QStringLiteral("WindowsModernAccent")));
-    };
+    auto rearm = [this] { refreshWallpaperWatch(); };
     connect(&m_wallpaperWatch, &QFileSystemWatcher::fileChanged, this, [this, rearm](const QString &) {
         rearm();
         scheduleWallpaperAccentSync();
@@ -837,23 +835,29 @@ void SystemTray::init()
             scheduleWallpaperAccentSync();
         }
     });
-    refreshWallpaperWatch(config->group(QStringLiteral("WindowsModernAccent")));
+    refreshWallpaperWatch();
 }
 
 void SystemTray::scheduleWallpaperAccentSync()
 {
-    if (m_automaticWallpaperAccent) {
+    // Material follows the wallpaper even when the accent is manual or
+    // native. The existing shell helper checks the transparency preference.
+    if (m_automaticWallpaperAccent || m_wallpaperAccentSource) {
         Q_EMIT accentPreferencesChanged();
     }
 }
 
-void SystemTray::refreshWallpaperWatch(const KConfigGroup &group)
+void SystemTray::refreshWallpaperWatch()
 {
-    const auto state = QJsonDocument::fromJson(group.readEntry("Palette", QString()).toUtf8()).object();
-    m_automaticWallpaperAccent = state.value(u"source"_s).toString() == u"automatic";
+    auto globals = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::NoGlobals);
+    const auto accent = QJsonDocument::fromJson(
+        globals->group(QStringLiteral("WindowsModernAccent")).readEntry("Palette", QString()).toUtf8()).object();
+    const auto material = QJsonDocument::fromJson(
+        globals->group(QStringLiteral("WindowsModernMaterial")).readEntry("Sample", QString()).toUtf8()).object();
+    m_automaticWallpaperAccent = accent.value(u"source"_s).toString() == u"automatic";
     m_configWallpaperParent = false;
     QSet<QString> wanted;
-    if (m_automaticWallpaperAccent) {
+    if (m_automaticWallpaperAccent || m_wallpaperAccentSource) {
         // Some wallpaper KCM paths sync the containment config directly
         // rather than emitting the shell's wallpaperChanged signal.
         const auto configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
@@ -864,26 +868,32 @@ void SystemTray::refreshWallpaperWatch(const KConfigGroup &group)
                 wanted.insert(appletConfig);
             }
         }
-        const auto images = state.value(u"wallpapers"_s).toArray();
-        if (images.size() <= 16) {
-            for (const auto &image : images) {
-                const auto entry = image.toObject();
-                // The selected alias and its resolved file may live in
-                // different directories. Watch both when supplied.
-                for (const auto &key : {u"path"_s, u"source_path"_s}) {
-                    const QFileInfo file(entry.value(key).toString());
-                    if (!file.isAbsolute()) {
-                        continue;
-                    }
-                    if (file.isFile()) {
-                        wanted.insert(file.absoluteFilePath());
-                    }
-                    // The parent detects replacement or temporary deletion.
-                    const auto parent = file.absolutePath();
-                    if (QFileInfo(parent).isDir()) {
-                        wanted.insert(parent);
-                        m_configWallpaperParent |= parent == configDir;
-                    }
+        QJsonArray images;
+        const auto accentImages = accent.value(u"wallpapers"_s).toArray();
+        if (m_automaticWallpaperAccent && accentImages.size() <= 16) {
+            images = accentImages;
+        }
+        const auto materialImages = material.value(u"wallpapers"_s).toArray();
+        if (m_wallpaperAccentSource && materialImages.size() == 1) {
+            images.append(materialImages.at(0));
+        }
+        for (const auto &image : images) {
+            const auto entry = image.toObject();
+            // The selected alias and its resolved file may live in
+            // different directories. Watch both when supplied.
+            for (const auto &key : {u"path"_s, u"source_path"_s}) {
+                const QFileInfo file(entry.value(key).toString());
+                if (!file.isAbsolute()) {
+                    continue;
+                }
+                if (file.isFile()) {
+                    wanted.insert(file.absoluteFilePath());
+                }
+                // The parent detects replacement or temporary deletion.
+                const auto parent = file.absolutePath();
+                if (QFileInfo(parent).isDir()) {
+                    wanted.insert(parent);
+                    m_configWallpaperParent |= parent == configDir;
                 }
             }
         }

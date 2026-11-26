@@ -97,7 +97,7 @@ private:
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
 
-    void refreshWallpaperWatch(const KConfigGroup &group);
+    void refreshWallpaperWatch();
 
     KConfigWatcher::Ptr m_configWatcher;
     KConfigWatcher::Ptr m_blurConfigWatcher;

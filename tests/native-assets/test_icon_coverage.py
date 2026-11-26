@@ -29,13 +29,33 @@ class CoverageTests(unittest.TestCase):
             manifest = {"outputs": {"icons/apps/store.svg": {
                 "sha256": hashlib.sha256(native).hexdigest()
             }, "icons/status/missing.svg": {"sha256": "bad"}}}
-            expected, actual, mismatched = audit.native_inventory(mapping, manifest, theme, names)
+            expected, actual, mismatched, unindexed = audit.native_inventory(mapping, manifest, theme, names)
             self.assertEqual(mismatched, ["status/missing.svg"])
+            self.assertEqual(unindexed, [])
             self.assertEqual(audit.classify("store", names, expected, actual), "native_hash_verified")
             self.assertEqual(audit.classify("missing", names, expected, actual), "native_mapping_not_verified")
             self.assertEqual(audit.classify("other", names, expected, actual), "bundled_not_native_verified")
             self.assertEqual(audit.classify("unknown", names, expected, actual), "not_in_theme")
             self.assertEqual(audit.classify("/tmp/icon.png", names, expected, actual), "path_bypasses_theme")
+
+    def test_matching_hash_outside_index_is_not_coverage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            theme = Path(tmp)
+            (theme / "index.theme").write_text("[Icon Theme]\nDirectories=apps\n")
+            for folder in ("apps", "status"):
+                (theme / folder).mkdir()
+                (theme / folder / "store.svg").write_bytes(b"<svg/>")
+            (theme / "status/hidden.svg").write_bytes(b"<svg/>")
+            names, _, _ = audit.theme_inventory(theme)
+            mapping = {"icons": {"i:1": "apps/store status/store status/hidden"}}
+            digest = hashlib.sha256(b"<svg/>").hexdigest()
+            manifest = {"outputs": {"icons/" + path: {"sha256": digest}
+                                    for path in ("apps/store.svg", "status/store.svg", "status/hidden.svg")}}
+            expected, actual, mismatched, unindexed = audit.native_inventory(mapping, manifest, theme, names)
+            self.assertEqual(dict(actual), {"store": ["apps/store.svg"]})
+            self.assertEqual(mismatched, [])
+            self.assertEqual(unindexed, ["status/hidden.svg", "status/store.svg"])
+            self.assertEqual(audit.classify("hidden", names, expected, actual), "native_mapping_not_verified")
 
     def test_verified_name_can_have_unverified_same_name_file(self):
         names = {"battery": ["devices/battery.svg", "status/battery.svg"],

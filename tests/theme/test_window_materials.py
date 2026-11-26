@@ -1589,6 +1589,46 @@ class WindowMaterialTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate()
 
+    def test_live_material_cache_tracks_primary_file_and_decoder_revision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "wallpaper.png"
+            image.write_bytes(b"first")
+            decode = Mock(return_value=(1, 1, bytes((0, 0, 255, 255))))
+            sync = {"WALLPAPER_ANALYSIS_REVISION": 2, "decode_wallpaper_bitmap": decode}
+            snapshot = {"activity": "one", "wallpapers": [{"path": str(image), "size": 5}]}
+            first = frames.live_material_state(snapshot, None, sync)
+            self.assertEqual(first["colors"], {mode: frames.tint_color(mode, (255, 0, 0))
+                                                for mode in frames.BASE_COLORS})
+            snapshot["activity"] = "two"
+            snapshot["wallpapers"].append({"path": "/other.png", "size": 1})
+            self.assertEqual(frames.live_material_state(snapshot, json.dumps(first), sync), first)
+            decode.assert_called_once_with(image)
+            sync["WALLPAPER_ANALYSIS_REVISION"] += 1
+            second = frames.live_material_state(snapshot, json.dumps(first), sync)
+            self.assertEqual(decode.call_count, 2)
+            snapshot["wallpapers"][0]["size"] = 10
+            frames.live_material_state(snapshot, json.dumps(second), sync)
+            self.assertEqual(decode.call_count, 3)
+            decode.side_effect = ValueError("Unsupported wallpaper")
+            self.assertIsNone(frames.live_material_state(snapshot, None, sync))
+
+    def test_live_material_skips_disabled_or_inactive_appearance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            marker = root / "windows-modern/transparency-off"
+            marker.parent.mkdir()
+            marker.touch()
+            discover = Mock()
+            control = {"CONFIG": root / "config", "DATA": root,
+                       "active_mode": Mock(return_value=True), "discover_wallpapers": discover}
+            self.assertEqual(frames.sync_live_material("dark", control), "skipped")
+            control["active_mode"].assert_not_called()
+            discover.assert_not_called()
+            marker.unlink()
+            control["active_mode"].return_value = False
+            self.assertEqual(frames.sync_live_material("dark", control), "skipped")
+            discover.assert_not_called()
+
     def test_material_selection_change_rolls_back(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
