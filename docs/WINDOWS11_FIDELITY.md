@@ -1502,6 +1502,62 @@ for arbitrary images, transparency, multi-monitor source selection,
 and live application color refresh remains unverified. No installed
 theme behavior changes in this correction.
 
+### Local wallpaper file analysis and renderer roles
+
+The same calculation module now exposes a complete read-only file
+analysis pipeline. It uses Pillow (already in the NixOS theme runtime
+and native-resource importer) for local BMP, JPEG, PNG and WebP still
+images, applies EXIF orientation before calculating the analysis
+dimensions, prepares the existing 256-pixel-capped bitmap, combines
+all supplied image statistics, and then derives the normalized RGB,
+Alpha, and seven-role candidate palette. The original file is never
+modified or recompressed. The decoder uses its decoded RGB values
+without an additional ICC transform; WIC color-management parity
+and non-RGB source formats have not been established.
+
+The opt-in command accepts explicitly selected files, not an assumed
+primary containment or wallpaper-package directory. A source with
+more than 40 million pixels, animation, unsupported pixel format,
+invalid orientation, actual transparency or a failed decode is an
+error, not a request to use a guessed accent. Opaque RGBA and
+indexed/gray images within the supported format contract can be
+converted to RGB. This keeps source-alpha handling separate from
+the native analysis bitmap's fourth-byte validity contract.
+
+```bash
+python3 -I scripts/theme/sync-accent.py --analyze-wallpaper /absolute/path/to/image.jpg
+```
+
+Multiple file arguments use the existing pooled statistics path.
+The JSON distinguishes weighted_seed, colorization_argb,
+colorization_alpha, palette and mode_accents. The latter uses
+AccentLight2 for dark and AccentDark1 for light, as observed in
+the WinUI resources. Both modes consume the same computed palette.
+The command performs no KDE, Kvantum, wallpaper or theme-setting
+writes. It is shipped in the existing appearance script; no daemon,
+new application or independent color theme is installed. The
+original directory/mode/selection invocation remains unchanged.
+The regression definitions cover EXIF rotation, opaque RGBA,
+transparent RGB/alpha rejection, size bounds, the seven uniform
+reference colors as lossless files, mode-role mapping and pooled
+file analysis. They have not been executed.
+
+Plasma 6.8.3 still owns the live effective color: its
+[wallpaper reader](https://github.com/KDE/plasma-workspace/blob/v6.8.3/wallpapers/image/plugin/utils/mediaproxy.cpp)
+uses the mode-dependent metadata color when present, and
+[plasma-apply-colorscheme](https://github.com/KDE/plasma-workspace/blob/v6.8.3/kcms/colors/plasma-apply-colorscheme.cpp)
+routes accent changes through applyScheme. The
+[Colors KCM](https://github.com/KDE/plasma-workspace/blob/v6.8.3/kcms/colors/colors.cpp)
+requests the wallpaper accent through PlasmaShell's color method.
+Supplying a WinUI shade as a KDE accent does not guarantee an identical
+effective selection role: KDE's applicator blends some backgrounds.
+A tray palette-change observer that also writes the global accent
+would create a second authority competing with the wallpaper provider.
+Keep native wallpaper/manual selection and the existing effective
+palette-to-Kvantum synchronization intact until the single-owner
+integration contract is implemented. Do not assume active applications
+reload a same-name Kvantum style on a palette notification.
+
 ### Native automatic-color diagnostic
 
 OpenGlass reverse-engineers the private

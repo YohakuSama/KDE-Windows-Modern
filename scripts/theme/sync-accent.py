@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Synchronize template-owned Kvantum accent paints, not window materials."""
+"""Analyze Windows-style wallpaper colors or synchronize owned Kvantum accent paints."""
 import argparse
 import colorsys
 from fractions import Fraction
@@ -13,6 +13,7 @@ import stat
 import struct
 from string import Template
 import tempfile
+import warnings
 import xml.etree.ElementTree as ET
 
 ROLES = ("accent", "highlight_text", "selected_item_text",
@@ -319,6 +320,60 @@ def prepare_opaque_wallpaper_bitmap(pixels, width, height):
     return w, h, bytes(output)
 
 
+# Keep full-image decoding bounded independently of the 256-pixel analysis
+# limit. 40 million pixels allow conventional 8K still images.
+WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
+WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
+
+
+def decode_opaque_wallpaper_bitmap(path):
+    """Decode a local still image into the staged opaque analysis buffer.
+
+    Reuse Pillow's decoder and EXIF orientation support. Do not re-encode,
+    alter the source, or substitute another wallpaper on failure. The
+    decoded RGB values are used without a new ICC transform. Exact WIC
+    decoding and color management for arbitrary formats are not proven.
+    """
+    try:
+        from PIL import Image, ImageOps
+    except ImportError as error:
+        raise ValueError("Pillow is required for wallpaper analysis") from error
+
+    path = Path(path)
+    if not path.is_file():
+        raise ValueError("Expected a local wallpaper image file")
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(path, formats=WALLPAPER_IMAGE_FORMATS) as source:
+                if source.width * source.height > WALLPAPER_DECODE_PIXEL_LIMIT:
+                    raise ValueError("Wallpaper exceeds the analysis decode limit")
+                if getattr(source, "n_frames", 1) != 1:
+                    raise ValueError("Animated wallpapers are not supported")
+                if source.mode not in ("1", "L", "LA", "P", "RGB", "RGBA"):
+                    raise ValueError("Wallpaper pixel format is outside the reviewed RGB contract")
+                orientation = source.getexif().get(274, 1)
+                if orientation not in range(1, 9):
+                    raise ValueError("Invalid wallpaper orientation")
+                image = ImageOps.exif_transpose(source) if orientation != 1 else source
+                try:
+                    if "A" in image.getbands() or "transparency" in image.info:
+                        with image.convert("RGBA") as rgba:
+                            if rgba.getextrema()[3] != (255, 255):
+                                raise ValueError("Transparent wallpaper conversion is not verified")
+                    if image.mode == "RGB":
+                        return prepare_opaque_wallpaper_bitmap(
+                            image.tobytes(), image.width, image.height)
+                    with image.convert("RGB") as decoded:
+                        return prepare_opaque_wallpaper_bitmap(
+                            decoded.tobytes(), decoded.width, decoded.height)
+                finally:
+                    if image is not source:
+                        image.close()
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning) as error:
+        raise ValueError("Wallpaper exceeds the decoder safety limit") from error
+
+
 def _wallpaper_analysis_count(width, height):
     if any(type(n) is not int or not 1 <= n <= WALLPAPER_ANALYSIS_LIMIT
            for n in (width, height)):
@@ -559,6 +614,35 @@ def derive_automatic_palette(candidate):
     return derive_custom_lab_palette(color)
 
 
+def analyze_wallpapers(paths):
+    """Return the candidate automatic ramp for explicitly supplied files.
+
+    Accumulate all prepared images before selecting a color. The caller
+    chooses which actual display images to include; this function does
+    not discover KDE containments, guess package variants, or write any
+    configuration. The two mode accents are WinUI reference roles, not
+    values already transformed by KDE's color applicator.
+    """
+    result = derive_weighted_wallpaper_bitmaps(
+        decode_opaque_wallpaper_bitmap(path) for path in paths)
+    if result is None:
+        raise ValueError("No valid wallpaper color group")
+    seed, alpha = result
+    candidate = normalize_weighted_wallpaper_seed(seed)
+    palette = derive_automatic_palette(candidate)
+    return {
+        "schema_version": 1,
+        "weighted_seed": seed,
+        "colorization_argb": f"0x{alpha:02X}{candidate[1:]}",
+        "colorization_alpha": alpha,
+        "palette": palette,
+        "mode_accents": {
+            "dark": palette["AccentLight2"],
+            "light": palette["AccentDark1"],
+        },
+    }
+
+
 def contrast_ink(color):
     channels = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
     linear = [x / 12.92 if x <= .04045 else ((x + .055) / 1.055) ** 2.4
@@ -657,14 +741,31 @@ def synchronize(directory, mode, selection):
     return bool(pending)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("directory", type=Path)
-    parser.add_argument("mode", choices=("dark", "light"))
-    parser.add_argument("selection")
+    parser.add_argument("directory", type=Path, nargs="?")
+    parser.add_argument("mode", choices=("dark", "light"), nargs="?")
+    parser.add_argument("selection", nargs="?")
+    parser.add_argument("--analyze-wallpaper", metavar="IMAGE", type=Path, nargs="+",
+                        help="read-only candidate palette from one or more explicit local images")
     args = parser.parse_args()
+    if args.analyze_wallpaper is not None:
+        if any(value is not None for value in (args.directory, args.mode, args.selection)):
+            parser.error("--analyze-wallpaper cannot be combined with Kvantum synchronization")
+        try:
+            result = analyze_wallpapers(args.analyze_wallpaper)
+        except (OSError, ValueError, TypeError) as error:
+            parser.exit(1, f"Wallpaper analysis: {error}\n")
+        print(json.dumps(result, indent=2))
+        return
+    if any(value is None for value in (args.directory, args.mode, args.selection)):
+        parser.error("directory, mode and selection are required for Kvantum synchronization")
     try:
         changed = synchronize(args.directory, args.mode, args.selection)
     except (OSError, ValueError, KeyError, TypeError, ET.ParseError) as error:
         parser.exit(1, f"Kvantum accent: {error}\n")
     print("changed" if changed else "unchanged")
+
+
+if __name__ == "__main__":
+    main()

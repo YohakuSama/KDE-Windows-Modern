@@ -634,6 +634,98 @@ class WindowMaterialTests(unittest.TestCase):
             "isolated-red-high-top": "0xAF008700",
         })
 
+    def test_decode_wallpaper_orientation_and_opacity(self):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("optional Pillow unavailable")
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        decode = sync["decode_opaque_wallpaper_bitmap"]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "oriented.png"
+            # EXIF 6 rotates the 2x3 image clockwise to 3x2.
+            pixels = [(10, 20, 30), (40, 50, 60), (70, 80, 90),
+                      (100, 110, 120), (130, 140, 150), (160, 170, 180)]
+            with Image.new("RGB", (2, 3)) as image:
+                image.putdata(pixels)
+                exif = Image.Exif()
+                exif[274] = 6
+                image.save(path, exif=exif)
+            original = path.read_bytes()
+            expected = bytes(channel for r, g, b in
+                             (pixels[4], pixels[2], pixels[0], pixels[5], pixels[3], pixels[1])
+                             for channel in (b, g, r, 255))
+            self.assertEqual(decode(path), (3, 2, expected))
+            self.assertEqual(path.read_bytes(), original)
+            with patch.dict(decode.__globals__, {"WALLPAPER_DECODE_PIXEL_LIMIT": 5}):
+                with self.assertRaisesRegex(ValueError, "decode limit"):
+                    decode(path)
+            rgba = root / "rgba.png"
+            with Image.new("RGBA", (1, 1), (10, 20, 30, 255)) as image:
+                image.save(rgba)
+                self.assertEqual(decode(rgba), (1, 1, bytes((30, 20, 10, 255))))
+                image.putpixel((0, 0), (10, 20, 30, 128))
+                image.save(rgba)
+            with self.assertRaisesRegex(ValueError, "Transparent"):
+                decode(rgba)
+            # RGB PNG can also carry a transparent-color key.
+            with Image.new("RGB", (1, 1), (10, 20, 30)) as image:
+                image.save(rgba, transparency=(10, 20, 30))
+            with self.assertRaisesRegex(ValueError, "Transparent"):
+                decode(rgba)
+            with self.assertRaises(ValueError):
+                decode(root)
+            with self.assertRaises(ValueError):
+                decode(root / "missing.jpg")
+
+    def test_wallpaper_file_to_reference_palette(self):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("optional Pillow unavailable")
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        analyze = sync["analyze_wallpapers"]
+        report = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes-cache-isolation.json").read_text(
+            encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            count = 0
+            for sample in report["samples"]:
+                if sample["image"]["rectangle"] is not None:
+                    continue
+                observation = sample["observation"]
+                capture = observation["capture"]
+                pixel = tuple(bytes.fromhex(
+                    observation["cache_observation"]["transcoded"]["background_rgb"][1:]))
+                # Preserve the sampled decoded RGB in a lossless local file.
+                # These are synthetic uniform inputs, not native JPEG bytes.
+                path = root / (sample["image"]["name"] + ".bmp")
+                with Image.new("RGB", (1, 1), pixel) as image:
+                    image.save(path)
+                with self.subTest(name=sample["image"]["name"]):
+                    result = analyze([path])
+                    expected = {role: "#" + capture["appearance"]["colors_argb"][role][3:]
+                                for role in ("Accent", *sync["PRESET_SHADE_ROLES"])}
+                    self.assertEqual(result["colorization_argb"],
+                                     capture["native_wallpaper_color_api"]["argb"])
+                    self.assertEqual(result["palette"], expected)
+                    self.assertEqual(result["mode_accents"],
+                                     {"dark": expected["AccentLight2"], "light": expected["AccentDark1"]})
+                count += 1
+            self.assertEqual(count, 7)
+            with self.assertRaises(ValueError):
+                analyze([])
+            # File decoding must preserve the existing multi-image
+            # statistics reduction, not average independently chosen colors.
+            red = root / "red.bmp"
+            cyan = root / "cyan.bmp"
+            for path, size, color in ((red, (40, 1), (188, 88, 88)),
+                                      (cyan, (60, 1), (32, 132, 132))):
+                with Image.new("RGB", size, color) as image:
+                    image.save(path)
+            self.assertEqual(analyze([red, cyan])["colorization_argb"], "0xAFD44343")
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')
