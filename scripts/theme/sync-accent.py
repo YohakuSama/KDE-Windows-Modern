@@ -267,7 +267,7 @@ def derive_wallpaper_alpha(range_sum, pixel_count):
 
 # The weighted-RGB branch was recovered from shell32 10.0.26100.9974.
 # These functions consume already prepared analysis buffers. Source-file
-# decoding and exact WIC nearest-neighbor coordinates are separate work.
+# decoding and exact WIC bilinear resampling are separate work.
 WALLPAPER_ANALYSIS_LIMIT = 256
 
 

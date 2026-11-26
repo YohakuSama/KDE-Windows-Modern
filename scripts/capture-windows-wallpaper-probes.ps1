@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation')]
+    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary')]
     [string]$ProbeSet = 'Basic',
     [switch]$IncludeNativeWallpaperColor
 )
@@ -14,8 +14,9 @@ $ErrorActionPreference = 'Stop'
 if (-not $ApplyTemporarily) {
     throw 'This collection temporarily changes the wallpaper. Use -ApplyTemporarily in the reference VM.'
 }
-if ($ProbeSet -eq 'CacheIsolation' -and -not $IncludeNativeWallpaperColor) {
-    throw 'CacheIsolation requires -IncludeNativeWallpaperColor.'
+$isolated = $ProbeSet -in @('CacheIsolation', 'BitmapBoundary')
+if ($isolated -and -not $IncludeNativeWallpaperColor) {
+    throw 'CacheIsolation and BitmapBoundary require -IncludeNativeWallpaperColor.'
 }
 $captureScript = Join-Path $PSScriptRoot 'capture-windows-accent.ps1'
 if (-not (Test-Path -LiteralPath $captureScript -PathType Leaf)) {
@@ -31,6 +32,9 @@ $width = $screens[0].Bounds.Width
 $height = $screens[0].Bounds.Height
 if ($width -lt 64 -or $height -lt 64 -or ([long]$width * $height) -gt 16000000) {
     throw 'Unsupported display size for the controlled images.'
+}
+if ($ProbeSet -eq 'BitmapBoundary' -and ($width -ne 1280 -or $height -ne 800)) {
+    throw 'BitmapBoundary reproduces the recorded 1280x800 reference. Set that display size before collecting.'
 }
 
 # Only the first two IDesktopWallpaper methods are needed. Use the public
@@ -96,6 +100,241 @@ namespace WindowsModern.Reference
 '@
 }
 
+# Public WIC recreation for unrotated synthetic probes only.
+# This is not an interception of shell32's internal bitmap.
+if ($ProbeSet -eq 'BitmapBoundary' -and -not ('WindowsModern.Reference.WicBoundary' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.IO;
+using System.IO.Compression;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Security.Cryptography;
+
+namespace WindowsModern.Reference
+{
+    // The inherited bitmap-source slots are explicitly repeated for COM.
+    [ComImport, Guid("00000120-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IWicSource
+    {
+        void GetSize(out uint width, out uint height);
+        void GetPixelFormat(out Guid format);
+        void GetResolution(out double x, out double y);
+        void CopyPalette(IntPtr palette);
+        void CopyPixels(IntPtr rect, uint stride, uint size,
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex=2)] byte[] pixels);
+    }
+
+    [ComImport, Guid("3b16811b-6a43-4ec9-a813-3d930c13b940"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IWicFrame
+    {
+        void GetSize(out uint width, out uint height);
+        void GetPixelFormat(out Guid format);
+        void GetResolution(out double x, out double y);
+        void CopyPalette(IntPtr palette);
+        void CopyPixels(IntPtr rect, uint stride, uint size,
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex=2)] byte[] pixels);
+    }
+
+    [ComImport, Guid("00000302-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IWicScaler
+    {
+        void GetSize(out uint width, out uint height);
+        void GetPixelFormat(out Guid format);
+        void GetResolution(out double x, out double y);
+        void CopyPalette(IntPtr palette);
+        void CopyPixels(IntPtr rect, uint stride, uint size,
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex=2)] byte[] pixels);
+        void Initialize(IWicSource source, uint width, uint height, uint mode);
+    }
+
+    [ComImport, Guid("00000301-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IWicConverter
+    {
+        void GetSize(out uint width, out uint height);
+        void GetPixelFormat(out Guid format);
+        void GetResolution(out double x, out double y);
+        void CopyPalette(IntPtr palette);
+        void CopyPixels(IntPtr rect, uint stride, uint size,
+            [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex=2)] byte[] pixels);
+        void Initialize(IWicSource source, ref Guid format, uint dither,
+                        IntPtr palette, double alphaThreshold, uint paletteType);
+    }
+
+    // Unused slots preserve SDK vtable order and are never invoked.
+    [ComImport, Guid("9edde9e7-8dee-47ea-99df-e6faf2ed44bf"),
+     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IWicDecoder
+    {
+        void ReservedQueryCapability();
+        void ReservedInitialize();
+        void ReservedGetContainerFormat();
+        void ReservedGetDecoderInfo();
+        void ReservedCopyPalette();
+        void ReservedGetMetadataQueryReader();
+        void ReservedGetPreview();
+        void ReservedGetColorContexts();
+        void ReservedGetThumbnail();
+        void GetFrameCount(out uint count);
+        void GetFrame(uint index, out IWicFrame frame);
+    }
+
+    [ComImport, Guid("ec5ec8a9-c395-4314-9c77-54d7a935ff70"),
+     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IWicFactory
+    {
+        void ReservedCreateDecoderFromFilename();
+        void CreateDecoderFromStream(IStream stream, IntPtr vendor, uint options,
+                                     out IWicDecoder decoder);
+        void ReservedCreateDecoderFromFileHandle();
+        void ReservedCreateComponentInfo();
+        void ReservedCreateDecoder();
+        void ReservedCreateEncoder();
+        void ReservedCreatePalette();
+        void CreateFormatConverter(out IWicConverter converter);
+        void CreateBitmapScaler(out IWicScaler scaler);
+    }
+
+    public sealed class WicBuffer
+    {
+        public uint SourceWidth, SourceHeight, Width, Height;
+        public string Sha256, GzipBase64;
+    }
+
+    public static class WicBoundary
+    {
+        [DllImport("shlwapi.dll", CharSet=CharSet.Unicode, ExactSpelling=true)]
+        private static extern int SHCreateStreamOnFileEx(
+            string path, uint mode, uint attributes,
+            [MarshalAs(UnmanagedType.Bool)] bool create, IStream template,
+            out IStream stream);
+
+        public static WicBuffer Read(string path)
+        {
+            IStream stream = null;
+            IWicFactory factory = null;
+            IWicDecoder decoder = null;
+            IWicFrame frame = null;
+            IWicScaler scaler = null;
+            IWicConverter converter = null;
+            try
+            {
+                // STGM_READ | STGM_SHARE_DENY_WRITE.
+                Marshal.ThrowExceptionForHR(SHCreateStreamOnFileEx(path, 0x20, 0,
+                    false, null, out stream));
+                factory = (IWicFactory)Activator.CreateInstance(Type.GetTypeFromCLSID(
+                    new Guid("cacaf262-9370-4615-a13b-9f5539da4c0a")));
+                factory.CreateDecoderFromStream(stream, IntPtr.Zero, 0, out decoder);
+                decoder.GetFrame(0, out frame);
+                uint sw, sh;
+                frame.GetSize(out sw, out sh);
+                if (sw != 1280 || sh != 800)
+                    throw new InvalidDataException("Unexpected WIC source dimensions.");
+                uint w = Math.Min(256u, sw), h = Math.Min(256u, sh);
+                factory.CreateBitmapScaler(out scaler);
+                // The target shell passes WICBitmapInterpolationModeLinear (1).
+                scaler.Initialize((IWicSource)frame, w, h, 1);
+                factory.CreateFormatConverter(out converter);
+                Guid format = new Guid("6fddc324-4e03-4bfe-b185-3d77768dc90e");
+                converter.Initialize((IWicSource)scaler, ref format, 0, IntPtr.Zero, 0, 0);
+                Guid actual;
+                converter.GetPixelFormat(out actual);
+                uint cw, ch;
+                converter.GetSize(out cw, out ch);
+                if (actual != format || cw != w || ch != h)
+                    throw new InvalidDataException("Unexpected converted WIC bitmap.");
+                byte[] pixels = new byte[checked((int)(w * h * 4))];
+                converter.CopyPixels(IntPtr.Zero, w * 4, (uint)pixels.Length, pixels);
+                string hash;
+                using (var sha = SHA256.Create())
+                    hash = BitConverter.ToString(sha.ComputeHash(pixels)).Replace("-", "");
+                string compressed;
+                using (var memory = new MemoryStream())
+                {
+                    using (var gzip = new GZipStream(memory, CompressionMode.Compress, true))
+                        gzip.Write(pixels, 0, pixels.Length);
+                    compressed = Convert.ToBase64String(memory.ToArray());
+                }
+                return new WicBuffer { SourceWidth=sw, SourceHeight=sh,
+                    Width=w, Height=h, Sha256=hash, GzipBase64=compressed };
+            }
+            finally
+            {
+                foreach (object item in new object[] { converter, scaler, frame, decoder, factory, stream })
+                    if (item != null) Marshal.ReleaseComObject(item);
+            }
+        }
+    }
+}
+'@
+}
+
+function Read-WicBoundaryBuffer([string]$Path, [string]$ExpectedHash) {
+    if ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -cne $ExpectedHash) {
+        throw 'The WIC input changed before reading.'
+    }
+    $image = [System.Drawing.Bitmap]::new($Path)
+    try {
+        if ($image.PropertyIdList -contains 0x112) {
+            $orientation = $image.GetPropertyItem(0x112).Value
+            if ($orientation.Length -ne 2 -or [BitConverter]::ToUInt16($orientation, 0) -ne 1) {
+                throw 'Unexpected orientation metadata in the synthetic probe.'
+            }
+        }
+    } finally {
+        $image.Dispose()
+    }
+    $buffer = [WindowsModern.Reference.WicBoundary]::Read($Path)
+    if ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -cne $ExpectedHash) {
+        throw 'The WIC input changed while reading.'
+    }
+    return [ordered]@{
+        source_sha256 = $ExpectedHash
+        source_width = $buffer.SourceWidth
+        source_height = $buffer.SourceHeight
+        width = $buffer.Width
+        height = $buffer.Height
+        interpolation_mode = 1
+        pixel_format = '32bppBGR'
+        order = 'top-down BGRX'
+        bitmap_sha256 = $buffer.Sha256
+        gzip_base64 = $buffer.GzipBase64
+    }
+}
+
+function Assert-ProbeCacheColor([string]$Observed, [string]$Expected) {
+    if ($Observed -notmatch '^#[0-9A-Fa-f]{6}$') {
+        throw 'Missing sampled cache color.'
+    }
+    $a = [System.Drawing.ColorTranslator]::FromHtml($Observed)
+    $b = [System.Drawing.ColorTranslator]::FromHtml($Expected)
+    foreach ($channel in @('R', 'G', 'B')) {
+        if ([Math]::Abs([int]($a.$channel) - [int]($b.$channel)) -gt 12) {
+            throw 'Cache pixels do not match the controlled probe colors.'
+        }
+    }
+}
+
+function Read-WicBoundaryEvidence([string]$Path, [string]$ExpectedHash, $Probe, $Result) {
+    # Never export original reference wallpaper pixels. The cache must be
+    # changed, have the expected dimensions and match the probe's colors.
+    $cache = $Result.cache_observation.transcoded
+    $reference = $Result.isolation_reference.caches.transcoded
+    if (-not $Result.native_argb_changed_from_reference -or
+        $cache.status -ne 'ok' -or -not $cache.is_jpeg -or
+        $reference.status -ne 'ok' -or $cache.sha256 -ceq $reference.sha256 -or
+        $cache.width -ne $width -or $cache.height -ne $height) {
+        throw 'No independently verified synthetic JPEG cache for WIC capture.'
+    }
+    Assert-ProbeCacheColor $cache.background_rgb $Probe.background
+    Assert-ProbeCacheColor $cache.patch_rgb $Probe.rectangle.color
+    $cachePath = Join-Path $env:APPDATA 'Microsoft\Windows\Themes\TranscodedWallpaper'
+    return [ordered]@{
+        source = (Read-WicBoundaryBuffer $Path $ExpectedHash)
+        transcoded = (Read-WicBoundaryBuffer $cachePath $cache.sha256)
+    }
+}
+
 function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     $captureArguments = @{
         AccentMode = 'Automatic'
@@ -108,8 +347,8 @@ function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation') -and $sample.schema_version -lt 4) {
-        throw 'Refinement, Extraction, Boundary, Scoring, ScoringRefinement and CacheIsolation require capture-windows-accent.ps1 schema 4 or newer.'
+    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary') -and $sample.schema_version -lt 4) {
+        throw 'Refinement, Extraction, Boundary, Scoring, ScoringRefinement, CacheIsolation and BitmapBoundary require capture-windows-accent.ps1 schema 4 or newer.'
     }
     if ($WithNativeWallpaperColor -and $sample.schema_version -lt 5) {
         throw 'Native wallpaper diagnostics require capture-windows-accent.ps1 schema 5 or newer.'
@@ -609,7 +848,7 @@ try {
             @{name='alpha-l50-span-49'; background='#9B6A6A'; rectangle=$null},
             @{name='alpha-l50-span-52'; background='#9D6969'; rectangle=$null}
         )
-    } elseif ($ProbeSet -eq 'CacheIsolation') {
+    } elseif ($isolated) {
         # Recheck the winner interval in both directions and rotate the
         # split. All rectangles leave a background region at bottom right.
         $redLow = [int][Math]::Floor($width * 0.345)
@@ -642,6 +881,11 @@ try {
             @{name='isolated-fallback-span-28'; background='#8B6F6F'; rectangle=$null},
             @{name='isolated-fallback-span-30'; background='#8D6F6F'; rectangle=$null}
         )
+        if ($ProbeSet -eq 'BitmapBoundary') {
+            $probes = @($probes | Where-Object {
+                $_.name -in @('isolated-red-high-left', 'isolated-red-high-right', 'isolated-red-high-top')
+            })
+        }
     } else {
         $probes = @(
             @{name='solid-purple'; background='#9F5A8C'; rectangle=$null},
@@ -663,7 +907,7 @@ try {
     }
 
     $previous = $baseline
-    if ($ProbeSet -eq 'CacheIsolation') {
+    if ($isolated) {
         Assert-NativeColorEvidence $baseline
         if ($baseline.appearance.source_wallpaper_sha256 -ne $baseline.appearance.registered_wallpaper_sha256) {
             throw 'The original source and registered wallpaper must match for CacheIsolation.'
@@ -680,7 +924,7 @@ try {
             throw 'Probe image bytes changed before applying the wallpaper.'
         }
         $attempted = $true
-        if ($ProbeSet -eq 'CacheIsolation') {
+        if ($isolated) {
             # Independently re-establish the original wallpaper before
             # every target, rather than inheriting the preceding probe.
             if ($active -ine $original) {
@@ -714,7 +958,7 @@ try {
             (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $expectedHash) {
             throw 'Probe image bytes changed.'
         }
-        if ($ProbeSet -eq 'CacheIsolation') {
+        if ($isolated) {
             Assert-NativeColorEvidence $result.capture
             if ($result.capture.appearance.registered_wallpaper_sha256 -cne $expectedHash) {
                 throw 'Registered wallpaper does not match the generated probe.'
@@ -723,6 +967,12 @@ try {
             $result.native_argb_changed_from_reference = (
                 $result.capture.native_wallpaper_color_api.argb -cne $reference.native_argb)
             $result.cache_observation = Read-WallpaperCaches $probe
+            if ($ProbeSet -eq 'BitmapBoundary') {
+                if ($desktop.GetPath() -ine $path) {
+                    throw 'Wallpaper changed before reading WIC buffers.'
+                }
+                $result.wic_boundary = Read-WicBoundaryEvidence $path $expectedHash $probe $result
+            }
             if ($desktop.GetPath() -ine $path) {
                 throw 'Wallpaper changed while reading probe caches.'
             }

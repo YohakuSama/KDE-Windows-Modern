@@ -1320,10 +1320,13 @@ bitmap source. The path also reads System.Photo.Orientation
 This is not an unconditional image rotation on every format.
 
 The per-image analysis routine invokes the bitmap method with the
-independently capped dimensions and interpolation argument zero.
-The bitmap method creates IWICBitmapScaler and initializes it with
-that argument. The Windows SDK defines zero as nearest-neighbor
-interpolation; see [WICBitmapInterpolationMode](https://learn.microsoft.com/en-us/windows/win32/api/wincodec/ne-wincodec-wicbitmapinterpolationmode).
+independently capped dimensions and interpolation argument **one**.
+This corrects the preceding interpretation of the call. At RVA 0x12476F
+the fifth argument is set to 1 and stored at caller [rsp+0x20] at
+0x1247A1. The callee retrieves that fifth argument at 0x1B01B and
+passes it unchanged to IWICBitmapScaler::Initialize at 0x1B030.
+The Windows SDK defines one as bilinear interpolation; zero is
+nearest-neighbor. See [WICBitmapInterpolationMode](https://learn.microsoft.com/en-us/windows/win32/api/wincodec/ne-wincodec-wicbitmapinterpolationmode).
 It requests the format whose GUID is
 6fddc324-4e03-4bfe-b185-3d77768dc90e, identified in the
 [Microsoft SDK header](https://github.com/microsoft/win32metadata/blob/main/generation/WinSDK/RecompiledIdlHeaders/um/wincodec.h)
@@ -1357,18 +1360,58 @@ and byte lengths. This explicit no-group result must not be fed to
 the RGB normalizer. The function does not implement source alpha
 conversion, monitor enumeration or native decoder fallback policy.
 
-An offline calculation on the nine mixed CacheIsolation recipes
-using a locally recreated quality-85 JPEG and Pillow nearest-neighbor
-resampling to 256x256 predicts eight of nine winning color groups.
-The 35%-red-left probe still selects green in this calculation,
-where the native result was red. The local JPEG is not the actual
-Windows cache, and Pillow nearest-neighbor coordinates are not
-verified equivalent to WIC. This is a concrete remaining discrepancy,
-not a reason to introduce a position-dependent score. Exact decoded
-bitmap bytes, including orientation and the fourth-byte values, are
-needed to discriminate decoding, resampling coordinates and input
-image selection. Keep the installed renderer unchanged until these
-are resolved and renderer palette ownership is verified. The original
+Recalculating the nine mixed CacheIsolation recipes with a local
+quality-85 JPEG and either Pillow BILINEAR or a four-point bilinear
+pixel-center calculation gives the same eight of nine winner
+agreement as the earlier nearest-neighbor approximation. In particular,
+the four-point approximation of the 35%-red-left probe yields red
+weight about 1593.27 and green weight about 1614.38; Windows returns
+red. These are offline synthetic calculations, not WIC observations
+or project test results. Pillow BILINEAR uses a wider filter for
+downsampling, so neither approximation establishes WIC parity.
+The actual source chosen by the native extractor also remains
+unresolved. Do not fit an exponent or a position bias.
+
+### Focused WIC bitmap boundary capture
+
+The existing collector accepts `-ProbeSet BitmapBoundary`, a subset
+of CacheIsolation containing only the three already measured 35% red
+orientations (left, right, top). It requires the original 1280x800
+single-display reference, Automatic mode, and schema-5 accent
+collector. It restores and verifies the original wallpaper between
+probes and at completion, using the existing isolation safeguards.
+
+For each settled synthetic BMP and matching synthetic
+TranscodedWallpaper JPEG, the collector recreates the public WIC
+decode path: a read-only stream, frame zero, independently capped
+dimensions, interpolation mode 1, 32bppBGR conversion, and a
+tightly packed top-down CopyPixels buffer. It rejects unexpected
+dimensions or orientation metadata, changing file hashes, caches
+identical to the reference, and mismatched interior colors.
+The source and cache buffers are independently hashed and gzip
+compressed into the JSON report (the gzip_base64 field). The
+fourth byte is retained exactly rather than assumed to be source
+alpha or forced opaque. Original reference wallpaper pixels are
+not captured. No extra executable or DLL is included, and no
+cache or registry entry is edited.
+
+This is a public API recreation, not an interception of the private
+shell analysis buffer: the decoder's internal stream selection,
+orientation and any feature-dependent handling may still differ.
+Comparing the actual WIC bytes for the two input paths with the
+measured native ARGB can distinguish a decoder/resampling mismatch
+from a remaining selection or normalization mismatch. Keep the
+existing runtime disconnected until this evidence and palette
+ownership are resolved.
+
+Run from the folder containing the two capture scripts:
+
+```powershell
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet BitmapBoundary -IncludeNativeWallpaperColor
+```
+
+Submit the new wallpaper-probes.json; there is no need to repeat
+the other 16-probe or 29-probe collections. The original Windows
 DLL and symbols remain outside the repository.
 
 ### Native automatic-color diagnostic
