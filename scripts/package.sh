@@ -138,7 +138,17 @@ build_one() {
     elif [[ "$meta" == "colorschemes" ]]; then
         # Discover unpacks color schemes straight into color-schemes/, so the
         # .colors files must sit at the top of the zip, not in a folder.
-        (cd "$dir" && zip -q "$outpath" ./*.colors)
+        local color_stage
+        color_stage="$(mktemp -d)"
+        if ! (set -e
+            python3 "$SCRIPT_DIR/theme/appearance-packages.py" "$color_stage" --component color-schemes &&
+            cd "$color_stage" &&
+            zip -q "$outpath" WindowsModernDark.colors WindowsModernLight.colors
+        ); then
+            rm -rf "$color_stage" "$outpath"
+            return 1
+        fi
+        rm -rf "$color_stage"
     else
         (cd "$(dirname "$dir")" && zip -qr "$outpath" "$(basename "$dir")" \
             -x '*/build/*' '*/build-*/*' '*/CMakeFiles/*' '*/dev.sh' '*/BUILD.md' '*.orig' '*.rej')

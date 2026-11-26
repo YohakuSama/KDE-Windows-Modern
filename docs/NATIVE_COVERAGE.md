@@ -481,7 +481,16 @@ shadow hints have common geometry. The existing selection opacities,
 slider outline and window material update path remain intact. Exact Qt
 SVG antialiasing and fractional-scale rendering need desktop acceptance;
 these are existing Qt theme resources, not newly verified native artwork.
-The two KDE color schemes remain for separate consolidation.
+Both KDE color schemes now have one template and one shared fixed-role
+palette, scripts/theme/palette.json. The materializer reproduces both
+previous .colors files byte for byte, including their distinct inactive,
+selection and semantic foreground roles. Kvantum reads its existing
+palette values from that same source, and Aurorae uses the same neutral
+window base. The normal installer, NixOS transaction and the KDE Store
+color-scheme archive use the generated files; their historical names and
+package IDs stay unchanged. Plasma's existing fixed SVG fallback roles,
+dynamic accent propagation and material tuning are separate remaining
+work. No dynamic-color behavior or renderer geometry changes here.
 KDE supports adaptive SVG colors via the current-color-scheme
 stylesheet (https://develop.kde.org/docs/plasma/theme/theme-colors/);
 do not automatically substitute fixed Windows material colors or

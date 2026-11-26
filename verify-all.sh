@@ -36,10 +36,8 @@ echo "======================================"
 # ── Theme source (shared base + mode-specific renderer outputs) ──────
 echo ""
 echo " Themes:"
-for v in dark light; do
-    V="$(tr '[:lower:]' '[:upper:]' <<< "${v:0:1}")${v:1}"
-    check_file "color-schemes/WindowsModern${V}.colors"    "Color scheme ${v}"
-done
+check_file "color-schemes/WindowsModern.colors.in"          "Shared color scheme source"
+check_file "scripts/theme/palette.json"                     "Shared fixed palette roles"
 check_dir  "aurorae/windows-modern-dark-aurorae"           "Shared Aurorae source"
 check_dir  "plasma/desktoptheme/Windows-modern-dark"        "Shared Plasma theme source"
 check_dir  "plasma/look-and-feel/org.kde.windowsmodern.dark" "Shared global theme source"
@@ -86,6 +84,9 @@ if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance"; then
     for name in Windows-modern Windows-modernDark; do
         check_file "$tasks_tmp/appearance/Kvantum/Windows-modern/$name.kvconfig" "Kvantum configuration $name"
         check_file "$tasks_tmp/appearance/Kvantum/Windows-modern/$name.svg" "Kvantum artwork $name"
+    done
+    for scheme in WindowsModernDark WindowsModernLight; do
+        check_file "$tasks_tmp/appearance/color-schemes/$scheme.colors" "Color scheme $scheme"
     done
     drift=""
     for v in dark light; do

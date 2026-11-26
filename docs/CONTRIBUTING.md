@@ -49,7 +49,7 @@ remain open tasks.
 | `plasma/look-and-feel/`, `plasma/desktoptheme/` | Shared global theme and Plasma style sources. Generate both renderer modes with the appearance materializer. |
 | `aurorae/` | Shared window decoration and caption states. Generate both native decoration packages with the appearance materializer. |
 | `Kvantum/` | Shared Qt style configuration and SVG geometry templates; generate both modes through the appearance materializer. |
-| `color-schemes/` | Mode-specific palettes. |
+| `color-schemes/`, `scripts/theme/palette.json` | Shared KDE color scheme template and fixed palette roles used by KDE, Kvantum and Aurorae window bases. |
 | `plasma/layout-templates/` | The "Add Panel → Windows Modern Panel" template. |
 | `plasma/windowswitcher/` | The Alt+Tab switcher (a KWin window-switcher layout). |
 | `tests/` | Headless regression tests, previews, and separate live desktop tests. |

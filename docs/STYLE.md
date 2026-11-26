@@ -595,7 +595,7 @@ focus rings).
 | Token | Dark | Light |
 |---|---|---|
 | `window` | `#202020` | `#F9F9F9` |
-| `base` / `alt.base` | `#2C2C2C` | `#FFFFFF` / `#F8F8F8` |
+| `base` / `alt.base` | `#191919` / `#1E1E1E` | `#FFFFFF` / `#F8F8F8` |
 | `button` | `#2C2C2C` | `#F3F3F3` |
 | `light` (hover) | `#3F3F3F` | `#E9E9E9` |
 | `mid.light` | `#3F3F3F` | `#E9E9E9` |
@@ -657,10 +657,18 @@ correctly under compositing.
 
 ### Color Schemes
 
-Location: `color-schemes/WindowsModern{Dark,Light}.colors`
+Location: `color-schemes/WindowsModern.colors.in` and `scripts/theme/palette.json`.
 
-KDE color scheme files defining system-wide colors for widgets,
-selections, tooltips, etc. Rewritten with Win11 values:
+The shared template defines the KDE groups, effects and keys. The fixed
+palette supplies common KDE and Kvantum roles and the neutral Aurorae
+window base. The appearance materializer generates both installed
+`WindowsModern{Dark,Light}.colors` files, preserving their previous
+contents exactly. Normal installation, NixOS staging and the flat
+KDE Store ZIP use those same generated files. Renderer-specific paint,
+selection effects and disabled/inactive semantics remain separate roles.
+This is not a dynamic accent or material algorithm.
+
+The installed KDE color schemes retain the existing Win11-derived values:
 `ColorScheme=WindowsModernDark` / `WindowsModernLight` (the previous
 `McMojave` / `McMojaveLight` leftovers were removed). Dark uses
 `BackgroundNormal=32,32,32` for windows and `44,44,44` for buttons;

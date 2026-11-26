@@ -367,53 +367,44 @@ def lookfeel(root, destination, mode):
     return target
 
 
-# Kvantum's geometry, behavior and state keys are shared. Keep its existing
-# palette roles separate: a literal used for a surface may have a different
-# light-mode value than the same literal used for text.
-KVANTUM_CONFIG_COLORS = {
-    "dark": {
-        "window": "#202020",
-        "base": "#191919",
-        "alternate_base": "#1E1E1E",
-        "button": "#2C2C2C",
-        "light_surface": "#3F3F3F",
-        "dark_surface": "#1F1F1F",
-        "mid_surface": "#2C2C2C",
-        "accent": "#4CC2FF",
-        "text": "#FFFFFF",
-        "text_lower": "#ffffff",
-        "disabled_text": "#5A5A5A",
-        "highlight_text": "#1E1E1E",
-        "selected_item_text": "#FFFFFF",
-    },
-    "light": {
-        "window": "#F9F9F9",
-        "base": "#FFFFFF",
-        "alternate_base": "#F8F8F8",
-        "button": "#F3F3F3",
-        "light_surface": "#E9E9E9",
-        "dark_surface": "#E5E5E5",
-        "mid_surface": "#E5E5E5",
-        "accent": "#0067C0",
-        "text": "#1E1E1E",
-        "text_lower": "#1E1E1E",
-        "disabled_text": "#A0A0A0",
-        "highlight_text": "#ffffff",
-        "selected_item_text": "#ffffff",
-    },
-}
+# KDE and Kvantum share fixed palette roles where their semantics agree.
+# Keep renderer-specific surface and state roles distinct, even if their
+# current values happen to be identical.
+def load_palette(root, mode):
+    """Read the common fixed-color roles; do not modify the user's accent."""
+    palette = json.loads((root / "scripts/theme/palette.json").read_text(encoding="utf-8"))
+    return palette[mode]
+
+
+def render_color_scheme(root, mode):
+    source = root / "color-schemes/WindowsModern.colors.in"
+    values = {}
+    for role, color in load_palette(root, mode).items():
+        if not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
+            raise ValueError("Invalid RGB palette role: " + role)
+        values[role] = ",".join(str(int(color[i:i + 2], 16)) for i in (1, 3, 5))
+    values["scheme_id"] = "WindowsModern" + mode.capitalize()
+    values["scheme_name"] = "Windows Modern " + mode.capitalize()
+    return Template(source.read_text(encoding="utf-8")).substitute(values)
+
+
+def color_schemes(root, destination):
+    destination.mkdir(parents=True, exist_ok=True)
+    for mode in ("dark", "light"):
+        name = "WindowsModern" + mode.capitalize() + ".colors"
+        (destination / name).write_text(render_color_scheme(root, mode), encoding="utf-8")
 
 
 def render_kvantum_config(root, mode):
     source = root / "Kvantum/Windows-modern/Windows-modern.kvconfig.in"
-    return Template(source.read_text(encoding="utf-8")).substitute(KVANTUM_CONFIG_COLORS[mode])
+    return Template(source.read_text(encoding="utf-8")).substitute(load_palette(root, mode))
 
 
 # The common SVG contains only geometry and mode-independent paint.
 # These roles retain the previously reviewed mode-specific fills and state
 # opacities, including transparent light indicator cutouts and the opaque
 # dark glyph backing. Shared config roles (accent, text, window, button
-# and disabled text) come from KVANTUM_CONFIG_COLORS above.
+# and disabled text) come from palette.json.
 KVANTUM_SVG_PAINT = {
     "dark": {
         "control_surface": "#2C2C2C",
@@ -470,7 +461,7 @@ KVANTUM_SVG_PAINT = {
 
 def render_kvantum_svg(root, mode):
     source = root / "Kvantum/Windows-modern/Windows-modern.svg.in"
-    values = {**KVANTUM_CONFIG_COLORS[mode], **KVANTUM_SVG_PAINT[mode]}
+    values = {**load_palette(root, mode), **KVANTUM_SVG_PAINT[mode]}
     svg = Template(source.read_text(encoding="utf-8")).substitute(values)
     # Preserve the atlas markup and attribute order for window-frames.py.
     # Parsing here rejects broken generated SVG before installation.
@@ -492,7 +483,7 @@ def kvantum(root, destination):
 def materialize(root, output, component="runtime"):
     output = output.resolve()
     if any(output.is_relative_to((root / source).resolve()) for source in
-           ("plasma/desktoptheme", "plasma/look-and-feel", "aurorae", "Kvantum")):
+           ("plasma/desktoptheme", "plasma/look-and-feel", "aurorae", "Kvantum", "color-schemes")):
         raise ValueError("Stage appearance packages outside their source directories")
     output.mkdir(parents=True, exist_ok=True)
     if component in ("runtime", "themes"):
@@ -504,10 +495,13 @@ def materialize(root, output, component="runtime"):
             desktoptheme(root, desktop, mode)
             aurorae(root, decorations, mode)
         kvantum(root, output / "Kvantum")
+        color_schemes(root, output / "color-schemes")
         if component == "runtime":
             global_theme = output / "look-and-feel"
             global_theme.mkdir()
             lookfeel(root, global_theme, "unified")
+    elif component == "color-schemes":
+        color_schemes(root, output)
     elif component == "desktopthemes":
         for mode in ("dark", "light"):
             desktoptheme(root, output, mode)
@@ -527,7 +521,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--component", default="runtime",
-                        choices=("runtime", "themes", "desktopthemes", "lookfeel",
+                        choices=("runtime", "themes", "desktopthemes", "lookfeel", "color-schemes",
                                  "desktoptheme-dark", "desktoptheme-light",
                                  "aurorae-dark", "aurorae-light",
                                  "lookfeel-dark", "lookfeel-light"))

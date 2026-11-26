@@ -24,7 +24,7 @@ done
 step "Color schemes"
 ensure_dir "$SCHEMES_DIR"
 rm -f "$SCHEMES_DIR/WindowsModern"*.colors
-cp -r "$SRC_DIR/color-schemes/"*.colors "$SCHEMES_DIR/"
+cp -- "$appearance_stage/color-schemes/"*.colors "$SCHEMES_DIR/"
 
 step "Kvantum themes"
 ensure_dir "$KVANTUM_DIR"

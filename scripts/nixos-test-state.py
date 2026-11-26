@@ -132,8 +132,8 @@ def plan(root, state, profile):
         for path in sorted(source.iterdir()):
             if path.is_dir() or path.suffix == ".colors":
                 result[destination / path.name] = path
-    packages(root / "color-schemes", DATA / "color-schemes")
     appearance = state / "staged-appearance"
+    packages(appearance / "color-schemes", DATA / "color-schemes")
     packages(appearance / "Kvantum", CONFIG / "Kvantum")
     packages(appearance / "aurorae", DATA / "aurorae/themes")
     packages(appearance / "desktoptheme", DATA / "plasma/desktoptheme")

@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+import configparser
 import importlib.util
 from pathlib import Path
 import runpy
@@ -12,6 +13,7 @@ spec = importlib.util.spec_from_file_location('window_frames', ROOT / 'scripts/t
 frames = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(frames)
 appearance = runpy.run_path(str(ROOT / 'scripts/theme/appearance-packages.py'))
+render_color_scheme = appearance['render_color_scheme']
 render_kvantum_config = appearance['render_kvantum_config']
 render_kvantum_svg = appearance['render_kvantum_svg']
 SVG = ('<svg xmlns="http://www.w3.org/2000/svg">'
@@ -126,6 +128,35 @@ class WindowMaterialTests(unittest.TestCase):
                         self.assertEqual(ring.get('stroke-width'), '1')
                         self.assertEqual(ring.get('stroke'),
                                          'none' if mode == 'dark' else '#D5D5D5')
+
+    def test_shared_system_palette(self):
+        def rgb(hex_color):
+            return ','.join(str(int(hex_color[i:i + 2], 16)) for i in (1, 3, 5))
+
+        schemes = {}
+        for mode in ('dark', 'light'):
+            with self.subTest(mode=mode):
+                scheme = configparser.ConfigParser(interpolation=None)
+                scheme.read_string(render_color_scheme(ROOT, mode))
+                config = configparser.ConfigParser(interpolation=None)
+                config.read_string(render_kvantum_config(ROOT, mode))
+                colors = config['GeneralColors']
+                for section, key, role in (
+                        ('Colors:Window', 'BackgroundNormal', 'window.color'),
+                        ('Colors:View', 'BackgroundNormal', 'base.color'),
+                        ('Colors:Button', 'BackgroundNormal', 'button.color'),
+                        ('Colors:Window', 'DecorationHover', 'light.color'),
+                        ('Colors:Window', 'ForegroundNormal', 'text.color'),
+                        ('Colors:Selection', 'BackgroundNormal', 'highlight.color'),
+                        ('Colors:Selection', 'ForegroundNormal', 'highlight.text.color'),
+                        ('ColorEffects:Disabled', 'Color', 'disabled.text.color')):
+                    self.assertEqual(scheme[section][key], rgb(colors[role]))
+                self.assertEqual(scheme['General']['ColorScheme'], 'WindowsModern' + mode.capitalize())
+                self.assertEqual(scheme['WM']['activeBackground'], rgb(frames.BASE_COLORS[mode]))
+                self.assertEqual(scheme['Colors:View']['ForegroundLink'],
+                                 scheme['Colors:Selection']['BackgroundNormal'])
+                schemes[mode] = [(section, tuple(scheme[section])) for section in scheme.sections()]
+        self.assertEqual(schemes['dark'], schemes['light'])
 
     def test_qt_control_spacing_matches_both_themes(self):
         for mode in ('light', 'dark'):
