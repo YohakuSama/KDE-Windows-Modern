@@ -246,15 +246,9 @@ def bridge_curve_tables(profile):
         for raw in (tag[52:64],tag[-12:]):
             if struct.unpack('>6H',raw)!=(0,65535)*3:
                 raise ValueError('Expected full-range unity bridge curves')
-    def sample(count, scale):
-        # Round to Q15 first, then round the ICC export. The input and
-        # output paths have distinct scale factors; preserve full white.
-        i = np.arange(count,dtype=np.int64)
-        q = (2*i*32768+count-1)//(2*(count-1))
-        values = (q*scale+16384)//32768
-        values[-1] = 65535
-        return np.tile(values,(3,1))
-    return sample(256,65534), sample(1024,65535)
+    generate = runpy.run_path(str(Path(__file__).with_name('wallpaper-icc.py')))['mft2_unity_curve']
+    return (np.tile(np.asarray(generate(256,65534),dtype=np.int64),(3,1)),
+            np.tile(np.asarray(generate(1024,65535),dtype=np.int64),(3,1)))
 
 
 def separable_grid(grid, reverse_output=False):

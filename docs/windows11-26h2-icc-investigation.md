@@ -1208,4 +1208,101 @@ Use the existing standalone Windows precision collector on build 26300.9974:
 .\capture-windows-icc-precision.ps1 -FamilyProfiles
 ```
 
-This selects the two existing mft2 RGB-to-PCS controls (identity and ZYX permutation), the original RGB calibration controls, and two synthetic gray monitor profiles (linear and gamma 563/256). For each RGB profile the collector requests all 16,777,216 WIC RGB8 outputs as hashes and records relative-intent link data. For each gray profile it requests a 256-pixel 8bppGray ramp and records the individual output RGB triplets and separately requests the relative-colorimetric device link. Each operation retains its own native error if it fails. The JSON defaults to `windows-icc-families.json` on the desktop. It does not change the wallpaper or install a profile. These measurements are pending. Unseen forward LUTs and gray samples do not enter the runtime based on this capture definition alone.
+This selects the two existing mft2 RGB-to-PCS controls (identity and ZYX permutation), the original RGB calibration controls, and two synthetic gray monitor profiles (linear and gamma 563/256). For each RGB profile the collector requests all 16,777,216 WIC RGB8 outputs as hashes and records relative-intent link data. For each gray profile it requests a 256-pixel 8bppGray ramp and records the individual output RGB triplets and separately requests the relative-colorimetric device link. Each operation retains its own native error if it fails. The JSON defaults to `windows-icc-families.json` on the desktop. It does not change the wallpaper or install a profile. The completed measurements are analyzed below. Unseen forward LUTs and gray samples do not enter the runtime based on this capture definition alone.
+
+
+## Measured LUT and Gray RGB8 execution
+
+The owner supplied the 8,046,797-byte family report from build 26300.9974
+(SHA-256 AC1D34171EC97C1DC67A71E6FB900DB6D78DCADBEB8D674CB55E47AE136FEEFC).
+All 169 encoded payloads passed length and SHA-256 checks, and no
+operation reported a native error. Both original RGB controls retain
+their measured output identities.
+
+The two synthetic forward mft2 controls produce the existing 3-to-3
+device-link shape: 256 input samples per channel, a 32-cube with three
+16-bit outputs, and 1024 destination samples per channel. Their input
+tables match the Q15 unity-curve generator from the previous PCS
+investigation (768 entries per control). Their target curves match the
+independently generated registered-sRGB curve (3072 entries per control).
+The two CLUTs are exact reversals of the first and third input axes,
+not of the output channels.
+
+A separate array transcription of the existing tetrahedral executor
+reproduced every native RGB8 output hash, including all 256 red-slice
+hashes for each control (33,554,432 colors in total). The captured
+grids were used; this is an execution result, not independent grid
+construction.
+
+The two gray monitor controls produce an 8340-byte Gray-to-RGB
+device link with a 256-entry input curve, a 128-point three-output
+grid, and the same 3072-entry destination table. Both input tables
+are independently reproduced by the existing matrix_input_curve
+generator when applied to kTRC. Their grid is identical
+(SHA-256 6C980519309C8832E202F47DF12C643FCCD383420D9541A5441CB5F6C80FFD07).
+The gray coordinate is a Q9 fraction:
+```
+code = value * 127 >> 7
+point = code >> 9
+fraction = 512 if value == 65535 else code & 511
+index = clamp((grid[point] * (512-fraction) +
+               grid[point+1] * fraction) >> 15, 0, 1023)
+output = target[index] >> 8
+```
+Apply the index and output lookup separately to each of the three
+output channels. This reproduces all 768 output bytes for each gray
+control (512 input codes total). Reusing the RGB Q11 coordinate for
+gray instead leaves disagreements. Repeating the gray input three
+times is not equivalent.
+
+The existing fixed-point RGB8 executor now accepts the measured
+single-channel shape and shares the weighted destination lookup with
+RGB. The previous RGB coordinate, tetrahedral vertex order and shift
+are preserved. The existing offline analyzer accepts the family
+report; it verifies the control identities and input/output curves,
+reports the scalar calibration and full gray ramp comparisons, and
+optionally enumerates the full RGB domain through the scalar engine.
+The previous PCS analyzer reuses the same unity-curve generator.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc.py --family-report /path/to/windows-icc-families.json
+```
+
+Add `--full-domain` for explicit exhaustive offline enumeration.
+No raw captured table, Windows binary, new dependency or runtime
+receipt format is committed. Runtime now includes the reviewed opaque Gray8 branch described below.
+Existing supplemental RGB receipt selection is unchanged. Independent
+forward RGB LUT construction remains open; do not promote a fitted grid
+or repeat-gray RGB approximation.
+The numerical archive comparisons above are separate from repository
+tests; no repository suite, build, desktop session or CI was run.
+
+
+## Independent gray-grid generation
+
+The re-supplied reference native modules match the previously documented
+SHA-256 identities. Static inspection locates the Gray-to-XYZ two-point
+stage at icm32.dll RVA 0x1cad8, with the endpoint words (31594,32767,27105),
+and the common repeated-bit grid construction and fixed-point interpolation
+stages. A bounded integer normalization reconstruction yields the following
+128-point grid formula. For point n, form word = (n << 9) | (n << 2) |
+(n >> 5). Use q = ((word - (word >> 15)) >> 1) << 1, except q = 65536
+at the last point. For each XYZ endpoint component v, set raw = q*v,
+x = raw + (raw >> 16), position = (x - (x >> 10)) >> 6. Interpolate
+the existing 1024-point identity curve at the Q16 position, then apply
+the same inverse sRGB matrix stage as the RGB matrix generator.
+All 384 resulting 16-bit grid words match the measured grid hash exactly.
+Both measured single-gamma kTRCs and the destination curve reproduce
+all 512 gray input codes using the same RGB8-output executor. This
+numeric agreement covers the supplied two controls; it does not prove
+all gray ICC versions, tag combinations, decoder formats or alpha paths.
+The new runtime branch accepts opaque L images with a bounded v2 D50
+monitor profile containing only kTRC, wtpt and optional desc/cprt, and
+requires a single-gamma curve. The source sample is converted before
+bilinear resampling; no private receipt or stored grid is needed.
+Decoder revision 9 invalidates prior analysis results. Unsupported gray
+profile and transparency combinations remain explicit errors. Added
+regression definitions cover the measured output hashes and image-mode
+boundaries; they have not been executed. No project build or CI was run.
+The forward mft2 RGB LUT still requires its independent input/grid
+normalization; the measured replay is not promoted as a general generator.

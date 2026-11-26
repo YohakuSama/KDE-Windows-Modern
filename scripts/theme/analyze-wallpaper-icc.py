@@ -498,14 +498,141 @@ def compare_alpha(root, report_path, precision_path):
     return result
 
 
+# These are the exact synthetic source and native output identities from
+# the target-build family report, not embedded conversion tables.
+FAMILY_LUT_FULL_SHA = {
+    "D32E4F221D8FBA508546D930EC200C200AEAAAE95EA22E23331B68D3495BF1A4":
+        "7DA3D42C3664A08A331095CF2C49526D2C2AB9DB6CFB84F20AE934B80AC0CDEA",
+    "086832DEE2195FBFC5FAF48A48C30CF2301D70CBA9C92CA46C11E6257C5DBB18":
+        "4B78538B0FC4C275B6DE3D48A87CBAF8089F14D8A32AC5DB2362FD0FED6C5075",
+}
+FAMILY_GRAY_SHA = {
+    "gray-linear": ("FCA615D30B83A208A33AFB4A4FF7EAE18AD3F9BB66EE2872619ACA101A044AC4",
+                    "B5643195AD00E72793FDDB40ADABA26617B894B24817C31149537AEE7B6065AF"),
+    "gray-gamma22": ("CC2F4242F64AA4624D41A3853547F84BBF861A221C738D742959019169085B28",
+                     "C3A571A6A7E554745A5417B4785F2C587053E998917BB0ED6D797B79380D1CB8"),
+}
+
+
+def compare_families(root, report_path, *, full_domain=False):
+    """Validate the two measured LUT and two gray controls without publishing data."""
+    native = runpy.run_path(str(root / "scripts/theme/wallpaper-icc.py"))
+    # Reuse the existing exact matrix-control and reference identity checks.
+    alpha_control_replays(native, report_path)
+    with report_path.open("rb") as stream:
+        raw = stream.read(native["FULL_REPORT_LIMIT"] + 1)
+    if len(raw) > native["FULL_REPORT_LIMIT"]:
+        raise ValueError("Oversized ICC family report")
+    report = json.loads(raw.decode("utf-8-sig"))
+    if report["schema_version"] != 2:
+        raise ValueError("Expected schema 2 ICC family report")
+    controls = {name: digest for name, digest, _ in native["PROFILES"]}
+    lut_sources = {"custom-" + digest: digest for digest in FAMILY_LUT_FULL_SHA}
+    if (report["sources"] != {**controls, **lut_sources}
+            or set(report["results"]) != set(report["sources"])
+            or set(report["synthetic_sources"]) != set(lut_sources)
+            or set(report["gray8"]) != set(FAMILY_GRAY_SHA)):
+        raise ValueError("Unexpected ICC family control set")
+
+    checked = native["checked_payload"]
+    colors = checked(report["input_rgb"], 5120 * 3, native["INPUT_SHA"])
+    target = native["srgb_output_curve"]()
+    lut_source = native["mft2_unity_curve"](256, 65534) * 3
+    result = {"windows_build": report["windows_build"], "report_sha256": sha(raw),
+              "rgb_lut": {}, "gray": {}}
+
+    def tables_summary(tables, source):
+        return {
+            "input_entries": len(tables[0]), "grid_entries": len(tables[1]),
+            "output_entries": len(tables[2]),
+            "table_sha256": [native["_table_hash"](table) for table in tables],
+            "generated_input_differences": sum(a != b for a, b in zip(source, tables[0])),
+            "generated_output_differences": sum(a != b for a, b in zip(target, tables[2])),
+            "grid_independently_generated": False,
+        }
+
+    for name, digest in lut_sources.items():
+        entry = report["synthetic_sources"][name]
+        checked(entry, entry["length"], digest)
+        item = report["results"][name]
+        relative = item["intents"]["1"]
+        if relative["status"] != "ok":
+            raise ValueError("Missing native relative LUT transform")
+        link = relative["link_profile"]
+        tables = native["read_rgb8_tables"](checked(link, link["length"], link["sha256"]),
+                                            full_domain=True)
+        replay = native["Rgb8Replay"](tables)
+        wic = item["wic"]
+        reference = checked(wic, len(colors), wic["sha256"])
+        for method in ("direct", "link_replay"):
+            checked(relative[method]["outputs"]["8to8"], len(colors), wic["sha256"])
+        actual = b"".join(bytes(replay.convert(*pixel)) for pixel in struct.iter_unpack("3B", colors))
+        full = item["full_rgb8"]
+        if ((full["status"], full["color_count"], full["order"], full["sha256"])
+                != ("ok", 1 << 24, "ascending-rgb24", FAMILY_LUT_FULL_SHA[digest])
+                or len(full["red_slice_sha256"]) != 256):
+            raise ValueError("Unexpected native LUT full-domain measurement")
+        for value in full["red_slice_sha256"]:
+            native["digest_bytes"](value)
+        row = tables_summary(tables, lut_source)
+        row.update(calibration_colors=len(colors) // 3,
+                   calibration_different_channels=sum(a != b for a, b in zip(actual, reference)),
+                   native_full_sha256=full["sha256"], full_domain_verified=False)
+        if full_domain:
+            native["verify_full_rgb8"](replay, full)
+            row["full_domain_verified"] = True
+        result["rgb_lut"][digest] = row
+
+    for name, (profile_sha, wic_sha) in FAMILY_GRAY_SHA.items():
+        item = report["gray8"][name]
+        if (item["input_order"], item["output_order"]) != ("gray8-0-through-255", "rgb24"):
+            raise ValueError("Unexpected gray ramp order")
+        profile = checked(item["profile"], item["profile"]["length"], profile_sha)
+        count = struct.unpack_from(">I", profile, 128)[0]
+        end = 132 + 12 * count
+        if end > len(profile):
+            raise ValueError("Invalid gray profile directory")
+        curves = [profile[offset:offset + size]
+                  for sig, offset, size in struct.iter_unpack(">4sII", profile[132:end])
+                  if sig == b"kTRC" and end <= offset <= len(profile) - size]
+        if len(curves) != 1:
+            raise ValueError("Missing measured gray kTRC")
+        source = native["matrix_input_curve"](curves[0])
+        link = item["relative_link"]
+        tables = native["read_rgb8_tables"](checked(link, link["length"], link["sha256"]),
+                                            source_channels=1)
+        replay = native["Rgb8Replay"](tables)
+        reference = checked(item["wic"], 768, wic_sha)
+        actual = bytes(channel for code in range(256) for channel in replay.convert(code))
+        generated = native["generate_gray_tables"](profile)
+        generated_replay = native["Rgb8Replay"](generated)
+        generated_actual = bytes(channel for code in range(256) for channel in generated_replay.convert(code))
+        row = tables_summary(tables, source)
+        row.update(grid_independently_generated=True,
+                   generated_grid_differences=sum(a != b for a, b in zip(generated[1], tables[1])),
+                   generated_rgb_differences=sum(a != b for a, b in zip(generated_actual, reference)),
+                   gray_codes=256, different_channels=sum(a != b for a, b in zip(actual, reference)),
+                   native_output_sha256=wic_sha, replay_sha256=sha(actual))
+        result["gray"][name] = row
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target", action="append", type=Path, default=[], help="Optional local ICC target (never bundled)")
     parser.add_argument("--native-report", type=Path, help="Compare a read-only Windows native API capture")
     parser.add_argument("--alpha-report", type=Path, help="Compare combined alpha/profile probe caches")
     parser.add_argument("--precision-report", type=Path, help="Verified ICC precision or full-RGB8 report for alpha comparison")
+    parser.add_argument("--family-report", type=Path, help="Compare the measured RGB LUT and Gray ICC families")
+    parser.add_argument("--full-domain", action="store_true", help="Enumerate all RGB8 inputs for the family report")
     args = parser.parse_args()
-    if args.alpha_report:
+    if args.full_domain and not args.family_report:
+        parser.error("--full-domain requires --family-report")
+    if args.family_report:
+        if args.alpha_report or args.precision_report or args.native_report or args.target:
+            parser.error("--family-report excludes other modes")
+        result = compare_families(ROOT, args.family_report, full_domain=args.full_domain)
+    elif args.alpha_report:
         if not args.precision_report or args.native_report or args.target:
             parser.error("--alpha-report requires --precision-report and excludes other modes")
         result = compare_alpha(ROOT, args.alpha_report, args.precision_report)

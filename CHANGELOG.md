@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Share Gray8 and RGB8 fixed-point execution, independently generate the reviewed v2 single-gamma gray grid and enable opaque Gray8 ICC wallpaper conversion. Add family capture comparison; independent forward RGB LUT generation remains open.
+
 - Fix Qt 6 Kvantum 1.1.9 live accent reload for the installed light and dark user themes. Refresh scheduled wallpaper selection when the desktop window changes output, visibility or device pixel ratio.
 - Handle forward RGB matrix transforms in input profiles and profiles with reverse-only LUTs. Reject unreadable embedded ICC data during wallpaper sampling. Add a single reference capture for two forward LUTs and two gray tone curves.
 

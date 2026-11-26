@@ -307,16 +307,16 @@ def _wallpaper_axis_samples(source, target):
 
 
 def _prepare_wallpaper_bitmap(pixels, width, height, channels, transform=None):
-    """Resample packed RGB, premultiplied RGBa or ICC-tagged straight RGBA.
+    """Resample packed RGB, premultiplied RGBa or ICC-tagged RGB/Gray.
 
     With a measured RGB8 transform, convert contributing straight RGB
     samples before premultiplying and interpolating. Without a transform,
     four-channel input must already be premultiplied.
     """
     if (any(type(n) is not int or n <= 0 for n in (width, height))
-            or channels not in (3, 4)
+            or channels not in (1, 3, 4) or (channels == 1 and transform is None)
             or not isinstance(pixels, bytes) or len(pixels) != width * height * channels):
-        raise ValueError("Expected tightly packed RGB8 or premultiplied RGBa8")
+        raise ValueError("Expected tightly packed RGB8, RGBa8 or ICC-tagged Gray8")
     w, h = min(width, WALLPAPER_ANALYSIS_LIMIT), min(height, WALLPAPER_ANALYSIS_LIMIT)
     xs = [(left * channels, right * channels, a, b)
           for left, right, a, b in _wallpaper_axis_samples(width, w)]
@@ -348,7 +348,7 @@ def _prepare_wallpaper_bitmap(pixels, width, height, channels, transform=None):
                             # color. Avoid needless ICC work on invisible taps.
                             samples.append((0, 0, 0, marker))
                 else:
-                    samples = [transform(*pixels[position:position + 3]) if weight else (0, 0, 0)
+                    samples = [transform(*pixels[position:position + channels]) if weight else (0, 0, 0)
                                for position, weight in zip(positions, weights)]
 
                 def interpolate(channel):
@@ -405,7 +405,7 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 # Bump when decoder/analysis semantics change; installed automatic state
 # must not reuse a palette computed by the previous decoder.
-WALLPAPER_ANALYSIS_REVISION = 8
+WALLPAPER_ANALYSIS_REVISION = 9
 
 
 @lru_cache(maxsize=1)
@@ -423,6 +423,8 @@ def _icc_rgb_transform(image, profile_bytes):
         raise ValueError("Invalid embedded wallpaper ICC profile")
     if image.mode not in ("RGB", "RGBA", "P"):
         raise ValueError("Embedded ICC requires a reviewed RGB8 image mode")
+    if profile_bytes[16:20] == b"GRAY":
+        raise ValueError("Gray ICC requires a reviewed Gray8 image mode")
     transform = _native_icc_module()["transform_for_profile"](profile_bytes)
     if transform is None:
         raise ValueError("Wallpaper ICC requires a reviewed RGB8 ICC transform")
@@ -430,7 +432,14 @@ def _icc_rgb_transform(image, profile_bytes):
 
 
 def _icc_rgb_bitmap(image, profile_bytes):
-    """Convert contributing straight RGB taps before opaque resampling."""
+    """Convert contributing straight RGB or Gray taps before opaque resampling."""
+    if image.mode == "L":
+        if (not isinstance(profile_bytes, bytes) or profile_bytes[16:20] != b"GRAY"):
+            raise ValueError("Gray8 wallpaper requires a gray ICC profile")
+        transform = _native_icc_module()["transform_for_profile"](profile_bytes)
+        if transform is None:
+            raise ValueError("Wallpaper ICC requires a reviewed Gray8 ICC transform")
+        return _prepare_wallpaper_bitmap(image.tobytes(), image.width, image.height, 1, transform)
     transform = _icc_rgb_transform(image, profile_bytes)
     if image.mode == "RGB":
         return _prepare_wallpaper_bitmap(image.tobytes(), image.width, image.height, 3, transform)
@@ -458,7 +467,8 @@ def decode_wallpaper_bitmap(path):
     reviewed fixed-point RGB8 executor before resampling. For untagged
     transparent PNG use Pillow's premultiplied RGBa path. Tagged RGB PNG
     uses the same transform before premultiplication. Unsupported ICC
-    profiles and non-RGB tagged images are explicit decoder errors.
+    profiles and unreviewed tagged image modes are explicit decoder errors.
+    Opaque Gray8 uses the same fixed-point executor with its gray grid.
     Do not re-encode or alter the source.
     """
     try:

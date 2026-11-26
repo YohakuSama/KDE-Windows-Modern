@@ -120,12 +120,25 @@ def reference_identity():
     return sha(full) if full is not None else None
 
 
-def read_rgb8_tables(data, *, full_domain=False):
-    """Read the measured RGB-to-RGB mft2 shape, not a general ICC."""
-    if (not 132 <= len(data) <= MAX_LINK_SIZE or (not full_domain and len(data) != LINK_SIZE)
+def read_rgb8_tables(data, *, full_domain=False, source_channels=3):
+    """Read the measured RGB8-output mft2 shapes, not a general ICC.
+
+    Three-channel RGB uses a 32-cube; single-channel Gray uses a 128-point
+    grid. The gray shape is also generated independently for the reviewed
+    v2 D50 single-gamma monitor profile branch.
+    """
+    if source_channels not in (1, 3):
+        raise ValueError("Unexpected ICC source channel count")
+    gray = source_channels == 1
+    header = b"linkGRAYRGB " if gray else b"linkRGB RGB "
+    link_size = 8340 if gray else LINK_SIZE
+    grid_size = 128 if gray else 32
+    source_words = source_channels * 256
+    grid_words = 3 * grid_size ** source_channels
+    if (not 132 <= len(data) <= MAX_LINK_SIZE or (not full_domain and len(data) != link_size)
             or struct.unpack_from(">I", data)[0] != len(data)
-            or data[12:24] != b"linkRGB RGB " or data[36:40] != b"acsp"):
-        raise ValueError("Invalid RGB8 device-link header")
+            or data[12:24] != header or data[36:40] != b"acsp"):
+        raise ValueError("Invalid RGB8-output device-link header")
     count = struct.unpack_from(">I", data, 128)[0]
     end = 132 + 12 * count
     if end > len(data):
@@ -140,51 +153,84 @@ def read_rgb8_tables(data, *, full_domain=False):
     if len(matches) != 1:
         raise ValueError("Expected one A2B0 device-link table")
     tag = matches[0]
-    if (len(tag) != 52 + 6 * 256 + 6 * 32**3 + 6 * 1024
-            or tag[:4] != b"mft2" or tag[8:11] != bytes((3, 3, 32))
+    if (len(tag) != 52 + 2 * (source_words + grid_words + 3072)
+            or tag[:4] != b"mft2" or tag[8:11] != bytes((source_channels, 3, grid_size))
             or struct.unpack_from(">9i", tag, 12) != (65536, 0, 0, 0, 65536, 0, 0, 0, 65536)
             or struct.unpack_from(">HH", tag, 48) != (256, 1024)):
-        raise ValueError("Unexpected measured RGB8 table layout")
-    return (struct.unpack_from(">768H", tag, 52),
-            struct.unpack_from(">98304H", tag, 52 + 6 * 256),
+        raise ValueError("Unexpected measured RGB8-output table layout")
+    return (struct.unpack_from(f">{source_words}H", tag, 52),
+            struct.unpack_from(f">{grid_words}H", tag, 52 + 2 * source_words),
             struct.unpack_from(">3072H", tag, len(tag) - 6 * 1024))
 
 
-def coordinate(value):
-    code = value * 31 >> 5
-    return code >> 11, 2048 if value == 65535 else code & 2047
+def coordinate(value, grid_size=32):
+    if grid_size not in (32, 128):
+        raise ValueError("Unreviewed ICC grid extent")
+    shift = 5 if grid_size == 32 else 7
+    bits = 16 - shift
+    code = value * (grid_size - 1) >> shift
+    unit = 1 << bits
+    return code >> bits, unit if value == 65535 else code & (unit - 1)
 
 
 class Rgb8Replay:
-    """Scalar execution of the independently verified tetrahedral replay."""
+    """Shared fixed-point RGB8 output for measured RGB and Gray link shapes."""
 
     def __init__(self, tables):
         source, self.grid, self.target = tables
-        self.coordinates = tuple(tuple(coordinate(v) for v in source[i:i + 256])
-                                 for i in (0, 256, 512))
+        if (len(source), len(self.grid), len(self.target)) == (256, 384, 3072):
+            grid_size, self.fraction_bits = 128, 9
+        elif (len(source), len(self.grid), len(self.target)) == (768, 98304, 3072):
+            grid_size, self.fraction_bits = 32, 11
+        else:
+            raise ValueError("Unexpected RGB8-output table dimensions")
+        self.coordinates = tuple(tuple(coordinate(v, grid_size) for v in source[i:i + 256])
+                                 for i in range(0, len(source), 256))
 
-    def convert(self, red, green, blue):
-        (r, fr), (g, fg), (b, fb) = (self.coordinates[0][red],
-                                    self.coordinates[1][green],
-                                    self.coordinates[2][blue])
-        # The three fractional coordinates choose a tetrahedron. Equal
-        # fractions telescope regardless of their relative ordering.
-        (f1, s1), (f2, s2), (f3, s3) = sorted(
-            ((fr, 32 * 32 * 3), (fg, 32 * 3), (fb, 3)), reverse=True)
-        p0 = ((r * 32 + g) * 32 + b) * 3
-        p1 = p0 + s1
-        p2 = p1 + s2
-        p3 = p2 + s3
-        weights = 2048 - f1, f1 - f2, f2 - f3, f3
+    def convert(self, red, green=None, blue=None):
+        if self.fraction_bits == 9:
+            if green is not None or blue is not None:
+                raise TypeError("Gray ICC input requires one channel")
+            point, fraction = self.coordinates[0][red]
+            p0, p1 = point * 3, (point + 1) * 3
+            p2 = p3 = p1
+            weights = 512 - fraction, fraction, 0, 0
+        else:
+            if green is None or blue is None:
+                raise TypeError("RGB ICC input requires three channels")
+            (r, fr), (g, fg), (b, fb) = (self.coordinates[0][red],
+                                        self.coordinates[1][green],
+                                        self.coordinates[2][blue])
+            # The three fractional coordinates choose a tetrahedron. Equal
+            # fractions telescope regardless of their relative ordering.
+            (f1, s1), (f2, s2), (f3, s3) = sorted(
+                ((fr, 32 * 32 * 3), (fg, 32 * 3), (fb, 3)), reverse=True)
+            p0 = ((r * 32 + g) * 32 + b) * 3
+            p1 = p0 + s1
+            p2 = p1 + s2
+            p3 = p2 + s3
+            weights = 2048 - f1, f1 - f2, f2 - f3, f3
         result = []
         for channel in range(3):
             numerator = (self.grid[p0 + channel] * weights[0]
                          + self.grid[p1 + channel] * weights[1]
                          + self.grid[p2 + channel] * weights[2]
                          + self.grid[p3 + channel] * weights[3])
-            index = min(1023, max(0, numerator >> 17))
+            index = min(1023, max(0, numerator >> (self.fraction_bits + 6)))
             result.append(self.target[channel * 1024 + index] >> 8)
         return tuple(result)
+
+
+def mft2_unity_curve(count, scale):
+    """Generate the reviewed two-point unity mft2 input/output curves."""
+    if (count, scale) not in ((256, 65534), (1024, 65535)):
+        raise ValueError("Unreviewed mft2 unity-curve dimensions")
+    values = []
+    for i in range(count):
+        q = (2 * i * 32768 + count - 1) // (2 * (count - 1))
+        values.append((q * scale + 16384) // 32768)
+    values[-1] = 65535
+    return tuple(values)
 
 
 # Standard sRGB target: the three XYZ colorants in signed 16.16 units.
@@ -204,17 +250,25 @@ GENERATED_SOURCE_SHA = {
 }
 
 
+GRAY_GRID_SHA = "6C980519309C8832E202F47DF12C643FCCD383420D9541A5441CB5F6C80FFD07"
+GRAY_SOURCE_SHA = {
+    "FCA615D30B83A208A33AFB4A4FF7EAE18AD3F9BB66EE2872619ACA101A044AC4": "D662C4C21DD794858E0DFA48F16CC34CAD14FDECA787158616CA13F2FE75C28C",
+    "CC2F4242F64AA4624D41A3853547F84BBF861A221C738D742959019169085B28": "AF1ADA4828EE82513F952133C77C7931EC306EBEC15183738E5D2B60F2A9CB47",
+}
+
+
 class UnsupportedMatrixProfile(ValueError):
-    """Outside the reviewed RGB matrix/TRC generation branch."""
+    """Outside the reviewed matrix/TRC generation branches."""
 
 
-def matrix_profile_tags(data):
+def matrix_profile_tags(data, *, gray=False):
     if (not isinstance(data, bytes) or not 132 <= len(data) <= 1024 * 1024
             or struct.unpack_from(">I", data)[0] != len(data)
             or data[8] not in (2, 4) or data[12:16] not in (b"mntr", b"scnr")
-            or data[16:24] != b"RGB XYZ "
+            or data[16:24] != (b"GRAYXYZ " if gray else b"RGB XYZ ")
+            or (gray and (data[8] != 2 or data[12:16] != b"mntr"))
             or data[36:40] != b"acsp" or struct.unpack_from(">3i", data, 68) != D50):
-        raise UnsupportedMatrixProfile("Expected a D50 RGB monitor or input matrix profile")
+        raise UnsupportedMatrixProfile("Expected a reviewed D50 matrix or gray monitor profile")
     count = struct.unpack_from(">I", data, 128)[0]
     end = 132 + 12 * count
     if count > 128 or end > len(data):
@@ -238,11 +292,13 @@ def matrix_profile_tags(data):
                b"desc", b"cprt", b"chad", b"chrm", b"dmnd", b"dmdd", b"tech",
                b"view", b"vued", b"lumi", b"meas", b"meta", b"bkpt",
                b"B2A0", b"B2A1", b"B2A2"}
+    if gray:
+        allowed = {b"kTRC", b"wtpt", b"desc", b"cprt"}
     if set(tags) - allowed:
         raise UnsupportedMatrixProfile("ICC profile has unreviewed transform or metadata tags")
     white = tags.get(b"wtpt", b"")
     if (len(white) != 20 or white[:4] != b"XYZ "
-            or struct.unpack_from(">3i", white, 8) not in (D50, D65_MEDIA_WHITE)):
+            or struct.unpack_from(">3i", white, 8) not in ((D50,) if gray else (D50, D65_MEDIA_WHITE))):
         raise UnsupportedMatrixProfile("Media white outside the reviewed relative-intent branch")
     black = tags.get(b"bkpt")
     if black is not None and (len(black) != 20 or black[:4] != b"XYZ "
@@ -286,43 +342,85 @@ def _inverse_parts(matrix):
     return adj, det
 
 
-@lru_cache(maxsize=4)
-def build_matrix_grid(source, target):
-    """Generate the staged 32-cube from signed ICC 16.16 colorants."""
-    for matrix in (source, target):
-        if (len(matrix) != 3 or any(len(row) != 3 for row in matrix)
-                or any(type(v) is not int or abs(v) > 131072 for row in matrix for v in row)):
-            raise UnsupportedMatrixProfile("ICC matrix outside signed 16.16 bounds")
-    _inverse_parts(source)
+def _checked_matrix(matrix):
+    if (len(matrix) != 3 or any(len(row) != 3 for row in matrix)
+            or any(type(v) is not int or abs(v) > 131072 for row in matrix for v in row)):
+        raise UnsupportedMatrixProfile("ICC matrix outside signed 16.16 bounds")
+
+
+def _checked_stage(matrix):
+    for row in matrix:
+        low = sum(min(v, 0) for v in row) * 16384 + 511
+        high = sum(max(v, 0) for v in row) * 16384 + 511
+        if low < -(1 << 31) or high >= 1 << 31:
+            raise UnsupportedMatrixProfile("Matrix accumulator outside signed 32-bit range")
+    return matrix
+
+
+def _destination_stage(target):
+    _checked_matrix(target)
     adj, det = _inverse_parts(target)
     if any(abs(v) * 2 * 65536 > 16 * det for row in adj for v in row):
         raise UnsupportedMatrixProfile("Destination inverse outside reviewed bounds")
-    first = tuple(tuple(_round_signed_ratio(v * 16368, 2 * 65536) for v in row)
-                  for row in source)
-    second = tuple(tuple(_round_signed_ratio(v * 2 * 65536 * 16368, det) for v in row)
-                   for row in adj)
-    for matrix in (first, second):
-        for row in matrix:
-            low = sum(min(v, 0) for v in row) * 16384 + 511
-            high = sum(max(v, 0) for v in row) * 16384 + 511
-            if low < -(1 << 31) or high >= 1 << 31:
-                raise UnsupportedMatrixProfile("Matrix accumulator outside signed 32-bit range")
+    return _checked_stage(tuple(tuple(_round_signed_ratio(v * 2 * 65536 * 16368, det)
+                                      for v in row) for row in adj))
+
+
+@lru_cache(maxsize=1)
+def _identity_curve():
+    return tuple(min(65535, (2047 + i * 262396) >> 12) for i in range(1024))
+
+
+def _matrix_stage(rgb, matrix, identity):
+    r, g, b = (((v - (v >> 8)) * 257 >> 8) + 2 >> 2 for v in rgb)
+    result = []
+    for a, c, d in matrix:
+        coordinate = min(261888, max(0, (r * a + g * c + b * d + 511) >> 10))
+        index, fraction = coordinate >> 8, coordinate & 255
+        result.append((identity[index] * (256 - fraction)
+                       + identity[min(index + 1, 1023)] * fraction) >> 8)
+    return result
+
+
+@lru_cache(maxsize=4)
+def build_matrix_grid(source, target):
+    """Generate the staged 32-cube from signed ICC 16.16 colorants."""
+    _checked_matrix(source)
+    _inverse_parts(source)
+    first = _checked_stage(tuple(tuple(_round_signed_ratio(v * 16368, 2 * 65536)
+                                       for v in row) for row in source))
+    second = _destination_stage(target)
     axis = tuple((i << 11) | (i << 6) | (i << 1) | (i >> 4) for i in range(32))
-    identity = tuple(min(65535, (2047 + i * 262396) >> 12) for i in range(1024))
-
-    def stage(rgb, matrix):
-        r, g, b = (((v - (v >> 8)) * 257 >> 8) + 2 >> 2 for v in rgb)
-        result = []
-        for a, c, d in matrix:
-            coordinate = min(261888, max(0, (r * a + g * c + b * d + 511) >> 10))
-            index, fraction = coordinate >> 8, coordinate & 255
-            result.append((identity[index] * (256 - fraction)
-                           + identity[min(index + 1, 1023)] * fraction) >> 8)
-        return result
-
+    identity = _identity_curve()
     return tuple(v for r in axis for g in axis for b in axis
-                 for v in stage(stage((r, g, b), first), second))
+                 for v in _matrix_stage(_matrix_stage((r, g, b), first, identity),
+                                        second, identity))
 
+
+@lru_cache(maxsize=1)
+def build_gray_grid():
+    """Reconstruct the reviewed v2 D50 Gray-to-XYZ stage and sRGB inverse."""
+    identity = _identity_curve()
+    second = _destination_stage(SRGB_COLORANTS)
+    # Native gray stage uses zero and a fixed relative-intent XYZ endpoint.
+    endpoint = (31594, 32767, 27105)
+    grid = []
+    for n in range(128):
+        word = (n << 9) | (n << 2) | (n >> 5)
+        q = 65536 if n == 127 else ((word - (word >> 15)) >> 1) << 1
+        xyz = []
+        for value in endpoint:
+            raw = q * value
+            x = raw + (raw >> 16)
+            position = (x - (x >> 10)) >> 6
+            index, fraction = position >> 16, position & 65535
+            xyz.append((identity[index] * (65536 - fraction)
+                        + identity[min(index + 1, 1023)] * fraction) >> 16)
+        grid.extend(_matrix_stage(xyz, second, identity))
+    result = tuple(grid)
+    if _table_hash(result) != GRAY_GRID_SHA:
+        raise ValueError("Generated gray ICC grid differs from the native reference")
+    return result
 
 def matrix_input_curve(tag):
     """Generate the native 256-entry RGB8 curve for supported ICC TRCs."""
@@ -446,10 +544,25 @@ def generate_matrix_tables(profile):
     return source, grid, target
 
 
+def generate_gray_tables(profile):
+    tags = matrix_profile_tags(profile, gray=True)
+    curve = tags.get(b"kTRC", b"")
+    # Only the single-gamma v2 monitor branch is reviewed for gray.
+    if (len(curve) != 14 or curve[:4] != b"curv"
+            or struct.unpack_from(">I", curve, 8)[0] != 1):
+        raise UnsupportedMatrixProfile("Unreviewed gray tone curve")
+    source = matrix_input_curve(curve)
+    expected = GRAY_SOURCE_SHA.get(sha(profile))
+    if expected is not None and _table_hash(source) != expected:
+        raise ValueError("Generated gray ICC input curve differs from the native reference")
+    return source, build_gray_grid(), srgb_output_curve()
+
+
 @lru_cache(maxsize=2)
 def generated_transform(profile):
     try:
-        tables = generate_matrix_tables(profile)
+        tables = (generate_gray_tables(profile) if profile[16:20] == b"GRAY"
+                  else generate_matrix_tables(profile))
     except UnsupportedMatrixProfile:
         return None
     return lru_cache(maxsize=32768)(Rgb8Replay(tables).convert)
@@ -459,6 +572,9 @@ def transform_for_profile(profile):
     if not isinstance(profile, bytes) or not profile:
         raise ValueError("Invalid embedded wallpaper ICC profile")
     digest = sha(profile)
+    if profile[16:20] == b"GRAY":
+        # Supplemental receipts contain RGB-input tables only.
+        return generated_transform(profile) if len(profile) <= 1024 * 1024 else None
     if digest in GENERATED_SOURCE_SHA:
         # The independently generated tables are already fully measured for
         # these profiles; don't read or prefer an obsolete private receipt.

@@ -1308,6 +1308,44 @@ class WindowMaterialTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "header"):
                 native["read_full_bundle"](path)
 
+    def test_generated_gray_tables_and_wallpaper_conversion(self):
+        native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        precision = (ROOT / "scripts/capture-windows-icc-precision.ps1").read_text(encoding="utf-8-sig")
+        expected = {
+            "gray-linear": "B5643195AD00E72793FDDB40ADABA26617B894B24817C31149537AEE7B6065AF",
+            "gray-gamma22": "C3A571A6A7E554745A5417B4785F2C587053E998917BB0ED6D797B79380D1CB8",
+        }
+        from PIL import Image
+        for name, output_sha in expected.items():
+            with self.subTest(profile=name):
+                match = re.search(r"'" + name + r"' = @\{sha256='([0-9A-F]{64})'; base64='([^']+)'", precision)
+                self.assertIsNotNone(match)
+                profile = base64.b64decode(match[2], validate=True)
+                self.assertEqual(hashlib.sha256(profile).hexdigest().upper(), match[1])
+                tables = native["generate_gray_tables"](profile)
+                self.assertEqual(tuple(map(len, tables)), (256, 384, 3072))
+                self.assertEqual(tuple(map(native["_table_hash"], tables)),
+                                 (native["GRAY_SOURCE_SHA"][match[1]], native["GRAY_GRID_SHA"],
+                                  native["GENERATED_OUTPUT_SHA"]))
+                convert = native["transform_for_profile"](profile)
+                rgb = bytes(v for code in range(256) for v in convert(code))
+                self.assertEqual(hashlib.sha256(rgb).hexdigest().upper(), output_sha)
+                with tempfile.TemporaryDirectory() as tmp:
+                    path = Path(tmp) / "gray.png"
+                    with Image.frombytes("L", (512, 1), bytes(range(256)) * 2) as image:
+                        image.save(path, icc_profile=profile)
+                    self.assertEqual(sync["decode_wallpaper_bitmap"](path),
+                                     sync["prepare_opaque_wallpaper_bitmap"](rgb * 2, 512, 1))
+                    with Image.new("RGB", (1, 1)) as image:
+                        image.save(path, icc_profile=profile)
+                    with self.assertRaisesRegex(ValueError, "Gray ICC"):
+                        sync["decode_wallpaper_bitmap"](path)
+                    with Image.new("LA", (1, 1), (128, 127)) as image:
+                        image.save(path, icc_profile=profile)
+                    with self.assertRaisesRegex(ValueError, "RGB8 image mode"):
+                        sync["decode_wallpaper_bitmap"](path)
+
     def test_native_sampled_curve_bounds(self):
         native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
         curve = native["matrix_input_curve"]
