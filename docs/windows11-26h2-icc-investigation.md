@@ -603,3 +603,45 @@ combined alpha/profile results and new shade-boundary observations have
 not been collected or verified in this change. The installed decoder,
 private bundle format, cache revision and palette algorithm are unchanged.
 No approximate native conversion or inferred alpha ordering is enabled.
+
+## Opt-in full-domain native RGB8 replay import
+
+A second private receipt format extends the runtime to additional exact
+source ICC hashes without distributing native tables or independently
+generating an approximate CLUT. Import requires a schema 2 report from
+the reference build and registered destination profile, matching the
+previous 5,120-color control measurements. The selected source link must
+have the reviewed RGB-to-RGB mft2 shape (three channels, 32-point grid,
+256/1024-entry curves and identity matrix). The scalar implementation
+used at runtime must match the captured 5,120 RGB8 samples, all 256
+red-slice hashes and the complete native RGB8 output hash before the
+receipt is published. The owner's local report is trusted as measurement
+input; its hashes are integrity checks, not Microsoft signatures.
+
+```sh
+python3 -I scripts/theme/wallpaper-icc.py --import-full-report /path/to/windows-icc-full-rgb8.json
+```
+
+Optional repeatable `--profile-sha256` values select individual source
+profiles. The exhaustive scalar comparison runs once at explicit import,
+not during wallpaper updates; it processes one red slice at a time and
+does not require NumPy. A mismatch or unsupported link layout refuses
+publication. The receipt stores only the verified fixed-size tables and
+source/output identities in `icc-replay-v2.bin` beside the existing local
+v1 bundle, with a bounded size and a checksum over the entire receipt.
+It is published atomically without overwriting a different existing
+receipt. To replace a receipt, the owner must explicitly remove the old
+v2 file before importing another. The v1 importer and file are preserved.
+When both exist, a fully verified v2 entry takes precedence for its exact
+source hash; v1 retains its previous behavior for the remaining controls.
+
+The existing wallpaper watcher observes both local files and their
+parent directory; it also observes the data directory until the parent
+exists. Either receipt changing or disappearing changes the shared cache
+identity. Untagged images and unmeasured ICC profiles retain the existing
+paths. No new service, runtime dependency or independent light/dark
+palette is introduced. This supports measured RGB8 links only, not
+arbitrary ICC generation, other table geometries or tagged transparency.
+The new full-domain import has not been exercised against native schema
+2 data; the added regression definition concerns receipt integrity,
+profile selection and cache invalidation, not native parity.

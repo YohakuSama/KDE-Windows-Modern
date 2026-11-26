@@ -1229,6 +1229,37 @@ class WindowMaterialTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "SHA-256"):
                 native["read_bundle"](path)
 
+    def test_full_domain_icc_bundle_selection(self):
+        native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
+        # This synthetic receipt exercises storage and selection only. The
+        # full-domain Windows import still requires real reference hashes.
+        profile = b"synthetic profile identity"
+        digest = hashlib.sha256(profile).digest()
+        header = native["FULL_MAGIC"] + bytes.fromhex(native["TARGET_SHA"]) + bytes((1,))
+        packed = bytes(native["TABLE_SIZE"])
+        entry = digest + bytes(32) + packed
+        body = header + entry
+        receipt = body + hashlib.sha256(body).digest()
+        self.assertEqual(native["full_bundle_entries"](receipt),
+                         {digest.hex().upper(): (bytes(32), packed)})
+        with self.assertRaisesRegex(ValueError, "integrity"):
+            native["full_bundle_entries"](receipt[:-1] + bytes((receipt[-1] ^ 1,)))
+        duplicate = header[:-1] + bytes((2,)) + entry + entry
+        with self.assertRaisesRegex(ValueError, "Duplicate"):
+            native["full_bundle_entries"](duplicate + hashlib.sha256(duplicate).digest())
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "icc-replay-v2.bin"
+            path.write_bytes(receipt)
+            with patch.dict(native["transform_for_profile"].__globals__, {
+                    "full_bundle_path": lambda: path, "read_bundle": lambda: None}):
+                self.assertEqual(native["read_full_bundle"](), receipt)
+                self.assertEqual(native["transform_for_profile"](profile)(255, 12, 88), (0, 0, 0))
+                self.assertIsNone(native["transform_for_profile"](b"different source"))
+                self.assertIsNotNone(native["reference_identity"]())
+                path.unlink()
+                self.assertIsNone(native["reference_identity"]())
+                self.assertIsNone(native["transform_for_profile"](profile))
+
     def test_all_live_scheme_roles_are_verified(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
         template, fixed = control["scheme_inputs"]()

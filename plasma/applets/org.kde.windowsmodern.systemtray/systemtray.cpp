@@ -915,13 +915,18 @@ void SystemTray::refreshWallpaperWatch()
         // decoder cache identity. Observe its parent for atomic publication.
         const auto dataDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
         if (!dataDir.isEmpty()) {
-            const auto reference = dataDir + u"/windows-modern/icc-replay-v1.bin"_s;
-            const QFileInfo file(reference);
-            if (file.isFile()) {
-                wanted.insert(reference);
+            const auto parent = dataDir + u"/windows-modern"_s;
+            for (const auto &name : {u"icc-replay-v1.bin"_s, u"icc-replay-v2.bin"_s}) {
+                const auto reference = parent + u"/"_s + name;
+                if (QFileInfo(reference).isFile()) {
+                    wanted.insert(reference);
+                }
             }
-            if (QFileInfo(file.absolutePath()).isDir()) {
-                wanted.insert(file.absolutePath());
+            if (QFileInfo(parent).isDir()) {
+                wanted.insert(parent);
+            } else if (QFileInfo(dataDir).isDir()) {
+                // The first import may create the private data directory.
+                wanted.insert(dataDir);
             }
         }
         QJsonArray images;
