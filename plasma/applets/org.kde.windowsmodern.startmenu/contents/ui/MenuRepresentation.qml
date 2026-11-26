@@ -567,10 +567,13 @@ Item {
                                             text: viewSelector.text
                                             horizontalAlignment: Text.AlignRight
                                         }
-                                        Kirigami.Icon {
+                                        Item {
                                             Layout.preferredWidth: 12
                                             Layout.preferredHeight: 12
-                                            source: "go-down-symbolic"
+                                            NativeGlyph {
+                                                anchors.fill: parent
+                                                roleName: "go-down-symbolic"
+                                            }
                                         }
                                     }
                                     background: Rectangle {
@@ -765,7 +768,6 @@ Item {
                         id: powerButton
                         visible: Plasmoid.configuration.showShutdownButton
                         text: i18n("Power")
-                        icon.name: "system-shutdown-symbolic"
                         icon.width: 16
                         icon.height: 16
                         display: PlasmaComponents3.AbstractButton.IconOnly

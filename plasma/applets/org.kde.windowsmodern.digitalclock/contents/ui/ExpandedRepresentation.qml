@@ -245,7 +245,7 @@ FocusScope {
                         Layout.preferredHeight: 24
                         enabled: expandedRoot.calendarCanExpand
                         text: expandedRoot.calendarBodyShown ? i18n("Collapse calendar") : i18n("Expand calendar")
-                        icon.name: expandedRoot.calendarBodyShown ? "go-down-symbolic" : "go-up-symbolic"
+                        nativeIconName: expandedRoot.calendarBodyShown ? "go-down-symbolic" : "go-up-symbolic"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: expandedRoot.calendarExpanded = !expandedRoot.calendarExpanded
                         PlasmaComponents.ToolTip { text: parent.text }
@@ -388,7 +388,7 @@ FocusScope {
                         enabled: !!expandedRoot.focusSession && expandedRoot.focusSession.canStart
                             && expandedRoot.focusSession.durationMinutes > 5
                         text: i18n("Decrease focus duration")
-                        icon.name: "list-remove"
+                        nativeIconName: "list-remove"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: expandedRoot.focusSession.adjust(-5)
                         PlasmaComponents.ToolTip { text: parent.text }
@@ -412,7 +412,7 @@ FocusScope {
                         enabled: !!expandedRoot.focusSession && expandedRoot.focusSession.canStart
                             && expandedRoot.focusSession.durationMinutes < 240
                         text: i18n("Increase focus duration")
-                        icon.name: "list-add"
+                        nativeIconName: "list-add"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: expandedRoot.focusSession.adjust(5)
                         PlasmaComponents.ToolTip { text: parent.text }
@@ -440,7 +440,7 @@ FocusScope {
                         enabled: !!expandedRoot.focusSession && (focusRow.running || expandedRoot.focusSession.canStart)
                         Layout.preferredHeight: 26
                         text: focusRow.running ? i18n("End session") : i18n("Focus")
-                        icon.name: focusRow.running ? "media-playback-stop" : "media-playback-start"
+                        nativeIconName: focusRow.running ? "media-playback-stop" : "media-playback-start"
                         Accessible.description: !enabled ? i18n("Notification service not available") : text
                         onClicked: {
                             if (focusRow.running)

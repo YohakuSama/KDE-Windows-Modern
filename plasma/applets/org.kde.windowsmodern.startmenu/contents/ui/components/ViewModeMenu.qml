@@ -85,14 +85,15 @@ QQC2.Popup {
             text: menu.modes[mode]
             contentItem: RowLayout {
                 spacing: 8
-                Kirigami.Icon {
+                Item {
                     Layout.preferredWidth: Theme.menuGlyphSize
                     Layout.preferredHeight: Theme.menuGlyphSize
-                    roundToIconSize: false
                     Layout.alignment: Qt.AlignVCenter
-                    source: "emblem-ok-symbolic"
-                    opacity: menu.currentMode === entry.mode ? 1 : 0
-                    isMask: true
+                    NativeGlyph {
+                        anchors.fill: parent
+                        roleName: "emblem-ok-symbolic"
+                        opacity: menu.currentMode === entry.mode ? 1 : 0
+                    }
                 }
                 QQC2.Label {
                     Layout.fillWidth: true

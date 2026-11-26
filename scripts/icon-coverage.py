@@ -19,7 +19,7 @@ REFERENCE = re.compile(
     r'\b(icon\.name|iconName|iconSource|icon|source)\s*(?::|=(?!=))\s*["\']([^"\']+)["\']'
 )
 QML_FIELD = re.compile(
-    r'\b(icon\.name|icon\.source|iconName|iconSource|fallbackRoleName|roleName|icon|source)\s*'
+    r'\b(icon\.name|icon\.source|iconName|iconSource|nativeIconName|fallbackRoleName|roleName|icon|source)\s*'
     r'(?::|=(?!=))\s*(.*)'
 )
 QUOTED = re.compile(r'["\']([^"\']+)["\']')
@@ -28,6 +28,7 @@ ROLE = re.compile(r'^(?:actions|status|devices|apps|emblems|categories|places|mi
 CPP_THEME = re.compile(r'QIcon::fromTheme\s*\(\s*(?:QStringLiteral\s*\(\s*)?["\']([^"\']+)["\']')
 CPP_LITERAL = re.compile(r'QStringLiteral\s*\(\s*"([^"]+)"\s*\)')
 CAPTION_CALL = re.compile(r'new\s+CaptionButton\s*\([^;]+?\);', re.S)
+GLYPH_PATH_CALL = re.compile(r'glyphPath\s*\(\s*QStringLiteral\s*\(\s*"([^"]+)"\s*\)\s*\)')
 ASSET_EXTENSIONS = EXTENSIONS | {".jpg", ".jpeg", ".webp", ".ico"}
 
 
@@ -142,7 +143,7 @@ def source_candidates(root, expected, names):
             add("inline_artwork", path, line, value[:100])
         elif Path(value).suffix.lower() in ASSET_EXTENSIONS:
             add("direct_artwork", path, line, value)
-        elif field in ("roleName", "fallbackRoleName") and NAME.fullmatch(value):
+        elif field in ("roleName", "fallbackRoleName", "nativeIconName") and NAME.fullmatch(value):
             alternate = (value.removesuffix("-symbolic") if value.endswith("-symbolic")
                          else value + "-symbolic")
             mapped = value in expected or alternate in expected
@@ -165,6 +166,9 @@ def source_candidates(root, expected, names):
                     for value in CPP_LITERAL.findall(call.group(0)):
                         if NAME.fullmatch(value):
                             private_role(path, line, "actions/" + value)
+                for call in GLYPH_PATH_CALL.finditer(source):
+                    line = source.count("\n", 0, call.start()) + 1
+                    private_role(path, line, "actions/" + call.group(1))
             for line, raw in enumerate(source.splitlines(), 1):
                 content = raw.strip()
                 if content.startswith(("//", "/*", "*")):

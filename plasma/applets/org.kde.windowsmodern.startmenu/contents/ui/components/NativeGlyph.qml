@@ -14,7 +14,7 @@ Kirigami.Icon {
         const names = roleName.endsWith("-symbolic") ? [roleName, roleName.slice(0, -9)]
             : [roleName + "-symbolic", roleName];
         for (const name of names) {
-            for (const context of ["actions", "status", "devices", "apps"]) {
+            for (const context of ["actions", "status", "devices", "apps", "emblems", "categories", "places"]) {
                 const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
                     "windows-modern/native-assets/icons/" + context + "/" + name + ".svg",
                     StandardPaths.LocateFile);

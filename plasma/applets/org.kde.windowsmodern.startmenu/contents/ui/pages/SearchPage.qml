@@ -285,11 +285,14 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Kirigami.Units.smallSpacing
 
-                Kirigami.Icon {
+                Item {
                     Layout.preferredWidth: Kirigami.Units.iconSizes.small
                     Layout.preferredHeight: Kirigami.Units.iconSizes.small
-                    source: searchPage.isCollapsed(section) ? "arrow-right" : "arrow-down"
-                    opacity: Theme.dimmedIconOpacity
+                    NativeGlyph {
+                        anchors.fill: parent
+                        roleName: searchPage.isCollapsed(section) ? "arrow-right-symbolic" : "arrow-down-symbolic"
+                        opacity: Theme.dimmedIconOpacity
+                    }
                 }
 
                 PlasmaComponents3.Label {

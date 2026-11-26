@@ -20,12 +20,12 @@ Kirigami.Icon {
 
     readonly property string nativeOnSource: locate("windows-modern/shell-assets/search/" + themeName + "-on.png")
     readonly property string nativeOffSource: locate("windows-modern/shell-assets/search/" + themeName + "-off.png")
-    readonly property string oldColorSource: locate("windows-modern/native-assets/icons/actions/search-active.svg")
-    readonly property string oldMaskSource: locate("windows-modern/native-assets/icons/actions/search.svg")
-    readonly property string verifiedColorSource: nativeOnSource || oldColorSource
-    readonly property string accentSource: nativeOffSource || oldMaskSource
-    readonly property bool hasColorSource: verifiedColorSource.length > 0
-    readonly property string colorSource: verifiedColorSource || oldMaskSource
+    // Until the build-specific image is imported, use only the mapped
+    // original Segoe E721 mask, never an unverified colored compatibility SVG.
+    readonly property string legacyMaskSource: locate("windows-modern/native-assets/icons/actions/search.svg")
+    readonly property string accentSource: nativeOffSource || legacyMaskSource
+    readonly property bool hasColorSource: nativeOnSource.length > 0
+    readonly property string colorSource: nativeOnSource || legacyMaskSource
     readonly property bool offIsMask: nativeOffSource.length === 0
     readonly property bool onIsMask: !hasColorSource
     readonly property string resolvedSource: accented ? accentSource : colorSource

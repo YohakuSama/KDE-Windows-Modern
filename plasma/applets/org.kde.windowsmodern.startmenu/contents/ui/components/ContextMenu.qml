@@ -173,15 +173,17 @@ Item {
                 contentItem: RowLayout {
                     visible: !row.separator
                     spacing: Theme.menuIconGap
-                    Kirigami.Icon {
-                        objectName: "wmStartActionGlyph"
+                    Item {
                         Layout.preferredWidth: Theme.menuGlyphSize
                         Layout.preferredHeight: Theme.menuGlyphSize
                         Layout.alignment: Qt.AlignVCenter
-                        roundToIconSize: false
-                        source: row.modelData.icon || ""
-                        isMask: String(row.modelData.icon || "").endsWith("-symbolic")
-                        color: Kirigami.Theme.textColor
+                        NativeGlyph {
+                            objectName: "wmStartActionGlyph"
+                            anchors.fill: parent
+                            // App/runner action names are not application identity icons.
+                            // Keep unknown actions text-only rather than using the theme.
+                            roleName: typeof row.modelData.icon === "string" ? row.modelData.icon : ""
+                        }
                     }
                     QQC2.Label {
                         Layout.fillWidth: true

@@ -423,7 +423,8 @@ fi
 # The titlebar uses these imported SVGs directly, not the stock theme.
 if [ "$with_konsole" -eq 1 ]; then
     for glyph in window-minimize-symbolic window-maximize-symbolic window-restore-symbolic \
-                 window-close-symbolic tab-new-symbolic go-down-symbolic; do
+                 window-close-symbolic tab-new-symbolic go-down-symbolic \
+                 go-previous-symbolic go-next-symbolic; do
         [ -s "$STATE/native/icons/actions/$glyph.svg" ] || {
             printf '终端插件缺少原版图标：%s.svg\n' "$glyph" >&2
             exit 1

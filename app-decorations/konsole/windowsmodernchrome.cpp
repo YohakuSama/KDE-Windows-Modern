@@ -65,6 +65,133 @@ QString glyphPath(const QString &name)
         QStringLiteral("windows-modern/native-assets/icons/actions/") + name + QStringLiteral(".svg"));
 }
 
+// Paint the imported SVG as an alpha mask at the target device scale.
+void paintNativeGlyph(QPainter &painter, QWidget *widget, QSvgRenderer &renderer,
+                      int size, const QColor &foreground)
+{
+    if (!renderer.isValid() || size <= 0)
+        return;
+    const qreal dpr = widget->devicePixelRatioF();
+    QPixmap mask(qCeil(size * dpr), qCeil(size * dpr));
+    mask.setDevicePixelRatio(dpr);
+    mask.fill(Qt::transparent);
+    {
+        QPainter iconPainter(&mask);
+        renderer.render(&iconPainter, QRectF(0, 0, size, size));
+        iconPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        iconPainter.fillRect(QRectF(0, 0, size, size), foreground);
+    }
+    painter.drawPixmap(QPointF((widget->width() - size) / 2.0,
+                               (widget->height() - size) / 2.0), mask);
+}
+
+// QTabBar owns the actual close and scrolling controls. Only replace their
+// paint events; never change their geometry, arrow type or input handlers.
+class NativeTabGlyphs final : public QObject
+{
+public:
+    NativeTabGlyphs()
+        : m_close(glyphPath(QStringLiteral("window-close-symbolic")))
+        , m_left(glyphPath(QStringLiteral("go-previous-symbolic")))
+        , m_right(glyphPath(QStringLiteral("go-next-symbolic")))
+    {
+    }
+
+    bool valid() const
+    {
+        return m_close.isValid() && m_left.isValid() && m_right.isValid();
+    }
+
+    void attach(QTabBar *bar, bool dark)
+    {
+        if (m_bar.data() != bar) {
+            clear();
+            m_bar = bar;
+        }
+        m_dark = dark;
+        if (!m_bar)
+            return;
+        // Qt recreates close buttons when tabs or settings change. WindowChrome
+        // already coalesces those child/layout events into a refresh.
+        for (auto *button : m_bar->findChildren<QAbstractButton *>(QString(), Qt::FindDirectChildrenOnly)) {
+            if (rendererFor(button)) {
+                button->installEventFilter(this);
+                button->update();
+            }
+        }
+    }
+
+    void clear()
+    {
+        if (m_bar) {
+            for (auto *button : m_bar->findChildren<QAbstractButton *>(QString(), Qt::FindDirectChildrenOnly)) {
+                button->removeEventFilter(this);
+                if (rendererFor(button))
+                    button->update();
+            }
+        }
+        m_bar.clear();
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (event->type() != QEvent::Paint)
+            return QObject::eventFilter(watched, event);
+        auto *button = qobject_cast<QAbstractButton *>(watched);
+        auto *renderer = rendererFor(button);
+        if (!renderer)
+            return QObject::eventFilter(watched, event);
+
+        // In the owned light stylesheet the active Campbell tab remains dark.
+        const int current = m_bar->currentIndex();
+        const bool activeTab = current >= 0 && (m_bar->tabButton(current, QTabBar::LeftSide) == button
+            || m_bar->tabButton(current, QTabBar::RightSide) == button);
+        QColor foreground(m_dark || activeTab ? QStringLiteral("#F3F3F3") : QStringLiteral("#1A1A1A"));
+        QPainter painter(button);
+        if (button->isEnabled() && (button->underMouse() || button->isDown())) {
+            QColor overlay = foreground;
+            overlay.setAlpha(button->isDown() ? 42 : 25);
+            painter.setRenderHint(QPainter::Antialiasing);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(overlay);
+            painter.drawRoundedRect(button->rect().adjusted(1, 1, -1, -1), 3, 3);
+        }
+        if (!button->isEnabled())
+            foreground.setAlpha(100);
+        paintNativeGlyph(painter, button, *renderer,
+                         qMin(12, qMin(button->width(), button->height())), foreground);
+        return true;
+    }
+
+private:
+    QSvgRenderer *rendererFor(QAbstractButton *button)
+    {
+        if (!m_bar || !button || button->parentWidget() != m_bar.data())
+            return nullptr;
+        // These are QTabBar's own Qt 6 CloseButton and named scroll buttons,
+        // not arbitrary custom tab widgets or profile buttons.
+        if (button->inherits("CloseButton"))
+            return &m_close;
+        auto *tool = qobject_cast<QToolButton *>(button);
+        if (!tool || (tool->objectName() != QStringLiteral("ScrollLeftButton")
+                      && tool->objectName() != QStringLiteral("ScrollRightButton")))
+            return nullptr;
+        // Follow the real arrow direction; Qt swaps it for RTL layouts.
+        if (tool->arrowType() == Qt::LeftArrow)
+            return &m_left;
+        if (tool->arrowType() == Qt::RightArrow)
+            return &m_right;
+        return nullptr;
+    }
+
+    QPointer<QTabBar> m_bar;
+    QSvgRenderer m_close;
+    QSvgRenderer m_left;
+    QSvgRenderer m_right;
+    bool m_dark = true;
+};
+
 class CaptionButton final : public QAbstractButton
 {
 public:
@@ -163,19 +290,8 @@ protected:
 
         // Rasterize the original path at the widget's device scale, then tint
         // its alpha mask. No theme lookup, no drawn substitute glyph.
-        const int size = m_compact ? 12 : 16;
-        const qreal dpr = devicePixelRatioF();
-        QPixmap mask(qCeil(size * dpr), qCeil(size * dpr));
-        mask.setDevicePixelRatio(dpr);
-        mask.fill(Qt::transparent);
-        {
-            QPainter iconPainter(&mask);
-            auto &renderer = m_useAlternate ? m_alternate : m_primary;
-            renderer.render(&iconPainter, QRectF(0, 0, size, size));
-            iconPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-            iconPainter.fillRect(QRectF(0, 0, size, size), foreground);
-        }
-        painter.drawPixmap(QPointF((width() - size) / 2.0, (height() - size) / 2.0), mask);
+        paintNativeGlyph(painter, this, m_useAlternate ? m_alternate : m_primary,
+                         m_compact ? 12 : 16, foreground);
         if (hasFocus()) {
             painter.setPen(foreground);
             painter.drawRect(rect().adjusted(1, 1, -2, -2));
@@ -703,6 +819,7 @@ private:
 
     void restoreStyle()
     {
+        m_tabGlyphs.clear();
         if (m_tabs && !m_appliedStyle.isEmpty() && m_tabs->styleSheet() == m_appliedStyle)
             m_tabs->setStyleSheet(m_originalStyle);
         m_appliedStyle.clear();
@@ -752,6 +869,10 @@ private:
         m_strip->show();
         const bool dark = darkChrome();
         updateThemeStyle(dark);
+        if (!m_appliedStyle.isEmpty() && m_tabGlyphs.valid())
+            m_tabGlyphs.attach(m_bar.data(), dark);
+        else
+            m_tabGlyphs.clear();
         QPalette colors = m_bar->palette();
         if (themeStyle() && !m_appliedStyle.isEmpty()) {
             const QColor background(dark ? QStringLiteral("#2D2D2D") : QStringLiteral("#F3F3F3"));
@@ -870,6 +991,11 @@ private:
             return;
         }
         updateStrip();
+        if (!m_appliedStyle.isEmpty() && !m_tabGlyphs.valid()) {
+            failSafe("imported tab close or scroll glyphs unavailable");
+            deactivate();
+            return;
+        }
         if (!placeNewControls()) {
             // Layout requests during initial show and config changes are
             // asynchronous. Allow a bounded settling period, then restore
@@ -910,6 +1036,7 @@ private:
     QTimer m_layoutRetry;
     int m_layoutFailures = 0;
     ChromeShadow m_shadow;
+    NativeTabGlyphs m_tabGlyphs;
     QPointer<QWindow> m_handle;
     QPointer<QWidget> m_menuWidget;
     QPointer<QMenu> m_systemMenu;

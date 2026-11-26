@@ -45,6 +45,7 @@ class CoverageTests(unittest.TestCase):
             (root / "plasma/example.qml").write_text(
                 'icon: menu.backend.nativeMenuIcon("actions/known")\n'
                 'roleName: "missing"\n'
+                'nativeIconName: "known"\n'
                 'source: "local.svg"\n'
                 'source: model.icon\n'
                 'source: "windows-modern/shell-assets/task-view/dark.svg"\n'
@@ -53,10 +54,17 @@ class CoverageTests(unittest.TestCase):
                 'QIcon::fromTheme(QStringLiteral("old"));\n'
                 'nativeMenuIcon(QStringLiteral("actions/absent"));\n'
             )
+            (root / "app-decorations/windowsmodernchrome.cpp").write_text(
+                'glyphPath(QStringLiteral("known"));\n'
+            )
             result = audit.source_candidates(root, {"known": [("e710", "actions/known.svg")]}, {})
             self.assertEqual(result["private_role_mapped"][0]["value"], "actions/known")
             self.assertEqual(result["private_role_unmapped"][0]["value"], "actions/absent")
             self.assertEqual(result["private_name_unmapped"][0]["value"], "missing")
+            self.assertEqual(result["private_name_mapped"][0]["value"], "known")
+            self.assertTrue(any(row["file"] == "app-decorations/windowsmodernchrome.cpp"
+                                and row["value"] == "actions/known"
+                                for row in result["private_role_mapped"]))
             self.assertEqual(result["direct_artwork"][0]["value"], "local.svg")
             self.assertEqual(result["private_shell_asset"][0]["value"],
                              "windows-modern/shell-assets/task-view/dark.svg")

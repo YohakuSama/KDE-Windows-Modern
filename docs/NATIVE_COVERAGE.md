@@ -108,10 +108,24 @@ category; unknown network states must not be assigned a fake strength.
 Missing private glyphs leave artwork empty instead of resolving through
 Breeze. Text and interaction geometry remain available.
 
-Remaining review includes the native Qt tab-close/scroll buttons and
-profile icons in Konsole, third-party application icons, native applet
-configuration pages, remaining theme lookups, dynamic pixmaps, and the
-26H2-specific shell assets listed above. The two recent-file compatibility
+Start context-menu actions, view selector/checkmark and search-section
+chevrons now request private mapped Windows artwork. Missing action icons
+leave a reserved empty slot; application/result identity icons are unchanged.
+Notification and calendar flyout buttons use private SVG sources rather
+than global icon names, including the DND banner and reply action.
+Search uses only the original E721 mask when a build-specific state image
+is missing; the old colored compatibility path is no longer requested.
+
+The optional Konsole integrated chrome's owned stylesheet now uses mapped
+E8BB tab-close and E76B/E76C scroll glyphs on the native QTabBar buttons.
+Qt still owns the actions and geometry; the original paint behavior returns
+when the custom chrome is disabled. Arbitrary user styles remain untouched.
+These are reviewed original font roles, not a claim of exact Terminal or
+26H2 shell artwork. Desktop acceptance is pending.
+
+Remaining review includes profile icons in Konsole, third-party application
+icons, native applet configuration pages, remaining theme lookups, dynamic
+pixmaps, and the 26H2-specific shell assets listed above. The two recent-file compatibility
 SVGs have had invalid editor-only attributes removed, but their provenance
 is still unverified. Do not count them as Microsoft originals.
 

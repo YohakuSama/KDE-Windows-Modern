@@ -119,11 +119,12 @@ ColumnLayout {
         }
 
         FlyoutButton {
+            id: dndToggle
             Layout.preferredWidth: 28
             text: history.effectiveDnd && !history.manualDnd
                 ? i18n("Do not disturb is active due to a rule or application")
                 : i18n("Manual do not disturb")
-            icon.name: "notification-disabled-symbolic"
+            nativeIconName: "notification-disabled-symbolic"
             attentionActive: history.effectiveDnd
             enabled: history.notificationsAvailable
             display: PlasmaComponents.AbstractButton.IconOnly
@@ -156,12 +157,18 @@ ColumnLayout {
             anchors.right: parent.right
             height: 24
             spacing: 6
-            Kirigami.Icon {
+            Item {
                 Layout.preferredWidth: 16
                 Layout.preferredHeight: 16
-                source: "notification-disabled-symbolic"
-                isMask: true
-                color: palette.text
+                Kirigami.Icon {
+                    anchors.fill: parent
+                    source: dndToggle.nativeIconSource
+                    fallback: ""
+                    visible: dndToggle.nativeIconSource.length > 0
+                    isMask: true
+                    roundToIconSize: false
+                    color: palette.text
+                }
             }
             PlasmaComponents.Label {
                 Layout.fillWidth: true
@@ -326,7 +333,7 @@ ColumnLayout {
                         quiet: true
                         visible: card.isGroup
                         text: card.model.isGroupExpanded ? i18n("Show fewer") : i18n("Show more")
-                        icon.name: card.model.isGroupExpanded ? "go-up" : "go-down"
+                        nativeIconName: card.model.isGroupExpanded ? "go-up" : "go-down"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: notificationModel.setData(notificationModel.index(card.index, 0),
                             !card.model.isGroupExpanded, NotificationManager.Notifications.IsGroupExpandedRole)
@@ -337,7 +344,7 @@ ColumnLayout {
                         Layout.preferredHeight: 24
                         quiet: true
                         text: card.isGroup ? i18n("Dismiss group") : i18n("Dismiss notification")
-                        icon.name: "window-close"
+                        nativeIconName: "window-close"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         visible: card.model.closable
                         onClicked: notificationModel.close(notificationModel.index(card.index, 0))
@@ -385,7 +392,7 @@ ColumnLayout {
                                 quiet: true
                                 visible: !!card.model.body
                                 text: card.bodyExpanded ? i18n("Show fewer") : i18n("Show more")
-                                icon.name: card.bodyExpanded ? "go-up-symbolic" : "go-down-symbolic"
+                                nativeIconName: card.bodyExpanded ? "go-up-symbolic" : "go-down-symbolic"
                                 display: PlasmaComponents.AbstractButton.IconOnly
                                 onClicked: card.bodyExpanded = !card.bodyExpanded
                             }
@@ -398,7 +405,7 @@ ColumnLayout {
                                 quiet: true
                                 visible: card.inGroup && card.model.closable
                                 text: i18n("Dismiss notification")
-                                icon.name: "window-close"
+                                nativeIconName: "window-close"
                                 display: PlasmaComponents.AbstractButton.IconOnly
                                 onClicked: history.notificationModel.close(history.notificationModel.index(card.index, 0))
                             }
@@ -533,7 +540,7 @@ ColumnLayout {
 
                             FlyoutButton {
                                 text: card.model.replySubmitButtonText || i18n("Send")
-                                icon.name: card.model.replySubmitButtonIconName || "document-send"
+                                nativeIconName: "document-send-symbolic"
                                 enabled: replyInput.text.trim().length > 0
                                 onClicked: card.submitReply()
                             }

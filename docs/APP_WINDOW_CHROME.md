@@ -26,6 +26,10 @@ The plugin uses Konsole's actual IKonsolePlugin and native QTabWidget:
   navigation and session confirmation remain native.
 - The Windows Modern tab stylesheet adapts to the system light/dark
   scheme; the selected Campbell tab still joins the dark terminal.
+  Native tab-close and overflow scroll buttons use the original E8BB,
+  E76B and E76C imported glyphs while this owned stylesheet is active.
+  The native button actions, arrow directions, enabled states and geometry
+  are retained. Restoring the stylesheet removes the paint override.
   Arbitrary custom styles are not replaced. Logical-pixel dimensions
   and device-scale glyph rendering follow Qt.
 - Shadows are submitted to KWindowShadow, outside the actual window
