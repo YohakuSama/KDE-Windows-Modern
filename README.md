@@ -22,6 +22,12 @@ compatibility, a separate Windows desktop environment and a complete GTK
 boot theme are separate, optional components. System fonts are preserved
 during normal installation.
 
+## Optional application window layouts
+
+An opt-in Konsole integrated title-bar prototype and the Dolphin Explorer
+layout boundaries are documented in [application window layouts](docs/APP_WINDOW_CHROME.md).
+The prototype is separate from normal theme installation.
+
 ## NixOS
 
 Run the installer as your normal desktop user in a running Plasma 6 session.
