@@ -330,6 +330,48 @@ See the source hashes, property offsets and usage records in
 windows11-26h2-ui-parameters.json. No Windows binaries are added.
 Live acceptance and runtime resource selection remain open.
 
+### Ordinary taskbar Search and tray content geometry
+
+The verified TaskbarResources.xbf minimum extents are 220 for the ordinary
+full Search box (Wave3) and 100 for the compact Search pill, with corner
+radius 16 in both. The full box template uses an 11px icon leading margin
+and text margin (37,0,16,1); the compact content grid has 22px horizontal
+padding, a 16px FontIcon and a 4px trailing icon margin. The KDE full
+Search preferred baseline is now 220 rather than the sampled 248, with
+2px horizontal host margins. Compact Search uses the 100px minimum and
+grows to fit translated text. The existing height adaptation, full-box
+icon size and label font remain provisional; the original runtime
+frame height and complete style are not established. The bottom
+component of the original full text margin is recorded but its exact
+text baseline is not applied yet. The Search popup anchor uses the
+actual rendered pill rectangle, including when the panel constrains
+the applet, rather than inferring it from the preferred side margins.
+
+The ordinary SearchBox Wave3 template resolves idle and hover to
+SearchBoxTextControlBackground3 and SearchBoxTextControlBackgroundPointerOver3.
+Inactive-pressed and all three active states resolve to
+SearchBoxTextControlBackgroundFocused with the focused border brush.
+The dark idle/hover brushes contain white at opacity 0.1435 and 0.1659;
+the focused border contains white at 0.18. Apply those original inputs
+and make pressed/selected share their current focused fill. The light
+and focused external fill references and the gradient border still
+require framework theme resolution; retain the existing approximations
+for those. Custom, compact, shy-tablet and high-contrast state palettes
+are not inferred from the ordinary full-box states. KWin output still
+needs desktop acceptance.
+
+The ordinary SystemTrayResources image template explicitly sets
+16x16 and references SystemTrayIconContentPadding (4,0,4,0). The
+battery templates have 16px and 12px variants and the same grid padding.
+Keep the current 16px ordinary canvas; enforce the two 4px insets in
+core cell sizing and battery/text sizing even at compact KDE spacing.
+Vertical panels adapt the padding along their primary axis. Existing
+system-group outer padding and third-party application identities are
+preserved. The glyph's actual ink geometry and runtime selection of the
+small variant need further review. Separate normal, small and tablet
+taskbar hit margins are now recorded, but are not blindly applied to
+all task buttons.
+
 ### Same-name theme alternatives
 
 The owner's pre-supplement installed audit lists 16 names with 16 additional

@@ -170,13 +170,14 @@ Item {
             return box;
         }
 
-        // 248 x 36 reference pill, capped for tall panels and scaled down for small ones.
+        // Original 220px Wave3 minimum extent and 2px side margin.
+        // Retain the constrained-height KDE adaptation.
         function test_boxGeometry_data() {
             return [
-                { tag: "42px inset cell", thickness: 42, boxHeight: 36, boxWidth: 248, margin: 2 },
-                { tag: "48px panel", thickness: 48, boxHeight: 36, boxWidth: 248, margin: 3 },
-                { tag: "36px panel", thickness: 36, boxHeight: 31, boxWidth: 214, margin: 1 },
-                { tag: "64px panel", thickness: 64, boxHeight: 36, boxWidth: 248, margin: 7 },
+                { tag: "42px inset cell", thickness: 42, boxHeight: 36, boxWidth: 220, margin: 2 },
+                { tag: "48px panel", thickness: 48, boxHeight: 36, boxWidth: 220, margin: 2 },
+                { tag: "36px panel", thickness: 36, boxHeight: 31, boxWidth: 189, margin: 2 },
+                { tag: "64px panel", thickness: 64, boxHeight: 36, boxWidth: 220, margin: 2 },
             ];
         }
         function test_boxGeometry(data) {
@@ -188,15 +189,18 @@ Item {
             const pill = findChild(box, "wmSearchPill");
             const icon = findChild(box, "searchBoxIcon");
             const label = findChild(box, "wmSearchPlaceholder");
-            compare(pill.radius, data.boxHeight / 2);
-            compare(icon.width, Math.round(data.boxHeight * 20 / 36));
+            compare(pill.radius, Math.min(pill.height / 2, 16));
+            compare(icon.width, Math.round(pill.height * 20 / 36));
             compare(label.font.pixelSize, Math.round(data.boxHeight * 16 / 36));
         }
 
         function test_fullSearchNeutralStates() {
             const box = makeBox({height: 42});
             const pill = findChild(box, "wmSearchPill");
-            compare(pill.restFill, Qt.color(box.darkTheme ? "#3D3D3D" : "#F3F3F3"));
+            compare(pill.restFill, box.darkTheme ? Qt.rgba(1, 1, 1, 0.1435) : Qt.color("#F3F3F3"));
+            if (box.darkTheme)
+                compare(pill.hoverFill, Qt.rgba(1, 1, 1, 0.1659));
+            compare(pill.pressedFill, pill.selectedFill);
             box.forceHovered = true;
             tryCompare(pill, "color", pill.hoverFill);
             box.forcePressed = true;
@@ -204,6 +208,23 @@ Item {
             box.forcePressed = false;
             box.selected = true;
             tryCompare(pill, "color", pill.selectedFill);
+        }
+
+        function test_originalSearchInsetsAndAnchor() {
+            const box = makeBox({height: 48, width: 250});
+            const pill = findChild(box, "wmSearchPill");
+            const icon = findChild(box, "searchBoxIcon");
+            const label = findChild(box, "wmSearchPlaceholder");
+            compare(pill.width, 220);
+            compare(icon.x, 11);
+            compare(label.x, 37);
+            compare(pill.width - label.x - label.width, 16);
+            compare(box.surfaceRect, Qt.rect(pill.x, pill.y, pill.width, pill.height));
+            box.mirroredLayout = true;
+            tryCompare(icon, "x", 220 - 11 - icon.width);
+            tryCompare(label, "x", 16);
+            box.width = 160;
+            compare(box.surfaceRect.width, 156);
         }
 
         function test_taskbarQueryMirror() {
@@ -223,8 +244,10 @@ Item {
 
         function test_compactSearchAndSelection() {
             const box = makeBox({styleMode: 1, width: 120});
-            compare(box.boxWidth, 112);
+            verify(box.boxWidth >= 100);
+            verify(box.boxWidth >= box.compactContentWidth);
             const pill = findChild(box, "wmSearchPill");
+            compare(findChild(box, "searchBoxIcon").width, 16);
             box.forceHovered = true;
             tryCompare(pill, "color", pill.hoverFill);
             box.selected = true;

@@ -55,9 +55,16 @@ function coreRenderSize(displaySize) {
     return 48;
 }
 
+// Windows 26300.9974 SystemTrayResources.xbf: SystemTrayIconContentPadding
+// (4,0,4,0), referenced by ordinary image and battery content grids.
+// Adapt the same padding along the primary axis on vertical panels.
+const trayContentPadding = 4;
+function paddedCoreContentLength(contentLength) {
+    return Math.ceil(contentLength) + 2 * trayContentPadding;
+}
+
 function coreCellLength(size, coreSize, spacing) {
-    // Default core cells are 24px, not the previous 30px.
-    return Math.max(cellLength(size, true, spacing), coreSize + 4);
+    return Math.max(cellLength(size, true, spacing), paddedCoreContentLength(coreSize));
 }
 
 function isQuickSettings(id) {

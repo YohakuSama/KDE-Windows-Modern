@@ -355,7 +355,8 @@ ContainmentItem {
                         readonly property int contentLength: batteryCell && !root.vertical
                             ? root.batteryContentWidth : root.coreItemSize
                         readonly property int baseSystemCellLength: batteryCell && !root.vertical
-                            ? Math.max(root.systemCellLength, contentLength + 6) : root.systemCellLength
+                            ? Math.max(root.systemCellLength, TrayMetrics.paddedCoreContentLength(contentLength))
+                            : root.systemCellLength
                         leadingSystemInset: {
                             const revision = tasksGrid.delegateRevision;
                             const previous = tasksGrid.itemAtIndex(index - 1);

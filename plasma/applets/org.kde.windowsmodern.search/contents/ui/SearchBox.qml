@@ -34,13 +34,29 @@ MouseArea {
     readonly property bool darkTheme: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.textColor)
                                       === Kirigami.ColorUtils.Light
     readonly property real thickness: height
-    // Reference at 150%: about 370 x 54 physical px, or 248 x 36 logical px.
-    // Plasma gives an inset cell, not the entire panel thickness.
+    // Windows 26300.9974 TaskbarResources.xbf, ordinary (non-shy) Search.
+    // The minimum extents are the preferred baseline. Retain the existing
+    // KDE height adaptation until the Windows frame height is established.
     readonly property int boxHeight: Math.max(0, Math.min(Math.floor(thickness), 36,
         Math.max(16, Math.round(thickness * 36 / 42))))
-    readonly property int boxWidth: Math.round(boxHeight * (styleMode === 1 ? 112 : 248) / 36)
-    readonly property int sideMargin: Math.max(0, Math.round((thickness - boxHeight) / 4))
+    readonly property real geometryScale: boxHeight / 36
+    readonly property int compactContentWidth: 2 * Math.round(22 * geometryScale)
+        + Math.round(16 * geometryScale) + Math.round(4 * geometryScale)
+        + Math.ceil(compactTextMetrics.advanceWidth)
+    readonly property int boxWidth: boxHeight === 0 ? 0 : styleMode === 1
+        ? Math.max(Math.round(100 * geometryScale), compactContentWidth)
+        : Math.round(220 * geometryScale)
+    readonly property int sideMargin: Math.round((styleMode === 1 ? 1 : 2) * geometryScale)
     readonly property int preferredWidth: boxWidth + 2 * sideMargin
+    readonly property rect surfaceRect: Qt.rect(pill.x, pill.y, pill.width, pill.height)
+
+    TextMetrics {
+        id: compactTextMetrics
+        text: box.text
+        font.family: Kirigami.Theme.defaultFont.family
+        font.pixelSize: Math.max(1, Math.round(16 * box.geometryScale))
+        font.weight: Font.Medium
+    }
 
     hoverEnabled: true
     activeFocusOnTab: true
@@ -66,27 +82,39 @@ MouseArea {
     Rectangle {
         id: pill
         objectName: "wmSearchPill"
-        readonly property color restFill: box.darkTheme ? (box.styleMode === 1 ? "#292929" : "#3D3D3D") : "#F3F3F3"
-        readonly property color hoverFill: box.darkTheme ? "#494949" : "#E5E5E5"
-        readonly property color pressedFill: box.darkTheme ? "#353535" : "#E0E0E0"
-        readonly property color selectedFill: box.styleMode === 1 ? "#0078D4" : (box.darkTheme ? "#202020" : "#FFFFFF")
-        readonly property int inset: Math.round(height * 14 / 36)
-        readonly property int iconGap: Math.round(height * 9 / 36)
+        // Wave3 dark brushes have their own original opacity. The light
+        // and focused external theme brushes remain KDE approximations.
+        readonly property bool compact: box.styleMode === 1
+        readonly property color restFill: box.darkTheme
+            ? (compact ? "#292929" : Qt.rgba(1, 1, 1, 0.1435)) : "#F3F3F3"
+        readonly property color hoverFill: box.darkTheme
+            ? (compact ? "#494949" : Qt.rgba(1, 1, 1, 0.1659)) : "#E5E5E5"
+        readonly property color selectedFill: compact ? "#0078D4" : (box.darkTheme ? "#202020" : "#FFFFFF")
+        // Inactive-pressed and all active Wave3 states share the focused brush.
+        readonly property color pressedFill: compact ? (box.darkTheme ? "#353535" : "#E0E0E0") : selectedFill
+        readonly property bool focusedSurface: !compact && (box.selected || box.showPressed)
+        readonly property real contentScale: height / 36
+        readonly property int leadingInset: Math.round((compact ? 22 : 11) * contentScale)
+        readonly property int trailingInset: Math.round((compact ? 22 : 16) * contentScale)
+        readonly property int iconGap: compact ? Math.round(4 * contentScale)
+            : Math.max(0, Math.round(37 * contentScale) - leadingInset - magnifier.width)
         readonly property bool mirrored: box.LayoutMirroring.enabled
-        readonly property bool showPlaceholder: width >= 2 * inset + magnifier.width + iconGap + 12
-            && placeholderLabel.implicitHeight <= height
-        readonly property real labelWidth: Math.max(0, Math.min(placeholderLabel.implicitWidth,
-            width - 2 * inset - magnifier.width - iconGap))
-        readonly property real groupLeft: box.styleMode === 1 ? Math.round((width - magnifier.width - iconGap - labelWidth) / 2) : inset
+        readonly property real availableLabelWidth: Math.max(0,
+            width - leadingInset - trailingInset - magnifier.width - iconGap)
+        readonly property bool showPlaceholder: availableLabelWidth >= 12 && placeholderLabel.implicitHeight <= height
+        readonly property real labelWidth: Math.min(placeholderLabel.implicitWidth, availableLabelWidth)
+        readonly property real groupLeft: compact
+            ? Math.max(0, Math.round((width - magnifier.width - iconGap - labelWidth) / 2)) : leadingInset
 
         anchors.centerIn: parent
         width: Math.max(0, Math.min(box.boxWidth, box.width - 2 * box.sideMargin))
         height: Math.min(box.boxHeight, width)
-        radius: height / 2
+        radius: Math.min(height / 2, 16)
         color: box.selected ? selectedFill : (box.showPressed ? pressedFill : (box.showHovered ? hoverFill : restFill))
-        border.width: 1
-        border.color: box.selected && box.styleMode === 1 ? selectedFill
-            : box.darkTheme ? (box.showHovered ? "#555555" : "#4B4B4B") : "#D5D5D5"
+        border.width: width > 0 && height > 0 ? 1 : 0
+        border.color: box.selected && compact ? selectedFill
+            : box.darkTheme ? (focusedSurface ? Qt.rgba(1, 1, 1, 0.18)
+                : box.showHovered ? "#555555" : "#4B4B4B") : "#D5D5D5"
         Behavior on color {
             ColorAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
         }
@@ -100,7 +128,7 @@ MouseArea {
             anchors.verticalCenter: parent.verticalCenter
             x: pill.showPlaceholder ? (pill.mirrored ? pill.width - pill.groupLeft - width : pill.groupLeft)
                                     : Math.round((pill.width - width) / 2)
-            width: Math.round(pill.height * 20 / 36)
+            width: Math.min(Math.floor(pill.width), Math.round(pill.height * (pill.compact ? 16 : 20) / 36))
             height: width
             iconName: box.iconName
             accented: box.styleMode === 1 && box.selected || !(box.selected || box.showHovered)
@@ -113,8 +141,9 @@ MouseArea {
             objectName: "wmSearchPlaceholder"
             visible: pill.showPlaceholder
             anchors.verticalCenter: parent.verticalCenter
-            x: pill.mirrored ? (box.styleMode === 1 ? pill.groupLeft : pill.inset) : magnifier.x + magnifier.width + pill.iconGap
-            width: box.styleMode === 1 ? pill.labelWidth : Math.max(0, pill.width - 2 * pill.inset - magnifier.width - pill.iconGap)
+            x: pill.mirrored ? (pill.compact ? pill.groupLeft : pill.trailingInset)
+                : magnifier.x + magnifier.width + pill.iconGap
+            width: pill.compact ? pill.labelWidth : pill.availableLabelWidth
             horizontalAlignment: Text.AlignLeft
             text: box.styleMode === 1 ? box.text : box.showQuery ? box.queryText : box.placeholder
             textFormat: Text.PlainText

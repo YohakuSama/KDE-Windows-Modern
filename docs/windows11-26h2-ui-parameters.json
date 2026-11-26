@@ -83,6 +83,60 @@
           "ControlLargeCornerRadiusValue": {
             "value": 4,
             "xbf_offset": 4453
+          },
+          "TaskbarButtonTabletPostureHitTestableMargin": {
+            "value": [
+              6,
+              4,
+              6,
+              4
+            ],
+            "xbf_offset": 4562
+          },
+          "TaskbarButtonSmallFrameHitTestableMargin": {
+            "value": [
+              1,
+              2,
+              1,
+              2
+            ],
+            "xbf_offset": 4541
+          },
+          "TaskbarButtonShyTabletPostureHitTestableMargin": {
+            "value": [
+              3,
+              6,
+              3,
+              6
+            ],
+            "xbf_offset": 4583
+          },
+          "TaskbarButtonOutlineThickness": {
+            "value": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "xbf_offset": 4469
+          },
+          "SearchBoxButtonMargin": {
+            "value": [
+              2,
+              0,
+              2,
+              0
+            ],
+            "xbf_offset": 5095
+          },
+          "SearchBoxButtonNormalPadding": {
+            "value": [
+              0,
+              8,
+              0,
+              8
+            ],
+            "xbf_offset": 5074
           }
         }
       }
@@ -115,6 +169,34 @@
             "xbf_offset": 25471
           }
         }
+      },
+      "brushes": {
+        "root": {
+          "SearchBoxTextControlBackground3": {
+            "xbf_offset": 25705,
+            "reference": "ControlFillColorDefaultBrush"
+          },
+          "SearchBoxTextControlBackgroundPointerOver3": {
+            "xbf_offset": 25709,
+            "reference": "ControlFillColorSecondaryBrush"
+          },
+          "SearchBoxTextControlBackgroundFocused": {
+            "xbf_offset": 25608,
+            "reference": "ControlFillColorInputActiveBrush"
+          },
+          "SearchBoxTextControlBorderBrush3": {
+            "xbf_offset": 25713,
+            "reference": "ControlElevationBorderBrush"
+          },
+          "SearchBoxTextControlBorderBrushPointerOver3": {
+            "xbf_offset": 25717,
+            "reference": "ControlElevationBorderBrush"
+          },
+          "SearchBoxTextControlBorderBrushFocused3": {
+            "xbf_offset": 25721,
+            "reference": "ControlStrokeColorDefaultBrush"
+          }
+        }
       }
     },
     {
@@ -143,6 +225,43 @@
           "IconPressedOpacity": {
             "value": 0.800000011920929,
             "xbf_offset": 24751
+          }
+        }
+      },
+      "brushes": {
+        "root": {
+          "SearchBoxTextControlBackground3": {
+            "xbf_offset": 25200,
+            "properties": {
+              "Color": "#FFFFFFFF",
+              "Opacity": 0.14350000023841858
+            }
+          },
+          "SearchBoxTextControlBackgroundPointerOver3": {
+            "xbf_offset": 25220,
+            "properties": {
+              "Color": "#FFFFFFFF",
+              "Opacity": 0.16590000689029694
+            }
+          },
+          "SearchBoxTextControlBackgroundFocused": {
+            "xbf_offset": 24920,
+            "reference": "ControlFillColorInputActiveBrush"
+          },
+          "SearchBoxTextControlBorderBrush3": {
+            "xbf_offset": 25328,
+            "reference": "SearchBoxControlElevationBorderBrush3"
+          },
+          "SearchBoxTextControlBorderBrushPointerOver3": {
+            "xbf_offset": 25332,
+            "reference": "SearchBoxControlElevationBorderBrush3"
+          },
+          "SearchBoxTextControlBorderBrushFocused3": {
+            "xbf_offset": 25336,
+            "properties": {
+              "Color": "#FFFFFFFF",
+              "Opacity": 0.18000000715255737
+            }
           }
         }
       }
@@ -174,6 +293,36 @@
           "ContextMenuMargin": {
             "value": 12,
             "xbf_offset": 21647
+          }
+        },
+        "ImageIconContent": {
+          "Height": {
+            "value": 16,
+            "xbf_offset": 27800
+          },
+          "Width": {
+            "value": 16,
+            "xbf_offset": 27808
+          }
+        },
+        "BatteryIconContent": {
+          "BaseFontSize": {
+            "value": 16,
+            "xbf_offset": 28084
+          },
+          "OverlayFontSize": {
+            "value": 16,
+            "xbf_offset": 28133
+          }
+        },
+        "BatteryIconContentSmall": {
+          "BaseFontSize": {
+            "value": 12,
+            "xbf_offset": 28387
+          },
+          "OverlayFontSize": {
+            "value": 12,
+            "xbf_offset": 28436
           }
         }
       },
@@ -218,7 +367,47 @@
             }
           }
         }
-      }
+      },
+      "reviewed_usages": [
+        {
+          "node_section": 33,
+          "element": "ContainerGrid",
+          "property": "Grid.Padding",
+          "resource": "SystemTrayIconContentPadding",
+          "xbf_offset": 27324
+        },
+        {
+          "node_section": 39,
+          "element": "ContainerGrid",
+          "property": "Grid.Padding",
+          "resource": "SystemTrayIconContentPadding",
+          "xbf_offset": 27743
+        },
+        {
+          "node_section": 43,
+          "element": "ContainerGrid",
+          "property": "Grid.Padding",
+          "resource": "SystemTrayIconContentPadding",
+          "xbf_offset": 27995
+        },
+        {
+          "node_section": 45,
+          "element": "ContainerGrid",
+          "property": "Grid.Padding",
+          "resource": "SystemTrayIconContentPadding",
+          "xbf_offset": 28298
+        },
+        {
+          "node_section": 47,
+          "element": "ContainerGrid",
+          "property": "Grid.Padding",
+          "resource": "SystemTrayIconContentPadding",
+          "xbf_offset": 28593
+        }
+      ],
+      "review_notes": [
+        "The image template directly specifies 16x16. The battery templates have 16px and 12px font-size variants. Visible ink size and runtime small-mode selection still need verification."
+      ]
     },
     {
       "pri_path": "SystemResources/Windows.UI.ControlCenter/Windows.UI.ControlCenter.pri",
@@ -684,6 +873,283 @@
           "template": "IconButtonPlayPauseStyle",
           "template_offset": 5247
         }
+      ]
+    },
+    {
+      "pri_path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/resources.pri",
+      "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
+      "resource": "Files\\Taskbar\\TaskbarResources.xbf",
+      "xbf_sha256": "7321e20bef2784dc8ebce1240acaede543bc29ddb67598e7020e2b0c8485757f",
+      "resource_values": {
+        "root": {
+          "SearchPillButtonMinExtent": {
+            "value": 100,
+            "xbf_offset": 89276
+          },
+          "SearchPillButtonMargin": {
+            "value": [
+              1,
+              4,
+              1,
+              4
+            ],
+            "xbf_offset": 89255
+          },
+          "SearchPillButtonCornerRadius": {
+            "value": "16",
+            "xbf_offset": 89248
+          },
+          "SearchBoxTextMargin": {
+            "value": [
+              37,
+              0,
+              16,
+              1
+            ],
+            "xbf_offset": 89004
+          },
+          "SearchBoxRoundCornerRadius": {
+            "value": "16",
+            "xbf_offset": 88883
+          },
+          "SearchBoxIconMargin": {
+            "value": [
+              11,
+              0,
+              0,
+              0
+            ],
+            "xbf_offset": 89025
+          },
+          "SearchBoxButtonExtent": {
+            "value": 220,
+            "xbf_offset": 89046
+          },
+          "SearchBoxOnShyTaskbarRoundCornerRadius": {
+            "value": "30",
+            "xbf_offset": 88890
+          }
+        },
+        "SearchBoxContentGrid": {
+          "Padding": {
+            "value": [
+              22,
+              0,
+              22,
+              0
+            ],
+            "xbf_offset": 109297
+          }
+        },
+        "SearchBoxFontIcon": {
+          "Margin": {
+            "value": [
+              0,
+              0,
+              4,
+              0
+            ],
+            "xbf_offset": 109407
+          },
+          "FontSize": {
+            "value": 16,
+            "xbf_offset": 109453
+          }
+        }
+      },
+      "reviewed_usages": [
+        {
+          "node_section": 72,
+          "element": "SearchPillBackgroundElement",
+          "property": "FrameworkElement.MinWidth",
+          "resource": "SearchPillButtonMinExtent",
+          "xbf_offset": 109067
+        },
+        {
+          "node_section": 72,
+          "element": "SearchPillBackgroundElement",
+          "property": "FrameworkElement.Margin",
+          "resource": "SearchPillButtonMargin",
+          "xbf_offset": 109073
+        },
+        {
+          "node_section": 72,
+          "element": "SearchPillBackgroundElement",
+          "property": "Border.CornerRadius",
+          "resource": "SearchPillButtonCornerRadius",
+          "xbf_offset": 109097
+        },
+        {
+          "node_section": 86,
+          "element": "SearchBoxTextBlock",
+          "property": "FrameworkElement.Margin",
+          "resource": "SearchBoxTextMargin",
+          "xbf_offset": 125510
+        },
+        {
+          "node_section": 89,
+          "state": "InactiveNormal_SearchBox_Wave3",
+          "element": "Icon",
+          "property": "Margin",
+          "resource": "SearchBoxIconMargin",
+          "xbf_offset": 127192
+        },
+        {
+          "node_section": 89,
+          "state": "InactiveNormal_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "CornerRadius",
+          "resource": "SearchBoxRoundCornerRadius",
+          "xbf_offset": 127227
+        },
+        {
+          "node_section": 89,
+          "state": "InactiveNormal_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "Background",
+          "resource": "SearchBoxTextControlBackground3",
+          "xbf_offset": 127244
+        },
+        {
+          "node_section": 89,
+          "state": "InactiveNormal_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "BorderBrush",
+          "resource": "SearchBoxTextControlBorderBrush3",
+          "xbf_offset": 127261
+        },
+        {
+          "node_section": 89,
+          "state": "InactiveNormal_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "MinWidth",
+          "resource": "SearchBoxButtonExtent",
+          "xbf_offset": 127278
+        },
+        {
+          "node_section": 89,
+          "state": "InactivePointerOver_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "Background",
+          "resource": "SearchBoxTextControlBackgroundPointerOver3",
+          "xbf_offset": 127394
+        },
+        {
+          "node_section": 89,
+          "state": "InactivePointerOver_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "BorderBrush",
+          "resource": "SearchBoxTextControlBorderBrushPointerOver3",
+          "xbf_offset": 127411
+        },
+        {
+          "node_section": 89,
+          "state": "InactivePointerOver_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "MinWidth",
+          "resource": "SearchBoxButtonExtent",
+          "xbf_offset": 127445
+        },
+        {
+          "node_section": 89,
+          "state": "InactivePressed_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "Background",
+          "resource": "SearchBoxTextControlBackgroundFocused",
+          "xbf_offset": 127561
+        },
+        {
+          "node_section": 89,
+          "state": "InactivePressed_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "BorderBrush",
+          "resource": "SearchBoxTextControlBorderBrushFocused3",
+          "xbf_offset": 127578
+        },
+        {
+          "node_section": 89,
+          "state": "InactivePressed_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "MinWidth",
+          "resource": "SearchBoxButtonExtent",
+          "xbf_offset": 127629
+        },
+        {
+          "node_section": 89,
+          "state": "ActiveNormal_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "Background",
+          "resource": "SearchBoxTextControlBackgroundFocused",
+          "xbf_offset": 127745
+        },
+        {
+          "node_section": 89,
+          "state": "ActiveNormal_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "BorderBrush",
+          "resource": "SearchBoxTextControlBorderBrushFocused3",
+          "xbf_offset": 127762
+        },
+        {
+          "node_section": 89,
+          "state": "ActiveNormal_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "MinWidth",
+          "resource": "SearchBoxButtonExtent",
+          "xbf_offset": 127813
+        },
+        {
+          "node_section": 89,
+          "state": "ActivePointerOver_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "Background",
+          "resource": "SearchBoxTextControlBackgroundFocused",
+          "xbf_offset": 127929
+        },
+        {
+          "node_section": 89,
+          "state": "ActivePointerOver_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "BorderBrush",
+          "resource": "SearchBoxTextControlBorderBrushFocused3",
+          "xbf_offset": 127946
+        },
+        {
+          "node_section": 89,
+          "state": "ActivePointerOver_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "MinWidth",
+          "resource": "SearchBoxButtonExtent",
+          "xbf_offset": 127997
+        },
+        {
+          "node_section": 89,
+          "state": "ActivePressed_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "Background",
+          "resource": "SearchBoxTextControlBackgroundFocused",
+          "xbf_offset": 128113
+        },
+        {
+          "node_section": 89,
+          "state": "ActivePressed_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "BorderBrush",
+          "resource": "SearchBoxTextControlBorderBrushFocused3",
+          "xbf_offset": 128130
+        },
+        {
+          "node_section": 89,
+          "state": "ActivePressed_SearchBox_Wave3",
+          "element": "BackgroundElement",
+          "property": "MinWidth",
+          "resource": "SearchBoxButtonExtent",
+          "xbf_offset": 128181
+        }
+      ],
+      "review_notes": [
+        "These are minimum extents. KDE uses 220 as the full-search preferred baseline and grows the compact preferred size to fit translated text with the template's content padding. Existing constrained-height scaling is retained.",
+        "The exact runtime frame height, full-search icon extent and text style are not established."
       ]
     }
   ],

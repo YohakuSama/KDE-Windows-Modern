@@ -65,9 +65,9 @@ PlasmoidItem {
                 // New Start versions accept the real source rectangle; older
                 // versions still respond to the original action.
                 if ("searchAnchor" in action && "taskbarBox" in action) {
-                    const inset = root.showBox ? searchBox.sideMargin : 0;
-                    const p = root.mapToGlobal(inset, 0);
-                    action.searchAnchor = {x: p.x, width: Math.max(1, root.width - 2 * inset)};
+                    const surface = searchBox.surfaceRect;
+                    const p = root.mapToGlobal(root.showBox ? surface.x : 0, 0);
+                    action.searchAnchor = {x: p.x, width: Math.max(1, root.showBox ? surface.width : root.width)};
                     action.taskbarBox = root.showBox && root.searchMode === 0;
                 }
                 action.trigger();

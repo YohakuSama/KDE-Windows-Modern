@@ -63,13 +63,15 @@ TestCase {
         compare(Metrics.coreIconSize(48, true), 16);
         compare(Metrics.coreIconSize(64, true), 21);
         compare(Metrics.coreIconSize(96, true), 32);
-        compare(Metrics.coreCellLength(16, 16, 1), 20);
+        compare(Metrics.coreCellLength(16, 16, 1), 24);
         compare(Metrics.coreCellLength(16, 16, 6), 32);
-        compare(Metrics.coreCellLength(32, 32, 2), 36);
-        compare(Metrics.coreCellLength(18, 18, 1), 22);
+        compare(Metrics.coreCellLength(32, 32, 2), 40);
+        compare(Metrics.coreCellLength(18, 18, 1), 26);
         compare(Metrics.coreCellLength(18, 18, 6), 32);
-        compare(Metrics.coreCellLength(20, 20, 1), 24);
+        compare(Metrics.coreCellLength(20, 20, 1), 28);
         compare(Metrics.coreCellLength(20, 20, 6), 32);
+        compare(Metrics.paddedCoreContentLength(16), 24);
+        compare(Metrics.paddedCoreContentLength(46), 54);
         compare(Metrics.coreRenderSize(12), 16);
         compare(Metrics.coreRenderSize(16), 32);
         compare(Metrics.coreRenderSize(24), 32);
@@ -96,7 +98,7 @@ TestCase {
         compare(Metrics.systemEdgeInset(true, true, cell, 16), 0);
         compare(Metrics.systemEdgeInset(false, false, cell, 16), 0);
         for (const batteryContent of [16, 20, 46, 60]) {
-            const lastCell = Math.max(cell, batteryContent + 6);
+            const lastCell = Math.max(cell, Metrics.paddedCoreContentLength(batteryContent));
             const trailing = Metrics.systemEdgeInset(true, false, lastCell, batteryContent);
             const runWidth = leading + cell * 2 + lastCell + trailing;
             const firstCenter = leading + cell / 2;
