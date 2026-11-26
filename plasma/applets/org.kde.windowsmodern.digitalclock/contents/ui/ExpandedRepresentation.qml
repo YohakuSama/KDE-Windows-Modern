@@ -8,6 +8,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import "code/popupGeometry.js" as PopupGeometry
 import QtQuick.Window
 import QtQuick.Controls as QQC2
 
@@ -95,11 +96,11 @@ FocusScope {
     readonly property real screenHeight: Number(panelScreen?.height || 0)
     readonly property bool verticalPanel: clockApplet.popupVerticalPanel === true
     readonly property real panelExtent: Math.max(0, Number(clockApplet.popupPanelExtent) || 48)
-    readonly property int availableScreenHeight: screenHeight >= 100
-        ? Math.max(1, Math.floor(screenHeight - (verticalPanel ? 0 : panelExtent) - 32)) : 720
+    readonly property int availableScreenHeight: PopupGeometry.availableExtent(screenHeight,
+        verticalPanel ? 0 : panelExtent, 32, 720)
     readonly property int configuredWidth: Math.max(240, Number(Plasmoid.configuration.expandedWidth) || 320)
-    readonly property int popupWidth: Math.min(configuredWidth, screenWidth >= 100
-        ? Math.max(1, Math.floor(screenWidth - (verticalPanel ? panelExtent : 0) - 24)) : configuredWidth)
+    readonly property int popupWidth: Math.min(configuredWidth, PopupGeometry.availableExtent(screenWidth,
+        verticalPanel ? panelExtent : 0, 24, configuredWidth))
     readonly property int notificationMinimum: history.minimumSectionHeight + 2 * sectionInset
     // Reserve a usable calendar and then let notification history grow into
     // the remaining space. Only the history list scrolls, never both cards.

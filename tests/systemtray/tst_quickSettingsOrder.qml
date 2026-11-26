@@ -26,6 +26,18 @@ TestCase {
         compare(Order.snapOffset(50, 80, 0), 0);
         compare(Order.clampOffset(500, 160), 160);
     }
+    function test_columnsMatchDropTargets() {
+        const width = 328, gap = 14, cell = 100;
+        for (const rtl of [false, true]) {
+            for (let index = 0; index < 6; ++index) {
+                const x = Order.columnX(index, cell, gap, rtl);
+                compare(Order.slotAt(x + cell / 2, Math.floor(index / 3) * 80 + 20,
+                    width, 80, 6, gap, rtl), index);
+            }
+        }
+        compare(Order.columnX(0, cell, gap, true), 228);
+        compare(Order.slotAt(10, 90, width, 80, 4, gap, true), 3);
+    }
     function test_partial_final_row() {
         compare(Order.slotAt(30, 10, 300, 80, 7), 0);
         compare(Order.slotAt(150, 90, 300, 80, 7), 4);

@@ -42,6 +42,14 @@ TestCase {
         compare(invalid.height, 640);
     }
 
+    function test_availableExtent() {
+        compare(Geometry.availableExtent(720, 48, 24, 720), 648);
+        compare(Geometry.availableExtent(80, 48, 24, 720), 8);
+        compare(Geometry.availableExtent(48, 48, 24, 720), 1);
+        compare(Geometry.availableExtent(0, 48, 24, 720), 720);
+        compare(Geometry.availableExtent(Infinity, 48, 24, 720), 720);
+    }
+
     function test_taskbarSearchAnchor() {
         const screen = {x: 0, width: 1920};
         const panel = {x: 0, width: 1920};
@@ -91,7 +99,8 @@ TestCase {
             {tag: "left negative screen", edge: "left", panel: {x:-1920,y:0,width:48,height:1080}, anchor: {x:-1916,y:200,width:40,height:48}, x:16,y:0},
             {tag: "right", edge: "right", panel: {x:1872,y:0,width:48,height:1080}, anchor: {x:1876,y:200,width:40,height:48}, x:-16,y:0},
             {tag: "unsettled panel height", edge: "top", panel: {x:0,y:0,width:1920,height:Infinity}, anchor: {x:200,y:4,width:48,height:40}, x:0,y:12},
-            {tag: "unsettled anchor width", edge: "left", panel: {x:0,y:0,width:48,height:1080}, anchor: {x:4,y:200,width:Infinity,height:48}, x:12,y:0}
+            {tag: "unsettled anchor width", edge: "left", panel: {x:0,y:0,width:48,height:1080}, anchor: {x:4,y:200,width:Infinity,height:48}, x:12,y:0},
+            {tag: "anchor on stale output", edge: "bottom", panel: {x:0,y:900,width:1920,height:48}, anchor: {x:2000,y:1200,width:48,height:40}, x:0,y:-12}
         ];
     }
 

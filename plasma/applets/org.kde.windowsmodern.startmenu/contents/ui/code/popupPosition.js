@@ -17,10 +17,8 @@ function surfaceSize(mode, screen, panelExtent, vertical, margin, searching) {
     const panel = Number.isFinite(panelValue) ? Math.max(0, panelValue) : 0;
     const inset = Number.isFinite(marginValue) ? 2 * Math.max(0, marginValue) : 0;
     return {
-        width: Math.max(1, Math.floor(Math.min(wantedWidth, screenWidth > 0
-            ? screenWidth - (vertical ? panel : 0) - inset : wantedWidth))),
-        height: Math.max(1, Math.floor(Math.min(wantedHeight, screenHeight > 0
-            ? screenHeight - (vertical ? 0 : panel) - inset : wantedHeight)))
+        width: Math.min(wantedWidth, Geometry.availableExtent(screenWidth, vertical ? panel : 0, inset, wantedWidth)),
+        height: Math.min(wantedHeight, Geometry.availableExtent(screenHeight, vertical ? 0 : panel, inset, wantedHeight))
     };
 }
 

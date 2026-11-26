@@ -45,8 +45,19 @@ Current implementation values are provisional until verified on the desktop.
 ## Quick Settings
 
 - One native popup and navigation stack, three tile columns, real hardware
-  states, conditional availability and reachable extra rows. No redundant
-  controls or permanent painted rail. Keep actual native input and routing.
+  states, conditional availability and reachable extra rows. The 376px
+  paginated card and 328px content group retain the existing 24px side
+  insets. Mirror tile position, keyboard direction and drag targets
+  together. Conditional page dots and a directional arrow occupy the
+  trailing gutter, with no permanent painted scrollbar rail.
+- The 178px media card and 12px gap have their own height budget. Keep
+  media visible if one full tile row and the fixed controls still fit;
+  later rows remain reachable through the existing pager. This constrained
+  desktop adaptation needs reference acceptance.
+- All three popup geometry copies reject stale panel/anchor rectangles
+  from different outputs, and size limits distinguish unavailable display
+  geometry from a genuinely small logical work area. Plasma retains final
+  placement and its native available-screen clamp.
 - Brightness and volume share the same groove bounds, current tile grid
   margins, equal 27px end slots and 18px thumb at normal UI scale. The
   output button uses the reviewed Speakers E7F5 role. Retain drag, wheel,

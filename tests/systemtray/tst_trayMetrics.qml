@@ -137,6 +137,12 @@ TestCase {
         compare(Metrics.splitSecondaryWidth(72, 1), 36);
         compare(Metrics.splitSecondaryWidth(180, 1.5), 72);
     }
+    function test_mediaAllocation() {
+        verify(Metrics.mediaFits(528, 286, 12, 178));
+        verify(!Metrics.mediaFits(470, 286, 12, 178));
+        verify(Metrics.mediaFits(476, 286, 12, 178));
+        compare(Metrics.quickSettingsHeight(528 - 12 - 178, 286), 286);
+    }
     function test_overflowUsesOneGeometryPlan() {
         for (const scale of [0.35, 0.75, 1, 1.25, 1.5, 2]) {
             const width = Math.round(216 * scale);

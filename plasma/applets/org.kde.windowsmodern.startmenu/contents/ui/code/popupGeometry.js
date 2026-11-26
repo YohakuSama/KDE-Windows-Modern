@@ -7,13 +7,25 @@ const gap = 12;
 
 function popupGap() { return gap; }
 
+function availableExtent(extent, panelExtent, inset, fallback) {
+    if (!Number.isFinite(extent) || extent <= 0) return fallback;
+    const panel = Number.isFinite(panelExtent) ? Math.max(0, panelExtent) : 0;
+    const margin = Number.isFinite(inset) ? Math.max(0, inset) : 0;
+    return Math.max(1, Math.floor(extent - panel - margin));
+}
+
+function validRect(rect) {
+    return rect && Number.isFinite(rect.x) && Number.isFinite(rect.y)
+        && Number.isFinite(rect.width) && rect.width > 0
+        && Number.isFinite(rect.height) && rect.height > 0;
+}
+
 function normalOffset(edge, panel, anchor) {
-    const valid = panel && anchor && Number.isFinite(panel.x) && Number.isFinite(panel.y)
-        && Number.isFinite(panel.width) && panel.width > 0
-        && Number.isFinite(panel.height) && panel.height > 0
-        && Number.isFinite(anchor.x) && Number.isFinite(anchor.y)
-        && Number.isFinite(anchor.width) && anchor.width > 0
-        && Number.isFinite(anchor.height) && anchor.height > 0;
+    // During a screen or panel move, the two rectangles can briefly refer
+    // to different outputs. Do not turn that stale delta into a popup jump.
+    const valid = validRect(panel) && validRect(anchor)
+        && anchor.x < panel.x + panel.width && anchor.x + anchor.width > panel.x
+        && anchor.y < panel.y + panel.height && anchor.y + anchor.height > panel.y;
     const result = {x: 0, y: 0};
     switch (edge) {
     case "bottom":

@@ -198,6 +198,12 @@ function overflowGeometry(width, availableHeight, scale, count) {
         contentHeight, height: contentHeight + 2 * inset};
 }
 
+// Keep a real media session reachable whenever one complete tile row and
+// the fixed controls fit beside its card. The grid can page later rows.
+function mediaFits(availableHeight, minimumHomeHeight, mediaGap, mediaHeight) {
+    return availableHeight >= minimumHomeHeight + mediaGap + mediaHeight;
+}
+
 function quickSettingsHeight(availableHeight, nominalHeight, detailMinimum = 0) {
     return Math.max(1, Math.min(availableHeight, Math.max(nominalHeight, detailMinimum)));
 }

@@ -4,6 +4,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../js/quickSettingsOrder.js" as Order
 import "../js/trayMetrics.js" as TrayMetrics
 import "../components" as Components
 
@@ -28,7 +29,8 @@ ColumnLayout {
     readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
 
     // A stable three-column grid, with vacant cells in a partial final row.
-    x: orderView && orderIndex >= 0 ? (orderIndex % 3) * (orderView.cellWidth + orderView.columnGap) : 0
+    x: orderView && orderIndex >= 0
+        ? Order.columnX(orderIndex, orderView.cellWidth, orderView.columnGap, LayoutMirroring.enabled) : 0
     y: orderView && orderIndex >= 0 ? Math.floor(orderIndex / 3) * orderView.rowStride : 0
     width: orderView ? orderView.cellWidth : implicitWidth
     height: orderView ? orderView.rowHeight : implicitHeight

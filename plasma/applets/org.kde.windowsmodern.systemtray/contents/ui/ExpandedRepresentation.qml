@@ -20,6 +20,7 @@ import org.kde.plasma.private.mpris as Mpris
 
 import "components" as Components
 import "js/trayMetrics.js" as TrayMetrics
+import "js/popupGeometry.js" as PopupGeometry
 
 Item {
     id: popup
@@ -31,10 +32,10 @@ Item {
     // QQuickLayout. The native popup is sized before the window is mapped.
     readonly property bool overflowHome: systemTrayState.overflowMode && !systemTrayState.activeApplet
     readonly property rect screenRect: Plasmoid.screenGeometry
-    readonly property int availableWidth: screenRect.width >= 100
-        ? Math.max(1, Math.floor(screenRect.width - (root.vertical ? root.panelExtent : 0) - 24)) : 720
-    readonly property int availableHeight: screenRect.height >= 100
-        ? Math.max(1, Math.floor(screenRect.height - (root.vertical ? 0 : root.panelExtent) - 24)) : 720
+    readonly property int availableWidth: PopupGeometry.availableExtent(screenRect.width,
+        root.vertical ? root.panelExtent : 0, 24, 720)
+    readonly property int availableHeight: PopupGeometry.availableExtent(screenRect.height,
+        root.vertical ? 0 : root.panelExtent, 24, 720)
     // The configured scale is a ceiling. Small work areas shrink the grid
     // before mapping, without using physical DPI or depending on panel length.
     readonly property real uiScale: Math.max(0.35, Math.min(Plasmoid.configuration.scale / 100,
@@ -56,8 +57,10 @@ Item {
     readonly property int mediaGap: Math.round(TrayMetrics.mediaCardGap * uiScale)
     readonly property int mediaHeight: Math.round(TrayMetrics.mediaCardHeight * uiScale)
     readonly property bool separatedMedia: !systemTrayState.activeApplet && !systemTrayState.overflowMode
-        && mediaCard.hasSession && availableHeight >= actionPanel.nominalHomeHeight + mediaGap + mediaHeight
-    readonly property int quickCardHeight: TrayMetrics.quickSettingsHeight(availableHeight,
+        && mediaCard.hasSession && TrayMetrics.mediaFits(availableHeight,
+            actionPanel.minimumHomeHeight, mediaGap, mediaHeight)
+    readonly property int settingsBudget: Math.max(1, availableHeight - (separatedMedia ? mediaGap + mediaHeight : 0))
+    readonly property int quickCardHeight: TrayMetrics.quickSettingsHeight(settingsBudget,
         actionPanel.nominalHomeHeight, quickDetail
             ? Math.round(TrayMetrics.quickDetailMinimumHeight * uiScale) : 0)
     readonly property int popupHeight: Math.max(1, Math.min(availableHeight - frameHeight,
@@ -385,7 +388,7 @@ Item {
                     id: actionPanel
                     anchors.fill: parent
                     uiScale: popup.uiScale
-                    availableHeight: popup.availableHeight
+                    availableHeight: popup.settingsBudget
                     frameInset: 0
                     shellAccent: popup.shellAccent
                     onVisibleChanged: {

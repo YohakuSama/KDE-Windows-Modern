@@ -38,10 +38,17 @@ function snapOffset(offset, stride, maximum) {
     return Math.abs(maximum - position) < Math.abs(row - position) ? maximum : row;
 }
 
-function slotAt(x, y, width, stride, count) {
+function columnX(index, cellWidth, gap, mirrored = false) {
+    const column = index % 3;
+    return (mirrored ? 2 - column : column) * (cellWidth + gap);
+}
+
+function slotAt(x, y, width, stride, count, gap = 0, mirrored = false) {
     if (count <= 0 || width <= 0 || stride <= 0 || x < 0 || x >= width || y < 0)
         return -1;
-    const column = Math.min(2, Math.floor(x * 3 / width));
+    const pitch = (width + gap) / 3;
+    const physicalColumn = Math.min(2, Math.floor((x + gap / 2) / pitch));
+    const column = mirrored ? 2 - physicalColumn : physicalColumn;
     return Math.min(count - 1, Math.floor(y / stride) * 3 + column);
 }
 

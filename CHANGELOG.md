@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Share popup extent and stale-output guards across Start, Quick Settings and calendar; mirror the quick tile grid, drag hit targets and keyboard direction together. Give the media card a separate height budget when one full tile row fits and preserve fixed slider/footer space on constrained screens.
+
 - Bound task grid stripes, cell sizes and layout hints during empty-model and constrained-panel transitions; use the same two-axis icon canvas rule for Start, Search, Task View and running tasks. Keep the three shared popup geometry copies in sync and guard unsettled display measurements without changing normal reference sizes.
 
 - Clamp battery display percentages consistently and keep unavailable battery controls from leaving stray separators. Avoid choosing an arbitrary brightness output when multiple matching displays exist; expose the per-display controls instead.

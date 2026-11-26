@@ -57,7 +57,12 @@ ColumnLayout {
         + sliderRowCount * sliderHeight + (sliderRowCount - 1) * sliderGap : 0
     readonly property int nominalFixedHeight: edgeInset + gridBottomGap + sliderBlockHeight
         + Math.max(24, Math.round(TrayMetrics.quickFooterHeight * uiScale))
-    readonly property int gridHeight: Math.max(Math.round(64 * uiScale), toggleViewport.viewportHeight)
+    // This lower bound does not depend on the available height. Media
+    // allocation can reserve its space first without a binding cycle.
+    readonly property int minimumHomeHeight: nominalFixedHeight
+        + Math.max(Math.round(64 * uiScale), toggleViewport.rows > 0 ? toggleViewport.rowHeight : 0)
+    readonly property int gridHeight: Math.max(0, Math.min(availableHeight - nominalFixedHeight,
+        Math.max(Math.round(64 * uiScale), toggleViewport.viewportHeight)))
     readonly property int nominalHomeHeight: nominalFixedHeight + gridHeight
     readonly property int homeHeight: contentInset + gridHeight + gridBottomGap + sliderBlockHeight + footerHeight
 
@@ -80,7 +85,7 @@ ColumnLayout {
         Layout.rightMargin: actionPanel.contentInset
         Layout.topMargin: actionPanel.contentInset
         Layout.bottomMargin: actionPanel.gridBottomGap
-        implicitHeight: Math.max(Math.round(64 * actionPanel.uiScale), toggleViewport.viewportHeight)
+        implicitHeight: actionPanel.gridHeight
         Layout.preferredHeight: implicitHeight
         Layout.minimumHeight: implicitHeight
         Layout.maximumHeight: implicitHeight
@@ -96,11 +101,12 @@ ColumnLayout {
                 String(Plasmoid.configuration.quickSettingsOrder || "").split(","), knownKeys)
             readonly property var visibleKeys: Order.visibleOrder(order, availableKeys)
             readonly property int rows: Math.ceil(visibleKeys.length / 3)
-            readonly property bool hasMoreRows: rows > visibleRows
+            readonly property bool hasMoreRows: maxOffset > 0.5
+            readonly property bool mirrored: LayoutMirroring.enabled
             readonly property real rowGap: Math.round(12 * actionPanel.uiScale)
-            readonly property real columnGap: Math.round(14 * actionPanel.uiScale)
+            readonly property real columnGap: Math.max(0, Math.min(Math.round(14 * actionPanel.uiScale), (width - 3) / 2))
             readonly property color shellAccent: actionPanel.shellAccent
-            readonly property real cellWidth: Math.max(1, (width - 2 * columnGap) / 3)
+            readonly property real cellWidth: Math.max(0, (width - 2 * columnGap) / 3)
             // Two caption lines are reserved for every tile, keeping
             // the second row aligned even for a long device name.
             readonly property real rowHeight: networkTile.buttonHeight + networkTile.spacing + networkTile.captionHeight
@@ -109,7 +115,8 @@ ColumnLayout {
                 Math.floor((actionPanel.availableHeight - actionPanel.nominalFixedHeight + rowGap) / Math.max(1, rowStride))))
             readonly property real viewportHeight: Math.max(0, visibleRows * rowStride - (rows > 0 ? rowGap : 0))
             readonly property real maxOffset: Math.max(0, contentHeight - height)
-            readonly property int pageCount: Math.max(1, Math.ceil(rows / Math.max(1, visibleRows)))
+            readonly property int pageCount: hasMoreRows
+                ? Math.max(2, Math.ceil(rows / Math.max(1, visibleRows))) : 1
             readonly property int currentPage: maxOffset > 0 ? Math.round(contentY / maxOffset * (pageCount - 1)) : 0
 
             property string dragKey: ""
@@ -164,6 +171,12 @@ ColumnLayout {
             // Settle after the last delta, without interfering with drag/reorder.
             onContentYChanged: if (ready && dragKey === "") rowSettle.restart()
             onMovementEnded: settleRows()
+            onMaxOffsetChanged: if (ready && dragKey === "") {
+                Qt.callLater(() => {
+                    if (toggleViewport.dragKey === "" && !toggleViewport.moving)
+                        toggleViewport.setOffsetImmediately(toggleViewport.contentY);
+                });
+            }
             Timer {
                 id: rowSettle
                 interval: 120
@@ -204,8 +217,8 @@ ColumnLayout {
                 const from = visibleKeys.indexOf(key);
                 let delta = 0;
                 switch (pressedKey) {
-                case Qt.Key_Left: delta = -1; break;
-                case Qt.Key_Right: delta = 1; break;
+                case Qt.Key_Left: delta = mirrored ? 1 : -1; break;
+                case Qt.Key_Right: delta = mirrored ? -1 : 1; break;
                 case Qt.Key_Up: delta = -3; break;
                 case Qt.Key_Down: delta = 3; break;
                 case Qt.Key_PageUp: page(-1); return true;
@@ -242,7 +255,8 @@ ColumnLayout {
                     return;
                 pointerPosition = position;
                 dropIndex = position.y >= 0 && position.y < height
-                    ? Order.slotAt(position.x, position.y + contentY, width, rowStride, visibleKeys.length) : -1;
+                    ? Order.slotAt(position.x, position.y + contentY, width, rowStride,
+                        visibleKeys.length, columnGap, mirrored) : -1;
             }
 
             function finishDrag(key, position) {
@@ -414,7 +428,8 @@ ColumnLayout {
             id: pageControls
             objectName: "wmQuickSettingsPageControls"
             visible: toggleViewport.hasMoreRows
-            // Use the existing right gutter, not part of a tile column.
+            // The existing trailing gutter mirrors with the grid, not the
+            // tile pitch or the content width.
             width: Math.round(14 * actionPanel.uiScale)
             anchors.left: parent.right
             anchors.leftMargin: Math.round(1 * actionPanel.uiScale)
@@ -432,8 +447,9 @@ ColumnLayout {
                     Accessible.name: i18n("Page %1", index + 1)
                     Accessible.onPressAction: toggleViewport.showPage(index)
                     activeFocusOnTab: true
-                    Keys.onReturnPressed: toggleViewport.showPage(index)
-                    Keys.onSpacePressed: toggleViewport.showPage(index)
+                    Keys.onReturnPressed: event => { if (!event.isAutoRepeat) toggleViewport.showPage(index); }
+                    Keys.onEnterPressed: event => { if (!event.isAutoRepeat) toggleViewport.showPage(index); }
+                    Keys.onSpacePressed: event => { if (!event.isAutoRepeat) toggleViewport.showPage(index); }
                     Rectangle {
                         anchors.centerIn: parent
                         width: Math.round((toggleViewport.currentPage === pageDot.index ? 5 : 3) * actionPanel.uiScale)
@@ -456,8 +472,9 @@ ColumnLayout {
                 Accessible.role: Accessible.Button
                 Accessible.name: atEnd ? i18n("Previous page") : i18n("Next page")
                 Accessible.onPressAction: navigate()
-                Keys.onReturnPressed: navigate()
-                Keys.onSpacePressed: navigate()
+                Keys.onReturnPressed: event => { if (!event.isAutoRepeat) navigate(); }
+                Keys.onEnterPressed: event => { if (!event.isAutoRepeat) navigate(); }
+                Keys.onSpacePressed: event => { if (!event.isAutoRepeat) navigate(); }
                 Components.NativeGlyph {
                     anchors.centerIn: parent
                     width: Math.max(8, Math.round(10 * actionPanel.uiScale))
