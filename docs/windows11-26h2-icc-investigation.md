@@ -1367,3 +1367,28 @@ and monitor profiles prefer the relative-intent A2B1 when present.
 The measured LUT grids still have no independently established
 coordinate normalization; the runtime does not embed their inferred
 axis samples or publish a fitted approximation.
+
+## Shared sampled LUT curves
+
+The 16-bit mft2 input loader at RVA 0x183fc selects the 256-entry
+input builder at 0x18510. Its full-range branch reduces to the same
+Q18 step, Q15 position, halved signed sample delta and 4095 bias
+already used by the sampled matrix/TRC input path. The two forward
+LUT controls match all 1536 measured input entries without a separate
+unity formula. The output loader at RVA 0x2253c selects 0x17d4c for
+the 16-bit 1024-entry table. Its Q20 step, rounded Q15 position and
+signed delta with 0x3fff bias reproduce the previously recorded unity
+output curve (SHA-256
+4404EC04FB9473830A5F4F24502FF3144BF7ACD7DCE6629803F26BCE890DC517).
+For both measured forward controls the generated input curve hash is
+6C61F33985621A47ACF0628A58E168E4A1215FE3BE5369CDDE2E1F4A94919605. The
+existing bridge diagnostics now read the actual synthetic profile
+tables through the shared bounded mft2 parser, rather than assuming
+a unity curve from the report name. Matrix and gray runtime eligibility,
+cache revision and fixed-point replay are unchanged.
+
+The independent forward CLUT stage still requires exact normalization.
+An offline reconstruction using the recovered output curve and a
+two-point lattice matches 26 of the 32 inferred 14-bit axis values;
+the remaining six differ by one before destination matrix
+interpolation. The fitted axis is not used by the production decoder.

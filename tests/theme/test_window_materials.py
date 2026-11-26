@@ -1454,6 +1454,28 @@ class WindowMaterialTests(unittest.TestCase):
         with self.assertRaises(native["UnsupportedMatrixProfile"]):
             curve(b"curv" + bytes(4) + struct.pack(">I", 8192) + bytes(8192 * 2))
 
+    def test_shared_mft2_bridge_curves(self):
+        native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
+        precision = (ROOT / "scripts/capture-windows-icc-precision.ps1").read_text(encoding="utf-8-sig")
+        for digest in ("D32E4F221D8FBA508546D930EC200C200AEAAAE95EA22E23331B68D3495BF1A4",
+                       "086832DEE2195FBFC5FAF48A48C30CF2301D70CBA9C92CA46C11E6257C5DBB18"):
+            encoded = re.search(r"'" + digest + r"' = '([^']+)'", precision)
+            self.assertIsNotNone(encoded)
+            profile = base64.b64decode(encoded[1], validate=True)
+            self.assertEqual(hashlib.sha256(profile).hexdigest().upper(), digest)
+            tags = native["icc_tag_directory"](profile)
+            source, target = native["mft2_bridge_curves"](tags[b"A2B0"])
+            self.assertEqual((len(source), len(target)), (768, 3072))
+            self.assertEqual(source, native["matrix_input_curve"](
+                b"curv" + bytes(4) + struct.pack(">I2H", 2, 0, 65535)) * 3)
+            self.assertEqual(native["_table_hash"](source),
+                             "6C61F33985621A47ACF0628A58E168E4A1215FE3BE5369CDDE2E1F4A94919605")
+            self.assertEqual(native["_table_hash"](target),
+                             "4404EC04FB9473830A5F4F24502FF3144BF7ACD7DCE6629803F26BCE890DC517")
+            self.assertEqual((target[0], target[1023]), (0, 65535))
+            with self.assertRaises(ValueError):
+                native["mft2_bridge_curves"](tags[b"A2B0"][:-2])
+
     def test_incomplete_jpeg_icc_does_not_use_untagged_rgb(self):
         from PIL import Image
         decode = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))["decode_wallpaper_bitmap"]

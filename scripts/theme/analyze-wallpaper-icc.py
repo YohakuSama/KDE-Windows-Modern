@@ -537,7 +537,6 @@ def compare_families(root, report_path, *, full_domain=False):
     checked = native["checked_payload"]
     colors = checked(report["input_rgb"], 5120 * 3, native["INPUT_SHA"])
     target = native["srgb_output_curve"]()
-    lut_source = native["mft2_unity_curve"](256, 65534) * 3
     result = {"windows_build": report["windows_build"], "report_sha256": sha(raw),
               "rgb_lut": {}, "gray": {}}
 
@@ -553,7 +552,11 @@ def compare_families(root, report_path, *, full_domain=False):
 
     for name, digest in lut_sources.items():
         entry = report["synthetic_sources"][name]
-        checked(entry, entry["length"], digest)
+        profile = checked(entry, entry["length"], digest)
+        tags = native["icc_tag_directory"](profile)
+        if profile[8:24] != b"\x02\x10\x00\x00spacRGB XYZ " or b"A2B0" not in tags:
+            raise ValueError("Unexpected synthetic forward LUT profile")
+        lut_source, lut_output = native["mft2_bridge_curves"](tags[b"A2B0"])
         item = report["results"][name]
         relative = item["intents"]["1"]
         if relative["status"] != "ok":
@@ -575,6 +578,7 @@ def compare_families(root, report_path, *, full_domain=False):
         for value in full["red_slice_sha256"]:
             native["digest_bytes"](value)
         row = tables_summary(tables, lut_source)
+        row["generated_forward_lut_output_sha256"] = native["_table_hash"](lut_output)
         row.update(calibration_colors=len(colors) // 3,
                    calibration_different_channels=sum(a != b for a, b in zip(actual, reference)),
                    native_full_sha256=full["sha256"], full_domain_verified=False)

@@ -133,8 +133,6 @@ def read_rgb8_tables(data, *, full_domain=False, source_channels=3):
     header = b"linkGRAYRGB " if gray else b"linkRGB RGB "
     link_size = 8340 if gray else LINK_SIZE
     grid_size = 128 if gray else 32
-    source_words = source_channels * 256
-    grid_words = 3 * grid_size ** source_channels
     if (not 132 <= len(data) <= MAX_LINK_SIZE or (not full_domain and len(data) != link_size)
             or struct.unpack_from(">I", data)[0] != len(data)
             or data[12:24] != header or data[36:40] != b"acsp"):
@@ -152,15 +150,22 @@ def read_rgb8_tables(data, *, full_domain=False, source_channels=3):
             matches.append(data[offset:offset + size])
     if len(matches) != 1:
         raise ValueError("Expected one A2B0 device-link table")
-    tag = matches[0]
-    if (len(tag) != 52 + 2 * (source_words + grid_words + 3072)
+    return read_mft2_tables(matches[0], source_channels, grid_size, 256, 1024)
+
+
+def read_mft2_tables(tag, source_channels, grid_size, input_count, output_count):
+    """Read an explicitly selected, identity-matrix, 16-bit LUT layout."""
+    source_words = source_channels * input_count
+    grid_words = 3 * grid_size ** source_channels
+    output_words = 3 * output_count
+    if (len(tag) != 52 + 2 * (source_words + grid_words + output_words)
             or tag[:4] != b"mft2" or tag[8:11] != bytes((source_channels, 3, grid_size))
             or struct.unpack_from(">9i", tag, 12) != (65536, 0, 0, 0, 65536, 0, 0, 0, 65536)
-            or struct.unpack_from(">HH", tag, 48) != (256, 1024)):
-        raise ValueError("Unexpected measured RGB8-output table layout")
+            or struct.unpack_from(">HH", tag, 48) != (input_count, output_count)):
+        raise ValueError("Unexpected 16-bit ICC LUT table layout")
     return (struct.unpack_from(f">{source_words}H", tag, 52),
             struct.unpack_from(f">{grid_words}H", tag, 52 + 2 * source_words),
-            struct.unpack_from(">3072H", tag, len(tag) - 6 * 1024))
+            struct.unpack_from(f">{output_words}H", tag, 52 + 2 * (source_words + grid_words)))
 
 
 def coordinate(value, grid_size=32):
@@ -221,16 +226,48 @@ class Rgb8Replay:
         return tuple(result)
 
 
+def mft2_output_curve(samples):
+    """Resample a 16-bit mft2 output table to the native 1024-entry curve."""
+    count = len(samples)
+    if not 2 <= count <= 4096:
+        raise ValueError("ICC LUT output curve exceeds native bounds")
+    # icm32 uses Q20 stepping, rounded Q15 positions, and signed
+    # interpolation with a 0x3fff bias. Unlike the RGB8 input path,
+    # the output path does not halve the sample delta.
+    step = ((count - 1) << 20) // 1023
+    result = []
+    for code in range(1024):
+        position = (step * code + 16) >> 5
+        i, f = position >> 15, position & 32767
+        value = samples[i]
+        if f:
+            value += ((samples[i + 1] - value) * f + 16383) >> 15
+        result.append(value)
+    return tuple(result)
+
+
+def mft2_bridge_curves(tag):
+    """Generate the reviewed two-point unity bridge curves from profile data.
+
+    The CLUT is not generated here. This is used for reference analysis,
+    not to enable forward LUT profiles in the wallpaper decoder.
+    """
+    source, _, target = read_mft2_tables(tag, 3, 2, 2, 2)
+    if source != (0, 65535) * 3 or target != (0, 65535) * 3:
+        raise ValueError("Expected full-range unity bridge curves")
+    return (tuple(v for i in range(0, 6, 2)
+                  for v in sampled_input_curve(source[i:i + 2])),
+            tuple(v for i in range(0, 6, 2)
+                  for v in mft2_output_curve(target[i:i + 2])))
+
+
 def mft2_unity_curve(count, scale):
-    """Generate the reviewed two-point unity mft2 input/output curves."""
-    if (count, scale) not in ((256, 65534), (1024, 65535)):
-        raise ValueError("Unreviewed mft2 unity-curve dimensions")
-    values = []
-    for i in range(count):
-        q = (2 * i * 32768 + count - 1) // (2 * (count - 1))
-        values.append((q * scale + 16384) // 32768)
-    values[-1] = 65535
-    return tuple(values)
+    """Compatibility entry for the measured two-point curve identities."""
+    if (count, scale) == (256, 65534):
+        return sampled_input_curve((0, 65535))
+    if (count, scale) == (1024, 65535):
+        return mft2_output_curve((0, 65535))
+    raise ValueError("Unreviewed mft2 unity-curve dimensions")
 
 
 # Standard sRGB target: the three XYZ colorants in signed 16.16 units.
@@ -261,6 +298,31 @@ class UnsupportedMatrixProfile(ValueError):
     """Outside the reviewed matrix/TRC generation branches."""
 
 
+def icc_tag_directory(data):
+    """Validate a bounded ICC profile directory before accessing its tags."""
+    if (not isinstance(data, bytes) or not 132 <= len(data) <= 1024 * 1024
+            or struct.unpack_from(">I", data)[0] != len(data)
+            or data[36:40] != b"acsp"):
+        raise UnsupportedMatrixProfile("Invalid ICC profile header")
+    count = struct.unpack_from(">I", data, 128)[0]
+    end = 132 + 12 * count
+    if count > 128 or end > len(data):
+        raise UnsupportedMatrixProfile("Invalid ICC profile tag directory")
+    tags = {}
+    extents = []
+    for sig, offset, size in struct.iter_unpack(">4sII", data[132:end]):
+        if (sig in tags or offset % 4 or offset < end or size < 8
+                or offset + size > len(data)):
+            raise UnsupportedMatrixProfile("Invalid ICC profile tag extent")
+        extent = (offset, offset + size)
+        if any(extent != previous and extent[0] < previous[1] and previous[0] < extent[1]
+               for previous in extents):
+            raise UnsupportedMatrixProfile("Overlapping ICC profile tags")
+        extents.append(extent)
+        tags[sig] = data[offset:offset + size]
+    return tags
+
+
 def matrix_profile_tags(data, *, gray=False):
     if (not isinstance(data, bytes) or not 132 <= len(data) <= 1024 * 1024
             or struct.unpack_from(">I", data)[0] != len(data)
@@ -269,22 +331,7 @@ def matrix_profile_tags(data, *, gray=False):
             or (gray and data[12:16] != b"mntr")
             or data[36:40] != b"acsp" or struct.unpack_from(">3i", data, 68) != D50):
         raise UnsupportedMatrixProfile("Expected a reviewed D50 matrix or gray monitor profile")
-    count = struct.unpack_from(">I", data, 128)[0]
-    end = 132 + 12 * count
-    if count > 128 or end > len(data):
-        raise UnsupportedMatrixProfile("Invalid matrix profile tag directory")
-    tags = {}
-    extents = []
-    for sig, offset, size in struct.iter_unpack(">4sII", data[132:end]):
-        if (sig in tags or offset % 4 or offset < end or size < 8
-                or offset + size > len(data)):
-            raise UnsupportedMatrixProfile("Invalid matrix profile tag extent")
-        extent = (offset, offset + size)
-        if any(extent != previous and extent[0] < previous[1] and previous[0] < extent[1]
-               for previous in extents):
-            raise UnsupportedMatrixProfile("Overlapping matrix profile tags")
-        extents.append(extent)
-        tags[sig] = data[offset:offset + size]
+    tags = icc_tag_directory(data)
     # The native forward transform checks A2B1 and A2B0 before the matrix.
     # B2A tables describe the opposite direction and do not displace it.
     # Keep every forward LUT outside this generator.
@@ -422,6 +469,28 @@ def build_gray_grid():
         raise ValueError("Generated gray ICC grid differs from the native reference")
     return result
 
+def sampled_input_curve(samples):
+    """Common 16-bit sampled input curve for matrix and mft2 RGB8 paths."""
+    count = len(samples)
+    if not 2 <= count < 8192:
+        raise UnsupportedMatrixProfile("Sampled ICC curve exceeds native bounds")
+    if any(a > b for a, b in zip(samples, samples[1:])):
+        raise UnsupportedMatrixProfile("Nonmonotone sampled tone curve")
+    # Native sampled-curve construction uses a Q18 step and Q15
+    # position. A rounded position may hit the final sample exactly.
+    step = ((count - 1) << 18) // 255
+    result = []
+    for code in range(256):
+        position = (step * code + 4) >> 3
+        i, f = position >> 15, position & 32767
+        value = samples[i]
+        if f:
+            delta = (samples[i + 1] - value) >> 1
+            value += ((delta * f >> 1) + 4095) >> 13
+        result.append(value)
+    return tuple(result)
+
+
 def matrix_input_curve(tag):
     """Generate the native 256-entry input curve for supported ICC TRCs."""
     if len(tag) < 12:
@@ -434,21 +503,7 @@ def matrix_input_curve(tag):
             return tuple(i * 257 for i in range(256))
         samples = struct.unpack_from(f">{count}H", tag, 12)
         if count > 1:
-            if any(a > b for a, b in zip(samples, samples[1:])):
-                raise UnsupportedMatrixProfile("Nonmonotone sampled tone curve")
-            # Native sampled-curve construction uses a Q18 step and Q15
-            # position. A rounded position may hit the final sample exactly.
-            step = ((count - 1) << 18) // 255
-            result = []
-            for code in range(256):
-                position = (step * code + 4) >> 3
-                i, f = position >> 15, position & 32767
-                value = samples[i]
-                if f:
-                    delta = (samples[i + 1] - value) >> 1
-                    value += ((delta * f >> 1) + 4095) >> 13
-                result.append(value)
-            return tuple(result)
+            return sampled_input_curve(samples)
         gamma = samples[0] / 256
         evaluate = lambda x: x if gamma == 1 else x ** gamma
     elif tag[:4] == b"para":

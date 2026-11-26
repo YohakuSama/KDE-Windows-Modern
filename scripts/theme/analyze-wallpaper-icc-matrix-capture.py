@@ -231,25 +231,13 @@ def table_difference(a,b):
 
 
 def bridge_curve_tables(profile):
-    """Generate the measured unity curves of the synthetic mft2 bridges.
-
-    The CLUT (identity or ZYX) is separate. Do not generalize this sampling
-    rule to arbitrary LUT profiles or matrix-profile tone curves.
-    """
-    identity_matrix = (65536,0,0,0,65536,0,0,0,65536)
-    for sig in (b'A2B0',b'B2A0'):
-        tag = profile[sig]
-        if (len(tag)!=124 or tag[:4]!=b'mft2' or tag[8:11]!=bytes((3,3,2))
-                or struct.unpack_from('>9i',tag,12)!=identity_matrix
-                or struct.unpack_from('>HH',tag,48)!=(2,2)):
-            raise ValueError('Expected the measured two-point mft2 bridge')
-        for raw in (tag[52:64],tag[-12:]):
-            if struct.unpack('>6H',raw)!=(0,65535)*3:
-                raise ValueError('Expected full-range unity bridge curves')
-    generate = runpy.run_path(str(Path(__file__).with_name('wallpaper-icc.py')))['mft2_unity_curve']
-    return (np.tile(np.asarray(generate(256,65534),dtype=np.int64),(3,1)),
-            np.tile(np.asarray(generate(1024,65535),dtype=np.int64),(3,1)))
-
+    """Generate the measured unity curves with the shared sampled paths."""
+    native = runpy.run_path(str(Path(__file__).with_name('wallpaper-icc.py')))
+    forward = native['mft2_bridge_curves'](profile[b'A2B0'])
+    reverse = native['mft2_bridge_curves'](profile[b'B2A0'])
+    if forward != reverse:
+        raise ValueError('Unexpected distinct bridge curves')
+    return tuple(np.asarray(curve, dtype=np.int64).reshape(3, -1) for curve in forward)
 
 def separable_grid(grid, reverse_output=False):
     """Measure, not generate, an axis-separable native grid."""

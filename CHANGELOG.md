@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Share the sampled 16-bit ICC input curve generator with mft2 reference analysis and validate LUT curves using the original profile tables. Forward CLUT normalization remains under investigation.
+
 - Reuse the native shared curve dispatcher for D50 Gray8 v2/v4 monitor profiles and compare partial manual palette capture batches without changing desktop settings. Preserve explicit native verification limits.
 
 - Preserve Gray ICC samples through opaque LA and GrayAlpha8 PNG preprocessing, sharing the existing alpha resampler. Add a guided manual accent reference batch for the remaining preset rows and custom boundaries; gray-alpha native comparison and independent forward LUT generation remain open.
