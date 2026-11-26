@@ -233,6 +233,10 @@ class WindowMaterialTests(unittest.TestCase):
                 del legacy["analysis_revision"]
                 self.assertEqual(automatic(legacy), state)
                 self.assertEqual(state["analysis_revision"], control["SYNC"]["WALLPAPER_ANALYSIS_REVISION"])
+                with patch.dict(control["SYNC"], {"icc_reference_identity": lambda: "new-reference"}):
+                    with self.assertRaises(control["WallpaperChangedError"]):
+                        control["require_wallpaper_snapshot"](state)
+                    self.assertEqual(automatic(state)["icc_reference"], "new-reference")
                 image.write_bytes(b"replacement image")
                 with self.assertRaises(control["WallpaperChangedError"]):
                     control["require_wallpaper_snapshot"](state)
@@ -1128,13 +1132,76 @@ class WindowMaterialTests(unittest.TestCase):
                 raw = sync["prepare_opaque_wallpaper_bitmap"](image.tobytes(), image.width, image.height)
                 self.assertNotEqual(expected, raw)
             before = path.read_bytes()
-            self.assertEqual(decode(path), expected)
+            # Test the existing color-managed fallback even when the owner
+            # has imported the optional exact native reference locally.
+            with patch.dict(sync["_icc_rgb_bitmap"].__globals__, {
+                    "_native_icc_module": lambda: {"transform_for_profile": lambda profile: None}}):
+                self.assertEqual(decode(path), expected)
             self.assertEqual(path.read_bytes(), before)
             invalid = Path(tmp) / "invalid.png"
             with Image.new("RGB", (1, 1), (20, 138, 20)) as image:
                 image.save(invalid, icc_profile=b"invalid ICC")
             with self.assertRaisesRegex(ValueError, "ICC conversion failed"):
                 decode(invalid)
+
+    def test_native_rgb8_replay_and_preconversion(self):
+        native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
+        # A synthetic grid exercises scalar tetrahedral interpolation
+        # independently of the private measured device-link payload.
+        source = tuple(i * 257 for i in range(256)) * 3
+        grid = tuple(value for r in range(32) for g in range(32) for b in range(32)
+                     for value in (r * 2048, g * 2048, b * 2048))
+        target = tuple(i * 64 for i in range(1024)) * 3
+        replay = native["Rgb8Replay"]((source, grid, target))
+        self.assertEqual(native["coordinate"](0), (0, 0))
+        self.assertEqual(native["coordinate"](65535), (30, 2048))
+        self.assertEqual(replay.convert(0, 0, 0), (0, 0, 0))
+        self.assertEqual(replay.convert(255, 0, 255), (248, 0, 248))
+        self.assertEqual(replay.convert(64, 128, 192), (62, 124, 186))
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        pixels = bytes((20, 138, 20, 225, 48, 48)) * 256
+        transform = lambda r, g, b: (0, 0, 0) if r == 20 else (255, 255, 255)
+        self.assertEqual(sync["_prepare_wallpaper_bitmap"](pixels, 512, 1, 3, transform),
+                         (256, 1, bytes((127, 127, 127, 255)) * 256))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "icc-replay-v1.bin"
+            self.assertIsNone(native["read_bundle"](path))
+            path.write_bytes(b"not a verified link")
+            with self.assertRaisesRegex(ValueError, "SHA-256"):
+                native["read_bundle"](path)
+
+    def test_all_live_scheme_roles_are_verified(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        template, fixed = control["scheme_inputs"]()
+        palette = control["SYNC"]["derive_manual_palette"]("#FF8C00")
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp)
+            scheme = config / "WindowsModernDark.colors"
+            expected = control["render"](template, fixed, "dark", palette)
+            scheme.write_bytes(expected)
+            live = config / "kdeglobals"
+            live.write_bytes(expected)
+            digest = hashlib.sha1(expected).hexdigest()
+            verify = control["live_matches"]
+            with patch.dict(verify.__globals__, {"CONFIG": config, "read": lambda *args: digest}):
+                self.assertTrue(verify(scheme, template, fixed, "dark", palette))
+                for section, key in (("Colors:View", "DecorationFocus"),
+                                     ("Colors:Tooltip", "ForegroundActive"),
+                                     ("Colors:Selection", "ForegroundActive"),
+                                     ("Colors:Button", "BackgroundNormal"),
+                                     ("WM", "inactiveForeground")):
+                    parser = control["parse_colors"](expected)
+                    parser.set(section, key, "1,2,3")
+                    with live.open("w", encoding="utf-8") as stream:
+                        parser.write(stream)
+                    self.assertFalse(verify(scheme, template, fixed, "dark", palette))
+                # An edited source and a matching edited live scheme must
+                # not be accepted as the requested Windows palette.
+                changed = expected.replace(b"DecorationFocus=255,182,52", b"DecorationFocus=1,2,3")
+                self.assertNotEqual(changed, expected)
+                scheme.write_bytes(changed)
+                live.write_bytes(changed)
+                self.assertFalse(verify(scheme, template, fixed, "dark", palette))
 
     def test_windows_icc_profile_boundary(self):
         report = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes-decode-profile.json").read_text(
@@ -1638,7 +1705,8 @@ class WindowMaterialTests(unittest.TestCase):
             decode = Mock(return_value=(2, 1, bytes((0, 0, 255, 255, 255, 0, 0, 0))))
             identity = lambda path: path.stat().st_size
             colors, validate = frames.wallpaper_tints(
-                image, {"wallpaper_file_identity": identity, "decode_wallpaper_bitmap": decode})
+                image, {"wallpaper_file_identity": identity, "decode_wallpaper_bitmap": decode,
+                        "icc_reference_identity": lambda: None})
             decode.assert_called_once_with(image)
             self.assertEqual(colors, {mode: frames.tint_color(mode, (255, 0, 0))
                                       for mode in frames.BASE_COLORS})
@@ -1660,12 +1728,16 @@ class WindowMaterialTests(unittest.TestCase):
             snapshot["wallpapers"].append({"path": "/other.png", "size": 1})
             self.assertEqual(frames.live_material_state(snapshot, json.dumps(first), sync), first)
             decode.assert_called_once_with(image)
-            sync["WALLPAPER_ANALYSIS_REVISION"] += 1
-            second = frames.live_material_state(snapshot, json.dumps(first), sync)
+            snapshot["icc_reference"] = "imported-reference"
+            imported = frames.live_material_state(snapshot, json.dumps(first), sync)
+            self.assertEqual(imported["icc_reference"], "imported-reference")
             self.assertEqual(decode.call_count, 2)
+            sync["WALLPAPER_ANALYSIS_REVISION"] += 1
+            second = frames.live_material_state(snapshot, json.dumps(imported), sync)
+            self.assertEqual(decode.call_count, 3)
             snapshot["wallpapers"][0]["size"] = 10
             frames.live_material_state(snapshot, json.dumps(second), sync)
-            self.assertEqual(decode.call_count, 3)
+            self.assertEqual(decode.call_count, 4)
             decode.side_effect = ValueError("Unsupported wallpaper")
             self.assertIsNone(frames.live_material_state(snapshot, None, sync))
 

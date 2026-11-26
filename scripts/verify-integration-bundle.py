@@ -45,7 +45,7 @@ def verify(revision, filename):
             "scripts/theme/window-frames.py", "scripts/theme/palette.json",
             "color-schemes/WindowsModern.colors.in",
             "scripts/theme/appearance-packages.py", "scripts/theme/sync-accent.py",
-            "scripts/theme/accent-control.py",
+            "scripts/theme/accent-control.py", "scripts/theme/wallpaper-icc.py",
             "prebuilt/SHA256SUMS",
             "bundled-store-artwork/manifest.json",
             "bundled-store-artwork/Microsoft_Store_logo_dark.svg",

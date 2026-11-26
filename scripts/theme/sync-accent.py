@@ -4,12 +4,14 @@
 import argparse
 import colorsys
 from fractions import Fraction
+from functools import lru_cache
 from io import BytesIO
 import json
 import math
 import os
 from pathlib import Path
 import re
+import runpy
 import stat
 import struct
 from string import Template
@@ -288,12 +290,14 @@ def _wallpaper_axis_samples(source, target):
                denominator - fraction, fraction)
 
 
-def _prepare_wallpaper_bitmap(pixels, width, height, channels):
+def _prepare_wallpaper_bitmap(pixels, width, height, channels, transform=None):
     """Resample packed RGB or premultiplied RGBa bytes into B/G/R/marker."""
     if (any(type(n) is not int or n <= 0 for n in (width, height))
             or channels not in (3, 4)
             or not isinstance(pixels, bytes) or len(pixels) != width * height * channels):
         raise ValueError("Expected tightly packed RGB8 or premultiplied RGBa8")
+    if transform is not None and channels != 3:
+        raise ValueError("Native ICC replay requires opaque RGB8")
     w, h = min(width, WALLPAPER_ANALYSIS_LIMIT), min(height, WALLPAPER_ANALYSIS_LIMIT)
     xs = [(left * channels, right * channels, a, b)
           for left, right, a, b in _wallpaper_axis_samples(width, w)]
@@ -307,9 +311,20 @@ def _prepare_wallpaper_bitmap(pixels, width, height, channels):
             weights = a * c, b * c, a * d, b * d
             positions = top + left, top + right, bottom + left, bottom + right
 
-            def interpolate(channel):
-                return sum(pixels[position + channel] * weight
-                           for position, weight in zip(positions, weights)) // denominator
+            # Color conversion is pointwise and precedes bilinear
+            # interpolation. Only the four contributing RGB taps are
+            # transformed, not the entire full-resolution image.
+            if transform is not None:
+                samples = [transform(*pixels[position:position + 3]) if weight else (0, 0, 0)
+                           for position, weight in zip(positions, weights)]
+
+                def interpolate(channel):
+                    return sum(sample[channel] * weight
+                               for sample, weight in zip(samples, weights)) // denominator
+            else:
+                def interpolate(channel):
+                    return sum(pixels[position + channel] * weight
+                               for position, weight in zip(positions, weights)) // denominator
 
             alpha = interpolate(3) if channels == 4 else 255
             if alpha:
@@ -353,18 +368,35 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 # Bump when decoder/analysis semantics change; installed automatic state
 # must not reuse a palette computed by the previous decoder.
-WALLPAPER_ANALYSIS_REVISION = 2
+WALLPAPER_ANALYSIS_REVISION = 3
+
+
+@lru_cache(maxsize=1)
+def _native_icc_module():
+    return runpy.run_path(str(Path(__file__).with_name("wallpaper-icc.py")))
+
+
+def icc_reference_identity():
+    return _native_icc_module()["reference_identity"]()
 
 
 def _icc_rgb_bitmap(image, profile_bytes):
     """Convert an opaque tagged RGB/gray image to the standard sRGB space.
 
-    This is the color-managed baseline, not a reconstruction of WCS's
-    integer quantization. Use the embedded profile and a fixed relative
-    colorimetric intent before the existing analysis resampling step.
+    Privately imported, hash-matched RGB8 links use the measured
+    fixed-point Windows replay. Other profiles use the existing Little
+    CMS color-managed baseline, not an exact WCS reconstruction.
+    Conversion precedes the existing analysis resampling step.
     """
     if not isinstance(profile_bytes, bytes) or not profile_bytes:
         raise ValueError("Invalid embedded wallpaper ICC profile")
+    if image.mode in ("RGB", "RGBA", "P"):
+        transform = _native_icc_module()["transform_for_profile"](profile_bytes)
+        if transform is not None:
+            if image.mode == "RGB":
+                return _prepare_wallpaper_bitmap(image.tobytes(), image.width, image.height, 3, transform)
+            with image.convert("RGB") as decoded:
+                return _prepare_wallpaper_bitmap(decoded.tobytes(), decoded.width, decoded.height, 3, transform)
     try:
         from PIL import ImageCms
     except ImportError as error:
@@ -412,8 +444,9 @@ def decode_wallpaper_bitmap(path):
     """Decode a local still image into the candidate WIC analysis buffer.
 
     Preserve the untagged opaque RGB path. Convert tagged opaque RGB or
-    grayscale images to sRGB before resampling, using the standard ICC
-    transform; WCS byte-level parity remains unresolved. For untagged
+    grayscale images to sRGB before resampling, using verified local RGB8
+    replay when available and the standard ICC transform otherwise.
+    General WCS table generation remains unresolved. For untagged
     transparent PNG use Pillow's premultiplied RGBa path. Tagged
     transparent images remain outside the reviewed contract.
     Do not re-encode or alter the source.
@@ -726,8 +759,15 @@ def analyze_wallpapers(paths):
     # Fingerprint the complete input set before decoding the first image.
     # Otherwise a later screen's file could change before its first read.
     identities = {path: wallpaper_file_identity(path) for path in dict.fromkeys(paths)}
+    reference = icc_reference_identity()
 
     def validate():
+        try:
+            current_reference = icc_reference_identity()
+        except (OSError, ValueError) as error:
+            raise WallpaperFileChangedError("ICC reference changed during analysis") from error
+        if current_reference != reference:
+            raise WallpaperFileChangedError("ICC reference changed during analysis")
         for path, identity in identities.items():
             try:
                 current = wallpaper_file_identity(path)

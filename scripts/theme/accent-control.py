@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Publish a Windows accent ramp through the active KDE color scheme."""
 import argparse
+import configparser
 import hashlib
 import json
 import os
@@ -130,10 +131,18 @@ def require_wallpaper_snapshot(state, primary_only=False):
         raise WallpaperChangedError("Previously accepted wallpaper is no longer ready") from error
     if current != expected:
         raise WallpaperChangedError("Desktop wallpaper changed during color analysis or publication")
+    if "icc_reference" in state:
+        try:
+            reference = SYNC["icc_reference_identity"]()
+        except (OSError, ValueError) as error:
+            raise WallpaperChangedError("ICC reference changed during publication") from error
+        if reference != state["icc_reference"]:
+            raise WallpaperChangedError("ICC reference changed during publication")
 
 
 def automatic_state(previous):
     snapshot = discover_wallpapers()
+    snapshot["icc_reference"] = SYNC["icc_reference_identity"]()
     revision = SYNC["WALLPAPER_ANALYSIS_REVISION"]
     if (previous and previous["source"] == "automatic"
             and previous.get("analysis_revision") == revision
@@ -246,30 +255,39 @@ def apply_current(mode, native):
                    check=True, stdout=subprocess.DEVNULL)
 
 
-def live_matches(mode, fixed, palette, path):
-    selection = palette[MODE_ROLES[mode]]
-    values = SYNC["accent_values"](mode, fixed[mode], selection, palette[LINK_ROLES[mode]])
-    file_hash = read("General", "ColorSchemeHash")
-    if file_hash != hashlib.sha1(path.read_bytes()).hexdigest():
-        return False
-    for group, key, role in (
-            ("Colors:Selection", "BackgroundNormal", "accent"),
-            ("Colors:Selection", "BackgroundAlternate", "accent"),
-            ("Colors:Selection", "ForegroundNormal", "highlight_text"),
-            ("Colors:Window", "DecorationFocus", "accent"),
-            ("Colors:Button", "DecorationFocus", "accent"),
-            ("Colors:Button", "ForegroundLink", "accent_link"),
-            ("Colors:Complementary", "ForegroundLink", "accent_link"),
-            ("Colors:Tooltip", "ForegroundLink", "accent_link"),
-            ("Colors:View", "ForegroundLink", "accent_link"),
-            ("Colors:Window", "ForegroundLink", "accent_link"),
-            ("Colors:Window", "BackgroundNormal", "window"),
-            ("WM", "activeBackground", "window")):
-        color = read(group, key)
-        if color is None or SYNC["rgb"](color) != SYNC["rgb"](values[role]):
-            return False
-    return True
+def parse_colors(data):
+    parser = configparser.ConfigParser(interpolation=None, strict=False, delimiters=("=",))
+    parser.optionxform = str
+    parser.read_string(data.decode("utf-8"))
+    return parser
 
+
+def live_matches(path, template, fixed, mode, palette):
+    # With a transparent native accent, Plasma 6.8.3's colorsapplicator
+    # copies all twelve roles in each Colors group and six WM roles.
+    # A scheme hash alone does not establish that the roles were applied.
+    # Read one local config snapshot instead of spawning a process per
+    # color; values absent from that snapshot cannot count as verified.
+    expected_data = render(template, fixed, mode, palette)
+    if path.read_bytes() != expected_data:
+        return False
+    if read("General", "ColorSchemeHash") != hashlib.sha1(expected_data).hexdigest():
+        return False
+    try:
+        expected = parse_colors(expected_data)
+        actual = parse_colors((CONFIG / "kdeglobals").read_bytes())
+        for group in expected.sections():
+            if not (group.startswith("Colors:") or group == "WM"):
+                continue
+            if not actual.has_section(group):
+                return False
+            for key, value in expected.items(group):
+                live = actual.get(group, key, fallback=None)
+                if live is None or SYNC["rgb"](live) != SYNC["rgb"](value):
+                    return False
+        return True
+    except (OSError, UnicodeError, ValueError, configparser.Error):
+        return False
 
 def synchronize(mode, action, inputs):
     if not active_mode(mode):
@@ -280,6 +298,23 @@ def synchronize(mode, action, inputs):
         return None
     native = native_accent()
     fresh_state = None
+    explicit_files = None
+    explicit_reference = None
+
+    def verify_source():
+        if fresh_state is not None:
+            require_wallpaper_snapshot(fresh_state)
+        if explicit_files is not None:
+            try:
+                if (SYNC["icc_reference_identity"]() != explicit_reference
+                        or any(SYNC["wallpaper_file_identity"](path) != identity
+                               for path, identity in explicit_files.items())):
+                    raise WallpaperChangedError("Selected wallpaper changed during publication")
+            except WallpaperChangedError:
+                raise
+            except (OSError, ValueError) as error:
+                raise WallpaperChangedError("Selected wallpaper changed during publication") from error
+
     if action in ("manual", "wallpaper", "automatic"):
         if any(native):
             raise ValueError("Select 'From current color scheme' in KDE Colors before using Windows accent control")
@@ -288,7 +323,16 @@ def synchronize(mode, action, inputs):
             state["manual_color"] = SYNC["rgb"](inputs[0])
             state["palette"] = SYNC["derive_manual_palette"](state["manual_color"])
         elif action == "wallpaper":
-            state["palette"] = SYNC["analyze_wallpapers"]([Path(path) for path in inputs])["palette"]
+            paths = [Path(path) for path in inputs]
+            explicit_files = {path: SYNC["wallpaper_file_identity"](path) for path in paths}
+            explicit_reference = SYNC["icc_reference_identity"]()
+            try:
+                state["palette"] = SYNC["analyze_wallpapers"](paths)["palette"]
+            except SYNC["WallpaperFileChangedError"] as error:
+                raise WallpaperChangedError(str(error)) from error
+            except (OSError, ValueError):
+                verify_source()
+                raise
         else:
             state = automatic_state(json.loads(raw) if raw is not None else None)
             fresh_state = state
@@ -334,17 +378,17 @@ def synchronize(mode, action, inputs):
         if desired is not None or name != mode:
             pending.update(prepared)
     scheme = directory / (scheme_name(mode) + ".colors")
-    refresh = (desired is None or scheme in pending or not live_matches(mode, fixed, desired, scheme))
+    refresh = (desired is None or scheme in pending or not live_matches(scheme, template, fixed, mode, desired))
     if not pending and not refresh and desired_raw == raw:
-        if fresh_state is not None:
-            require_wallpaper_snapshot(fresh_state)
+        verify_source()
+        if not active_mode(mode) or native_accent() != native or read(GROUP, KEY) != raw:
+            raise ValueError("Appearance changed during accent verification")
         return False
 
     # Do not revalidate the deliberately retained ramp on a failed
     # discovery or a mode-switch reapply. Only a fresh automatic result
     # must still refer to the currently loaded wallpaper.
-    if fresh_state is not None:
-        require_wallpaper_snapshot(fresh_state)
+    verify_source()
     if not active_mode(mode) or native_accent() != native:
         raise ValueError("KDE appearance changed while preparing the accent")
     if read(GROUP, KEY) != raw:
@@ -358,7 +402,7 @@ def synchronize(mode, action, inputs):
         if native_accent() != native or not active_mode(mode):
             raise ValueError("KDE appearance changed during accent synchronization")
         if desired is not None:
-            if not live_matches(mode, fixed, desired, scheme):
+            if not live_matches(scheme, template, fixed, mode, desired):
                 raise ValueError("KDE did not publish the requested Windows accent roles")
         else:
             selection = read("Colors:Selection", "BackgroundNormal")
@@ -366,8 +410,7 @@ def synchronize(mode, action, inputs):
                 raise ValueError("Missing effective KDE selection color")
             native_pending = SYNC["plan_kvantum"](kvdir, mode, selection)
             native_written = SYNC["write_pending"](native_pending)
-        if fresh_state is not None:
-            require_wallpaper_snapshot(fresh_state)
+        verify_source()
         if native_accent() != native or not active_mode(mode):
             raise ValueError("KDE appearance changed while committing the accent")
         if read(GROUP, KEY) != raw:
@@ -377,6 +420,12 @@ def synchronize(mode, action, inputs):
             write_state(desired_raw)
             if read(GROUP, KEY) != desired_raw:
                 raise ValueError("Windows accent state was not saved")
+        # Recheck the selection and source after writing the saved state.
+        # An event arriving during publication must not become a false
+        # successful update just because the renderer files were written.
+        verify_source()
+        if not active_mode(mode) or native_accent() != native or read(GROUP, KEY) != desired_raw:
+            raise ValueError("Appearance changed after accent publication")
         if refresh:
             notify_palette()
     except Exception:

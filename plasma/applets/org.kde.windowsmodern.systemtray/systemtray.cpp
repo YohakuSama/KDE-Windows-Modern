@@ -911,6 +911,19 @@ void SystemTray::refreshWallpaperWatch()
                 wanted.insert(appletConfig);
             }
         }
+        // Import/removal of a local, verified ICC replay also changes the
+        // decoder cache identity. Observe its parent for atomic publication.
+        const auto dataDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+        if (!dataDir.isEmpty()) {
+            const auto reference = dataDir + u"/windows-modern/icc-replay-v1.bin"_s;
+            const QFileInfo file(reference);
+            if (file.isFile()) {
+                wanted.insert(reference);
+            }
+            if (QFileInfo(file.absolutePath()).isDir()) {
+                wanted.insert(file.absolutePath());
+            }
+        }
         QJsonArray images;
         const auto accentImages = accent.value(u"wallpapers"_s).toArray();
         if (m_automaticWallpaperAccent && accentImages.size() <= 16) {

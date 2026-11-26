@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Add a private, hash-pinned RGB8 ICC replay for the two measured Windows 26H2 source profiles, convert only the pre-resampling taps, and invalidate automatic accent/material caches when the reference changes. Verify every owned KDE color/WM role and recheck explicit wallpaper selection through publication. Keep arbitrary ICC table generation and same-style live reload open.
+
 - Bound split Acrylic regions to the actual logical popup window, reject empty or invalid cards, and switch back to opaque paint on blur preference changes. Include the saved transparency marker and KWin blur choice in the existing checked renderer transaction; preserve the original preference across repeated off and refresh.
 
 - Reconcile the shared native icon resolver across Start, tray and both greeter packages; share the original default account portrait selector and SysBatt renderer without changing account or status-control placement. Keep plugged-in and unknown battery fallback states accurate, and preserve private resource boundaries.

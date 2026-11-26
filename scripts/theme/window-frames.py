@@ -198,12 +198,14 @@ def wallpaper_tints(package, sync=None):
     # Capture all identities before any decode and reuse one sample for
     # both variants when they select the same file.
     fingerprints = {path: identity(path) for path in set(sources.values()) if path is not None}
+    reference = sync["icc_reference_identity"]() if fingerprints else None
     samples = {path: sample_wallpaper(path, sync["decode_wallpaper_bitmap"])
                for path in fingerprints}
 
     def validate():
-        if wallpaper_sources(package) != sources or any(
-                identity(path) != fingerprint for path, fingerprint in fingerprints.items()):
+        if (wallpaper_sources(package) != sources
+                or (fingerprints and sync["icc_reference_identity"]() != reference)
+                or any(identity(path) != fingerprint for path, fingerprint in fingerprints.items())):
             raise ValueError("Wallpaper changed while preparing window materials")
 
     validate()
@@ -473,7 +475,7 @@ def live_material_state(snapshot, raw, sync):
     primary = dict(snapshot["wallpapers"][0])
     source = {"schema_version": 1, "analysis_revision": sync["WALLPAPER_ANALYSIS_REVISION"],
               "material_revision": MATERIAL_SAMPLE_REVISION, "base_colors": dict(BASE_COLORS),
-              "wallpapers": [primary]}
+              "icc_reference": snapshot.get("icc_reference"), "wallpapers": [primary]}
     try:
         previous = json.loads(raw) if raw is not None else None
     except (ValueError, TypeError):
@@ -514,6 +516,7 @@ def sync_live_material(mode, control):
     changed_error = control["WallpaperChangedError"]
     try:
         snapshot = control["discover_wallpapers"](primary_only=True)
+        snapshot["icc_reference"] = sync["icc_reference_identity"]()
     except changed_error:
         raise
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):

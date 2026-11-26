@@ -500,7 +500,8 @@ def lookfeel(root, destination, mode):
                            encoding="utf-8")
         scripts = target / "contents/scripts"
         scripts.mkdir()
-        for name in ("switch-mode.sh", "sync-accent.py", "accent-control.py", "window-frames.py", "palette.json"):
+        for name in ("switch-mode.sh", "sync-accent.py", "accent-control.py", "wallpaper-icc.py",
+                     "window-frames.py", "palette.json"):
             shutil.copy2(root / "scripts/theme" / name, scripts / name)
         shutil.copy2(root / "color-schemes/WindowsModern.colors.in", scripts)
     return target
