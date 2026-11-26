@@ -225,11 +225,12 @@ def table_metrics(actual, reference, sha):
             'absolute_error_sum':int(error.sum()), 'max_error':int(error.max())}
 
 
-def exhaustive_rgb8(source, candidate, native, destination, execute):
-    """Compare two *portable* table replays over all RGB8 codes, in batches.
+def exhaustive_rgb8(candidate_tables, native_tables, execute, native_full=None):
+    """Compare generated and measured-table replays in bounded RGB8 batches.
 
-    Native-table replay is not a fresh Windows measurement for these colors.
-    Hash both output streams in ascending R/G/B order.
+    With schema 2 evidence, verify the measured-table output against each
+    observed WIC red slice and the complete native output hash. Without
+    it, results describe only a comparison of two portable replays.
     """
     counts = np.zeros(256,dtype=np.int64)
     colors = 0
@@ -237,13 +238,23 @@ def exhaustive_rgb8(source, candidate, native, destination, execute):
     native_sha = hashlib.sha256()
     worst = None
     maximum = -1
+    different_red_slices = []
     for start in range(0,1<<24,1<<18):
         codes = np.arange(start,min(start+(1<<18),1<<24),dtype=np.uint32)
         pixels = np.column_stack((codes>>16,(codes>>8)&255,codes&255)).astype(np.uint8)
-        a = execute(source,candidate,destination,pixels)
-        b = execute(source,native,destination,pixels)
+        a = execute(*candidate_tables,pixels)
+        b = execute(*native_tables,pixels)
         candidate_sha.update(a.tobytes())
         native_sha.update(b.tobytes())
+        if native_full is not None:
+            for offset in range(0,len(pixels),1<<16):
+                red = (start+offset)>>16
+                end = offset+(1<<16)
+                expected = native_full['red_slice_sha256'][red]
+                if hashlib.sha256(b[offset:end].tobytes()).hexdigest().upper()!=expected:
+                    raise ValueError(f'Native-table replay differs from measured WIC at red slice {red}')
+                if hashlib.sha256(a[offset:end].tobytes()).hexdigest().upper()!=expected:
+                    different_red_slices.append(red)
         error = np.abs(a.astype(np.int16)-b.astype(np.int16))
         colors += int(np.count_nonzero(error.any(axis=1)))
         counts += np.bincount(error.ravel(),minlength=256)
@@ -251,14 +262,23 @@ def exhaustive_rgb8(source, candidate, native, destination, execute):
         if int(error[k,c])>maximum:
             maximum = int(error[k,c])
             worst = {'input':pixels[k].tolist(),'candidate':a[k].tolist(),'native_replay':b[k].tolist()}
-    return {'color_count':1<<24,'different_colors':colors,
+    native_digest = native_sha.hexdigest().upper()
+    if native_full is not None and native_digest != native_full['sha256']:
+        raise ValueError('Native-table replay differs from complete measured WIC hash')
+    result = {'color_count':1<<24,'different_colors':colors,
             'different_channels':int(counts[1:].sum()),
             'absolute_error_sum':int(counts@np.arange(256)),
             'max_channel_error':maximum,'channel_error_histogram':{
                 str(i):int(v) for i,v in enumerate(counts) if v},
             'candidate_rgb_sha256':candidate_sha.hexdigest().upper(),
-            'native_replay_rgb_sha256':native_sha.hexdigest().upper(),
+            'native_replay_rgb_sha256':native_digest,
             'worst_witness':worst}
+    if native_full is not None:
+        result.update(native_wic_hash_verified=True,
+                      different_red_slices=different_red_slices,
+                      matches_native=(colors==0 and not different_red_slices
+                                      and result['candidate_rgb_sha256']==native_digest))
+    return result
 
 
 def analyze(root, report, target_path, full_rgb8=False):
@@ -351,7 +371,7 @@ def analyze(root, report, target_path, full_rgb8=False):
                 row['grids'][model]['rgb8_error_bound'] = int(np.abs(np.diff(destination>>8,axis=1)).max())
             if full_rgb8 and model=='fixed14_integer':
                 row['grids'][model]['full_rgb8_replay_comparison'] = exhaustive_rgb8(
-                    source,grid,native_grid,destination,execute)
+                    (source,grid,destination),(source,native_grid,destination),execute)
         result['sources'][name] = row
     return result
 
@@ -447,16 +467,27 @@ def analyze_full_generation(root, report, target_path, source_paths, full_rgb8=F
                    calibration_and_mixed={key:partitions(execute(*tables,pixels),reference,n)
                                           for key,tables in stages.items()})
         if full_rgb8:
-            # Compare the completely generated result with the actual WIC
-            # full-domain hash, independently of the captured link replay.
-            digest,slices = precision['full_rgb8_hash'](stages['all_generated'])
             native = item['full_rgb8']
-            different = [i for i,(a,b) in enumerate(zip(slices,native['red_slice_sha256'])) if a!=b]
-            row['generated_full_rgb8'] = {
-                'sha256':digest,'different_red_slices':different,
-                'matches_native':digest==native['sha256'] and not different
-                    and all(not part['different_colors'] for part in
-                            row['calibration_and_mixed']['all_generated'].values())}
+            if measured['matches_full_rgb8']:
+                # Numeric differences are measured against the portable
+                # reference only after proving it matches every WIC slice.
+                row['generated_full_rgb8'] = exhaustive_rgb8(
+                    stages['all_generated'], (native_source,native_grid,native_destination),
+                    execute, native)
+                row['generated_full_rgb8']['matches_native'] &= all(
+                    not part['different_colors'] for part in
+                    row['calibration_and_mixed']['all_generated'].values())
+            else:
+                # A generated hash is still useful, but replay differences
+                # cannot be attributed to native WIC if its proof failed.
+                digest,slices = precision['full_rgb8_hash'](stages['all_generated'])
+                different = [i for i,(a,b) in enumerate(zip(slices,native['red_slice_sha256'])) if a!=b]
+                row['generated_full_rgb8'] = {
+                    'candidate_rgb_sha256':digest,'different_red_slices':different,
+                    'native_wic_hash_verified':False,
+                    'matches_native':digest==native['sha256'] and not different
+                        and all(not part['different_colors'] for part in
+                                row['calibration_and_mixed']['all_generated'].values())}
     return result
 
 

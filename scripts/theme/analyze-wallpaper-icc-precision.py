@@ -210,6 +210,43 @@ def measure(entry, count, reference, n):
     return result,buffers
 
 
+def analyze_source(item, reference, pixels, n, *, strict_replay=True):
+    """Validate every native precision result for one measured profile."""
+    count = len(pixels)
+    if set(item['intents'])!={'0','1','2'}:
+        raise ValueError('Wrong intent set')
+    results={}
+    for intent,entry in item['intents'].items():
+        if entry['status']=='error':
+            results[intent]=entry; continue
+        if entry['status']!='ok':
+            raise ValueError('Unknown transform status')
+        result,direct=measure(entry['direct'],count,reference,n)
+        link=checked(entry['link_profile'])
+        result['device_link']=entry['link_profile'] if link is None else describe_link(link)
+        if link is not None:
+            try:
+                prediction, tables = replay_rgb8(link, pixels)
+            except ValueError as error:
+                if strict_replay:
+                    raise
+                result['portable_rgb8'] = {'status':'unsupported-link','reason':str(error)}
+            else:
+                result['portable_rgb8'] = {**tables, 'output_sha256':sha(prediction.tobytes()),
+                                           'vs_wic':partitions(prediction,reference,n)}
+                if '8to8' in direct:
+                    result['portable_rgb8']['vs_direct']=partitions(prediction,direct['8to8'],n)
+            replay=entry['link_replay']
+            if replay.get('status')=='error':
+                result['link_replay']=replay
+            else:
+                m,buffers=measure(replay,count,reference,n)
+                m['vs_direct']={k:partitions(v,direct[k],n) for k,v in buffers.items() if k in direct}
+                result['link_replay']=m
+        results[intent]=result
+    return results
+
+
 def analyze(report, evidence):
     calibration,mixed=inputs(); n=len(calibration)//3; count=n+len(mixed)//3
     if (report['schema_version'],report['windows_build'],report['calibration_count'],report['mixed_count'],report['flags'])!=(1,'26300.9974',n,len(mixed)//3,3):
@@ -230,32 +267,7 @@ def analyze(report, evidence):
         wic=checked(item['wic'],count*3)
         if wic is None or wic[:n*3]!=prior:
             raise ValueError('WIC baseline did not reproduce prior measurement: '+source)
-        reference=rgb(wic,8)
-        if set(item['intents'])!={'0','1','2'}:
-            raise ValueError('Wrong intent set')
-        results[source]={}
-        for intent,entry in item['intents'].items():
-            if entry['status']=='error':
-                results[source][intent]=entry; continue
-            if entry['status']!='ok':
-                raise ValueError('Unknown transform status')
-            result,direct=measure(entry['direct'],count,reference,n)
-            link=checked(entry['link_profile'])
-            result['device_link']=entry['link_profile'] if link is None else describe_link(link)
-            if link is not None:
-                prediction, tables = replay_rgb8(link, rgb(calibration+mixed,8))
-                result['portable_rgb8'] = {**tables, 'output_sha256':sha(prediction.tobytes()),
-                                           'vs_wic':partitions(prediction,reference,n)}
-                if '8to8' in direct:
-                    result['portable_rgb8']['vs_direct']=partitions(prediction,direct['8to8'],n)
-                replay=entry['link_replay']
-                if replay.get('status')=='error':
-                    result['link_replay']=replay
-                else:
-                    m,buffers=measure(replay,count,reference,n)
-                    m['vs_direct']={k:partitions(v,direct[k],n) for k,v in buffers.items() if k in direct}
-                    result['link_replay']=m
-            results[source][intent]=result
+        results[source]=analyze_source(item,rgb(wic,8),rgb(calibration+mixed,8),n)
     return {'windows_build':report['windows_build'],'target_sha256':TARGET,'calibration_count':n,
             'mixed_count':count-n,'results':results}
 
@@ -282,12 +294,18 @@ def analyze_full_rgb8(report, evidence):
     known = {item['source']: item['source_icc_sha256'] for item in evidence['samples']}
     profiles = report['sources']
     if (len(profiles) > len(known) + 4 or set(profiles) != set(report['results'])
+            or len(set(profiles.values())) != len(profiles)
             or any(profiles.get(name) != digest for name, digest in known.items())):
         raise ValueError('Unexpected full-domain source profiles')
     for name, digest in profiles.items():
         if (len(digest) != 64 or any(c not in '0123456789ABCDEF' for c in digest)
                 or (name not in known and name != 'custom-' + digest)):
             raise ValueError('Invalid source profile identity')
+    for name, entry in report.get('synthetic_sources', {}).items():
+        data = checked(entry)
+        if (name in known or name not in profiles or data is None
+                or sha(data) != profiles[name]):
+            raise ValueError('Unexpected embedded synthetic source profile')
     baseline = dict(report, schema_version=1, sources=known,
                     results={name: report['results'][name] for name in known})
     result = analyze(baseline, evidence)
@@ -298,6 +316,16 @@ def analyze_full_rgb8(report, evidence):
         full = item['full_rgb8']
         row = {'source_sha256': profiles[name], 'native': full}
         result['full_rgb8'][name] = row
+        # Validate custom sources using the same precision path as the
+        # original controls, including all intents and bit depths. Do not
+        # let a failed full-domain measurement hide valid diagnostic data.
+        wic = checked(item['wic'], len(pixels) * 3)
+        if name not in known:
+            if wic is not None:
+                result['results'][name] = analyze_source(
+                    item, rgb(wic,8), pixels, len(calibration)//3, strict_replay=False)
+            else:
+                result['results'][name] = {'status':'missing-calibration'}
         if full['status'] == 'error':
             continue
         if (full['status'], full['color_count'], full['order']) != ('ok', 1 << 24, 'ascending-rgb24'):
@@ -306,7 +334,6 @@ def analyze_full_rgb8(report, evidence):
         if (len(hashes) != 257 or any(len(h) != 64 or any(c not in '0123456789ABCDEF' for c in h)
                                       for h in hashes)):
             raise ValueError('Invalid full-domain output hashes')
-        wic = checked(item['wic'], len(pixels) * 3)
         if wic is None:
             row['status'] = 'missing-calibration'
             continue
@@ -332,6 +359,15 @@ def analyze_full_rgb8(report, evidence):
         row['different_red_slices'] = different
         row['matches_full_rgb8'] = (digest == full['sha256'] and not different
                                    and not row['calibration_and_mixed']['different_colors'])
+        # One WIC full-domain observation per source. Other intents share
+        # its result only when all three measured conversion tables match.
+        # Complete profile hashes can differ despite identical tables.
+        keys = ('input_curve_sha256','clut_sha256','output_curve_sha256')
+        intents = result['results'][name]
+        relative = intents['1']['portable_rgb8']
+        row['equivalent_intents'] = [
+            intent for intent, item in sorted(intents.items())
+            if all(item.get('portable_rgb8',{}).get(key) == relative[key] for key in keys)]
         row['status'] = 'compared'
     return result
 

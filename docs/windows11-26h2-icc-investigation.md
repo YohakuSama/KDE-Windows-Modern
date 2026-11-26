@@ -787,3 +787,56 @@ counted as a fully generated transform. The new sampled interpolation
 remains in the offline diagnostic, not the installed runtime. The
 owner's raw capture and device-link data remain private. Tagged alpha
 ordering still requires the separate DecodeAlphaProfile capture.
+
+## Full-domain generated-matrix errors for the new curve controls
+
+The exact registered destination profile was obtained again from the
+previously recorded public reference, and its local SHA-256 matches
+the schema 2 report. The independent source-curve and destination-curve
+formulas reproduce all 768 input and 3,072 output entries for each of
+the two new synthetic profiles. The same approximate Q14 matrix model
+as before still differs at 61,369 of 98,304 CLUT entries (absolute error
+sum 508,403, maximum 43). The full-domain difference is therefore
+isolated to matrix construction in these controls.
+
+Local offline numerical comparison of the two generated transforms
+against their measured-table replays checked each reference red-slice
+hash and the complete native WIC hash before attributing numerical
+differences to native output:
+
+| Source control | Different RGB8 colors | Different channels | Absolute error sum | Max RGB8 error |
+| --- | ---: | ---: | ---: | ---: |
+| Independent R/G/B curves | 867,771 | 887,367 | 1,058,993 | 3 |
+| Shared gamma | 856,198 | 874,338 | 970,009 | 3 |
+
+Each denominator is 16,777,216 colors; both generated output streams
+differ from all 256 native red-slice hashes. These additional input
+curves do not eliminate the CLUT errors. No candidate matrix formula
+is promoted to the installed theme.
+
+The existing precision analyzer now applies the same binary and format
+validation to custom source profiles as to the original controls,
+including every successful direct and link-replay output at all three
+rendering intents and six bitmap-format combinations. Embedded
+synthetic profile identity is checked independently. Unsupported
+custom link geometry is reported without discarding its native
+precision measurements. For each source only one full-domain WIC
+measurement exists; other intent links are listed as equivalent only
+when all three conversion-table hashes match.
+
+The existing generation analyzer's optional full-domain comparison
+now reports exact differing-color and channel counts, the RGB8 error
+histogram, maximum error and a witness, rather than only the generated
+output hash. These numerical errors are identified with native WIC
+only if the reference replay matches all actual native hashes.
+Otherwise the analyzer retains the generated hash comparison without
+mislabeling portable-reference errors as native errors. The schema 1
+diagnostic retains its original portable-versus-portable comparison.
+No private ICC payload or new runtime dependency is included.
+
+The numerical comparison above is an isolated analysis of the owner's
+supplied data and the recorded exact destination profile, using a
+transcription of the existing formulas. It is not a run of the
+modified repository analyzer, a build, or desktop acceptance. Exact
+independent CLUT construction, native tagged-alpha ordering and other
+curve families remain unresolved.
