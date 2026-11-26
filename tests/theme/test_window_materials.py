@@ -168,7 +168,7 @@ class WindowMaterialTests(unittest.TestCase):
         def decode(path):
             calls.append(path)
             return (1, 1, bytes((88, 88, 188, 255)))
-        with patch.dict(analyze.__globals__, {"decode_opaque_wallpaper_bitmap": decode}):
+        with patch.dict(analyze.__globals__, {"decode_wallpaper_bitmap": decode}):
             path = Path("/wallpaper.png")
             single = analyze([path])
             repeated = analyze([path, path])
@@ -764,13 +764,13 @@ class WindowMaterialTests(unittest.TestCase):
             "isolated-red-high-top": "0xAF008700",
         })
 
-    def test_decode_wallpaper_orientation_and_opacity(self):
+    def test_decode_wallpaper_orientation_and_alpha(self):
         try:
             from PIL import Image
         except ImportError:
             self.skipTest("optional Pillow unavailable")
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
-        decode = sync["decode_opaque_wallpaper_bitmap"]
+        decode = sync["decode_wallpaper_bitmap"]
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             path = root / "oriented.png"
@@ -797,17 +797,91 @@ class WindowMaterialTests(unittest.TestCase):
                 self.assertEqual(decode(rgba), (1, 1, bytes((30, 20, 10, 255))))
                 image.putpixel((0, 0), (10, 20, 30, 128))
                 image.save(rgba)
-            with self.assertRaisesRegex(ValueError, "Transparent"):
-                decode(rgba)
+            # This is the candidate premultiply/unpremultiply contract,
+            # not a measurement of WIC's no-resize path.
+            self.assertEqual(decode(rgba), (1, 1, bytes((29, 19, 9, 128))))
             # RGB PNG can also carry a transparent-color key.
             with Image.new("RGB", (1, 1), (10, 20, 30)) as image:
                 image.save(rgba, transparency=(10, 20, 30))
-            with self.assertRaisesRegex(ValueError, "Transparent"):
+            self.assertEqual(decode(rgba), (1, 1, bytes(4)))
+            with Image.new("RGBA", (1, 1), (10, 20, 30, 128)) as image:
+                image.save(rgba, icc_profile=b"unreviewed")
+            with self.assertRaisesRegex(ValueError, "untagged PNG"):
                 decode(rgba)
+            with Image.new("RGBA", (1, 1), (10, 20, 30, 128)) as image:
+                webp = root / "transparent.webp"
+                try:
+                    image.save(webp, lossless=True)
+                except OSError:
+                    pass  # Pillow builds without a WebP encoder.
+                else:
+                    with self.assertRaisesRegex(ValueError, "untagged PNG"):
+                        decode(webp)
             with self.assertRaises(ValueError):
                 decode(root)
             with self.assertRaises(ValueError):
                 decode(root / "missing.jpg")
+
+    def test_windows_png_decoder_boundary(self):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("optional Pillow unavailable")
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        report = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes-decode-boundary.json").read_text(
+            encoding="utf-8-sig"))
+        self.assertEqual(report["probe_set"], "DecodeBoundary")
+        self.assertEqual(report["baseline"]["windows_build"], "26300.9974")
+        self.assertTrue(report["restoration"]["wallpaper_path_verified"])
+        self.assertTrue(report["restoration"]["palette_matches_baseline"])
+        references = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            for sample in report["samples"]:
+                probe, observation = sample["image"], sample["observation"]
+                capture = observation["capture"]
+                source = observation["wic_boundary"]["source"]
+                raw = gzip.decompress(base64.b64decode(source["gzip_base64"]))
+                with self.subTest(probe=probe["name"]):
+                    self.assertEqual(len(raw), 256 * 256 * 4)
+                    self.assertEqual(hashlib.sha256(raw).hexdigest().upper(), source["bitmap_sha256"])
+                    self.assertEqual(source["source_sha256"], capture["appearance"]["registered_wallpaper_sha256"])
+                    self.assertTrue(probe["pixel_validation"]["decoded_bgra_matches"])
+                    self.assertTrue(observation["native_argb_changed_from_reference"])
+                    native = capture["native_wallpaper_color_api"]
+                    self.assertTrue(native["argb_matches_image_color"])
+                    self.assertTrue(native["rgb_matches_dwm_colorization"])
+                    references[probe["name"]] = (raw, native["argb"])
+                    if probe["icc_profile"] != "none":
+                        continue  # Raw source WIC does not include the ICC-managed cache.
+                    width, height = sample["width"], sample["height"]
+                    patch, marker = probe["rectangle"], probe["marker_rectangle"]
+
+                    def box(rect):
+                        return (rect["x"], rect["y"], rect["x"] + rect["width"],
+                                rect["y"] + rect["height"])
+
+                    def rgba(color, alpha):
+                        return (*bytes.fromhex(color[1:]), alpha)
+
+                    path = Path(tmp) / (probe["name"] + ".png")
+                    with Image.new("RGBA", (width, height), rgba(probe["background"], 255)) as image:
+                        image.paste(rgba(patch["color"], probe["patch_alpha"]), box(patch))
+                        image.paste(rgba(probe["marker"], 255), box(marker))
+                        image.save(path)
+                    before = path.read_bytes()
+                    self.assertEqual(sync["decode_wallpaper_bitmap"](path), (256, 256, raw))
+                    self.assertEqual(path.read_bytes(), before)
+                    result = sync["analyze_wallpapers"]([path])
+                    roles = ("Accent", *sync["PRESET_SHADE_ROLES"])
+                    expected = {role: "#" + capture["appearance"]["colors_argb"][role][3:]
+                                for role in roles}
+                    self.assertEqual(result["colorization_argb"], native["argb"])
+                    self.assertEqual(result["palette"], expected)
+        self.assertEqual(len(references), 7)
+        self.assertEqual(references["decode-opaque"], references["decode-srgb"])
+        self.assertEqual(references["decode-opaque"][0], references["decode-linear"][0])
+        self.assertNotEqual(references["decode-opaque"][1], references["decode-linear"][1])
+        self.assertEqual(references["decode-alpha-0-red"], references["decode-alpha-0-blue"])
 
     def test_wallpaper_file_to_reference_palette(self):
         try:

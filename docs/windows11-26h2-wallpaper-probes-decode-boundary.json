@@ -1,0 +1,1213 @@
+{
+  "schema_version": 2,
+  "probe_set": "DecodeBoundary",
+  "description": "Controlled Windows automatic accent observations. Unchanged palette/image evidence is inconclusive.",
+  "baseline": {
+    "schema_version": 5,
+    "windows_build": "26300.9974",
+    "display_version": "26H2",
+    "accent_mode_argument": "Automatic",
+    "accent_mode_registry": "Automatic",
+    "accent_mode_registry_conflict": false,
+    "manual_color_argument": "",
+    "manual_color_matches_observed": null,
+    "native_wallpaper_color_api": {
+      "status": "ok",
+      "hresult": "0x00000000",
+      "argb": "0xAF2475CE",
+      "alpha": 175,
+      "image_color_argb": "0xAF2475CE",
+      "image_color_alpha": 175,
+      "image_color_after_api_argb": "0xAF2475CE",
+      "image_color_changed_by_api": false,
+      "argb_matches_image_color": true,
+      "alpha_matches_image_color": true,
+      "argb_matches_image_color_after_api": true,
+      "alpha_matches_image_color_after_api": true,
+      "rgb_matches_image_color": true,
+      "rgb_matches_dwm_colorization": true,
+      "error_type": null
+    },
+    "accent_observed_from_ui_settings": "#FF2475CE",
+    "manual_color_observed_from_ui_settings": null,
+    "appearance": {
+      "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+      "source_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+      "wallpaper_style_raw": "10",
+      "tile_wallpaper_raw": "0",
+      "apps_use_light_theme": 1,
+      "system_uses_light_theme": 1,
+      "transparency_raw": 1,
+      "reported_display_width": 1280,
+      "reported_display_height": 800,
+      "colors_argb": {
+        "Accent": "#FF2475CE",
+        "AccentDark1": "#FF1C5CB2",
+        "AccentDark2": "#FF123C8E",
+        "AccentDark3": "#FF061864",
+        "AccentLight1": "#FF398BDC",
+        "AccentLight2": "#FF85C5EA",
+        "AccentLight3": "#FFAEE6F6",
+        "Background": "#FFFFFFFF",
+        "Foreground": "#FF000000"
+      },
+      "registry": {
+        "control_panel_auto_colorization_raw": 1,
+        "desktop_image_color_raw": -1356565042,
+        "themes_history_auto_color_raw": 1,
+        "dwm_accent_color_raw": -16742656,
+        "dwm_colorization_color_raw": 2389454,
+        "dwm_colorization_afterglow_raw": 2389454,
+        "explorer_accent_color_menu_raw": -3246812,
+        "explorer_start_color_menu_raw": -5088228,
+        "accent_palette_length_bytes": 32,
+        "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
+      }
+    }
+  },
+  "samples": [
+    {
+      "image": {
+        "background": "#148A14",
+        "patch_alpha": 255,
+        "pixel_validation": {
+          "expected_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+          "decoded_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+          "decoded_bgra_matches": true,
+          "icc_profile_sha256": null
+        },
+        "name": "decode-opaque",
+        "rectangle": {
+          "y": 0,
+          "color": "#E13030",
+          "width": 1280,
+          "height": 281,
+          "x": 0
+        },
+        "icc_profile": "none",
+        "marker_rectangle": {
+          "y": 700,
+          "width": 160,
+          "height": 100,
+          "x": 0
+        },
+        "marker": "#FF00FF"
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAF008700",
+            "alpha": 175,
+            "image_color_argb": "0xAF008700",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAF008700",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FF038801",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "E3B8E9FC44A1161967EE35B32551F1BE0C8308E4177114912DF96CC9DDD03FAB",
+            "source_wallpaper_sha256": "E3B8E9FC44A1161967EE35B32551F1BE0C8308E4177114912DF96CC9DDD03FAB",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF038801",
+              "AccentDark1": "#FF027001",
+              "AccentDark2": "#FF025201",
+              "AccentDark3": "#FF012F00",
+              "AccentLight1": "#FF0AB301",
+              "AccentLight2": "#FF44FD27",
+              "AccentLight3": "#FF85FE66",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1358919936,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16742656,
+              "dwm_colorization_color_raw": 34560,
+              "dwm_colorization_afterglow_raw": 34560,
+              "explorer_accent_color_menu_raw": -16742656,
+              "explorer_start_color_menu_raw": -16683006,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "85FE660044FD27000AB30100038801000270010002520100012F000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "registered_source_matches": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "E1282751360155A4E3F8C4CF0A4FDBDBBDE938285EA16CE7533DB5465C5D8596",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3caf-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": false,
+            "background_rgb": "#148A14",
+            "marker_rgb": "#FF00FF",
+            "patch_rgb": "#E13030"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "E3B8E9FC44A1161967EE35B32551F1BE0C8308E4177114912DF96CC9DDD03FAB",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "source_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "scaled_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "decoded_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "ED5C23F919A278EE0ADE1E14C6DF154989E68DC0CB92C3CE687E9D917CA1E585",
+            "gzip_base64": "H4sIAAAAAAAEAO3TQRGAMBDAQERUSHXiEiWHBl6dIftYAXlk72c2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfrXsBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPzXXHHW6H8r8D13+hy7/Q5f/ocv/0OV/6PI/dPkfuvwPXf6HLv9Dl/+hy//Q5X/o8j90+R+6/A9d/ocu/0OX/6HL/9Dlf+jyP3T5H7r8D13+hy7/Q5f/ocv/0OV/6PI/dL0Exjc6AAAEAA=="
+          },
+          "transcoded": null,
+          "transcoded_status": "unverified"
+        }
+      }
+    },
+    {
+      "image": {
+        "background": "#148A14",
+        "patch_alpha": 255,
+        "pixel_validation": {
+          "expected_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+          "decoded_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+          "decoded_bgra_matches": true,
+          "icc_profile_sha256": "47FDA5236B74B9F11DA23C9834FAE1DBF0C0E195DEBEB22EFD147268C1CEC98C"
+        },
+        "name": "decode-srgb",
+        "rectangle": {
+          "y": 0,
+          "color": "#E13030",
+          "width": 1280,
+          "height": 281,
+          "x": 0
+        },
+        "icc_profile": "srgb",
+        "marker_rectangle": {
+          "y": 700,
+          "width": 160,
+          "height": 100,
+          "x": 0
+        },
+        "marker": "#FF00FF"
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAF008700",
+            "alpha": 175,
+            "image_color_argb": "0xAF008700",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAF008700",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FF038801",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "8D876AE6A9E29DECB0AB39141390500E8C894DFF29F5A918002692094362D0AA",
+            "source_wallpaper_sha256": "8D876AE6A9E29DECB0AB39141390500E8C894DFF29F5A918002692094362D0AA",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF038801",
+              "AccentDark1": "#FF027001",
+              "AccentDark2": "#FF025201",
+              "AccentDark3": "#FF012F00",
+              "AccentLight1": "#FF0AB301",
+              "AccentLight2": "#FF44FD27",
+              "AccentLight3": "#FF85FE66",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1358919936,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16742656,
+              "dwm_colorization_color_raw": 34560,
+              "dwm_colorization_afterglow_raw": 34560,
+              "explorer_accent_color_menu_raw": -16742656,
+              "explorer_start_color_menu_raw": -16683006,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "85FE660044FD27000AB30100038801000270010002520100012F000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "registered_source_matches": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "64030AD73AC073E0BCFE694C422B245C47CD7430F148658313AF898266D158DD",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3caf-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": false,
+            "background_rgb": "#138A13",
+            "marker_rgb": "#FF00FF",
+            "patch_rgb": "#E12F2F"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "8D876AE6A9E29DECB0AB39141390500E8C894DFF29F5A918002692094362D0AA",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "source_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "scaled_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "decoded_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "ED5C23F919A278EE0ADE1E14C6DF154989E68DC0CB92C3CE687E9D917CA1E585",
+            "gzip_base64": "H4sIAAAAAAAEAO3TQRGAMBDAQERUSHXiEiWHBl6dIftYAXlk72c2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfrXsBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPzXXHHW6H8r8D13+hy7/Q5f/ocv/0OV/6PI/dPkfuvwPXf6HLv9Dl/+hy//Q5X/o8j90+R+6/A9d/ocu/0OX/6HL/9Dlf+jyP3T5H7r8D13+hy7/Q5f/ocv/0OV/6PI/dL0Exjc6AAAEAA=="
+          },
+          "transcoded": null,
+          "transcoded_status": "unverified"
+        }
+      }
+    },
+    {
+      "image": {
+        "background": "#148A14",
+        "patch_alpha": 255,
+        "pixel_validation": {
+          "expected_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+          "decoded_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+          "decoded_bgra_matches": true,
+          "icc_profile_sha256": "BC77188D9AABAF2F17730FBE0C3B3954579190954C6E273C35C33D52CFB193B6"
+        },
+        "name": "decode-linear",
+        "rectangle": {
+          "y": 0,
+          "color": "#E13030",
+          "width": 1280,
+          "height": 281,
+          "x": 0
+        },
+        "icc_profile": "linear-srgb",
+        "marker_rectangle": {
+          "y": 700,
+          "width": 160,
+          "height": 100,
+          "x": 0
+        },
+        "marker": "#FF00FF"
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAF1A861A",
+            "alpha": 175,
+            "image_color_argb": "0xAF1A861A",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAF1A861A",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FF1B871B",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "B231F3C29D360F25D71BC8F6237DE1212262E62E39DEC4372B0A4C7464C42650",
+            "source_wallpaper_sha256": "B231F3C29D360F25D71BC8F6237DE1212262E62E39DEC4372B0A4C7464C42650",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF1B871B",
+              "AccentDark1": "#FF156F15",
+              "AccentDark2": "#FF0E510E",
+              "AccentDark3": "#FF052E05",
+              "AccentLight1": "#FF26A922",
+              "AccentLight2": "#FF67DE58",
+              "AccentLight3": "#FF99E98A",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1357216230,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -15038950,
+              "dwm_colorization_color_raw": 1738266,
+              "dwm_colorization_afterglow_raw": 1738266,
+              "explorer_accent_color_menu_raw": -15038950,
+              "explorer_start_color_menu_raw": -15372523,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "99E98A0067DE580026A922001B871B00156F15000E510E00052E050088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "registered_source_matches": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "7BD84D9777F7167CAE470AE2C1D3900F74946C765A68F4C3AAAE1DBC9628A62F",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3caf-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": false,
+            "background_rgb": "#4FC34F",
+            "marker_rgb": "#FF00FF",
+            "patch_rgb": "#F27878"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "B231F3C29D360F25D71BC8F6237DE1212262E62E39DEC4372B0A4C7464C42650",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "source_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "scaled_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "decoded_bgra_sha256": "A55374482A30804C0B84D96C4F3409B31FA426930EB5BC3B4825D3DFC1E529C9",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "ED5C23F919A278EE0ADE1E14C6DF154989E68DC0CB92C3CE687E9D917CA1E585",
+            "gzip_base64": "H4sIAAAAAAAEAO3TQRGAMBDAQERUSHXiEiWHBl6dIftYAXlk72c2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfrXsBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPzXXHHW6H8r8D13+hy7/Q5f/ocv/0OV/6PI/dPkfuvwPXf6HLv9Dl/+hy//Q5X/o8j90+R+6/A9d/ocu/0OX/6HL/9Dlf+jyP3T5H7r8D13+hy7/Q5f/ocv/0OV/6PI/dL0Exjc6AAAEAA=="
+          },
+          "transcoded": null,
+          "transcoded_status": "unverified"
+        }
+      }
+    },
+    {
+      "image": {
+        "background": "#148A14",
+        "patch_alpha": 128,
+        "pixel_validation": {
+          "expected_bgra_sha256": "E62EBD4C43CB8F7281DB3E91FCA57A47DB06A9259EF6C07B4302BD6DBB6DB504",
+          "decoded_bgra_sha256": "E62EBD4C43CB8F7281DB3E91FCA57A47DB06A9259EF6C07B4302BD6DBB6DB504",
+          "decoded_bgra_matches": true,
+          "icc_profile_sha256": null
+        },
+        "name": "decode-alpha-128",
+        "rectangle": {
+          "y": 0,
+          "color": "#E13030",
+          "width": 1280,
+          "height": 281,
+          "x": 0
+        },
+        "icc_profile": "none",
+        "marker_rectangle": {
+          "y": 700,
+          "width": 160,
+          "height": 100,
+          "x": 0
+        },
+        "marker": "#FF00FF"
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAF008700",
+            "alpha": 175,
+            "image_color_argb": "0xAF008700",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAF008700",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FF038801",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "402CD70459916AFD65CDF5FFA63C027816655696D6C321F904159C30AB0C70D9",
+            "source_wallpaper_sha256": "402CD70459916AFD65CDF5FFA63C027816655696D6C321F904159C30AB0C70D9",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF038801",
+              "AccentDark1": "#FF027001",
+              "AccentDark2": "#FF025201",
+              "AccentDark3": "#FF012F00",
+              "AccentLight1": "#FF0AB301",
+              "AccentLight2": "#FF44FD27",
+              "AccentLight3": "#FF85FE66",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1358919936,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16742656,
+              "dwm_colorization_color_raw": 34560,
+              "dwm_colorization_afterglow_raw": 34560,
+              "explorer_accent_color_menu_raw": -16742656,
+              "explorer_start_color_menu_raw": -16683006,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "85FE660044FD27000AB30100038801000270010002520100012F000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "registered_source_matches": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "38DC3F8296A2B8DC4637B5D02B1B957E9A3DE0C314B16492A5A574209D2963C9",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3caf-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": false,
+            "background_rgb": "#148A14",
+            "marker_rgb": "#FF00FF",
+            "patch_rgb": "#E13030"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "402CD70459916AFD65CDF5FFA63C027816655696D6C321F904159C30AB0C70D9",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "source_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "scaled_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "decoded_bgra_sha256": "E62EBD4C43CB8F7281DB3E91FCA57A47DB06A9259EF6C07B4302BD6DBB6DB504",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "6A23D3397262CF6CE9BF16DD042787DDFFABAFB21E42E50B1D88B09C72F72EA0",
+            "gzip_base64": "H4sIAAAAAAAEAO3TMRGAMADAQETURy0y4xIlrQam3pEfXkCGzPneEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAz8YzFgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPBP61pHne6HMv9Dl/+hy//Q5X/o8j90+R+6/A9d/ocu/0OX/6HL/9Dlf+jyP3T5H7r8D13+hy7/Q5f/ocv/0OV/6PI/dPkfuvwPXf6HLv9Dl/+hy//Q5X/o8j90+R+6/A9dG/UX/T0AAAQA"
+          },
+          "transcoded": null,
+          "transcoded_status": "unverified"
+        }
+      }
+    },
+    {
+      "image": {
+        "background": "#148A14",
+        "patch_alpha": 1,
+        "pixel_validation": {
+          "expected_bgra_sha256": "9ADEBB4AF4ABAE9A7D2A495CC06855B5F4AB093D9C253E13FB273F1A5B3BAFCD",
+          "decoded_bgra_sha256": "9ADEBB4AF4ABAE9A7D2A495CC06855B5F4AB093D9C253E13FB273F1A5B3BAFCD",
+          "decoded_bgra_matches": true,
+          "icc_profile_sha256": null
+        },
+        "name": "decode-alpha-1",
+        "rectangle": {
+          "y": 0,
+          "color": "#E13030",
+          "width": 1280,
+          "height": 281,
+          "x": 0
+        },
+        "icc_profile": "none",
+        "marker_rectangle": {
+          "y": 700,
+          "width": 160,
+          "height": 100,
+          "x": 0
+        },
+        "marker": "#FF00FF"
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAFD24444",
+            "alpha": 175,
+            "image_color_argb": "0xAFD24444",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAFD24444",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FFD24444",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "B90606A8D64FA20B58719941A94A8165DD836653199727737CE85F44A59FEFD6",
+            "source_wallpaper_sha256": "B90606A8D64FA20B58719941A94A8165DD836653199727737CE85F44A59FEFD6",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FFD24444",
+              "AccentDark1": "#FFBB2D2D",
+              "AccentDark2": "#FF8C2222",
+              "AccentDark3": "#FF5E0C0C",
+              "AccentLight1": "#FFD95B58",
+              "AccentLight2": "#FFEC968E",
+              "AccentLight3": "#FFF7B8AD",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1345174460,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -12303150,
+              "dwm_colorization_color_raw": 13780036,
+              "dwm_colorization_afterglow_raw": 13780036,
+              "explorer_accent_color_menu_raw": -12303150,
+              "explorer_start_color_menu_raw": -13816389,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "F7B8AD00EC968E00D95B5800D2444400BB2D2D008C2222005E0C0C0088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "registered_source_matches": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "A8AADC99D5CCCD098DEC6E1997DD64DC188049631F0A24B02BAF96303C92F523",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3caf-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": false,
+            "background_rgb": "#148A14",
+            "marker_rgb": "#FF00FF",
+            "patch_rgb": "#E13030"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "B90606A8D64FA20B58719941A94A8165DD836653199727737CE85F44A59FEFD6",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "source_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "scaled_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "decoded_bgra_sha256": "9ADEBB4AF4ABAE9A7D2A495CC06855B5F4AB093D9C253E13FB273F1A5B3BAFCD",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "E8BD721F8EB9CA60BA5849D36AFEE023EB3B2B2528D40B6101FBD5DDFA8AF3BE",
+            "gzip_base64": "H4sIAAAAAAAEAO3TMRGAQBDAwMMDqjF9aKD6GbLFCkiRmb0GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIDP7udeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4J929qjT/VDmf+jyP3T5H7r8D13+hy7/Q5f/ocv/0OV/6PI/dPkfuvwPXf6HLv9Dl/+hy//Q5X/o8j90+R+6/A9d/ocu/0OX/6HL/9Dlf+jyP3T5H7r8D13+hy7/Q5f/oesFrIVBnAAABAA="
+          },
+          "transcoded": null,
+          "transcoded_status": "unverified"
+        }
+      }
+    },
+    {
+      "image": {
+        "background": "#148A14",
+        "patch_alpha": 0,
+        "pixel_validation": {
+          "expected_bgra_sha256": "A8FF0C406C90A65E2B71679B7423F01CF32A9EBC0593974C4C8E85E621BEFA18",
+          "decoded_bgra_sha256": "A8FF0C406C90A65E2B71679B7423F01CF32A9EBC0593974C4C8E85E621BEFA18",
+          "decoded_bgra_matches": true,
+          "icc_profile_sha256": null
+        },
+        "name": "decode-alpha-0-red",
+        "rectangle": {
+          "y": 0,
+          "color": "#E13030",
+          "width": 1280,
+          "height": 281,
+          "x": 0
+        },
+        "icc_profile": "none",
+        "marker_rectangle": {
+          "y": 700,
+          "width": 160,
+          "height": 100,
+          "x": 0
+        },
+        "marker": "#FF00FF"
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAF008700",
+            "alpha": 175,
+            "image_color_argb": "0xAF008700",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAF008700",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FF038801",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "F968EA4EC452C3F3535144C93ADD2BE9FA2D6A65FB05F6BEEEE4E7297CE04CE2",
+            "source_wallpaper_sha256": "F968EA4EC452C3F3535144C93ADD2BE9FA2D6A65FB05F6BEEEE4E7297CE04CE2",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF038801",
+              "AccentDark1": "#FF027001",
+              "AccentDark2": "#FF025201",
+              "AccentDark3": "#FF012F00",
+              "AccentLight1": "#FF0AB301",
+              "AccentLight2": "#FF44FD27",
+              "AccentLight3": "#FF85FE66",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1358919936,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16742656,
+              "dwm_colorization_color_raw": 34560,
+              "dwm_colorization_afterglow_raw": 34560,
+              "explorer_accent_color_menu_raw": -16742656,
+              "explorer_start_color_menu_raw": -16683006,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "85FE660044FD27000AB30100038801000270010002520100012F000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "registered_source_matches": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "020889FA8B5DC92E261B9036B9962372F77DA74376345A996FEAC7AA4EBA0F87",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3caf-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": false,
+            "background_rgb": "#148A14",
+            "marker_rgb": "#FF00FF",
+            "patch_rgb": "#E13030"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "F968EA4EC452C3F3535144C93ADD2BE9FA2D6A65FB05F6BEEEE4E7297CE04CE2",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "source_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "scaled_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "decoded_bgra_sha256": "A8FF0C406C90A65E2B71679B7423F01CF32A9EBC0593974C4C8E85E621BEFA18",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "2C1FA1E0764E0E261EF8067156867E3A5F492D7FCAAE0E3ACA6ABA1FB5E3DC18",
+            "gzip_base64": "H4sIAAAAAAAEAO3TMQ3AQBAEsQPxqEP6wiHNSxmPZABb7IwkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIk6UvnOQsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD8085edXs/lPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dL3nrUOEAAAEAA=="
+          },
+          "transcoded": null,
+          "transcoded_status": "unverified"
+        }
+      }
+    },
+    {
+      "image": {
+        "background": "#148A14",
+        "patch_alpha": 0,
+        "pixel_validation": {
+          "expected_bgra_sha256": "46C4FBB034869523BE5EEDB5B6850EBDE5E96E9A29CAF747727A733C74B87F87",
+          "decoded_bgra_sha256": "46C4FBB034869523BE5EEDB5B6850EBDE5E96E9A29CAF747727A733C74B87F87",
+          "decoded_bgra_matches": true,
+          "icc_profile_sha256": null
+        },
+        "name": "decode-alpha-0-blue",
+        "rectangle": {
+          "y": 0,
+          "color": "#3030E1",
+          "width": 1280,
+          "height": 281,
+          "x": 0
+        },
+        "icc_profile": "none",
+        "marker_rectangle": {
+          "y": 700,
+          "width": 160,
+          "height": 100,
+          "x": 0
+        },
+        "marker": "#FF00FF"
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 5,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "manual_color_matches_observed": null,
+          "native_wallpaper_color_api": {
+            "status": "ok",
+            "hresult": "0x00000000",
+            "argb": "0xAF008700",
+            "alpha": 175,
+            "image_color_argb": "0xAF008700",
+            "image_color_alpha": 175,
+            "image_color_after_api_argb": "0xAF008700",
+            "image_color_changed_by_api": false,
+            "argb_matches_image_color": true,
+            "alpha_matches_image_color": true,
+            "argb_matches_image_color_after_api": true,
+            "alpha_matches_image_color_after_api": true,
+            "rgb_matches_image_color": true,
+            "rgb_matches_dwm_colorization": true,
+            "error_type": null
+          },
+          "accent_observed_from_ui_settings": "#FF038801",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "AB8C0A41BECD3FCF50279267C8290DD47177AE3DDC7390F87ACE270C1B98CCBB",
+            "source_wallpaper_sha256": "AB8C0A41BECD3FCF50279267C8290DD47177AE3DDC7390F87ACE270C1B98CCBB",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF038801",
+              "AccentDark1": "#FF027001",
+              "AccentDark2": "#FF025201",
+              "AccentDark3": "#FF012F00",
+              "AccentLight1": "#FF0AB301",
+              "AccentLight2": "#FF44FD27",
+              "AccentLight3": "#FF85FE66",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "desktop_image_color_raw": -1358919936,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16742656,
+              "dwm_colorization_color_raw": 34560,
+              "dwm_colorization_afterglow_raw": 34560,
+              "explorer_accent_color_menu_raw": -16742656,
+              "explorer_start_color_menu_raw": -16683006,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "85FE660044FD27000AB30100038801000270010002520100012F000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true,
+        "registered_source_matches": true,
+        "isolation_reference": {
+          "native_argb": "0xAF2475CE",
+          "accent": "#FF2475CE",
+          "wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "caches": {
+            "transcoded": {
+              "status": "ok",
+              "sha256": "6EA25D299ADB39DF40212749727988F5F4BD1DABA2B02FAFB970FA2D1DBEC7A7",
+              "width": 1920,
+              "height": 1200,
+              "format_guid": "b96b3cae-0728-11d3-9d7b-0000f81ef32e",
+              "is_jpeg": true
+            },
+            "display_cache": {
+              "status": "missing"
+            }
+          }
+        },
+        "native_argb_changed_from_reference": true,
+        "cache_observation": {
+          "transcoded": {
+            "status": "ok",
+            "sha256": "28572E7E7FC7B5B4F79B1D5583EE3CB3B89F80AB15CEC399BEF20B4C501D9E62",
+            "width": 1280,
+            "height": 800,
+            "format_guid": "b96b3caf-0728-11d3-9d7b-0000f81ef32e",
+            "is_jpeg": false,
+            "background_rgb": "#148A14",
+            "marker_rgb": "#FF00FF",
+            "patch_rgb": "#3030E1"
+          },
+          "display_cache": {
+            "status": "missing"
+          }
+        },
+        "wic_boundary": {
+          "source": {
+            "source_sha256": "AB8C0A41BECD3FCF50279267C8290DD47177AE3DDC7390F87ACE270C1B98CCBB",
+            "source_width": 1280,
+            "source_height": 800,
+            "width": 256,
+            "height": 256,
+            "interpolation_mode": 1,
+            "pixel_format": "32bppBGR",
+            "source_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "scaled_format_guid": "6fddc324-4e03-4bfe-b185-3d77768dc90f",
+            "decoded_bgra_sha256": "46C4FBB034869523BE5EEDB5B6850EBDE5E96E9A29CAF747727A733C74B87F87",
+            "order": "top-down BGRX",
+            "bitmap_sha256": "2C1FA1E0764E0E261EF8067156867E3A5F492D7FCAAE0E3ACA6ABA1FB5E3DC18",
+            "gzip_base64": "H4sIAAAAAAAEAO3TMQ3AQBAEsQPxqEP6wiHNSxmPZABb7IwkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIkSZIk6UvnOQsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD8085edXs/lPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dPk/dL3nrUOEAAAEAA=="
+          },
+          "transcoded": null,
+          "transcoded_status": "unverified"
+        }
+      }
+    }
+  ],
+  "restoration": {
+    "wallpaper_path_verified": true,
+    "palette_matches_baseline": true,
+    "observation": {
+      "capture": {
+        "schema_version": 5,
+        "windows_build": "26300.9974",
+        "display_version": "26H2",
+        "accent_mode_argument": "Automatic",
+        "accent_mode_registry": "Automatic",
+        "accent_mode_registry_conflict": false,
+        "manual_color_argument": "",
+        "manual_color_matches_observed": null,
+        "native_wallpaper_color_api": {
+          "status": "ok",
+          "hresult": "0x00000000",
+          "argb": "0xAF2475CE",
+          "alpha": 175,
+          "image_color_argb": "0xAF2475CE",
+          "image_color_alpha": 175,
+          "image_color_after_api_argb": "0xAF2475CE",
+          "image_color_changed_by_api": false,
+          "argb_matches_image_color": true,
+          "alpha_matches_image_color": true,
+          "argb_matches_image_color_after_api": true,
+          "alpha_matches_image_color_after_api": true,
+          "rgb_matches_image_color": true,
+          "rgb_matches_dwm_colorization": true,
+          "error_type": null
+        },
+        "accent_observed_from_ui_settings": "#FF2475CE",
+        "manual_color_observed_from_ui_settings": null,
+        "appearance": {
+          "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "source_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "wallpaper_style_raw": "10",
+          "tile_wallpaper_raw": "0",
+          "apps_use_light_theme": 1,
+          "system_uses_light_theme": 1,
+          "transparency_raw": 1,
+          "reported_display_width": 1280,
+          "reported_display_height": 800,
+          "colors_argb": {
+            "Accent": "#FF2475CE",
+            "AccentDark1": "#FF1C5CB2",
+            "AccentDark2": "#FF123C8E",
+            "AccentDark3": "#FF061864",
+            "AccentLight1": "#FF398BDC",
+            "AccentLight2": "#FF85C5EA",
+            "AccentLight3": "#FFAEE6F6",
+            "Background": "#FFFFFFFF",
+            "Foreground": "#FF000000"
+          },
+          "registry": {
+            "control_panel_auto_colorization_raw": 1,
+            "desktop_image_color_raw": -1356565042,
+            "themes_history_auto_color_raw": 1,
+            "dwm_accent_color_raw": -3246812,
+            "dwm_colorization_color_raw": 2389454,
+            "dwm_colorization_afterglow_raw": 2389454,
+            "explorer_accent_color_menu_raw": -3246812,
+            "explorer_start_color_menu_raw": -5088228,
+            "accent_palette_length_bytes": 32,
+            "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
+          }
+        }
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    }
+  }
+}

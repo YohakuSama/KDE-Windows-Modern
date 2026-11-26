@@ -287,37 +287,63 @@ def _wallpaper_axis_samples(source, target):
                denominator - fraction, fraction)
 
 
-def prepare_opaque_wallpaper_bitmap(pixels, width, height):
-    """Prepare a candidate top-down BGRX analysis bitmap from packed RGB8.
-
-    The caller supplies decoded, oriented, opaque RGB bytes. Dimensions
-    are capped independently; there is no forced JPEG re-encoding.
-    Pixel-center bilinear interpolation with truncation matches the
-    three measured WIC BMP buffers byte for byte. This is not a claim
-    of universal WIC decoder, format-conversion or rounding parity.
-    """
+def _prepare_wallpaper_bitmap(pixels, width, height, channels):
+    """Resample packed RGB or premultiplied RGBa bytes into B/G/R/marker."""
     if (any(type(n) is not int or n <= 0 for n in (width, height))
-            or not isinstance(pixels, bytes) or len(pixels) != width * height * 3):
-        raise ValueError("Expected a tightly packed opaque RGB8 image")
+            or channels not in (3, 4)
+            or not isinstance(pixels, bytes) or len(pixels) != width * height * channels):
+        raise ValueError("Expected tightly packed RGB8 or premultiplied RGBa8")
     w, h = min(width, WALLPAPER_ANALYSIS_LIMIT), min(height, WALLPAPER_ANALYSIS_LIMIT)
-    xs = [(left * 3, right * 3, a, b)
+    xs = [(left * channels, right * channels, a, b)
           for left, right, a, b in _wallpaper_axis_samples(width, w)]
     denominator = 4 * w * h
     output = bytearray(w * h * 4)
     offset = 0
     for top, bottom, c, d in _wallpaper_axis_samples(height, h):
-        top *= width * 3
-        bottom *= width * 3
+        top *= width * channels
+        bottom *= width * channels
         for left, right, a, b in xs:
             weights = a * c, b * c, a * d, b * d
             positions = top + left, top + right, bottom + left, bottom + right
-            for channel in range(3):
-                value = sum(pixels[position + channel] * weight
-                            for position, weight in zip(positions, weights)) // denominator
-                output[offset + 2 - channel] = value
-            output[offset + 3] = 255
+
+            def interpolate(channel):
+                return sum(pixels[position + channel] * weight
+                           for position, weight in zip(positions, weights)) // denominator
+
+            alpha = interpolate(3) if channels == 4 else 255
+            if alpha:
+                for channel in range(3):
+                    value = interpolate(channel)
+                    if channels == 4:
+                        # The measured WIC RGBA scaler/converter preserves
+                        # alpha and truncates the unpremultiplied component.
+                        value = min(255, value * 255 // alpha)
+                    output[offset + 2 - channel] = value
+            output[offset + 3] = alpha
             offset += 4
     return w, h, bytes(output)
+
+
+def prepare_opaque_wallpaper_bitmap(pixels, width, height):
+    """Prepare a candidate top-down BGRX analysis bitmap from packed RGB8.
+
+    Pixel-center bilinear interpolation with truncation matches the
+    three measured WIC BMP buffers byte for byte. This is not a claim
+    of universal WIC decoder, format-conversion or rounding parity.
+    """
+    return _prepare_wallpaper_bitmap(pixels, width, height, 3)
+
+
+def prepare_premultiplied_wallpaper_bitmap(pixels, width, height):
+    """Prepare a candidate BGR/alpha bitmap from packed premultiplied RGBa8.
+
+    DecodeBoundary on Windows build 26300.9974 shows (R,G,B,A) values
+    (225,48,48,128) becoming (225,47,47,128), alpha 1 becoming
+    (255,0,0,1), and alpha zero becoming (0,0,0,0). Interpolate
+    premultiplied channels and alpha before undoing premultiplication.
+    Mixed-alpha interpolation edges and other formats remain unmeasured.
+    """
+    return _prepare_wallpaper_bitmap(pixels, width, height, 4)
 
 
 # Keep full-image decoding bounded independently of the 256-pixel analysis
@@ -326,13 +352,14 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 
 
-def decode_opaque_wallpaper_bitmap(path):
-    """Decode a local still image into the staged opaque analysis buffer.
+def decode_wallpaper_bitmap(path):
+    """Decode a local still image into the candidate WIC analysis buffer.
 
-    Reuse Pillow's decoder and EXIF orientation support. Do not re-encode,
-    alter the source, or substitute another wallpaper on failure. The
-    decoded RGB values are used without a new ICC transform. Exact WIC
-    decoding and color management for arbitrary formats are not proven.
+    Preserve the existing opaque RGB path. For untagged transparent PNG,
+    use Pillow's premultiplied RGBa conversion before the shared resampler.
+    Do not re-encode or alter the source. ICC-managed extraction is still
+    unresolved: opaque embedded profiles remain unconverted as before,
+    and transparent images carrying an ICC profile are not accepted.
     """
     try:
         from PIL import Image, ImageOps
@@ -360,7 +387,12 @@ def decode_opaque_wallpaper_bitmap(path):
                     if "A" in image.getbands() or "transparency" in image.info:
                         with image.convert("RGBA") as rgba:
                             if rgba.getextrema()[3] != (255, 255):
-                                raise ValueError("Transparent wallpaper conversion is not verified")
+                                if source.format != "PNG" or source.info.get("icc_profile"):
+                                    raise ValueError("Transparent wallpaper outside the reviewed untagged PNG contract")
+                                with rgba.convert("RGBa") as premultiplied:
+                                    return prepare_premultiplied_wallpaper_bitmap(
+                                        premultiplied.tobytes(), premultiplied.width,
+                                        premultiplied.height)
                     if image.mode == "RGB":
                         return prepare_opaque_wallpaper_bitmap(
                             image.tobytes(), image.width, image.height)
@@ -458,7 +490,8 @@ def _bitmap_wallpaper_statistics(width, height, bitmap):
     if not isinstance(bitmap, bytes) or len(bitmap) != count * 4:
         raise ValueError("Expected a tightly packed 32-bit analysis bitmap")
     # Top-down rows, B/G/R/fourth byte. The final byte is a validity
-    # check in the native loop, not a contract for original PNG alpha.
+    # check in the native loop. Measured untagged PNG buffers preserve
+    # resized alpha, but nonzero values are not additional weights.
     pixels = (((r, g, b), marker != 0)
               for b, g, r, marker in struct.iter_unpack("4B", bitmap))
     return _weighted_wallpaper_statistics(pixels, count)
@@ -630,7 +663,7 @@ def analyze_wallpapers(paths):
         for path in paths:
             path = Path(path)
             if path not in cache:
-                cache[path] = _bitmap_wallpaper_statistics(*decode_opaque_wallpaper_bitmap(path))
+                cache[path] = _bitmap_wallpaper_statistics(*decode_wallpaper_bitmap(path))
             yield cache[path]
 
     result = _reduce_weighted_wallpaper_statistics(statistics())

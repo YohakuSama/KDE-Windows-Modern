@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary')]
+    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary', 'DecodeProfile')]
     [string]$ProbeSet = 'Basic',
     [switch]$IncludeNativeWallpaperColor
 )
@@ -14,8 +14,9 @@ $ErrorActionPreference = 'Stop'
 if (-not $ApplyTemporarily) {
     throw 'This collection temporarily changes the wallpaper. Use -ApplyTemporarily in the reference VM.'
 }
-$isolated = $ProbeSet -in @('CacheIsolation', 'BitmapBoundary', 'DecodeBoundary')
-$wicProbe = $ProbeSet -in @('BitmapBoundary', 'DecodeBoundary')
+$decodeProbe = $ProbeSet -in @('DecodeBoundary', 'DecodeProfile')
+$isolated = $decodeProbe -or $ProbeSet -in @('CacheIsolation', 'BitmapBoundary')
+$wicProbe = $decodeProbe -or $ProbeSet -eq 'BitmapBoundary'
 if ($isolated -and -not $IncludeNativeWallpaperColor) {
     throw 'Isolated probes require -IncludeNativeWallpaperColor.'
 }
@@ -103,7 +104,7 @@ namespace WindowsModern.Reference
 
 # Public WIC recreation for unrotated synthetic probes only.
 # This is not an interception of shell32's internal bitmap.
-if ($wicProbe -and -not ('WindowsModern.Reference.WicV2.WicBoundary' -as [type])) {
+if ($wicProbe -and -not ('WindowsModern.Reference.WicV3.WicBoundary' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
 using System.IO;
@@ -113,7 +114,7 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace WindowsModern.Reference.WicV2
+namespace WindowsModern.Reference.WicV3
 {
     // The inherited bitmap-source slots are explicitly repeated for COM.
     [ComImport, Guid("00000120-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -338,7 +339,7 @@ namespace WindowsModern.Reference.WicV2
         }
 
         public static string Write(string path, int width, int height, int patchHeight,
-                                   string background, string patch, int alpha, string profile)
+                                   string background, string patch, int alpha, string profile, bool calibration)
         {
             if (width != 1280 || height != 800 || patchHeight <= 0 ||
                 patchHeight >= height * 7 / 8 || alpha < 0 || alpha > 255)
@@ -355,6 +356,17 @@ namespace WindowsModern.Reference.WicV2
                     bool isPatch = y < patchHeight;
                     bool marker = y >= height * 7 / 8 && x < width / 8;
                     uint rgb = marker ? 0xff00ffu : (isPatch ? fg : bg);
+                    // Four 40px-high calibration bands. Each of the 256
+                    // RGB steps occupies 5 source pixels, so the 256-wide
+                    // WIC sample falls exactly on its interior.
+                    if (calibration && y >= 450 && y < 610)
+                    {
+                        uint level = (uint)(x / 5);
+                        int band = (y - 450) / 40;
+                        rgb = band == 0 ? level * 0x010101u :
+                              band == 1 ? level << 16 :
+                              band == 2 ? level << 8 : level;
+                    }
                     byte a = (byte)(isPatch ? alpha : 255);
                     int pos = y * stride + 1 + x * 4;
                     raw[pos] = (byte)(rgb >> 16);
@@ -420,7 +432,7 @@ function Read-WicBoundaryBuffer([string]$Path, [string]$ExpectedHash) {
     } finally {
         $image.Dispose()
     }
-    $buffer = [WindowsModern.Reference.WicV2.WicBoundary]::Read($Path, ($ProbeSet -eq 'DecodeBoundary'))
+    $buffer = [WindowsModern.Reference.WicV3.WicBoundary]::Read($Path, $decodeProbe)
     if ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -cne $ExpectedHash) {
         throw 'The WIC input changed while reading.'
     }
@@ -476,6 +488,7 @@ function Read-WicBoundaryEvidence([string]$Path, [string]$ExpectedHash, $Probe, 
 
 # The original cache collector requires matching background and patch.
 # Transparent/profile probes deliberately change the patch on decoding.
+# Windows 26H2 stores these PNG sources as a PNG cache, not JPEG.
 # Use two independently colored, opaque reference regions instead; never
 # export cache pixels without a matching registered source and new cache.
 function Read-DecodeBoundaryEvidence([string]$Path, [string]$ExpectedHash, $Probe, $Result) {
@@ -492,8 +505,9 @@ function Read-DecodeBoundaryEvidence([string]$Path, [string]$ExpectedHash, $Prob
     }
     $cache = $Result.cache_observation.transcoded
     $reference = $Result.isolation_reference.caches.transcoded
+    $supportedCache = $cache.is_jpeg -or $cache.format_guid -eq [System.Drawing.Imaging.ImageFormat]::Png.Guid.ToString()
     if ($Result.capture.appearance.registered_wallpaper_sha256 -cne $ExpectedHash -or
-        $cache.status -ne 'ok' -or -not $cache.is_jpeg -or
+        $cache.status -ne 'ok' -or -not $supportedCache -or
         $reference.status -ne 'ok' -or $cache.sha256 -ceq $reference.sha256 -or
         $cache.width -ne $width -or $cache.height -ne $height) {
         return $evidence
@@ -533,7 +547,7 @@ function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary') -and $sample.schema_version -lt 4) {
+    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation', 'BitmapBoundary', 'DecodeBoundary', 'DecodeProfile') -and $sample.schema_version -lt 4) {
         throw 'This probe set requires capture-windows-accent.ps1 schema 4 or newer.'
     }
     if ($WithNativeWallpaperColor -and $sample.schema_version -lt 5) {
@@ -651,9 +665,9 @@ function New-DecodeProbeImage([string]$Path, $Probe) {
         throw 'Unknown synthetic ICC profile.'
     }
     $payload = if ($null -eq $profileEntry) { '' } else { [string]$profileEntry.payload }
-    $expected = [WindowsModern.Reference.WicV2.SyntheticPng]::Write(
+    $expected = [WindowsModern.Reference.WicV3.SyntheticPng]::Write(
         $Path, $width, $height, $Probe.rectangle.height, $Probe.background,
-        $Probe.rectangle.color, $Probe.patch_alpha, $payload)
+        $Probe.rectangle.color, $Probe.patch_alpha, $payload, [bool]$Probe.profile_calibration)
     return [ordered]@{
         expected_bgra_sha256 = $expected
         decoded_bgra_sha256 = $null
@@ -723,16 +737,21 @@ function Read-WallpaperCache([string]$Path, $Probe) {
                 $by = [int][Math]::Floor($bitmap.Height * 0.875)
                 $pixel = $bitmap.GetPixel($bx, $by)
                 $info.background_rgb = '#{0:X2}{1:X2}{2:X2}' -f $pixel.R, $pixel.G, $pixel.B
-                if ($ProbeSet -eq 'DecodeBoundary') {
+                if ($decodeProbe) {
+                    $info.background_alpha = [int]$pixel.A
                     $marker = $bitmap.GetPixel(([int][Math]::Floor($bitmap.Width / 16)),
                         ([int][Math]::Floor($bitmap.Height * 15 / 16)))
                     $info.marker_rgb = '#{0:X2}{1:X2}{2:X2}' -f $marker.R, $marker.G, $marker.B
+                    $info.marker_alpha = [int]$marker.A
                 }
                 if ($Probe.rectangle) {
                     $px = [int][Math]::Floor(($Probe.rectangle.x + $Probe.rectangle.width / 2.0) * $bitmap.Width / $width)
                     $py = [int][Math]::Floor(($Probe.rectangle.y + $Probe.rectangle.height / 2.0) * $bitmap.Height / $height)
                     $pixel = $bitmap.GetPixel($px, $py)
                     $info.patch_rgb = '#{0:X2}{1:X2}{2:X2}' -f $pixel.R, $pixel.G, $pixel.B
+                    if ($decodeProbe) {
+                        $info.patch_alpha = [int]$pixel.A
+                    }
                 } else {
                     # Sample uniformity at nine interior points, not all pixels.
                     $colors = @(foreach ($fy in 0.125, 0.5, 0.875) {
@@ -1069,7 +1088,7 @@ try {
             @{name='alpha-l50-span-49'; background='#9B6A6A'; rectangle=$null},
             @{name='alpha-l50-span-52'; background='#9D6969'; rectangle=$null}
         )
-    } elseif ($ProbeSet -eq 'DecodeBoundary') {
+    } elseif ($decodeProbe) {
         # Identical geometry and encoded RGB across the profile controls.
         # Vary only patch alpha or the hidden RGB at zero alpha. The small
         # opaque bottom-left magenta region identifies the generated cache.
@@ -1082,10 +1101,17 @@ try {
             @{name='decode-alpha-0-red'; alpha=0; color='#E13030'; profile='none'},
             @{name='decode-alpha-0-blue'; alpha=0; color='#3030E1'; profile='none'}
         )
+        if ($ProbeSet -eq 'DecodeProfile') {
+            $variants = @($variants | Where-Object { $_.alpha -eq 255 })
+        }
         $probes = @(foreach ($variant in $variants) {
             @{
                 name=$variant.name; background='#148A14'; patch_alpha=$variant.alpha;
                 icc_profile=$variant.profile; marker='#FF00FF';
+                profile_calibration=($ProbeSet -eq 'DecodeProfile');
+                calibration_bands=if ($ProbeSet -eq 'DecodeProfile') {
+                    @{first_y=450; band_height=40; step_width=5; order=@('gray','red','green','blue')}
+                } else { $null };
                 marker_rectangle=@{x=0; y=700; width=160; height=100};
                 rectangle=@{color=$variant.color; x=0; y=0; width=$width; height=281}
             }
@@ -1140,10 +1166,10 @@ try {
             @{name='solid-blue'; background='#2475CE'; rectangle=$null}
         )
     }
-    $extension = if ($ProbeSet -eq 'DecodeBoundary') { '.png' } else { '.bmp' }
+    $extension = if ($decodeProbe) { '.png' } else { '.bmp' }
     foreach ($probe in $probes) {
         $path = Join-Path $folder ($probe.name + $extension)
-        if ($ProbeSet -eq 'DecodeBoundary') {
+        if ($decodeProbe) {
             $probe.pixel_validation = New-DecodeProbeImage $path $probe
         } else {
             New-ProbeImage $path $probe
@@ -1207,11 +1233,11 @@ try {
         }
         if ($isolated) {
             Assert-NativeColorEvidence $result.capture
-            if ($ProbeSet -ne 'DecodeBoundary' -and
+            if (-not $decodeProbe -and
                 $result.capture.appearance.registered_wallpaper_sha256 -cne $expectedHash) {
                 throw 'Registered wallpaper does not match the generated probe.'
             }
-            if ($ProbeSet -eq 'DecodeBoundary') {
+            if ($decodeProbe) {
                 $result.registered_source_matches = (
                     $result.capture.appearance.registered_wallpaper_sha256 -ceq $expectedHash)
             }
@@ -1223,7 +1249,7 @@ try {
                 if ($desktop.GetPath() -ine $path) {
                     throw 'Wallpaper changed before reading WIC buffers.'
                 }
-                if ($ProbeSet -eq 'DecodeBoundary') {
+                if ($decodeProbe) {
                     $result.wic_boundary = Read-DecodeBoundaryEvidence $path $expectedHash $probe $result
                 } else {
                     $result.wic_boundary = Read-WicBoundaryEvidence $path $expectedHash $probe $result
