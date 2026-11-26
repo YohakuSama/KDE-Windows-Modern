@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
-const passwordWidth = 248;
+// Windows 26300.9974 RequestCredentialUserControl.xbf: CredentialControlsWidth.
+// See docs/windows11-26h2-ui-parameters.json for the resource and template evidence.
+const passwordWidth = 296;
 const passwordHeight = 30;
 
 function avatarSize(width, height) {

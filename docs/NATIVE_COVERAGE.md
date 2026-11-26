@@ -199,13 +199,13 @@ is still required.
 
 ## Source-grounded Windows layout review
 
-The owner-provided 26300.9974 audit contains file indexes, resource hashes,
-and icon previews, not the original layout binaries or decoded XAML. The
-[layout source list](windows11-26h2-layout-sources.json) identifies 16 primary
-PRI files (51,255,376 bytes) and three direct candidates observed in that
-image: the Photon Start bundle and two WindowsLogo SVGs. The latter three
-did not have a content hash in the earlier inventory. Their names alone
-do not prove that the live Start button uses either logo.
+The initial 26300.9974 audit contained indexes, resource hashes and icon
+previews. The subsequent private layout-review archive includes the
+19 original source files (55,960,726 bytes), all independently hash-checked
+against its manifest. The [layout source list](windows11-26h2-layout-sources.json)
+now records the hashes of all 16 primary PRI files, the Photon Start bundle
+and both WindowsLogo SVGs. The two logo candidates have identical bytes;
+their names and hashes do not prove the taskbar Start button's actual role.
 
 Collect this bounded source set from the existing full local extraction,
 without remounting the ISO:
@@ -243,6 +243,44 @@ theme changes and verified parameter records. No layout dimensions,
 animation values or Start logo role are asserted by this collection mode.
 Localized PRIs, external resources, PE resources and runtime measurements
 can be investigated separately where the primary sources are insufficient.
+
+### First decoded parameter evidence
+
+The [selected UI parameter evidence](windows11-26h2-ui-parameters.json)
+records exact PRI and XBF hashes, resource paths, theme scopes, values and
+payload-relative offsets. The archived PRI candidates include 1,513 named
+XBF entries. All 1,481 non-placeholder payloads match the header-derived
+length and the owner's recorded SHA-256; 32 entries are one-byte space
+placeholders. This is not a claim that all node streams were decoded.
+
+The first review reads selected named resource dictionaries and simple
+brush property records, informed by the open XbfTools format research.
+No third-party decoder source or Microsoft binary payload is included.
+Do not combine constants from alternative implementations merely because
+their resource names describe the same feature. For example,
+ShellCommon's PaginatedControlCenterViewWidth is 376, whereas the
+ControlCenter package's L2FrameMinHeight is 400. These are different
+resource scopes, not proof of one 376-by-400 runtime popup. A declared
+ControlCenterHeight of 680 is not evidence that every quick-settings
+popup is that tall.
+
+The credential control template directly references CredentialControlsWidth
+(296) for FrameworkElement.Width. Update the existing KDE unlock credential
+panel maximum from 248 to 296 logical pixels, retaining layout clamping on
+narrow screens. Password height, avatar size, placement and animation remain
+unchanged until their specific original properties are resolved.
+
+The taskbar theme dictionaries contain separate light and dark fill/stroke
+colors and icon-pressed opacity. SystemTrayResources and logon CommonStyles
+contain explicit AcrylicBrush tint, luminosity, and fallback parameters.
+These are static material inputs, not final composited pixel colors.
+Windows distinguishes [Acrylic](https://learn.microsoft.com/windows/apps/design/style/acrylic)
+from [Mica](https://learn.microsoft.com/windows/apps/design/style/mica).
+Do not apply acrylic tint opacity as whole-window opacity, equate a KWin
+blur with Mica, or replace the wallpaper-derived accent with a fixed color.
+Resolve runtime resource selection and state transitions before adopting
+additional geometry, color or animation values. Maintain Qt logical pixels
+and preserve the existing compositor adaptation until it is source-grounded.
 
 ### Same-name theme alternatives
 

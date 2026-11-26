@@ -1,7 +1,7 @@
 {
   "format": "windows-modern-layout-sources-v1",
   "reference_build": "26300.9974",
-  "source_evidence": "Owner-provided all-files.txt and shell-inventory/inventory.json from Windows11-26H2-Audit-20261126-102158.tar.gz. The existing report contains names and hashes, not original layout bytes.",
+  "source_evidence": "Owner-provided Windows 26300.9974 audit and subsequent private layout-review archive. All 19 collected original files were independently hash-checked against the archive's manifest. See windows11-26h2-ui-parameters.json for selected embedded resource evidence.",
   "pri_source_count": 16,
   "pri_source_bytes": 51255376,
   "sources": [
@@ -121,27 +121,27 @@
       "path": "SystemApps/MicrosoftWindows.Client.Photon_cw5n1h2txyewy/Public/wsxpacks/StartMenu/index.windows.bundle",
       "scope": "Photon Start package implementation candidate",
       "kind": "bundle",
-      "bytes": null,
-      "sha256": null
+      "bytes": 4704052,
+      "sha256": "37031ddecf01019b0d7cd800505758233280cc0fc594acee18e41e852d50e1c3"
     },
     {
       "path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/Icons/WindowsLogo.svg",
       "scope": "Windows logo candidate; taskbar role not established",
       "kind": "svg",
-      "bytes": null,
-      "sha256": null
+      "bytes": 649,
+      "sha256": "c3f98413eba26760b6113632b69da0c8e4bcfd3ae38d7f7009dd1f262d50b333"
     },
     {
       "path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/ShellMcpServers.ConsentPrompts/Icons/WindowsLogo.svg",
       "scope": "Consent prompt logo candidate; not evidence of taskbar role",
       "kind": "svg",
-      "bytes": null,
-      "sha256": null
+      "bytes": 649,
+      "sha256": "c3f98413eba26760b6113632b69da0c8e4bcfd3ae38d7f7009dd1f262d50b333"
     }
   ],
   "limitations": [
     "Primary package PRI files only; localized PRI files, WinSxS copies and compiled DLLs are not collected in this pass.",
-    "Three direct file candidates were found in the complete image index but have no previously recorded content hash.",
+    "The Photon bundle and both logo candidates now have hashes from the private review archive; neither the active Start implementation nor the taskbar logo role is established.",
     "The scope labels identify packages to inspect, not verified layout resources or exact runtime controls."
   ]
 }

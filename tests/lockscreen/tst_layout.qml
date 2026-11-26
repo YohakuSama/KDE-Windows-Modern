@@ -10,7 +10,7 @@ TestCase {
         compare(LockMetrics.avatarSize(480, 800), 160);
         compare(LockMetrics.formTop(800, 240), 172);
         compare(LockMetrics.formTop(400, 270), 66);
-        compare(LockMetrics.passwordWidth, 248);
+        compare(LockMetrics.passwordWidth, 296);
         compare(LockMetrics.passwordHeight, 30);
     }
     function test_localLanguageFallback() {
