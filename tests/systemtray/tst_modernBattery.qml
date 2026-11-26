@@ -53,11 +53,24 @@ Item {
             glyph.percent = 5;
             compare(glyph.fillCode, 0);
         }
+        function test_pluggedInLegacyState() {
+            glyph.percent = 100;
+            glyph.pluggedIn = true;
+            compare(glyph.iconName, "battery-100-charging-symbolic");
+            glyph.percent = -1;
+            compare(glyph.iconName, "battery-unknown-charging-symbolic");
+            verify(!glyph.modernAvailable);
+            glyph.pluggedIn = false;
+            compare(glyph.iconName, "battery-unknown-symbolic");
+        }
+
         function test_stableGeometryAndNativeStates() {
             verify(findChild(glyph, "wmBatteryNativeGlyph") !== null);
             glyph.glyphSize = 16;
             compare(glyph.implicitWidth, 20);
             compare(glyph.implicitHeight, 16);
+            compare(glyph.canvasWidth, 20);
+            compare(glyph.canvasHeight, 16);
             glyph.glyphSize = 20;
             compare(glyph.implicitWidth, 25);
             compare(glyph.implicitHeight, 20);

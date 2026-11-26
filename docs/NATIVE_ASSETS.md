@@ -187,12 +187,18 @@ library. The importer and rendering are not evidence that the original
   Search state. Task View uses E7C4 until both original PRI SVG variants are
   imported. These existing sources are not proof of 26H2 provenance; do not use
   Windows 10 or KDE/Breeze replacements.
-- The default Start menu account SVG is the official MIT-licensed Fluent
-  Person 48 Filled path, recolored by the theme (see [attribution](../ATTRIBUTION.md)).
-  It is not a verified 26H2 login portrait. Actual user portraits take
-  precedence; when present, a locally imported Windows default portrait is
-  preferred over the generic fallback. Hidden account identity always uses
-  the generic fallback.
+- The default account SVGs are the official MIT-licensed Fluent Person 48
+  Filled path, recolored by the theme (see [attribution](../ATTRIBUTION.md)).
+  They are not verified 26H2 login portraits. Start, session unlock and
+  login now share the same portrait selection: a successfully loaded user
+  image takes precedence, then the privately imported Windows default
+  portrait, then the Fluent fallback. Hidden Start account identity
+  always uses the generic fallback. A separate login service account must
+  have access to its own authorized local resource directory; a desktop
+  user's private assets are not copied to a system location.
+- The existing login battery control and desktop tray share the original
+  SysBatt renderer, level selection, 5:4 canvas and private lookup.
+  The existing lock-screen control visibility policy is unchanged.
 - Hibernate uses the optional original Segoe Fluent E823 glyph (Recent)
   from the local Windows font, selected by comparison with the clock-shaped
   Hibernate artwork in Windows 11 screenshots. Direct 26H2 source-role

@@ -280,6 +280,11 @@ for pair in \
     "$LOCK/NativeGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/NativeGlyph.qml" \
     "$LOCK/NativeGlyph.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeGlyph.qml" \
     "$LOCK/DefaultAccountPortrait.qml $LOGIN/DefaultAccountPortrait.qml" \
+    "$LOCK/DefaultAccountPortrait.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/DefaultAccountPortrait.qml" \
+    "$LOCK/BatteryGlyph.qml $LOGIN/BatteryGlyph.qml" \
+    "$LOCK/BatteryGlyph.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/BatteryGlyph.qml" \
+    "$LOCK/batteryState.js $LOGIN/batteryState.js" \
+    "$LOCK/batteryState.js plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/batteryState.js" \
     "$LOCK/default-avatar.svg $LOGIN/default-avatar.svg" \
     "$LOCK/default-avatar-small.svg $LOGIN/default-avatar-small.svg" \
     "$LOCK/FluentPowerMenuItem.qml $LOGIN/FluentPowerMenuItem.qml" \

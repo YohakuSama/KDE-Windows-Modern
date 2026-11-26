@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Reconcile the shared native icon resolver across Start, tray and both greeter packages; share the original default account portrait selector and SysBatt renderer without changing account or status-control placement. Keep plugged-in and unknown battery fallback states accurate, and preserve private resource boundaries.
+
 - Share popup extent and stale-output guards across Start, Quick Settings and calendar; mirror the quick tile grid, drag hit targets and keyboard direction together. Give the media card a separate height budget when one full tile row fits and preserve fixed slider/footer space on constrained screens.
 
 - Bound task grid stripes, cell sizes and layout hints during empty-model and constrained-panel transitions; use the same two-axis icon canvas rule for Start, Search, Task View and running tasks. Keep the three shared popup geometry copies in sync and guard unsettled display measurements without changing normal reference sizes.

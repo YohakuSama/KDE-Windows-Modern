@@ -702,22 +702,12 @@ Item {
                                         if (Plasmoid.configuration.hideAccountIdentity)
                                             return "";
                                         const face = String(kuser.faceIconUrl || "");
-                                        if (face && !face.endsWith("/faces/.face.icon"))
-                                            return kuser.faceIconUrl;
-                                        for (const suffix of [".png", ".jpg", ".bmp"]) {
-                                            const path = StandardPaths.locate(
-                                                StandardPaths.GenericDataLocation,
-                                                "windows-modern/shell-assets/account/default" + suffix,
-                                                StandardPaths.LocateFile);
-                                            if (String(path).length > 0)
-                                                return path;
-                                        }
-                                        return "";
+                                        return face && !face.endsWith("/faces/.face.icon") ? kuser.faceIconUrl : "";
                                     }
                                     cache: false
                                     fillMode: Image.PreserveAspectCrop
                                     visible: status === Image.Ready
-                                    layer.enabled: true
+                                    layer.enabled: visible
                                     layer.effect: OpacityMask {
                                         maskSource: Rectangle {
                                             width: avatarArea.width
@@ -726,18 +716,12 @@ Item {
                                         }
                                     }
                                 }
-                                Rectangle {
+                                DefaultAccountPortrait {
                                     anchors.fill: parent
-                                    radius: width / 2
-                                    color: "#F2F2F2"
+                                    compact: true
                                     visible: userAvatar.status !== Image.Ready
-                                    Image {
-                                        anchors.centerIn: parent
-                                        width: Math.round(parent.width * 0.82)
-                                        height: width
-                                        source: Qt.resolvedUrl("default-account.svg")
-                                        fillMode: Image.PreserveAspectFit
-                                    }
+                                    showImported: !Plasmoid.configuration.hideAccountIdentity
+                                    fallbackSource: Qt.resolvedUrl("default-account.svg")
                                 }
                             }
                             PlasmaComponents3.Label {

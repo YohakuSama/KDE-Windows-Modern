@@ -203,6 +203,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/BatteryPage.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/Battery.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/BatteryGlyph.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/batteryState.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/NativeGlyph.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/NativeButtonContent.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/components/NativeToolButton.qml

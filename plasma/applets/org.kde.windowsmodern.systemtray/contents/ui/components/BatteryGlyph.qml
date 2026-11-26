@@ -3,7 +3,7 @@
 import QtQuick
 import QtCore
 import org.kde.kirigami as Kirigami
-import "../js/funcs.js" as Funcs
+import "batteryState.js" as BatteryState
 
 Item {
     id: root
@@ -14,9 +14,10 @@ Item {
     property bool saver: false
     property color foreground: Kirigami.Theme.textColor
     readonly property bool known: Number.isFinite(percent) && percent >= 0
-    readonly property string visualState: Funcs.batteryVisualState(percent, charging, saver)
-    readonly property string iconName: visualState === "unknown" ? "battery-unknown-symbolic"
-        : Funcs.batteryIconName(percent, charging, saver)
+    readonly property string visualState: BatteryState.batteryVisualState(percent, charging, saver)
+    // Keep the real plugged-in state even when charging has completed or
+    // the battery backend cannot report its level.
+    readonly property string iconName: BatteryState.batteryIconName(percent, charging || pluggedIn, saver)
     readonly property int level: known ? (percent <= 5 ? 0 : Math.min(10, Math.round(percent / 10))) : 0
     readonly property string shellState: charging ? "charging" : pluggedIn ? "plugged" : saver ? "saver" : "normal"
     readonly property int outlineCode: shellState === "charging" ? 0xf8db
@@ -41,13 +42,16 @@ Item {
 
     implicitWidth: Math.ceil(glyphSize * 1.25)
     implicitHeight: glyphSize
+    // Preserve the imported font's canvas aspect ratio in every layer.
+    readonly property real canvasWidth: Math.max(0, Math.min(width, height * 1.25, glyphSize * 1.25))
+    readonly property real canvasHeight: canvasWidth / 1.25
     // Previous genuine Windows 11 import is used only when the new
     // shell artwork is unavailable. Never resolve an arbitrary theme icon.
     NativeGlyph {
         objectName: "wmBatteryNativeGlyph"
         anchors.centerIn: parent
-        width: Math.min(root.width, root.height * 1.25)
-        height: Math.min(root.height, root.glyphSize)
+        width: root.canvasWidth
+        height: root.canvasHeight
         roleName: root.iconName
         foreground: root.foreground
         opacity: root.modernAvailable ? 0 : 1
@@ -55,8 +59,8 @@ Item {
     Kirigami.Icon {
         objectName: "wmBatteryShellOutline"
         anchors.centerIn: parent
-        width: Math.min(root.width, root.height * 1.25)
-        height: Math.min(root.height, root.glyphSize)
+        width: root.canvasWidth
+        height: root.canvasHeight
         source: root.outlineSource
         fallback: ""
         visible: root.modernAvailable
@@ -68,8 +72,8 @@ Item {
     Kirigami.Icon {
         objectName: "wmBatteryShellFill"
         anchors.centerIn: parent
-        width: Math.min(root.width, root.height * 1.25)
-        height: Math.min(root.height, root.glyphSize)
+        width: root.canvasWidth
+        height: root.canvasHeight
         source: root.fillSource
         fallback: ""
         visible: root.modernAvailable && root.fillCode !== 0

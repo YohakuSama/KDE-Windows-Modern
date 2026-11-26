@@ -80,7 +80,12 @@ acceptance. The older reference/runtime resource pins are unchanged.
 
 The extraction output used a separate staging directory; to activate the
 already-supported shell artwork, reimport the complete local image as the
-desktop user into the default XDG destination:
+desktop user into the default XDG destination. Start and both greeter
+implementations share the imported default portrait selector, and the
+existing login battery control uses the same SysBatt renderer as the tray.
+Missing local resources retain their documented fallback behavior; a
+greeter with a different XDG data directory does not automatically see
+another user's private import:
 
 ```sh
 python3 scripts/import-shell-assets.py /path/to/extracted/image --build 26300.9974
