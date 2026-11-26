@@ -20,6 +20,7 @@
 #include <Plasma/Containment>
 
 class QQuickItem;
+class WallpaperAccentSource;
 
 namespace Plasma
 {
@@ -99,6 +100,7 @@ private:
 
     KConfigWatcher::Ptr m_configWatcher;
     QFileSystemWatcher m_wallpaperWatch;
+    QPointer<WallpaperAccentSource> m_wallpaperAccentSource;
     bool m_automaticWallpaperAccent = false;
     bool m_xwaylandClientsScale = true;
 

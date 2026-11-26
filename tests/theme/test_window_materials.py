@@ -150,6 +150,16 @@ class WindowMaterialTests(unittest.TestCase):
                 next_image.write_bytes(b"next")
                 snapshot["images"][1]["path"] = str(next_image)
                 self.assertEqual(automatic(state)["wallpapers"][1]["path"], str(next_image))
+                # A scheduled crossfade has no accepted single-file source.
+                # Do not decode a guessed endpoint or mutate the saved ramp.
+                snapshot["error"] = "Scheduled wallpaper is between stable images"
+                before = json.dumps(state, sort_keys=True)
+                with patch.dict(control["SYNC"], {"analyze_wallpapers": lambda paths: self.fail("decoded a crossfade")}):
+                    with self.assertRaisesRegex(ValueError, "between stable images"):
+                        automatic(state)
+                self.assertEqual(json.dumps(state, sort_keys=True), before)
+                del snapshot["error"]
+                self.assertEqual(automatic(state)["wallpapers"][1]["path"], str(next_image))
 
     def test_repeated_wallpaper_path_reuses_statistics(self):
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))

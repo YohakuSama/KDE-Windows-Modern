@@ -118,6 +118,7 @@ target_link_libraries(systemtray_static
         KF6::ItemModels
         KF6::WindowSystem
         KF6::XmlGui
+        KF6::Package
         Plasma::Plasma
         Plasma::PlasmaQuick
 )

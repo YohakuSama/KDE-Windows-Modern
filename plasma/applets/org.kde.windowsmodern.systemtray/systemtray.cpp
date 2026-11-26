@@ -4,6 +4,8 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
+#include <cmath>
+#include <limits>
 #include <optional>
 #include <utility>
 
@@ -22,6 +24,7 @@
 #include <QCursor>
 #include <QDBusConnection>
 #include <QDBusMessage>
+#include <QDir>
 #include <QGuiApplication>
 #include <QFileInfo>
 #include <QImageReader>
@@ -31,6 +34,7 @@
 #include <QSet>
 #include <QStandardPaths>
 #include <QUrl>
+#include <QUrlQuery>
 #include <QMenu>
 #include <QPainterPath>
 #include <QRegion>
@@ -59,6 +63,8 @@
 #include <KIO/CommandLauncherJob>
 #include <KNotificationJobUiDelegate>
 #include <KPluginMetaData>
+#include <KPackage/Package>
+#include <KPackage/PackageLoader>
 #include <KService>
 #include <KSycoca>
 #include <KActionCollection>
@@ -70,7 +76,8 @@ using namespace Qt::StringLiterals;
 
 // Read-only, shell-local adapter for Plasma 6.8's native image wallpaper.
 // Its QML property contract is checked at runtime. An unknown plugin,
-// incomplete load, preview or non-file provider must fail closed.
+// incomplete load or preview must fail closed. Scheduled wallpapers
+// contribute their settled native endpoint, never a guessed blend.
 class WallpaperAccentSource final : public QObject
 {
     Q_OBJECT
@@ -89,6 +96,7 @@ public:
     {
         if (auto *existing = shell->findChild<WallpaperAccentSource *>(
                 u"windowsModernWallpaperAccentSource"_s, Qt::FindDirectChildrenOnly)) {
+            ++existing->m_users;
             return existing;
         }
         auto *source = new WallpaperAccentSource(shell);
@@ -98,6 +106,14 @@ public:
             return nullptr;
         }
         return source;
+    }
+
+    void release()
+    {
+        if (--m_users == 0) {
+            QDBusConnection::sessionBus().unregisterObject(u"/WindowsModernWallpaper"_s);
+            delete this;
+        }
     }
 
 public Q_SLOTS:
@@ -156,7 +172,8 @@ public Q_SLOTS:
                 }
             }
             auto *stack = imageStack(root);
-            if (!stack || stack->property("pendingImage").value<QObject *>()) {
+            if (!stack || stack->property("pendingImage").value<QObject *>()
+                || stack->property("busy").toBool()) {
                 return failure(u"Wallpaper image is not settled on screen %1"_s.arg(screen));
             }
             auto *current = stack->property("currentItem").value<QObject *>();
@@ -171,13 +188,21 @@ public Q_SLOTS:
                 || current->property("source").toUrl() != selected) {
                 return failure(u"Wallpaper selection is changing on screen %1"_s.arg(screen));
             }
-            if (!selected.isLocalFile() || (!selected.host().isEmpty() && selected.host() != u"localhost")
-                || selected.fragment() == u"day-night") {
-                return failure(u"Wallpaper is not a supported local still image on screen %1"_s.arg(screen));
+            QString path;
+            if (selected.fragment() == u"day-night") {
+                auto *endpoint = scheduledEndpoint(qobject_cast<QQuickItem *>(current));
+                if (!endpoint) {
+                    return failure(u"Scheduled wallpaper is between stable images on screen %1"_s.arg(screen));
+                }
+                const auto source = endpoint->property("source").toUrl();
+                const auto requested = (endpoint->size() * endpoint->window()->effectiveDevicePixelRatio()).toSize();
+                path = scheduledFile(source, selected, requested);
+            } else if (selected.isLocalFile() && (selected.host().isEmpty() || selected.host() == u"localhost")) {
+                path = selected.toLocalFile();
             }
-            const QFileInfo file(selected.toLocalFile());
+            const QFileInfo file(path);
             if (!file.isAbsolute() || !file.isFile()) {
-                return failure(u"Selected wallpaper file is unavailable on screen %1"_s.arg(screen));
+                return failure(u"Selected wallpaper is not a supported local image on screen %1"_s.arg(screen));
             }
             images.append(QJsonObject{{u"screen"_s, int(screen)}, {u"path"_s, file.absoluteFilePath()}});
         }
@@ -222,6 +247,143 @@ private:
         return result;
     }
 
+    static QQuickItem *dayNightView(QQuickItem *component)
+    {
+        if (!component) {
+            return nullptr;
+        }
+        QQuickItem *view = nullptr;
+        for (auto *child : component->childItems()) {
+            const auto *meta = child->metaObject();
+            if (meta->indexOfProperty("snapshot") < 0 || meta->indexOfProperty("nextItem") < 0
+                || meta->indexOfProperty("currentItem") < 0 || meta->indexOfProperty("busy") < 0) {
+                continue;
+            }
+            if (view) {
+                return nullptr;
+            }
+            view = child;
+        }
+        return view;
+    }
+
+    static QQuickItem *dayNightImage(QQuickItem *view)
+    {
+        if (!view) {
+            return nullptr;
+        }
+        return qobject_cast<QQuickItem *>(view->property("currentItem").value<QObject *>());
+    }
+
+    static QQuickItem *scheduledEndpoint(QQuickItem *component)
+    {
+        auto *view = dayNightView(component);
+        auto *image = dayNightImage(view);
+        // Match Plasma 6.8 DayNightView/DayNightImage. Wait until the
+        // native stack has committed its item and all blending has ended.
+        if (!image || view->property("busy").toBool()
+            || view->property("nextItem").value<QObject *>() != image
+            || image->property("status").toInt() != 1) {
+            return nullptr;
+        }
+        const auto bottom = image->property("bottomUrl");
+        const auto top = image->property("topUrl");
+        if (!bottom.isValid() || !top.isValid() || bottom.toUrl().isEmpty() || !top.toUrl().isEmpty()) {
+            return nullptr;
+        }
+        QQuickItem *endpoint = nullptr;
+        int mediaCount = 0;
+        for (auto *child : image->childItems()) {
+            const auto source = child->property("source");
+            const auto status = child->property("status");
+            if (!source.isValid() || !status.isValid()) {
+                continue;
+            }
+            ++mediaCount;
+            if (source.toUrl().isEmpty()) {
+                // The former top image must have been cleared by sync().
+                if (status.toInt() != 0) {
+                    return nullptr;
+                }
+                continue;
+            }
+            if (endpoint || source.toUrl() != bottom.toUrl() || status.toInt() != 1
+                || !child->window() || child->size().isEmpty() || child->opacity() != 1.0) {
+                return nullptr;
+            }
+            endpoint = child;
+        }
+        return mediaCount == 2 ? endpoint : nullptr;
+    }
+
+    // The scheduled TransientImage receives a package URL, not the chosen
+    // file. Follow the Plasma 6.8 package finder using the same KPackage
+    // entries, their order, the physical target size and the native score.
+    // No directory scan by extension, assumed resolution or guessed variant.
+    static QString preferredEntry(const KPackage::Package &package, const QByteArray &folder, const QSize &target)
+    {
+        QString best;
+        double bestScore = std::numeric_limits<double>::max();
+        for (const auto &entry : package.entryList(folder)) {
+            const auto name = QFileInfo(entry).baseName();
+            const auto split = name.indexOf(u'x');
+            if (split < 0) {
+                continue;
+            }
+            bool widthOk = false;
+            bool heightOk = false;
+            const int width = name.left(split).toInt(&widthOk);
+            const int height = name.mid(split + 1).toInt(&heightOk);
+            if (!widthOk || !heightOk || width <= 0 || height <= 0) {
+                continue;
+            }
+            const double delta = double(width) - target.width();
+            const double aspect = double(width) / height - double(target.width()) / target.height();
+            const double score = std::abs(aspect) * 25000.0 + (delta < 0 ? -2.0 * delta : delta);
+            if (best.isEmpty() || score < bestScore) {
+                best = entry;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    static QString scheduledFile(const QUrl &source, const QUrl &selected, const QSize &target)
+    {
+        if (source.scheme() != u"image" || source.host() != u"package" || source.path() != u"/get"
+            || !selected.isLocalFile() || (!selected.host().isEmpty() && selected.host() != u"localhost")
+            || target.isEmpty()) {
+            return {};
+        }
+        const QUrlQuery query(source);
+        const auto dir = query.queryItemValue(u"dir"_s);
+        const auto dark = query.queryItemValue(u"darkMode"_s);
+        if (!QDir::isAbsolutePath(dir) || QDir::cleanPath(dir) != QDir::cleanPath(selected.toLocalFile())
+            || (dark != u"0" && dark != u"1")) {
+            return {};
+        }
+        auto package = KPackage::PackageLoader::self()->loadPackage(u"Wallpaper/Images"_s);
+        package.setPath(dir);
+        if (!package.isValid()) {
+            return {};
+        }
+        const auto light = preferredEntry(package, "images", target);
+        const auto darkEntry = preferredEntry(package, "images_dark", target);
+        package.removeDefinition("preferred");
+        package.addFileDefinition("preferred", u"images/"_s + light);
+        if (!darkEntry.isEmpty()) {
+            package.removeDefinition("preferredDark");
+            package.addFileDefinition("preferredDark", u"images_dark/"_s + darkEntry);
+        }
+        if (dark == u"1" && !darkEntry.isEmpty()) {
+            const auto path = package.filePath("preferredDark");
+            if (!path.isEmpty()) {
+                return path;
+            }
+        }
+        return light.isEmpty() ? QString() : package.filePath("preferred");
+    }
+
     void observe(QObject *object, const char *name)
     {
         if (!object) {
@@ -255,15 +417,36 @@ private:
             observe(root, "loading");
             observe(root, "accentColor");
             observe(root, "visible");
+            observe(root->property("configuration").value<QObject *>(), "PreviewImage");
             auto *stack = imageStack(root);
             observe(stack, "modelImage");
             observe(stack, "currentItem");
             observe(stack, "pendingImage");
+            observe(stack, "busy");
             if (stack) {
                 observe(stack->property("mediaProxy").value<QObject *>(), "modelImage");
                 // Re-arm after replacement. TransientImage can enter
                 // Loading again during resize, then become Ready later.
-                observe(stack->property("currentItem").value<QObject *>(), "status");
+                auto *current = qobject_cast<QQuickItem *>(stack->property("currentItem").value<QObject *>());
+                observe(current, "status");
+                auto *view = dayNightView(current);
+                observe(view, "currentItem");
+                observe(view, "nextItem");
+                observe(view, "busy");
+                observe(view, "status");
+                if (auto *image = dayNightImage(view)) {
+                    observe(image, "bottomUrl");
+                    observe(image, "topUrl");
+                    observe(image, "status");
+                    // Do not observe blendFactor: no sampling of the
+                    // per-minute crossfade. Wait for topUrl to clear.
+                    for (auto *child : image->childItems()) {
+                        if (child->property("source").isValid() && child->property("status").isValid()) {
+                            observe(child, "source");
+                            observe(child, "status");
+                        }
+                    }
+                }
             }
         }
     }
@@ -285,6 +468,7 @@ private:
     }
 
     Plasma::Corona *const m_shell;
+    int m_users = 1;
 };
 
 SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args)
@@ -538,6 +722,9 @@ bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuic
 
 SystemTray::~SystemTray()
 {
+    if (m_wallpaperAccentSource) {
+        m_wallpaperAccentSource->release();
+    }
     delete m_settings;
 }
 
@@ -579,10 +766,14 @@ void SystemTray::init()
     // Wallpaper changes through the shell API and ordinary desktop config
     // saves both reach this path, as do activity and screen changes.
     if (auto *shell = corona()) {
-        if (auto *source = WallpaperAccentSource::forShell(shell)) {
-            connect(source, &WallpaperAccentSource::changed, this, &SystemTray::scheduleWallpaperAccentSync);
-        } else {
-            qWarning("Windows Modern: could not register live wallpaper source");
+        if (!m_wallpaperAccentSource) {
+            m_wallpaperAccentSource = WallpaperAccentSource::forShell(shell);
+            if (m_wallpaperAccentSource) {
+                connect(m_wallpaperAccentSource.data(), &WallpaperAccentSource::changed,
+                        this, &SystemTray::scheduleWallpaperAccentSync);
+            } else {
+                qWarning("Windows Modern: could not register live wallpaper source");
+            }
         }
         connect(shell, &Plasma::Corona::configSynced, this, &SystemTray::scheduleWallpaperAccentSync);
         connect(shell, &Plasma::Corona::screenAdded, this, &SystemTray::scheduleWallpaperAccentSync);
