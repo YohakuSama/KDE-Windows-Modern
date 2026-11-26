@@ -1,80 +1,140 @@
-# Experimental application window layouts
+# Optional application window layouts
 
-## Konsole: Windows Terminal-style integrated tab strip
+## Konsole: integrated Windows Terminal-style title bar
 
 The optional plugin in `app-decorations/konsole` is source-reviewed against
 [Konsole release/26.08](https://github.com/KDE/konsole/tree/release/26.08/src).
-It uses Konsole's actual IKonsolePlugin and native QTabWidget, including its
-original session, profile menu, tab drag, detach and close behavior. The
-window caption buttons are sourced from the existing private Windows
-glyph import (E921, E922, E923, E8BB). If any glyph or the native tab
-corner is unavailable, do not remove the native decoration.
+Its layout follows the public Windows Terminal
+[TabRowControl](https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalApp/TabRowControl.xaml)
+and [TitlebarControl](https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalApp/TitlebarControl.xaml).
+The dimensions are provisional logical pixels; the source review does not
+establish measured Windows 11 26H2 visual parity.
 
-This is an opt-in prototype, not part of the normal theme installation,
-and not proof of Windows Terminal parity. It adds minimize, maximize/restore,
-close and a dedicated drag region to the native right corner. The stock
-new-tab/profile button remains in its upstream left corner for now.
-Window moves and eight edge/corner resize zones use QWindow's native
-system move/resize requests; unsupported requests turn off the prototype.
-The normal Konsole close confirmation remains in charge. The standard
-Windows Modern Campbell stylesheet remains dark; other palettes inherit
-the native tab colors. Native KWin decoration shadows, snap flyout on
-maximize hover and titlebar system menu are not reproduced by this prototype.
+The plugin uses Konsole's actual IKonsolePlugin and native QTabWidget:
+- Minimize, maximize/restore and close share the tab row. The plugin uses
+  locally imported Windows E921, E922, E923 and E8BB glyphs.
+- Separate new-tab and profile/container dropdown buttons use the original
+  Windows E710 and E70D glyphs. They proxy Konsole's existing button and
+  live menu, rather than duplicating the session or profile logic. They
+  follow the last visible tab when space permits, and use a reserved
+  corner area when the tab strip scrolls. Native buttons and styles are
+  restored when the feature is disabled.
+- Empty title areas use compositor-native moves, double-click maximize,
+  an application window menu on right-click and eight resize zones.
+  Clicks and releases belonging to the title area are not sent to
+  Konsole's detachable tab bar. Actual tab drag, detach, close, keyboard
+  navigation and session confirmation remain native.
+- The Windows Modern tab stylesheet adapts to the system light/dark
+  scheme; the selected Campbell tab still joins the dark terminal.
+  Arbitrary custom styles are not replaced. Logical-pixel dimensions
+  and device-scale glyph rendering follow Qt.
+- Shadows are submitted to KWindowShadow, outside the actual window
+  geometry, and updated for focus, scale and native surface changes.
+  They are removed on maximize, fullscreen or deactivation. A missing
+  compositor shadow protocol does not block window use.
+- A hover over the maximize button requests the existing KWin Snap
+  Layouts script to show an anchored interactive picker, using the same
+  layout definitions as drag-to-top. KWin checks the active window,
+  matching client/frame geometry, pointer position, output work area,
+  and size limits before placing that window. The short-lived D-Bus
+  request can only be consumed by the running KWin service. No terminal
+  titles, commands or session contents are exchanged.
+- There is no default global shortcut for this request. A missing,
+  disabled or older snap script leaves maximize/restore usable. Hover
+  snapping does not implement Windows Snap Assist, persistent snap
+  groups, or automatic placement of other applications.
 
-It only activates with a visible top tab bar, hidden menu/toolbars, no
-attached side docks, a supported X11/Wayland backend, and Konsole's own
-frameless preference disabled. Changing these settings restores the
-native titlebar. Fullscreen uses the native fullscreen mode.
+This remains an opt-in pre-acceptance implementation. It activates only
+with a visible top tab bar and enabled native new-tab button, hidden
+menu/toolbars, no attached side docks, X11 or Wayland, and Konsole's own
+frameless preference disabled. Missing imported glyphs, unavailable
+window-move/resize requests or a layout that cannot fit the controls
+disable the custom chrome. The integrated controls are hidden in
+fullscreen and the original tab controls are restored there.
+
+Window rounding is deliberately left to the compositor. The plugin does
+not set a hard window mask or modify terminal transparency to imitate
+Windows corners; that would risk clipping at fractional scales. Actual
+outer corner rounding is still unresolved for frameless Konsole.
 
 ### Manual NixOS trial
 
-Use the same **absolute nixpkgs path** as the current desktop/test runtime.
-Konsole's plugin loader checks the release major/minor and its private
-ABI has no public SDK. The optional expression uses the exact nixpkgs
-Konsole derivation, adds only the plugin subdirectory, and produces an
-isolated Konsole package with its own matching libraries. It does not
-replace the system package or modify Home Manager, configuration.nix,
-the default launcher, or the Nix store directly. It is not a plugin
-binary for an arbitrary installed Konsole. Build and install are manual
-maintainer actions.
+First update the normal theme through its existing reversible upgrade
+flow. The optional Konsole package is **not** built or enabled by that
+flow. The updated Snap Layouts script is part of the normal theme; KWin
+caches QML, so log out and back in after upgrading it before testing hover
+snapping. If the script is disabled, enable Windows Modern: Snap Layouts
+in System Settings > Window Management > KWin Scripts.
 
-From the theme checkout, after the standard theme and native glyphs have
-been installed, inspect `konsole --version` and supply that exact version:
+From the theme checkout, as the desktop user:
 
 ```sh
-nix-build nix/konsole-chrome.nix \
-  --argstr nixpkgsPath /absolute/path/to/the/current/nixpkgs \
-  --argstr konsoleVersion 26.08.3 \
-  --out-link ./result-konsole-chrome
-WM_KONSOLE_CHROME=1 ./result-konsole-chrome/bin/konsole \
-  --separate --hide-menubar --hide-toolbars --show-tabbar
+./scripts/konsole-chrome.sh build
+./scripts/konsole-chrome.sh run
 ```
 
-Replace the example version with the actual version. The expression
-rejects a different package version or an unaudited release series.
-For a source build on another distribution, copy the plugin directory
-into the matching Konsole checkout at `src/plugins/WindowsModernChrome`,
-append `add_subdirectory(WindowsModernChrome)` to
-`src/plugins/CMakeLists.txt`, and build that Konsole in an isolated
-prefix with the upstream dependencies plus Qt SVG. Do not install
-a module compiled against a different package ABI into stock Konsole.
+The first command is the maintainer's explicit build action. It resolves
+the running NixOS nixpkgs revision, checks the installed Konsole version
+and builds an isolated Konsole package with its matching private
+libraries. The source-reviewed series is 26.08.x; another version is
+rejected. If the exact nixpkgs revision cannot be identified, supply
+the matching absolute nixpkgs directory:
 
-The plugin is disabled by default. The environment variable enables it
-for this process only. Alternatively, enable/disable the checkable
-entry in the native Plugins menu (show the menu bar to access it and
-hide it to apply the integrated layout). Exit the isolated process and
-launch ordinary Konsole to recover. The plugin writes no user settings
-and does not change terminal profiles; ordinary Konsole itself still
-uses the user's existing configuration and session state. Do not launch
-it with irreplaceable terminal sessions during initial acceptance.
+```sh
+WM_KONSOLE_NIXPKGS=/absolute/path/to/nixpkgs ./scripts/konsole-chrome.sh build
+```
 
-Manual acceptance (not performed by the developer): verify actual plugin
-loading, single and many tabs, profile dropdown and split views, tab drag
-and detach, multiple windows, normal close confirmation, minimize,
-maximize/restore, fullscreen, titlebar double-click, all resize edges
-and corners, compositor snapping, 100/125/150/200% scaling, moving
-between differently scaled screens, light/dark palettes, keyboard
-access and recovery when glyphs or a supported tab layout are absent.
+The run action checks the recorded source digest, installed Konsole
+version and Nix store output before starting a separate process. After
+a plugin source update or a system upgrade, run the build action again.
+Additional Konsole arguments can follow `run`.
+
+The plugin is disabled by default in an ordinary invocation of the
+isolated binary. The run action sets `WM_KONSOLE_CHROME=1` and requests
+the native top-level tab UI. A checkable entry in the native Plugins menu
+and in the plugin's right-click title menu allows disabling it for a
+window. The right-click menu also exposes the original menu-bar action.
+
+To stop using the plugin, close the isolated Konsole process and launch
+ordinary Konsole. To remove the dedicated build link:
+
+```sh
+./scripts/konsole-chrome.sh remove
+```
+
+The trial uses a private state directory and Nix GC root, without
+replacing the system package, default launcher, Home Manager,
+configuration.nix or Nix store contents. Removal unlinks the managed
+build and manifest only. Nix garbage collection can reclaim an unused
+package later. The plugin writes no preferences and does not change
+terminal profiles; the isolated Konsole application itself still shares
+the usual Konsole configuration and session state.
+
+For another distribution, build inside a matching Konsole source tree
+by copying the plugin directory into `src/plugins/WindowsModernChrome`
+and appending `add_subdirectory(WindowsModernChrome)` to
+`src/plugins/CMakeLists.txt`. Use the upstream dependencies plus Qt SVG,
+Qt DBus and KWindowSystem. Do not mix an arbitrary compiled plugin with
+stock Konsole's private ABI.
+
+### Manual desktop acceptance
+
+No build, automatic tests or live desktop validation have been performed
+by the developer. Start with disposable terminal sessions. Verify:
+- Loading the plugin and returning to the stock layout.
+- One tab, many tabs, very narrow windows, profile/container dropdown,
+  split views, tab close, drag, detach, multiple windows and close prompts.
+- Dragging empty space, right-click menu, double-click, minimize,
+  maximize/restore, fullscreen, all resize edges and corners.
+- Light/dark changes, 100/125/150/200% scales, different-scale monitors,
+  active/inactive shadows and absence of layout or glyph clipping.
+- Hover snap placement, disabled cells, output changes, focus changes,
+  missing/disabled KWin script and ordinary drag-to-top snapping.
+- Missing native glyphs, visible menu/toolbars, dock widgets and native
+  frameless settings. The plugin must not make a window inaccessible.
+
+Integrate with the normal theme installation, upgrade and removal only
+after acceptance. Do not overwrite or replace the system Konsole.
 
 ## Dolphin: Explorer layout boundaries
 

@@ -24,9 +24,11 @@ during normal installation.
 
 ## Optional application window layouts
 
-An opt-in Konsole integrated title-bar prototype and the Dolphin Explorer
-layout boundaries are documented in [application window layouts](docs/APP_WINDOW_CHROME.md).
-The prototype is separate from normal theme installation.
+An opt-in Konsole integrated title bar and the Dolphin Explorer layout
+boundaries are documented in [application window layouts](docs/APP_WINDOW_CHROME.md).
+The Konsole trial is separate from normal installation:
+`./scripts/konsole-chrome.sh build` and `./scripts/konsole-chrome.sh run`.
+It remains pending manual desktop acceptance.
 
 ## NixOS
 

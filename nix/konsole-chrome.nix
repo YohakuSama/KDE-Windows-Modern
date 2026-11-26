@@ -13,7 +13,7 @@ assert lib.assertMsg (lib.hasPrefix "26.08." konsoleVersion)
   "The experimental plugin has only been source-reviewed for Konsole 26.08.";
 konsole.overrideAttrs (old: {
   pname = "windows-modern-konsole";
-  buildInputs = (old.buildInputs or [ ]) ++ [ k.qtsvg ];
+  buildInputs = (old.buildInputs or [ ]) ++ [ k.qtsvg k.kwindowsystem ];
   postPatch = (old.postPatch or "") + ''
     cp -R -- ${../app-decorations/konsole} src/plugins/WindowsModernChrome
     printf '\n%s\n' 'add_subdirectory(WindowsModernChrome)' >> src/plugins/CMakeLists.txt

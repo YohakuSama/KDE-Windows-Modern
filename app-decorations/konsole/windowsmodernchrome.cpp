@@ -3,32 +3,42 @@
 #include "MainWindow.h"
 #include "KonsoleSettings.h"
 #include "pluginsystem/IKonsolePlugin.h"
+#include "captionsnapbridge.h"
+#include "chromeshadow.h"
 
+#include <KActionCollection>
 #include <KPluginFactory>
 
 #include <QAbstractButton>
 #include <QAction>
 #include <QApplication>
 #include <QColor>
+#include <QContextMenuEvent>
 #include <QBoxLayout>
 #include <QDebug>
 #include <QDockWidget>
 #include <QEvent>
 #include <QGuiApplication>
 #include <QMargins>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPoint>
+#include <QPlatformSurfaceEvent>
+#include <QStyle>
+#include <QStyleHints>
 #include <QSizePolicy>
 #include <QPainter>
 #include <QPalette>
 #include <QPixmap>
 #include <QPointer>
+#include <QSet>
 #include <QStandardPaths>
 #include <QSvgRenderer>
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTimer>
 #include <QToolBar>
+#include <QToolButton>
 #include <QWindow>
 #include <QtMath>
 #include <array>
@@ -36,6 +46,11 @@
 namespace
 {
 constexpr int GripSize = 5; // Logical pixels; Qt handles output scaling.
+constexpr int CaptionWidth = 46;
+constexpr int CaptionHeight = 34;
+constexpr int NewTabWidth = 30;
+constexpr int ProfilesWidth = 24;
+constexpr int NewControlsWidth = NewTabWidth + ProfilesWidth + 4;
 constexpr auto ToggleName = "wmKonsoleChromeToggle";
 const std::array<Qt::Edges, 8> Edges = {
     Qt::LeftEdge, Qt::RightEdge, Qt::TopEdge, Qt::BottomEdge,
@@ -54,13 +69,18 @@ class CaptionButton final : public QAbstractButton
 {
 public:
     CaptionButton(const QString &name, const QString &glyph, QWidget *parent,
-                  bool close = false, const QString &alternate = {})
+                  bool close = false, const QString &alternate = {}, bool compact = false,
+                  int width = CaptionWidth)
         : QAbstractButton(parent)
         , m_close(close)
+        , m_compact(compact)
         , m_alternateName(alternate)
     {
-        setFixedWidth(46);
-        setMinimumHeight(34);
+        setFixedWidth(width);
+        if (compact)
+            setFixedHeight(24);
+        else
+            setMinimumHeight(24);
         setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
         setFocusPolicy(Qt::TabFocus);
         setAttribute(Qt::WA_Hover);
@@ -75,7 +95,7 @@ public:
         }
     }
 
-    QSize sizeHint() const override { return {46, 34}; }
+    QSize sizeHint() const override { return {minimumWidth(), m_compact ? 24 : CaptionHeight}; }
 
     bool valid() const
     {
@@ -121,7 +141,8 @@ protected:
         QPainter painter(this);
         const QColor background = palette().color(QPalette::Button);
         QColor foreground = palette().color(QPalette::ButtonText);
-        painter.fillRect(rect(), background);
+        if (!m_compact)
+            painter.fillRect(rect(), background);
         if (underMouse() || isDown()) {
             if (m_close) {
                 painter.fillRect(rect(), QColor(isDown() ? QStringLiteral("#A4261B") : QStringLiteral("#C42B1C")));
@@ -129,13 +150,20 @@ protected:
             } else {
                 QColor overlay = foreground;
                 overlay.setAlpha(isDown() ? 42 : 25);
-                painter.fillRect(rect(), overlay);
+                if (m_compact) {
+                    painter.setRenderHint(QPainter::Antialiasing);
+                    painter.setPen(Qt::NoPen);
+                    painter.setBrush(overlay);
+                    painter.drawRoundedRect(rect().adjusted(1, 1, -1, -1), 4, 4);
+                } else {
+                    painter.fillRect(rect(), overlay);
+                }
             }
         }
 
         // Rasterize the original path at the widget's device scale, then tint
         // its alpha mask. No theme lookup, no drawn substitute glyph.
-        constexpr int size = 16;
+        const int size = m_compact ? 12 : 16;
         const qreal dpr = devicePixelRatioF();
         QPixmap mask(qCeil(size * dpr), qCeil(size * dpr));
         mask.setDevicePixelRatio(dpr);
@@ -158,6 +186,7 @@ private:
     QSvgRenderer m_primary;
     QSvgRenderer m_alternate;
     bool m_close;
+    bool m_compact;
     QString m_alternateName;
     bool m_useAlternate = false;
 };
@@ -165,10 +194,11 @@ private:
 class WindowChrome final : public QObject
 {
 public:
-    explicit WindowChrome(Konsole::MainWindow *window)
+    explicit WindowChrome(Konsole::MainWindow *window, CaptionSnapBridge *snapBridge)
         : QObject(window)
         , m_window(window)
         , m_toggle(new QAction(tr("Use Windows Modern title bar"), window))
+        , m_snapBridge(snapBridge)
     {
         m_toggle->setObjectName(QString::fromLatin1(ToggleName));
         m_toggle->setCheckable(true);
@@ -176,6 +206,18 @@ public:
         connect(m_toggle, &QAction::toggled, this, [this] { schedule(); });
         connect(Konsole::KonsoleSettings::self(), &Konsole::KonsoleSettings::configChanged,
                 this, [this] { schedule(); });
+        connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
+                this, [this] { schedule(); });
+        m_layoutRetry.setSingleShot(true);
+        m_layoutRetry.setInterval(80);
+        connect(&m_layoutRetry, &QTimer::timeout, this, [this] { schedule(); });
+        m_snapHover.setSingleShot(true);
+        m_snapHover.setInterval(450);
+        connect(&m_snapHover, &QTimer::timeout, this, [this] {
+            if (m_snapBridge && m_active && m_window && m_maximize && !m_window->isFullScreen()
+                && !m_maximize->isDown() && m_maximize->underMouse())
+                m_snapBridge->request(m_window.data(), m_maximize.data());
+        });
         window->installEventFilter(this);
         watchTabs();
         schedule();
@@ -197,49 +239,78 @@ public:
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override
     {
+        const auto type = event->type();
+        if (watched == m_handle.data() && type == QEvent::PlatformSurface) {
+            auto *surface = static_cast<QPlatformSurfaceEvent *>(event);
+            if (surface->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed)
+                m_shadow.clear();
+            else
+                schedule();
+        }
+
+        if (watched == m_maximize.data()) {
+            if (type == QEvent::HoverEnter && m_active && m_window->isActiveWindow())
+                m_snapHover.start();
+            else if (type == QEvent::HoverLeave || type == QEvent::MouseButtonPress
+                     || type == QEvent::Hide || type == QEvent::Destroy)
+                m_snapHover.stop();
+        }
+
         if (m_active && m_window && !m_window->isFullScreen()) {
-            // Keep a plain click available for double-click; start a native
-            // move only when the pointer crosses Qt's drag threshold.
-            if (watched == m_pendingDrag.data()) {
-                if (event->type() == QEvent::MouseMove) {
+            // Own the complete press/move/release sequence. In particular,
+            // DetachableTabBar must never receive a release without a press.
+            if (watched == m_dragOwner.data()) {
+                if (type == QEvent::MouseMove) {
                     const auto *mouse = static_cast<QMouseEvent *>(event);
-                    if (!(mouse->buttons() & Qt::LeftButton)) {
-                        m_pendingDrag.clear();
-                    } else if ((mouse->globalPosition().toPoint() - m_pressPosition).manhattanLength()
-                               >= QApplication::startDragDistance()) {
-                        m_pendingDrag.clear();
+                    if (!(mouse->buttons() & m_dragButton)) {
+                        clearDrag();
+                    } else if (m_dragButton == Qt::LeftButton && !m_moveStarted
+                               && (mouse->globalPosition().toPoint() - m_pressPosition).manhattanLength()
+                                      >= QApplication::startDragDistance()) {
+                        m_moveStarted = true;
                         if (auto *handle = m_window->windowHandle(); handle && handle->startSystemMove())
                             return true;
                         failSafe("compositor declined window move");
-                        return true;
                     }
-                } else if (event->type() == QEvent::MouseButtonRelease
-                           || event->type() == QEvent::UngrabMouse
-                           || event->type() == QEvent::Hide) {
-                    m_pendingDrag.clear();
+                    return true;
                 }
-            }
-            if (watched == m_drag.data() || isEmptyTabStrip(watched, event)) {
-                if (event->type() == QEvent::MouseButtonDblClick) {
+                if (type == QEvent::MouseButtonRelease) {
                     const auto *mouse = static_cast<QMouseEvent *>(event);
-                    if (mouse->button() == Qt::LeftButton) {
-                        m_pendingDrag.clear();
-                        toggleMaximized();
+                    if (mouse->button() == m_dragButton) {
+                        const bool openMenu = m_dragButton == Qt::RightButton
+                            && isDragSurface(watched, mouse->position().toPoint())
+                            && (mouse->globalPosition().toPoint() - m_pressPosition).manhattanLength()
+                                < QApplication::startDragDistance();
+                        clearDrag();
+                        if (openMenu)
+                            showWindowMenu(mouse->globalPosition().toPoint());
                         return true;
                     }
                 }
-                if (event->type() == QEvent::MouseButtonPress) {
-                    const auto *mouse = static_cast<QMouseEvent *>(event);
-                    if (mouse->button() == Qt::LeftButton) {
-                        m_pendingDrag = watched;
-                        m_pressPosition = mouse->globalPosition().toPoint();
-                        return true;
-                    }
-                }
+                if (type == QEvent::UngrabMouse || type == QEvent::Hide || type == QEvent::Destroy)
+                    clearDrag();
             }
-            if (event->type() == QEvent::MouseButtonPress) {
+            if (type == QEvent::ContextMenu) {
+                const auto *context = static_cast<QContextMenuEvent *>(event);
+                if (context->reason() == QContextMenuEvent::Mouse
+                    && isDragSurface(watched, context->pos()))
+                    return true; // handled by our right-click sequence
+            }
+
+            if (type == QEvent::MouseButtonPress || type == QEvent::MouseButtonDblClick) {
                 const auto *mouse = static_cast<QMouseEvent *>(event);
-                if (mouse->button() == Qt::LeftButton) {
+                if (isDragSurface(watched, mouse->position().toPoint())) {
+                    if (mouse->button() == Qt::LeftButton || mouse->button() == Qt::RightButton) {
+                        m_dragOwner = watched;
+                        m_dragButton = mouse->button();
+                        m_pressPosition = mouse->globalPosition().toPoint();
+                        m_moveStarted = type == QEvent::MouseButtonDblClick;
+                        if (m_moveStarted && m_dragButton == Qt::LeftButton)
+                            toggleMaximized();
+                        return true;
+                    }
+                }
+                if (type == QEvent::MouseButtonPress && mouse->button() == Qt::LeftButton) {
                     for (std::size_t i = 0; i < m_grips.size(); ++i) {
                         if (watched != m_grips[i].data())
                             continue;
@@ -252,17 +323,32 @@ protected:
             }
         }
 
-        if (watched == m_window.data() || watched == m_tabs.data() || watched == m_bar.data()) {
-            switch (event->type()) {
+        // A native tab geometry or settings update may recreate corner
+        // widgets. Coalesce it into one post-layout refresh.
+        if (watched == m_window.data() || watched == m_tabs.data() || watched == m_bar.data()
+            || watched == m_corner.data() || watched == m_reserve.data()
+            || watched == m_handle.data() || watched == m_nativeNew.data()
+            || watched == m_menuWidget.data() || m_layoutWidgets.contains(watched)) {
+            switch (type) {
             case QEvent::Show:
             case QEvent::Hide:
             case QEvent::Resize:
+            case QEvent::Move:
             case QEvent::LayoutRequest:
             case QEvent::ChildAdded:
             case QEvent::ChildRemoved:
             case QEvent::WindowStateChange:
+            case QEvent::WindowActivate:
+            case QEvent::WindowDeactivate:
             case QEvent::PaletteChange:
+            case QEvent::ApplicationPaletteChange:
             case QEvent::StyleChange:
+            case QEvent::LayoutDirectionChange:
+            case QEvent::FontChange:
+            case QEvent::Expose:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+            case QEvent::DevicePixelRatioChange:
+#endif
                 schedule();
                 break;
             default:
@@ -278,6 +364,8 @@ private:
         auto *tabs = qobject_cast<QTabWidget *>(m_window->centralWidget());
         auto *bar = tabs ? tabs->tabBar() : nullptr;
         if (tabs != m_tabs.data()) {
+            if (m_active)
+                deactivate();
             if (m_tabs)
                 m_tabs->removeEventFilter(this);
             m_tabs = tabs;
@@ -285,31 +373,101 @@ private:
                 m_tabs->installEventFilter(this);
         }
         if (bar != m_bar.data()) {
-            if (m_bar)
+            if (m_bar) {
                 m_bar->removeEventFilter(this);
+                disconnect(m_bar.data(), nullptr, this, nullptr);
+            }
             m_bar = bar;
-            if (m_bar)
+            if (m_bar) {
                 m_bar->installEventFilter(this);
+                connect(m_bar.data(), &QTabBar::currentChanged, this, [this] { schedule(); });
+                connect(m_bar.data(), &QTabBar::tabMoved, this, [this] { schedule(); });
+            }
+        }
+        auto *handle = m_window->windowHandle();
+        if (handle != m_handle.data()) {
+            m_shadow.clear();
+            if (m_handle) {
+                m_handle->removeEventFilter(this);
+                disconnect(m_handle.data(), nullptr, this, nullptr);
+            }
+            m_handle = handle;
+            if (m_handle) {
+                m_handle->installEventFilter(this);
+                connect(m_handle.data(), &QWindow::screenChanged, this, [this] { schedule(); });
+            }
+        }
+        if (m_window->menuWidget() != m_menuWidget.data()) {
+            if (m_menuWidget)
+                m_menuWidget->removeEventFilter(this);
+            m_menuWidget = m_window->menuWidget();
+            if (m_menuWidget)
+                m_menuWidget->installEventFilter(this);
+        }
+        // Watch native menu/toolbar/dock visibility changes, rather than
+        // relying on a main-window layout request to be propagated.
+        for (auto *widget : m_window->findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly)) {
+            if (!qobject_cast<QToolBar *>(widget) && !qobject_cast<QDockWidget *>(widget))
+                continue;
+            if (m_layoutWidgets.contains(widget))
+                continue;
+            m_layoutWidgets.insert(widget);
+            widget->installEventFilter(this);
+            connect(widget, &QObject::destroyed, this, [this](QObject *object) {
+                m_layoutWidgets.remove(object);
+                schedule();
+            });
         }
     }
 
-    bool isEmptyTabStrip(QObject *watched, QEvent *event) const
+    void clearDrag()
     {
-        if (!m_tabs || !m_bar || watched != m_tabs.data()
-            || (event->type() != QEvent::MouseButtonPress && event->type() != QEvent::MouseButtonDblClick))
+        m_dragOwner.clear();
+        m_dragButton = Qt::NoButton;
+        m_moveStarted = false;
+    }
+
+    bool isDragSurface(QObject *watched, const QPoint &pos) const
+    {
+        if (watched == m_drag.data() || watched == m_reserve.data())
+            return true;
+        if (!m_bar || !m_tabs)
             return false;
-        const auto pos = static_cast<QMouseEvent *>(event)->position().toPoint();
-        // Do not intercept tab-bar clicks or any actual child control,
-        // including Konsole's native double-click-to-create/rename actions.
+        if (watched == m_bar.data())
+            return m_bar->rect().contains(pos) && m_bar->tabAt(pos) < 0 && !m_bar->childAt(pos);
+        if (watched != m_tabs.data())
+            return false;
         const QRect barRect(m_bar->mapTo(m_tabs.data(), QPoint(0, 0)), m_bar->size());
-        return pos.y() >= barRect.top() && pos.y() <= barRect.bottom()
-            && !m_tabs->childAt(pos);
+        return pos.y() >= barRect.top() && pos.y() <= barRect.bottom() && !m_tabs->childAt(pos);
+    }
+
+    void showWindowMenu(const QPoint &position)
+    {
+        if (m_systemMenu)
+            return;
+        auto *menu = new QMenu(m_window.data());
+        menu->setAttribute(Qt::WA_DeleteOnClose);
+        m_systemMenu = menu;
+        auto *restore = menu->addAction(tr("Restore"), m_window.data(), &QWidget::showNormal);
+        restore->setEnabled(m_window->isMaximized());
+        menu->addAction(tr("Minimize"), m_window.data(), &QWidget::showMinimized);
+        auto *maximize = menu->addAction(tr("Maximize"), m_window.data(), &QWidget::showMaximized);
+        maximize->setEnabled(!m_window->isMaximized());
+        menu->addSeparator();
+        if (auto *showMenu = m_window->actionCollection()->action(QStringLiteral("show-menubar")))
+            menu->addAction(showMenu);
+        menu->addAction(m_toggle);
+        menu->addSeparator();
+        menu->addAction(tr("Close"), m_window.data(), &QWidget::close);
+        connect(menu, &QMenu::aboutToHide, menu, &QObject::deleteLater);
+        menu->popup(position);
     }
 
     bool layoutReady() const
     {
         if (!m_tabs || !m_bar || m_tabs->tabPosition() != QTabWidget::North
-            || !m_bar->isVisibleTo(m_window.data()))
+            || !m_bar->isVisibleTo(m_window.data())
+            || !Konsole::KonsoleSettings::newTabButton())
             return false;
         if (auto *menu = m_window->menuWidget(); menu && menu->isVisibleTo(m_window.data()))
             return false;
@@ -324,14 +482,41 @@ private:
         return true;
     }
 
+    void restoreNativeNewButton()
+    {
+        if (!m_tabs || !m_nativeNew)
+            return;
+        m_nativeNew->removeEventFilter(this);
+        if (Konsole::KonsoleSettings::newTabButton()
+            && !m_tabs->cornerWidget(Qt::TopLeftCorner)) {
+            m_tabs->setCornerWidget(m_nativeNew.data(), Qt::TopLeftCorner);
+            m_nativeNew->show();
+        }
+        m_nativeNew = nullptr;
+    }
+
     void removeStrip()
     {
-        m_pendingDrag.clear();
-        delete m_strip.data(); // Own controls only; never remove native buttons.
+        m_snapHover.stop();
+        if (m_snapBridge)
+            m_snapBridge->cancel(m_window.data());
+        clearDrag();
+        if (m_systemMenu)
+            m_systemMenu->close();
+        if (m_newGroup && m_nativeNew && m_nativeNew->menu() && m_nativeNew->menu()->isVisible())
+            m_nativeNew->menu()->close();
+        if (m_corner)
+            m_corner->removeEventFilter(this);
+        delete m_newGroup.data();
+        delete m_strip.data(); // Never delete upstream controls.
+        m_newGroup = nullptr;
+        m_profiles = nullptr;
+        m_reserve = nullptr;
         m_strip = nullptr;
         m_drag = nullptr;
         m_maximize = nullptr;
         m_corner = nullptr;
+        restoreNativeNewButton();
     }
 
     bool ensureStrip()
@@ -340,14 +525,32 @@ private:
         auto *layout = corner ? qobject_cast<QBoxLayout *>(corner->layout()) : nullptr;
         if (!layout || !corner->isVisibleTo(m_window.data()))
             return false;
-        if (m_strip && corner == m_corner.data())
+        auto *left = m_tabs->cornerWidget(Qt::TopLeftCorner);
+        if (m_strip && m_newGroup && m_nativeNew && corner == m_corner.data()
+            && (!left || left == m_nativeNew.data())) {
+            if (left)
+                m_tabs->setCornerWidget(nullptr, Qt::TopLeftCorner);
             return true;
+        }
 
         removeStrip();
+        auto *nativeNew = qobject_cast<QToolButton *>(m_tabs->cornerWidget(Qt::TopLeftCorner));
+        if (!nativeNew || !nativeNew->menu())
+            return false;
+
         auto *strip = new QWidget(corner);
+        strip->setAutoFillBackground(true);
         auto *row = new QHBoxLayout(strip);
         row->setContentsMargins(0, 0, 0, 0);
         row->setSpacing(0);
+        // Reserve room in Qt's real corner layout even when the new-tab
+        // group is placed over the unused portion of the tab strip.
+        auto *reserve = new QWidget(strip);
+        reserve->setFixedWidth(NewControlsWidth);
+        reserve->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+        reserve->installEventFilter(this);
+        row->addWidget(reserve);
+
         auto *drag = new QWidget(strip);
         drag->setFixedWidth(40);
         drag->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
@@ -359,22 +562,117 @@ private:
         auto *maximize = new CaptionButton(tr("Maximize"), QStringLiteral("window-maximize-symbolic"), strip,
                                            false, QStringLiteral("window-restore-symbolic"));
         auto *close = new CaptionButton(tr("Close"), QStringLiteral("window-close-symbolic"), strip, true);
-        if (!minimize->valid() || !maximize->valid() || !close->valid()) {
+
+        auto *group = new QWidget(m_tabs.data());
+        group->setFixedWidth(NewControlsWidth);
+        group->setAutoFillBackground(true);
+        auto *buttons = new QHBoxLayout(group);
+        buttons->setContentsMargins(2, 0, 2, 0);
+        buttons->setSpacing(0);
+        auto *newTab = new CaptionButton(tr("New tab"), QStringLiteral("tab-new-symbolic"), group,
+                                         false, QString(), true, NewTabWidth);
+        auto *profiles = new CaptionButton(tr("Open profiles and containers"), QStringLiteral("go-down-symbolic"),
+                                           group, false, QString(), true, ProfilesWidth);
+        if (!minimize->valid() || !maximize->valid() || !close->valid()
+            || !newTab->valid() || !profiles->valid()) {
+            delete group;
             delete strip;
             return false;
         }
         for (auto *button : {minimize, maximize, close})
             row->addWidget(button);
+        buttons->addWidget(newTab, 0, Qt::AlignVCenter);
+        buttons->addWidget(profiles, 0, Qt::AlignVCenter);
         connect(minimize, &QAbstractButton::clicked, m_window.data(), &QWidget::showMinimized);
         connect(maximize, &QAbstractButton::clicked, this, [this] { toggleMaximized(); });
-        // QWidget::close goes through Konsole's normal queryClose path.
         connect(close, &QAbstractButton::clicked, this, [this] { m_window->close(); });
+        // Reuse the actual native click handler and its live profile menu.
+        connect(newTab, &QAbstractButton::clicked, nativeNew, &QToolButton::click);
+        connect(profiles, &QAbstractButton::clicked, this, [this] {
+            if (m_nativeNew && m_nativeNew->menu() && m_profiles) {
+                auto *menu = m_nativeNew->menu();
+                const int x = m_profiles->layoutDirection() == Qt::RightToLeft
+                    ? m_profiles->width() - menu->sizeHint().width() : 0;
+                menu->popup(m_profiles->mapToGlobal(QPoint(x, m_profiles->height())));
+            }
+        });
+        maximize->installEventFilter(this);
         layout->addWidget(strip);
         m_strip = strip;
         m_drag = drag;
         m_maximize = maximize;
         m_corner = corner;
+        m_reserve = reserve;
+        m_newGroup = group;
+        m_profiles = profiles;
+        m_nativeNew = nativeNew;
+        corner->installEventFilter(this);
+        nativeNew->installEventFilter(this);
         strip->show();
+        m_tabs->setCornerWidget(nullptr, Qt::TopLeftCorner);
+        return true;
+    }
+
+    bool placeNewControls()
+    {
+        if (!m_reserve || !m_newGroup || !m_bar || !m_tabs || !m_strip)
+            return false;
+        const QRect reserved(m_reserve->mapTo(m_tabs.data(), QPoint(0, 0)), m_reserve->size());
+        const QRect stripRect(m_strip->mapTo(m_tabs.data(), QPoint(0, 0)), m_strip->size());
+        const QRect barRect(m_bar->mapTo(m_tabs.data(), QPoint(0, 0)), m_bar->size());
+        const QRect bounds = m_tabs->rect();
+        // Do not hide the server decoration until Qt has allocated all
+        // caption controls and their reserved area. A very small or custom
+        // layout may not have enough space for the integrated chrome.
+        if (!reserved.isValid() || reserved.width() != NewControlsWidth || reserved.height() < 24
+            || !bounds.contains(stripRect) || !stripRect.contains(reserved)
+            || stripRect.width() < NewControlsWidth + 40 + 3 * CaptionWidth
+            || !barRect.isValid() || barRect.intersected(stripRect).width() > 2) {
+            m_newGroup->hide();
+            return false;
+        }
+
+        // Work in logical LTR coordinates, then mirror the final rect.
+        // The corner reservation remains outside the actual tab bar; no
+        // overlay ever covers tabs or scroll arrows on a crowded strip.
+        const auto direction = m_tabs->layoutDirection();
+        const QRect slot = QStyle::visualRect(direction, bounds, reserved);
+        const QRect logicalBar = QStyle::visualRect(direction, bounds, barRect);
+        bool scrolling = false;
+        for (const auto *button : m_bar->findChildren<QToolButton *>(QString(), Qt::FindDirectChildrenOnly)) {
+            if (button->isVisibleTo(m_bar.data())) {
+                scrolling = true;
+                break;
+            }
+        }
+        int last = logicalBar.left();
+        for (int i = 0; i < m_bar->count(); ++i) {
+            if (!m_bar->isTabVisible(i))
+                continue;
+            const QRect tab = m_bar->tabRect(i).translated(barRect.topLeft());
+            const QRect logicalTab = QStyle::visualRect(direction, bounds, tab);
+            last = qMax(last, logicalTab.right() + 1);
+            if (!logicalBar.contains(logicalTab))
+                scrolling = true;
+        }
+
+        int x = slot.left();
+        const int candidate = last + 2;
+        // In document mode the tab bar often spans the empty area. Only
+        // use that area if the complete group fits before the reservation.
+        if (!scrolling && candidate >= logicalBar.left()
+            && candidate + NewControlsWidth <= slot.left())
+            x = candidate;
+        const QRect desired = QStyle::visualRect(direction, bounds,
+            QRect(x, slot.top(), NewControlsWidth, slot.height()));
+        if (!bounds.contains(desired)) {
+            m_newGroup->hide();
+            return false;
+        }
+        if (m_newGroup->geometry() != desired)
+            m_newGroup->setGeometry(desired);
+        m_newGroup->show();
+        m_newGroup->raise();
         return true;
     }
 
@@ -386,24 +684,88 @@ private:
             m_window->showMaximized();
     }
 
+    bool darkChrome() const
+    {
+        const auto scheme = QGuiApplication::styleHints()->colorScheme();
+        if (scheme == Qt::ColorScheme::Dark)
+            return true;
+        if (scheme == Qt::ColorScheme::Light)
+            return false;
+        return QApplication::palette().color(QPalette::Window).lightness() < 128;
+    }
+
+    bool themeStyle() const
+    {
+        return Konsole::KonsoleSettings::tabBarUseUserStyleSheet()
+            && Konsole::KonsoleSettings::tabBarUserStyleSheetFile().fileName()
+                == QStringLiteral("WindowsModern-tabs.css");
+    }
+
+    void restoreStyle()
+    {
+        if (m_tabs && !m_appliedStyle.isEmpty() && m_tabs->styleSheet() == m_appliedStyle)
+            m_tabs->setStyleSheet(m_originalStyle);
+        m_appliedStyle.clear();
+        m_originalStyle.clear();
+    }
+
+    void updateThemeStyle(bool dark)
+    {
+        if (!themeStyle()) {
+            restoreStyle();
+            return;
+        }
+        const auto current = m_tabs->styleSheet();
+        if (current != m_appliedStyle)
+            m_originalStyle = current;
+        // Touch only the known Windows Modern stylesheet. Preserve arbitrary
+        // user styles and any stock Konsole style not matching this template.
+        if (!m_originalStyle.contains(QStringLiteral("QTabWidget::pane"))
+            || !m_originalStyle.contains(QStringLiteral("background: #2D2D2D;"))
+            || !m_originalStyle.contains(QStringLiteral("min-width: 180px;"))) {
+            restoreStyle();
+            return;
+        }
+        QString style = m_originalStyle;
+        style.replace(QStringLiteral("QTabWidget {\n    background: #0C0C0C;"),
+                      QStringLiteral("QTabWidget {\n    background: #2D2D2D;"));
+        style.replace(QStringLiteral("min-width: 180px;"), QStringLiteral("min-width: 72px;"));
+        style.replace(QStringLiteral("max-width: 232px;"), QStringLiteral("max-width: 216px;"));
+        style.replace(QStringLiteral("min-height: 34px;"), QStringLiteral("min-height: 28px;"));
+        style.replace(QStringLiteral("padding: 4px 12px;"), QStringLiteral("padding: 2px 10px;"));
+        if (!dark) {
+            // The active Campbell tab stays joined to its dark terminal.
+            style.replace(QStringLiteral("#2D2D2D"), QStringLiteral("#F3F3F3"));
+            style.replace(QStringLiteral("#CCCCCC"), QStringLiteral("#444444"));
+            style.replace(QStringLiteral("#3A3A3A"), QStringLiteral("#E4E4E4"));
+            style.replace(QStringLiteral("#454545"), QStringLiteral("#D8D8D8"));
+            style.replace(QStringLiteral("#F2F2F2"), QStringLiteral("#1A1A1A"));
+            style.replace(QStringLiteral("#FFFFFF"), QStringLiteral("#1A1A1A"));
+        }
+        m_appliedStyle = style;
+        if (current != style)
+            m_tabs->setStyleSheet(style);
+    }
+
     void updateStrip()
     {
         m_strip->show();
+        const bool dark = darkChrome();
+        updateThemeStyle(dark);
         QPalette colors = m_bar->palette();
-        // The existing Windows Modern Campbell stylesheet is intentionally
-        // dark even on a light desktop. Otherwise inherit native colors.
-        const bool campbell = Konsole::KonsoleSettings::tabBarUseUserStyleSheet()
-            && Konsole::KonsoleSettings::tabBarUserStyleSheetFile().fileName()
-                == QStringLiteral("WindowsModern-tabs.css");
-        if (campbell) {
-            colors.setColor(QPalette::Button, QColor(QStringLiteral("#2D2D2D")));
-            colors.setColor(QPalette::Window, QColor(QStringLiteral("#2D2D2D")));
-            colors.setColor(QPalette::ButtonText, QColor(QStringLiteral("#F2F2F2")));
+        if (themeStyle() && !m_appliedStyle.isEmpty()) {
+            const QColor background(dark ? QStringLiteral("#2D2D2D") : QStringLiteral("#F3F3F3"));
+            const QColor foreground(dark ? QStringLiteral("#F2F2F2") : QStringLiteral("#1A1A1A"));
+            colors.setColor(QPalette::Button, background);
+            colors.setColor(QPalette::Window, background);
+            colors.setColor(QPalette::ButtonText, foreground);
         } else {
             colors.setColor(QPalette::Window, colors.color(QPalette::Button));
         }
         if (m_strip->palette() != colors)
             m_strip->setPalette(colors);
+        if (m_newGroup->palette() != colors)
+            m_newGroup->setPalette(colors);
         const bool maximized = m_window->isMaximized();
         m_maximize->setAlternate(maximized);
         m_maximize->setLabel(maximized ? tr("Restore") : tr("Maximize"));
@@ -458,7 +820,11 @@ private:
 
     void deactivate()
     {
+        m_layoutRetry.stop();
+        m_layoutFailures = 0;
         removeStrip();
+        restoreStyle();
+        m_shadow.clear();
         if (!m_active)
             return;
         updateGrips(false);
@@ -470,17 +836,24 @@ private:
 
     void refresh()
     {
-        if (!m_window || !m_window->isVisible())
+        if (!m_window || !m_window->isVisible() || m_window->isMinimized()) {
+            m_snapHover.stop();
+            m_layoutRetry.stop();
+            clearDrag();
+            m_shadow.clear();
             return;
+        }
+        watchTabs();
         if (m_window->isFullScreen()) {
-            if (m_strip)
-                m_strip->hide();
+            m_layoutRetry.stop();
+            m_layoutFailures = 0;
+            // Keep Konsole's native new-tab/profile controls in fullscreen.
+            removeStrip();
+            restoreStyle();
+            m_shadow.clear();
             updateGrips(false);
             return;
         }
-        if (m_window->isMinimized())
-            return;
-        watchTabs();
         const auto platform = QGuiApplication::platformName();
         const bool supportedPlatform = platform == QStringLiteral("xcb")
             || platform.startsWith(QStringLiteral("wayland"));
@@ -497,6 +870,23 @@ private:
             return;
         }
         updateStrip();
+        if (!placeNewControls()) {
+            // Layout requests during initial show and config changes are
+            // asynchronous. Allow a bounded settling period, then restore
+            // the real titlebar instead of leaving clipped controls.
+            m_snapHover.stop();
+            if (!m_layoutRetry.isActive()) {
+                if (++m_layoutFailures > 5) {
+                    failSafe("integrated tab strip does not fit the native layout");
+                    deactivate();
+                } else {
+                    m_layoutRetry.start();
+                }
+            }
+            return;
+        }
+        m_layoutRetry.stop();
+        m_layoutFailures = 0;
         if (!m_active) {
             m_savedMargins = m_window->contentsMargins();
             m_active = true;
@@ -508,19 +898,38 @@ private:
             deactivate();
             return;
         }
-        updateGrips(!m_window->isMaximized());
+        const bool normal = !m_window->isMaximized() && !m_window->isFullScreen();
+        updateGrips(normal);
+        m_shadow.update(m_window->windowHandle(), normal, m_window->isActiveWindow());
     }
 
     QPointer<Konsole::MainWindow> m_window;
     QAction *m_toggle;
+    QPointer<CaptionSnapBridge> m_snapBridge;
+    QTimer m_snapHover;
+    QTimer m_layoutRetry;
+    int m_layoutFailures = 0;
+    ChromeShadow m_shadow;
+    QPointer<QWindow> m_handle;
+    QPointer<QWidget> m_menuWidget;
+    QPointer<QMenu> m_systemMenu;
+    QSet<QObject *> m_layoutWidgets;
     QPointer<QTabWidget> m_tabs;
     QPointer<QTabBar> m_bar;
     QPointer<QWidget> m_corner;
     QPointer<QWidget> m_strip;
     QPointer<QWidget> m_drag;
     QPointer<CaptionButton> m_maximize;
-    QPointer<QObject> m_pendingDrag;
+    QPointer<QWidget> m_reserve;
+    QPointer<QWidget> m_newGroup;
+    QPointer<CaptionButton> m_profiles;
+    QPointer<QToolButton> m_nativeNew;
+    QPointer<QObject> m_dragOwner;
+    Qt::MouseButton m_dragButton = Qt::NoButton;
     QPoint m_pressPosition;
+    QString m_originalStyle;
+    QString m_appliedStyle;
+    bool m_moveStarted = false;
     std::array<QPointer<QWidget>, 8> m_grips{};
     QMargins m_savedMargins;
     bool m_queued = false;
@@ -534,13 +943,14 @@ class WindowsModernChrome final : public Konsole::IKonsolePlugin
 public:
     WindowsModernChrome(QObject *parent, const QVariantList &args)
         : IKonsolePlugin(parent, args)
+        , m_snapBridge(new CaptionSnapBridge(this))
     {
         setName(QStringLiteral("Windows Modern title bar"));
     }
 
     void createWidgetsForMainWindow(Konsole::MainWindow *window) override
     {
-        new WindowChrome(window);
+        new WindowChrome(window, m_snapBridge);
     }
 
     void activeViewChanged(Konsole::SessionController *, Konsole::MainWindow *) override {}
@@ -550,6 +960,9 @@ public:
         auto *action = window->findChild<QAction *>(QString::fromLatin1(ToggleName), Qt::FindDirectChildrenOnly);
         return action ? QList<QAction *>{action} : QList<QAction *>{};
     }
+
+private:
+    CaptionSnapBridge *m_snapBridge;
 };
 
 K_PLUGIN_CLASS_WITH_JSON(WindowsModernChrome, "windowsmodernchrome.json")
