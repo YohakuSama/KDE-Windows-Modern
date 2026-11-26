@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "description": "Controlled Windows automatic accent observations. Unchanged palette/image evidence is inconclusive.",
+  "baseline": {
+    "schema_version": 2,
+    "windows_build": "26300.9974",
+    "display_version": "26H2",
+    "accent_mode_argument": "Automatic",
+    "accent_mode_registry": "Automatic",
+    "accent_mode_registry_conflict": false,
+    "manual_color_argument": "",
+    "accent_observed_from_ui_settings": "#FF2475CE",
+    "manual_color_observed_from_ui_settings": null,
+    "appearance": {
+      "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+      "source_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+      "wallpaper_style_raw": "10",
+      "tile_wallpaper_raw": "0",
+      "apps_use_light_theme": 1,
+      "system_uses_light_theme": 1,
+      "transparency_raw": 1,
+      "reported_display_width": 1280,
+      "reported_display_height": 800,
+      "colors_argb": {
+        "Accent": "#FF2475CE",
+        "AccentDark1": "#FF1C5CB2",
+        "AccentDark2": "#FF123C8E",
+        "AccentDark3": "#FF061864",
+        "AccentLight1": "#FF398BDC",
+        "AccentLight2": "#FF85C5EA",
+        "AccentLight3": "#FFAEE6F6",
+        "Background": "#FFFFFFFF",
+        "Foreground": "#FF000000"
+      },
+      "registry": {
+        "control_panel_auto_colorization_raw": 1,
+        "themes_history_auto_color_raw": 1,
+        "dwm_accent_color_raw": -3246812,
+        "dwm_colorization_color_raw": 2389454,
+        "explorer_accent_color_menu_raw": -3246812,
+        "explorer_start_color_menu_raw": -5088228,
+        "accent_palette_length_bytes": 32,
+        "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
+      }
+    }
+  },
+  "samples": [
+    {
+      "image": {
+        "background": "#9F5A8C",
+        "name": "solid-purple",
+        "rectangle": null
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 2,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "accent_observed_from_ui_settings": "#FFB25098",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "D8E70B541A85DCB6C610FC1C84DB6206E66DBEC80D22794FB4C5C2318246E665",
+            "source_wallpaper_sha256": "D8E70B541A85DCB6C610FC1C84DB6206E66DBEC80D22794FB4C5C2318246E665",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FFB25098",
+              "AccentDark1": "#FF963E7E",
+              "AccentDark2": "#FF73285E",
+              "AccentDark3": "#FF4A0E38",
+              "AccentLight1": "#FFBE66A8",
+              "AccentLight2": "#FFDFA1D4",
+              "AccentLight3": "#FFF1C3EC",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -6795086,
+              "dwm_colorization_color_raw": 11686040,
+              "explorer_accent_color_menu_raw": -6795086,
+              "explorer_start_color_menu_raw": -8503658,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "F1C3EC00DFA1D400BE66A800B2509800963E7E0073285E004A0E380088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true
+      }
+    },
+    {
+      "image": {
+        "background": "#FF8C00",
+        "name": "solid-orange",
+        "rectangle": null
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 2,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "accent_observed_from_ui_settings": "#FFB75B00",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "399EE386BE8DAD707FC9AEDEEA0C3ED1CEDD34C05C7E5C09D3232224EC256A7A",
+            "source_wallpaper_sha256": "399EE386BE8DAD707FC9AEDEEA0C3ED1CEDD34C05C7E5C09D3232224EC256A7A",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FFB75B00",
+              "AccentDark1": "#FF9C4700",
+              "AccentDark2": "#FF7A2E00",
+              "AccentDark3": "#FF531000",
+              "AccentLight1": "#FFDA7200",
+              "AccentLight2": "#FFFFB135",
+              "AccentLight3": "#FFFFD068",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16753737,
+              "dwm_colorization_color_raw": 12016384,
+              "explorer_accent_color_menu_raw": -16753737,
+              "explorer_start_color_menu_raw": -16758884,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "FFD06800FFB13500DA720000B75B00009C4700007A2E00005310000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true
+      }
+    },
+    {
+      "image": {
+        "background": "#FF8C00",
+        "name": "center-purple",
+        "rectangle": {
+          "y": 200,
+          "color": "#9F5A8C",
+          "width": 640,
+          "height": 400,
+          "x": 320
+        }
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 2,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "accent_observed_from_ui_settings": "#FFBB5900",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "D098C9BABA1A8C551785BD09A5C4C1B5D63BA905E3B8F632677165EC068045F6",
+            "source_wallpaper_sha256": "D098C9BABA1A8C551785BD09A5C4C1B5D63BA905E3B8F632677165EC068045F6",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FFBB5900",
+              "AccentDark1": "#FFA04500",
+              "AccentDark2": "#FF7D2D00",
+              "AccentDark3": "#FF551000",
+              "AccentLight1": "#FFDD6F00",
+              "AccentLight2": "#FFFFAE35",
+              "AccentLight3": "#FFFFCD68",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16754245,
+              "dwm_colorization_color_raw": 12278016,
+              "explorer_accent_color_menu_raw": -16754245,
+              "explorer_start_color_menu_raw": -16759392,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "FFCD6800FFAE3500DD6F0000BB590000A04500007D2D00005510000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true
+      }
+    },
+    {
+      "image": {
+        "background": "#808482",
+        "name": "solid-gray",
+        "rectangle": null
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 2,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "accent_observed_from_ui_settings": "#FF0078D4",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "31090C8B067208DDD7E42F54DCE6FC57DE11A950A5BED4FE11080D168DDB1AF8",
+            "source_wallpaper_sha256": "31090C8B067208DDD7E42F54DCE6FC57DE11A950A5BED4FE11080D168DDB1AF8",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF0078D4",
+              "AccentDark1": "#FF0067C0",
+              "AccentDark2": "#FF003E92",
+              "AccentDark3": "#FF001A68",
+              "AccentLight1": "#FF0091F8",
+              "AccentLight2": "#FF4CC2FF",
+              "AccentLight3": "#FF99EBFF",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -9211026,
+              "dwm_colorization_color_raw": 7238515,
+              "explorer_accent_color_menu_raw": -9211026,
+              "explorer_start_color_menu_raw": -4167936,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "99EBFF004CC2FF000091F8000078D4000067C000003E9200001A680088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true
+      }
+    },
+    {
+      "image": {
+        "background": "#FF8C00",
+        "name": "corner-purple",
+        "rectangle": {
+          "y": 0,
+          "color": "#9F5A8C",
+          "width": 640,
+          "height": 400,
+          "x": 0
+        }
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 2,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "accent_observed_from_ui_settings": "#FFBB5900",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "316E0776AFD7B9EFCA06C8B18FFEFC4B43174E30CE5A45E0EE8D364E25459D60",
+            "source_wallpaper_sha256": "316E0776AFD7B9EFCA06C8B18FFEFC4B43174E30CE5A45E0EE8D364E25459D60",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FFBB5900",
+              "AccentDark1": "#FFA04500",
+              "AccentDark2": "#FF7D2D00",
+              "AccentDark3": "#FF551000",
+              "AccentLight1": "#FFDD6F00",
+              "AccentLight2": "#FFFFAE35",
+              "AccentLight3": "#FFFFCD68",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -16754245,
+              "dwm_colorization_color_raw": 12278016,
+              "explorer_accent_color_menu_raw": -16754245,
+              "explorer_start_color_menu_raw": -16759392,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "FFCD6800FFAE3500DD6F0000BB590000A04500007D2D00005510000088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true
+      }
+    },
+    {
+      "image": {
+        "background": "#2475CE",
+        "name": "solid-blue",
+        "rectangle": null
+      },
+      "width": 1280,
+      "height": 800,
+      "observation": {
+        "capture": {
+          "schema_version": 2,
+          "windows_build": "26300.9974",
+          "display_version": "26H2",
+          "accent_mode_argument": "Automatic",
+          "accent_mode_registry": "Automatic",
+          "accent_mode_registry_conflict": false,
+          "manual_color_argument": "",
+          "accent_observed_from_ui_settings": "#FF0976CF",
+          "manual_color_observed_from_ui_settings": null,
+          "appearance": {
+            "registered_wallpaper_sha256": "F421079B104908C5BB8DB304AC94AD218B62AEE993BF2D631C67B2F7AC9DF4FE",
+            "source_wallpaper_sha256": "F421079B104908C5BB8DB304AC94AD218B62AEE993BF2D631C67B2F7AC9DF4FE",
+            "wallpaper_style_raw": "10",
+            "tile_wallpaper_raw": "0",
+            "apps_use_light_theme": 1,
+            "system_uses_light_theme": 1,
+            "transparency_raw": 1,
+            "reported_display_width": 1280,
+            "reported_display_height": 800,
+            "colors_argb": {
+              "Accent": "#FF0976CF",
+              "AccentDark1": "#FF075DB3",
+              "AccentDark2": "#FF053E8F",
+              "AccentDark3": "#FF021965",
+              "AccentLight1": "#FF0B90F3",
+              "AccentLight2": "#FF69CAF8",
+              "AccentLight3": "#FF9EE9FB",
+              "Background": "#FFFFFFFF",
+              "Foreground": "#FF000000"
+            },
+            "registry": {
+              "control_panel_auto_colorization_raw": 1,
+              "themes_history_auto_color_raw": 1,
+              "dwm_accent_color_raw": -3181048,
+              "dwm_colorization_color_raw": 554703,
+              "explorer_accent_color_menu_raw": -3181048,
+              "explorer_start_color_menu_raw": -5022457,
+              "accent_palette_length_bytes": 32,
+              "accent_palette_hex": "9EE9FB0069CAF8000B90F3000976CF00075DB300053E8F000219650088179800"
+            }
+          }
+        },
+        "stable_captures": 2,
+        "palette_changed_since_previous": true,
+        "registered_wallpaper_changed_since_previous": true
+      }
+    }
+  ],
+  "restoration": {
+    "wallpaper_path_verified": true,
+    "palette_matches_baseline": true,
+    "observation": {
+      "capture": {
+        "schema_version": 2,
+        "windows_build": "26300.9974",
+        "display_version": "26H2",
+        "accent_mode_argument": "Automatic",
+        "accent_mode_registry": "Automatic",
+        "accent_mode_registry_conflict": false,
+        "manual_color_argument": "",
+        "accent_observed_from_ui_settings": "#FF2475CE",
+        "manual_color_observed_from_ui_settings": null,
+        "appearance": {
+          "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "source_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+          "wallpaper_style_raw": "10",
+          "tile_wallpaper_raw": "0",
+          "apps_use_light_theme": 1,
+          "system_uses_light_theme": 1,
+          "transparency_raw": 1,
+          "reported_display_width": 1280,
+          "reported_display_height": 800,
+          "colors_argb": {
+            "Accent": "#FF2475CE",
+            "AccentDark1": "#FF1C5CB2",
+            "AccentDark2": "#FF123C8E",
+            "AccentDark3": "#FF061864",
+            "AccentLight1": "#FF398BDC",
+            "AccentLight2": "#FF85C5EA",
+            "AccentLight3": "#FFAEE6F6",
+            "Background": "#FFFFFFFF",
+            "Foreground": "#FF000000"
+          },
+          "registry": {
+            "control_panel_auto_colorization_raw": 1,
+            "themes_history_auto_color_raw": 1,
+            "dwm_accent_color_raw": -3246812,
+            "dwm_colorization_color_raw": 2389454,
+            "explorer_accent_color_menu_raw": -3246812,
+            "explorer_start_color_menu_raw": -5088228,
+            "accent_palette_length_bytes": 32,
+            "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
+          }
+        }
+      },
+      "stable_captures": 2,
+      "palette_changed_since_previous": true,
+      "registered_wallpaper_changed_since_previous": true
+    }
+  }
+}

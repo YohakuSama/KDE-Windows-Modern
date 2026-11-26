@@ -229,6 +229,91 @@ class WindowMaterialTests(unittest.TestCase):
             "registered_wallpaper_sha256"],
             sample["appearance"]["registered_wallpaper_sha256"])
 
+    def test_controlled_automatic_wallpaper_references(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        derive = sync["derive_automatic_palette"]
+        report = json.loads((ROOT / "docs/windows11-26h2-wallpaper-probes.json").read_text(
+            encoding="utf-8"))
+        self.assertTrue(report["restoration"]["wallpaper_path_verified"])
+        self.assertTrue(report["restoration"]["palette_matches_baseline"])
+        self.assertEqual(report["restoration"]["observation"]["capture"],
+                         report["baseline"])
+        baseline = report["baseline"]
+        probes = {sample["image"]["name"]: sample for sample in report["samples"]}
+        self.assertEqual(set(probes), {"solid-purple", "solid-orange", "center-purple",
+                                      "solid-gray", "corner-purple", "solid-blue"})
+        slot_roles = ("AccentLight3", "AccentLight2", "AccentLight1", "Accent",
+                      "AccentDark1", "AccentDark2", "AccentDark3")
+        expected_by_name = {}
+        seeds = {}
+        for name, capture in [("baseline", baseline)] + [
+                (name, probe["observation"]["capture"])
+                for name, probe in probes.items()]:
+            with self.subTest(name=name):
+                appearance = capture["appearance"]
+                colors = appearance["colors_argb"]
+                registry = appearance["registry"]
+                self.assertEqual(capture["windows_build"], "26300.9974")
+                self.assertEqual(capture["accent_mode_registry"], "Automatic")
+                self.assertFalse(capture["accent_mode_registry_conflict"])
+                self.assertEqual(registry["control_panel_auto_colorization_raw"], 1)
+                self.assertEqual(registry["themes_history_auto_color_raw"], 1)
+                self.assertEqual(appearance["source_wallpaper_sha256"],
+                                 appearance["registered_wallpaper_sha256"])
+                self.assertRegex(appearance["source_wallpaper_sha256"], r"^[0-9A-F]{64}$")
+                for key in ("apps_use_light_theme", "system_uses_light_theme",
+                            "transparency_raw", "wallpaper_style_raw", "tile_wallpaper_raw",
+                            "reported_display_width", "reported_display_height"):
+                    self.assertEqual(appearance[key], baseline["appearance"][key])
+                expected = {role: "#" + colors[role][3:] for role in slot_roles}
+                expected_by_name[name] = expected
+                raw = bytes.fromhex(registry["accent_palette_hex"])
+                self.assertEqual(len(raw), registry["accent_palette_length_bytes"])
+                self.assertEqual(len(raw), 32)
+                for i, role in enumerate(slot_roles):
+                    self.assertEqual("#FF" + raw[4*i:4*i+3].hex().upper(), colors[role])
+                # These settled automatic observations contain a useful
+                # intermediate RGB in the low 24 bits of DWM ColorizationColor.
+                # Earlier manual-to-automatic captures had stale DWM values.
+                seed = "#{:06X}".format(registry["dwm_colorization_color_raw"] & 0xFFFFFF)
+                seeds[name] = seed
+                if name == "solid-gray":
+                    self.assertEqual(seed, "#6E7373")
+                    self.assertEqual(expected["Accent"], "#0078D4")
+                    # Explicit measured fallback; do not infer its threshold.
+                    self.assertEqual(derive(None), expected)
+                    with self.assertRaises(ValueError):
+                        derive(seed)
+                else:
+                    self.assertEqual(derive(seed), expected)
+        for probe in probes.values():
+            self.assertEqual((probe["width"], probe["height"]), (1280, 800))
+            self.assertGreaterEqual(probe["observation"]["stable_captures"], 2)
+            self.assertTrue(probe["observation"]["palette_changed_since_previous"])
+            self.assertTrue(probe["observation"]["registered_wallpaper_changed_since_previous"])
+
+        self.assertEqual(seeds["solid-blue"], "#0876CF")
+        self.assertEqual(expected_by_name["solid-blue"]["Accent"], "#0976CF")
+        self.assertNotEqual(derive(expected_by_name["solid-blue"]["Accent"]),
+                            expected_by_name["solid-blue"])
+        self.assertNotEqual(derive(probes["solid-orange"]["image"]["background"]),
+                            expected_by_name["solid-orange"])
+        self.assertEqual(expected_by_name["center-purple"], expected_by_name["corner-purple"])
+        self.assertNotEqual(expected_by_name["center-purple"], expected_by_name["solid-orange"])
+        center, corner = (probes[name] for name in ("center-purple", "corner-purple"))
+        for probe in (center, corner):
+            rect = probe["image"]["rectangle"]
+            self.assertEqual(rect["width"] * rect["height"] * 4,
+                             probe["width"] * probe["height"])
+            self.assertEqual(probe["image"]["background"], "#FF8C00")
+            self.assertEqual(rect["color"], "#9F5A8C")
+        self.assertEqual((center["image"]["rectangle"]["x"], center["image"]["rectangle"]["y"]),
+                         (320, 200))
+        self.assertEqual((corner["image"]["rectangle"]["x"], corner["image"]["rectangle"]["y"]),
+                         (0, 0))
+        self.assertNotEqual(center["observation"]["capture"]["appearance"]["source_wallpaper_sha256"],
+                            corner["observation"]["capture"]["appearance"]["source_wallpaper_sha256"])
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')

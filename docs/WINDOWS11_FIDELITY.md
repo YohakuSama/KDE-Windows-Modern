@@ -602,6 +602,62 @@ and the restoration observation, not the original absolute file path.
 The tool is a reference collection utility, not an automated KDE
 acceptance test, and is not installed into the Linux runtime theme.
 
+### Measured controlled automatic palette results
+
+The maintainer successfully ran the six-probe collection on 26H2 build
+26300.9974 at 1280x800, with both light mode flags set. The complete
+[probe report](windows11-26h2-wallpaper-probes.json) preserves the
+observed colors, exact image recipes, SHA-256 values, raw registry
+values, stable-capture flags and restoration result. All six samples
+changed both the palette and the registered image relative to the
+preceding sample. Source and registered hashes match for every image.
+Restoration reproduced the baseline image and palette.
+
+For these settled observations only, the low 24 bits of DWM
+ColorizationColor provide a useful intermediate RGB to the existing
+CIELAB calculation:
+
+| Image | Intermediate RGB | UISettings Accent |
+| --- | --- | --- |
+| Bloom | #2475CE | #2475CE |
+| Solid #9F5A8C | #B25098 | #B25098 |
+| Solid #FF8C00 | #B75B00 | #B75B00 |
+| Orange + centered purple (25%) | #BB5900 | #BB5900 |
+| Solid #808482 | #6E7373 | #0078D4 |
+| Orange + corner purple (25%) | #BB5900 | #BB5900 |
+| Solid #2475CE | #0876CF | #0976CF |
+
+The CIELAB calculation reproduces all seven roles for each of the six
+chromatic observations (126 RGB channels, including the baseline and
+both rectangle positions). The solid-blue intermediate differs from
+the final Accent by one red unit. Feeding the final Accent back into
+the calculation changes the generated shades; keep the intermediate
+and final values distinct. Earlier transition captures had unchanged
+DWM registry values, so do not use DWM as the sole source for current
+shell color or assert that its value always equals a palette input.
+
+The near-gray probe returns the full default blue UISettings ramp even
+though DWM and Explorer AccentColorMenu retain a grayish color. The
+Windows fallback criterion is not known. The two rectangle observations
+are identical despite their different positions, but differ from the
+solid orange observation. This excludes a pure largest-pixel-color
+lookup for these results, not all possible spatial weighting methods.
+Solid colored images also demonstrate hue/chroma changes before shade
+generation: the image pixel RGB is not the intermediate RGB. No
+historical patent supplies confirmed 26H2 extraction parameters.
+
+The existing accent module now exposes derive_automatic_palette():
+chromatic preprocessed candidates reuse the CIELAB function, and an
+explicit no-eligible-color result (None) selects the default ramp.
+An extraction error or an unsupported chromatic input is not a
+no-eligible-color result. No gray threshold, pixel-to-candidate
+transform, spatial weights or preset matching for automatic image
+pixels is assumed. The existing regression suite records all seven
+observations, including exact seed/output separation and the observed
+fallback. This function remains disconnected from runtime until the
+extractor and global palette ownership are resolved. The current
+samples do not establish the Windows image-to-intermediate algorithm.
+
 ### Capture procedure
 
 For maintainer acceptance, use a single display and a static picture in

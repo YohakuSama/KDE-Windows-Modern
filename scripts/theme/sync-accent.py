@@ -246,6 +246,22 @@ def derive_manual_palette(selection):
     return derive_custom_palette(color)
 
 
+def derive_automatic_palette(candidate):
+    """Stage the automatic shade calculation, not the image extractor.
+
+    Pass a preprocessed chromatic candidate, not a pixel RGB, observed
+    final Accent, or KDE's effective selection color. None represents
+    an explicit no-eligible-color result, not an extraction error.
+    The rejection threshold and preprocessing are not established.
+    """
+    if candidate is None:
+        return derive_manual_palette("#0078D4")
+    # The chromatic automatic captures use the CIELAB branch even when
+    # their source image is a preset color. Never dispatch on the image
+    # pixel's manual preset identity or use the manual HSL fallback.
+    return derive_custom_lab_palette(candidate)
+
+
 def contrast_ink(color):
     channels = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
     linear = [x / 12.92 if x <= .04045 else ((x + .055) / 1.055) ** 2.4
