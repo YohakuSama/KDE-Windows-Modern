@@ -1,6 +1,8 @@
 import QtQuick
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents3
+import "../components" as Components
 
 Item {
     id: root
@@ -14,10 +16,15 @@ Item {
     signal clicked
     signal rightClicked
 
-    implicitWidth: hitSize
+    implicitWidth: Math.max(hitSize, glyph.nativeSource.length > 0 ? 0
+        : Math.min(120, missingGlyphLabel.implicitWidth + 8))
     implicitHeight: hitSize
     activeFocusOnTab: true
+    Accessible.role: Accessible.Button
+    Accessible.name: root.tooltipText
     Accessible.onPressAction: root.clicked()
+
+    function resolveIcon(role) { return glyph.resolveRole(role); }
     Keys.onReturnPressed: root.clicked()
     Keys.onEnterPressed: root.clicked()
     Keys.onSpacePressed: root.clicked()
@@ -37,14 +44,23 @@ Item {
         textFormat: Text.PlainText
     }
 
-    Kirigami.Icon {
+    Components.NativeGlyph {
+        id: glyph
         width: root.buttonSize; height: root.buttonSize
         anchors.centerIn: parent
-        source: root.iconSource
-        color: Kirigami.Theme.textColor
-        isMask: true
-        opacity: 1
-        roundToIconSize: false
+        roleName: root.iconSource
+    }
+    // Keep the action visible and usable when the owner has not imported
+    // the original resource. Never silently fall through to a KDE glyph.
+    PlasmaComponents3.Label {
+        id: missingGlyphLabel
+        anchors.centerIn: parent
+        width: Math.max(0, parent.width - 8)
+        visible: glyph.nativeSource.length === 0
+        text: root.tooltipText
+        horizontalAlignment: Text.AlignHCenter
+        elide: Text.ElideRight
+        textFormat: Text.PlainText
     }
 
     MouseArea {

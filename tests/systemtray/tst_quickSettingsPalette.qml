@@ -23,6 +23,7 @@ Item {
         buttonHeight: 48
         label: "Wi-Fi"
         iconSource: "network-wireless-symbolic"
+        LayoutMirroring.childrenInherit: true
     }
     SignalSpy { id: toggle; target: split; signalName: "clicked" }
     SignalSpy { id: details; target: split; signalName: "arrowClicked" }
@@ -58,6 +59,39 @@ Item {
             verify(split.captionHeight >= 20);
             split.buttonHeight = 48;
         }
+        function test_mirroredSplitPaintAndTargets() {
+            split.width = 120;
+            split.LayoutMirroring.enabled = true;
+            try {
+                toggle.clear();
+                details.clear();
+                const surface = findChild(split, "wmQuickTileSurface");
+                const toggleBrush = findChild(split, "wmQuickTileToggleBrush");
+                const detailsBrush = findChild(split, "wmQuickTileDetailsBrush");
+                const divider = findChild(split, "wmQuickTileDivider");
+                const glyph = findChild(split, "wmQuickTileGlyph");
+                const arrow = findChild(split, "wmQuickTileDetailsGlyph");
+                verify(surface && toggleBrush && detailsBrush && divider && glyph && arrow);
+                tryCompare(surface, "width", 120);
+                tryCompare(toggleBrush, "x", 48);
+                compare(detailsBrush.x, 1);
+                compare(divider.x, 48);
+                compare(toggleBrush.topLeftRadius, 0);
+                compare(detailsBrush.topRightRadius, 0);
+                compare(arrow.roleName, "go-previous-symbolic");
+                verify(Math.abs(glyph.x + glyph.width / 2 - 84) <= 1);
+                verify(Math.abs(arrow.x + arrow.width / 2 - 24) <= 1);
+                mouseClick(surface, 84, surface.height / 2);
+                compare(toggle.count, 1);
+                mouseClick(surface, 24, surface.height / 2);
+                compare(details.count, 1);
+                compare(toggle.count, 1);
+            } finally {
+                split.LayoutMirroring.enabled = false;
+                split.width = 96;
+            }
+        }
+
         function test_sourceSizedSplitGeometryAndTargets() {
             split.width = 120;
             toggle.clear();

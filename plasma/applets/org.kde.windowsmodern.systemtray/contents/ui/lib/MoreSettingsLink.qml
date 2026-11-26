@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
@@ -13,7 +14,9 @@ Item {
     signal clicked
 
     implicitHeight: 42
-    implicitWidth: parent ? parent.width : 200
+    // Intrinsic width is independent of the host Loader/ColumnLayout.
+    implicitWidth: 200
+    Layout.fillWidth: true
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
     Accessible.name: root.text

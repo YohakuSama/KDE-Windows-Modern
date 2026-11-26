@@ -178,9 +178,14 @@ Item {
         color: mediaCard.surfaceColor
         border.width: 1
         border.color: mediaCard.outlineColor
-        z: -1
+        // Observe the actual painted surface, not the intermediate layout.
+        // A radius change can alter the blur mask without resizing the window.
+        onXChanged: popup.scheduleSplitBlur()
         onYChanged: popup.scheduleSplitBlur()
+        onWidthChanged: popup.scheduleSplitBlur()
         onHeightChanged: popup.scheduleSplitBlur()
+        onRadiusChanged: popup.scheduleSplitBlur()
+        z: -1
     }
 
     ColumnLayout {
@@ -371,10 +376,6 @@ Item {
                 Layout.preferredHeight: popup.quickCardHeight
                 Layout.minimumHeight: popup.quickCardHeight
                 Layout.maximumHeight: popup.quickCardHeight
-                onXChanged: popup.scheduleSplitBlur()
-                onYChanged: popup.scheduleSplitBlur()
-                onWidthChanged: popup.scheduleSplitBlur()
-                onHeightChanged: popup.scheduleSplitBlur()
                 visible: !systemTrayState.overflowMode
                 ActionPanel {
                     id: actionPanel

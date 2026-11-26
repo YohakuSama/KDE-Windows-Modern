@@ -21,6 +21,7 @@ ColumnLayout {
     property real buttonHeight: -1
     readonly property real uiScale: buttonHeight > 0 ? buttonHeight / TrayMetrics.quickToggleHeight : 1
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property bool mirroredLayout: LayoutMirroring.enabled
     readonly property int captionHeight: Math.max(Math.round(30 * uiScale), Math.ceil(2 * captionMetrics.lineSpacing))
     FontMetrics { id: captionMetrics; font: caption.font }
     readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
@@ -99,12 +100,14 @@ ColumnLayout {
         Rectangle {
             id: toggleBrush
             objectName: "wmQuickTileToggleBrush"
-            x: 1; y: 1
+            x: toggleMA.x + (tile.mirroredLayout ? 0 : 1); y: 1
             width: Math.max(0, toggleMA.width - 1)
             height: Math.max(0, bg.height - 2)
             radius: Math.max(0, bg.radius - 1)
-            topRightRadius: 0
-            bottomRightRadius: 0
+            topLeftRadius: tile.mirroredLayout ? 0 : radius
+            bottomLeftRadius: topLeftRadius
+            topRightRadius: tile.mirroredLayout ? radius : 0
+            bottomRightRadius: topRightRadius
             color: ColorType.quickTileFill(tile.dark, tile.active,
                 toggleMA.containsMouse, toggleMA.containsPress, tile.accent)
             Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
@@ -112,12 +115,14 @@ ColumnLayout {
         Rectangle {
             id: detailsBrush
             objectName: "wmQuickTileDetailsBrush"
-            x: toggleMA.width; y: 1
+            x: arrowMA.x + (tile.mirroredLayout ? 1 : 0); y: 1
             width: Math.max(0, arrowMA.width - 1)
             height: Math.max(0, bg.height - 2)
             radius: Math.max(0, bg.radius - 1)
-            topLeftRadius: 0
-            bottomLeftRadius: 0
+            topLeftRadius: tile.mirroredLayout ? radius : 0
+            bottomLeftRadius: topLeftRadius
+            topRightRadius: tile.mirroredLayout ? 0 : radius
+            bottomRightRadius: topRightRadius
             border.width: arrowMA.activeFocus ? 1 : 0
             border.color: tile.fg
             color: ColorType.quickTileFill(tile.dark, tile.active,
@@ -193,7 +198,8 @@ ColumnLayout {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            x: Math.round(toggleMA.width)
+            objectName: "wmQuickTileDivider"
+            x: Math.round(tile.mirroredLayout ? toggleMA.x : arrowMA.x)
             width: 1
             height: parent.height - 4
             color: Qt.rgba(tile.fg.r, tile.fg.g, tile.fg.b,
@@ -207,7 +213,7 @@ ColumnLayout {
             width: Math.max(8, Math.round(12 * tile.uiScale))
             height: width
             roundToIconSize: false
-            roleName: "go-next-symbolic"
+            roleName: tile.mirroredLayout ? "go-previous-symbolic" : "go-next-symbolic"
             foreground: tile.active ? ColorType.contrastingForeground(detailsBrush.color) : tile.fg
             isMask: true
         }

@@ -5,6 +5,8 @@ import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib" as Lib
 
 Item {
+    id: fixture
+    property int footerClicks: 0
     width: 360
     height: 300
     ColumnLayout {
@@ -16,6 +18,38 @@ Item {
             onSwitchToggled: switchChecked = !switchChecked
         }
         Item { Layout.fillHeight: true }
+    }
+    Component {
+        id: footerContent
+        ColumnLayout {
+            spacing: 0
+            Lib.MoreSettingsLink {
+                objectName: "wmTestFooterLink"
+                text: "More settings"
+                onClicked: fixture.footerClicks++
+            }
+            Lib.MoreSettingsLink { text: "Display settings" }
+        }
+    }
+    Component {
+        id: pageComponent
+        Lib.Page {
+            width: 300
+            height: 240
+            title: "Volume"
+            footer: footerContent
+            Item { Layout.fillWidth: true; implicitHeight: 600 }
+        }
+    }
+    Component {
+        id: detailComponent
+        Lib.DetailPage {
+            width: 300
+            height: 240
+            title: "Bluetooth"
+            emptyText: "No devices"
+            footer: footerContent
+        }
     }
     SignalSpy { id: toggled; target: header; signalName: "switchToggled" }
     SignalSpy { id: wentBack; target: header; signalName: "back" }
@@ -46,6 +80,29 @@ Item {
             mouseClick(back, back.width / 2, back.height / 2);
             compare(wentBack.count, 1);
         }
+        function test_fixedFooter_data() {
+            return [{tag: "scroll page", component: pageComponent},
+                    {tag: "empty detail page", component: detailComponent}];
+        }
+        function test_fixedFooter(data) {
+            const page = createTemporaryObject(data.component, fixture);
+            verify(page);
+            const loader = findChild(page, "wmDetailPageFooter");
+            verify(loader);
+            tryVerify(() => loader.item !== null && loader.height > 0);
+            const link = findChild(loader.item, "wmTestFooterLink");
+            verify(link);
+            tryVerify(() => Math.abs(loader.y + loader.height - page.height) <= 1);
+            compare(loader.height, loader.item.implicitHeight);
+            tryCompare(link, "width", loader.width);
+            fixture.footerClicks = 0;
+            mouseClick(link, link.width / 2, link.height / 2);
+            compare(fixture.footerClicks, 1);
+            page.footer = null;
+            tryCompare(loader, "visible", false);
+            tryVerify(() => loader.item === null && loader.Layout.preferredHeight === 0);
+        }
+
         function test_conditionalAction() {
             header.showSwitch = false;
             header.showAction = true;

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "../components" as Components
 
 RowLayout {
     id: header
@@ -29,12 +30,20 @@ RowLayout {
 
     PlasmaComponents3.ToolButton {
         objectName: "wmDetailBack"
-        Layout.preferredWidth: 36
+        readonly property string nativeIcon: backGlyph.nativeSource
+        Layout.preferredWidth: nativeIcon.length > 0 ? 36 : implicitWidth
         Layout.preferredHeight: 36
         Layout.alignment: Qt.AlignVCenter
         text: i18n("Back")
-        display: PlasmaComponents3.AbstractButton.IconOnly
-        icon.name: Application.layoutDirection === Qt.RightToLeft ? "go-next" : "go-previous"
+        display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly
+            : PlasmaComponents3.AbstractButton.TextOnly
+        icon.source: nativeIcon
+        Components.NativeGlyph {
+            id: backGlyph
+            visible: false
+            roleName: header.LayoutMirroring.enabled || Application.layoutDirection === Qt.RightToLeft
+                ? "go-next-symbolic" : "go-previous-symbolic"
+        }
         icon.width: 18
         icon.height: 18
         onClicked: header.back()

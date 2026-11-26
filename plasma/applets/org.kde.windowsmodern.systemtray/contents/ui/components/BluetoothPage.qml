@@ -50,7 +50,12 @@ Lib.DetailPage {
             anchors.leftMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             text: i18n("Add device")
-            icon.name: "list-add-symbolic"
+            icon.source: addDeviceGlyph.nativeSource
+            NativeGlyph {
+                id: addDeviceGlyph
+                visible: false
+                roleName: "list-add-symbolic"
+            }
             onClicked: PlasmaBt.LaunchApp.launchWizard()
         }
     }

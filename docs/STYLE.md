@@ -939,6 +939,34 @@ Reference:
 - https://learn.microsoft.com/en-us/windows/apps/develop/platform/xaml/xaml-theme-resources
 - https://blogs.windows.com/windows-insider/2026/08/27/releasing-windows-11-version-26h2-to-the-release-preview-channel/
 
+### Quick Settings page structure, icon and blur consistency
+
+Both shared detail containers now instantiate their declared footer outside
+the scrollable body. This restores the already-connected settings actions
+for Wi-Fi, Bluetooth, battery, brightness (two links), volume, devices and
+power profiles. A null footer consumes no layout space. The links keep a
+stable intrinsic width while their host fills the available width.
+
+The common detail back button, Bluetooth add-device button, main Settings
+gear and its settings menu now resolve their artwork only through the
+existing private Windows import. Missing artwork leaves a text action
+instead of an implicit Breeze icon. This does not establish complete
+system icon coverage or change third-party identities.
+
+The two halves of the split tile paint from their actual hit-target
+positions in mirrored layouts, including outside corner radii, divider
+and the original direction-specific chevron. The previously reviewed
+48px details extent and narrow-width clamp remain unchanged. The broader
+tile-grid order and Windows touch behavior remain live-reference work.
+
+The custom popup blur update observes the actual settings surface
+geometry and radius as well as the media card position/size, so a layout
+or scale change updates the existing rounded blur region. The same
+debounced timer and compositor availability checks are retained. This
+is not a new DWM Acrylic shader, Mica implementation or a claim of
+compositor parity; live compositor preference changes and physical
+rendering still require validation.
+
 ### System accent propagation
 
 The detail switches and brightness/volume sliders now consume the enabled,
