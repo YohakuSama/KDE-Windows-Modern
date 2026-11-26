@@ -806,6 +806,99 @@ observation and restoration result. If a palette does not change, the
 sample remains in the report as an ambiguous observation rather than
 being discarded.
 
+### Extraction results: Windows 11 26H2 build 26300.9974
+
+The uploaded [Extraction report](windows11-26h2-wallpaper-probes-extraction.json)
+contains 15 settled probes at 1280x800. All source and registered wallpaper
+hashes match. Fourteen observations reached two stable captures; the
+75%-red/25%-muted-red image reached 18 observations without changing the
+palette from the preceding 50/50 image. Preserve that unchanged result as
+a negative observation. The original wallpaper path and baseline palette
+were both restored. In all 15 captures, the low 24 bits of ImageColor
+match DWM ColorizationColor exactly. The private native COM method was
+not requested in this run, so the registry alpha bytes are not yet
+independently confirmed as native COM alpha.
+
+| Controlled image | Patch area | ImageColor RGB | ImageColor alpha |
+| --- | ---: | --- | ---: |
+| Solid vivid red | — | #D24444 | 175 |
+| Solid vivid green | — | #008700 | 175 |
+| Solid vivid blue | — | #6868CC | 175 |
+| Solid muted red | — | #956767 | 161 |
+| Orange on purple | 0.5% | #B5518B | 175 |
+| Orange on purple | 1% | #B65281 | 175 |
+| Orange on purple | 2.03% | #B7527D | 175 |
+| Orange on purple | 4% | #BC535C | 175 |
+| Vivid red on muted red | 6.25% | #C54E4E | 169 |
+| Vivid red on muted red | 25% | #D24444 | 175 |
+| Vivid red on muted red | 50% | #D44343 | 175 |
+| Muted red on vivid red | 25% | #D44343 | 175 |
+| Red on green | 25% red / 75% green | #008700 | 175 |
+| Red on green | 75% red / 25% green | #D24444 | 175 |
+| Red on green, corner | 25% red / 75% green | #008700 | 175 |
+
+The 0.5%, 1%, 2.03% and 4% orange patches move ImageColor gradually
+away from the Basic solid-purple DWM candidate (#B25098) rather than
+producing a clear 1% discontinuity. A 25% orange patch on purple in the
+Refinement report does produce the orange-family candidate. These results
+do not support a simple hard 1% cutoff as the whole selection rule.
+
+The 25% red / 75% green sample selects green even though red has the
+larger raw channel span (177 versus 118). Reversing the areas selects
+red. Moving the same 25% red patch from the center to the corner does
+not change the selected green-family result. This contradicts the
+literal historical patent embodiment that selects the remaining bucket
+with the greatest average channel span after a minimum-population filter.
+The patent is a useful historical lead, not a 26H2 implementation
+specification. See [US8847973B2](https://patents.google.com/patent/US8847973B2/en).
+
+A testable alternative is a bucket score proportional to
+`population × average channel span`. Using the exact source RGB values,
+its predicted pairwise tie points are:
+
+| Color pair | Channel spans | Predicted area tie |
+| --- | ---: | ---: |
+| Orange #FF8C00 vs purple #9F5A8C | 255 vs 69 | 21.30% orange |
+| Red #E13030 vs muted red #936E6E | 177 vs 37 | 17.29% red |
+| Red #E13030 vs green #148A14 | 177 vs 118 | 40% red |
+
+The orange/purple and red/green observations fall on the predicted
+sides of these tie points. The red/muted-red pair shares a hue, so its
+6.25% and 25% results do not independently identify a categorical
+winner. This is a hypothesis, not a recovered Windows algorithm. The
+new Boundary probe set brackets all three tie points before any runtime
+implementation is considered.
+
+The 15 registry alpha bytes also fit
+`min(175, 124 + floor(average per-pixel channel span))` exactly when
+the average is calculated from the authored RGB colors and exact patch
+areas. The two uncapped samples are solid muted red (span 37, alpha 161)
+and 6.25% vivid red on muted red (average span 45.75, alpha 169).
+This differs by one from the 125 lower bound documented for other
+reverse-engineered shell32 builds. It may indicate a 26H2 constant
+change or a one-unit difference in the effective analysis pixels.
+Because this report did not call the native COM method, treat the
+124 fit as provisional. The Boundary set includes native COM capture
+to verify the returned alpha and ImageColor before/after relationship.
+
+### Boundary probe set
+
+The collector now accepts `-ProbeSet Boundary`. It tests ratios around
+the three predicted population-times-span tie points and includes
+solid red samples with channel spans 37, 48 and 50 for the alpha check.
+Use the opt-in private COM diagnostic once per settled sample, not during
+the collector's polling loop:
+
+```powershell
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet Boundary -IncludeNativeWallpaperColor
+```
+
+The collector records the COM HRESULT, native ARGB/alpha, ImageColor
+before and after the call, and DWM RGB. It checks that the appearance
+did not change between the settled capture and the diagnostic. The
+private API remains undocumented and is never called unless the switch
+is explicitly supplied.
+
 ### Native automatic-color diagnostic
 
 OpenGlass reverse-engineers the private

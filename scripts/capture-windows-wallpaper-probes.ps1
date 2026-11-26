@@ -5,8 +5,9 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement', 'Extraction')]
-    [string]$ProbeSet = 'Basic'
+    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary')]
+    [string]$ProbeSet = 'Basic',
+    [switch]$IncludeNativeWallpaperColor
 )
 
 $ErrorActionPreference = 'Stop'
@@ -92,13 +93,23 @@ namespace WindowsModern.Reference
 '@
 }
 
-function Read-Capture([string]$Path) {
-    $sample = & $captureScript -AccentMode Automatic -SourceWallpaper $Path | ConvertFrom-Json
+function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
+    $captureArguments = @{
+        AccentMode = 'Automatic'
+        SourceWallpaper = $Path
+    }
+    if ($WithNativeWallpaperColor) {
+        $captureArguments.IncludeNativeWallpaperColor = $true
+    }
+    $sample = & $captureScript @captureArguments | ConvertFrom-Json
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -in @('Refinement', 'Extraction') -and $sample.schema_version -lt 4) {
-        throw 'Refinement and Extraction require capture-windows-accent.ps1 schema 4 or newer.'
+    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary') -and $sample.schema_version -lt 4) {
+        throw 'Refinement, Extraction and Boundary require capture-windows-accent.ps1 schema 4 or newer.'
+    }
+    if ($WithNativeWallpaperColor -and $sample.schema_version -lt 5) {
+        throw 'Native wallpaper diagnostics require capture-windows-accent.ps1 schema 5 or newer.'
     }
     return $sample
 }
@@ -125,6 +136,29 @@ function Assert-Context($Sample, $Baseline) {
             throw "Appearance context changed: $key"
         }
     }
+}
+
+function Add-NativeWallpaperDiagnostic($Capture, [string]$Path, $Baseline) {
+    if (-not $IncludeNativeWallpaperColor) {
+        return $Capture
+    }
+    if ($desktop.GetPath() -ine $Path) {
+        throw 'Wallpaper changed before the native COM diagnostic.'
+    }
+    # Invoke the private method once, only after the ordinary capture has
+    # settled. Do not call it on every two-second polling iteration.
+    $nativeCapture = Read-Capture $Path -WithNativeWallpaperColor
+    Assert-Context $nativeCapture $Baseline
+    if ($desktop.GetPath() -ine $Path) {
+        throw 'Wallpaper changed during the native COM diagnostic.'
+    }
+    $expectedAppearance = $Capture.appearance | ConvertTo-Json -Depth 8 -Compress
+    $observedAppearance = $nativeCapture.appearance | ConvertTo-Json -Depth 8 -Compress
+    if ($observedAppearance -cne $expectedAppearance) {
+        throw 'Appearance changed during the native COM diagnostic.'
+    }
+    $Capture.native_wallpaper_color_api = $nativeCapture.native_wallpaper_color_api
+    return $Capture
 }
 
 function Palette-AgreesWithRegistry($Sample) {
@@ -251,6 +285,7 @@ try {
     if ($desktop.GetPath() -ine $original -or -not (Palette-AgreesWithRegistry $baseline)) {
         throw 'The original wallpaper or palette is not stable.'
     }
+    $baseline = Add-NativeWallpaperDiagnostic $baseline $original $baseline
     $report.baseline = $baseline
 
     $folder = Join-Path $PSScriptRoot ('wallpaper-probes-' + [Guid]::NewGuid().ToString('N').Substring(0, 12))
@@ -327,6 +362,33 @@ try {
             @{name='red-quarter-corner-on-green'; background='#148A14'; rectangle=@{
                 color='#E13030'; x=0; y=0; width=$rw; height=$rh}}
         )
+    } elseif ($ProbeSet -eq 'Boundary') {
+        # Bracket the population * channel-span tie points inferred from
+        # the completed Extraction set. These are hypotheses, not constants.
+        # Three solid red shades also distinguish native alpha offsets 124/125.
+        $probes = @(
+            @{name='solid-red-span-37'; background='#936E6E'; rectangle=$null},
+            @{name='solid-red-span-48'; background='#936363'; rectangle=$null},
+            @{name='solid-red-span-50'; background='#946262'; rectangle=$null},
+            @{name='red-15pct-on-muted-red'; background='#936E6E'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.15); height=$height}},
+            @{name='red-17_5pct-on-muted-red'; background='#936E6E'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.175); height=$height}},
+            @{name='red-20pct-on-muted-red'; background='#936E6E'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.20); height=$height}},
+            @{name='orange-20pct-on-purple'; background='#9F5A8C'; rectangle=@{
+                color='#FF8C00'; x=0; y=0; width=[int][Math]::Floor($width * 0.20); height=$height}},
+            @{name='orange-21_25pct-on-purple'; background='#9F5A8C'; rectangle=@{
+                color='#FF8C00'; x=0; y=0; width=[int][Math]::Floor($width * 0.2125); height=$height}},
+            @{name='orange-22_5pct-on-purple'; background='#9F5A8C'; rectangle=@{
+                color='#FF8C00'; x=0; y=0; width=[int][Math]::Floor($width * 0.225); height=$height}},
+            @{name='red-37_5pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.375); height=$height}},
+            @{name='red-40pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
+            @{name='red-42_5pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.425); height=$height}}
+        )
     } else {
         $probes = @(
             @{name='solid-purple'; background='#9F5A8C'; rectangle=$null},
@@ -361,6 +423,7 @@ try {
         $attempted = $true
         $desktop.SetPath($path)
         $result = Read-Settled $path $previous $baseline
+        $result.capture = Add-NativeWallpaperDiagnostic $result.capture $path $baseline
         if ($result.capture.appearance.source_wallpaper_sha256 -ne $expectedHash -or
             (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $expectedHash) {
             throw 'Probe image bytes changed.'
@@ -383,6 +446,7 @@ try {
             }
             $desktop.SetPath($original)
             $restored = Read-Settled $original $previous $baseline
+            $restored.capture = Add-NativeWallpaperDiagnostic $restored.capture $original $baseline
             $report.restoration = [ordered]@{
                 wallpaper_path_verified = ($desktop.GetPath() -ieq $original)
                 palette_matches_baseline = ((Palette-Key $restored.capture) -ceq (Palette-Key $baseline))
