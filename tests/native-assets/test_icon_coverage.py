@@ -37,6 +37,15 @@ class CoverageTests(unittest.TestCase):
             self.assertEqual(audit.classify("unknown", names, expected, actual), "not_in_theme")
             self.assertEqual(audit.classify("/tmp/icon.png", names, expected, actual), "path_bypasses_theme")
 
+    def test_verified_name_can_have_unverified_same_name_file(self):
+        names = {"battery": ["devices/battery.svg", "status/battery.svg"],
+                 "clock": ["actions/clock.svg"], "other": ["apps/other.svg"]}
+        actual = {"battery": ["status/battery.svg"], "clock": ["actions/clock.svg"]}
+        self.assertEqual(audit.same_name_alternates(names, actual), {
+            "battery": {"verified_files": ["status/battery.svg"],
+                        "unverified_files": ["devices/battery.svg"]}
+        })
+
     def test_private_roles_and_dynamic_sources(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

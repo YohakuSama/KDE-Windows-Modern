@@ -1,0 +1,147 @@
+{
+  "format": "windows-modern-layout-sources-v1",
+  "reference_build": "26300.9974",
+  "source_evidence": "Owner-provided all-files.txt and shell-inventory/inventory.json from Windows11-26H2-Audit-20261126-102158.tar.gz. The existing report contains names and hashes, not original layout bytes.",
+  "pri_source_count": 16,
+  "pri_source_bytes": 51255376,
+  "sources": [
+    {
+      "path": "ImmersiveControlPanel/resources.pri",
+      "scope": "Settings application",
+      "kind": "pri",
+      "bytes": 20888,
+      "sha256": "7626f8b7d1dc6217c37800a1f3004eb1c5e625e663039b6dd5783d9b9cae1d89"
+    },
+    {
+      "path": "SystemApps/Microsoft.LockApp_cw5n1h2txyewy/resources.pri",
+      "scope": "Lock screen",
+      "kind": "pri",
+      "bytes": 209000,
+      "sha256": "0471a22826195ae79c951f2439b4ab02c2be634c39866c101cd6b5e28ef5d214"
+    },
+    {
+      "path": "SystemApps/Microsoft.UI.Xaml.CBS_8wekyb3d8bbwe/resources.pri",
+      "scope": "Shared XAML framework resources",
+      "kind": "pri",
+      "bytes": 2124600,
+      "sha256": "2a93db6aded19eb8026b2de11f583271505b26e9a47536d364d4e9ed93a57421"
+    },
+    {
+      "path": "SystemApps/Microsoft.Windows.FileExplorer_cw5n1h2txyewy/resources.pri",
+      "scope": "File Explorer package",
+      "kind": "pri",
+      "bytes": 87472,
+      "sha256": "9be1b46e92a1c212e157ecf669c9c9ef8e55f906740d6a084876a02bd2213ba7"
+    },
+    {
+      "path": "SystemApps/Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy/resources.pri",
+      "scope": "Start host package",
+      "kind": "pri",
+      "bytes": 1672,
+      "sha256": "7ce606defc2bb36afc3a0f83531d399fdc252475b8424bf1921b7eff93edb0dd"
+    },
+    {
+      "path": "SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/resources.pri",
+      "scope": "Shell, input and shared package resources",
+      "kind": "pri",
+      "bytes": 17142144,
+      "sha256": "68784628ccc5776c6d0da8488fb84167a0fe94882f7dc8ec332cad675a26df83"
+    },
+    {
+      "path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/resources.pri",
+      "scope": "Start, taskbar, tray and core shell resources",
+      "kind": "pri",
+      "bytes": 8533048,
+      "sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461"
+    },
+    {
+      "path": "SystemApps/MicrosoftWindows.Client.FileExp_cw5n1h2txyewy/resources.pri",
+      "scope": "File Explorer extension resources",
+      "kind": "pri",
+      "bytes": 1976976,
+      "sha256": "20168fb740db198544f67b608c3e805f69a3f45760e4e716bc7019b02b9b90cc"
+    },
+    {
+      "path": "SystemApps/MicrosoftWindows.Client.Photon_cw5n1h2txyewy/resources.pri",
+      "scope": "Photon shell package resources",
+      "kind": "pri",
+      "bytes": 80744,
+      "sha256": "a5351c50a8718de19ad55f7b13db99f703f1b18e0964d94177c934e052725881"
+    },
+    {
+      "path": "SystemApps/ShellExperienceHost_cw5n1h2txyewy/resources.pri",
+      "scope": "Shell experience host",
+      "kind": "pri",
+      "bytes": 2296,
+      "sha256": "b90c691ec87e211bf6ee4505b4b0e868d1efbe3d76da024a0dda782980ef344d"
+    },
+    {
+      "path": "SystemResources/Windows.ShellCommon.SharedResources/Windows.ShellCommon.SharedResources.pri",
+      "scope": "Shared shell resources",
+      "kind": "pri",
+      "bytes": 1448,
+      "sha256": "8335b027d41fa484eb8ee9e5d5a9f360164c5f6bbe26371c66af634c8d6cd8d3"
+    },
+    {
+      "path": "SystemResources/Windows.UI.ControlCenter/Windows.UI.ControlCenter.pri",
+      "scope": "Quick Settings",
+      "kind": "pri",
+      "bytes": 242248,
+      "sha256": "b6c11035a2011487516cda4f3b8e7bc2651d55a8a8fd58840a8c0456b574043b"
+    },
+    {
+      "path": "SystemResources/Windows.UI.Logon/Windows.UI.Logon.pri",
+      "scope": "Logon and unlock",
+      "kind": "pri",
+      "bytes": 278792,
+      "sha256": "87564f326bdf857606aabe817df193bf22535d6ed670895b1662c944e687cdee"
+    },
+    {
+      "path": "SystemResources/Windows.UI.SettingsAppThreshold/Windows.UI.SettingsAppThreshold.pri",
+      "scope": "Settings",
+      "kind": "pri",
+      "bytes": 17743776,
+      "sha256": "e6de3f2f2307a6ffb59d38d2625d9d4c4d310239e174e89e4aacb44dfd3a6095"
+    },
+    {
+      "path": "SystemResources/Windows.UI.ShellCommon/Windows.UI.ShellCommon.pri",
+      "scope": "Shared shell controls and menus",
+      "kind": "pri",
+      "bytes": 2755336,
+      "sha256": "98f34192ec2d03d73eeba5123a7ad2e11b86eb93272e8ab2702d5728b18f0b8a"
+    },
+    {
+      "path": "SystemResources/Windows.UI.ShellCommonInetCore/Windows.UI.ShellCommonInetCore.pri",
+      "scope": "Shared network-related shell resources",
+      "kind": "pri",
+      "bytes": 54936,
+      "sha256": "246301a4922f2d3e9b1d79a7ef9dba7a9ee073cd2273465ef89f225b31470423"
+    },
+    {
+      "path": "SystemApps/MicrosoftWindows.Client.Photon_cw5n1h2txyewy/Public/wsxpacks/StartMenu/index.windows.bundle",
+      "scope": "Photon Start package implementation candidate",
+      "kind": "bundle",
+      "bytes": null,
+      "sha256": null
+    },
+    {
+      "path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/Icons/WindowsLogo.svg",
+      "scope": "Windows logo candidate; taskbar role not established",
+      "kind": "svg",
+      "bytes": null,
+      "sha256": null
+    },
+    {
+      "path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/ShellMcpServers.ConsentPrompts/Icons/WindowsLogo.svg",
+      "scope": "Consent prompt logo candidate; not evidence of taskbar role",
+      "kind": "svg",
+      "bytes": null,
+      "sha256": null
+    }
+  ],
+  "limitations": [
+    "Primary package PRI files only; localized PRI files, WinSxS copies and compiled DLLs are not collected in this pass.",
+    "Three direct file candidates were found in the complete image index but have no previously recorded content hash.",
+    "The scope labels identify packages to inspect, not verified layout resources or exact runtime controls."
+  ]
+}

@@ -242,10 +242,22 @@ def desktop_candidates(data_dirs):
     return found
 
 
+def same_name_alternates(names, actual):
+    """List files not individually verified alongside a verified icon name."""
+    return {
+        name: {"verified_files": sorted(set(paths)),
+               "unverified_files": sorted(set(names[name]) - set(paths))}
+        for name, paths in sorted(actual.items())
+        if paths and set(names.get(name, [])) - set(paths)
+    }
+
+
 def classify(name, names, expected, actual):
     if "/" in name:
         return "path_bypasses_theme"
     if name in actual:
+        # This is a name-level result: at least one file is verified.
+        # Inspect same_name_alternates before claiming complete coverage.
         return "native_hash_verified"
     if name in expected:
         return "native_mapping_not_verified"
@@ -353,6 +365,7 @@ def main():
     mapping = json.loads((ROOT / "scripts/native-assets-map.json").read_text(encoding="utf-8"))
     names, broken, missing_dirs = theme_inventory(theme)
     expected, actual, mismatched = native_inventory(mapping, manifest, theme, names)
+    alternates = same_name_alternates(names, actual)
     qml = qml_candidates(ROOT)
     sources = source_candidates(ROOT, expected, names)
     desktop = desktop_candidates([data_home] + [
@@ -374,6 +387,7 @@ def main():
             "name": name,
             "native_mapping": expected.get(name, []),
             "verified_native_files": actual.get(name, []),
+            "unverified_same_name_files": alternates.get(name, {}).get("unverified_files", []),
             "theme_files": names.get(name, []),
             "qml_candidates": qml.get(name, []),
             "desktop_ids": desktop.get(name, []),
@@ -388,6 +402,9 @@ def main():
         "broken_theme_links": broken,
         "missing_index_directories": missing_dirs,
         "native_output_missing_or_changed": mismatched,
+        "same_name_alternates": alternates,
+        "same_name_alternate_name_count": len(alternates),
+        "same_name_alternate_file_count": sum(len(row["unverified_files"]) for row in alternates.values()),
         "counts": {k: len(v) for k, v in sorted(report.items())},
         "references": dict(sorted(report.items())),
         "kcm_metadata": kcm,
@@ -400,6 +417,7 @@ def main():
             "QML source and C++ literal scans are heuristic, not complete expression or data-flow analysis.",
             "Exact private role mapping proves a declared source, not local asset presence; direct artwork, native controls and dynamic pixmaps require provenance and live review.",
             "A verified output hash establishes local import parity, not semantic identity or Windows version.",
+            "Native name counts mean at least one verified path; same-name alternate files may have different contexts or bytes and are not independently verified.",
             "KCM metadata lists declared icons, not the runtime-resolved theme file or category and page-internal controls.",
             "Private shell manifest hashes establish output parity, not independent verification of the declared Windows build."
         ],

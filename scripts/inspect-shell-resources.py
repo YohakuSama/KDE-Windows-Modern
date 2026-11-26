@@ -10,6 +10,7 @@ import struct
 
 from fontTools.ttLib import TTCollection, TTFont, TTLibError
 from native_pe_resources import pe_resources
+from native_pri_resources import MAX_PRI_BYTES, named_file_candidates
 
 SHELL_MODULES = {"systemtray.dll", "taskbar.view.dll"}
 MODULES = {name + suffix for name in SHELL_MODULES for suffix in ("", ".mui", ".mun")}
@@ -243,15 +244,102 @@ def font_review(source, output):
     return issues
 
 
+def layout_review(source, output):
+    """Collect a bounded, private set of original layout sources and metadata."""
+    root = source.resolve(strict=True)
+    output = output.resolve()
+    if not root.is_dir() or output.is_relative_to(root):
+        raise ValueError("Use the extracted Windows directory and a separate output directory")
+    reference_path = Path(__file__).resolve().parents[1] / "docs/windows11-26h2-layout-sources.json"
+    reference = json.loads(reference_path.read_text(encoding="utf-8"))
+    output.mkdir(mode=0o700, parents=True, exist_ok=False)
+    records, issues = [], []
+    for item in reference["sources"]:
+        relative = Path(item["path"])
+        record = {"path": item["path"], "scope": item["scope"], "kind": item["kind"],
+                  "reference_sha256": item["sha256"], "reference_bytes": item["bytes"]}
+        records.append(record)
+        try:
+            if relative.is_absolute() or ".." in relative.parts:
+                raise ValueError("Invalid layout source path")
+            path = root / relative
+            if (path.is_symlink() or not path.resolve().is_relative_to(root)
+                    or not path.is_file()):
+                raise ValueError("Original layout source missing or outside Windows directory")
+            size = path.stat().st_size
+            if size > MAX_PRI_BYTES:
+                raise ValueError("Layout source exceeds private review size limit")
+            data = path.read_bytes()
+            sha = digest(data)
+            record.update({"sha256": sha, "bytes": len(data)})
+            expected = item["sha256"]
+            if expected is not None and (sha != expected or len(data) != item["bytes"]):
+                raise ValueError("Source differs from the recorded 26300.9974 resource")
+            dest = output / "sources" / relative
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(data)
+            record["source_file"] = dest.relative_to(output).as_posix()
+            record["source_status"] = "reference_hash_matched" if expected else "new_source_hash"
+        except (OSError, ValueError) as exc:
+            record["source_status"] = "not_collected"
+            issues.append({"path": item["path"], "stage": "source", "error": str(exc)})
+            continue
+        if item["kind"] != "pri":
+            # A bundle or SVG is only a candidate until its actual role is
+            # reviewed. Do not infer a taskbar logo or a layout from its name.
+            record["inventory_status"] = "not_decoded"
+            continue
+        candidates = []
+        record["named_layout_candidates"] = candidates
+        try:
+            for section, index, name, payload in named_file_candidates(
+                    data, (".xbf", ".xaml", ".lottie")):
+                candidate = {"map_section": section, "schema_item": index, "resource": name}
+                if payload is None:
+                    candidate["status"] = "first_candidate_unresolved"
+                else:
+                    candidate.update({"status": "first_embedded_candidate",
+                                      "bytes": len(payload), "sha256": digest(payload),
+                                      "signature_hex": payload[:12].hex()})
+                candidates.append(candidate)
+            record["inventory_status"] = "named_candidates_listed"
+        except (ValueError, KeyError, IndexError, struct.error) as exc:
+            record["inventory_status"] = "partial"
+            issues.append({"path": item["path"], "stage": "pri_inventory", "error": str(exc)})
+    if not any("source_file" in record for record in records):
+        issues.append({"stage": "source", "error": "No layout sources collected"})
+    (output / "layout-review.json").write_text(
+        json.dumps({
+            "format": "windows-modern-layout-review-v1",
+            "reference_build": reference["reference_build"],
+            "sources": records,
+            "issues": issues,
+            "limitations": [
+                "Source files are copied byte-for-byte to a private output directory, never to the repository.",
+                "Only the recorded primary PRI files and specific direct candidates are collected; no WinSxS or arbitrary DLL scan.",
+                "PRI names and first embedded candidates do not resolve resource qualifiers, external references or all candidate variants.",
+                "No XBF, application bundle or runtime layout is decoded by this inventory.",
+                "A named resource or matching source hash alone does not prove its runtime role or any layout dimension."
+            ],
+        }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return issues
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path, help="new private output directory")
-    parser.add_argument("--font-review", action="store_true",
-                        help="Create private deduplicated icon font glyph sheets and catalog (requires Pillow)")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--font-review", action="store_true",
+                      help="Create private deduplicated icon font glyph sheets and catalog (requires Pillow)")
+    mode.add_argument("--layout-review", action="store_true",
+                      help="Collect exact private 26300.9974 layout sources and named PRI candidates")
     args = parser.parse_args()
-    findings = (font_review(args.source, args.output) if args.font_review
-                else scan(args.source, args.output))
-    name = "font-review.json" if args.font_review else "inventory.json"
+    if args.layout_review:
+        findings, name = layout_review(args.source, args.output), "layout-review.json"
+    elif args.font_review:
+        findings, name = font_review(args.source, args.output), "font-review.json"
+    else:
+        findings, name = scan(args.source, args.output), "inventory.json"
     print(f"Inventory: {args.output / name} ({len(findings)} issues)")
     raise SystemExit(bool(findings))

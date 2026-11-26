@@ -266,6 +266,44 @@ def embedded_resources(data, names):
     return result
 
 
+def named_file_candidates(data, suffixes):
+    """Yield exact schema names and first supported embedded file candidates.
+
+    This is an inventory, not PRI qualifier resolution. A None payload means
+    the first candidate is external, absent or unsupported; it does not mean
+    that the named resource or its other qualified candidates do not exist.
+    """
+    if len(data) > MAX_PRI_BYTES:
+        raise ValueError("PRI resource index exceeds size limit")
+    sections = _toc(data)
+    suffixes = tuple(suffix.casefold() for suffix in suffixes)
+    for map_index, (section_id, content) in enumerate(sections):
+        if section_id not in MAP_IDS:
+            continue
+        schema_index = _u16(content, 4)
+        if schema_index >= len(sections):
+            raise ValueError("PRI resource map references an invalid schema")
+        schema_id, schema_content = sections[schema_index]
+        if schema_id not in SCHEMA_IDS:
+            raise ValueError("Unsupported PRI resource schema")
+        names = _item_names(schema_content, schema_id == SCHEMA_IDS[1])
+        selected = {index: name for index, name in names.items()
+                    if name.casefold().endswith(suffixes)}
+        if not selected:
+            continue
+        found = _first_data(content, {index: index for index in selected})
+        for index, name in sorted(selected.items()):
+            payload = None
+            if index in found:
+                section_index, item_index = found[index]
+                if section_index >= len(sections):
+                    raise ValueError("PRI candidate references an invalid data section")
+                data_id, data_content = sections[section_index]
+                if data_id == DATA_ID:
+                    payload = _data_item(data_content, item_index)
+            yield map_index, index, name, payload
+
+
 def embedded_resources_from_file(path, names):
     path = Path(path)
     size = path.stat().st_size

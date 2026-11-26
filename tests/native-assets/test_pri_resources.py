@@ -6,10 +6,10 @@ import unittest
 
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
-from native_pri_resources import embedded_resources
+from native_pri_resources import embedded_resources, named_file_candidates
 
 
-def make_pri(resource_name, payload):
+def make_pri(resource_name, payload, *, embedded=True):
     encoded = (resource_name + "\0").encode("utf-16le")
     schema = bytearray(68 + len(encoded))
     struct.pack_into("<HH", schema, 2, 0, 0)
@@ -27,7 +27,7 @@ def make_pri(resource_name, payload):
     struct.pack_into("<HH", mapping, 40, 0, 0)
     struct.pack_into("<HH", mapping, 44, 1, 0)
     struct.pack_into("<HH", mapping, 48, 0, 0)
-    mapping[52] = 1
+    mapping[52] = 1 if embedded else 0
     mapping[53] = 0
     struct.pack_into("<HH", mapping, 56, 0, 2)
 
@@ -77,6 +77,20 @@ class PriEmbeddedResources(unittest.TestCase):
             embedded_resources(source, ["files/systemsettings/assets/taskview_dark.svg"]),
             [payload],
         )
+
+    def test_named_layout_candidates_keep_exact_resource_identity(self):
+        name = "Files\\Shell\\QuickSettings.XBF"
+        payload = b"XBF\0synthetic-layout"
+        source = make_pri(name, payload)
+        self.assertEqual(list(named_file_candidates(source, (".xbf", ".xaml"))),
+                         [(1, 0, name, payload)])
+        self.assertEqual(list(named_file_candidates(source, (".svg",))), [])
+
+    def test_named_layout_candidate_does_not_guess_external_data(self):
+        name = "Files\\Shell\\QuickSettings.xbf"
+        source = make_pri(name, b"not the selected candidate", embedded=False)
+        self.assertEqual(list(named_file_candidates(source, (".xbf",))),
+                         [(1, 0, name, None)])
 
     def test_rejects_non_pri_and_oversized_input(self):
         with self.assertRaisesRegex(ValueError, "Not a Windows PRI"):

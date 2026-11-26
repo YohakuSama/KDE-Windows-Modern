@@ -197,6 +197,66 @@ delegates use full width with inset inner cards instead of relying on the
 ListView-controlled x position. Live layout, DPI and interaction acceptance
 is still required.
 
+## Source-grounded Windows layout review
+
+The owner-provided 26300.9974 audit contains file indexes, resource hashes,
+and icon previews, not the original layout binaries or decoded XAML. The
+[layout source list](windows11-26h2-layout-sources.json) identifies 16 primary
+PRI files (51,255,376 bytes) and three direct candidates observed in that
+image: the Photon Start bundle and two WindowsLogo SVGs. The latter three
+did not have a content hash in the earlier inventory. Their names alone
+do not prove that the live Start button uses either logo.
+
+Collect this bounded source set from the existing full local extraction,
+without remounting the ISO:
+
+```sh
+python3 scripts/inspect-shell-resources.py /path/to/image/Windows /path/to/new/private/layout-review --layout-review
+```
+
+The layout review compares each previously inventoried PRI with its recorded
+SHA-256 and byte count. It saves the original bytes under a separate
+private `sources/` directory and records exact schema paths, map section
+and item identifiers for named XBF, XAML and Lottie candidates. For the
+first supported embedded candidate it records the payload hash, size and
+header bytes. It does not resolve PRI qualifiers, external files, later
+candidates or any XBF node stream. An unresolved or empty candidate list
+does not mean that the component has no layout. The original PRI bytes
+are retained in the private review directory even if the narrow parser
+cannot enumerate their schema, so a later decoder can recover further
+resources without a new image extraction. An issue is recorded if an
+expected source is missing, differs from the reference, or fails inventory.
+
+Review the raw XBF with a suitable decoder (e.g.
+[XbfTools](https://github.com/chausner/XbfTools)); the applicable framework
+schema and version must match the source. WinUI templates, resource
+references, theme dictionaries, visual states, adaptive layout and
+runtime code still need resolution. The Photon bundle is not XAML and
+needs separate inspection. Do not apply a nominal Width or Margin to KDE
+until its component, property, state and source are established. Use Qt
+logical pixels and its device scaling once; document every intentional
+platform adjustment rather than rescaling already-scaled logical values.
+
+The review directory contains original Microsoft data and remains private.
+Commit only the source metadata, parser code, independently authored
+theme changes and verified parameter records. No layout dimensions,
+animation values or Start logo role are asserted by this collection mode.
+Localized PRIs, external resources, PE resources and runtime measurements
+can be investigated separately where the primary sources are insufficient.
+
+### Same-name theme alternatives
+
+The owner's pre-supplement installed audit lists 16 names with 16 additional
+theme files that are not individually verified, despite a verified path
+for each name. Examples include devices/battery.svg, apps/system-run.svg
+and status/network-connect.svg. A theme lookup can choose a different
+context or size. The coverage report now exposes the extra paths in
+`same_name_alternates` and `unverified_same_name_files`; the legacy
+native name count remains the number of names with at least one verified
+output path. Do not interpret the extra paths as confirmed non-Microsoft
+artwork: they may contain identical bytes or intentionally different
+application identity artwork. Inspect each before overriding it.
+
 ## Runtime assets and NixOS
 
 NixOS uses the reversible desktop installer and builds the tray, taskbar and
