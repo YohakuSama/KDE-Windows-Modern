@@ -685,3 +685,55 @@ labels native colorization inconclusive when the native ARGB did not
 change or the observation was not settled. This prevents a stale palette
 from being used as evidence of conversion ordering. No new Windows
 alpha observations or exact ICC generation have been obtained.
+
+## Independent per-channel curve generation and full-domain comparison
+
+The offline generation diagnostic now accepts individual red, green and
+blue tone curves. Alongside the previously verified shared parametric
+and v2 unity-gamma controls, it evaluates ICC curveType identity, gamma
+and sampled tables and parametricCurveType functions 0 through 4.
+Additional forms apply the existing four-code anchor construction as a
+candidate, not a confirmed native sampling rule. The original controls
+retain their previous reciprocal, power and rounding order. This does
+not change the installed decoder.
+
+To distinguish input-curve differences from matrix precision, the
+existing precision collector offers two optional synthetic profiles with
+the exact colorants of the earlier source-v2 matrix control. The first
+has separate red gamma (563/256), green sampled (33 points) and blue
+unity TRCs; the second uses the same red gamma for all three channels.
+Their hashes and synthetic bytes are checked and included in the
+report. Real user-supplied profiles remain local and are identified
+only by hash. No actual display profile is exported or installed.
+
+Run once in Windows PowerShell:
+
+```powershell
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\capture-windows-icc-precision.ps1 -FullRgb8 -CurveProfiles
+```
+
+The existing generation diagnostic accepts that schema 2 report and
+optional local source ICC files (repeat `--source-profile` for each).
+For each reviewed matrix/TRC profile, it compares the independently
+generated input curves, CLUT and destination curves individually and
+reports their combined RGB8 errors against the native calibration and
+mixed inputs. With `--full-rgb8`, it also compares the generated
+transform against the actual native full-domain and red-slice hashes,
+not only against the portable replay of a measured link.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-generation.py /path/to/windows-icc-full-rgb8.json --target /path/to/sRGB.icm --full-rgb8
+```
+
+The previously measured matrix report was reopened locally and its
+SHA-256 matched 8D746E6AD1BD358F46245612B4D824A098BF8304C664535A95B36D2C2D97B55A.
+Its diagonal controls still show nonuniform integer residuals (for the
+green scalar map, output minus eight times inferred PCS ranges from
+-2 to 0). These observations do not establish a complete matrix
+formula. The new synthetic profile payloads were constructed from
+the verified mathematical source-v2 control and their ICC tag
+lengths and SHA-256 identities checked during construction. They
+have not yet been accepted or measured by Windows. Schema 2 native
+output and combined DecodeAlphaProfile evidence are still required.
+No runtime approximation, native table payload, additional runtime
+dependency or separate theme is introduced.

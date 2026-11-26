@@ -5,6 +5,7 @@
 param(
     [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('Desktop')) 'windows-icc-precision.json'),
     [switch]$FullRgb8,
+    [switch]$CurveProfiles,
     [string[]]$SourceProfile = @()
 )
 Set-StrictMode -Version Latest
@@ -13,8 +14,10 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'Run this diagnostic in Windows PowerShell on the reference Windows VM.'
 }
 
-if ($SourceProfile.Count -gt 4 -or ($SourceProfile.Count -gt 0 -and -not $FullRgb8)) {
-    throw 'Specify at most four local RGB profiles, with -FullRgb8.'
+$syntheticCount = if ($CurveProfiles) { 2 } else { 0 }
+if (($SourceProfile.Count + $syntheticCount) -gt 4 -or
+    (($SourceProfile.Count -gt 0 -or $CurveProfiles) -and -not $FullRgb8)) {
+    throw 'Use -FullRgb8 for up to four additional profiles (two are reserved by -CurveProfiles).'
 }
 if ($FullRgb8) {
     if (-not $PSBoundParameters.ContainsKey('OutputPath')) {
@@ -476,6 +479,24 @@ foreach ($name in $sourceData.Keys) {
     if ($nativeType::Hash($data) -ne $sourceHashes[$name]) { throw 'Synthetic ICC hash mismatch.' }
     $sourceProfiles[$name] = $data
 }
+# Two mathematical v2.1 profiles with the same colorants as the measured
+# source-v2 matrix control. Only their TRC tags differ. These are not
+# user/display profiles: they independently exercise gamma and sampled TRCs.
+$syntheticSources = [ordered]@{}
+if ($CurveProfiles) {
+    $curveControls = [ordered]@{
+        '3633820C700F656C83A23C1D0DAA20214E73D040AB13E6B87262CEF513D0B5CA' = 'AAACWAAAAAACEAAAbW50clJHQiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJZGVzYwAAAPAAAABxY3BydAAAAWQAAAAzd3RwdAAAAZgAAAAUclhZWgAAAawAAAAUZ1hZWgAAAcAAAAAUYlhZWgAAAdQAAAAUclRSQwAAAegAAAAOZ1RSQwAAAfgAAABOYlRSQwAAAkgAAAAOZGVzYwAAAAAAAAAXTWF0cml4IHByb2JlIHNvdXJjZS12MgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1YWVogAAAAAAAAb6AAADj1AAADkFhZWiAAAAAAAABilwAAt4cAABjZWFlaIAAAAAAAACSfAAAPhAAAtsNjdXJ2AAAAAAAAAAECMwAAY3VydgAAAAAAAAAhAAAAgAG+A50GEAkPDJQQmhUdGhkfjCV0K80ylznPQXRJhFH+WuFkKm3bd/CCao1HmIekKLAqvIzJTdZt4+vxx///AABjdXJ2AAAAAAAAAAEBAAAA'
+        '6A907D854C58B4625AADACA152438EE1BC857B46EE106D31381208493023B268' = 'AAACGAAAAAACEAAAbW50clJHQiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJZGVzYwAAAPAAAABxY3BydAAAAWQAAAAzd3RwdAAAAZgAAAAUclhZWgAAAawAAAAUZ1hZWgAAAcAAAAAUYlhZWgAAAdQAAAAUclRSQwAAAegAAAAOZ1RSQwAAAfgAAAAOYlRSQwAAAggAAAAOZGVzYwAAAAAAAAAXTWF0cml4IHByb2JlIHNvdXJjZS12MgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1YWVogAAAAAAAAb6AAADj1AAADkFhZWiAAAAAAAABilwAAt4cAABjZWFlaIAAAAAAAACSfAAAPhAAAtsNjdXJ2AAAAAAAAAAECMwAAY3VydgAAAAAAAAABAjMAAGN1cnYAAAAAAAAAAQIzAAA='
+    }
+    foreach ($digest in $curveControls.Keys) {
+        [byte[]]$data = [Convert]::FromBase64String($curveControls[$digest])
+        if ($nativeType::Hash($data) -cne $digest) { throw 'Synthetic curve profile hash mismatch.' }
+        $name = 'custom-' + $digest
+        $sourceHashes[$name] = $digest
+        $sourceProfiles[$name] = $data
+        $syntheticSources[$name] = $nativeType::Pack($data)
+    }
+}
 foreach ($path in $SourceProfile) {
     [byte[]]$data = $nativeType::LocalRgbProfile([IO.Path]::GetFullPath($path))
     $digest = $nativeType::Hash($data)
@@ -527,6 +548,7 @@ $report = [ordered]@{
     calibration_sha256=$nativeType::Hash($rgb); input_rgb=$nativeType::Pack($inputRgb);
     sources=$sourceHashes; target_sha256=$targetHash; flags=3; results=$results
 }
+if ($CurveProfiles) { $report.synthetic_sources = $syntheticSources }
 $json = $report | ConvertTo-Json -Depth 16
 [IO.File]::WriteAllText([IO.Path]::GetFullPath($OutputPath),$json,(New-Object Text.UTF8Encoding($false)))
 Write-Host ('Report: {0}' -f [IO.Path]::GetFullPath($OutputPath))

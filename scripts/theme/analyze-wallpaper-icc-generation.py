@@ -35,22 +35,88 @@ def interpolate_anchors(anchors, codes, indices, step):
     return anchors[k]+((anchors[k+1]-anchors[k])*rem*2+span)//(2*span)
 
 
+def candidate_trc_values(tag, normalized):
+    """Evaluate ICC curveType/parametricCurveType at specified source codes.
+
+    Additional curve families are numerical candidates until an independent
+    native capture confirms the CMM uses the same anchor construction.
+    """
+    if len(tag) < 12:
+        raise ValueError('Truncated source tone curve')
+    if tag[:4] == b'curv':
+        count = struct.unpack_from('>I', tag, 8)[0]
+        if len(tag) != 12 + 2*count:
+            raise ValueError('Invalid sampled source curve length')
+        if count == 0:
+            return normalized
+        if count == 1:
+            gamma = struct.unpack_from('>H', tag, 12)[0]/256
+            if gamma <= 0:
+                raise ValueError('Invalid source gamma')
+            if gamma == 1:
+                return normalized
+            return normalized**gamma
+        values = np.frombuffer(tag[12:], '>u2').astype(np.int64)
+        if np.any(np.diff(values)<0):
+            raise ValueError('Expected a monotone sampled source curve')
+        coordinate = normalized*(count-1)
+        index = np.minimum(coordinate.astype(np.int64), count-2)
+        return (values[index]+(values[index+1]-values[index])*(coordinate-index))/65535
+    if tag[:4] != b'para':
+        raise ValueError('Unsupported source tone curve type')
+    kind = struct.unpack_from('>H', tag, 8)[0]
+    sizes = (1,3,4,5,7)
+    if kind >= len(sizes) or len(tag) != 12+4*sizes[kind]:
+        raise ValueError('Invalid parametric source tone curve')
+    params = np.array(struct.unpack_from(f'>{sizes[kind]}i', tag, 12))/65536
+    gamma = params[0]
+    if gamma <= 0:
+        raise ValueError('Invalid source gamma')
+    if kind == 0:
+        return normalized**gamma
+    a,b = params[1:3]
+    if a <= 0:
+        raise ValueError('Invalid source curve scale')
+    if kind in (1,2):
+        offset = params[3] if kind == 2 else 0
+        active = normalized >= -b/a
+        values = np.full(normalized.shape, offset, dtype=np.float64)
+    else:
+        c,d = params[3:5]
+        active = normalized >= d
+        offset = params[5] if kind == 4 else 0
+        values = c*normalized+(params[6] if kind == 4 else 0)
+    power_base = a*normalized[active]+b
+    if np.any(power_base < -1e-12):
+        raise ValueError('Negative active parametric power base')
+    values[active] = np.maximum(power_base,0)**gamma+offset
+    return values
+
+
 def input_curves(profile, decode):
-    """Measured shared parametric types 0/3 and v2 unity-gamma sampling."""
-    tag = shared_trc(profile)
+    """Generate per-channel source curves using the observed anchor scheme."""
+    tags = tuple(profile[key] for key in (b'rTRC',b'gTRC',b'bTRC'))
     codes = np.r_[np.arange(0,256,4),255]
     # Preserve the reciprocal multiplication and binary64 floor order.
     # Division by 255 is not interchangeable at integral linear samples.
     normalized = codes*(1.0/255.0)
-    linear = normalized if linear_gamma_tag(tag) else decode(profile, normalized)
-    anchors = np.floor(linear*65535)
-    if not np.isfinite(anchors).all() or np.any(anchors<0) or np.any(anchors>65535):
-        raise ValueError('Invalid sampled source curve')
-    anchors = anchors.astype(np.int64)
-    if np.any(np.diff(anchors)<0):
-        raise ValueError('Expected a monotone source curve')
-    out = interpolate_anchors(anchors, codes, np.arange(256), 4)
-    return np.tile(out,(3,1))
+    # Retain the previously verified arithmetic for the original shared
+    # parametric controls; the general ICC evaluator covers other forms.
+    if (tags[0]==tags[1]==tags[2] and tags[0][:4]==b'para'
+            and len(tags[0])>=12 and struct.unpack_from('>H',tags[0],8)[0] in (0,3)):
+        curves = (decode(profile, normalized),)*3
+    else:
+        curves = tuple(candidate_trc_values(tag, normalized) for tag in tags)
+    output = []
+    for linear in curves:
+        anchors = np.floor(linear*65535)
+        if not np.isfinite(anchors).all() or np.any(anchors<0) or np.any(anchors>65535):
+            raise ValueError('Invalid sampled source curve')
+        anchors = anchors.astype(np.int64)
+        if np.any(np.diff(anchors)<0):
+            raise ValueError('Expected a monotone source curve')
+        output.append(interpolate_anchors(anchors, codes, np.arange(256), 4))
+    return np.stack(output)
 
 
 def output_curves(profile):
@@ -262,15 +328,128 @@ def analyze(root, report, target_path, full_rgb8=False):
     return result
 
 
+def analyze_full_generation(root, report, target_path, source_paths, full_rgb8=False):
+    """Separate source curves, CLUT generation, and output curves for schema 2.
+
+    Additional matrix profiles are provided explicitly, identified by the
+    exact native source hash. No private source profile or link is published.
+    """
+    precision = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-precision.py'))
+    engine = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-engine.py'))
+    evidence = json.loads((root/'docs/windows11-26h2-icc-native-matches.json').read_text())
+    # Reuse the full-domain diagnostic instead of introducing a second
+    # verifier or treating the native-link replay as fresh native data.
+    verification = precision['analyze_full_rgb8'](report,evidence)
+    target, _, sources, _ = engine['inputs'](root,target_path)
+    tags,matrix,decode,sha = (engine[k] for k in ('tags','matrix','decode','sha'))
+    read,execute,checked,rgb,partitions = (precision[k] for k in
+        ('read_rgb8_tables','execute_rgb8_tables','checked','rgb','partitions'))
+    synthetic_hashes = {
+        '3633820C700F656C83A23C1D0DAA20214E73D040AB13E6B87262CEF513D0B5CA',
+        '6A907D854C58B4625AADACA152438EE1BC857B46EE106D31381208493023B268',
+    }
+    for name, item in report.get('synthetic_sources', {}).items():
+        digest = report['sources'].get(name)
+        if digest not in synthetic_hashes or name != 'custom-'+digest:
+            raise ValueError('Unexpected embedded synthetic curve profile')
+        data = checked(item)
+        if data is None or sha(data)!=digest:
+            raise ValueError('Synthetic curve profile failed identity check')
+        sources[name] = data
+    for path in source_paths:
+        with path.open('rb') as stream:
+            data = stream.read(16*1024*1024+1)
+        if len(data)>16*1024*1024:
+            raise ValueError('Oversized source ICC profile')
+        digest = sha(data)
+        matches = [name for name,value in report['sources'].items() if value==digest]
+        if len(matches)!=1:
+            raise ValueError('Source ICC is not identified in the native report')
+        sources[matches[0]] = data
+    target_tags = tags(target)
+    destination = output_curves(target_tags)
+    target_matrix = matrix(target_tags)
+    pixels = rgb(checked(report['input_rgb']),8)
+    n = report['calibration_count']
+    result = {'windows_build':report['windows_build'],'target_sha256':sha(target),
+              'missing_source_profiles':sorted(set(report['sources'])-set(sources)),
+              'sources':{}}
+    for name,data in sources.items():
+        measured = verification['full_rgb8'][name]
+        row = {'source_sha256':sha(data),'native_full_rgb8':measured}
+        result['sources'][name] = row
+        if measured.get('status')!='compared':
+            row['status'] = 'native-link-unavailable'
+            continue
+        profile = tags(data)
+        # Restrict the matrix candidate to the matrix/TRC path. An ICC LUT
+        # profile may have fallback colorants that do not describe its CMM.
+        if (data[16:24]!=b'RGB XYZ ' or any(key.startswith(
+                (b'A2B',b'B2A',b'D2B',b'B2D')) for key in profile)
+                or any(len(profile.get(key,b''))!=20 or profile[key][:4]!=b'XYZ '
+                       for key in (b'rXYZ',b'gXYZ',b'bXYZ'))):
+            row['status'] = 'unsupported-matrix-profile'
+            continue
+        try:
+            source = input_curves(profile,decode)
+            grid = integer_fixed14_grid(matrix(profile),target_matrix)
+        except (KeyError,ValueError,struct.error) as error:
+            row.update(status='unsupported-matrix-profile',reason=str(error))
+            continue
+        item = report['results'][name]
+        native_source,native_grid,native_destination = read(checked(item['intents']['1']['link_profile']))
+        native_output = checked(item['wic'],len(pixels)*3)
+        if native_output is None:
+            row['status'] = 'missing-native-calibration'
+            continue
+        reference = rgb(native_output,8)
+        stages = {
+            'source_curve_only': (source,native_grid,native_destination),
+            'clut_only': (native_source,grid,native_destination),
+            'output_curve_only': (native_source,native_grid,destination),
+            'all_generated': (source,grid,destination),
+        }
+        row.update(status='compared',
+                   source_curve=table_metrics(source,native_source,sha),
+                   clut=table_metrics(grid,native_grid,sha),
+                   output_curve=table_metrics(destination,native_destination,sha),
+                   calibration_and_mixed={key:partitions(execute(*tables,pixels),reference,n)
+                                          for key,tables in stages.items()})
+        if full_rgb8:
+            # Compare the completely generated result with the actual WIC
+            # full-domain hash, independently of the captured link replay.
+            digest,slices = precision['full_rgb8_hash'](stages['all_generated'])
+            native = item['full_rgb8']
+            different = [i for i,(a,b) in enumerate(zip(slices,native['red_slice_sha256'])) if a!=b]
+            row['generated_full_rgb8'] = {
+                'sha256':digest,'different_red_slices':different,
+                'matches_native':digest==native['sha256'] and not different
+                    and all(not part['different_colors'] for part in
+                            row['calibration_and_mixed']['all_generated'].values())}
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('report',type=Path)
     parser.add_argument('--target',required=True,type=Path)
     parser.add_argument('--full-rgb8',action='store_true',
-                        help='Compare fixed14 and native-table replays over all RGB8 inputs')
+                        help='Compare the generated RGB8 domain with the available reference')
+    parser.add_argument('--source-profile',action='append',type=Path,default=[],
+                        help='Additional exact source ICC for a schema 2 native report')
     args = parser.parse_args()
-    report = json.loads(args.report.read_text(encoding='utf-8-sig'))
-    print(json.dumps(analyze(ROOT,report,args.target,args.full_rgb8),indent=2))
+    with args.report.open('rb') as stream:
+        raw = stream.read(64*1024*1024+1)
+    if len(raw)>64*1024*1024:
+        parser.error('Oversized native report')
+    report = json.loads(raw.decode('utf-8-sig'))
+    if report['schema_version']==2:
+        result = analyze_full_generation(ROOT,report,args.target,args.source_profile,args.full_rgb8)
+    else:
+        if args.source_profile:
+            parser.error('--source-profile requires a schema 2 native report')
+        result = analyze(ROOT,report,args.target,args.full_rgb8)
+    print(json.dumps(result,indent=2))
 
 
 if __name__=='__main__':
