@@ -7,6 +7,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QFileSystemWatcher>
 #include <QPointer>
 #include <QRect>
 #include <QRectF>
@@ -84,6 +85,7 @@ Q_SIGNALS:
     void accentPreferencesChanged();
 
 private Q_SLOTS:
+    void scheduleWallpaperAccentSync();
     void onEnabledAppletsChanged();
     void startApplet(const QString &pluginId);
     void stopApplet(const QString &pluginId);
@@ -93,7 +95,11 @@ private:
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
 
+    void refreshWallpaperWatch(const KConfigGroup &group);
+
     KConfigWatcher::Ptr m_configWatcher;
+    QFileSystemWatcher m_wallpaperWatch;
+    bool m_automaticWallpaperAccent = false;
     bool m_xwaylandClientsScale = true;
 
     QPointer<SystemTraySettings> m_settings;

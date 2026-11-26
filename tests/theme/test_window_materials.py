@@ -94,6 +94,76 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertTrue(all(x == y for i, (x, y) in
                                         enumerate(zip(before, after)) if i not in owned))
 
+    def test_active_wallpaper_package_variants(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        resolve = control["resolve_wallpaper"]
+        with tempfile.TemporaryDirectory() as tmp:
+            package = Path(tmp) / "wallpaper # one"
+            light = package / "contents/images/3840x2160.jpg"
+            dark = package / "contents/images_dark/3840x2160.jpg"
+            for path in (light, dark):
+                path.parent.mkdir(parents=True)
+                path.write_bytes(b"image")
+            (package / "metadata.json").write_text("{}")
+            self.assertEqual(resolve(package.as_uri(), "dark"), dark)
+            self.assertEqual(resolve(package.as_uri(), "light"), light)
+            self.assertEqual(resolve(package.as_uri() + "#light", "dark"), light)
+            self.assertEqual(resolve(package.as_uri() + "#dark", "light"), dark)
+            self.assertEqual(resolve(light.as_uri(), "dark"), light)
+            self.assertEqual(resolve(str(light), "dark"), light)
+            with self.assertRaises(ValueError):
+                resolve(package.as_uri() + "#day-night", "dark")
+            with self.assertRaises(ValueError):
+                resolve("https://example.com/image.jpg", "light")
+            dark.unlink()
+            self.assertEqual(resolve(package.as_uri(), "dark"), light)
+            (light.parent / "1920x1080.jpg").write_bytes(b"other")
+            with self.assertRaisesRegex(ValueError, "unambiguous"):
+                resolve(package.as_uri(), "light")
+
+    def test_automatic_wallpaper_cache_and_discovery(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        discover = control["discover_wallpapers"]
+        automatic = control["automatic_state"]
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "wallpaper.png"
+            image.write_bytes(b"first")
+            topology = {"activity": "current", "screens": 2}
+            params = {"wallpaperPlugin": {"type": "s", "data": "org.kde.image"},
+                      "Image": {"type": "s", "data": image.as_uri()}}
+            palette = control["SYNC"]["derive_manual_palette"]("#FF8C00")
+            with patch.dict(discover.__globals__, {
+                    "desktop_snapshot": lambda: topology,
+                    "plasma_call": lambda *args: params}), \
+                 patch.dict(control["SYNC"], {"analyze_wallpapers": lambda paths: {"palette": palette}}):
+                snapshot = discover("light")
+                self.assertEqual(snapshot["activity"], "current")
+                self.assertEqual(len(snapshot["wallpapers"]), 2)
+                self.assertEqual(snapshot["wallpapers"][0], snapshot["wallpapers"][1])
+                state = automatic("light", None)
+                self.assertEqual(control["decode_state"](json.dumps(state)), palette)
+                with patch.dict(control["SYNC"], {"analyze_wallpapers": lambda paths: self.fail("decoded cached images")}):
+                    self.assertIs(automatic("dark", state), state)
+                image.write_bytes(b"replacement image")
+                self.assertNotEqual(automatic("light", state)["wallpapers"], state["wallpapers"])
+                params["PreviewImage"] = {"type": "s", "data": image.as_uri()}
+                with self.assertRaisesRegex(ValueError, "previewing"):
+                    discover("light")
+
+    def test_repeated_wallpaper_path_reuses_statistics(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        analyze = sync["analyze_wallpapers"]
+        calls = []
+        def decode(path):
+            calls.append(path)
+            return (1, 1, bytes((88, 88, 188, 255)))
+        with patch.dict(analyze.__globals__, {"decode_opaque_wallpaper_bitmap": decode}):
+            path = Path("/wallpaper.png")
+            single = analyze([path])
+            repeated = analyze([path, path])
+        self.assertEqual(calls, [path, path])
+        self.assertEqual(single, repeated)
+
     def test_windows_accent_state_validation(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
         palette = control["SYNC"]["derive_manual_palette"]("#FF8C00")

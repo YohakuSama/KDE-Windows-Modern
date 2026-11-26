@@ -10,9 +10,9 @@ missing="__windows_modern_missing_appearance_key__"
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 [ "$EUID" -ne 0 ] || fail "Switch appearance as the desktop user, not root."
 [ "$#" -ge 1 ] || fail "Specify an appearance operation."
-usage="Usage: switch-mode.sh light|dark|--migrate|--sync-accent|--manual-accent RGB|--wallpaper-accent IMAGE...|--native-accent"
+usage="Usage: switch-mode.sh light|dark|--migrate|--sync-accent|--manual-accent RGB|--wallpaper-accent IMAGE...|--automatic-accent|--native-accent"
 case "$1" in
-    light|dark|--migrate|--sync-accent|--native-accent) [ "$#" -eq 1 ] || fail "$usage" ;;
+    light|dark|--migrate|--sync-accent|--automatic-accent|--native-accent) [ "$#" -eq 1 ] || fail "$usage" ;;
     --manual-accent) [ "$#" -eq 2 ] || fail "$usage" ;;
     --wallpaper-accent) [ "$#" -ge 2 ] || fail "$usage" ;;
     *) fail "Unknown appearance mode: $1" ;;
@@ -180,7 +180,7 @@ case "$1" in
         [ "$active" = "$theme_id" ] || exit 0
         sync_accent sync
         exit $? ;;
-    --manual-accent|--wallpaper-accent|--native-accent)
+    --manual-accent|--wallpaper-accent|--automatic-accent|--native-accent)
         [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."
         action="${1#--}"
         action="${action%-accent}"

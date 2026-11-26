@@ -87,6 +87,8 @@ ContainmentItem {
             root.accentCommand = "";
             if (data["exit code"] !== 0)
                 console.warn("Windows Modern accent synchronization failed:", data["stderr"]);
+            else if (String(data["stderr"] || "").trim().length > 0)
+                console.warn("Windows Modern accent synchronization:", data["stderr"]);
             if (root.accentDirty) accentTimer.restart();
         }
     }

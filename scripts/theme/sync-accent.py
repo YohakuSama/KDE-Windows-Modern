@@ -623,8 +623,17 @@ def analyze_wallpapers(paths):
     configuration. The two mode accents are WinUI reference roles, not
     values already transformed by KDE's color applicator.
     """
-    result = derive_weighted_wallpaper_bitmaps(
-        decode_opaque_wallpaper_bitmap(path) for path in paths)
+    def statistics():
+        # Reuse the bounded per-image statistics for a repeated path but
+        # still merge it once per occurrence, in the original screen order.
+        cache = {}
+        for path in paths:
+            path = Path(path)
+            if path not in cache:
+                cache[path] = _bitmap_wallpaper_statistics(*decode_opaque_wallpaper_bitmap(path))
+            yield cache[path]
+
+    result = _reduce_weighted_wallpaper_statistics(statistics())
     if result is None:
         raise ValueError("No valid wallpaper color group")
     seed, alpha = result
