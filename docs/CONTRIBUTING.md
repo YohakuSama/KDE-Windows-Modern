@@ -58,8 +58,10 @@ remain open tasks.
 
 - Keep `main` as the stable release branch and `testing` as the integration
   and user-acceptance branch.
-- Push development changes to `testing`. Branch pushes and pull-request
-  events do not start CI.
+- Push development changes to `testing`. Ordinary branch pushes and
+  pull-request events do not start CI. An explicit change to
+  `.github/static-check.request` on `testing` requests the separate static
+  workflow, without starting the formal CI.
 - Complete the relevant local static checks, then have the maintainer install
   and manually verify the `testing` branch in the target Plasma session.
 - Keep manual desktop acceptance and explicit maintainer approval as
@@ -100,6 +102,27 @@ Report unavailable tools, missing version-specific headers or imports,
 and incomplete checks. Never report a check as passed if it did not run.
 If only manual review is available, report that separately. Do not add
 one-off checkers merely to claim a passing result.
+
+#### GitHub-hosted static analysis
+
+The independent [Static Check workflow](../.github/workflows/static-check.yml)
+uses Fedora 45 for Qt/KDE tools and a pinned Konsole 26.08.3 source tree.
+It parses tracked formats, runs the existing QML parser and icon audit,
+reports Snap Layouts qmllint diagnostics, and runs Clang `-fsyntax-only`
+on the Konsole plugin and its generated Qt metadata. CMake configuration
+and declaration generators are allowed; no application/plugin build,
+link, automated test, packaging, publication or desktop session is run.
+The C++ check covers Konsole only, not all native applets or NixOS ABI
+compatibility. Missing KWin import metadata is an unresolved lint result,
+not a passing semantic check. Original private resources are not uploaded.
+
+Until the workflow is present on the default branch, GitHub's normal
+`workflow_dispatch` is unavailable. On explicit maintainer authorization,
+change the text of `.github/static-check.request` in one commit on
+`testing` to request a run. Ordinary code commits leave it unchanged.
+After the workflow reaches `main` through the approved integration flow,
+Actions > Static Check > Run workflow can also select `testing`. Neither
+entry point launches the separate `CI` workflow.
 
 ### Maintainer: builds, tests and desktop acceptance
 

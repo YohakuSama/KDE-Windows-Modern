@@ -19,7 +19,10 @@
   check or compile pass as visual acceptance.
 - Batch related changes on `testing`. Do not create pull requests, merge
   into `main`, dispatch CI, publish releases or change the CI trigger
-  policy without explicit maintainer approval.
+  policy without explicit maintainer approval. The separate Static Check
+  workflow is authorized for explicit static-analysis requests only; it
+  never authorizes the formal CI, a build, tests or a release. Change
+  `.github/static-check.request` only when a check is requested.
 - NixOS uses the reversible installer and ABI-matched native plugins.
   Never modify the Nix store or substitute Fedora builds for NixOS.
 
