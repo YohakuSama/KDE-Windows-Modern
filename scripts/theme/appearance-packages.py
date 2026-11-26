@@ -9,6 +9,7 @@ KPackages and Store archives receive real files, never source symlinks.
 import argparse
 import json
 from pathlib import Path
+import re
 import shutil
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,12 +17,59 @@ PACKAGE = "org.kde.windowsmodern.dark"
 LIGHT_PACKAGE = "org.kde.windowsmodern.light"
 
 
+# These existing light variants differ from the shared SVGs only in color
+# literals. Keep their geometry, element IDs, opacity and fallback palette
+# exactly as before. This is packaging-time color separation, not a new
+# Windows brush or dynamic-accent mapping.
+LIGHT_ACCENT = {b"#4CC2FF": b"#0067C0"}
+LIGHT_WIDGET_COLORS = {
+    **{name: LIGHT_ACCENT for name in (
+        "action-overlays", "actionbutton", "analog_meter", "clock",
+        "containment-controls", "glowbar", "notes", "pager",
+    )},
+    "background": {b"#2C2C2C": b"#F9F9F9", b"#3F3F3F": b"#E5E5E5"},
+    "branding": {b"#FFFFFF": b"#eceff4", **LIGHT_ACCENT},
+    "menubaritem": {
+        b"#3D3D3D": b"#eff0f1", b"#2C2C2C": b"#eff0f1",
+        b"#4A4A4A": b"#93cee9", b"#60CDFF": b"#3daee9",
+    },
+    "radiobutton": {b"#2C2C2C": b"#eff0f1", **LIGHT_ACCENT},
+    "timer": {b"#3D3D3D": b"#dcdcdc"},
+}
+SVG_HEX_COLOR = re.compile(rb"#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
+
+
+def apply_light_widget_colors(target, overlay):
+    for name, colors in LIGHT_WIDGET_COLORS.items():
+        relative = Path("widgets") / (name + ".svg")
+        if (overlay / relative).exists():
+            raise ValueError(f"Duplicate light widget source: {relative}")
+        path = target / relative
+        seen = set()
+
+        def substitute(match):
+            value = match.group()
+            if value in colors:
+                seen.add(value)
+            return colors.get(value, value)
+
+        # Work on bytes and replace complete tokens in one pass. Do not
+        # reserialize XML, change line endings or cascade color replacements.
+        result = SVG_HEX_COLOR.sub(substitute, path.read_bytes())
+        if seen != colors.keys():
+            missing = ", ".join(sorted(value.decode("ascii") for value in colors.keys() - seen))
+            raise ValueError(f"Missing shared SVG color in {relative}: {missing}")
+        path.write_bytes(result)
+
+
 def desktoptheme(root, destination, mode):
     source = root / "plasma/desktoptheme"
     target = destination / ("Windows-modern-" + mode)
     shutil.copytree(source / "Windows-modern-dark", target)
     if mode == "light":
-        shutil.copytree(source / "Windows-modern-light", target, dirs_exist_ok=True)
+        overlay = source / "Windows-modern-light"
+        shutil.copytree(overlay, target, dirs_exist_ok=True)
+        apply_light_widget_colors(target, overlay)
     return target
 
 

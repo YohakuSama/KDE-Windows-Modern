@@ -403,12 +403,21 @@ switching; a failed switch attempts to restore the previous appearance
 settings. Existing applications that do not accept live style changes
 may need to be reopened.
 
-There are still mode-specific renderer assets: 46 different Plasma
-style files, two color schemes, and fixed-color Aurorae/Kvantum
-artwork. Retain those differences until their actual Windows brush roles
-and geometry are resolved. Future shared geometry should live in the
-common source/generator, with only the necessary light/dark values
-separated. KDE supports adaptive SVG colors via the current-color-scheme
+A further 13 Plasma widget SVG pairs have identical content except for
+hexadecimal color literals. The materializer now generates their light
+variants from the shared artwork and explicit per-widget color mappings
+in scripts/theme/appearance-packages.py. The substitutions reproduce the
+previous light SVGs byte for byte; geometry, element IDs, opacity and
+fallback palette values remain unchanged. Edit the common SVG for layout
+changes and its light mapping for mode-specific color changes. These are
+existing KDE theme values, not newly decoded Windows brush roles or a
+wallpaper-accent algorithm.
+
+There are still 33 separate Plasma style files in the light source tree,
+two color schemes, and fixed-color Aurorae/Kvantum artwork. Retain those
+differences until their actual Windows brush roles and geometry are
+resolved. Future shared geometry should live in the common source/generator,
+with only the necessary light/dark values separated. KDE supports adaptive SVG colors via the current-color-scheme
 stylesheet (https://develop.kde.org/docs/plasma/theme/theme-colors/);
 do not automatically substitute fixed Windows material colors or
 opacity with unrelated palette roles. This first consolidation does not
