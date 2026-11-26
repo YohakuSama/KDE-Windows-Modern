@@ -30,6 +30,22 @@ TestCase {
         compare(half.x, 960); compare(half.y, 48); compare(half.width, 960); compare(half.height, 1032);
     }
 
+    function test_sharedSizeConstraints() {
+        const area = {x: -1601, y: 41, width: 1601, height: 901};
+        const half = Layouts.cellRect(area, Layouts.layouts[0][0]);
+        const quarter = Layouts.cellRect(area, Layouts.layouts[4][0]);
+        const min = Qt.size(600, 700);
+        const max = Qt.size(0, 0);
+        verify(Layouts.fitsSize(half, min, max));
+        verify(!Layouts.fitsSize(quarter, min, max));
+        verify(!Layouts.fitsSize(half, min, Qt.size(600, 0)));
+        verify(Layouts.fitsSize(half, Qt.size(half.width, half.height),
+                                Qt.size(half.width, half.height)));
+        verify(Layouts.hasFittingCell(area, min, max));
+        verify(!Layouts.hasFittingCell(area, Qt.size(1602, 902), max));
+        verify(!Layouts.fitsSize({width: 0, height: 10}, Qt.size(0, 0), max));
+    }
+
     function test_narrowAndShortOutputMetrics() {
         for (const size of [[300, 600], [1920, 25], [1920, 1080]]) {
             const m = Layouts.barMetrics(size[0], size[1]);

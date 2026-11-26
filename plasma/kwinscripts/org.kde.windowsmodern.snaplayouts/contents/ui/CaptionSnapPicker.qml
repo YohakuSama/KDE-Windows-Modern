@@ -36,7 +36,7 @@ PlasmaCore.Window {
         anchorRect = anchor;
         minimumWindowSize = minimum;
         maximumWindowSize = maximum;
-        if (!Layouts.layouts.some(layout => layout.some(fitsCell)))
+        if (!Layouts.hasFittingCell(area, minimum, maximum))
             return false;
         if (diagramWidth < 48 || width > screen.width || height > screen.height
             || area.width <= 0 || area.height <= 0)
@@ -54,10 +54,7 @@ PlasmaCore.Window {
     }
 
     function fitsCell(cell) {
-        const rect = Layouts.cellRect(workArea, cell);
-        return rect.width >= minimumWindowSize.width && rect.height >= minimumWindowSize.height
-            && (maximumWindowSize.width <= 0 || rect.width <= maximumWindowSize.width)
-            && (maximumWindowSize.height <= 0 || rect.height <= maximumWindowSize.height);
+        return Layouts.fitsSize(Layouts.cellRect(workArea, cell), minimumWindowSize, maximumWindowSize);
     }
 
     function inside(point, rect, padding) {

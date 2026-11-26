@@ -108,6 +108,8 @@ def verify(revision, filename):
             "app-decorations/konsole/chromeshadow.h",
             "app-decorations/konsole/chromeshadow.cpp",
             "scripts/konsole-chrome.sh", "docs/APP_WINDOW_CHROME.md",
+            "nix/dolphin-chrome.nix", "app-decorations/dolphin/statusbar-margins.patch",
+            "scripts/fix-dolphin-statusbar.sh",
             "plasma/kwinscripts/org.kde.windowsmodern.snaplayouts/contents/ui/CaptionSnapPicker.qml",
             "scripts/import-windows-assets.py", "scripts/native-assets-map.json",
             "scripts/native_assets_index.py", "scripts/native_assets_input.py",

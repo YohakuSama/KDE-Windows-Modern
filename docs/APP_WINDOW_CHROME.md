@@ -24,6 +24,9 @@ The plugin uses Konsole's actual IKonsolePlugin and native QTabWidget:
   Clicks and releases belonging to the title area are not sent to
   Konsole's detachable tab bar. Actual tab drag, detach, close, keyboard
   navigation and session confirmation remain native.
+- Caption Snap requests are canceled on hover exit, press, visibility,
+  focus or window-state changes; the bridge rechecks the live button state
+  before returning its one-shot anchor.
 - The Windows Modern tab stylesheet adapts to the system light/dark
   scheme; the selected Campbell tab still joins the dark terminal.
   Native tab-close and overflow scroll buttons use the original E8BB,
@@ -181,5 +184,22 @@ objects and search/navigation models. Keep ordinary Dolphin available;
 build an isolated NixOS derivation first, as with Konsole. Do not use a
 file-action plugin as an undocumented global widget-injection mechanism.
 Preserve multi-tab and split-view navigation, file selection, shortcuts,
-accessibility, file operations and confirmation dialogs. No Dolphin
-source patch is included in this Konsole prototype.
+accessibility, file operations and confirmation dialogs.
+
+The first isolated Dolphin derivation now backports the upstream 26.08
+status-bar spacing correction. It uses QStyle's frame metric instead of
+negative layout margins, preserving the capacity control and native disk
+usage menu. The same patch is reused by the explicit Fedora repair script,
+which no longer treats diff's normal "files differ" exit status as a failure.
+
+The Nix expression is `nix/dolphin-chrome.nix`; it requires the installed
+26.08.x version and matching absolute nixpkgs source path, following the
+version gate used for Konsole. It is not in the normal installer/runtime.
+For a maintainer's separate trial, build it explicitly with
+`nix-build nix/dolphin-chrome.nix --argstr nixpkgsPath /absolute/matching/nixpkgs --argstr dolphinVersion 26.08.x --out-link ./dolphin-trial`
+(replace both placeholders), then run `./dolphin-trial/bin/dolphin --new-window`.
+The latter prevents forwarding the request to an already-running stock
+Dolphin process. The stock application and launcher remain installed;
+the trial still shares the normal Dolphin settings/session files.
+No build or desktop validation has been performed. Moving the tabs above
+both toolbars and the persistent Explorer search field remain separate work.

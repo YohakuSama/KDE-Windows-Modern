@@ -25,6 +25,20 @@ function cellRect(area, cell) {
     return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
 }
 
+// Both pickers use identical rounded work-area geometry and constraints.
+// Nonpositive maxima mean no upper limit.
+function fitsSize(rect, minimum, maximum) {
+    return rect.width > 0 && rect.height > 0
+        && rect.width >= minimum.width && rect.height >= minimum.height
+        && (maximum.width <= 0 || rect.width <= maximum.width)
+        && (maximum.height <= 0 || rect.height <= maximum.height);
+}
+
+function hasFittingCell(area, minimum, maximum) {
+    return layouts.some(layout => layout.some(cell =>
+        fitsSize(cellRect(area, cell), minimum, maximum)));
+}
+
 // Keep the six diagrams within the available output. At the normal size
 // the reference 72 x 44 diagrams and 10px gaps stay unchanged.
 function barMetrics(availableWidth, availableHeight) {

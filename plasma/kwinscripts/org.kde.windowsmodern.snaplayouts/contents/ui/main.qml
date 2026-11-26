@@ -32,14 +32,8 @@ Item {
         }
         win.interactiveMoveResizeStarted.connect(() => {
             root.hideCaptionPicker();
-            if (snapTimer.win === win) {
-                snapTimer.stop();
-                snapTimer.win = null;
-                snapTimer.rect = null;
-                snapTimer.captionArea = null;
-                snapTimer.captionFrame = null;
-            }
-            if (win.move && win.resizeable) {
+            root.clearPendingSnap();
+            if (win.move && root.canSnap(win)) {
                 root.resetPicker();
                 root.movingWindow = win;
             }
@@ -66,7 +60,18 @@ Item {
         return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
     }
 
+    function canSnap(win) {
+        return win && !win.deleted && win.normalWindow && win.resizeable && win.moveable
+            && !win.fullScreen && !win.minimized;
+    }
+
     function update(win) {
+        if (!canSnap(win)) {
+            resetPicker();
+            return;
+        }
+        bar.minimumWindowSize = win.minSize;
+        bar.maximumWindowSize = win.maxSize;
         const cursor = Workspace.cursorPos;
         const output = Workspace.screenAt(cursor);
         if (!output) {
@@ -110,13 +115,15 @@ Item {
         const chosen = target && hit && hit.layout === target.layout && hit.cell === target.cell
             && output && sameRect(bar.workArea, Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop))
             ? target : null;
+        const area = bar.workArea;
         resetPicker();
         movingWindow = null;
-        if (!chosen || win.deleted) return;
+        if (!chosen || !canSnap(win) || !fitsWindow(win, chosen.rect)) return;
         // After KWin has handled the release (it may maximize at the top edge).
+        // Keep the actual target output's work area, even for a drag.
         snapTimer.win = win;
         snapTimer.rect = chosen.rect;
-        snapTimer.captionArea = null;
+        snapTimer.workArea = area;
         snapTimer.captionFrame = null;
         snapTimer.restart();
     }
@@ -125,10 +132,8 @@ Item {
     // Konsole plugin only requests a short-lived anchor. KWin retains the
     // target window, presents the picker and applies the chosen geometry.
     function captionCandidate(win) {
-        if (!win || win.deleted || !win.normalWindow || !win.active
-            || win !== Workspace.activeWindow || !win.resizeable
-            || !win.moveable || win.fullScreen || win.minimized || win.move || win.resize
-            || win.pid <= 0)
+        if (!canSnap(win) || !win.active || win !== Workspace.activeWindow
+            || win.move || win.resize || win.pid <= 0)
             return false;
         // noBorder is a decoration policy, not a reliable Wayland CSD
         // indicator. Require the actual client and frame to coincide.
@@ -149,20 +154,14 @@ Item {
     }
 
     function fitsWindow(win, rect) {
-        const min = win.minSize;
-        const max = win.maxSize;
-        return rect.width >= min.width && rect.height >= min.height
-            && (max.width <= 0 || rect.width <= max.width)
-            && (max.height <= 0 || rect.height <= max.height);
+        return Layouts.fitsSize(rect, win.minSize, win.maxSize);
     }
 
-    function clearCaptionSnap() {
-        if (!snapTimer.captionArea)
-            return;
+    function clearPendingSnap() {
         snapTimer.stop();
         snapTimer.win = null;
         snapTimer.rect = null;
-        snapTimer.captionArea = null;
+        snapTimer.workArea = null;
         snapTimer.captionFrame = null;
     }
 
@@ -257,7 +256,7 @@ Item {
                 return;
             snapTimer.win = win;
             snapTimer.rect = rect;
-            snapTimer.captionArea = area;
+            snapTimer.workArea = area;
             snapTimer.captionFrame = root.captionGeometry;
             snapTimer.restart();
         }
@@ -279,36 +278,29 @@ Item {
         id: snapTimer
         property var win: null
         property var rect: null
-        property var captionArea: null
+        property var workArea: null
         property var captionFrame: null
         interval: 50
         onTriggered: {
             const window = win;
             const geometry = rect;
-            const area = captionArea;
+            const area = workArea;
             const frame = captionFrame;
-            win = null;
-            rect = null;
-            captionArea = null;
-            captionFrame = null;
-            if (!window || window.deleted || window.move || window.resize || !geometry)
+            root.clearPendingSnap();
+            if (!root.canSnap(window) || window !== Workspace.activeWindow
+                || window.move || window.resize || !geometry || !area
+                || !root.fitsWindow(window, geometry))
                 return;
-            if (area) {
-                // A focus switch or output change must not tile another
-                // window or apply geometry captured for the old monitor.
-                if (!root.captionCandidate(window) || !frame
-                    || !root.sameRect(frame, window.frameGeometry) || !root.fitsWindow(window, geometry))
-                    return;
-                const output = Workspace.screenAt(Qt.point(area.x + area.width / 2, area.y + area.height / 2));
-                if (!output || !root.sameRect(area, Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop)))
-                    return;
-                if (window.tile) {
-                    if (typeof window.tile.unmanage === "function")
-                        window.tile.unmanage(window);
-                    else
-                        window.tile = null;
-                }
-            }
+            // Both input paths must reject changed output/work-area geometry.
+            // The caption path additionally requires the original frame.
+            if (frame && (!root.captionCandidate(window) || !root.sameRect(frame, window.frameGeometry)))
+                return;
+            const output = Workspace.screenAt(Qt.point(area.x + area.width / 2, area.y + area.height / 2));
+            if (!output || !root.sameRect(area, Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop)))
+                return;
+            // Remove a native quick-tile request before explicit placement.
+            if (window.tile && !window.tile.unmanage(window))
+                return;
             if (typeof window.setMaximize === "function")
                 window.setMaximize(false, false);
             window.frameGeometry = Qt.rect(geometry.x, geometry.y, geometry.width, geometry.height);
@@ -338,24 +330,20 @@ Item {
                 root.movingWindow = null;
                 root.resetPicker();
             }
-            if (snapTimer.win === win) {
-                snapTimer.stop();
-                snapTimer.win = null;
-                snapTimer.rect = null;
-                snapTimer.captionArea = null;
-                snapTimer.captionFrame = null;
-            }
+            if (snapTimer.win === win)
+                root.clearPendingSnap();
         }
         function onWindowActivated(win) {
-            if (snapTimer.captionArea && snapTimer.win !== win)
-                root.clearCaptionSnap();
+            if (snapTimer.win && snapTimer.win !== win)
+                root.clearPendingSnap();
             if (root.captionWindow && root.captionWindow !== win)
                 root.hideCaptionPicker();
             if (captionRequest.win && captionRequest.win !== win)
                 captionRequest.win = null;
         }
         function onCurrentDesktopChanged() {
-            root.clearCaptionSnap();
+            root.clearPendingSnap();
+            root.resetPicker();
             root.hideCaptionPicker();
             captionRequest.win = null;
         }
@@ -363,11 +351,7 @@ Item {
             root.hideCaptionPicker();
             captionRequest.win = null;
             root.resetPicker();
-            snapTimer.stop();
-            snapTimer.win = null;
-            snapTimer.rect = null;
-            snapTimer.captionArea = null;
-            snapTimer.captionFrame = null;
+            root.clearPendingSnap();
         }
     }
 }

@@ -330,7 +330,8 @@ public:
         m_snapHover.setSingleShot(true);
         m_snapHover.setInterval(450);
         connect(&m_snapHover, &QTimer::timeout, this, [this] {
-            if (m_snapBridge && m_active && m_window && m_maximize && !m_window->isFullScreen()
+            if (m_snapBridge && m_active && m_window && m_maximize && m_window->isActiveWindow()
+                && !m_window->isFullScreen() && m_maximize->isVisible() && m_maximize->isEnabled()
                 && !m_maximize->isDown() && m_maximize->underMouse())
                 m_snapBridge->request(m_window.data(), m_maximize.data());
         });
@@ -365,11 +366,21 @@ protected:
         }
 
         if (watched == m_maximize.data()) {
-            if (type == QEvent::HoverEnter && m_active && m_window->isActiveWindow())
+            if (type == QEvent::HoverEnter && m_active && m_window && m_window->isActiveWindow()
+                && m_maximize->isEnabled())
                 m_snapHover.start();
             else if (type == QEvent::HoverLeave || type == QEvent::MouseButtonPress
-                     || type == QEvent::Hide || type == QEvent::Destroy)
+                     || type == QEvent::Hide || type == QEvent::Destroy || type == QEvent::EnabledChange) {
                 m_snapHover.stop();
+                if (m_snapBridge)
+                    m_snapBridge->cancel(m_window.data());
+            }
+        }
+        if (watched == m_window.data() && (type == QEvent::WindowDeactivate || type == QEvent::Hide
+                                          || type == QEvent::WindowStateChange)) {
+            m_snapHover.stop();
+            if (m_snapBridge)
+                m_snapBridge->cancel(m_window.data());
         }
 
         if (m_active && m_window && !m_window->isFullScreen()) {

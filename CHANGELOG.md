@@ -6,6 +6,9 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Share size eligibility and work-area revalidation between both Snap Layouts entry points, cancel stale delayed placements, and invalidate Konsole caption anchors when focus or pointer state changes.
+- Add a version-matched isolated Dolphin derivation for the upstream status-bar spacing fix and reuse its patch in the explicit Fedora repair script.
+
 - Refresh the static window material on settled native wallpaper and appearance events, independently of the accent mode. Cache the primary image sample with file identities and decoder revision, preserve the transparency-off choice, and re-plan both installed renderers without adding a daemon.
 
 - Route transparency operations through the reversible NixOS installation, preserve the marker in exact-path backups, and stage both window materials, popup selectors and Kvantum transparency settings together before publication.

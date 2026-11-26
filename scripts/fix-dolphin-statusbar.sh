@@ -18,7 +18,8 @@
 set -euo pipefail
 shopt -s lastpipe
 
-WORK="$(mktemp -d /tmp/opencode/dolphin-fix.XXXXXX)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/windows-modern-dolphin-fix.XXXXXX")"
 BACKUP="$HOME/.local/share/windows-modern/backup/dolphin-rpm"
 mkdir -p "$BACKUP"
 
@@ -56,28 +57,24 @@ if ! grep -q 'setContentsMargins(2, -1, 0, -1)' "$CPP"; then
     exit 0
 fi
 
-# 4. Patch it, tag the release .wm1
-python3 - "$CPP" <<'EOF'
-import sys
-p = sys.argv[1]
-s = open(p).read()
-old = "    layout->setContentsMargins(2, -1, 0, -1); // \"-1\" makes it so the fixed height won't be ignored."
-new = ("    const auto spacing = style()->pixelMetric(QStyle::PM_DefaultFrameWidth);\n"
-       "    layout->setContentsMargins(2, spacing, 0, spacing);")
-assert old in s
-open(p, 'w').write(s.replace(old, new, 1))
-EOF
-diff -u --label a/src/statusbar/statusbarspaceinfo.cpp --label b/src/statusbar/statusbarspaceinfo.cpp \
-    <(tar -xOf "$TARBALL" "$(tar -tf "$TARBALL" | grep 'statusbar/statusbarspaceinfo.cpp$' | head -1)") \
-    "$CPP" > statusbar-margins.patch
-[ -s statusbar-margins.patch ] || die "Patch generation failed."
-cp statusbar-margins.patch dolphin-wm-statusbar-margins.patch
+# 4. Reuse the same source-reviewed patch as the isolated NixOS build.
+# A patch that does not match the extracted source must stop before rpmbuild.
+PATCH="$ROOT/app-decorations/dolphin/statusbar-margins.patch"
+patch --dry-run --batch --forward --fuzz=0 -d src -p1 < "$PATCH" || die "Status-bar patch does not match this Dolphin source."
+cp -- "$PATCH" dolphin-wm-statusbar-margins.patch
 
+# Only modify an RPM spec with the expected patch application mechanism.
+# A numbered tag already used by Fedora must never be mistaken for ours.
+if grep -Eq '^Patch1[[:space:]]*:' dolphin.spec; then
+    die "Patch1 is already occupied; review the RPM spec before applying this backport."
+fi
+grep -Eq '^Patch[[:space:]]*:' dolphin.spec || die "No unnumbered Patch tag; review the RPM spec."
+grep -Eq '^Release:[[:space:]]*[0-9.]+%\{\?dist\}' dolphin.spec ||
+    die "Unexpected RPM Release format."
 sed -i 's/^Release:[[:space:]]*\([0-9.]*\)%{?dist}/Release:        \1.wm1%{?dist}/' dolphin.spec
-grep -q '^\* .*wm1$' dolphin.spec || sed -i 's/^%changelog/%changelog/' dolphin.spec
-grep -q 'Patch1:' dolphin.spec || sed -i 's/^\(Patch:.*\)$/\1\nPatch1:         dolphin-wm-statusbar-margins.patch/' dolphin.spec
-# an existing Patch1/Patch2 line would collide; fail loudly instead
-grep -q '^Patch1:' dolphin.spec || die "Could not add the patch to the spec."
+sed -i 's/^\(Patch:.*\)$/\1\nPatch1:         dolphin-wm-statusbar-margins.patch/' dolphin.spec
+grep -qx 'Patch1:         dolphin-wm-statusbar-margins.patch' dolphin.spec ||
+    die "Could not register the status-bar patch."
 
 # 5. Build dependencies, build
 step "Installing build dependencies (pkexec)"

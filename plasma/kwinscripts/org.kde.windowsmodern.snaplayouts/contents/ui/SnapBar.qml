@@ -22,6 +22,8 @@ PlasmaCore.Window {
     property var hovered: null    // { layout, cell } or null
     property rect workArea: Qt.rect(0, 0, 1, 1)
     property rect screenGeometry: Qt.rect(0, 0, 1920, 1080)
+    property size minimumWindowSize: Qt.size(0, 0)
+    property size maximumWindowSize: Qt.size(0, 0)
     readonly property var metrics: Layouts.barMetrics(screenGeometry.width - leftPadding - rightPadding,
         screenGeometry.height - topPadding - bottomPadding)
     readonly property int diagramWidth: metrics.width
@@ -40,7 +42,8 @@ PlasmaCore.Window {
     function showOn(screen, area) {
         screenGeometry = screen;
         workArea = area;
-        if (width > screen.width || height > screen.height || area.width <= 0 || area.height <= 0)
+        if (width > screen.width || height > screen.height || area.width <= 0 || area.height <= 0
+            || !Layouts.hasFittingCell(area, minimumWindowSize, maximumWindowSize))
             return;
         const centered = Math.round(screen.x + (screen.width - rowWidth) / 2) - leftPadding;
         x = Math.max(screen.x, Math.min(centered, screen.x + screen.width - width));
@@ -48,9 +51,15 @@ PlasmaCore.Window {
         visible = true;
     }
 
-    // The layout cell under a point in screen coordinates, or null.
+    function fitsCell(cell) {
+        return Layouts.fitsSize(Layouts.cellRect(workArea, cell), minimumWindowSize, maximumWindowSize);
+    }
+
+    // The enabled layout cell under a point in screen coordinates, or null.
     function cellAt(px, py) {
-        return Layouts.cellAt(px - x - leftPadding, py - y - topPadding, diagramWidth, diagramHeight, gap, cellGap);
+        const hit = Layouts.cellAt(px - x - leftPadding, py - y - topPadding,
+                                   diagramWidth, diagramHeight, gap, cellGap);
+        return hit && fitsCell(Layouts.layouts[hit.layout][hit.cell]) ? hit : null;
     }
 
     mainItem: Row {
@@ -69,16 +78,17 @@ PlasmaCore.Window {
                     Rectangle {
                         required property var modelData
                         required property int index
-                        readonly property bool isHovered: bar.hovered !== null
+                        enabled: bar.fitsCell(modelData)
+                        readonly property bool isHovered: enabled && bar.hovered !== null
                             && bar.hovered.layout === diagram.index && bar.hovered.cell === index
                         x: modelData[0] * bar.diagramWidth + bar.cellGap / 2
                         y: modelData[1] * bar.diagramHeight + bar.cellGap / 2
                         width: Math.max(0, modelData[2] * bar.diagramWidth - bar.cellGap)
                         height: Math.max(0, modelData[3] * bar.diagramHeight - bar.cellGap)
                         radius: 3
-                        color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, 0.10)
+                        color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.10 : 0.04)
                         border.width: 1
-                        border.color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, 0.35)
+                        border.color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.35 : 0.15)
                     }
                 }
             }

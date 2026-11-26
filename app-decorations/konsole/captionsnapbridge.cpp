@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "captionsnapbridge.h"
 
+#include <QAbstractButton>
 #include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
@@ -49,9 +50,12 @@ bool CaptionSnapBridge::ensureRegistered()
 
 void CaptionSnapBridge::request(QWidget *window, QWidget *button)
 {
-    if (!window || !button || !window->isActiveWindow() || !button->isVisible()
-        || !button->underMouse() || window->isFullScreen() || window->isMinimized()
-        || !ensureRegistered())
+    const auto *caption = qobject_cast<QAbstractButton *>(button);
+    if (!window || !caption || !window->isActiveWindow() || !caption->isVisibleTo(window)
+        || !caption->isEnabled() || caption->isDown() || !caption->underMouse()
+        || window->isFullScreen() || window->isMinimized()
+        || !window->windowFlags().testFlag(Qt::FramelessWindowHint)
+        || caption->window() != window || !ensureRegistered())
         return;
     m_window = window;
     m_button = button;
@@ -94,7 +98,9 @@ QString CaptionSnapBridge::takeAnchor()
     const auto button = m_button;
     const bool recent = m_requestedAt.isValid() && m_requestedAt.elapsed() <= 1000;
     reset(); // Always consume once, even when the window has changed.
-    if (!recent || !window || !button || !window->isActiveWindow()
+    const auto *caption = qobject_cast<QAbstractButton *>(button.data());
+    if (!recent || !window || !caption || !caption->isEnabled() || caption->isDown()
+        || !window->isActiveWindow()
         || !window->windowHandle() || window->isFullScreen() || window->isMinimized()
         || !window->windowFlags().testFlag(Qt::FramelessWindowHint)
         || !button->isVisibleTo(window.data()) || !button->underMouse()
