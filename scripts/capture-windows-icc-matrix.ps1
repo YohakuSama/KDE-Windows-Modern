@@ -3,15 +3,20 @@
 # display settings, registry writes, administrator rights, or external DLLs.
 [CmdletBinding()]
 param(
-    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('Desktop')) 'windows-icc-matrix.json')
+    [string]$OutputPath,
+    [ValidateSet('Matrix','Pcs')][string]$ProbeSet = 'Matrix'
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+if (-not $OutputPath) {
+    $file = if ($ProbeSet -eq 'Pcs') { 'windows-icc-pcs.json' } else { 'windows-icc-matrix.json' }
+    $OutputPath = Join-Path ([Environment]::GetFolderPath('Desktop')) $file
+}
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'Run this diagnostic in Windows PowerShell on the reference Windows VM.'
 }
 
-if (-not ('WindowsModern.Reference.IccMatrixV1.Native' -as [type])) {
+if (-not ('WindowsModern.Reference.IccMatrixV2.Native' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
@@ -21,7 +26,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace WindowsModern.Reference.IccMatrixV1
+namespace WindowsModern.Reference.IccMatrixV2
 {
     [ComImport, Guid("00000120-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IWicSource
@@ -352,6 +357,95 @@ namespace WindowsModern.Reference.IccMatrixV1
             }
         }
 
+        [DllImport("mscms.dll", ExactSpelling=true, SetLastError=true)]
+        private static extern bool TranslateColors(IntPtr transform, [In] byte[] input, uint count,
+            uint inputType, [Out] byte[] output, uint outputType);
+
+        public static Dictionary<string,object> PackPcs(byte[] bytes)
+        {
+            using (var stream=new MemoryStream())
+            {
+                using (var gzip=new System.IO.Compression.GZipStream(stream,
+                    System.IO.Compression.CompressionMode.Compress,true)) gzip.Write(bytes,0,bytes.Length);
+                return new Dictionary<string,object>{{"status","ok"},{"length",bytes.Length},
+                    {"sha256",Hash(bytes)},{"gzip_base64",Convert.ToBase64String(stream.ToArray())}};
+            }
+        }
+
+        public static byte[] PcsColors()
+        {
+            // Explicit little-endian, three 16-bit words per color. Asymmetric
+            // markers first; then a normalized 32^3 grid; then three PCS axes.
+            using (var stream=new MemoryStream())
+            using (var writer=new BinaryWriter(stream))
+            {
+                ushort[] markers={0,0,0,1,12345,32768,32768,1,65535,1000,2000,3000,
+                                  65535,0,0,0,65535,0,0,0,65535,65535,65535,65535};
+                foreach(ushort v in markers) writer.Write(v);
+                for(int r=0;r<32;r++) for(int g=0;g<32;g++) for(int b=0;b<32;b++)
+                    foreach(int v in new int[]{r,g,b}) writer.Write((ushort)((v*65535+15)/31));
+                for(int axis=0;axis<3;axis++) for(int q=0;q<=8192;q++)
+                    for(int c=0;c<3;c++) writer.Write((ushort)(c==axis?q*4:0));
+                return stream.ToArray();
+            }
+        }
+        private static byte[] PcsTranslate(IntPtr transform, byte[] input, bool srcXyz, bool dstXyz, bool colorApi)
+        {
+            if(input.Length%6!=0) throw new ArgumentException("Expected three 16-bit words per color");
+            // COLOR includes a pointer-alignment union member: 16 bytes on
+            // Win64/ARM64, 8 on Win32. Only its first three words are exported.
+            int stride=colorApi?(IntPtr.Size==8?16:8):6;
+            byte[] output=new byte[input.Length];
+            for(int start=0;start<input.Length/6;start+=1024)
+            {
+                int count=Math.Min(1024,input.Length/6-start);
+                int bufferLength=colorApi?count*stride:((count*stride+3)&~3);
+                byte[] a=new byte[bufferLength], b=new byte[bufferLength];
+                for(int i=0;i<count;i++) Buffer.BlockCopy(input,(start+i)*6,a,i*stride,6);
+                bool ok=colorApi?TranslateColors(transform,a,(uint)count,srcXyz?3u:2u,b,dstXyz?3u:2u):
+                    TranslateBitmapBits(transform,a,srcXyz?0x0501u:10u,(uint)count,1,(uint)a.Length,
+                        b,dstXyz?0x0501u:10u,(uint)b.Length,IntPtr.Zero,IntPtr.Zero);
+                if(!ok) throw new Win32Exception(Marshal.GetLastWin32Error());
+                for(int i=0;i<count;i++) Buffer.BlockCopy(b,i*stride,output,(start+i)*6,6);
+            }
+            return output;
+        }
+        public static Dictionary<string,object> PcsProbe(byte[] input, byte[] source, byte[] destination, bool srcXyz, bool dstXyz)
+        {
+            IntPtr src=IntPtr.Zero,dst=IntPtr.Zero,transform=IntPtr.Zero;
+            GCHandle srcPin=default(GCHandle),dstPin=default(GCHandle);
+            var row=new Dictionary<string,object>();
+            try
+            {
+                srcPin=GCHandle.Alloc(source,GCHandleType.Pinned); dstPin=GCHandle.Alloc(destination,GCHandleType.Pinned);
+                src=Open(source); dst=Open(destination);
+                transform=CreateMultiProfileTransform(new IntPtr[]{src,dst},2,new uint[]{1,1},2,3,0);
+                if(transform==IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
+                row["status"]="ok";
+                row["cmm_ident"]=GetCMMInfo(transform,1).ToString("X8");
+                row["cmm_dll_version"]=GetCMMInfo(transform,3);
+                row["cmm_win_version"]=GetCMMInfo(transform,0);
+                try {row["color16"]=PackPcs(PcsTranslate(transform,input,srcXyz,dstXyz,true));}
+                catch(Exception e) {row["color16"]=Error(e);}
+                // Capture both APIs independently. Never infer word order from
+                // the API format name; the identity and ZYX controls establish it.
+                try {row["bitmap16"]=PackPcs(PcsTranslate(transform,input,srcXyz,dstXyz,false));}
+                catch(Exception e) {row["bitmap16"]=Error(e);}
+                try {row["link_profile"]=PackPcs(DeviceLink(src,dst,1));}
+                catch(Exception e) {row["link_profile"]=Error(e);}
+                return row;
+            }
+            catch(Exception e) {return Error(e);}
+            finally
+            {
+                if(transform!=IntPtr.Zero) DeleteColorTransform(transform);
+                if(dst!=IntPtr.Zero) CloseColorProfile(dst);
+                if(src!=IntPtr.Zero) CloseColorProfile(src);
+                if(dstPin.IsAllocated) dstPin.Free();
+                if(srcPin.IsAllocated) srcPin.Free();
+            }
+        }
+
         public static byte[] Wic(byte[] rgb, byte[] source, byte[] destination, string formatName)
         {
             IWicFactory factory=null; IWicSource bitmap=null; IWicContext src=null,dst=null; IWicTransform transform=null;
@@ -413,7 +507,7 @@ $sourceHashes = [ordered]@{
     'srgb' = '47FDA5236B74B9F11DA23C9834FAE1DBF0C0E195DEBEB22EFD147268C1CEC98C'
     'linear-srgb' = 'BC77188D9AABAF2F17730FBE0C3B3954579190954C6E273C35C33D52CFB193B6'
 }
-$nativeType = [WindowsModern.Reference.IccMatrixV1.Native]
+$nativeType = [WindowsModern.Reference.IccMatrixV2.Native]
 $sourceProfiles = [ordered]@{}
 foreach ($name in $sourceData.Keys) {
     [byte[]]$data = [Convert]::FromBase64String($sourceData[$name])
@@ -463,6 +557,55 @@ foreach ($name in $matrixProfiles.Keys) {
 if ($nativeType::Hash($rgb) -ne 'DDFCE7C3B7CA3AEB95ADC28356EE50430CD0FEAB5530FA602D36FB0DEEC4B484') {
     throw 'Calibration input hash mismatch.'
 }
+if ($ProbeSet -eq 'Pcs') {
+    # Identity and ZYX-permuted ICC v2.1 LUT bridges, no display profile installation.
+    $pcsProfiles = [ordered]@{
+        'xyz-identity' = @{'sha256'='B6E383B40B96A7BD0824C145B5761692B92851B4DF4BD16319157CCB21D19D77';'base64'='AAACaAAAAAACEAAAc3BhY1hZWiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFZGVzYwAAAMAAAABnY3BydAAAASgAAAAzd3RwdAAAAVwAAAAUQTJCMAAAAXAAAAB8QjJBMAAAAewAAAB8ZGVzYwAAAAAAAAANeHl6LWlkZW50aXR5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1tZnQyAAAAAAMDAgAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAgACAAD//wAA//8AAP//AAAAAAAAAAAAAP//AAD//wAAAAD///////8AAAAA//8AAP///////wAA////////AAD//wAA//8AAP//bWZ0MgAAAAADAwIAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAIAAgAA//8AAP//AAD//wAAAAAAAAAAAAD//wAA//8AAAAA////////AAAAAP//AAD///////8AAP///////wAA//8AAP//AAD//w=='}
+        'rgb-pcs' = @{'sha256'='D32E4F221D8FBA508546D930EC200C200AEAAAE95EA22E23331B68D3495BF1A4';'base64'='AAACZAAAAAACEAAAc3BhY1JHQiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFZGVzYwAAAMAAAABiY3BydAAAASQAAAAzd3RwdAAAAVgAAAAUQTJCMAAAAWwAAAB8QjJBMAAAAegAAAB8ZGVzYwAAAAAAAAAIcmdiLXBjcwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHRleHQAAAAAUHVibGljIGRvbWFpbiBzeW50aGV0aWMgZGlhZ25vc3RpYyBwcm9maWxlAABYWVogAAAAAAAA9tYAAQAAAADTLW1mdDIAAAAAAwMCAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAACAAIAAP//AAD//wAA//8AAAAAAAAAAAAA//8AAP//AAAAAP///////wAAAAD//wAA////////AAD///////8AAP//AAD//wAA//9tZnQyAAAAAAMDAgAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAgACAAD//wAA//8AAP//AAAAAAAAAAAAAP//AAD//wAAAAD///////8AAAAA//8AAP///////wAA////////AAD//wAA//8AAP//'}
+        'rgb-pcs-zyx' = @{'sha256'='086832DEE2195FBFC5FAF48A48C30CF2301D70CBA9C92CA46C11E6257C5DBB18';'base64'='AAACaAAAAAACEAAAc3BhY1JHQiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFZGVzYwAAAMAAAABmY3BydAAAASgAAAAzd3RwdAAAAVwAAAAUQTJCMAAAAXAAAAB8QjJBMAAAAewAAAB8ZGVzYwAAAAAAAAAMcmdiLXBjcy16eXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1tZnQyAAAAAAMDAgAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAgACAAD//wAA//8AAP//AAAAAAAA//8AAAAAAAD//wAA/////wAAAAAAAP////8AAP//AAD/////////////AAD//wAA//8AAP//bWZ0MgAAAAADAwIAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAIAAgAA//8AAP//AAD//wAAAAAAAP//AAAAAAAA//8AAP////8AAAAAAAD/////AAD//wAA/////////////wAA//8AAP//AAD//w=='}
+    }
+    foreach ($name in $pcsProfiles.Keys) {
+        [byte[]]$data = [Convert]::FromBase64String($pcsProfiles[$name]['base64'])
+        if ($nativeType::Hash($data) -ne $pcsProfiles[$name]['sha256']) { throw 'PCS profile hash mismatch.' }
+        $profiles[$name] = $data
+        $hashes[$name] = $pcsProfiles[$name]['sha256']
+    }
+    [byte[]]$input16 = $nativeType::PcsColors()
+    if ($input16.Length -ne ((8+32768+3*8193)*6) -or
+        $nativeType::Hash($input16) -ne 'CE19EB355E773C647F28C7A7DD9FDE12B756955FC590C0B4CD51996B2ACD9997') {
+        throw 'Unexpected PCS input length or hash.'
+    }
+    $pcsPairs = @(
+        'xyz-identity|xyz-identity', 'rgb-pcs|rgb-pcs', 'rgb-pcs|rgb-pcs-zyx',
+        'xyz-identity|rgb-pcs', 'rgb-pcs|xyz-identity',
+        'linear-srgb|xyz-identity', 'mixed|xyz-identity', 'diagonal|xyz-identity',
+        'xyz-identity|diagonal', 'xyz-identity|registered-srgb', 'xyz-identity|mixed', 'xyz-identity|mixed-delta',
+        'linear-srgb|rgb-pcs', 'mixed|rgb-pcs', 'diagonal|rgb-pcs',
+        'rgb-pcs|diagonal', 'rgb-pcs|registered-srgb', 'rgb-pcs|mixed', 'rgb-pcs|mixed-delta',
+        'linear-srgb|rgb-pcs-zyx', 'rgb-pcs-zyx|registered-srgb',
+        'linear-srgb|registered-srgb', 'diagonal|diagonal'
+    )
+    $results = [ordered]@{}
+    foreach ($pair in $pcsPairs) {
+        $names = $pair.Split('|')
+        Write-Host ('Measuring ' + $pair + ' ...')
+        $results[$pair] = $nativeType::PcsProbe($input16,$profiles[$names[0]],$profiles[$names[1]],
+            ($names[0] -eq 'xyz-identity'),($names[1] -eq 'xyz-identity'))
+    }
+    $report = [ordered]@{
+        schema_version=1; probe_set='Pcs'; windows_build=$build; flags=3; intent=1;
+        marker_count=8; grid_count=32768; axis_count=8193; color_count=($input16.Length/6);
+        input_words='little-endian three WORDs'; input16=$nativeType::PackPcs($input16);
+        profiles=$hashes; matrix_profiles=$matrixProfiles; pcs_profiles=$pcsProfiles; results=$results
+    }
+    $json = $report | ConvertTo-Json -Depth 16
+    [IO.File]::WriteAllText([IO.Path]::GetFullPath($OutputPath),$json,(New-Object Text.UTF8Encoding($false)))
+    Write-Host ('Report: {0}' -f [IO.Path]::GetFullPath($OutputPath))
+    $success = @($results.Values | Where-Object { $_['status'] -eq 'ok' }).Count
+    Write-Host ('PCS transforms created: {0}/{1}' -f $success,$pcsPairs.Count)
+    return
+}
+
 $pairs = @(
     'linear-srgb|registered-srgb', 'source-v2|registered-srgb',
     'diagonal|diagonal', 'linear-srgb|diagonal', 'diagonal|registered-srgb',
