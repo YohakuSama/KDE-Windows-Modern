@@ -1121,7 +1121,90 @@ extractor input. No cache file or registry value is edited. Existing
 wallpaper restoration remains in effect.
 
 Keep the extractor and alpha model out of the KDE runtime until the
-input preprocessing and independent winner observations are resolved.
+input preprocessing and representative-color selection are resolved.
+
+### Cache isolation results (build 26300.9974)
+
+The complete [CacheIsolation report](windows11-26h2-wallpaper-probes-cache-isolation.json)
+contains 16 independent probes at 1280x800. Every probe changed native
+ARGB from the verified blue reference, changed the palette, had two
+stable captures, matched the source/registered wallpaper SHA-256, and
+returned consistent native ARGB/registry RGB. All BMP sample pixels
+matched their authored recipes. The original path and palette were
+restored. The original TranscodedWallpaper was a 1920x1200 JPEG with
+the same hash before every probe; all probe caches were 1280x800 JPEGs
+with different hashes from that reference. The matching display-size
+CachedFiles JPEG was missing in every observation.
+
+| Probe | Decoded cache RGB (background / patch) | Native ARGB | UI Accent | Alpha from solid sample |
+| --- | --- | --- | --- | ---: |
+| isolated-red-low-left | #148914 / #E03030 | 0xAF008700 | #038801 | — |
+| isolated-red-high-left | #148914 / #E03030 | 0xAFD24444 | #D24444 | — |
+| isolated-red-low-right | #E03030 / #148914 | 0xAF008700 | #038801 | — |
+| isolated-red-high-right | #E03030 / #148914 | 0xAF008700 | #038801 | — |
+| isolated-red-high-top | #148914 / #E03030 | 0xAF008700 | #038801 | — |
+| isolated-cyan-60-left | #BC5858 / #208484 | 0xAFD44343 | #D44343 | — |
+| isolated-cyan-60-right | #208484 / #BC5858 | 0xAFD44343 | #D44343 | — |
+| isolated-cyan-60-top | #BC5858 / #208484 | 0xAFD44343 | #D44343 | — |
+| isolated-cyan-75-left | #BC5858 / #208484 | 0xAF008181 | #038282 | — |
+| isolated-cyan-solid | #208484 | 0xAF008181 | #038282 | 175 |
+| isolated-alpha-span-34 | #916F6E | 0xA0936867 | #956A69 | 160 |
+| isolated-alpha-span-35 | #906E6D | 0xA0936867 | #956A69 | 160 |
+| isolated-alpha-span-48 | #9B6B6B | 0xADA06262 | #A26464 | 173 |
+| isolated-alpha-span-49 | #9B6B6B | 0xADA06262 | #A26464 | 173 |
+| isolated-fallback-span-28 | #8B6F6E | 0x9A8F6968 | #916B6A | 154 |
+| isolated-fallback-span-30 | #8D6F6F | 0x9B906969 | #926B6B | 155 |
+
+The two red fractions were exactly 441/1280 (34.453125%) and
+448/1280 (35%). At the lower fraction both orientations select green.
+At 35%, red on the left selects red; red on the right or top selects
+green. This contradicts the orientation-independent population/span
+models and invalidates the previous interpretation of a universal
+red/green area threshold. Sampling, resizing, compression boundaries
+and scan/order-dependent grouping remain distinct explanations; these
+observations do not establish intentional position weighting.
+
+Cyan #208484 covering 60% selects red #D44343 in all three orientations,
+and at 75% on the left selects #008181. Both source colors have channel
+span 100, including after decoding the cache. A simple population
+rule cannot reproduce this behavior. The older observations were not
+merely carried over from the preceding sample.
+
+All seven solids, including six with uncapped Alpha, match
+`min(175, 125 + max(R,G,B) - min(R,G,B))` using their sampled decoded
+cache RGB. In particular #9B6B6B and #9B6A6A yield the identical cached
+JPEG hash and decoded RGB #9B6B6B, and the same native ARGB 0xADA06262.
+The two source spans 34 and 35 both decode to span 35 and return Alpha
+160. This is direct evidence of the relevant JPEG color quantization,
+not proof of the native extractor's internal pixel buffer or scaling
+order. All sixteen observations also match the seven-role CIELAB
+shade equations (112 role colors, calculated offline from native RGB;
+not a runtime or test-suite execution).
+
+The two new red-family candidates #8F6968 and #906969 have HSL
+saturation 39/247 and 39/249 respectively, both above the provisional
+0.15 gate. Both produce non-default UI accents. The previous rejected
+#896B6B has saturation 30/244; the previously accepted #8C6783 has
+saturation 37/243. The new data do not narrow the tightest existing
+cross-hue saturation bracket. Keep the gate provisional.
+
+The existing sync-accent.py now exposes
+`derive_wallpaper_alpha(range_sum, pixel_count)` for opaque,
+already-preprocessed image statistics. It uses integer division,
+rejects invalid statistics and returns a colorization-strength byte.
+It does not load images, calculate the representative RGB, assign
+surface opacity or alter KDE settings. No new dependency or separate
+runtime theme is introduced. The calculation remains staged alongside
+the shade functions, pending the unresolved image preparation and
+representative-color algorithm. Do not unconditionally JPEG-encode
+every image or use this helper for unknown/transparent/native fallback
+conditions.
+
+Next, investigate the native selection and normalization implementation
+and the sampling geometry before requesting another broad empirical
+sweep. The current evidence is sufficient to stage the alpha reduction
+and preserve the orientation counterexamples, but not to claim exact
+automatic-accent parity or enable a guessed extractor.
 
 ### Native automatic-color diagnostic
 

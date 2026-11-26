@@ -249,6 +249,22 @@ def derive_manual_palette(selection):
     return derive_custom_palette(color)
 
 
+def derive_wallpaper_alpha(range_sum, pixel_count):
+    """Candidate colorization strength for already-preprocessed analysis pixels.
+
+    range_sum is the sum of max(R,G,B)-min(R,G,B) across opaque pixels.
+    pixel_count is the number of analysis pixels, not the source image size.
+    This stage does not choose a representative RGB or decode/resize images.
+    Transparent pixels, native fallbacks and multi-display analysis are
+    outside the reviewed opaque-image contract. Do not use this value as
+    the alpha of a Plasma, Qt or KWin surface.
+    """
+    if (type(range_sum) is not int or type(pixel_count) is not int
+            or pixel_count <= 0 or not 0 <= range_sum <= 255 * pixel_count):
+        raise ValueError("Invalid wallpaper analysis statistics")
+    return min(175, 125 + range_sum // pixel_count)
+
+
 def derive_automatic_palette(candidate):
     """Derive shades from the shell's pre-shade wallpaper color candidate.
 
