@@ -269,3 +269,52 @@ python3 scripts/theme/analyze-wallpaper-icc-matrix-capture.py /path/to/windows-i
 ```
 
 The updated diagnostics were compiled and run locally against the actual matrix and previous precision reports, using the isolated repository reconstruction. All nine new and six previous RGB8 replays matched, the synthetic endpoint regression passed, and a tampered link hash was rejected. The new analyzer does not archive the native device-link tables or the full report. Full independent table generation, additional ICC families and tagged alpha remain unresolved. No runtime/cache revision, main or CI change.
+
+
+## Matrix separability counterexamples and periodic residuals
+
+The [quantization diagnostic](../scripts/theme/analyze-wallpaper-icc-quantization.py) reruns the complete controlled matrix report validation, including nine exact portable RGB8 replays, then examines the four source profiles converted to the diagonal destination. No new measurement or runtime dependency is required. It uses the same inferred PCS code q = round(M_destination * native_RGB16 / 8), excludes clipped output components, and does not treat q as a directly captured native buffer.
+
+The diagonal target provides 7,457, 7,180 and 6,266 distinct inferred X, Y and Z values respectively. Repeated inferred scalar codes always map to the same raw output component across these four source profiles. This supports investigating the inverse scalar normalization separately.
+
+For an affine scalar transform with a single final quantizer whose error lies in an interval of width one, any two unclipped samples (q1,y1) and (q2,y2) constrain the slope to [(y2-y1-1)/(q2-q1), (y2-y1+1)/(q2-q1)]. The diagnostic finds strictly incompatible rational bounds for every component:
+
+| Component | Lower slope bound | Upper slope bound |
+| --- | ---: | ---: |
+| X | 17/2 | 315/38 |
+| Y | 8 | 32783/4098 |
+| Z | 59/6 | 281/29 |
+
+For example, the Y samples (66,527) and (75,600) require a slope >= 8, while (2958,23664) and (7056,56446) require a slope <= 32783/4098. These witnesses reject the single-affine, single-uniform-rounding model on the inferred lattice even if the coefficients and offset are freely chosen. They do not establish the actual internal PCS representation.
+
+The diagonal green colorant is exactly one, so the residual is native_green - 8*q. Its observed range is -2..0. Comparing values separated by a fixed PCS-code lag reveals a 128-code periodic structure with a downward trend:
+
+| Lag | Available pairs | Equal residual | Increase | Decrease |
+| ---: | ---: | ---: | ---: | ---: |
+| 16 | 7068 | 5637 | 708 | 723 |
+| 32 | 7031 | 4649 | 1181 | 1201 |
+| 64 | 7044 | 3943 | 1534 | 1567 |
+| 128 | 6960 | 6846 | 0 | 114 |
+| 256 | 6811 | 6587 | 0 | 224 |
+| 512 | 6561 | 6130 | 0 | 431 |
+
+This favors investigation of staged normalization or segmented fixed-point calculations rather than another single affine coefficient adjustment. It does not prove a 128-entry internal LUT or an exact quantization formula.
+
+Forward-stage test: if an inferred coordinate is formed from three arbitrary independent axis contributions plus a constant and one floor (or ceil or half-up) operation, its alternating sum on any two-axis rectangle is -1, 0 or 1. The actual inferred coordinates contain violations on all three components of both independent source matrices:
+
+| Source | X violations | Y violations | Z violations |
+| --- | ---: | ---: | ---: |
+| Linear sRGB | 814 | 117 | 7 |
+| Mixed | 33 | 1712 | 171 |
+
+For the linear-sRGB X coordinate, one adjacent rectangle is [[719,820],[833,936]], with alternating sum 2. The diagnostic reports a witness for each component and counts adjacent rectangles across all three axis pairs, excluding clipped outputs. This rejects the stated single-round separable model on the inferred coordinates, not arbitrary staged or nonuniform quantization.
+
+An additional exploratory search evaluated 22,464 candidate forward models (coordinate/coefficient precision, optional term rounding, pair order, intermediate rounding and final rounding) on a deterministic subset of the linear-sRGB and mixed grids, then reevaluated the top 100 on the full unclipped grids, with mixed-delta and diagonal as holdouts. The previous candidate accumulated 36,311 lattice-unit errors across the two training grids; the best reevaluated staged candidate accumulated 36,188, while worsening the linear-sRGB error individually from 18,619 to 20,102. No promoted algorithm resulted. This sweep is separate exploratory work; the committed diagnostic reproduces the structural counterexamples rather than this search.
+
+Reproduce:
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-quantization.py /path/to/windows-icc-matrix.json --target /path/to/sRGB.icm
+```
+
+Local checks on the isolated repository reconstruction: the precision and matrix-capture helper Git blob hashes match the testing revisions; Python syntax compilation passed; the supplied matrix report was fully validated; the synthetic affine, incompatible-slope, periodic-identity and separable-grid tests passed; a tampered link hash was rejected; the previous six intent replays on 5,120 colors each remained exact. No full repository build, desktop acceptance or CI was run. No captured normalization LUT, sample-specific corrections, runtime or main changes. Independently generating the complete CLUT remains open.
