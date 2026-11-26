@@ -196,6 +196,10 @@ class WindowMaterialTests(unittest.TestCase):
         def rgb(hex_color):
             return ','.join(str(int(hex_color[i:i + 2], 16)) for i in (1, 3, 5))
 
+        reference = json.loads((ROOT / "docs/windows11-26h2-accent-captures.json").read_text(
+            encoding="utf-8"))
+        captured = reference["captures"]
+        fill_roles = {"dark": "AccentLight2", "light": "AccentDark1"}
         schemes = {}
         for mode in ('dark', 'light'):
             with self.subTest(mode=mode):
@@ -204,6 +208,12 @@ class WindowMaterialTests(unittest.TestCase):
                 config = configparser.ConfigParser(interpolation=None)
                 config.read_string(render_kvantum_config(ROOT, mode))
                 colors = config['GeneralColors']
+                # WinUI primary accent fill, measured on the target Windows build.
+                observed = captured[mode]["appearance"]["colors_argb"][fill_roles[mode]]
+                self.assertRegex(observed, r"^#FF[0-9A-F]{6}$")
+                observed_rgb = "#" + observed[3:]
+                self.assertEqual(colors['highlight.color'].upper(), observed_rgb)
+                self.assertEqual(scheme['Colors:Selection']['BackgroundNormal'], rgb(observed_rgb))
                 for section, key, role in (
                         ('Colors:Window', 'BackgroundNormal', 'window.color'),
                         ('Colors:View', 'BackgroundNormal', 'base.color'),

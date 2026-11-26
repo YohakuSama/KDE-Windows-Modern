@@ -308,6 +308,48 @@ static brush references but does not disclose the shell's wallpaper
 extraction and palette generation formulas. KDE extraction is the current
 implementation; it is not evidence of Windows-equivalent colors.
 
+### Captured Windows 11 26H2 baseline
+
+The maintainer supplied two captures from build 26300.9974, preserved in
+[the runtime accent reference](windows11-26h2-accent-captures.json).
+The seven accent colors are identical in the two captures:
+
+| UISettings role | Observed RGB |
+| --- | --- |
+| Accent | #0078D4 |
+| AccentDark1 | #0067C0 |
+| AccentDark2 | #003E92 |
+| AccentDark3 | #001A68 |
+| AccentLight1 | #0091F8 |
+| AccentLight2 | #4CC2FF |
+| AccentLight3 | #99EBFF |
+
+The Windows foreground/background roles invert between modes. These are
+system color roles, not the final Mica or control surface colors.
+The [upstream WinUI resource dictionary](https://github.com/microsoft/microsoft-ui-xaml/blob/main/controls/dev/CommonStyles/Common_themeresources_any.xaml)
+uses AccentLight2 for the dark primary accent fill and AccentDark1 for
+the light primary fill. The existing shared theme palette uses exactly
+these values for its default fill/Highlight role; no runtime palette
+change is needed for this baseline. WinUI also uses separate accent text
+roles and the base accent for selected text background. KDE's shared
+Highlight role is a host-renderer adaptation, not proof that all of
+those WinUI roles are implemented.
+
+The registry-selected wallpaper hashes differ, the original image hashes
+were not supplied, and AutoColorization is null in both samples.
+Do not treat these as a controlled same-wallpaper automatic-mode pair or
+infer shade generation from them. The existing shared-palette regression
+check now compares the default KDE and Kvantum colors against the recorded
+mode-specific accent fills.
+
+The next useful reference is a distinctly non-blue ramp. In the Windows
+VM, either select a warm-colored static wallpaper with Automatic
+explicitly selected, or select a known non-blue manual accent. Capture
+the actual palette after the visible color change. If all seven values
+remain identical to the blue baseline, it is not a new ramp.
+
+### Capture procedure
+
 For maintainer acceptance, use a single display and a static picture in
 the target Windows VM. Set Personalization > Colors > Accent color to
 Automatic, select the exact original wallpaper used on KDE, and let the

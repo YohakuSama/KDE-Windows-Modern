@@ -1,0 +1,65 @@
+{
+  "description": "Operator-provided UISettings.GetColorValue captures. The accent mode is reported, not independently verified. The registered wallpaper hashes differ and neither original wallpaper hash was supplied. These captures establish one observed accent ramp in two appearance modes, not a wallpaper extraction or shade-generation algorithm.",
+  "captures": {
+    "dark": {
+      "schema_version": 1,
+      "windows_build": "26300.9974",
+      "display_version": "26H2",
+      "accent_mode_reported_by_operator": "Automatic",
+      "manual_color_reported_by_operator": "",
+      "appearance": {
+        "registered_wallpaper_sha256": "D54262032574B15CCF541E40FA13475FFB39D8682C19383E917F3ED5E8BBCA71",
+        "source_wallpaper_sha256": null,
+        "wallpaper_style_raw": "10",
+        "tile_wallpaper_raw": "0",
+        "auto_colorization_raw": null,
+        "apps_use_light_theme": 0,
+        "system_uses_light_theme": 0,
+        "transparency_raw": 1,
+        "reported_display_width": 1280,
+        "reported_display_height": 800,
+        "colors_argb": {
+          "Accent": "#FF0078D4",
+          "AccentDark1": "#FF0067C0",
+          "AccentDark2": "#FF003E92",
+          "AccentDark3": "#FF001A68",
+          "AccentLight1": "#FF0091F8",
+          "AccentLight2": "#FF4CC2FF",
+          "AccentLight3": "#FF99EBFF",
+          "Background": "#FF000000",
+          "Foreground": "#FFFFFFFF"
+        }
+      }
+    },
+    "light": {
+      "schema_version": 1,
+      "windows_build": "26300.9974",
+      "display_version": "26H2",
+      "accent_mode_reported_by_operator": "Automatic",
+      "manual_color_reported_by_operator": "",
+      "appearance": {
+        "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+        "source_wallpaper_sha256": null,
+        "wallpaper_style_raw": "10",
+        "tile_wallpaper_raw": "0",
+        "auto_colorization_raw": null,
+        "apps_use_light_theme": 1,
+        "system_uses_light_theme": 1,
+        "transparency_raw": 1,
+        "reported_display_width": 1280,
+        "reported_display_height": 800,
+        "colors_argb": {
+          "Accent": "#FF0078D4",
+          "AccentDark1": "#FF0067C0",
+          "AccentDark2": "#FF003E92",
+          "AccentDark3": "#FF001A68",
+          "AccentLight1": "#FF0091F8",
+          "AccentLight2": "#FF4CC2FF",
+          "AccentLight3": "#FF99EBFF",
+          "Background": "#FFFFFFFF",
+          "Foreground": "#FF000000"
+        }
+      }
+    }
+  }
+}
