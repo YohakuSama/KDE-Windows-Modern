@@ -318,3 +318,23 @@ python3 scripts/theme/analyze-wallpaper-icc-quantization.py /path/to/windows-icc
 ```
 
 Local checks on the isolated repository reconstruction: the precision and matrix-capture helper Git blob hashes match the testing revisions; Python syntax compilation passed; the supplied matrix report was fully validated; the synthetic affine, incompatible-slope, periodic-identity and separable-grid tests passed; a tampered link hash was rejected; the previous six intent replays on 5,120 colors each remained exact. No full repository build, desktop acceptance or CI was run. No captured normalization LUT, sample-specific corrections, runtime or main changes. Independently generating the complete CLUT remains open.
+
+
+## Linear ICC v2 curve generation and inverse projection ordering
+
+The previously unresolved linear target curve is now generated independently from the ICC v2 unity-gamma curveType tag (count 1, u8Fixed8 value 256). The input curve uses the same four-code source-anchor construction as the measured linear parametric v4 curve. The output curve uses anchors at indices 0,16,...,1008,1023, with integer values round-half-up(65535*i/1023). Interpolate the integer anchors with half-up rounding, including the final 15-code interval. A 16-code interval is exact on the measured curve; naive per-index rounding differs at 270 positions. The generated linear destination table SHA-256 is `0802A0EAAEA62A838818E62E3485650B01B939B3CE858E9294B24D63273FE19A`. No recorded curve values are used by the generator.
+
+The existing generation diagnostic now shares integer anchor interpolation between the two curve stages, and the existing matrix-capture diagnostic regenerates the input and output tables for all nine source/target pairs directly from their verified profiles. All 6,912 input-table entries and 27,648 output-table entries match (counts include repeated tables for different transforms), and all 9,216 RGB8 evaluations match when the independently generated curves are combined with the native CLUT. The prior two 5,120-color precision sets remain exact with generated curves and native CLUT. The newly covered curve format is unity-gamma v2 only; other gamma curves and arbitrary ICC LUT profiles are not newly verified.
+
+The inverse quantization diagnostic now also compares projection ordering for each measured destination and channel, using every available source that was independently converted to the diagonal profile. Starting with inferred unclipped PCS codes, compute the exact inverse projection key with the adjugate of the signed 16.16 colorant matrix (the positive determinant is common within each destination), and compare against the nearest-Q16 inverse coefficients using integer arithmetic. Exclude clipped observed channels; group equal keys and check whether the maximum output at a lower key exceeds the minimum output at the next distinct key. A reversal rejects any deterministic monotone scalar post-map for that specific inverse coefficient matrix on the inferred PCS codes, rather than only rejecting a particular rounding mode.
+
+| Destination | Exact inverse: reversed adjacent keys (R/G/B) | Nearest-Q16 inverse: reversed adjacent keys (R/G/B) |
+| --- | --- | --- |
+| Diagonal | 0 / 0 / 0 | 0 / 0 / 0 |
+| Registered sRGB | 2271 / 3579 / 2202 | 2871 / 1900 / 890 |
+| Mixed | 0 / 402 / 91 | 0 / 203 / 3 |
+| Mixed-delta | 212 / 0 / 119 | 212 / 0 / 119 |
+
+No equal-key conflicts were found in these within-destination comparisons. The diagonal green residual also shows a 512-code modulation of its 128-code repeating structure: the boundary of the one-unit residual interval moves between blocks. A simple affine sawtooth model with a 512-code block index and a 128-code phase still misses 56 of the 7,180 observed values; it is not used as a generator. The order reversals do not reject every possible inverse coefficient matrix. Exploratory ordering constraints with freely adjustable row coefficients admit alternative linear orderings on the measured sets, but those fitted coefficients and arbitrary monotone maps are not portable formulas. Neither the inferred PCS nor the fitted coefficients are directly observed native intermediates.
+
+Reproduce with the existing matrix-capture, generation and quantization commands. Local static Python AST parsing passed for all three changed files. Offline analysis of the supplied matrix report and previous precision report confirmed the exact curve hashes and matching RGB8 replays above. No full repository build, automated test suite, desktop acceptance, CI, runtime change or main change. All of the CLUT construction still needs a general profile-derived solution; the verified curve changes do not remove the dependency on the native CLUT for exact replay.

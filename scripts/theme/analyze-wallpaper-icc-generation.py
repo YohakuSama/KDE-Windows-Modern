@@ -12,32 +12,56 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def shared_trc(profile):
+    tag = profile[b'rTRC']
+    if tag != profile[b'gTRC'] or tag != profile[b'bTRC']:
+        raise ValueError('Expected shared RGB tone curves')
+    return tag
+
+
+def linear_gamma_tag(tag):
+    # ICC v2 curveType, one u8Fixed8 gamma value (1.0).
+    return (len(tag) == 14 and tag[:4] == b'curv'
+            and struct.unpack_from('>IH', tag, 8) == (1, 256))
+
+
+def interpolate_anchors(anchors, codes, indices, step):
+    k = np.minimum(indices//step, len(codes)-2)
+    span = codes[k+1]-codes[k]
+    rem = indices-codes[k]
+    # Interpolate integer endpoints, round half up, including the short tail.
+    return anchors[k]+((anchors[k+1]-anchors[k])*rem*2+span)//(2*span)
+
+
 def input_curves(profile, decode):
-    """Measured shared parametric source curve sampling, types 0 and 3."""
+    """Measured shared parametric types 0/3 and v2 unity-gamma sampling."""
+    tag = shared_trc(profile)
     codes = np.r_[np.arange(0,256,4),255]
     # Preserve the reciprocal multiplication and binary64 floor order.
     # Division by 255 is not interchangeable at integral linear samples.
-    anchors = np.floor(decode(profile, codes*(1.0/255.0))*65535)
+    normalized = codes*(1.0/255.0)
+    linear = normalized if linear_gamma_tag(tag) else decode(profile, normalized)
+    anchors = np.floor(linear*65535)
     if not np.isfinite(anchors).all() or np.any(anchors<0) or np.any(anchors>65535):
         raise ValueError('Invalid sampled source curve')
     anchors = anchors.astype(np.int64)
     if np.any(np.diff(anchors)<0):
         raise ValueError('Expected a monotone source curve')
-    indices = np.arange(256)
-    k = np.minimum(indices//4,63)
-    span = codes[k+1]-codes[k]
-    rem = indices-codes[k]
-    # Interpolate integer endpoints, half-up. The last segment is 3 codes.
-    out = anchors[k]+((anchors[k+1]-anchors[k])*rem*2+span)//(2*span)
+    out = interpolate_anchors(anchors, codes, np.arange(256), 4)
     return np.tile(out,(3,1))
 
 
 def output_curves(profile):
-    """Measured inverse sampling for a shared monotone 1024-point target TRC."""
-    tag = profile[b'rTRC']
-    if (tag[:4]!=b'curv' or len(tag)!=12+2048 or struct.unpack_from('>I',tag,8)[0]!=1024
-            or tag!=profile[b'gTRC'] or tag!=profile[b'bTRC']):
-        raise ValueError('Expected three shared 1024-point sampled curves')
+    """Measured shared sampled sRGB or v2 unity-gamma inverse curve."""
+    tag = shared_trc(profile)
+    if linear_gamma_tag(tag):
+        # Unity gamma: native 16-code anchor spacing and a final 15-code span.
+        codes = np.r_[np.arange(0,1024,16),1023]
+        anchors = (2*codes*65535+1023)//(2*1023)
+        out = interpolate_anchors(anchors,codes,np.arange(1024),16)
+        return np.tile(out,(3,1))
+    if (tag[:4]!=b'curv' or len(tag)!=12+2048 or struct.unpack_from('>I',tag,8)[0]!=1024):
+        raise ValueError('Expected a measured linear or 1024-point sampled curve')
     curve = np.frombuffer(tag[12:],'>u2').astype(np.int64)
     if curve[0]!=0 or curve[-1]!=65535 or np.any(np.diff(curve)<=0):
         raise ValueError('Expected a strictly increasing full-range target curve')

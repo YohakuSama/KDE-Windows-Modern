@@ -40,6 +40,7 @@ def endpoint_regression(execute):
 def analyze(root, report, target_path):
     p = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-precision.py'))
     e = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-engine.py'))
+    gen = runpy.run_path(str(root/'scripts/theme/analyze-wallpaper-icc-generation.py'))
     evidence = json.loads((root/'docs/windows11-26h2-icc-native-matches.json').read_text())
     sha, checked = p['sha'], p['checked']
     if (report['schema_version'],report['windows_build'],report['flags'],report['intent'],report['color_count']) != (1,'26300.9974',3,1,1024):
@@ -60,7 +61,12 @@ def analyze(root, report, target_path):
             raise ValueError('Synthetic profile hash mismatch')
     if {name:sha(data) for name,data in profiles.items()} != PROFILE_HASHES:
         raise ValueError('Profile identity mismatch')
-    matrices = {name:e['matrix'](e['tags'](data)) for name,data in profiles.items()}
+    tags = {name:e['tags'](data) for name,data in profiles.items()}
+    matrices = {name:e['matrix'](profile) for name,profile in tags.items()}
+    input_tables = {name:gen['input_curves'](tags[name],e['decode'])
+                    for name in {pair.split('|')[0] for pair in PAIRS}}
+    output_tables = {name:gen['output_curves'](tags[name])
+                     for name in {pair.split('|')[1] for pair in PAIRS}}
     endpoint_regression(p['execute_rgb8_tables'])
     pixels = p['rgb'](raw,8)
     grids, table_sets, results = {}, {}, {}
@@ -80,10 +86,17 @@ def analyze(root, report, target_path):
         pred = p['execute_rgb8_tables'](*tables,pixels)
         if pred.tobytes() != direct:
             raise ValueError('Portable replay mismatch: '+pair)
+        src,dst = pair.split('|')
+        source_curve = input_tables[src]
+        output_curve = output_tables[dst]
+        generated = p['execute_rgb8_tables'](source_curve,tables[1],output_curve,pixels)
         table_sets[pair] = tables
         grids[pair] = tables[1].reshape(-1,3)
         results[pair] = {'rgb8_sha256':sha(direct),'clut_sha256':sha(tables[1].astype('>u2').tobytes()),
-                         'matching_rgb8_colors':len(pixels)}
+                         'matching_rgb8_colors':len(pixels),
+                         'generated_input_curve':gen['table_metrics'](source_curve,tables[0],sha),
+                         'generated_output_curve':gen['table_metrics'](output_curve,tables[2],sha),
+                         'generated_curves_native_grid':p['metric'](generated,p['rgb'](direct,8))}
     control = next(s for s in evidence['samples'] if s['source']=='linear-srgb')
     if results[PAIRS[0]]['rgb8_sha256'] != control['output_rgb_sha256']:
         raise ValueError('Original calibration control mismatch')

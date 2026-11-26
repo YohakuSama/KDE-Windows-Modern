@@ -66,6 +66,65 @@ def periodic_residual(values):
     return result
 
 
+def inverse_order_constraints(grids, diagonal, matrices):
+    """Reject monotone scalar postprocessing of particular inverse matrices.
+
+    Within each target and output channel, a larger observed output must
+    have a strictly larger projected scalar for any deterministic monotone
+    mapping. Compute projection keys exactly from ICC 16.16 colorants.
+    The PCS codes are still inferred, not a directly captured buffer.
+    """
+    observations = {}
+    for pair, grid in grids.items():
+        source, target = pair.split('|')
+        control = grids.get(source+'|diagonal')
+        if control is None:
+            continue
+        a = control.reshape(-1,3)
+        mask = ((a>0)&(a<65535)).all(axis=1)
+        q = np.floor(a[mask] @ diagonal.T / 8 + .5).astype(np.int64)
+        observations.setdefault(target,[]).append((q,grid.reshape(-1,3)[mask]))
+    result = {}
+    for target, pairs in observations.items():
+        q = np.concatenate([a for a,_ in pairs])
+        observed = np.concatenate([b for _,b in pairs])
+        # Hash-checked probe profiles have small positive 16.16 colorants.
+        # Their adjugate products and PCS dot products fit int64. Use Python
+        # integers for the Q16 rounding numerator, which may exceed int64.
+        a = (matrices[target]*65536).astype(np.int64)
+        adj = np.array([np.cross(a[:,1],a[:,2]),np.cross(a[:,2],a[:,0]),np.cross(a[:,0],a[:,1])])
+        det = int(a[:,0] @ adj[0])
+        if det <= 0:
+            raise ValueError('Expected positive-determinant probe matrix')
+        q16 = np.array([[(2*int(v)*65536**2+det)//(2*det) for v in row] for row in adj],dtype=np.int64)
+        models = {}
+        for name, coeff in (('exact_inverse',adj),('nearest_q16_inverse',q16)):
+            channels = []
+            for c in range(3):
+                mask = (observed[:,c]>0)&(observed[:,c]<65535)
+                y = observed[mask,c]
+                x = q[mask] @ coeff[c]
+                order = np.argsort(x)
+                x,y = x[order],y[order]
+                starts = np.r_[0,np.flatnonzero(np.diff(x))+1]
+                lo = np.minimum.reduceat(y,starts)
+                hi = np.maximum.reduceat(y,starts)
+                collisions = np.flatnonzero(lo!=hi)
+                reversals = np.flatnonzero(hi[:-1]>lo[1:])
+                witness = None
+                if len(reversals):
+                    i = int(reversals[0])
+                    witness = [[int(x[starts[i]]),int(hi[i])],
+                               [int(x[starts[i+1]]),int(lo[i+1])]]
+                channels.append({'distinct_projection_keys':len(starts),
+                                 'conflicting_equal_keys':len(collisions),
+                                 'reversed_adjacent_keys':len(reversals),
+                                 'reversal_witness':witness})
+            models[name] = channels
+        result[target] = models
+    return result
+
+
 def rectangle_witness(grid, diagonal):
     # If the inferred coordinate is floor(a_i+b_j+c_k+constant),
     # every unclipped rectangle has alternating sum in {-1,0,1}.
@@ -103,10 +162,15 @@ def analyze(root, report, target_path):
     grids = {name:p['read_rgb8_tables'](p['checked'](item['link_profile']))[1]
              for name,item in report['results'].items()}
     values = scalar_maps(grids,diagonal)
+    matrices = {'registered-srgb':e['matrix'](e['tags'](target_path.read_bytes()))}
+    for name in ('diagonal','mixed','mixed-delta'):
+        data = base64.b64decode(report['matrix_profiles'][name]['base64'],validate=True)
+        matrices[name] = e['matrix'](e['tags'](data))
     return {'windows_build':verified['windows_build'],'verified_payloads':verified['verified_payloads'],
             'portable_rgb8_colors':verified['portable_rgb8_colors'],
             'inverse_scalar_bounds':[slope_bounds(v) for v in values],
             'identity_green_residual':periodic_residual(values[1]),
+            'inverse_order_constraints':inverse_order_constraints(grids,diagonal,matrices),
             'forward_rectangles':{name:rectangle_witness(grids[name+'|diagonal'],diagonal)
                                   for name in ('linear-srgb','mixed')}}
 
