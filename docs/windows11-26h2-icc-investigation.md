@@ -203,3 +203,36 @@ python3 scripts/theme/analyze-wallpaper-icc-generation.py /path/to/windows-icc-p
 ```
 
 Local checks: both Python files compiled, all precision-report buffers and reference inputs were checked by the existing diagnostics, the regenerated curves matched the native table hashes, and invalid curve shapes, out-of-range table entries and incorrect target profiles were rejected. The local directory remains an isolated research reconstruction, not a full repository checkout. No runtime cache revision, new runtime dependency, main change or CI run. Next isolate forward XYZ and inverse matrix fixed-point construction; additional ICC profile families and tagged alpha remain unverified.
+
+
+## Separate CLUT coordinate and matrix quantization
+
+The new [matrix diagnostic](../scripts/theme/analyze-wallpaper-icc-matrix.py) checks the previous full precision report, exact ICC source/destination identities, independently generated curves and all six native RGB8 replays. It then projects the 27,000 unclipped interior native grid nodes through the target colorant matrix. In units of 8 raw CLUT codes, the projected XYZ residuals from their nearest integer lie within [-0.291,-0.013], [-0.359,-0.016], and [-0.228,-0.003] for X, Y, Z. This is consistent with an approximately 13-fractional-bit PCS lattice. It does not directly observe the native intermediate representation. The inferred nearest lattice indices are diagnostic values only.
+
+An exploratory decomposition of the residuals by grid axis revealed an alternating odd/even offset close to half a 14-bit coordinate step (with an anomalous region at node 13). This motivated testing quantized coordinates before the matrix, rather than changing the already verified tetrahedral execution. The reproducible full-grid sweep covers 672 combinations of coordinate sampling, source matrix precision, XYZ rounding, inverse matrix precision and output quantization. The best table-level candidate differs from the previous fixed13 candidate only by round-half-up sampling of each grid coordinate at scale 16384.
+
+| Model | Differing table entries / 98,304 | Absolute table error sum | Max table error |
+| --- | ---: | ---: | ---: |
+| Previous fixed13 | 63,513 | 542,583 | 43 |
+| 14-bit grid sampling + fixed13 | 61,369 | 508,403 | 43 |
+
+| Model | sRGB calibration / mixed differing colors | Linear sRGB calibration / mixed differing colors |
+| --- | ---: | ---: |
+| Previous fixed13 | 50 / 219 | 37 / 370 |
+| 14-bit grid sampling + fixed13 | 29 / 163 | 25 / 316 |
+
+No candidate is exact. On the inferred interior PCS lattice, forward-model disagreements decrease from 16,880 to 15,151 of 81,000 values, each by one lattice unit. Supplying those inferred PCS indices directly to the candidate inverse calculation still leaves 29,337 differing interior RGB entries (absolute error sum 29,361, maximum 2). Thus changing coordinate sampling alone does not resolve the full calculation. The inferred PCS is not a native measurement, and neither model enters the runtime. No per-color correction is fitted or bundled.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-matrix.py /path/to/windows-icc-precision.json --target /path/to/sRGB.icm
+```
+
+Rather than further fit the same pair of matrices, the standalone [controlled matrix probe](../scripts/capture-windows-icc-matrix.ps1) reuses the previously executed ICM BEST_MODE/relative-colorimetric collector helper and adds four small synthetic ICC v2.1 matrix/linear-TRC profiles: a D50 diagonal, a mixed matrix, a mixed matrix with 1–4 code colorant perturbations preserving its white point, and a v2 profile with the original source colorants. The nine source/target combinations include the original control, v2/v4 comparison, diagonal-to-diagonal, forward matrix isolation, inverse matrix isolation and perturbation tests. The diagonal profile is a mathematical diagnostic, not a real display profile. All synthetic ICCs were loaded and converted successfully using Little CMS locally. Native acceptance is not yet verified.
+
+The collector exports only synthetic ICC inputs, calibration RGB inputs and outputs, generated device links, CMM metadata, hashes and errors. It does not export the installed sRGB profile, modify wallpaper, install profiles, write registry values, or require elevation. It checks the reference build, original target and input hashes. Unsupported native combinations are recorded rather than treated as matching.
+
+```powershell
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\capture-windows-icc-matrix.ps1
+```
+
+Output: windows-icc-matrix.json on the Desktop. This is a focused measurement to isolate both matrix stages and low-bit coefficient sensitivity; it is not a repeat of the wallpaper capture. The PowerShell wrapper and synthetic ICC inputs have been inspected locally, but the new combinations have not been run on Windows. Python syntax compilation and the full matrix diagnostic passed using the actual supplied precision report in the isolated research checkout. Runtime revision 2, main and CI remain unchanged.
