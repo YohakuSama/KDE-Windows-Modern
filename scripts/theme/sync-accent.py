@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Synchronize template-owned Kvantum accent paints, not window materials."""
 import argparse
+import colorsys
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -51,6 +53,78 @@ def rgb(value):
     if any(x > 255 for x in channels) or (len(channels) == 4 and channels[3] != 255):
         raise ValueError("Expected opaque KDE selection color")
     return "#" + "".join(f"{x:02X}" for x in channels[:3])
+
+
+# Candidate for the central custom-color branch, not the preset lookup
+# or the wallpaper extractor. Mathematical description:
+# https://gist.github.com/cnbluefire/7ffa04c493c57b8a67f6a8baa2c726f7
+# Use standard sRGB/D65 CIELAB conversions and Python's HLS routines.
+# Keep the original input distinct from the normalized output Accent.
+def derive_custom_lab_palette(selection):
+    source = tuple(bytes.fromhex(rgb(selection)[1:]))
+    hue, lightness, saturation = colorsys.rgb_to_hls(*(x / 255 for x in source))
+    if not 0.25 <= lightness <= 0.75 or saturation < 0.15:
+        raise ValueError("Custom accent outside the reviewed CIELAB branch")
+
+    def linear(channel):
+        c = channel / 255
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    def lab_component(x):
+        return x ** (1 / 3) if x > 0.008856 else 7.787 * x + 16 / 116
+
+    def inverse_lab_component(x):
+        return x ** 3 if x > 6 / 29 else (x - 16 / 116) / 7.787
+
+    def byte(value):
+        return math.floor(max(0, min(255, value)) + 0.5)
+
+    def encode(channel):
+        c = (12.92 * channel if channel <= 0.0031308
+             else 1.055 * channel ** (1 / 2.4) - 0.055)
+        return byte(255 * c)
+
+    r, g, b = map(linear, source)
+    fx, fy, fz = map(lab_component, (
+        (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047,
+        0.2126 * r + 0.7152 * g + 0.0722 * b,
+        (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883,
+    ))
+    a, b = 500 * (fx - fy), 200 * (fy - fz)
+
+    def from_lab(light):
+        y = (light + 16) / 116
+        x = 0.95047 * inverse_lab_component(y + a / 500)
+        z = 1.08883 * inverse_lab_component(y - b / 200)
+        y = inverse_lab_component(y)
+        return tuple(map(encode, (
+            3.2406 * x - 1.5372 * y - 0.4986 * z,
+            -0.9689 * x + 1.8758 * y + 0.0415 * z,
+            0.0557 * x - 0.2040 * y + 1.0570 * z,
+        )))
+
+    base = from_lab(max(49.0, min(50.0, 116 * fy - 16)))
+    dark, light = from_lab(0.0), from_lab(100.0)
+    _, _, base_saturation = colorsys.rgb_to_hls(*(x / 255 for x in base))
+
+    def shade(endpoint, weight):
+        mixed = tuple(byte(x * (1 - weight) + y * weight)
+                      for x, y in zip(base, endpoint))
+        h, l, s = colorsys.rgb_to_hls(*(x / 255 for x in mixed))
+        return tuple(byte(255 * x) for x in
+                     colorsys.hls_to_rgb(h, l, max(s, base_saturation)))
+
+    colors = {
+        "Accent": base,
+        "AccentLight1": shade(light, 0.16),
+        "AccentLight2": shade(light, 0.58),
+        "AccentLight3": shade(light, 0.82),
+        "AccentDark1": shade(dark, 0.22),
+        "AccentDark2": shade(dark, 0.50),
+        "AccentDark3": shade(dark, 0.82),
+    }
+    return {role: "#" + bytes(channels).hex().upper()
+            for role, channels in colors.items()}
 
 
 def contrast_ink(color):

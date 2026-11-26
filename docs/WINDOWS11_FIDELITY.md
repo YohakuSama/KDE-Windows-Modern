@@ -310,7 +310,7 @@ implementation; it is not evidence of Windows-equivalent colors.
 
 ### Captured Windows 11 26H2 baseline
 
-The maintainer supplied five UISettings captures from build 26300.9974,
+The maintainer supplied six UISettings captures from build 26300.9974,
 preserved in [the runtime accent reference](windows11-26h2-accent-captures.json).
 The original blue samples were produced with the v1 script argument
 Automatic, but the Settings screenshot and the owner's correction
@@ -427,11 +427,48 @@ dependency. No third-party code or preset table is imported.
 The capture script v3 preserves the entered custom RGB value and the
 observed base Accent separately, even when they differ. The previous
 v2 cross-check rejected mismatches, preventing normalization analysis.
-The next manual reference should use a custom non-preset color
-(e.g. #9F5A8C) entered through Windows Settings, with ManualColor recording
-that exact input. For wallpaper extraction, obtain the original image or
-its source hash separately; the current automatic sample does not have it.
-No repeat of the default blue or orange captures is required.
+The owner supplied a v2 custom purple capture following the instruction
+to enter #9F5A8C. Its observed base is #A25D8F; the v2 command omitted
+ManualColor, so the exact entered value remains operator-context evidence,
+not a field recorded by the capture. With that requested RGB, the
+independently written CIELAB calculation reproduces all seven observed
+colors (21 RGB channels), including the normalized base:
+
+| UISettings role | Observed RGB |
+| --- | --- |
+| Accent | #A25D8F |
+| AccentDark1 | #884976 |
+| AccentDark2 | #662F56 |
+| AccentDark3 | #401132 |
+| AccentLight1 | #B173A1 |
+| AccentLight2 | #D8ADD0 |
+| AccentLight3 | #EECEEB |
+
+The raw registry slots also match the seven API roles; the eighth is
+#881798, unchanged from the preceding automatic capture. A read-only
+calculation based on the requested input produces the complete ramp.
+Reusing the normalized #A25D8F as input does not produce identical
+Dark1 and Dark3, so input and output must remain distinct.
+
+The existing sync-accent.py module now exposes a pure
+derive_custom_lab_palette() function for the central CIELAB branch.
+It uses standard-library color conversion and rounds intermediate RGB
+values before saturation correction. It rejects extreme-lightness and
+near-gray inputs pending verification of the legacy HSL branch. Callers
+must not use it for Windows preset colors or wallpaper extraction.
+The existing window-material regression suite contains the conditional
+purple vector and rejected-input checks. No third-party source code is
+imported and no dependency is added.
+
+This is a staged calculation core, not a change to the installed
+accent propagation: KDE's effective selection color remains authoritative
+for Plasma and Kvantum. Applying the new ramp only to Kvantum or custom
+QML while leaving KColorScheme unchanged would break color consistency.
+The next useful manual sample is an explicitly recorded non-preset
+near-gray or very dark input, to check the separate HSL path. A second
+central-color sample with an explicit input would independently verify
+the CIELAB formula. For wallpaper extraction, obtain the original image
+or its source hash separately. No repeat of blue or orange is needed.
 
 ### Capture procedure
 

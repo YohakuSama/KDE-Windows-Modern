@@ -91,6 +91,45 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertTrue(all(x == y for i, (x, y) in
                                         enumerate(zip(before, after)) if i not in owned))
 
+    def test_custom_lab_accent_reference(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        derive = sync["derive_custom_lab_palette"]
+        reference = json.loads((ROOT / "docs/windows11-26h2-accent-captures.json").read_text(
+            encoding="utf-8"))
+        sample = reference["captures"]["manual_custom_light_registry"]
+        observed = sample["appearance"]["colors_argb"]
+        registry = sample["appearance"]["registry"]
+        self.assertEqual(sample["accent_mode_registry"], "Manual")
+        self.assertEqual(registry["control_panel_auto_colorization_raw"], 0)
+        self.assertEqual(registry["themes_history_auto_color_raw"], 0)
+        # The requested input was supplied in the preceding instructions,
+        # not captured by the v2 script; this is a conditional reference.
+        self.assertEqual(sample["manual_color_argument"], "")
+        candidate = derive(sample["requested_manual_color"])
+        expected = {role: "#" + observed[role][3:] for role in (
+            "Accent", "AccentLight1", "AccentLight2", "AccentLight3",
+            "AccentDark1", "AccentDark2", "AccentDark3")}
+        self.assertEqual(candidate, expected)
+        self.assertNotEqual(candidate["Accent"], sample["requested_manual_color"])
+        # The normalized Accent is not interchangeable with the original input.
+        self.assertNotEqual(derive(candidate["Accent"]), candidate)
+        raw = bytes.fromhex(registry["accent_palette_hex"])
+        self.assertEqual(len(raw), registry["accent_palette_length_bytes"])
+        self.assertEqual(len(raw), 32)
+        observation = reference["registry_palette_observation"]
+        for i, role in enumerate(observation["ui_settings_roles_in_slot_order"]):
+            slot = raw[i * 4:i * 4 + 4]
+            self.assertEqual("#" + slot[:3].hex().upper(), expected[role])
+            self.assertEqual(slot[3], 0)
+        self.assertEqual("#" + raw[28:31].hex().upper(),
+                         observation["custom_unassigned_slot_rgb"])
+        self.assertEqual(raw[31], 0)
+        # Do not silently apply this branch to unreviewed extreme/gray colors.
+        for unsupported in ("#000000", "#FFFFFF", "#808080", "#080020", "#F8ECF8"):
+            with self.subTest(color=unsupported):
+                with self.assertRaises(ValueError):
+                    derive(unsupported)
+
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
         self.assertEqual(frames.tint_color('dark', (255, 255, 255)), '#363636')

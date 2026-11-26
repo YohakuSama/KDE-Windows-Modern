@@ -1,7 +1,7 @@
 {
   "windows_build": "26300.9974",
   "display_version": "26H2",
-  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In every sample, the observed manual base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1. The v2 orange capture independently records the registry mode and raw palette, with the same seven UISettings colors as the v1 orange capture. The v2 automatic sample reports Automatic at both registry locations; unlike the manual captures, the current API/Explorer palette differs from DWM's unchanged manual orange values.",
+  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In every sample, the observed manual base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1. The v2 orange capture independently records the registry mode and raw palette, with the same seven UISettings colors as the v1 orange capture. The v2 automatic sample reports Automatic at both registry locations; unlike the manual captures, the current API/Explorer palette differs from DWM's unchanged manual orange values. The v2 custom-color capture records a third manual palette; the requested input was #9F5A8C, but the capture itself does not attest to the exact entered RGB.",
   "winui_roles": {
     "dark": {
       "primary_fill": "AccentLight2",
@@ -204,6 +204,50 @@
           "accent_palette_hex": "AEE6F60085C5EA00398BDC002475CE001C5CB200123C8E000618640088179800"
         }
       }
+    },
+    "manual_custom_light_registry": {
+      "script_schema_version": 2,
+      "script_mode_argument": "Manual",
+      "verified_settings_mode": "Manual",
+      "accent_mode_registry": "Manual",
+      "accent_mode_registry_conflict": false,
+      "manual_color_argument": "",
+      "requested_manual_color": "#9F5A8C",
+      "requested_manual_color_provenance": "The preceding capture instructions requested this input; the v2 output did not record the entered color. Treat it as a conditional reference, not a measured input.",
+      "accent_observed_from_ui_settings": "#FFA25D8F",
+      "manual_color_observed_from_ui_settings": "#FFA25D8F",
+      "appearance": {
+        "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+        "source_wallpaper_sha256": null,
+        "wallpaper_style_raw": "10",
+        "tile_wallpaper_raw": "0",
+        "apps_use_light_theme": 1,
+        "system_uses_light_theme": 1,
+        "transparency_raw": 1,
+        "reported_display_width": 1280,
+        "reported_display_height": 800,
+        "colors_argb": {
+          "Accent": "#FFA25D8F",
+          "AccentDark1": "#FF884976",
+          "AccentDark2": "#FF662F56",
+          "AccentDark3": "#FF401132",
+          "AccentLight1": "#FFB173A1",
+          "AccentLight2": "#FFD8ADD0",
+          "AccentLight3": "#FFEECEEB",
+          "Background": "#FFFFFFFF",
+          "Foreground": "#FF000000"
+        },
+        "registry": {
+          "control_panel_auto_colorization_raw": 0,
+          "themes_history_auto_color_raw": 0,
+          "dwm_accent_color_raw": -7578977,
+          "dwm_colorization_color_raw": -996189556,
+          "explorer_accent_color_menu_raw": -7578977,
+          "explorer_start_color_menu_raw": -9025144,
+          "accent_palette_length_bytes": 32,
+          "accent_palette_hex": "EECEEB00D8ADD000B173A100A25D8F0088497600662F56004011320088179800"
+        }
+      }
     }
   },
   "registry_palette_observation": {
@@ -222,8 +266,10 @@
     ],
     "unassigned_slot_index": 7,
     "unassigned_slot_rgb": "#0063B1",
-    "limitations": "Observed on build 26300.9974 with one manual accent and one automatic accent. The eighth slot and fourth byte semantics are not established; these observations do not specify the Windows palette-generation algorithm.",
+    "limitations": "Observed on build 26300.9974 with two manual accents and one automatic accent. The eighth slot and fourth byte semantics are not established; these observations do not specify the Windows palette-generation algorithm.",
     "automatic_capture": "automatic_blue_light_registry",
-    "automatic_unassigned_slot_rgb": "#881798"
+    "automatic_unassigned_slot_rgb": "#881798",
+    "custom_capture": "manual_custom_light_registry",
+    "custom_unassigned_slot_rgb": "#881798"
   }
 }
