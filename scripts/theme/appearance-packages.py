@@ -500,8 +500,9 @@ def lookfeel(root, destination, mode):
                            encoding="utf-8")
         scripts = target / "contents/scripts"
         scripts.mkdir()
-        for name in ("switch-mode.sh", "sync-accent.py"):
+        for name in ("switch-mode.sh", "sync-accent.py", "accent-control.py", "palette.json"):
             shutil.copy2(root / "scripts/theme" / name, scripts / name)
+        shutil.copy2(root / "color-schemes/WindowsModern.colors.in", scripts)
     return target
 
 
@@ -516,14 +517,8 @@ def load_palette(root, mode):
 
 def render_color_scheme(root, mode):
     source = root / "color-schemes/WindowsModern.colors.in"
-    values = {}
-    for role, color in load_palette(root, mode).items():
-        if not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
-            raise ValueError("Invalid RGB palette role: " + role)
-        values[role] = ",".join(str(int(color[i:i + 2], 16)) for i in (1, 3, 5))
-    values["scheme_id"] = "WindowsModern" + mode.capitalize()
-    values["scheme_name"] = "Windows Modern " + mode.capitalize()
-    return Template(source.read_text(encoding="utf-8")).substitute(values)
+    render = runpy.run_path(str(root / "scripts/theme/sync-accent.py"))["render_scheme"]
+    return render(source.read_text(encoding="utf-8"), load_palette(root, mode), mode)
 
 
 def color_schemes(root, destination):

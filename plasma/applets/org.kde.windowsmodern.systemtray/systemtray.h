@@ -81,6 +81,7 @@ Q_SIGNALS:
     void castAvailabilityChanged();
     void clipboardHistoryRequested();
     void runDialogRequested();
+    void accentPreferencesChanged();
 
 private Q_SLOTS:
     void onEnabledAppletsChanged();

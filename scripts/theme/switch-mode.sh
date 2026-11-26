@@ -9,8 +9,14 @@ data="${XDG_DATA_HOME:-$HOME/.local/share}"
 missing="__windows_modern_missing_appearance_key__"
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 [ "$EUID" -ne 0 ] || fail "Switch appearance as the desktop user, not root."
-[ "$#" -eq 1 ] || fail "Usage: switch-mode.sh light|dark|--migrate|--sync-accent"
-case "$1" in light|dark|--migrate|--sync-accent) ;; *) fail "Unknown appearance mode: $1" ;; esac
+[ "$#" -ge 1 ] || fail "Specify an appearance operation."
+usage="Usage: switch-mode.sh light|dark|--migrate|--sync-accent|--manual-accent RGB|--wallpaper-accent IMAGE...|--native-accent"
+case "$1" in
+    light|dark|--migrate|--sync-accent|--native-accent) [ "$#" -eq 1 ] || fail "$usage" ;;
+    --manual-accent) [ "$#" -eq 2 ] || fail "$usage" ;;
+    --wallpaper-accent) [ "$#" -ge 2 ] || fail "$usage" ;;
+    *) fail "Unknown appearance mode: $1" ;;
+esac
 for cmd in kreadconfig6 kwriteconfig6; do
     command -v "$cmd" >/dev/null || fail "Missing command: $cmd"
 done
@@ -63,6 +69,11 @@ if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
 elif [ "$1" != --migrate ]; then
     fail "No desktop runtime directory."
 fi
+# The active package may have changed while waiting for the lock.
+active="$(read_key kdeglobals KDE LookAndFeelPackage)"
+if [ "$active" = "$missing" ] && [ -f "$config/kdedefaults/package" ]; then
+    active="$(cat "$config/kdedefaults/package")"
+fi
 if [ "$1" = --migrate ]; then
     # Move only an old Windows Modern Light identity to the shared package.
     # The actual palette, materials, wallpaper and panel layout stay put.
@@ -86,8 +97,17 @@ if [ "$1" = --migrate ]; then
     exit 0
 fi
 
-# KDE's effective selection palette is authoritative. Never change its
-# wallpaper accent setting, other themes or system-managed Kvantum assets.
+accent_python() {
+    local python="${XDG_STATE_HOME:-$HOME/.local/state}/windows-modern-nixos-test/runtime/bin/python3"
+    if [ ! -x "$python" ]; then
+        python="$(command -v python3 || true)"
+    fi
+    [ -x "$python" ] || { echo "Python 3 is unavailable for accent synchronization." >&2; return 1; }
+    printf '%s\n' "$python"
+}
+
+# In native mode, KDE's effective selection palette is authoritative.
+# Do not change native accent settings or externally managed artwork.
 sync_mode_accent() {
     local current_mode="$1" selection python result name
     local kvdir="$config/Kvantum/Windows-modern"
@@ -107,40 +127,67 @@ sync_mode_accent() {
     }
     selection="$(read_key kdeglobals Colors:Selection BackgroundNormal)"
     [ "$selection" != "$missing" ] || { echo "Missing effective KDE selection color." >&2; return 1; }
-    python="$(command -v python3 || true)"
-    if [ -z "$python" ]; then
-        python="${XDG_STATE_HOME:-$HOME/.local/state}/windows-modern-nixos-test/runtime/bin/python3"
-    fi
-    [ -x "$python" ] || { echo "Python 3 is unavailable for Kvantum accent synchronization." >&2; return 1; }
+    python="$(accent_python)" || return 1
     result="$("$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/sync-accent.py" "$kvdir" "$current_mode" "$selection")" || return 1
     printf '%s\n' "$result"
 }
 
+sync_renderer_accent() {
+    local current_mode="$1" action="$2" python result
+    shift 2
+    if [ "$action" = sync ] && [ "$(read_key kdeglobals WindowsModernAccent Palette)" = "$missing" ]; then
+        sync_mode_accent "$current_mode"
+        return $?
+    fi
+    guard_config kdeglobals
+    python="$(accent_python)" || return 1
+    result="$("$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/accent-control.py" "$current_mode" "$action" -- "$@")" || return 1
+    case "$result" in
+        native) sync_mode_accent "$current_mode" ;;
+        changed|unchanged) printf '%s\n' "$result" ;;
+        *) echo "Unexpected accent synchronization result." >&2; return 1 ;;
+    esac
+}
+
 sync_accent() {
-    local current_scheme current_style current_theme current_mode result
+    local action="$1" current_scheme current_style current_theme current_mode result
+    shift
     current_scheme="$(read_key kdeglobals General ColorScheme)"
     current_style="$(read_key kdeglobals KDE widgetStyle)"
     current_theme="$(read_key Kvantum/kvantum.kvconfig General theme)"
-    [ "$current_theme" = Windows-modern ] || return 0
+    if [ "$current_theme" != Windows-modern ]; then
+        [ "$action" = sync ] && return 0
+        fail "Select the Windows Modern Kvantum theme first."
+    fi
     case "$current_scheme:$current_style" in
         WindowsModernDark:kvantum-dark) current_mode=dark ;;
         WindowsModernLight:kvantum) current_mode=light ;;
-        *) return 0 ;;
+        *)
+            [ "$action" = sync ] && return 0
+            fail "Select a Windows Modern appearance mode first." ;;
     esac
-    result="$(sync_mode_accent "$current_mode")" || return 1
+    result="$(sync_renderer_accent "$current_mode" "$action" "$@")" || return 1
     if [ "$result" = changed ]; then
         # This is a best-effort notification. Plasma-integration deliberately
         # skips recreating a QStyle when its name has not changed.
         busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
-        printf '%s\n' "Kvantum accent assets updated; open applications may need reopening."
+        printf '%s\n' "Accent assets updated; open Kvantum applications may need reopening."
     fi
 }
 
-if [ "$1" = --sync-accent ]; then
-    [ "$active" = "$theme_id" ] || exit 0
-    sync_accent
-    exit $?
-fi
+case "$1" in
+    --sync-accent)
+        [ "$active" = "$theme_id" ] || exit 0
+        sync_accent sync
+        exit $? ;;
+    --manual-accent|--wallpaper-accent|--native-accent)
+        [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."
+        action="${1#--}"
+        action="${action%-accent}"
+        shift
+        sync_accent "$action" "$@"
+        exit $? ;;
+esac
 
 [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."
 mode="$1"
@@ -193,7 +240,7 @@ apply_mode() {
     plasma-apply-colorscheme "$scheme" || return 1
     # Apply the destination mode's accent before publishing widgetStyle.
     # Otherwise a newly created Kvantum style loads the previous atlas.
-    sync_mode_accent "$mode" >/dev/null || return 1
+    sync_renderer_accent "$mode" sync >/dev/null || return 1
     plasma-apply-desktoptheme "$plasma" || return 1
     local i
     for i in "${!keys[@]}"; do
@@ -220,9 +267,9 @@ if ! apply_mode; then
     # for the same reason that the normal switch stages its destination.
     case "$old_scheme:${old_values[0]}:${old_values[3]}" in
         WindowsModernDark:kvantum-dark:Windows-modern)
-            sync_mode_accent dark >/dev/null || restored=false ;;
+            sync_renderer_accent dark sync >/dev/null || restored=false ;;
         WindowsModernLight:kvantum:Windows-modern)
-            sync_mode_accent light >/dev/null || restored=false ;;
+            sync_renderer_accent light sync >/dev/null || restored=false ;;
     esac
     for i in "${!keys[@]}"; do
         write_key "${files[i]}" "${groups[i]}" "${keys[i]}" "${old_values[i]}" || restored=false

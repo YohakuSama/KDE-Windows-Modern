@@ -121,9 +121,18 @@ uninstall_component() {
             rm_path "$AURORAE_DIR/Windows-modern"*-aurorae
             rm_path "$AURORAE_DIR/__aurorae__svg__windows-modern"*
             rm_path "$AURORAE_DIR/__aurorae__svg__Windows-modern"*
+            # A stored Windows ramp belongs only to these installed schemes.
+            # Never modify KDE's native accent preference during removal.
+            lock_appearance_writes || return 1
+            if [ "$UID" -ne 0 ] && command -v kwriteconfig6 >/dev/null &&
+               [ ! -L "${XDG_CONFIG_HOME:-$HOME/.config}" ] &&
+               [ ! -L "${XDG_CONFIG_HOME:-$HOME/.config}/kdeglobals" ]; then
+                kwriteconfig6 --notify --file kdeglobals --group WindowsModernAccent --key Palette --delete
+            fi
             rm_path "$SCHEMES_DIR/WindowsModern"*.colors
             rm_path "$KVANTUM_DIR/Windows-modern"*
             rm_path "$KVANTUM_DIR/windows-modern"*
+            exec 8>&-
             rm_path "$PLASMA_DIR/Windows-modern"*
             rm_path "$PLASMA_DIR/windows-modern"*
             rm_path "$WALLPAPER_DIR/Windows-modern"*

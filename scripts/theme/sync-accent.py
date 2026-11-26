@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Analyze Windows-style wallpaper colors or synchronize owned Kvantum accent paints."""
+"""Analyze Windows-style colors and synchronize shared scheme and Kvantum roles."""
 import argparse
 import colorsys
 from fractions import Fraction
@@ -663,6 +663,22 @@ def accent_values(mode, defaults, selection):
             "selected_item_text": ink if mode == "light" else defaults["selected_item_text"]}
 
 
+def render_scheme(template, defaults, mode, selection=None):
+    """Render the common KDE roles, including an optional final mode accent."""
+    values = defaults.copy() if selection is None else accent_values(mode, defaults, selection)
+    if defaults["button_active_text"].upper() == defaults["accent"].upper():
+        values["button_active_text"] = values["accent"]
+    channels = {}
+    for role in defaults:
+        color = values[role]
+        if not COLOR.fullmatch(color):
+            raise ValueError("Invalid RGB palette role: " + role)
+        channels[role] = ",".join(str(int(color[i:i + 2], 16)) for i in (1, 3, 5))
+    channels["scheme_id"] = "WindowsModern" + mode.capitalize()
+    channels["scheme_name"] = "Windows Modern " + mode.capitalize()
+    return Template(template).substitute(channels)
+
+
 def patch(text, spec, values):
     lines = text.splitlines(keepends=True)
     if len(lines) != spec["lines"]:
@@ -699,13 +715,11 @@ def atomic_write(path, data):
         Path(name).unlink(missing_ok=True)
 
 
-def synchronize(directory, mode, selection):
-    if os.geteuid() == 0:
-        raise ValueError("Run accent synchronization as the desktop user")
+def plan_kvantum(directory, mode, selection):
     if any(p.is_symlink() for p in (directory, directory.parent)):
         raise ValueError("Refusing externally managed Kvantum directory")
     if not directory.is_dir():
-        return False
+        return {}
     manifest = owned_file(directory / "accent-bindings.json")
     entry = json.loads(manifest.read_text(encoding="utf-8"))[mode]
     values = accent_values(mode, entry["defaults"], selection)
@@ -725,6 +739,24 @@ def synchronize(directory, mode, selection):
             ET.fromstring(new)
         if old != new.encode("utf-8"):
             pending[path] = (old, new.encode("utf-8"))
+    return pending
+
+
+def restore_pending(pending, written):
+    failures = []
+    for path in reversed(written):
+        old, new = pending[path]
+        try:
+            if owned_file(path).read_bytes() != new:
+                raise ValueError(f"Theme changed during accent rollback: {path}")
+            atomic_write(path, old)
+        except (OSError, ValueError) as error:
+            failures.append(str(error))
+    if failures:
+        raise ValueError("; ".join(failures))
+
+
+def write_pending(pending):
     written = []
     try:
         for path, (old, new) in pending.items():
@@ -733,12 +765,15 @@ def synchronize(directory, mode, selection):
             atomic_write(path, new)
             written.append(path)
     except (OSError, ValueError):
-        for path in reversed(written):
-            old, new = pending[path]
-            if owned_file(path).read_bytes() == new:
-                atomic_write(path, old)
+        restore_pending(pending, written)
         raise
-    return bool(pending)
+    return written
+
+
+def synchronize(directory, mode, selection):
+    if os.geteuid() == 0:
+        raise ValueError("Run accent synchronization as the desktop user")
+    return bool(write_pending(plan_kvantum(directory, mode, selection)))
 
 
 def main():

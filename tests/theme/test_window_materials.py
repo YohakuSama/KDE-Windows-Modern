@@ -94,6 +94,55 @@ class WindowMaterialTests(unittest.TestCase):
                     self.assertTrue(all(x == y for i, (x, y) in
                                         enumerate(zip(before, after)) if i not in owned))
 
+    def test_windows_accent_state_validation(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        palette = control["SYNC"]["derive_manual_palette"]("#FF8C00")
+        state = {"schema_version": 1, "source": "manual", "palette": palette}
+        self.assertEqual(control["decode_state"](json.dumps(state)), palette)
+        self.assertIsNone(control["decode_state"](None))
+        state["palette"] = {**palette, "AccentDark1": "invalid"}
+        with self.assertRaises(ValueError):
+            control["decode_state"](json.dumps(state))
+        state["palette"] = {"Accent": "#FF8C00"}
+        with self.assertRaisesRegex(ValueError, "Incomplete"):
+            control["decode_state"](json.dumps(state))
+
+    def test_windows_accent_scheme_transaction(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        sync = control["SYNC"]
+        template, fixed = control["scheme_inputs"]()
+        palette = sync["derive_manual_palette"]("#FF8C00")
+        for mode, shade in (("dark", "#FFB634"), ("light", "#E37700")):
+            rendered = control["render"](template, fixed, mode, palette)
+            scheme = configparser.ConfigParser(interpolation=None)
+            scheme.read_string(rendered.decode("utf-8"))
+            rgb = lambda value: ",".join(str(int(value[i:i + 2], 16)) for i in (1, 3, 5))
+            self.assertEqual(scheme["Colors:Selection"]["BackgroundNormal"], rgb(shade))
+            self.assertEqual(scheme["Colors:View"]["ForegroundLink"], rgb(shade))
+            self.assertEqual(scheme["Colors:Window"]["DecorationFocus"], rgb(shade))
+            self.assertEqual(scheme["Colors:Selection"]["ForegroundNormal"],
+                             rgb(sync["contrast_ink"](shade)))
+            self.assertEqual(scheme["Colors:Window"]["BackgroundNormal"], rgb(fixed[mode]["window"]))
+            self.assertEqual(scheme["Colors:Button"]["ForegroundActive"],
+                             rgb(shade if mode == "light" else fixed[mode]["button_active_text"]))
+            self.assertEqual(control["render"](template, fixed, mode, None).decode("utf-8"),
+                             render_color_scheme(ROOT, mode))
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "color-schemes"
+            appearance["color_schemes"](ROOT, directory)
+            changes = control["plan_schemes"](directory, template, fixed, None, palette)
+            self.assertEqual(len(changes), 2)
+            for path, (old, new) in changes.items():
+                self.assertEqual(path.read_bytes(), old)
+                path.write_bytes(new)
+            self.assertEqual(control["plan_schemes"](directory, template, fixed, palette, palette), {})
+            reset = control["plan_schemes"](directory, template, fixed, palette, None)
+            self.assertEqual(reset, {path: (new, old) for path, (old, new) in changes.items()})
+            path = next(iter(changes))
+            path.write_bytes(path.read_bytes() + b"\n# local edit\n")
+            with self.assertRaisesRegex(ValueError, "Color scheme differs"):
+                control["plan_schemes"](directory, template, fixed, palette, None)
+
     def test_manual_preset_accent_reference(self):
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
         derive = sync["derive_manual_palette"]

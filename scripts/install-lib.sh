@@ -334,9 +334,10 @@ apply_lookandfeel() {
     fi
     info "Applying $id ${reset_flag:+with layout reset}..."
     plasma-apply-lookandfeel -a "$id" $reset_flag
-    # The Plasma wallpaper plugin owns extraction and live palette updates.
-    # Preserve an explicitly selected manual accent mode on upgrades.
+    # Do not enable KDE wallpaper extraction over an explicit Windows ramp
+    # or a previously selected native manual accent.
     if command -v kreadconfig6 >/dev/null && command -v kwriteconfig6 >/dev/null &&
+       [ -z "$(kreadconfig6 --file kdeglobals --group WindowsModernAccent --key Palette)" ] &&
        [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
         kwriteconfig6 --notify --file kdeglobals --group General --key accentColorFromWallpaper --type bool true
     fi
@@ -368,8 +369,8 @@ apply_appearance_mode() {
 # they are off, holding the blur setting to restore.
 TRANSPARENCY_OFF_FILE="$HOME/.local/share/windows-modern/transparency-off"
 
-# Serialize local writes to the same Kvantum files as switch-mode.sh.
-# System-wide installation does not modify the user's Kvantum files.
+# Serialize local color-scheme and Kvantum writes with switch-mode.sh.
+# System-wide installation does not modify the user's appearance files.
 lock_appearance_writes() {
     [ "$UID" -ne 0 ] && [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] || return 0
     command -v flock >/dev/null || { warn "Missing flock for appearance changes."; return 1; }

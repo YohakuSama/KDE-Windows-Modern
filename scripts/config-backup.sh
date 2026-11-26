@@ -22,13 +22,14 @@ WM_BACKUP_KEEP=5
 WM_BACKUP_CONFIG=(
     kdeglobals kdedefaults kwinrc kscreenlockerrc plasmarc plasmashellrc kcmicons
     plasma-org.kde.plasma.desktop-appletsrc kcminputrc ksplashrc
-    kglobalshortcutsrc Kvantum/kvantum.kvconfig gtk-3.0/settings.ini
+    kglobalshortcutsrc Kvantum/kvantum.kvconfig Kvantum/Windows-modern gtk-3.0/settings.ini
     gtk-4.0/settings.ini xsettingsd/xsettingsd.conf mimeapps.list
     spectaclerc dolphinrc konsolerc konsolestaterc
 )
 WM_BACKUP_DATA=(kxmlgui5/dolphin/dolphinui.rc kxmlgui5/konsole/konsoleui.rc
     konsole/WindowsModern.profile konsole/WindowsModern-tabs.css
-    windows-modern/backup/app-appearance.json)
+    windows-modern/backup/app-appearance.json
+    color-schemes/WindowsModernDark.colors color-schemes/WindowsModernLight.colors)
 
 _wm_config_home() { echo "${XDG_CONFIG_HOME:-$HOME/.config}"; }
 _wm_data_home() { echo "${XDG_DATA_HOME:-$HOME/.local/share}"; }
@@ -177,8 +178,22 @@ restore_backup_snapshot() {
     dir="$WM_BACKUPS/$id"; m="$dir/manifest.json"
     [ -f "$m" ] || { echo "No such backup: $id" >&2; return 1; }
 
-    undo="$(snapshot_configs "before restoring $id")"
+    undo="$(snapshot_configs "before restoring $id")" || return 1
     echo "Current settings saved as $undo (restore it to undo)."
+
+    # Older snapshots contain kdeglobals but not the now-mutable scheme
+    # files. Release the current Windows ramp before replacing its state,
+    # otherwise a later theme activation can load a stale custom scheme.
+    if ! grep -q '"data/color-schemes/WindowsModernDark.colors"' "$m" &&
+       command -v kreadconfig6 >/dev/null &&
+       [ -n "$(kreadconfig6 --file kdeglobals --group WindowsModernAccent --key Palette)" ]; then
+        local switch
+        switch="$(dirname -- "${BASH_SOURCE[0]}")/theme/switch-mode.sh"
+        if ! bash "$switch" --native-accent; then
+            echo "Cannot restore an older snapshot while the Windows accent ramp is active." >&2
+            return 1
+        fi
+    fi
 
     # Plasma rewrites its panel files when it quits: stop it first.
     local shell_unit=false

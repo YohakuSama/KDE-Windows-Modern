@@ -44,6 +44,9 @@ check "an unchanged state adds no snapshot" '[ "$again" = "$first" ] && [ "$(cou
 # Windows Modern applied: colours change, mimeapps.list appears.
 printf '[General]\nColorScheme=WindowsModernDark\n' > "$XDG_CONFIG_HOME/kdeglobals"
 printf '[Default Applications]\nvideo/mp4=haruna.desktop\n' > "$XDG_CONFIG_HOME/mimeapps.list"
+mkdir -p "$XDG_DATA_HOME/color-schemes" "$XDG_CONFIG_HOME/Kvantum/Windows-modern"
+printf 'custom scheme\n' > "$XDG_DATA_HOME/color-schemes/WindowsModernDark.colors"
+printf 'custom paint\n' > "$XDG_CONFIG_HOME/Kvantum/Windows-modern/Windows-modernDark.svg"
 sleep 1
 second="$(snapshot_configs "test second")"
 check "a changed state adds one" '[ "$second" != "$first" ] && [ "$(count)" -eq 2 ]'
@@ -54,6 +57,8 @@ sleep 1
 restore_backup_snapshot >/dev/null
 check "restore without an id puts back the original" 'grep -q BreezeDark "$XDG_CONFIG_HOME/kdeglobals"'
 check "a file that did not exist then is removed" '[ ! -e "$XDG_CONFIG_HOME/mimeapps.list" ]'
+check "absent mutable accent files are removed" \
+    '[ ! -e "$XDG_DATA_HOME/color-schemes/WindowsModernDark.colors" ] && [ ! -e "$XDG_CONFIG_HOME/Kvantum/Windows-modern" ]'
 check "files outside the list are untouched" '[ "$(cat "$XDG_CONFIG_HOME/unrelatedrc")" = "keep me" ]'
 check "restored files are writable" '[ -w "$XDG_CONFIG_HOME/kdeglobals" ]'
 check "the state before the restore is kept (unchanged: the last snapshot)" \

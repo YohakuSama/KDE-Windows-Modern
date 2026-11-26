@@ -587,15 +587,22 @@ busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" clipboard-apply
 "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" run-apply
 
-# Opt into Plasma's native wallpaper accent on a fresh/unspecified mode.
-# An explicit existing manual mode remains the user's choice.
-if [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
+# Opt into native wallpaper extraction only when no accent mode was
+# specified. Never discard a saved Windows ramp during an upgrade.
+if [ -z "$(kreadconfig6 --file kdeglobals --group WindowsModernAccent --key Palette)" ] &&
+   [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
     kwriteconfig6 --notify --file kdeglobals --group General --key accentColorFromWallpaper --type bool true
 fi
 
 "$PYTHON" "$ROOT/scripts/app-appearance.py" apply
 # Refresh after artwork and wallpaper installation; retain local materials.
-bash "$ROOT/scripts/theme/switch-mode.sh" --sync-accent || echo "Kvantum accent synchronization incomplete." >&2
+if ! bash "$ROOT/scripts/theme/switch-mode.sh" --sync-accent; then
+    if [ -n "$(kreadconfig6 --file kdeglobals --group WindowsModernAccent --key Palette)" ]; then
+        echo "Stored Windows accent synchronization failed; restoring the previous installation." >&2
+        exit 1
+    fi
+    echo "Kvantum accent synchronization incomplete." >&2
+fi
 
 # Do not report success with stock fallback applets or a stale C++ plugin.
 layout="$CONFIG/plasma-org.kde.plasma.desktop-appletsrc"

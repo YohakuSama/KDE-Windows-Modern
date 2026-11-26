@@ -327,18 +327,25 @@ void SystemTray::init()
         disconnect(applet, &Applet::activated, this, &Applet::activated);
     });
 
+    auto config = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::NoGlobals);
     if (KWindowSystem::isPlatformWayland()) {
-        auto config = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::NoGlobals);
         KConfigGroup kscreenGroup = config->group(QStringLiteral("KScreen"));
         m_xwaylandClientsScale = kscreenGroup.readEntry("XwaylandClientsScale", true);
-
-        m_configWatcher = KConfigWatcher::create(config);
-        connect(m_configWatcher.data(), &KConfigWatcher::configChanged, this, [this](const KConfigGroup &group, const QByteArrayList &names) {
-            if (group.name() == u"KScreen" && names.contains(QByteArrayLiteral("XwaylandClientsScale"))) {
-                m_xwaylandClientsScale = group.readEntry("XwaylandClientsScale", true);
-            }
-        });
     }
+
+    m_configWatcher = KConfigWatcher::create(config);
+    connect(m_configWatcher.data(), &KConfigWatcher::configChanged, this, [this](const KConfigGroup &group, const QByteArrayList &names) {
+        if (KWindowSystem::isPlatformWayland() && group.name() == u"KScreen" && names.contains(QByteArrayLiteral("XwaylandClientsScale"))) {
+            m_xwaylandClientsScale = group.readEntry("XwaylandClientsScale", true);
+        } else if (group.name() == u"General"
+                   && (names.contains(QByteArrayLiteral("AccentColor"))
+                       || names.contains(QByteArrayLiteral("accentColorFromWallpaper"))
+                       || names.contains(QByteArrayLiteral("ColorScheme")))) {
+            // Native preferences may change without a different highlight
+            // color. Use the existing debounced accent sync in the applet.
+            Q_EMIT accentPreferencesChanged();
+        }
+    });
 }
 
 void SystemTray::initSettingsAndRegistry()

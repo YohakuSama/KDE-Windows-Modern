@@ -941,4 +941,14 @@ Reference:
 
 ### System accent propagation
 
-Reviewed Plasma widget fills are generated with KSVG's native Highlight role. Kvantum uses the installed accent binding manifest and reads the effective KDE selection color on appearance changes. The shared palette provides the defaults, not a replacement for KDE's current accent selection. All nine reviewed accent gradient stops follow the native Highlight role. The KDE-only analog meter and containment editor use a uniform accent instead of historical teal companion stops; the glow bar retains its opacity gradient. Their inherited-color rendering still needs desktop comparison. The exact Windows wallpaper accent algorithm is unpublished in the reviewed sources, and Kvantum same-mode live reload is limited by the upstream engine.
+Reviewed Plasma widget fills are generated with KSVG's native Highlight role. All nine reviewed accent gradient stops follow that role. The KDE-only analog meter and containment editor use a uniform accent instead of historical teal companion stops; the glow bar retains its opacity gradient. Their inherited-color rendering still needs desktop comparison.
+
+KDE's native accent mode remains the default. To opt into the Windows ramp, first select "From current color scheme" in KDE Colors, with Windows Modern active and its user-local Kvantum assets installed. Use the existing appearance switch:
+
+- `bash scripts/theme/switch-mode.sh --manual-accent '#FF8C00'` derives a ramp from the original manual RGB input.
+- `bash scripts/theme/switch-mode.sh --wallpaper-accent /absolute/image.png` derives one ramp from explicitly supplied local opaque images. Multiple paths are accepted.
+- `bash scripts/theme/switch-mode.sh --native-accent` releases the stored Windows ramp and restores the shipped scheme files.
+
+The control writes the two generated schemes and matching Kvantum accent bindings from one seven-role palette, selecting AccentLight2 in dark mode and AccentDark1 in light mode. It asks KDE to reapply the active scheme with a transparent accent override, so the scheme values are copied rather than mixed with a second KDE accent. It verifies the live selection, text, focus and link roles and preserves the selected ramp across mode changes and ordinary reinstalls. A subsequent native KDE custom or wallpaper accent is respected on synchronization. The tray observes KDE accent preference notifications as well as live palette changes; the controller does not write native preferences, edit other themes or start a daemon. NixOS upgrade rollback already covers both scheme files, Kvantum and kdeglobals. New conventional configuration snapshots include those mutable theme files as well. Before restoring an older snapshot with an active Windows ramp, the restore helper releases the ramp, preserving an undo snapshot.
+
+Automatic wallpaper discovery, ICC and transparency parity, exact surface-specific QML/WinUI brush mapping and same-mode refresh of already-open Kvantum applications remain unverified or incomplete.

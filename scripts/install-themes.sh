@@ -21,15 +21,16 @@ for mode in dark light; do
     cp -r "$appearance_stage/aurorae/$package" "$AURORAE_DIR/"
 done
 
-step "Color schemes"
-ensure_dir "$SCHEMES_DIR"
-rm -f "$SCHEMES_DIR/WindowsModern"*.colors
-cp -- "$appearance_stage/color-schemes/"*.colors "$SCHEMES_DIR/"
-
-step "Kvantum themes"
-ensure_dir "$KVANTUM_DIR"
+# Scheme and Kvantum paints form one runtime palette. Serialize both
+# replacements against the tray and the mode switch.
 (
     lock_appearance_writes || exit 1
+    step "Color schemes"
+    ensure_dir "$SCHEMES_DIR"
+    rm -f "$SCHEMES_DIR/WindowsModern"*.colors
+    cp -- "$appearance_stage/color-schemes/"*.colors "$SCHEMES_DIR/"
+    step "Kvantum themes"
+    ensure_dir "$KVANTUM_DIR"
     rm -rf "$KVANTUM_DIR/Windows-modern"*
     cp -r "$appearance_stage/Kvantum/Windows-modern" "$KVANTUM_DIR/"
 )

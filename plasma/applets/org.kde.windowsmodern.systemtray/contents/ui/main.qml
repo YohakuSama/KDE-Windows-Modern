@@ -157,6 +157,7 @@ ContainmentItem {
 
     Connections {
         target: Plasmoid
+        function onAccentPreferencesChanged() { root.scheduleAccentSync(); }
         function onActivated() {
             root.quickSettingsOrigin = null;
             systemTrayState.toggleHome(false);

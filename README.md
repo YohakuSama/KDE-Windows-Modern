@@ -145,8 +145,10 @@ conventional installer; NixOS uses the reversible actions above.
 
 ## Appearance and resources
 
-The global color scheme follows KDE's accent settings. Original Windows
-artwork is imported from reviewed owner resources; an unverified or missing
+The global color scheme follows KDE's accent settings by default. An explicit
+Windows accent ramp can instead be applied through the shared appearance
+switch; see the system accent propagation notes in [STYLE.md](docs/STYLE.md#system-accent-propagation).
+Original Windows artwork is imported from reviewed owner resources; an unverified or missing
 role keeps a compatibility fallback. The complete development reference
 library remains separate from the small installable runtime input set.
 See [native asset import](docs/NATIVE_ASSETS.md) and
