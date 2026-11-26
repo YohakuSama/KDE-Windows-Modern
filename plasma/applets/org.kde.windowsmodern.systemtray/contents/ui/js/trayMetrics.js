@@ -41,6 +41,8 @@ function networkReferenceName(name) {
     const n = String(name || "");
     if (/^network-wireless-(?:connected-)?[0-9]+-symbolic$/.test(n))
         return "network-wireless-symbolic";
+    if (/^network-wireless-[0-9]+-locked-symbolic$/.test(n))
+        return "network-wireless-100-locked-symbolic";
     if (/^network-wireless-[0-9]+-limited-symbolic$/.test(n))
         return "network-wireless-100-limited-symbolic";
     return n;

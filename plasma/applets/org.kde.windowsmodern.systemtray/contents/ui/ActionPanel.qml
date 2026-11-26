@@ -50,9 +50,10 @@ ColumnLayout {
     // the window is hidden. Reserve a complete first viewport in that case.
     readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume
-    readonly property int sliderRows: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
-    readonly property int sliderBlockHeight: sliderRows > 0 ? sliderTopInset + sliderBottomInset
-        + sliderRows * sliderHeight + (sliderRows - 1) * sliderGap : 0
+    // A QML id must not shadow the slider count used for pre-map sizing.
+    readonly property int sliderRowCount: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
+    readonly property int sliderBlockHeight: sliderRowCount > 0 ? sliderTopInset + sliderBottomInset
+        + sliderRowCount * sliderHeight + (sliderRowCount - 1) * sliderGap : 0
     readonly property int nominalFixedHeight: edgeInset + gridBottomGap + sliderBlockHeight
         + Math.max(24, Math.round(48 * uiScale))
     readonly property int gridHeight: Math.max(Math.round(64 * uiScale), toggleViewport.viewportHeight)
@@ -456,30 +457,12 @@ ColumnLayout {
                 Accessible.onPressAction: navigate()
                 Keys.onReturnPressed: navigate()
                 Keys.onSpacePressed: navigate()
-                Canvas {
-                    id: pageTriangle
+                Components.NativeGlyph {
                     anchors.centerIn: parent
                     width: Math.max(8, Math.round(10 * actionPanel.uiScale))
                     height: width
-                    readonly property bool up: pageArrow.atEnd
-                    readonly property color ink: actionPanel.dark ? "#CCCCCC" : "#737373"
-                    onUpChanged: requestPaint()
-                    onInkChanged: requestPaint()
-                    onWidthChanged: requestPaint()
-                    onHeightChanged: requestPaint()
-                    Component.onCompleted: requestPaint()
-                    onPaint: {
-                        const c = getContext("2d");
-                        c.reset();
-                        c.clearRect(0, 0, width, height);
-                        c.fillStyle = ink;
-                        c.beginPath();
-                        c.moveTo(width * 0.13, height * (up ? 0.70 : 0.30));
-                        c.lineTo(width * 0.87, height * (up ? 0.70 : 0.30));
-                        c.lineTo(width * 0.50, height * (up ? 0.26 : 0.74));
-                        c.closePath();
-                        c.fill();
-                    }
+                    roleName: pageArrow.atEnd ? "wm-quick-page-up-symbolic" : "wm-quick-page-down-symbolic"
+                    foreground: actionPanel.dark ? "#CCCCCC" : "#737373"
                 }
                 MouseArea { anchors.fill: parent; onClicked: pageArrow.navigate() }
             }
@@ -487,9 +470,9 @@ ColumnLayout {
     }
 
     ColumnLayout {
-        id: sliderRows
+        id: sliderLayout
         objectName: "wmQuickSettingsSliderRows"
-        visible: actionPanel.sliderRows > 0
+        visible: actionPanel.sliderRowCount > 0
         Layout.fillWidth: true
         // Bind to the actual grid margins, not a separate set of guesses.
         Layout.leftMargin: toggleRow.Layout.leftMargin

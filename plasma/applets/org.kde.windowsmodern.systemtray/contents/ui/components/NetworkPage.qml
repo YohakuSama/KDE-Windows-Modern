@@ -62,9 +62,8 @@ Lib.DetailPage {
 
     listView.delegate: Item {
         id: delegate
-        // Balanced gutters; the scrollbar overlays the edge.
-        x: 8
-        width: Math.max(1, listView.width - 16)
+        // ListView owns delegate positioning. Inset the inner card.
+        width: listView.width
         height: container.height + 2
 
         readonly property bool predictableWirelessPassword: !Uuid && Type === PlasmaNM.Enums.Wireless &&
@@ -149,6 +148,8 @@ Lib.DetailPage {
             id: container
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
             height: contentLayout.implicitHeight
             radius: 4
             color: delegate.expanded ? delegate.subtleBg

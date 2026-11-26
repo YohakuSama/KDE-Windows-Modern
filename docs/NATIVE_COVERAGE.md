@@ -131,6 +131,72 @@ PRI/XBF or live Windows UI before mapping. Settings page icons, tray
 states, Hibernate, Start animation and newer context-menu resources
 remain unverified. Do not add guessed glyph IDs.
 
+## Reviewed 26300.9974 glyph supplement
+
+The owner's successful font-review archive records eight distinct fonts, no
+render failures, and all 45 imported Shell outputs with matching hashes.
+The reference Segoe font SHA-256
+`031ada497ddcc9bf3f2536efba2f4bd53f12a0dead44460a4a934b06a952dd2b`
+matches the 26H2 extraction. Its original cmap and actual glyph previews
+were reviewed against the [Segoe Fluent Icons reference](https://learn.microsoft.com/windows/apps/design/iconography/segoe-fluent-icons-font).
+The runtime resource pin need not change: the new mappings reuse that font.
+
+The following 24 previously unverified or missing KCM names gain
+original glyph mappings. These are semantic mappings for KDE roles, not
+proof that Windows uses these glyphs for every comparable control.
+The final column records identical rasterized glyphs in the owner's
+SettingsAppThreshold SettingsIcons.ttf review (36px FreeType mask),
+where established; it is not an outline-level identity test.
+
+| Segoe codepoint | Meaning | KCM icon names | Equal Settings raster |
+| --- | --- | --- | --- |
+| `E950` | Component | `cpu`, `preferences-devices-cpu` | E950 |
+| `E88E` | USB | `drive-removable-media-usb-pendrive` | E88E |
+| `EC4F` | MusicNote | `emblem-music-symbolic` | EC4F |
+| `E92E` | KeyboardStandard | `input-keyboard-virtual` | E765 |
+| `E946` | Info | `ktip` | E946 |
+| `E721` | Search | `plasma-search`, `preferences-desktop-baloo` | E721 |
+| `E8B0` | Click | `preferences-desktop-cursors` | E3B3/E8B0 |
+| `E7F4` | TVMonitor | `preferences-desktop-display-randr` | E7F4 |
+| `ED15` | Feedback | `preferences-desktop-feedback` | ED15 |
+| `E8D2` | Font | `preferences-desktop-font-installer` | E8D2 |
+| `E7FC` | Game | `preferences-desktop-gaming` | E7FC |
+| `EDA7` | KeyboardShortcut | `preferences-desktop-keyboard-shortcut` | Not established |
+| `EFA5` | Touchpad | `preferences-desktop-touchpad` | EFA5 |
+| `EDA4` | Touchscreen | `preferences-desktop-touchscreen` | Not established |
+| `E72E` | Lock | `preferences-desktop-user-password` | E72E |
+| `E7C4` | TaskView | `preferences-desktop-virtual` | E7C4/EE40 |
+| `E7E8` | PowerButton | `preferences-system-power-management` | E7E8 |
+| `E8F9` | SwitchApps | `preferences-system-tabbox` | E8F9 |
+| `E716` | People | `preferences-system-users` | E716 |
+| `E8EA` | CellPhone | `smartphone` | E8EA |
+| `EC50` | FileExplorer | `system-file-manager` | EC50 |
+| `EDA3` | NetworkAdapter | `network-card` | EDA3 |
+
+All observed same-name theme contexts for these roles are overlaid, with
+symbolic aliases where appropriate. The two power KCMs share the same
+function family. Cross-function shared names (time/recent files,
+language/renderer, window behavior/rules/scripts) are not repurposed
+globally. Other module-specific conflicts, KDE-only functions, application
+identity icons, native runtime lookups and page controls remain open.
+
+Plasma NM's network-list model returns `network-wireless-{0,20,40,60,80,100}-locked`
+for secured networks. The 26H2 Segoe, SettingsAppThreshold and NetworkUX
+font previews have matching rasterized E670–E673 lock-and-signal glyphs
+(dot, one arc, two arcs, three arcs). Map both normal and symbolic names
+to original outlines, preserving the existing four-level Windows family
+and the backend's security state. The original EDDB/EDDC solid caret
+glyphs replace the drawn Quick Settings pager triangle. No proprietary
+artwork is added to this commit.
+
+The Quick Settings slider count previously shared its name with the
+slider layout's QML id. Renaming the count and layout separates the
+nominal height calculation from the object id, preserving slider and
+footer height before the popup is mapped. Wi-Fi and Bluetooth list
+delegates use full width with inset inner cards instead of relying on the
+ListView-controlled x position. Live layout, DPI and interaction acceptance
+is still required.
+
 ## Runtime assets and NixOS
 
 NixOS uses the reversible desktop installer and builds the tray, taskbar and

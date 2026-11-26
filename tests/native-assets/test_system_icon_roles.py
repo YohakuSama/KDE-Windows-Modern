@@ -196,3 +196,46 @@ class SystemIconRolesTests(unittest.TestCase):
                 ('e821', 'actions/tools-symbolic'),
                 ('e76b', 'actions/go-next-symbolic-rtl')):
             self.assertIn(path, MAPPING['icons'][glyph].split())
+
+    def test_reviewed_26h2_kcm_aliases(self):
+        expected = {
+            "e950": ["devices/cpu", "devices/cpu-symbolic", "apps/preferences-devices-cpu", "apps/preferences-devices-cpu-symbolic", "categories/preferences-devices-cpu", "categories/preferences-devices-cpu-symbolic"],
+            "e88e": ["devices/drive-removable-media-usb-pendrive", "devices/drive-removable-media-usb-pendrive-symbolic"],
+            "ec4f": ["status/emblem-music-symbolic"],
+            "e92e": ["apps/input-keyboard-virtual", "apps/input-keyboard-virtual-symbolic", "devices/input-keyboard-virtual", "devices/input-keyboard-virtual-symbolic"],
+            "e946": ["apps/ktip", "apps/ktip-symbolic"],
+            "e721": ["apps/plasma-search", "apps/plasma-search-symbolic", "apps/preferences-desktop-baloo", "apps/preferences-desktop-baloo-symbolic", "categories/preferences-desktop-baloo", "categories/preferences-desktop-baloo-symbolic"],
+            "e8b0": ["apps/preferences-desktop-cursors", "apps/preferences-desktop-cursors-symbolic", "categories/preferences-desktop-cursors", "categories/preferences-desktop-cursors-symbolic"],
+            "e7f4": ["apps/preferences-desktop-display-randr", "apps/preferences-desktop-display-randr-symbolic", "categories/preferences-desktop-display-randr", "categories/preferences-desktop-display-randr-symbolic", "status/preferences-desktop-display-randr", "status/preferences-desktop-display-randr-symbolic"],
+            "ed15": ["apps/preferences-desktop-feedback", "apps/preferences-desktop-feedback-symbolic", "categories/preferences-desktop-feedback", "categories/preferences-desktop-feedback-symbolic"],
+            "e8d2": ["apps/preferences-desktop-font-installer", "apps/preferences-desktop-font-installer-symbolic", "categories/preferences-desktop-font-installer", "categories/preferences-desktop-font-installer-symbolic"],
+            "e7fc": ["apps/preferences-desktop-gaming", "apps/preferences-desktop-gaming-symbolic", "categories/preferences-desktop-gaming", "categories/preferences-desktop-gaming-symbolic"],
+            "eda7": ["apps/preferences-desktop-keyboard-shortcut", "apps/preferences-desktop-keyboard-shortcut-symbolic", "categories/preferences-desktop-keyboard-shortcut", "categories/preferences-desktop-keyboard-shortcut-symbolic"],
+            "efa5": ["apps/preferences-desktop-touchpad", "apps/preferences-desktop-touchpad-symbolic", "categories/preferences-desktop-touchpad", "categories/preferences-desktop-touchpad-symbolic"],
+            "eda4": ["apps/preferences-desktop-touchscreen", "apps/preferences-desktop-touchscreen-symbolic", "categories/preferences-desktop-touchscreen", "categories/preferences-desktop-touchscreen-symbolic"],
+            "e72e": ["apps/preferences-desktop-user-password", "apps/preferences-desktop-user-password-symbolic", "categories/preferences-desktop-user-password", "categories/preferences-desktop-user-password-symbolic"],
+            "e7c4": ["apps/preferences-desktop-virtual", "apps/preferences-desktop-virtual-symbolic", "categories/preferences-desktop-virtual", "categories/preferences-desktop-virtual-symbolic"],
+            "e7e8": ["apps/preferences-system-power-management", "apps/preferences-system-power-management-symbolic", "categories/preferences-system-power-management", "categories/preferences-system-power-management-symbolic"],
+            "e8f9": ["apps/preferences-system-tabbox", "apps/preferences-system-tabbox-symbolic", "categories/preferences-system-tabbox", "categories/preferences-system-tabbox-symbolic"],
+            "e716": ["apps/preferences-system-users", "apps/preferences-system-users-symbolic", "categories/preferences-system-users", "categories/preferences-system-users-symbolic"],
+            "e8ea": ["devices/smartphone", "devices/smartphone-symbolic"],
+            "ec50": ["apps/system-file-manager", "apps/system-file-manager-symbolic"],
+            "eda3": ["devices/network-card", "devices/network-card-symbolic"],
+        }
+        for glyph, paths in expected.items():
+            for path in paths:
+                with self.subTest(glyph=glyph, path=path):
+                    self.assertIn(path, MAPPING['icons'][glyph].split())
+
+    def test_original_wifi_locked_states_and_pager(self):
+        expected = {"e670": ("0", "20"), "e671": ("40",),
+                    "e672": ("60",), "e673": ("80", "100")}
+        for glyph, levels in expected.items():
+            for level in levels:
+                for suffix in ("", "-symbolic"):
+                    self.assertIn("status/network-wireless-" + level + "-locked" + suffix,
+                                  MAPPING["icons"][glyph].split())
+        self.assertEqual(MAPPING["panel_glyph_groups"]["wifiLocked"], list(expected))
+        self.assertNotIn("wifiLocked", MAPPING["panel_glyph_center_groups"])
+        self.assertIn("actions/wm-quick-page-up-symbolic", MAPPING["icons"]["eddb"].split())
+        self.assertIn("actions/wm-quick-page-down-symbolic", MAPPING["icons"]["eddc"].split())

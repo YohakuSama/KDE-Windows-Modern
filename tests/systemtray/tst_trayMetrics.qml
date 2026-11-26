@@ -30,6 +30,8 @@ TestCase {
         for (const name of ["network-wireless-0-symbolic", "network-wireless-20-symbolic",
                             "network-wireless-connected-00-symbolic", "network-wireless-connected-80-symbolic"])
             compare(Metrics.networkReferenceName(name), "network-wireless-symbolic");
+        for (const name of ["network-wireless-0-locked-symbolic", "network-wireless-60-locked-symbolic"])
+            compare(Metrics.networkReferenceName(name), "network-wireless-100-locked-symbolic");
         for (const name of ["network-wireless-0-limited-symbolic", "network-wireless-60-limited-symbolic"])
             compare(Metrics.networkReferenceName(name), "network-wireless-100-limited-symbolic");
         compare(Metrics.networkReferenceName("network-unavailable-symbolic"), "network-unavailable-symbolic");

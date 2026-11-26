@@ -70,22 +70,27 @@ Lib.DetailPage {
         }
     }
 
-    listView.delegate: Rectangle {
+    listView.delegate: Item {
         id: deviceRow
         required property var model
         readonly property bool busy: model.Connecting || model.Disconnecting
         readonly property color fg: Kirigami.Theme.textColor
-        x: 8
-        width: Math.max(1, page.listView.width - 16)
+        width: page.listView.width
         height: 52
-        radius: 4
-        color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
-            model.Connected, deviceHover.hovered, false)
 
-        HoverHandler { id: deviceHover }
+        Rectangle {
+            id: deviceSurface
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            radius: 4
+            color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
+                deviceRow.model.Connected, deviceHover.hovered, false)
+            HoverHandler { id: deviceHover }
+        }
 
         RowLayout {
-            anchors.fill: parent
+            anchors.fill: deviceSurface
             anchors.leftMargin: 12
             anchors.rightMargin: 12
             spacing: 12
