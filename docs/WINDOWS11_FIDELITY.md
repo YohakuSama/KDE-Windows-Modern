@@ -725,7 +725,7 @@ ColorizationAfterglow in addition to the existing fields, preserving
 missing values as null and raw DWORDs. Its opt-in native COM diagnostic
 records the returned ARGB/alpha and compares them with ImageColor before
 and after the call and DWM RGB. The bulk wallpaper-probe collector
-remains a separate capture path and does not invoke the private method.
+invokes the private method only when explicitly requested.
 
 The existing collector accepts -ProbeSet Refinement, which requires
 schema 4 and produces eight new controlled images without repeating
@@ -1010,6 +1010,119 @@ The private COM diagnostic is called once per settled sample, not during
 the polling loop. Submit the new `wallpaper-probes.json` report. The
 collector restores and verifies the original wallpaper and palette.
 
+### Scoring refinement results
+
+The maintainer supplied [29 ScoringRefinement samples](windows11-26h2-wallpaper-probes-scoring-refinement.json)
+at 1280x800 on build 26300.9974. Every source/registered SHA-256 matched,
+every sampled BMP background/patch pixel matched its recipe, and all 29
+native calls returned S_OK with matching ImageColor before and after
+the call and matching DWM RGB. The original path and palette were restored.
+
+| Probe | Patch area | Native ARGB | UI Accent | Stable captures |
+| --- | ---: | --- | --- | ---: |
+| red-33pct-on-green | 32.969% | 0xAF008700 | #038801 | 2 |
+| red-33_25pct-on-green | 33.203% | 0xAF008700 | #038801 | 18 |
+| red-33_5pct-on-green | 33.438% | 0xAF008700 | #038801 | 18 |
+| red-33_75pct-on-green | 33.750% | 0xAF008700 | #038801 | 18 |
+| red-34pct-on-green | 33.984% | 0xAF008700 | #038801 | 18 |
+| red-34_25pct-on-green | 34.219% | 0xAF008700 | #038801 | 18 |
+| red-34_5pct-on-green | 34.453% | 0xAF008700 | #038801 | 18 |
+| similarity-solid-hue0 | solid | 0xAFD44343 | #D44343 | 2 |
+| similarity-solid-hue180 | solid | 0xAF008181 | #038282 | 2 |
+| similarity-hue30-patch40 | 40.000% | 0xAFC74E35 | #C74E35 | 2 |
+| similarity-hue60-patch40 | 40.000% | 0xAFC15333 | #C15333 | 2 |
+| similarity-hue90-patch40 | 40.000% | 0xAFD24444 | #D24444 | 2 |
+| similarity-hue120-patch40 | 40.000% | 0xAFD24444 | #D24444 | 18 |
+| similarity-hue150-patch40 | 40.000% | 0xAFD24444 | #D24444 | 18 |
+| similarity-hue165-patch40 | 40.000% | 0xAFD44343 | #D44343 | 2 |
+| similarity-hue180-patch40 | 40.000% | 0xAFD44343 | #D44343 | 18 |
+| similarity-hue150-patch60 | 60.000% | 0xAF008543 | #048644 | 2 |
+| similarity-hue180-patch60 | 60.000% | 0xAFD44343 | #D44343 | 2 |
+| alpha-l50-span-32 | solid | 0x9D926868 | #946A6A | 2 |
+| alpha-l50-span-34 | solid | 0xA0936867 | #956A69 | 2 |
+| alpha-l50-span-35 | solid | 0xA0936867 | #956A69 | 18 |
+| alpha-l50-span-38 | solid | 0xA4986668 | #996769 | 2 |
+| alpha-l50-span-40 | solid | 0xA59B6464 | #9D6666 | 2 |
+| alpha-l50-span-44 | solid | 0xA99E6366 | #A06467 | 2 |
+| alpha-l50-span-46 | solid | 0xABA06262 | #A26464 | 2 |
+| alpha-l50-span-47 | solid | 0xABA06262 | #A26464 | 18 |
+| alpha-l50-span-48 | solid | 0xADA06262 | #A26464 | 18 |
+| alpha-l50-span-49 | solid | 0xADA06262 | #A26464 | 18 |
+| alpha-l50-span-52 | solid | 0xAFA4615F | #A56260 | 2 |
+
+The red/green series retains green through 441/1280 (34.453125%) red;
+the preceding Scoring series returned red at 448/1280 (35%). The
+unchanged outputs are not independent confirmations of recomputation.
+Treat this as an observed interval, not an established native threshold.
+The equal-span red/cyan pair produces red even when cyan covers 60%,
+whereas the 150-degree patch selects green at 60%. The 30- and 60-degree
+patches move the representative toward orange; 90–180-degree patches at
+40% retain a red-family result. No universal hue-distance threshold or
+population-only winner rule is established.
+
+### JPEG preprocessing hypothesis
+
+For the eight Scoring and eleven ScoringRefinement low-chroma solid
+samples, an in-memory Pillow/libjpeg JPEG encode/decode at quality 85
+followed by `min(175, 125 + floor(mean decoded channel span))` reproduces
+all 19 observed Alpha bytes. Direct authored RGB gives seven one-byte
+errors. Examples:
+
+| Authored RGB | JPEG-decoded RGB (local experiment) | Native Alpha |
+| --- | --- | ---: |
+| #916F6F | #916F6E | 160 |
+| #916E6E | #906E6D | 160 |
+| #996B6B | #996B6B | 171 |
+| #9A6B6B | #996B6B | 171 |
+| #9B6B6B | #9B6B6B | 173 |
+| #9B6A6A | #9B6B6B | 173 |
+
+The same model matches the archived near-neutral purple solids, the two
+uncapped mixed-color observations (small orange on gray and vivid red on
+muted red), and the Boundary solid alpha samples. This is offline
+analysis of synthetic recipes, not execution of Windows or project
+acceptance tests. Multiple JPEG qualities fit the solids; the exact
+codec, quality, scaling order and native analysis pixels are unresolved.
+Windows maintains [transcoded and display-size wallpaper caches](https://www.winhelponline.com/blog/find-current-wallpaper-file-path-windows-10/).
+Source/registered file hashes do not identify the rendered cache.
+
+The UI Accent remains separate from native ARGB. Source span 32 has
+native RGB #926868 and UI Accent #946A6A; source span 24 in the preceding
+report has native RGB #896B6B and default UI Accent #0078D4. This supports
+the provisional HSL saturation gate, not an exact cutoff.
+
+### Cache isolation probe set
+
+Use the same static Picture, Automatic accent, original blue wallpaper
+and single-display VM. CacheIsolation requires the opt-in native
+diagnostic and schema-5 accent collector:
+
+```powershell
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet CacheIsolation -IncludeNativeWallpaperColor
+```
+
+The 16 probes comprise five red/green boundary and orientation probes,
+five cyan/red area and orientation probes, four repeated low-chroma
+solids and two new fallback-boundary solids. Before each probe the
+collector verifies the original reference palette, native ARGB and
+wallpaper hashes. Each result records the independent reference and
+whether native ARGB changed from it. Results identical to the reference
+remain inconclusive.
+
+The collector reads TranscodedWallpaper and, when unambiguous, the
+single display-size CachedFiles JPEG. It records format, dimensions,
+SHA-256, interior pixel RGB and a nine-point solid-color uniformity
+sample. For uniform sampled colors it records a predicted alpha.
+Original reference caches expose metadata only; no file paths or image
+bytes are exported. Missing, unreadable, ambiguous or changing caches
+remain diagnostic results. Compare cache hashes and sampled colors with
+the target and reference; a cache match alone cannot identify the
+extractor input. No cache file or registry value is edited. Existing
+wallpaper restoration remains in effect.
+
+Keep the extractor and alpha model out of the KDE runtime until the
+input preprocessing and independent winner observations are resolved.
+
 ### Native automatic-color diagnostic
 
 OpenGlass reverse-engineers the private
@@ -1039,7 +1152,7 @@ records ImageColor both before and after the call. It also records the
 HRESULT, native ARGB/alpha and comparisons against DWM RGB. Manual or
 conflicting mode is skipped. An unavailable private interface is
 reported without discarding the ordinary capture. This diagnostic is
-not used by the bulk probe collector or the Linux runtime theme.
+opt-in for the bulk probe collector and is not used by the Linux runtime theme.
 
 Run it once on the current Automatic wallpaper:
 

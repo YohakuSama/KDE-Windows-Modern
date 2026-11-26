@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement')]
+    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation')]
     [string]$ProbeSet = 'Basic',
     [switch]$IncludeNativeWallpaperColor
 )
@@ -13,6 +13,9 @@ param(
 $ErrorActionPreference = 'Stop'
 if (-not $ApplyTemporarily) {
     throw 'This collection temporarily changes the wallpaper. Use -ApplyTemporarily in the reference VM.'
+}
+if ($ProbeSet -eq 'CacheIsolation' -and -not $IncludeNativeWallpaperColor) {
+    throw 'CacheIsolation requires -IncludeNativeWallpaperColor.'
 }
 $captureScript = Join-Path $PSScriptRoot 'capture-windows-accent.ps1'
 if (-not (Test-Path -LiteralPath $captureScript -PathType Leaf)) {
@@ -105,8 +108,8 @@ function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement') -and $sample.schema_version -lt 4) {
-        throw 'Refinement, Extraction, Boundary, Scoring and ScoringRefinement require capture-windows-accent.ps1 schema 4 or newer.'
+    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement', 'CacheIsolation') -and $sample.schema_version -lt 4) {
+        throw 'Refinement, Extraction, Boundary, Scoring, ScoringRefinement and CacheIsolation require capture-windows-accent.ps1 schema 4 or newer.'
     }
     if ($WithNativeWallpaperColor -and $sample.schema_version -lt 5) {
         throw 'Native wallpaper diagnostics require capture-windows-accent.ps1 schema 5 or newer.'
@@ -237,6 +240,95 @@ function Get-ProbePixelValidation([string]$Path, $Probe) {
         return $validation
     } finally {
         $bitmap.Dispose()
+    }
+}
+
+# Read-only rendered-cache evidence, without exporting image bytes or
+# personal paths. A matching cache does not prove the extractor used it.
+function Read-WallpaperCache([string]$Path, $Probe) {
+    try {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            return [ordered]@{status='missing'}
+        }
+        $hash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+        $bitmap = [System.Drawing.Bitmap]::new($Path)
+        try {
+            $info = [ordered]@{
+                status = 'ok'
+                sha256 = $hash
+                width = $bitmap.Width
+                height = $bitmap.Height
+                format_guid = $bitmap.RawFormat.Guid.ToString()
+                is_jpeg = ($bitmap.RawFormat.Guid -eq [System.Drawing.Imaging.ImageFormat]::Jpeg.Guid)
+            }
+            if ($null -ne $Probe) {
+                # CacheIsolation rectangles leave the bottom-right interior
+                # in the background. Use normalized sample coordinates.
+                $bx = [int][Math]::Floor($bitmap.Width * 0.875)
+                $by = [int][Math]::Floor($bitmap.Height * 0.875)
+                $pixel = $bitmap.GetPixel($bx, $by)
+                $info.background_rgb = '#{0:X2}{1:X2}{2:X2}' -f $pixel.R, $pixel.G, $pixel.B
+                if ($Probe.rectangle) {
+                    $px = [int][Math]::Floor(($Probe.rectangle.x + $Probe.rectangle.width / 2.0) * $bitmap.Width / $width)
+                    $py = [int][Math]::Floor(($Probe.rectangle.y + $Probe.rectangle.height / 2.0) * $bitmap.Height / $height)
+                    $pixel = $bitmap.GetPixel($px, $py)
+                    $info.patch_rgb = '#{0:X2}{1:X2}{2:X2}' -f $pixel.R, $pixel.G, $pixel.B
+                } else {
+                    # Sample uniformity at nine interior points, not all pixels.
+                    $colors = @(foreach ($fy in 0.125, 0.5, 0.875) {
+                        foreach ($fx in 0.125, 0.5, 0.875) {
+                            $pixel = $bitmap.GetPixel(([int][Math]::Floor($bitmap.Width * $fx)),
+                                ([int][Math]::Floor($bitmap.Height * $fy)))
+                            '#{0:X2}{1:X2}{2:X2}' -f $pixel.R, $pixel.G, $pixel.B
+                        }
+                    })
+                    $info.sampled_solid_rgb = $colors
+                    $info.sampled_uniform = (@($colors | Select-Object -Unique).Count -eq 1)
+                    if ($info.sampled_uniform) {
+                        $rgb = $bitmap.GetPixel($bx, $by)
+                        $range = @([int]$rgb.R, [int]$rgb.G, [int]$rgb.B) | Measure-Object -Minimum -Maximum
+                        $info.alpha_from_sampled_span = [int][Math]::Min(175, (125 + $range.Maximum - $range.Minimum))
+                    }
+                }
+            }
+        } finally {
+            $bitmap.Dispose()
+        }
+        if ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -cne $hash) {
+            return [ordered]@{status='changed_during_read'}
+        }
+        return $info
+    } catch {
+        return [ordered]@{status='unreadable'; error_type=$_.Exception.GetType().Name}
+    }
+}
+
+function Read-WallpaperCaches($Probe) {
+    $themes = Join-Path $env:APPDATA 'Microsoft\Windows\Themes'
+    $displayDir = Join-Path $themes 'CachedFiles'
+    $pattern = 'CachedImage_{0}_{1}_POS*.jpg' -f $width, $height
+    $cacheFiles = @(Get-ChildItem -LiteralPath $displayDir -Filter $pattern -File -ErrorAction SilentlyContinue)
+    $displayCache = [ordered]@{status='missing'}
+    if ($cacheFiles.Count -eq 1) {
+        $displayCache = Read-WallpaperCache ($cacheFiles[0].FullName) $Probe
+    } elseif ($cacheFiles.Count -gt 1) {
+        $displayCache = [ordered]@{status='ambiguous'; count=$cacheFiles.Count}
+    }
+    return [ordered]@{
+        transcoded = (Read-WallpaperCache (Join-Path $themes 'TranscodedWallpaper') $Probe)
+        display_cache = $displayCache
+    }
+}
+
+function Assert-NativeColorEvidence($Capture) {
+    $native = $Capture.native_wallpaper_color_api
+    if ($null -eq $native -or $native.status -ne 'ok' -or
+        $native.hresult -ne '0x00000000' -or
+        -not $native.argb_matches_image_color -or
+        -not $native.argb_matches_image_color_after_api -or
+        -not $native.rgb_matches_dwm_colorization -or
+        $native.image_color_changed_by_api) {
+        throw 'CacheIsolation requires consistent native ARGB evidence.'
     }
 }
 
@@ -517,6 +609,39 @@ try {
             @{name='alpha-l50-span-49'; background='#9B6A6A'; rectangle=$null},
             @{name='alpha-l50-span-52'; background='#9D6969'; rectangle=$null}
         )
+    } elseif ($ProbeSet -eq 'CacheIsolation') {
+        # Recheck the winner interval in both directions and rotate the
+        # split. All rectangles leave a background region at bottom right.
+        $redLow = [int][Math]::Floor($width * 0.345)
+        $redHigh = [int][Math]::Floor($width * 0.35)
+        $cyanWide = [int][Math]::Floor($width * 0.60)
+        $probes = @(
+            @{name='isolated-red-low-left'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=$redLow; height=$height}},
+            @{name='isolated-red-high-left'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=$redHigh; height=$height}},
+            @{name='isolated-red-low-right'; background='#E13030'; rectangle=@{
+                color='#148A14'; x=0; y=0; width=($width - $redLow); height=$height}},
+            @{name='isolated-red-high-right'; background='#E13030'; rectangle=@{
+                color='#148A14'; x=0; y=0; width=($width - $redHigh); height=$height}},
+            @{name='isolated-red-high-top'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=$width; height=[int][Math]::Floor($height * 0.35)}},
+            @{name='isolated-cyan-60-left'; background='#BC5858'; rectangle=@{
+                color='#208484'; x=0; y=0; width=$cyanWide; height=$height}},
+            @{name='isolated-cyan-60-right'; background='#208484'; rectangle=@{
+                color='#BC5858'; x=0; y=0; width=($width - $cyanWide); height=$height}},
+            @{name='isolated-cyan-60-top'; background='#BC5858'; rectangle=@{
+                color='#208484'; x=0; y=0; width=$width; height=[int][Math]::Floor($height * 0.60)}},
+            @{name='isolated-cyan-75-left'; background='#BC5858'; rectangle=@{
+                color='#208484'; x=0; y=0; width=[int][Math]::Floor($width * 0.75); height=$height}},
+            @{name='isolated-cyan-solid'; background='#208484'; rectangle=$null},
+            @{name='isolated-alpha-span-34'; background='#916F6F'; rectangle=$null},
+            @{name='isolated-alpha-span-35'; background='#916E6E'; rectangle=$null},
+            @{name='isolated-alpha-span-48'; background='#9B6B6B'; rectangle=$null},
+            @{name='isolated-alpha-span-49'; background='#9B6A6A'; rectangle=$null},
+            @{name='isolated-fallback-span-28'; background='#8B6F6F'; rectangle=$null},
+            @{name='isolated-fallback-span-30'; background='#8D6F6F'; rectangle=$null}
+        )
     } else {
         $probes = @(
             @{name='solid-purple'; background='#9F5A8C'; rectangle=$null},
@@ -538,6 +663,12 @@ try {
     }
 
     $previous = $baseline
+    if ($ProbeSet -eq 'CacheIsolation') {
+        Assert-NativeColorEvidence $baseline
+        if ($baseline.appearance.source_wallpaper_sha256 -ne $baseline.appearance.registered_wallpaper_sha256) {
+            throw 'The original source and registered wallpaper must match for CacheIsolation.'
+        }
+    }
     foreach ($probe in $probes) {
         $path = Join-Path $folder ($probe.name + '.bmp')
         $active = $desktop.GetPath()
@@ -548,14 +679,53 @@ try {
         if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $expectedHash) {
             throw 'Probe image bytes changed before applying the wallpaper.'
         }
-        Write-Host ('Collecting ' + $probe.name)
         $attempted = $true
+        if ($ProbeSet -eq 'CacheIsolation') {
+            # Independently re-establish the original wallpaper before
+            # every target, rather than inheriting the preceding probe.
+            if ($active -ine $original) {
+                $desktop.SetPath($original)
+                $reset = Read-Settled $original $previous $baseline
+                $previous = Add-NativeWallpaperDiagnostic $reset.capture $original $baseline
+            }
+            Assert-NativeColorEvidence $previous
+            if ($desktop.GetPath() -ine $original -or
+                (Palette-Key $previous) -cne (Palette-Key $baseline) -or
+                $previous.native_wallpaper_color_api.argb -cne $baseline.native_wallpaper_color_api.argb -or
+                $previous.appearance.source_wallpaper_sha256 -cne $baseline.appearance.source_wallpaper_sha256 -or
+                $previous.appearance.registered_wallpaper_sha256 -cne $baseline.appearance.registered_wallpaper_sha256) {
+                throw 'Could not re-establish the original reference before the next probe.'
+            }
+            $reference = [ordered]@{
+                native_argb = $previous.native_wallpaper_color_api.argb
+                accent = $previous.accent_observed_from_ui_settings
+                wallpaper_sha256 = $previous.appearance.registered_wallpaper_sha256
+                caches = (Read-WallpaperCaches $null)
+            }
+            if ($desktop.GetPath() -ine $original) {
+                throw 'Wallpaper changed while reading reference caches.'
+            }
+        }
+        Write-Host ('Collecting ' + $probe.name)
         $desktop.SetPath($path)
         $result = Read-Settled $path $previous $baseline
         $result.capture = Add-NativeWallpaperDiagnostic $result.capture $path $baseline
         if ($result.capture.appearance.source_wallpaper_sha256 -ne $expectedHash -or
             (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ne $expectedHash) {
             throw 'Probe image bytes changed.'
+        }
+        if ($ProbeSet -eq 'CacheIsolation') {
+            Assert-NativeColorEvidence $result.capture
+            if ($result.capture.appearance.registered_wallpaper_sha256 -cne $expectedHash) {
+                throw 'Registered wallpaper does not match the generated probe.'
+            }
+            $result.isolation_reference = $reference
+            $result.native_argb_changed_from_reference = (
+                $result.capture.native_wallpaper_color_api.argb -cne $reference.native_argb)
+            $result.cache_observation = Read-WallpaperCaches $probe
+            if ($desktop.GetPath() -ine $path) {
+                throw 'Wallpaper changed while reading probe caches.'
+            }
         }
         $report.samples += [ordered]@{
             image = $probe
