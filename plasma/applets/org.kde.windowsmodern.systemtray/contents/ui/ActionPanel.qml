@@ -49,7 +49,7 @@ ColumnLayout {
     // A pre-map size from the hardware/configuration and tile geometry,
     // not visible children. Qt Layout implicitHeight can be zero while
     // the window is hidden. Reserve a complete first viewport in that case.
-    readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.brightnessAvailable
+    readonly property bool brightnessShown: Plasmoid.configuration.showBrightness && brightnessSlider.displayControlsAvailable
     readonly property bool volumeShown: Plasmoid.configuration.showVolume
     // A QML id must not shadow the slider count used for pre-map sizing.
     readonly property int sliderRowCount: (brightnessShown ? 1 : 0) + (volumeShown ? 1 : 0)
@@ -488,13 +488,14 @@ ColumnLayout {
             controlScale: actionPanel.uiScale
             shellAccent: actionPanel.shellAccent
             iconSize: Math.round(20 * controlScale)
-            visible: Plasmoid.configuration.showBrightness && brightnessAvailable
-            showArrow: false
+            visible: actionPanel.brightnessShown
+            showArrow: displayControlsAvailable && !brightnessAvailable
             reserveDetailsSpace: true
             Layout.preferredHeight: actionPanel.sliderHeight
             implicitHeight: actionPanel.sliderHeight
             panelScreenGeometry: Plasmoid.screenGeometry
             panelScreenIndex: Plasmoid.containment.screen
+            onArrowClicked: actionPanel.requestPage("brightness")
             onRightClicked: actionPanel.requestPage("brightness")
         }
         Components.VolumeSlider {

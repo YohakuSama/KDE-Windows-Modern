@@ -326,6 +326,21 @@ Item {
             compare(days().length, 42);
         }
 
+        function test_keyboardAfterPaging() {
+            view.selectDate(new Date(2026, 0, 31));
+            view.page(1);
+            compare(view.displayedMonth, 1);
+            compare(view.selectedDate.getMonth(), 0);
+            keyClick(Qt.Key_Left);
+            compare(view.displayedMonth, 1);
+            compare(view.selectedDate.getMonth(), 1);
+            compare(view.selectedDate.getDate(), 27);
+            view.page(1);
+            keyClick(Qt.Key_Right);
+            compare(view.displayedMonth, 2);
+            compare(view.selectedDate.getDate(), 28);
+        }
+
         function test_keyboard() {
             // Month view: arrows move the selection, Page Down flips the month.
             keyClick(Qt.Key_Right);

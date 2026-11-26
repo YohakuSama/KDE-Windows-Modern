@@ -257,7 +257,12 @@ ColumnLayout {
         if (calendarView.zoom !== CalendarView.Zoom.Month && event.key !== Qt.Key_Home) {
             return;
         }
-        const d = new Date(calendarView.selectedDate);
+        // Paging intentionally keeps the selected day's agenda until a new
+        // day is picked. Arrow navigation must start in the displayed month,
+        // rather than jumping back to the old selection's month.
+        const selected = calendarView.selectedDate;
+        const d = new Date(calendarView.displayedYear, calendarView.displayedMonth,
+            Math.min(selected.getDate(), Calendar.daysInMonth(calendarView.displayedYear, calendarView.displayedMonth)));
         switch (event.key) {
         case Qt.Key_Left:
             d.setDate(d.getDate() - 1);
@@ -345,9 +350,9 @@ ColumnLayout {
             activeFocusOnTab: headerButton.enabled
             Accessible.role: headerButton.enabled ? Accessible.Button : Accessible.StaticText
             Accessible.onPressAction: if (headerButton.enabled) calendarView.zoomOut()
-            Keys.onReturnPressed: if (headerButton.enabled) calendarView.zoomOut()
-            Keys.onEnterPressed: if (headerButton.enabled) calendarView.zoomOut()
-            Keys.onSpacePressed: if (headerButton.enabled) calendarView.zoomOut()
+            Keys.onReturnPressed: event => { if (headerButton.enabled && !event.isAutoRepeat) calendarView.zoomOut(); }
+            Keys.onEnterPressed: event => { if (headerButton.enabled && !event.isAutoRepeat) calendarView.zoomOut(); }
+            Keys.onSpacePressed: event => { if (headerButton.enabled && !event.isAutoRepeat) calendarView.zoomOut(); }
 
             // Hover/press background around the title text, behind it; the
             // decade level is the last one, so there it is plain text.

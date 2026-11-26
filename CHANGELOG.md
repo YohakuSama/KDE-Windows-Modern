@@ -6,6 +6,9 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Clamp battery display percentages consistently and keep unavailable battery controls from leaving stray separators. Avoid choosing an arbitrary brightness output when multiple matching displays exist; expose the per-display controls instead.
+- Suppress repeated keyboard activation of one-shot Quick Settings and calendar controls, navigate calendar arrows from the displayed month after paging, and preserve clipboard image placeholders and deletion targets across model changes.
+
 - Separate the primary-only window material snapshot from multi-display automatic accent; validate all wallpaper inputs before decoding and recheck stale snapshots even on failed decoding or unchanged caches.
 - Cancel drag and caption Snap Layouts state on focus, desktop, output and interactive-operation changes, and revalidate open caption pickers when the work area or window constraints change.
 

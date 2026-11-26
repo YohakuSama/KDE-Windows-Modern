@@ -142,7 +142,8 @@ ColumnLayout {
                 && (page.historyModel.starredCount === undefined || page.historyCount > page.historyModel.starredCount)
             text: i18n("Clear all")
             Layout.preferredHeight: 30
-            onClicked: page.historyController.clearHistory()
+            enabled: !!page.historyController
+            onClicked: if (page.historyController) page.historyController.clearHistory()
         }
     }
 
@@ -188,6 +189,7 @@ ColumnLayout {
             id: card
             objectName: "wmClipboardCard"
             required property var model
+            readonly property string itemUuid: String(model?.uuid || "")
             readonly property bool isImage: model.type === 4
             readonly property bool supportsPin: model.starred !== undefined
             readonly property bool pinned: supportsPin && model.starred
@@ -201,8 +203,8 @@ ColumnLayout {
                 : ColorType.divider(page.dark)
 
             function selectItem() {
-                if (!model.uuid) return;
-                page.historyController.moveToTop(model.uuid);
+                if (!itemUuid || !page.historyController) return;
+                page.historyController.moveToTop(itemUuid);
                 page.itemSelected();
             }
 
@@ -220,9 +222,9 @@ ColumnLayout {
                 Accessible.role: Accessible.Button
                 Accessible.name: card.isImage ? i18n("Image") : String(card.model.display || "")
                 Accessible.onPressAction: card.selectItem()
-                Keys.onReturnPressed: card.selectItem()
-                Keys.onEnterPressed: card.selectItem()
-                Keys.onSpacePressed: card.selectItem()
+                Keys.onReturnPressed: event => { if (!event.isAutoRepeat) card.selectItem(); }
+                Keys.onEnterPressed: event => { if (!event.isAutoRepeat) card.selectItem(); }
+                Keys.onSpacePressed: event => { if (!event.isAutoRepeat) card.selectItem(); }
                 onClicked: card.selectItem()
             }
 
@@ -256,7 +258,7 @@ ColumnLayout {
                 anchors.topMargin: 10
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 10
-                visible: !card.isImage || preview.status === Image.Error
+                visible: !card.isImage || preview.status !== Image.Ready
                 text: card.isImage ? i18n("Image") : String(card.model.display || "")
                 textFormat: Text.PlainText
                 wrapMode: Text.Wrap
@@ -288,18 +290,31 @@ ColumnLayout {
                     text: i18n("More actions")
                     icon.width: 16
                     icon.height: 16
+                    enabled: !!page.historyController && card.itemUuid.length > 0
                     onClicked: actions.opened ? actions.close() : actions.open()
                     QQC2.Menu {
                         id: actions
+                        objectName: "wmClipboardActions"
+                        property string targetUuid: ""
+                        // Keep the captured ID through the close animation:
+                        // Qt may close the menu before delivering triggered.
+                        onAboutToShow: targetUuid = card.itemUuid
                         parent: moreButton
                         popupType: QQC2.Popup.Item
                         x: moreButton.width - width
                         y: moreButton.height + 4
                         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
                         NativeMenuItem {
+                            objectName: "wmClipboardDelete"
                             text: i18n("Delete")
                             nativeRole: "edit-delete-symbolic"
-                            onTriggered: page.historyController.remove(card.model.uuid)
+                            enabled: !!page.historyController && actions.targetUuid.length > 0
+                                && actions.targetUuid === card.itemUuid
+                            onTriggered: {
+                                if (page.historyController && actions.targetUuid
+                                    && actions.targetUuid === card.itemUuid)
+                                    page.historyController.remove(actions.targetUuid);
+                            }
                         }
                     }
                 }

@@ -81,6 +81,37 @@ Item {
             compare(page.historyController.selectedUuid, "image-1");
             compare(selection.count, 2);
         }
+        function test_missingImagePreviewHasText() {
+            const list = findChild(page, "wmClipboardHistory");
+            page.historyModel.setProperty(1, "decoration", "");
+            const card = list.itemAtIndex(1);
+            const preview = findChild(card, "wmClipboardPreview");
+            tryCompare(preview, "status", Image.Null);
+            const label = findChild(card, "wmClipboardText");
+            tryCompare(label, "visible", true);
+            compare(label.text, "Image");
+        }
+
+        function test_deleteMenuRetainsOriginalTarget() {
+            const list = findChild(page, "wmClipboardHistory");
+            const card = list.itemAtIndex(0);
+            const more = findChild(card, "wmClipboardMore");
+            const menu = findChild(card, "wmClipboardActions");
+            const remove = findChild(card, "wmClipboardDelete");
+            verify(more && menu && remove);
+            mouseClick(more, more.width / 2, more.height / 2);
+            tryCompare(menu, "opened", true);
+            compare(menu.targetUuid, "text-1");
+            page.historyModel.setProperty(0, "uuid", "replacement");
+            tryCompare(card, "itemUuid", "replacement");
+            tryCompare(remove, "enabled", false);
+            remove.triggered();
+            compare(page.historyModel.count, 2);
+            compare(page.historyModel.get(0).uuid, "replacement");
+            menu.close();
+            tryCompare(menu, "opened", false);
+        }
+
         function test_pinAndConditionalClear() {
             const list = findChild(page, "wmClipboardHistory");
             tryVerify(() => list.itemAtIndex(0));

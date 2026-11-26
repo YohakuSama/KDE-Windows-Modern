@@ -61,9 +61,9 @@ ColumnLayout {
     Accessible.name: tile.label
     Accessible.checked: tile.active
     Accessible.onPressAction: tile.clicked()
-    Keys.onReturnPressed: tile.clicked()
-    Keys.onEnterPressed: tile.clicked()
-    Keys.onSpacePressed: tile.clicked()
+    Keys.onReturnPressed: event => { if (!event.isAutoRepeat) tile.clicked(); }
+    Keys.onEnterPressed: event => { if (!event.isAutoRepeat) tile.clicked(); }
+    Keys.onSpacePressed: event => { if (!event.isAutoRepeat) tile.clicked(); }
 
     property color shellAccent: orderView && orderView.shellAccent !== undefined
         ? orderView.shellAccent : Kirigami.Theme.highlightColor

@@ -20,6 +20,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.battery as BatteryBackend
 import "js/trayMetrics.js" as TrayMetrics
+import "js/funcs.js" as Funcs
 import "js/popupGeometry.js" as PopupGeometry
 import "components" as Components
 import "components/volume" as Volume
@@ -133,11 +134,11 @@ ContainmentItem {
         text: i18n("%1%", 100)
         font.family: Kirigami.Theme.defaultFont.family
         font.pixelSize: 12
+        font.features: { "tnum": 1 }
     }
     readonly property bool panelHasBattery: panelBattery.hasCumulative
-    readonly property real panelBatteryPercent: panelBattery.percent
-    readonly property bool panelBatteryPercentKnown: panelHasBattery
-        && Number.isFinite(panelBatteryPercent) && panelBatteryPercent >= 0
+    readonly property real panelBatteryPercent: Funcs.boundedBatteryPercent(panelBattery.percent)
+    readonly property bool panelBatteryPercentKnown: panelHasBattery && panelBatteryPercent >= 0
     readonly property bool showPanelBatteryPercentage: !vertical
         && Plasmoid.configuration.showBatteryPercentage && panelBatteryPercentKnown
     readonly property int batteryGlyphSize: vertical

@@ -25,9 +25,9 @@ Item {
     Accessible.role: Accessible.Button
     Accessible.name: row.text
     Accessible.onPressAction: row.clicked()
-    Keys.onReturnPressed: row.clicked()
-    Keys.onEnterPressed: row.clicked()
-    Keys.onSpacePressed: row.clicked()
+    Keys.onReturnPressed: event => { if (!event.isAutoRepeat) row.clicked(); }
+    Keys.onEnterPressed: event => { if (!event.isAutoRepeat) row.clicked(); }
+    Keys.onSpacePressed: event => { if (!event.isAutoRepeat) row.clicked(); }
 
     Rectangle {
         anchors.fill: parent

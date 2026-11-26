@@ -46,6 +46,22 @@ Item {
             compare(Funcs.inputMethodLabel("Fcitx", "input-keyboard", "Keyboard - Japanese"), "");
             compare(Funcs.inputMethodLabel("Other", "fcitx-rime", "中文"), "");
         }
+        function test_brightnessDisplaySelection() {
+            compare(Funcs.brightnessDisplayIndex([], true), -1);
+            compare(Funcs.brightnessDisplayIndex([false], true), 0);
+            compare(Funcs.brightnessDisplayIndex([true, false], true), 0);
+            compare(Funcs.brightnessDisplayIndex([true, false], false), 1);
+            compare(Funcs.brightnessDisplayIndex([true, false, false], false), -1);
+            compare(Funcs.brightnessDisplayIndex([false, false], true), -1);
+            compare(Funcs.brightnessDisplayIndex([true, true], true), -1);
+            compare(Funcs.brightnessDisplayIndex([true, false], null), -1);
+            compare(Funcs.brightnessDisplayIndex([true, undefined], true), -1);
+            verify(Funcs.isInternalConnectorName("eDP-2"));
+            verify(Funcs.isInternalConnectorName("LVDS2"));
+            verify(Funcs.isInternalConnectorName("DSI-3"));
+            verify(!Funcs.isInternalConnectorName("DP-1"));
+        }
+
         function test_equalTracks() {
             const a = findChild(brightness, "wmFluentSliderTrack");
             const b = findChild(volume, "wmFluentSliderTrack");

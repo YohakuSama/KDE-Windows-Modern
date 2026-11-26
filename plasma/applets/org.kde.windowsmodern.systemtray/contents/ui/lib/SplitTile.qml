@@ -69,9 +69,9 @@ ColumnLayout {
     Accessible.name: tile.accessibleLabel
     Accessible.checked: tile.active
     Accessible.onPressAction: if (tile.toggleAvailable) tile.clicked()
-    Keys.onReturnPressed: if (tile.toggleAvailable) tile.clicked()
-    Keys.onEnterPressed: if (tile.toggleAvailable) tile.clicked()
-    Keys.onSpacePressed: if (tile.toggleAvailable) tile.clicked()
+    Keys.onReturnPressed: event => { if (tile.toggleAvailable && !event.isAutoRepeat) tile.clicked(); }
+    Keys.onEnterPressed: event => { if (tile.toggleAvailable && !event.isAutoRepeat) tile.clicked(); }
+    Keys.onSpacePressed: event => { if (tile.toggleAvailable && !event.isAutoRepeat) tile.clicked(); }
 
     property color shellAccent: orderView && orderView.shellAccent !== undefined
         ? orderView.shellAccent : Kirigami.Theme.highlightColor
@@ -177,9 +177,9 @@ ColumnLayout {
             Accessible.role: Accessible.Button
             Accessible.name: i18n("%1 details", tile.accessibleLabel)
             Accessible.onPressAction: tile.arrowClicked()
-            Keys.onReturnPressed: tile.arrowClicked()
-            Keys.onEnterPressed: tile.arrowClicked()
-            Keys.onSpacePressed: tile.arrowClicked()
+            Keys.onReturnPressed: event => { if (!event.isAutoRepeat) tile.arrowClicked(); }
+            Keys.onEnterPressed: event => { if (!event.isAutoRepeat) tile.arrowClicked(); }
+            Keys.onSpacePressed: event => { if (!event.isAutoRepeat) tile.arrowClicked(); }
             onClicked: tile.arrowClicked()
         }
 

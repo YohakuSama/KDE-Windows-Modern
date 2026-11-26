@@ -25,6 +25,15 @@ TestCase {
         return rows;
     }
 
+    function test_boundedLevel() {
+        for (const level of [-1, NaN, Infinity, -Infinity])
+            compare(Funcs.boundedBatteryPercent(level), -1);
+        compare(Funcs.boundedBatteryPercent(0), 0);
+        compare(Funcs.boundedBatteryPercent(99.5), 99.5);
+        compare(Funcs.boundedBatteryPercent(100), 100);
+        compare(Funcs.boundedBatteryPercent(101), 100);
+    }
+
     function test_iconName(data) {
         compare(Funcs.batteryIconName(data.percent, data.pluggedIn), data.expected);
     }

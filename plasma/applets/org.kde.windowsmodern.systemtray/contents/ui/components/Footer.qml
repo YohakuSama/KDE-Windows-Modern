@@ -60,12 +60,12 @@ Rectangle {
         opacity: 1
 
         Accessible.role: Accessible.Button
-        Accessible.name: battery.percentKnown ? i18n("Battery %1%", battery.percent) : i18n("Battery level unknown")
+        Accessible.name: battery.percentKnown ? i18n("Battery %1%", Math.round(battery.displayPercent)) : i18n("Battery level unknown")
         Accessible.onPressAction: footer.batteryClicked()
         activeFocusOnTab: visible
-        Keys.onReturnPressed: footer.batteryClicked()
-        Keys.onEnterPressed: footer.batteryClicked()
-        Keys.onSpacePressed: footer.batteryClicked()
+        Keys.onReturnPressed: event => { if (!event.isAutoRepeat) footer.batteryClicked(); }
+        Keys.onEnterPressed: event => { if (!event.isAutoRepeat) footer.batteryClicked(); }
+        Keys.onSpacePressed: event => { if (!event.isAutoRepeat) footer.batteryClicked(); }
 
         MouseArea {
             id: batteryMouse

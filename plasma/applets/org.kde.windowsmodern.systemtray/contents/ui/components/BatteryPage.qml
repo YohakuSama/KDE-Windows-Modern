@@ -9,6 +9,7 @@ import org.kde.kcmutils
 import org.kde.plasma.plasmoid
 import "../lib" as Lib
 import "../js/colorType.js" as ColorType
+import "../js/funcs.js" as Funcs
 
 Lib.Page {
     id: page
@@ -28,8 +29,9 @@ Lib.Page {
     }
 
     readonly property bool hasBattery: batteryControl.hasCumulative
-    readonly property bool percentKnown: hasBattery && Number.isFinite(batteryControl.percent) && batteryControl.percent >= 0
-    readonly property string percent: percentKnown ? i18n("%1%", batteryControl.percent) : i18n("Unknown")
+    readonly property real displayPercent: Funcs.boundedBatteryPercent(batteryControl.percent)
+    readonly property bool percentKnown: hasBattery && displayPercent >= 0
+    readonly property string percent: percentKnown ? i18n("%1%", Math.round(displayPercent)) : i18n("Unknown")
     readonly property bool isCharging: batteryControl.state === BatteryControlModel.Charging
     readonly property bool isFull: batteryControl.state === BatteryControlModel.FullyCharged
     readonly property string batteryStatus: !hasBattery ? i18n("No battery")
@@ -84,7 +86,7 @@ Lib.Page {
                 glyphSize: 20
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
-                percent: page.percentKnown ? batteryControl.percent : -1
+                percent: page.percentKnown ? page.displayPercent : -1
                 charging: batteryControl.pluggedIn && page.isCharging
                 pluggedIn: batteryControl.pluggedIn
                 saver: powerProfiles.activeProfile === "power-saver"
@@ -121,7 +123,7 @@ Lib.Page {
             Accessible.role: Accessible.ProgressBar
             Accessible.name: page.percent
             Rectangle {
-                width: parent.width * (page.percentKnown ? Math.max(0, Math.min(100, batteryControl.percent)) / 100 : 0)
+                width: parent.width * (page.percentKnown ? Funcs.batteryFillFraction(page.displayPercent) : 0)
                 height: parent.height
                 radius: 2
                 color: page.accent
@@ -157,6 +159,7 @@ Lib.Page {
         }
 
         Rectangle {
+            visible: page.hasBattery
             Layout.fillWidth: true
             Layout.topMargin: 2
             Layout.bottomMargin: 2
@@ -250,13 +253,11 @@ Lib.Page {
             }
 
             PlasmaComponents3.Label {
+                Layout.fillWidth: true
                 text: i18n("Block sleep & screen lock")
+                wrapMode: Text.WordWrap
                 font.pixelSize: 12
                 color: Kirigami.Theme.textColor
-            }
-
-            Item {
-                Layout.fillWidth: true
             }
 
             Lib.FluentSwitch {

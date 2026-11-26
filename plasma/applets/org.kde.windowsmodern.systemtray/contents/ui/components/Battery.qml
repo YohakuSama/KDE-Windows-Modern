@@ -4,6 +4,7 @@ import org.kde.plasma.private.battery
 import org.kde.plasma.private.batterymonitor
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "../js/funcs.js" as Funcs
 
 Item {
     id: root
@@ -11,7 +12,8 @@ Item {
     property alias hasBattery: batteryControl.hasCumulative
     property alias percent: batteryControl.percent
     property alias pluggedIn: batteryControl.pluggedIn
-    readonly property bool percentKnown: hasBattery && Number.isFinite(percent) && percent >= 0
+    readonly property real displayPercent: Funcs.boundedBatteryPercent(percent)
+    readonly property bool percentKnown: hasBattery && displayPercent >= 0
     readonly property bool charging: pluggedIn && batteryControl.state === BatteryControlModel.Charging
 
     property bool showPercentage: true
@@ -35,7 +37,7 @@ Item {
             width: implicitWidth
             height: implicitHeight
             anchors.verticalCenter: parent.verticalCenter
-            percent: root.percentKnown ? root.percent : -1
+            percent: root.percentKnown ? root.displayPercent : -1
             charging: root.charging
             pluggedIn: root.pluggedIn
             saver: powerProfiles.activeProfile === "power-saver"
@@ -43,7 +45,7 @@ Item {
 
         PlasmaComponents3.Label {
             visible: root.showPercentage && root.percentKnown
-            text: i18n("%1%", Math.round(root.percent))
+            text: i18n("%1%", Math.round(root.displayPercent))
             width: Math.max(implicitWidth, root.percentageWidth)
             color: Kirigami.Theme.textColor
             font.family: Kirigami.Theme.defaultFont.family

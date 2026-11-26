@@ -54,6 +54,11 @@ Current implementation values are provisional until verified on the desktop.
   threshold and idle reset are provisional input tuning; verify on the
   target touchpad. Main and detail display sliders use the native normalized
   PowerDevil zero endpoint and reject unavailable brightness backends.
+  When several brightness controls exist, the panel's connector type must
+  identify exactly one control. An unknown or ambiguous match leaves the
+  main track disabled and opens the existing per-display brightness page
+  through the details button. A sole available control remains usable.
+  Exact external connector matching awaits a native identifier mapping.
 - The hidden tray grid and its popup consume one geometry plan: five
   columns, up to three visible rows, a bounded work area, and the existing
   16px scroll rail when needed. Short screens can scroll instead of

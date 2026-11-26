@@ -25,9 +25,9 @@ Item {
     Accessible.onPressAction: root.clicked()
 
     function resolveIcon(role) { return glyph.resolveRole(role); }
-    Keys.onReturnPressed: root.clicked()
-    Keys.onEnterPressed: root.clicked()
-    Keys.onSpacePressed: root.clicked()
+    Keys.onReturnPressed: event => { if (!event.isAutoRepeat) root.clicked(); }
+    Keys.onEnterPressed: event => { if (!event.isAutoRepeat) root.clicked(); }
+    Keys.onSpacePressed: event => { if (!event.isAutoRepeat) root.clicked(); }
 
     Rectangle {
         anchors.fill: parent

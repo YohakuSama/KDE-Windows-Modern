@@ -61,9 +61,9 @@ Item {
                 Accessible.name: modelData.caption ? modelData.text + " " + modelData.caption : modelData.text
                 Accessible.onPressAction: zoomGrid.picked(index)
 
-                Keys.onReturnPressed: zoomGrid.picked(index)
-                Keys.onEnterPressed: zoomGrid.picked(index)
-                Keys.onSpacePressed: zoomGrid.picked(index)
+                Keys.onReturnPressed: event => { if (!event.isAutoRepeat) zoomGrid.picked(index); }
+                Keys.onEnterPressed: event => { if (!event.isAutoRepeat) zoomGrid.picked(index); }
+                Keys.onSpacePressed: event => { if (!event.isAutoRepeat) zoomGrid.picked(index); }
                 onClicked: zoomGrid.picked(index)
 
                 Rectangle {

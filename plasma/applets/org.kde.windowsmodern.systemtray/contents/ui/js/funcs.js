@@ -33,6 +33,30 @@ function volIconName(volume, muted) {
     return "audio-volume-high-symbolic";
 }
 
+// Preserve the unknown sentinel; never show more than 100% or a nonfinite level.
+function boundedBatteryPercent(percent) {
+    return Number.isFinite(percent) && percent >= 0 ? Math.min(100, percent) : -1;
+}
+
+// Display names are opaque PowerDevil identifiers, not connector names.
+// With several controlled outputs choose only an unambiguous type match.
+function brightnessDisplayIndex(internalFlags, panelInternal) {
+    if (internalFlags.length === 1) return 0;
+    if (typeof panelInternal !== "boolean" || internalFlags.some(flag => typeof flag !== "boolean"))
+        return -1;
+    let match = -1;
+    for (let i = 0; i < internalFlags.length; ++i) {
+        if (internalFlags[i] !== panelInternal) continue;
+        if (match !== -1) return -1;
+        match = i;
+    }
+    return match;
+}
+
+function isInternalConnectorName(name) {
+    return /^(?:edp|lvds|dsi)(?:-?\d+)?$/i.test(String(name || ""));
+}
+
 function batteryIconName(percent, pluggedIn, saver = false) {
     if (!Number.isFinite(percent) || percent < 0)
         return pluggedIn ? "battery-unknown-charging-symbolic" : "battery-unknown-symbolic";

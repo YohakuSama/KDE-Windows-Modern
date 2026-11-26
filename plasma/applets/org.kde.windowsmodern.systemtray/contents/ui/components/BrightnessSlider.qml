@@ -3,6 +3,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.brightnesscontrolplugin
 import org.kde.kitemmodels as KItemModels
 import "../lib" as Lib
+import "../js/funcs.js" as Funcs
 
 Lib.Slider {
     id: root
@@ -11,7 +12,8 @@ Lib.Slider {
     property rect panelScreenGeometry: Qt.rect(0, 0, 0, 0)
     property int panelScreenIndex: -1
 
-    sliderAccessibleName: i18n("Brightness")
+    sliderAccessibleName: brightnessAvailable ? i18n("Brightness") : i18n("Select a display in brightness details")
+    detailsAccessibleName: i18n("Display brightness details")
     iconSource: "brightness-high-symbolic"
     iconSize: 20
     showArrow: true
@@ -30,37 +32,24 @@ Lib.Slider {
         if (!model || model.rowCount() === 0) {
             return null;
         }
-        if (model.rowCount() === 1) {
-            return model.index(0, 0);
-        }
-
         const isInternalRole = model.KItemModels.KRoleNames.role("isInternal");
-        const wantInternal = root.panelOnInternalScreen();
-
-        for (let i = 0; i < model.rowCount(); ++i) {
-            const idx = model.index(i, 0);
-            if (model.data(idx, isInternalRole) === wantInternal) {
-                return idx;
-            }
-        }
-
-        return model.index(0, 0);
+        const flags = [];
+        for (let i = 0; i < model.rowCount(); ++i)
+            flags.push(model.data(model.index(i, 0), isInternalRole));
+        const chosen = Funcs.brightnessDisplayIndex(flags, root.panelOnInternalScreen());
+        return chosen >= 0 ? model.index(chosen, 0) : null;
     }
 
-    // True when the panel's screen is the internal (laptop) panel.
+    // True for an internal panel, false for an external connector, null
+    // if neither screen lookup yields a connector name.
     //
     // Qt.application.screens[i].geometry is not exposed to QML in current
     // Qt/Plasma builds (only .name is), so geometry matching is impossible.
     // We resolve the connector name via the containment's screen index, and
     // fall back to the Screen attached property (the popup window's screen,
-    // which opens on the panel's screen) and finally to panelScreenGeometry.
+    // which opens on the panel's screen). Do not guess when both are absent.
     function isInternalConnectorName(name) {
-        if (!name) {
-            return false;
-        }
-        return name === "eDP-1" || name === "eDP1" || name === "eDP"
-            || name === "LVDS-1" || name === "LVDS1"
-            || name === "DSI-1" || name === "DSI1";
+        return Funcs.isInternalConnectorName(name);
     }
 
     function panelOnInternalScreen() {
@@ -75,7 +64,7 @@ Lib.Slider {
         if (typeof Screen !== "undefined" && Screen.name) {
             return root.isInternalConnectorName(Screen.name);
         }
-        return true;
+        return null;
     }
 
     function refreshDisplays() {
@@ -105,6 +94,9 @@ Lib.Slider {
         function onModelReset() {
             root.refreshDisplays();
         }
+        function onLayoutChanged() {
+            root.refreshDisplays();
+        }
         function onRowsInserted() {
             root.refreshDisplays();
         }
@@ -118,16 +110,18 @@ Lib.Slider {
     onPanelScreenGeometryChanged: root.refreshDisplays()
     onPanelScreenIndexChanged: root.refreshDisplays()
 
-    readonly property bool brightnessAvailable: sbControl.isBrightnessAvailable && mainScreen !== null
-        && mainScreen.maxBrightness > 0
-    visible: brightnessAvailable
+    readonly property bool displayControlsAvailable: sbControl.isBrightnessAvailable
+    readonly property bool brightnessAvailable: displayControlsAvailable && mainScreen !== null
+        && !!mainScreen.displayName && Number.isFinite(mainScreen.brightness)
+        && Number.isFinite(mainScreen.maxBrightness) && mainScreen.maxBrightness > 0
+    visible: displayControlsAvailable
     trackEnabled: brightnessAvailable
     // The per-display PowerDevil API already subtracts its safe minimum.
     // Zero is the normalized lower endpoint, as in Plasma's BrightnessItem.
     from: 0
-    to: mainScreen ? mainScreen.maxBrightness : 100
-    value: mainScreen ? mainScreen.brightness : 0
-    stepSize: mainScreen ? Math.max(1, Math.floor(mainScreen.maxBrightness / 100)) : 1
+    to: brightnessAvailable ? mainScreen.maxBrightness : 100
+    value: brightnessAvailable ? mainScreen.brightness : 0
+    stepSize: brightnessAvailable ? Math.max(1, Math.floor(mainScreen.maxBrightness / 100)) : 1
 
     onMoved: function (v) {
         if (brightnessAvailable) {
