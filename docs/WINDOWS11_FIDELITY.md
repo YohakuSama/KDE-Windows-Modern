@@ -852,41 +852,60 @@ with the greatest average channel span after a minimum-population filter.
 The patent is a useful historical lead, not a 26H2 implementation
 specification. See [US8847973B2](https://patents.google.com/patent/US8847973B2/en).
 
-The first candidate score, `population × average channel span`, is
-inconsistent with the Boundary results. For red #E13030 (span 177)
-against green #148A14 (span 118), it predicts a 40% red tie, but the
-37.5% red sample already selects the red candidate. For orange #FF8C00
-(span 255) against purple #9F5A8C (span 69), it predicts a 21.30% orange
-tie, but the 20% orange sample already returns an orange-family color.
-The linear score is therefore rejected for these observations.
+The Scoring report rejects both simple candidate scores tested so far.
+For red #E13030 (channel span 177) against green #148A14 (span 118),
+the observed switch lies above 32.5% red and at or below 35% red.
+The linear score `population × channel span` predicts a 40% tie, and
+the squared score `population × channel span²` predicts 30.77%.
+Both predictions fall outside the observed interval. A power-law score
+with an exponent between roughly 1.53 and 1.80 could fit this pair, but
+one pair does not establish that model.
 
-A nonlinear candidate is `population × average channel span²`. It
-predicts a 30.77% red tie against green and a 6.82% orange tie against
-purple. Both values lie inside the observed winner intervals: 25% red
-loses to green while 37.5% red wins; the 4% orange sample remains a
-transitional red-toned color while 20% orange produces an orange-family
-color. This is a better fit, not a recovered Windows algorithm.
+The equal-lightness orange/purple samples do not behave like a simple
+winner-takes-one-bucket selection. As the orange patch grows from
+13.984% to 22.5%, native ImageColor moves gradually from #BA5463 to
+#BF534A. This could reflect merging similar-color buckets, a continuous
+weighted representative, or another color-space transformation. The
+report does not distinguish those mechanisms.
 
-The original orange/purple pair has a large lightness mismatch. The
-Scoring probe set adds a second pair with nearly equal CIELAB lightness:
-orange #AB5E0B (L* 47.87, channel span 160) and purple #9F5A8C
-(L* 47.72, channel span 69). Their predicted orange tie is 30.13% for
-linear span weighting and 15.67% for squared-span weighting. The red
-and green pair is also lightness-matched (L* 49.91 and 49.95). These
-independent boundaries help distinguish a squared-span score from
-other nonlinear exponents and from lightness bias.
+The historical Microsoft patent describes filtering near-neutral pixels,
+grouping similar RGB values by per-channel ranges, averaging each group,
+discarding groups below a population threshold, and selecting the
+remaining group with the largest average channel span. Its detailed
+embodiment is not a specification for Windows 11 26H2: the observed
+red/green winner boundary contradicts its literal maximum-span selection
+rule, and the current report does not identify the 26H2 grouping distance.
+The new ScoringRefinement probes hold lightness and channel span nearly
+constant while varying hue distance to test whether a similarity boundary
+explains the gradual orange/purple results. See
+[US8847973B2](https://patents.google.com/patent/US8847973B2/en).
 
-The Boundary COM observations also revise the alpha conclusion. The
-native API directly confirms that ImageColor's high byte is its alpha,
-but the three solid-color points do not fit one constant integer offset:
-RGB channel spans 37, 48 and 50 return alpha 161, 173 and 175. An
-offset of 124 fits the first point but misses the latter two by one.
-An offset of 125 fits the latter two but misses the first by one.
-The earlier 15-sample Extraction set appeared to fit the 124 offset,
-but that fit is not general enough to implement. The Scoring set adds
-eight near-L*=50, near-20-degree-red samples with channel spans 12, 24,
-36, 37, 47, 49, 50 and 51. Keep the alpha formula unresolved until
-those points are measured through the native COM method.
+The native Alpha is now directly confirmed for all 19 Scoring samples.
+For solid near-L*=50 red samples, the measured pairs are:
+
+| Source channel span | Native Alpha |
+| ---: | ---: |
+| 12 | 137 |
+| 24 | 149 |
+| 36 | 161 |
+| 37 | 161 |
+| 47 | 171 |
+| 49 | 173 |
+| 50 | 175 |
+| 51 | 175 |
+
+These values are close to `min(175, 125 + channel span)`, but spans
+37, 47 and 49 are each one below that expression. The previous Extraction
+set also showed a one-unit discrepancy. The native API confirms the
+alpha byte itself, not its exact calculation. The new sweep adds
+near-L*=50, hue-zero samples with spans 32, 34, 35, 38, 40, 44, 46, 47,
+48, 49 and 52. Keep the formula unresolved.
+
+The UI Settings Accent also has a separate low-chroma fallback. At
+source spans 12 and 24, DWM/ImageColor updates to #806E6E and #896B6B,
+but UI Settings Accent remains #0078D4. At span 36, Accent changes to
+#976969. The next sweep brackets this transition as well; do not assume
+that the UI Accent and DWM color are always identical.
 
 ### Boundary probe results
 
@@ -924,27 +943,72 @@ The three solid colors also supplied direct native-alpha measurements.
 Use `-IncludeNativeWallpaperColor` only in the disposable Windows
 reference VM. The private API is undocumented.
 
-### Scoring probe set
+### Scoring results
 
-The collector now accepts `-ProbeSet Scoring`. It brackets the squared
-channel-span hypothesis using two hue pairs and adds an equal-lightness
-orange/purple pair to avoid the brightness mismatch in the first set.
-It also adds eight solid colors near CIELAB L*=50 and hue 20 degrees,
-with channel spans 12, 24, 36, 37, 47, 49, 50 and 51 for the alpha study.
+The uploaded [Scoring report](windows11-26h2-wallpaper-probes-scoring.json)
+contains 19 samples at 1280x800 on Windows 11 26H2 build 26300.9974.
+All 19 native COM calls returned HRESULT 0x00000000. Native ARGB
+matched ImageColor before and after the call, native RGB matched DWM
+ColorizationColor, and no call changed ImageColor. Every source wallpaper
+hash matched the registered wallpaper hash. The original wallpaper path
+and palette were restored.
+
+| Controlled image | Area | Native ARGB | UI Settings Accent |
+| --- | ---: | --- | --- |
+| Red on green | 30% red | 0xAF008700 | #038801 |
+| Red on green | 31.25% red | 0xAF008700 | #038801 |
+| Red on green | 32.5% red | 0xAF008700 | #038801 |
+| Red on green | 35% red | 0xAFD24444 | #D24444 |
+| Red on green | 37.5% red | 0xAFD24444 | #D24444 |
+| Orange on purple, L*≈48 | 13.984% orange | 0xAFBA5463 | #BA5463 |
+| Orange on purple, L*≈48 | 15% orange | 0xAFBA5461 | #BA5461 |
+| Orange on purple, L*≈48 | 15.938% orange | 0xAFBC535C | #BC535C |
+| Orange on purple, L*≈48 | 17.5% orange | 0xAFBB5459 | #BB5459 |
+| Orange on purple, L*≈48 | 20% orange | 0xAFBB5552 | #BB5552 |
+| Orange on purple, L*≈48 | 22.5% orange | 0xAFBF534A | #BF534A |
+
+The red/green boundary is above 32.5% and at or below 35% red.
+The 31.25%, 32.5% and 37.5% samples reached 18 stable observations
+without changing the UI palette; these unchanged observations are
+preserved rather than discarded.
+
+The low-chroma alpha samples show that DWM/ImageColor and UI Settings
+Accent can diverge. At spans 12 and 24, the native ARGB values are
+0x89806E6E and 0x95896B6B, while UI Settings Accent remains #0078D4.
+At span 36, Accent changes to #976969. This is a separate fallback
+condition from native ImageColor extraction.
+
+### Scoring refinement probe set
+
+The collector now accepts `-ProbeSet ScoringRefinement`. It contains
+29 controlled probes:
+
+- Seven red/green ratios between 32.97% and 34.45%, narrowing the observed
+  winner boundary.
+- Eleven equal-lightness, near-equal-channel-span similarity probes.
+  They vary hue distance and reverse the area ratio at the two widest
+  hue separations. This tests whether similar colors are grouped before
+  the representative color is calculated.
+- Eleven near-L*=50, hue-zero solid colors with channel spans 32, 34, 35,
+  38, 40, 44, 46, 47, 48, 49 and 52. These refine native Alpha and the
+  low-chroma UI Accent fallback boundary.
+
+Before applying any wallpaper, the collector now reopens each generated
+BMP and verifies one background pixel and, where present, one patch
+pixel against the authored RGB values. Each report sample records this
+pixel validation alongside the image recipe and SHA-256.
 
 Run it in the same disposable Windows VM with Automatic accent and a
-static Picture background. The native COM diagnostic is opt-in and is
-called once per settled sample, not during the polling loop:
+static Picture background. Keep the schema-5
+`capture-windows-accent.ps1` beside the collector:
 
 ```powershell
-.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet Scoring -IncludeNativeWallpaperColor
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet ScoringRefinement -IncludeNativeWallpaperColor
 ```
 
-The collector records the HRESULT, native ARGB/alpha, ImageColor before
-and after the call, and DWM RGB. It checks that the appearance did not
-change between the settled capture and the diagnostic. Submit the new
-`wallpaper-probes.json` report. The original wallpaper is restored and
-verified by the collector.
+The private COM diagnostic is called once per settled sample, not during
+the polling loop. Submit the new `wallpaper-probes.json` report. The
+collector restores and verifies the original wallpaper and palette.
 
 ### Native automatic-color diagnostic
 

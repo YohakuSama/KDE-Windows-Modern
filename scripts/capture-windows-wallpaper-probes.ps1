@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring')]
+    [ValidateSet('Basic', 'Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement')]
     [string]$ProbeSet = 'Basic',
     [switch]$IncludeNativeWallpaperColor
 )
@@ -105,8 +105,8 @@ function Read-Capture([string]$Path, [switch]$WithNativeWallpaperColor) {
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring') -and $sample.schema_version -lt 4) {
-        throw 'Refinement, Extraction, Boundary and Scoring require capture-windows-accent.ps1 schema 4 or newer.'
+    if ($ProbeSet -in @('Refinement', 'Extraction', 'Boundary', 'Scoring', 'ScoringRefinement') -and $sample.schema_version -lt 4) {
+        throw 'Refinement, Extraction, Boundary, Scoring and ScoringRefinement require capture-windows-accent.ps1 schema 4 or newer.'
     }
     if ($WithNativeWallpaperColor -and $sample.schema_version -lt 5) {
         throw 'Native wallpaper diagnostics require capture-windows-accent.ps1 schema 5 or newer.'
@@ -199,6 +199,42 @@ function New-ProbeImage([string]$Path, $Probe) {
             $graphics.Dispose()
         }
         $bitmap.Save($Path, [System.Drawing.Imaging.ImageFormat]::Bmp)
+    } finally {
+        $bitmap.Dispose()
+    }
+}
+
+function Get-ProbePixelValidation([string]$Path, $Probe) {
+    $bitmap = [System.Drawing.Bitmap]::new($Path)
+    try {
+        $expectedBackground = [System.Drawing.ColorTranslator]::FromHtml($Probe.background)
+        $actualBackground = $bitmap.GetPixel(($width - 1), ($height - 1))
+        $expectedBackgroundHex = '#{0:X2}{1:X2}{2:X2}' -f $expectedBackground.R, $expectedBackground.G, $expectedBackground.B
+        $actualBackgroundHex = '#{0:X2}{1:X2}{2:X2}' -f $actualBackground.R, $actualBackground.G, $actualBackground.B
+        $validation = [ordered]@{
+            background_expected_rgb = $expectedBackgroundHex
+            background_actual_rgb = $actualBackgroundHex
+            background_matches = $expectedBackgroundHex -ceq $actualBackgroundHex
+            patch_expected_rgb = $null
+            patch_actual_rgb = $null
+            patch_matches = $null
+        }
+        if ($Probe.rectangle) {
+            $expectedPatch = [System.Drawing.ColorTranslator]::FromHtml($Probe.rectangle.color)
+            $patchX = [int]$Probe.rectangle.x + [int][Math]::Floor([int]$Probe.rectangle.width / 2)
+            $patchY = [int]$Probe.rectangle.y + [int][Math]::Floor([int]$Probe.rectangle.height / 2)
+            $actualPatch = $bitmap.GetPixel($patchX, $patchY)
+            $expectedPatchHex = '#{0:X2}{1:X2}{2:X2}' -f $expectedPatch.R, $expectedPatch.G, $expectedPatch.B
+            $actualPatchHex = '#{0:X2}{1:X2}{2:X2}' -f $actualPatch.R, $actualPatch.G, $actualPatch.B
+            $validation.patch_expected_rgb = $expectedPatchHex
+            $validation.patch_actual_rgb = $actualPatchHex
+            $validation.patch_matches = $expectedPatchHex -ceq $actualPatchHex
+        }
+        if (-not $validation.background_matches -or
+            ($Probe.rectangle -and -not $validation.patch_matches)) {
+            throw "Generated BMP pixel validation failed for $Path."
+        }
+        return $validation
     } finally {
         $bitmap.Dispose()
     }
@@ -429,6 +465,58 @@ try {
             @{name='alpha-l50-span-50'; background='#9C6A6B'; rectangle=$null},
             @{name='alpha-l50-span-51'; background='#9D6A6B'; rectangle=$null}
         )
+    } elseif ($ProbeSet -eq 'ScoringRefinement') {
+        # Red/green winner boundary: refine the observed 32.5%-35% interval.
+        # Similarity pairs keep CIELAB L* near 50 and channel span near 100,
+        # varying hue distance and the per-channel RGB delta.
+        # Alpha samples keep L* near 50 and hue near zero while varying span.
+        $probes = @(
+            @{name='red-33pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.33); height=$height}},
+            @{name='red-33_25pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.3325); height=$height}},
+            @{name='red-33_5pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.335); height=$height}},
+            @{name='red-33_75pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.3375); height=$height}},
+            @{name='red-34pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.34); height=$height}},
+            @{name='red-34_25pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.3425); height=$height}},
+            @{name='red-34_5pct-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=[int][Math]::Floor($width * 0.345); height=$height}},
+            @{name='similarity-solid-hue0'; background='#BC5858'; rectangle=$null},
+            @{name='similarity-solid-hue180'; background='#208484'; rectangle=$null},
+            @{name='similarity-hue30-patch40'; background='#BC5858'; rectangle=@{
+                color='#9F6C3A'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
+            @{name='similarity-hue60-patch40'; background='#BC5858'; rectangle=@{
+                color='#7B7B17'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
+            @{name='similarity-hue90-patch40'; background='#BC5858'; rectangle=@{
+                color='#528420'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
+            @{name='similarity-hue120-patch40'; background='#BC5858'; rectangle=@{
+                color='#258925'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
+            @{name='similarity-hue150-patch40'; background='#BC5858'; rectangle=@{
+                color='#238755'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
+            @{name='similarity-hue165-patch40'; background='#BC5858'; rectangle=@{
+                color='#22866D'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
+            @{name='similarity-hue180-patch40'; background='#BC5858'; rectangle=@{
+                color='#208484'; x=0; y=0; width=[int][Math]::Floor($width * 0.40); height=$height}},
+            @{name='similarity-hue150-patch60'; background='#BC5858'; rectangle=@{
+                color='#238755'; x=0; y=0; width=[int][Math]::Floor($width * 0.60); height=$height}},
+            @{name='similarity-hue180-patch60'; background='#BC5858'; rectangle=@{
+                color='#208484'; x=0; y=0; width=[int][Math]::Floor($width * 0.60); height=$height}},
+            @{name='alpha-l50-span-32'; background='#8F6F6F'; rectangle=$null},
+            @{name='alpha-l50-span-34'; background='#916F6F'; rectangle=$null},
+            @{name='alpha-l50-span-35'; background='#916E6E'; rectangle=$null},
+            @{name='alpha-l50-span-38'; background='#946E6E'; rectangle=$null},
+            @{name='alpha-l50-span-40'; background='#956D6D'; rectangle=$null},
+            @{name='alpha-l50-span-44'; background='#986C6C'; rectangle=$null},
+            @{name='alpha-l50-span-46'; background='#996B6B'; rectangle=$null},
+            @{name='alpha-l50-span-47'; background='#9A6B6B'; rectangle=$null},
+            @{name='alpha-l50-span-48'; background='#9B6B6B'; rectangle=$null},
+            @{name='alpha-l50-span-49'; background='#9B6A6A'; rectangle=$null},
+            @{name='alpha-l50-span-52'; background='#9D6969'; rectangle=$null}
+        )
     } else {
         $probes = @(
             @{name='solid-purple'; background='#9F5A8C'; rectangle=$null},
@@ -444,6 +532,7 @@ try {
     foreach ($probe in $probes) {
         $path = Join-Path $folder ($probe.name + '.bmp')
         New-ProbeImage $path $probe
+        $probe.pixel_validation = Get-ProbePixelValidation $path $probe
         $probePaths += $path
         $probeHashes[$path] = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
     }
