@@ -111,3 +111,26 @@ Additional local exploratory sweeps tested single-stage quantization with sample
 Next measure the actual CMM identifier/version with [GetCMMInfo](https://learn.microsoft.com/en-us/windows/win32/api/icm/nf-icm-getcmminfo), distinguish intermediate from final rounding with native higher-bit RGB outputs, and test whether [CreateDeviceLinkProfile](https://learn.microsoft.com/en-us/windows/win32/api/icm/nf-icm-createdevicelinkprofile) exposes a usable intermediate transform. The public API's success and agreement with the measured BEST_MODE bitmap path must be established before relying on its output. Do not bundle a device link as a general replacement for arbitrary input ICCs. Independent mixed-color/transparent reference validation is still outstanding.
 
 Local checks: Python syntax compilation, execution of the diagnostic with the hash-matching target, and rejection of a different target profile. The source tree in the local test directory is an isolated reconstruction using the original native report and matching archived input/output hashes; no full repository build, desktop acceptance, or CI was executed.
+
+
+## Native precision and device-link measurement protocol
+
+The new standalone [precision collector](../scripts/capture-windows-icc-precision.ps1) reuses the verified source profiles and registered standard RGB target. It requires the original reference build 26300.9974 and exact target profile hash. The 1,024 previous calibration colors are followed by a disjoint 16 x 16 x 16 mixed-color grid (R=8+16i, G=4+16j, B=12+16k). The grid adds 4,096 previously unseen colors, with distinct channel residues. It is reserved for independent checks rather than fitting the current model.
+
+For both source profiles and the three matching intents (0, 1, 2), the collector creates a BEST_MODE transform once and measures 8- and 16-bit normalized input to 8-, 10- and 16-bit RGB output. GetCMMInfo records the actual CMM signature and versions. WIC BGR24 supplies an independent comparison; its first 1,024 outputs must exactly reproduce the previous native reference. The 16-bit input repeats each original byte (n*257); native output packing follows the [BMFORMAT byte layout](https://learn.microsoft.com/en-us/windows/win32/api/icm/ne-icm-bmformat).
+
+CreateDeviceLinkProfile is attempted with the same source, destination, intent and flags. Returned memory is bounded by GlobalSize and the ICC header length, then released using GlobalFree as specified by Microsoft. If generated, the synthetic device link is captured and reopened as a single-profile transform for identical replay measurements. Unsupported formats or failed device-link calls are recorded separately, not interpreted as successful outputs. No Windows profile installation, DLL redistribution, wallpaper change or registry write occurs. Only synthetic color inputs and outputs, generated links for these two synthetic sources, profile hashes and CMM metadata are recorded. Device links are investigation evidence only, not a general runtime solution.
+
+```powershell
+powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\capture-windows-icc-precision.ps1
+```
+
+The report is written to the Desktop as windows-icc-precision.json.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-precision.py /path/to/windows-icc-precision.json
+```
+
+The NumPy-based comparator verifies input/source/target identity and all successful output hashes, requires the original WIC calibration to match, separates mixed and calibration metrics, compares four high-bit downconversion rules with the matching input-format RGB8 path, and reports device-link tag types/grid dimensions and replay differences. Agreement of downconversion rules would be evidence about output packing, not proof of the internal CMM representation.
+
+Local validation: Python syntax compilation, exact prior calibration-input hash and 4,096 disjoint mixed inputs, synthetic RGB8/10/16 test buffers, synthetic ICC link-header parsing and replay metrics, rejection of tampered output hashes and of a nonmatching WIC baseline. The synthetic test does not establish native high-bit behavior or valid generated ICC link contents. The Windows PowerShell/C# code has been reviewed against the documented API signatures but cannot be executed in this Linux container. No actual CMM ID, high-bit results, or device-link availability is claimed until the new measurement returns. Runtime revision 2, main and CI are unchanged.
