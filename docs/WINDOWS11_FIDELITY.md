@@ -664,9 +664,14 @@ The refinement report is preserved in
 Across its baseline and eight probes, the low 24 bits of the raw
 HKCU\\Control Panel\\Desktop\\ImageColor DWORD match the low 24 bits
 of DWM ColorizationColor. ColorizationAfterglow also matches
-ColorizationColor in every capture. The upper ImageColor byte varies
-from 0x8A to 0xAF; its meaning is unknown and the implementation does
-not interpret it. This is the first measured link between the shell's
+ColorizationColor in every capture. The upper ImageColor byte varies from 0x8A to 0xAF. A schema-5 native
+COM diagnostic on the Bloom baseline returned 0xAF2475CE, exactly
+matching ImageColor before and after the call. Its alpha is 175, and
+its RGB matches DWM ColorizationColor. This confirms the native
+ARGB/ImageColor relationship for this wallpaper on build 26300.9974.
+The other eight probes were not individually checked through COM, so
+do not generalize this result to every probe or Windows build. The
+runtime still does not interpret the alpha byte. This is the first measured link between the shell's
 wallpaper candidate and the seven-color calculation.
 
 For eight chromatic captures, passing the ImageColor low 24-bit RGB
@@ -714,10 +719,12 @@ possible.
 A [third-party shell implementation](https://github.com/lsdev/LiteStep/blob/master/litestep/DesktopWallpaper.cpp)
 uses the registry value HKCU\\Control Panel\\Desktop\\ImageColor
 as its wallpaper-color readout. This is a research lead, not a
-documented Windows 26H2 contract. The read-only capture script schema 4
-records ImageColor and DWM ColorizationAfterglow in addition to the
-existing fields, preserving missing values as null and raw DWORDs
-without assuming a byte order or alpha interpretation for ImageColor.
+documented Windows 26H2 contract. The accent capture script schema 5 records ImageColor and DWM
+ColorizationAfterglow in addition to the existing fields, preserving
+missing values as null and raw DWORDs. Its opt-in native COM diagnostic
+records the returned ARGB/alpha and compares them with ImageColor before
+and after the call and DWM RGB. The bulk wallpaper-probe collector
+remains a separate capture path and does not invoke the private method.
 
 The existing collector accepts -ProbeSet Refinement, which requires
 schema 4 and produces eight new controlled images without repeating
@@ -765,10 +772,12 @@ and [color hook](https://github.com/ALTaleX531/OpenGlass/blob/b6dcd558ca5d842ac0
 Its documented shell32 builds are 10.0.17763.737 and 10.0.26100.9549.
 This is reverse-engineered, undocumented behavior, not a 26H2 API contract.
 
-The refinement captures show a varying high byte in ImageColor, while
-the low 24 bits match DWM ColorizationColor. This is consistent with the
-native ARGB result, but does not yet prove that the registry DWORD and
-private method return the same value on build 26300.9974.
+The baseline capture on build 26300.9974 returned 0xAF2475CE. Its full
+ARGB matched ImageColor before and after the call, including alpha 175,
+and its RGB matched DWM ColorizationColor. The call did not change
+ImageColor in this observation. This confirms the registry/private-method
+relationship for the baseline wallpaper only; it does not establish the
+same result for every probe or another Windows build.
 
 The [accent capture script](../scripts/capture-windows-accent.ps1)
 has an opt-in `-IncludeNativeWallpaperColor` diagnostic. It invokes only
@@ -788,10 +797,10 @@ Run it once on the current Automatic wallpaper:
 .\capture-windows-accent.ps1 -AccentMode Automatic -IncludeNativeWallpaperColor
 ```
 
-Send the JSON output. An exact match between native ARGB and ImageColor
-will confirm the high byte's role on this build. A matching alpha with
-different RGB will confirm only the strength channel. Neither result
-reveals how Windows selects the RGB from image pixels.
+The baseline result is preserved in
+[windows11-26h2-accent-captures.json](windows11-26h2-accent-captures.json).
+The full match confirms both the native alpha and RGB relationship for
+this sample. It does not reveal how Windows selects RGB from image pixels.
 
 ### Native colorization-strength alpha
 
@@ -822,11 +831,12 @@ the exact 26H2 preprocessing/rounding remains to be checked. This makes
 the varying ImageColor high byte consistent with native colorization
 strength, not image transparency.
 
-The optional COM diagnostic above is the next direct check. It records
-the native method's returned ARGB and the ImageColor registry value
-both before and after the call. No alpha formula is wired into the
-runtime theme. The wallpaper-to-RGB selection algorithm remains a
-separate unresolved problem.
+The optional COM diagnostic has confirmed the baseline relationship.
+That baseline alpha is at the 175 ceiling, so it does not independently
+validate the alpha formula. The lower alpha values in the refinement
+set remain registry observations, not separate COM checks. No alpha
+formula is wired into the runtime theme. The wallpaper-to-RGB selection
+algorithm remains a separate unresolved problem.
 
 ### Capture procedure
 

@@ -3,7 +3,7 @@
   "probe_set": "Refinement",
   "windows_build": "26300.9974",
   "display_version": "26H2",
-  "description": "Curated exact observations from the uploaded Windows 11 26H2 refinement report. ImageColor upper-byte semantics are unknown. Palette fields store RGB without the opaque FF prefix.",
+  "description": "Curated exact observations from the uploaded Windows 11 26H2 refinement report. A separate schema-5 native COM diagnostic on the Bloom baseline confirms that ImageColor's upper byte is the native alpha for build 26300.9974; the eight refinement samples are not individually COM-validated. Palette fields store RGB without the opaque FF prefix.",
   "baseline": {
     "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
     "source_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
