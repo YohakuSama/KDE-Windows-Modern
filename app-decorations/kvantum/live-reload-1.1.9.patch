@@ -165,43 +165,31 @@ diff --git a/style/Kvantum.cpp b/style/Kvantum.cpp
 +Style::~Style()
  {
    if (cachedOption_)
-@@ -595,6 +732,13 @@
-         }
- 
--        /* this can't be about a copied theme anymore */
--        if (!userConfig.isEmpty())
-+        /* this can't be about a copied theme anymore */
-+        const QString wmBase = QStringLiteral("Windows-modern");
-+        const QString wmName = useDark ? wmBase + QStringLiteral("Dark") : wmBase;
-+        const QString wmPath = xdg_config_home + QStringLiteral("/Kvantum/Windows-modern/") + wmName;
-+        const bool wmLocal = baseThemeName == wmBase
-+            && userConfig == wmPath + QStringLiteral(".kvconfig")
-+            && userSvg == wmPath + QStringLiteral(".svg");
-+        const auto wmBefore = wmLocal ? wmPairDigest(userConfig, userSvg) : QByteArray();
-+        if (!userConfig.isEmpty())
-           themeSettings_ = new ThemeConfig(userConfig);
-         if (!userSvg.isEmpty())
-@@ -603,9 +747,15 @@
-           themeRndr_->load(userSvg);
-         }
--        if (themeSettings_ || themeRndr_)
--        {
--          setupThemeDeps();
--          return;
--        }
-+        if (themeSettings_ || themeRndr_)
-+        {
-+          if (wmLocal && themeSettings_ && themeRndr_ && themeRndr_->isValid()) {
-+            wmConfigPath_ = userConfig;
-+            wmSvgPath_ = userSvg;
-+            if (wmBefore == wmPairDigest(userConfig, userSvg))
-+              wmLoadedDigest_ = wmBefore;
-+          }
-+          setupThemeDeps();
-+          return;
-+        }
+@@ -610,4 +747,13 @@ void Style::setTheme(const QString &baseThemeName, bool useDark)
        }
  
++      // Only the complete user-local pair participates in receipt-based reload.
++      const QString wmBase = QStringLiteral("Windows-modern");
++      const QString wmName = useDark ? wmBase + QStringLiteral("Dark") : wmBase;
++      const QString wmPath = xdg_config_home + QStringLiteral("/Kvantum/Windows-modern/") + wmName;
++      const bool wmLocal = baseThemeName == wmBase
++          && userConfig == wmPath + QStringLiteral(".kvconfig")
++          && userSvg == wmPath + QStringLiteral(".svg");
++      const auto wmBefore = wmLocal ? wmPairDigest(userConfig, userSvg) : QByteArray();
++
+       /*******************
+        ** kvconfig file **
+@@ -788,4 +934,10 @@ void Style::setTheme(const QString &baseThemeName, bool useDark)
+         }
+       }
++      if (wmLocal && themeSettings_ && themeRndr_ && themeRndr_->isValid()) {
++        wmConfigPath_ = userConfig;
++        wmSvgPath_ = userSvg;
++        if (wmBefore == wmPairDigest(userConfig, userSvg))
++          wmLoadedDigest_ = wmBefore;
++      }
+       if (themeRndr_)
+         break;
 diff --git a/style/Kvantum.h b/style/Kvantum.h
 --- a/style/Kvantum.h
 +++ b/style/Kvantum.h

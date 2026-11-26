@@ -21,9 +21,8 @@ import stat
 import struct
 import tempfile
 
-REPORT_SHA = "42F2C3D2FEBE30FC65B8F04F931CD154AFA520116DD5A40356C62AF9B5BDA76A"
 TARGET_SHA = "2B3AA1645779A9E634744FAF9B01E9102B0C9B88FD6DECED7934DF86B949AF7E"
-# Order is part of the private binary bundle format.
+# Original calibration controls, also checked when importing additional profiles.
 PROFILES = (
     ("srgb", "47FDA5236B74B9F11DA23C9834FAE1DBF0C0E195DEBEB22EFD147268C1CEC98C",
      "2E9CF49200C44791A7F70EBEF00A889E1EADABC8E992B5350CF1EE0CB1FAB1CD"),
@@ -31,9 +30,6 @@ PROFILES = (
      "97E8FB0C2828CEB25B993BB6F6D2EA8967C292C86D843187CD9F01951F93FE36"),
 )
 LINK_SIZE = 205204
-BUNDLE_SIZE = len(PROFILES) * LINK_SIZE
-BUNDLE_SHA = "CDB09ED87EFC0B147BA64E705E2343CAC1C6E37828AC97B424937CE7B51DA6D2"
-REPORT_LIMIT = 8 * 1024 * 1024
 FULL_REPORT_LIMIT = 64 * 1024 * 1024
 FULL_MAGIC = b"WMICC002"
 FULL_MAX_PROFILES = 6
@@ -215,9 +211,10 @@ class UnsupportedMatrixProfile(ValueError):
 def matrix_profile_tags(data):
     if (not isinstance(data, bytes) or not 132 <= len(data) <= 1024 * 1024
             or struct.unpack_from(">I", data)[0] != len(data)
-            or data[8] not in (2, 4) or data[12:24] != b"mntrRGB XYZ "
+            or data[8] not in (2, 4) or data[12:16] not in (b"mntr", b"scnr")
+            or data[16:24] != b"RGB XYZ "
             or data[36:40] != b"acsp" or struct.unpack_from(">3i", data, 68) != D50):
-        raise UnsupportedMatrixProfile("Expected a D50 RGB monitor matrix profile")
+        raise UnsupportedMatrixProfile("Expected a D50 RGB monitor or input matrix profile")
     count = struct.unpack_from(">I", data, 128)[0]
     end = 132 + 12 * count
     if count > 128 or end > len(data):
@@ -234,11 +231,13 @@ def matrix_profile_tags(data):
             raise UnsupportedMatrixProfile("Overlapping matrix profile tags")
         extents.append(extent)
         tags[sig] = data[offset:offset + size]
-    # Do not substitute the matrix branch for a profile with LUT transforms
-    # or another color representation. The remaining tags are metadata.
+    # The native forward transform checks A2B1 and A2B0 before the matrix.
+    # B2A tables describe the opposite direction and do not displace it.
+    # Keep every forward LUT outside this generator.
     allowed = {b"rXYZ", b"gXYZ", b"bXYZ", b"rTRC", b"gTRC", b"bTRC", b"wtpt",
                b"desc", b"cprt", b"chad", b"chrm", b"dmnd", b"dmdd", b"tech",
-               b"view", b"vued", b"lumi", b"meas", b"meta", b"bkpt"}
+               b"view", b"vued", b"lumi", b"meas", b"meta", b"bkpt",
+               b"B2A0", b"B2A1", b"B2A2"}
     if set(tags) - allowed:
         raise UnsupportedMatrixProfile("ICC profile has unreviewed transform or metadata tags")
     white = tags.get(b"wtpt", b"")
@@ -502,36 +501,6 @@ def checked_payload(entry, length, digest):
     if len(data) != length or sha(data) != digest:
         raise ValueError("Native ICC payload SHA-256 mismatch")
     return data
-
-
-def extract_bundle(report_path):
-    with report_path.open("rb") as stream:
-        raw = stream.read(REPORT_LIMIT + 1)
-    if len(raw) > REPORT_LIMIT or sha(raw) != REPORT_SHA:
-        raise ValueError("Expected the exact previously verified Windows ICC precision report")
-    report = json.loads(raw.decode("utf-8-sig"))
-    if (report["windows_build"], report["target_sha256"], report["flags"]) != ("26300.9974", TARGET_SHA, 3):
-        raise ValueError("Unexpected ICC reference identity")
-    if report["sources"] != {name: source for name, source, _ in PROFILES}:
-        raise ValueError("Unexpected source profile identities")
-    colors = checked_payload(report["input_rgb"], 5120 * 3, INPUT_SHA)
-    links = []
-    for name, _, digest in PROFILES:
-        item = report["results"][name]
-        link = checked_payload(item["intents"]["1"]["link_profile"], LINK_SIZE, digest)
-        reference = checked_payload(item["wic"], len(colors), WIC_SHA[name])
-        # The owner's import itself verifies the scalar execution against
-        # every recorded native calibration and mixed RGB8 sample.
-        replay = Rgb8Replay(read_rgb8_tables(link))
-        converted = b"".join(bytes(replay.convert(*colors[i:i + 3]))
-                             for i in range(0, len(colors), 3))
-        if converted != reference:
-            raise ValueError("Scalar RGB8 replay differs from the recorded WIC output: " + name)
-        links.append(link)
-    bundle = b"".join(links)
-    if sha(bundle) != BUNDLE_SHA:
-        raise ValueError("Unexpected combined ICC reference hash")
-    return bundle
 
 
 def digest_bytes(value):

@@ -6,6 +6,9 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Fix Qt 6 Kvantum 1.1.9 live accent reload for the installed light and dark user themes. Refresh scheduled wallpaper selection when the desktop window changes output, visibility or device pixel ratio.
+- Handle forward RGB matrix transforms in input profiles and profiles with reverse-only LUTs. Reject unreadable embedded ICC data during wallpaper sampling. Add a single reference capture for two forward LUTs and two gray tone curves.
+
 - Add a content-addressed local Kvantum reload receipt and version-gated Qt 6 V1.1.9 NixOS style patch. Reload the same verified Windows Modern renderer on the GUI thread after committed accent changes, without style cycling or restarting an application. Preserve custom and stock style paths.
 
 - Initialize the Windows automatic accent path for unconfigured full installations rather than silently opting into KDE wallpaper extraction. Preserve existing selections and retain a distinct pending request when the first wallpaper is not ready.

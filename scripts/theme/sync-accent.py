@@ -405,7 +405,7 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 # Bump when decoder/analysis semantics change; installed automatic state
 # must not reuse a palette computed by the previous decoder.
-WALLPAPER_ANALYSIS_REVISION = 7
+WALLPAPER_ANALYSIS_REVISION = 8
 
 
 @lru_cache(maxsize=1)
@@ -483,6 +483,10 @@ def decode_wallpaper_bitmap(path):
                 if orientation not in range(1, 9):
                     raise ValueError("Invalid wallpaper orientation")
                 profile = source.info.get("icc_profile")
+                # Pillow retains the key with None when JPEG ICC fragments
+                # are missing or a PNG iCCP stream cannot be decompressed.
+                if "icc_profile" in source.info and not profile:
+                    raise ValueError("Unreadable embedded wallpaper ICC profile")
                 image = ImageOps.exif_transpose(source) if orientation != 1 else source
                 try:
                     if "A" in image.getbands() or "transparency" in image.info:

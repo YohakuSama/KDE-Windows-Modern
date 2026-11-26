@@ -226,8 +226,7 @@ sync_appearance() {
     if [ "$accent_status" -eq 75 ] || [ "$material_status" -eq 75 ]; then return 75; fi
     [ "$accent_status" -eq 0 ] || return "$accent_status"
     [ "$material_status" -eq 0 ] || return "$material_status"
-    publish_kvantum_reload || echo "Appearance saved; live Kvantum reload receipt could not be published." >&2
-    return 0
+    publish_kvantum_reload
 }
 
 case "$1" in
@@ -241,8 +240,8 @@ case "$1" in
         action="${action%-accent}"
         shift
         sync_accent "$action" "$@" || exit $?
-        publish_kvantum_reload || echo "Accent saved; live Kvantum reload receipt could not be published." >&2
-        exit 0 ;;
+        publish_kvantum_reload
+        exit $? ;;
 esac
 
 [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."

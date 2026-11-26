@@ -25,6 +25,7 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDir>
+#include <QEvent>
 #include <QGuiApplication>
 #include <QFileInfo>
 #include <QImageReader>
@@ -400,13 +401,15 @@ private:
             package.removeDefinition("preferredDark");
             package.addFileDefinition("preferredDark", u"images_dark/"_s + darkEntry);
         }
-        if (dark == u"1" && !darkEntry.isEmpty()) {
+        if (dark == u"1") {
+            // The package can already define preferredDark even when no
+            // resolution-named dark entry overrides it.
             const auto path = package.filePath("preferredDark");
             if (!path.isEmpty()) {
                 return path;
             }
         }
-        return light.isEmpty() ? QString() : package.filePath("preferred");
+        return package.filePath("preferred");
     }
 
     void observe(QObject *object, const char *name, bool rebind = false)
@@ -421,6 +424,16 @@ private:
             QObject::connect(object, meta->property(index).notifySignal(), this,
                              QMetaMethod::fromSignal(signal), Qt::UniqueConnection);
         }
+    }
+
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        // A scheduled package can select a different image at the same
+        // logical size when the output scale changes.
+        if (event->type() == QEvent::DevicePixelRatioChange) {
+            Q_EMIT changed();
+        }
+        return QObject::eventFilter(watched, event);
     }
 
     void refreshConnections()
@@ -440,6 +453,14 @@ private:
             }
             connect(root, &QQuickItem::childrenChanged, this, &WallpaperAccentSource::refresh,
                     Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
+            connect(root, &QQuickItem::windowChanged, this, &WallpaperAccentSource::refresh,
+                    Qt::ConnectionType(Qt::QueuedConnection | Qt::UniqueConnection));
+            if (auto *window = root->window(); window &&
+                connect(window, &QWindow::screenChanged, this, &WallpaperAccentSource::changed, Qt::UniqueConnection)) {
+                window->installEventFilter(this);
+                connect(window, &QWindow::visibleChanged, this,
+                        &WallpaperAccentSource::changed, Qt::UniqueConnection);
+            }
             observe(root, "loading");
             observe(root, "accentColor");
             observe(root, "visible");

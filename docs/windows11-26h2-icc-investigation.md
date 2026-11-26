@@ -2,7 +2,7 @@
 
 Reference: build 26300.9974, [DecodeProfile capture](windows11-26h2-wallpaper-probes-decode-profile.json), original runtime revision 2.
 
-Current runtime policy: see the final section. Earlier sections are
+Current runtime coverage is described under [unified RGB8 execution](#unified-rgb8-execution-and-native-general-tone-curve-construction) and [profile direction](#profile-direction-and-native-family-capture). Earlier sections are
 historical measurements and commands, not current installation steps.
 In particular, the v1 private receipt and Little CMS runtime baseline
 have been retired. Neither is needed for independently generated ICC
@@ -490,50 +490,9 @@ The existing generation diagnostic now compares the entire calculated seven-role
 The diagnostic ran on the actual precision report and the isolated cache reconstruction, with the seven-role observations transcribed from the exact repository archive and the relevant existing runtime shade functions. Its Python source passed AST parsing. This is not a full repository checkout or a desktop acceptance test. The first local invocation exposed missing appearance fields in the minimal local archive reconstruction; after including those recorded fields, the comparison completed. The source archive already contains those fields and does not need a modification. The full-domain differences and arbitrary-profile limits from the previous section remain; no approximate ICC candidate is installed. The related runtime synchronization changes are independent of this ICC investigation and do not change the analysis algorithm revision.
 
 
-## Private measured RGB8 replay in the runtime
+## Historical RGB8 controls
 
-The supplied precision report was reopened from the owner's original file.
-Its raw SHA-256 matches the earlier report identity. The relative-colorimetric
-device links have SHA-256 values
-2E9CF49200C44791A7F70EBEF00A889E1EADABC8E992B5350CF1EE0CB1FAB1CD
-and
-97E8FB0C2828CEB25B993BB6F6D2EA8967C292C86D843187CD9F01951F93FE36
-for the measured sRGB and linear-sRGB source profiles, respectively.
-
-The new local-only importer extracts those two exact links, verifies their
-sizes, hashes and RGB mft2 shape, compares the scalar replay with all
-10240 recorded RGB8 outputs before permitting installation, and publishes a 410408-byte private data
-file with SHA-256 CDB09ED87EFC0B147BA64E705E2343CAC1C6E37828AC97B424937CE7B51DA6D2.
-No native profile, device link or report payload is committed or packaged.
-
-```sh
-python3 -I scripts/theme/wallpaper-icc.py --import-report /path/to/windows-icc-precision.json
-```
-
-The installed helper is also shipped in the unified look-and-feel's
-contents/scripts directory. The private data lives at
-$XDG_DATA_HOME/windows-modern/icc-replay-v1.bin (normally
-~/.local/share/windows-modern/icc-replay-v1.bin). The existing wallpaper
-watcher observes its file and parent. The existing appearance sync command
-can refresh the current selection explicitly after importing. Removing the
-file returns to the previous color-managed baseline. The saved accent and
-material caches distinguish the two decoder paths (analysis revision 3).
-
-Only the exact two measured source ICC SHA-256 identities select the
-native RGB8 replay; arbitrary profiles still use Little CMS. The scalar
-replay uses the same 5-bit grid, 11-bit fractions, tetrahedral weights and
-final output-curve truncation as the existing independent diagnostic.
-Conversion is pointwise and precedes resizing: only the at most four
-source taps per output pixel are converted, with a bounded color cache.
-This avoids a new NumPy runtime dependency and full-image native replay.
-The existing tagged-alpha restrictions remain in place.
-
-This local reference path is an intermediate use of the verified
-measurements, not independent matrix/CLUT generation. The original
-native replays were verified by the earlier diagnostics; the new runtime
-implementation and regression definitions have not been executed.
-Unknown ICC profiles, tagged alpha, general native table generation and
-live same-style Kvantum reloading remain open.
+The original precision report identified two RGB-to-RGB device links. Their SHA-256 values were `2E9CF49200C44791A7F70EBEF00A889E1EADABC8E992B5350CF1EE0CB1FAB1CD` (sRGB) and `97E8FB0C2828CEB25B993BB6F6D2EA8967C292C86D843187CD9F01951F93FE36` (linear sRGB). The archived comparison covered 10,240 RGB8 outputs. The current decoder generates both transforms independently. The offline alpha diagnostic reads the historical report directly. The installed helper only imports supplemental full-domain v2 data for its shared executor.
 
 Global scheme publication now checks all twelve RGB roles in each of
 the six owned Colors groups and all six WM roles in one local kdeglobals
@@ -1237,3 +1196,16 @@ Kvantum version/integration acceptance remain open. Do not count
 unsupported profiles as exact merely because the approximate
 runtime path has been removed. Existing regression definitions
 have been updated, not executed.
+
+
+## Profile direction and native family capture
+
+On the reference icm32.dll, RVAs 0x1319A, 0x1322C and 0x1339E select the relative-intent forward table for RGB input and monitor profiles, then the perceptual forward table. The XYZ matrix fallback calls 0x13570 from 0x132AF or 0x133FB. Reverse B2A tables belong to the destination direction. The decoder now accepts the reviewed RGB/XYZ matrix shape in either source class even when reverse tables are present. A forward LUT stays outside independent matrix generation. The gray monitor branch at 0x13365 instead dispatches to 0x1CAD8 and reads kTRC. A repeated RGB triplet does not establish the output of this gray path.
+
+Use the existing standalone Windows precision collector on build 26300.9974:
+
+```powershell
+.\capture-windows-icc-precision.ps1 -FamilyProfiles
+```
+
+This selects the two existing mft2 RGB-to-PCS controls (identity and ZYX permutation), the original RGB calibration controls, and two synthetic gray monitor profiles (linear and gamma 563/256). For each RGB profile the collector requests all 16,777,216 WIC RGB8 outputs as hashes and records relative-intent link data. For each gray profile it requests a 256-pixel 8bppGray ramp and records the individual output RGB triplets and separately requests the relative-colorimetric device link. Each operation retains its own native error if it fails. The JSON defaults to `windows-icc-families.json` on the desktop. It does not change the wallpaper or install a profile. These measurements are pending. Unseen forward LUTs and gray samples do not enter the runtime based on this capture definition alone.

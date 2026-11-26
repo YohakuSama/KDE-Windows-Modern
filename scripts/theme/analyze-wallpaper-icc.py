@@ -316,47 +316,47 @@ def alpha_control_replays(native, precision_path):
     if len(raw) > limit:
         raise ValueError("Oversized precision report")
     report = json.loads(raw.decode("utf-8-sig"))
-    profiles = native["PROFILES"]
-    if report["schema_version"] == 1:
-        bundle = native["extract_bundle"](precision_path)
-        size = native["LINK_SIZE"]
-        tables = {name: native["read_rgb8_tables"](bundle[i*size:(i+1)*size])
-                  for i, (name, _, _) in enumerate(profiles)}
-    elif report["schema_version"] == 2:
+    schema = report["schema_version"]
+    if schema == 1:
+        if sha(raw) != "42F2C3D2FEBE30FC65B8F04F931CD154AFA520116DD5A40356C62AF9B5BDA76A":
+            raise ValueError("Unexpected historical precision report")
+    elif schema == 2:
         if (report["windows_build"], report["target_sha256"], report["flags"],
                 report["calibration_count"], report["mixed_count"]) != (
                 "26300.9974", native["TARGET_SHA"], 3, 1024, 4096):
-            raise ValueError("Unexpected full-domain precision identity")
-        checked = native["checked_payload"]
-        colors = checked(report["input_rgb"], 5120 * 3, native["INPUT_SHA"])
-        tables = {}
-        for name, digest, _ in profiles:
-            if report["sources"].get(name) != digest:
-                raise ValueError("Unexpected alpha control source: " + name)
-            item = report["results"][name]
+            raise ValueError("Unexpected precision reference identity")
+    else:
+        raise ValueError("Unsupported ICC precision report schema")
+
+    checked = native["checked_payload"]
+    colors = checked(report["input_rgb"], 5120 * 3, native["INPUT_SHA"])
+    transforms = {}
+    identities = {"none": None}
+    for name, digest, original_link_sha in native["PROFILES"]:
+        if report["sources"].get(name) != digest:
+            raise ValueError("Unexpected alpha control source: " + name)
+        item = report["results"][name]
+        if schema == 2:
             full = item["full_rgb8"]
             if (full["status"], full["color_count"], full["order"], full["sha256"]) != (
                     "ok", 1 << 24, "ascending-rgb24", ALPHA_FULL_RGB8_SHA[name]):
                 raise ValueError("Unexpected alpha control full-domain identity: " + name)
-            entry = item["intents"]["1"]
-            if entry["status"] != "ok":
-                raise ValueError("Missing alpha control relative-colorimetric link")
-            link = entry["link_profile"]
-            data = checked(link, native["LINK_SIZE"], link["sha256"])
-            table = native["read_rgb8_tables"](data)
-            packed = struct.pack(f">{native['TABLE_WORDS']}H", *table[0], *table[1], *table[2])
-            if sha(packed) != ALPHA_CONTROL_TABLE_SHA[name]:
-                raise ValueError("Alpha control conversion table differs from reviewed evidence")
-            replay = native["Rgb8Replay"](table)
-            reference = checked(item["wic"], len(colors), native["WIC_SHA"][name])
-            if b"".join(bytes(replay.convert(*colors[i:i+3]))
-                        for i in range(0, len(colors), 3)) != reference:
-                raise ValueError("Alpha control scalar calibration differs from native WIC")
-            tables[name] = table
-    else:
-        raise ValueError("Unsupported ICC precision report schema")
-    return ({name: native["Rgb8Replay"](table).convert for name, table in tables.items()},
-            {"none": None, **{name: digest for name, digest, _ in profiles}})
+        entry = item["intents"]["1"]
+        if entry["status"] != "ok":
+            raise ValueError("Missing alpha control relative-colorimetric link")
+        link = entry["link_profile"]
+        data = checked(link, native["LINK_SIZE"], original_link_sha if schema == 1 else link["sha256"])
+        table = native["read_rgb8_tables"](data)
+        packed = struct.pack(f">{native['TABLE_WORDS']}H", *table[0], *table[1], *table[2])
+        if sha(packed) != ALPHA_CONTROL_TABLE_SHA[name]:
+            raise ValueError("Alpha control conversion table differs from reviewed evidence")
+        convert = native["Rgb8Replay"](table).convert
+        reference = checked(item["wic"], len(colors), native["WIC_SHA"][name])
+        if b"".join(bytes(convert(*pixel)) for pixel in struct.iter_unpack("3B", colors)) != reference:
+            raise ValueError("Alpha control scalar calibration differs from native WIC")
+        transforms[name] = convert
+        identities[name] = digest
+    return transforms, identities
 
 
 def alpha_roundtrip(data):

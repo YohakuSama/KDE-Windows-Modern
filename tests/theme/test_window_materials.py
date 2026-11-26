@@ -1324,6 +1324,20 @@ class WindowMaterialTests(unittest.TestCase):
         with self.assertRaises(native["UnsupportedMatrixProfile"]):
             curve(b"curv" + bytes(4) + struct.pack(">I", 8192) + bytes(8192 * 2))
 
+    def test_incomplete_jpeg_icc_does_not_use_untagged_rgb(self):
+        from PIL import Image
+        decode = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))["decode_wallpaper_bitmap"]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "incomplete.jpg"
+            with Image.new("RGB", (2, 2)) as image:
+                image.save(path, icc_profile=b"fragment")
+            data = path.read_bytes()
+            marker = b"ICC_PROFILE\0\x01"
+            self.assertIn(marker + b"\x01fragment", data)
+            path.write_bytes(data.replace(marker + b"\x01fragment", marker + b"\x02fragment", 1))
+            with self.assertRaisesRegex(ValueError, "Unreadable embedded"):
+                decode(path)
+
     def test_generated_matrix_tables_without_native_files(self):
         native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
         collector = (ROOT / "scripts/capture-windows-wallpaper-probes.ps1").read_text(encoding="utf-8-sig")
@@ -1362,6 +1376,29 @@ class WindowMaterialTests(unittest.TestCase):
             linear = profiles[native["PROFILES"][1][1]]
             self.assertEqual(select(srgb)(225, 48, 48), (225, 47, 47))
             self.assertEqual(select(linear)(225, 48, 48), (242, 120, 120))
+            # Replace the optional chad directory entry with an actual mft2
+            # control from the PCS capture. Only its direction now differs.
+            lut_digest = "D32E4F221D8FBA508546D930EC200C200AEAAAE95EA22E23331B68D3495BF1A4"
+            encoded = re.search(r"'" + lut_digest + r"' = '([^']+)'", precision)
+            self.assertIsNotNone(encoded)
+            control = base64.b64decode(encoded[1], validate=True)
+
+            def entry(profile, key):
+                count = struct.unpack_from(">I", profile, 128)[0]
+                return next(i for i in range(132, 132 + 12 * count, 12) if profile[i:i + 4] == key)
+
+            start, length = struct.unpack_from(">II", control, entry(control, b"B2A0") + 4)
+            mixed = bytearray(linear + control[start:start + length])
+            struct.pack_into(">I", mixed, 0, len(mixed))
+            directory = entry(linear, b"chad")
+            struct.pack_into(">4sII", mixed, directory, b"B2A1", len(linear), length)
+            for profile_class in (b"mntr", b"scnr"):
+                mixed[12:16] = profile_class
+                self.assertEqual(native["generate_matrix_tables"](bytes(mixed)),
+                                 native["generate_matrix_tables"](linear))
+            for tag in (b"A2B0", b"A2B1"):
+                mixed[directory:directory + 4] = tag
+                self.assertIsNone(select(bytes(mixed)))
 
     def test_full_domain_icc_bundle_selection(self):
         native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))

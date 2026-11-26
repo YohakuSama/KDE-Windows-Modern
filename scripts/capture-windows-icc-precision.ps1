@@ -6,7 +6,8 @@ param(
     [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('Desktop')) 'windows-icc-precision.json'),
     [switch]$FullRgb8,
     [switch]$CurveProfiles,
-    [string[]]$SourceProfile = @()
+    [string[]]$SourceProfile = @(),
+    [switch]$FamilyProfiles
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -14,21 +15,27 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'Run this diagnostic in Windows PowerShell on the reference Windows VM.'
 }
 
-$syntheticCount = if ($CurveProfiles) { 2 } else { 0 }
+$syntheticCount = 0
+if ($CurveProfiles) { $syntheticCount += 2 }
+if ($FamilyProfiles) {
+    $FullRgb8 = $true
+    $syntheticCount += 2
+}
 if (($SourceProfile.Count + $syntheticCount) -gt 4 -or
     (($SourceProfile.Count -gt 0 -or $CurveProfiles) -and -not $FullRgb8)) {
-    throw 'Use -FullRgb8 for up to four additional profiles (two are reserved by -CurveProfiles).'
+    throw 'Full RGB8 measurement allows four additional RGB profiles. CurveProfiles and FamilyProfiles each use two.'
 }
 if ($FullRgb8) {
     if (-not $PSBoundParameters.ContainsKey('OutputPath')) {
-        $OutputPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'windows-icc-full-rgb8.json'
+        $name = if ($FamilyProfiles) { 'windows-icc-families.json' } else { 'windows-icc-full-rgb8.json' }
+        $OutputPath = Join-Path ([Environment]::GetFolderPath('Desktop')) $name
     }
     if (Test-Path -LiteralPath $OutputPath) {
         throw 'Full-domain report already exists. Choose a new OutputPath to preserve previous evidence.'
     }
 }
 
-if (-not ('WindowsModern.Reference.IccPrecisionV2.Native' -as [type])) {
+if (-not ('WindowsModern.Reference.IccPrecisionV3.Native' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
@@ -38,7 +45,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace WindowsModern.Reference.IccPrecisionV2
+namespace WindowsModern.Reference.IccPrecisionV3
 {
     [ComImport, Guid("00000120-a8f2-4877-ba0a-fd2b6645fb94"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IWicSource
@@ -325,6 +332,26 @@ namespace WindowsModern.Reference.IccPrecisionV2
             }
             finally {if(data!=IntPtr.Zero) GlobalFree(data);}
         }
+        public static byte[] RelativeLink(byte[] source, byte[] destination)
+        {
+            GCHandle srcPin=default(GCHandle), dstPin=default(GCHandle);
+            IntPtr src=IntPtr.Zero, dst=IntPtr.Zero;
+            try
+            {
+                srcPin=GCHandle.Alloc(source,GCHandleType.Pinned);
+                dstPin=GCHandle.Alloc(destination,GCHandleType.Pinned);
+                src=Open(source);
+                dst=Open(destination);
+                return DeviceLink(src,dst,1);
+            }
+            finally
+            {
+                if (dst!=IntPtr.Zero) CloseColorProfile(dst);
+                if (src!=IntPtr.Zero) CloseColorProfile(src);
+                if (dstPin.IsAllocated) dstPin.Free();
+                if (srcPin.IsAllocated) srcPin.Free();
+            }
+        }
         public static Dictionary<string,object> Precision(byte[] rgb, byte[] source, byte[] destination, uint intent)
         {
             IntPtr src=IntPtr.Zero,dst=IntPtr.Zero,transform=IntPtr.Zero,linkProfile=IntPtr.Zero,linkTransform=IntPtr.Zero;
@@ -412,21 +439,38 @@ namespace WindowsModern.Reference.IccPrecisionV2
             if (rgb.Length%3!=0 || rowWidth==0 || (uint)(rgb.Length/3)%rowWidth!=0)
                 throw new ArgumentException("Invalid WIC RGB dimensions");
             uint rowHeight=(uint)(rgb.Length/3)/rowWidth;
+            string suffix=formatName=="BGR24"?"0c":formatName=="BGR32"?"0e":formatName=="BGRA32"?"0f":null;
+            if (suffix==null) throw new ArgumentException("Unsupported WIC format");
+            int channels=formatName=="BGR24"?3:4;
+            Guid format=new Guid("6fddc324-4e03-4bfe-b185-3d77768dc9"+suffix);
+            uint stride=checked(rowWidth*(uint)channels);
+            byte[] output=WicPixels(ToBgr(rgb,channels),format,stride,rowWidth,rowHeight,
+                source,destination,format,stride);
+            return FromBgr(output,channels,formatName=="BGRA32");
+        }
+
+        public static byte[] GrayRamp(byte[] source, byte[] destination)
+        {
+            byte[] gray=new byte[256];
+            for (int i=0;i<gray.Length;i++) gray[i]=(byte)i;
+            Guid input=new Guid("6fddc324-4e03-4bfe-b185-3d77768dc908");
+            Guid output=new Guid("6fddc324-4e03-4bfe-b185-3d77768dc90c");
+            return FromBgr(WicPixels(gray,input,256,256,1,source,destination,output,768),3,false);
+        }
+
+        private static byte[] WicPixels(byte[] input, Guid inputFormat, uint inputStride,
+            uint rowWidth, uint rowHeight, byte[] source, byte[] destination, Guid format, uint stride)
+        {
             IWicFactory factory=null; IWicSource bitmap=null; IWicContext src=null,dst=null; IWicTransform transform=null;
             GCHandle inputPin=default(GCHandle), outputPin=default(GCHandle), sourcePin=default(GCHandle), destPin=default(GCHandle);
+            byte[] output=new byte[checked((int)(stride*rowHeight))];
             try
             {
-                string suffix=formatName=="BGR24"?"0c":formatName=="BGR32"?"0e":formatName=="BGRA32"?"0f":null;
-                if (suffix==null) throw new ArgumentException("Unsupported WIC format");
-                int channels=formatName=="BGR24"?3:4;
-                Guid format=new Guid("6fddc324-4e03-4bfe-b185-3d77768dc9"+suffix);
-                byte[] input=ToBgr(rgb,channels), output=new byte[input.Length];
                 inputPin=GCHandle.Alloc(input,GCHandleType.Pinned);
                 outputPin=GCHandle.Alloc(output,GCHandleType.Pinned);
                 sourcePin=GCHandle.Alloc(source,GCHandleType.Pinned);
                 factory=(IWicFactory)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("cacaf262-9370-4615-a13b-9f5539da4c0a")));
-                uint stride=checked(rowWidth*(uint)channels);
-                factory.CreateBitmapFromMemory(rowWidth,rowHeight,ref format,stride,
+                factory.CreateBitmapFromMemory(rowWidth,rowHeight,ref inputFormat,inputStride,
                     (uint)input.Length,inputPin.AddrOfPinnedObject(),out bitmap);
                 factory.CreateColorContext(out src);
                 src.InitializeFromMemory(sourcePin.AddrOfPinnedObject(),(uint)source.Length);
@@ -445,7 +489,7 @@ namespace WindowsModern.Reference.IccPrecisionV2
                 if (actual!=format || width!=rowWidth || height!=rowHeight)
                     throw new InvalidDataException("Unexpected WIC output format or dimensions.");
                 transform.CopyPixels(IntPtr.Zero,stride,(uint)output.Length,outputPin.AddrOfPinnedObject());
-                return FromBgr(output,channels,formatName=="BGRA32");
+                return output;
             }
             finally
             {
@@ -472,30 +516,36 @@ $sourceHashes = [ordered]@{
     'srgb' = '47FDA5236B74B9F11DA23C9834FAE1DBF0C0E195DEBEB22EFD147268C1CEC98C'
     'linear-srgb' = 'BC77188D9AABAF2F17730FBE0C3B3954579190954C6E273C35C33D52CFB193B6'
 }
-$nativeType = [WindowsModern.Reference.IccPrecisionV2.Native]
+$nativeType = [WindowsModern.Reference.IccPrecisionV3.Native]
 $sourceProfiles = [ordered]@{}
 foreach ($name in $sourceData.Keys) {
     [byte[]]$data = [Convert]::FromBase64String($sourceData[$name])
     if ($nativeType::Hash($data) -ne $sourceHashes[$name]) { throw 'Synthetic ICC hash mismatch.' }
     $sourceProfiles[$name] = $data
 }
-# Two mathematical v2.1 profiles with the same colorants as the measured
-# source-v2 matrix control. Only their TRC tags differ. These are not
-# user/display profiles: they independently exercise gamma and sampled TRCs.
 $syntheticSources = [ordered]@{}
+$controls = [ordered]@{}
+if ($FamilyProfiles) {
+    # Same identity and ZYX 2x2x2 mft2 controls as the PCS capture.
+    $controls += [ordered]@{
+        'D32E4F221D8FBA508546D930EC200C200AEAAAE95EA22E23331B68D3495BF1A4' = 'AAACZAAAAAACEAAAc3BhY1JHQiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFZGVzYwAAAMAAAABiY3BydAAAASQAAAAzd3RwdAAAAVgAAAAUQTJCMAAAAWwAAAB8QjJBMAAAAegAAAB8ZGVzYwAAAAAAAAAIcmdiLXBjcwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHRleHQAAAAAUHVibGljIGRvbWFpbiBzeW50aGV0aWMgZGlhZ25vc3RpYyBwcm9maWxlAABYWVogAAAAAAAA9tYAAQAAAADTLW1mdDIAAAAAAwMCAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAACAAIAAP//AAD//wAA//8AAAAAAAAAAAAA//8AAP//AAAAAP///////wAAAAD//wAA////////AAD///////8AAP//AAD//wAA//9tZnQyAAAAAAMDAgAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAgACAAD//wAA//8AAP//AAAAAAAAAAAAAP//AAD//wAAAAD///////8AAAAA//8AAP///////wAA////////AAD//wAA//8AAP//'
+        '086832DEE2195FBFC5FAF48A48C30CF2301D70CBA9C92CA46C11E6257C5DBB18' = 'AAACaAAAAAACEAAAc3BhY1JHQiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFZGVzYwAAAMAAAABmY3BydAAAASgAAAAzd3RwdAAAAVwAAAAUQTJCMAAAAXAAAAB8QjJBMAAAAewAAAB8ZGVzYwAAAAAAAAAMcmdiLXBjcy16eXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1tZnQyAAAAAAMDAgAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAgACAAD//wAA//8AAP//AAAAAAAA//8AAAAAAAD//wAA/////wAAAAAAAP////8AAP//AAD/////////////AAD//wAA//8AAP//bWZ0MgAAAAADAwIAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAIAAgAA//8AAP//AAD//wAAAAAAAP//AAAAAAAA//8AAP////8AAAAAAAD/////AAD//wAA/////////////wAA//8AAP//AAD//w=='
+    }
+}
 if ($CurveProfiles) {
-    $curveControls = [ordered]@{
+    # Same v2.1 matrix colorants, with gamma and sampled TRC controls.
+    $controls += [ordered]@{
         '3633820C700F656C83A23C1D0DAA20214E73D040AB13E6B87262CEF513D0B5CA' = 'AAACWAAAAAACEAAAbW50clJHQiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJZGVzYwAAAPAAAABxY3BydAAAAWQAAAAzd3RwdAAAAZgAAAAUclhZWgAAAawAAAAUZ1hZWgAAAcAAAAAUYlhZWgAAAdQAAAAUclRSQwAAAegAAAAOZ1RSQwAAAfgAAABOYlRSQwAAAkgAAAAOZGVzYwAAAAAAAAAXTWF0cml4IHByb2JlIHNvdXJjZS12MgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1YWVogAAAAAAAAb6AAADj1AAADkFhZWiAAAAAAAABilwAAt4cAABjZWFlaIAAAAAAAACSfAAAPhAAAtsNjdXJ2AAAAAAAAAAECMwAAY3VydgAAAAAAAAAhAAAAgAG+A50GEAkPDJQQmhUdGhkfjCV0K80ylznPQXRJhFH+WuFkKm3bd/CCao1HmIekKLAqvIzJTdZt4+vxx///AABjdXJ2AAAAAAAAAAEBAAAA'
         '6A907D854C58B4625AADACA152438EE1BC857B46EE106D31381208493023B268' = 'AAACGAAAAAACEAAAbW50clJHQiBYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJZGVzYwAAAPAAAABxY3BydAAAAWQAAAAzd3RwdAAAAZgAAAAUclhZWgAAAawAAAAUZ1hZWgAAAcAAAAAUYlhZWgAAAdQAAAAUclRSQwAAAegAAAAOZ1RSQwAAAfgAAAAOYlRSQwAAAggAAAAOZGVzYwAAAAAAAAAXTWF0cml4IHByb2JlIHNvdXJjZS12MgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1YWVogAAAAAAAAb6AAADj1AAADkFhZWiAAAAAAAABilwAAt4cAABjZWFlaIAAAAAAAACSfAAAPhAAAtsNjdXJ2AAAAAAAAAAECMwAAY3VydgAAAAAAAAABAjMAAGN1cnYAAAAAAAAAAQIzAAA='
     }
-    foreach ($digest in $curveControls.Keys) {
-        [byte[]]$data = [Convert]::FromBase64String($curveControls[$digest])
-        if ($nativeType::Hash($data) -cne $digest) { throw 'Synthetic curve profile hash mismatch.' }
-        $name = 'custom-' + $digest
-        $sourceHashes[$name] = $digest
-        $sourceProfiles[$name] = $data
-        $syntheticSources[$name] = $nativeType::Pack($data)
-    }
+}
+foreach ($digest in $controls.Keys) {
+    [byte[]]$data = [Convert]::FromBase64String($controls[$digest])
+    if ($nativeType::Hash($data) -cne $digest) { throw 'Synthetic RGB profile hash mismatch.' }
+    $name = 'custom-' + $digest
+    $sourceHashes[$name] = $digest
+    $sourceProfiles[$name] = $data
+    $syntheticSources[$name] = $nativeType::Pack($data)
 }
 foreach ($path in $SourceProfile) {
     [byte[]]$data = $nativeType::LocalRgbProfile([IO.Path]::GetFullPath($path))
@@ -548,7 +598,29 @@ $report = [ordered]@{
     calibration_sha256=$nativeType::Hash($rgb); input_rgb=$nativeType::Pack($inputRgb);
     sources=$sourceHashes; target_sha256=$targetHash; flags=3; results=$results
 }
-if ($CurveProfiles) { $report.synthetic_sources = $syntheticSources }
+if ($syntheticSources.Count) { $report.synthetic_sources = $syntheticSources }
+if ($FamilyProfiles) {
+    # Embedded v2 Gray/XYZ monitor controls differ in their kTRC gamma.
+    # The WIC input is one gray byte per pixel, not three repeated RGB bytes.
+    $grayControls = [ordered]@{
+        'gray-linear' = @{sha256='FCA615D30B83A208A33AFB4A4FF7EAE18AD3F9BB66EE2872619ACA101A044AC4'; base64='AAABdAAAAAACEAAAbW50ckdSQVlYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEZGVzYwAAALQAAABmY3BydAAAARwAAAAzd3RwdAAAAVAAAAAUa1RSQwAAAWQAAAAOZGVzYwAAAAAAAAAMZ3JheS1saW5lYXIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1jdXJ2AAAAAAAAAAEBAAAA'}
+        'gray-gamma22' = @{sha256='CC2F4242F64AA4624D41A3853547F84BBF861A221C738D742959019169085B28'; base64='AAABdAAAAAACEAAAbW50ckdSQVlYWVogB9AAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEZGVzYwAAALQAAABnY3BydAAAARwAAAAzd3RwdAAAAVAAAAAUa1RSQwAAAWQAAAAOZGVzYwAAAAAAAAANZ3JheS1nYW1tYTIyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0ZXh0AAAAAFB1YmxpYyBkb21haW4gc3ludGhldGljIGRpYWdub3N0aWMgcHJvZmlsZQAAWFlaIAAAAAAAAPbWAAEAAAAA0y1jdXJ2AAAAAAAAAAECMwAA'}
+    }
+    $report.gray8 = [ordered]@{}
+    foreach ($name in $grayControls.Keys) {
+        $entry = $grayControls[$name]
+        [byte[]]$data = [Convert]::FromBase64String($entry.base64)
+        if ($nativeType::Hash($data) -cne $entry.sha256) { throw 'Synthetic gray profile hash mismatch.' }
+        $wic = try { $nativeType::Pack($nativeType::GrayRamp($data,$target)) }
+               catch { [ordered]@{status='error';error=(Get-ProbeError $_)} }
+        $link = try { $nativeType::Pack($nativeType::RelativeLink($data,$target)) }
+                catch { [ordered]@{status='error';error=(Get-ProbeError $_)} }
+        $report.gray8[$name] = [ordered]@{
+            profile=$nativeType::Pack($data); input_order='gray8-0-through-255';
+            output_order='rgb24'; wic=$wic; relative_link=$link
+        }
+    }
+}
 $json = $report | ConvertTo-Json -Depth 16
 [IO.File]::WriteAllText([IO.Path]::GetFullPath($OutputPath),$json,(New-Object Text.UTF8Encoding($false)))
 Write-Host ('Report: {0}' -f [IO.Path]::GetFullPath($OutputPath))
