@@ -916,11 +916,9 @@ void SystemTray::refreshWallpaperWatch()
         const auto dataDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
         if (!dataDir.isEmpty()) {
             const auto parent = dataDir + u"/windows-modern"_s;
-            for (const auto &name : {u"icc-replay-v1.bin"_s, u"icc-replay-v2.bin"_s}) {
-                const auto reference = parent + u"/"_s + name;
-                if (QFileInfo(reference).isFile()) {
-                    wanted.insert(reference);
-                }
+            const auto reference = parent + u"/icc-replay-v2.bin"_s;
+            if (QFileInfo(reference).isFile()) {
+                wanted.insert(reference);
             }
             if (QFileInfo(parent).isDir()) {
                 wanted.insert(parent);

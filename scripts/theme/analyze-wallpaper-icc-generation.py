@@ -3,6 +3,7 @@
 """Offline ICC table construction experiments, not a runtime color engine."""
 import argparse
 import hashlib
+from io import BytesIO
 from functools import lru_cache
 import json
 from pathlib import Path
@@ -10,7 +11,7 @@ import runpy
 import struct
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageCms
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -36,116 +37,11 @@ def interpolate_anchors(anchors, codes, indices, step):
     return anchors[k]+((anchors[k+1]-anchors[k])*rem*2+span)//(2*span)
 
 
-def candidate_trc_values(tag, normalized):
-    """Evaluate ICC curveType/parametricCurveType at specified source codes.
-
-    Additional curve families are numerical candidates until an independent
-    native capture confirms the CMM uses the same anchor construction.
-    """
-    if len(tag) < 12:
-        raise ValueError('Truncated source tone curve')
-    if tag[:4] == b'curv':
-        count = struct.unpack_from('>I', tag, 8)[0]
-        if len(tag) != 12 + 2*count:
-            raise ValueError('Invalid sampled source curve length')
-        if count == 0:
-            return normalized
-        if count == 1:
-            gamma = struct.unpack_from('>H', tag, 12)[0]/256
-            if gamma <= 0:
-                raise ValueError('Invalid source gamma')
-            if gamma == 1:
-                return normalized
-            return normalized**gamma
-        values = np.frombuffer(tag[12:], '>u2').astype(np.int64)
-        if np.any(np.diff(values)<0):
-            raise ValueError('Expected a monotone sampled source curve')
-        coordinate = normalized*(count-1)
-        index = np.minimum(coordinate.astype(np.int64), count-2)
-        return (values[index]+(values[index+1]-values[index])*(coordinate-index))/65535
-    if tag[:4] != b'para':
-        raise ValueError('Unsupported source tone curve type')
-    kind = struct.unpack_from('>H', tag, 8)[0]
-    sizes = (1,3,4,5,7)
-    if kind >= len(sizes) or len(tag) != 12+4*sizes[kind]:
-        raise ValueError('Invalid parametric source tone curve')
-    params = np.array(struct.unpack_from(f'>{sizes[kind]}i', tag, 12))/65536
-    gamma = params[0]
-    if gamma <= 0:
-        raise ValueError('Invalid source gamma')
-    if kind == 0:
-        return normalized**gamma
-    a,b = params[1:3]
-    if a <= 0:
-        raise ValueError('Invalid source curve scale')
-    if kind in (1,2):
-        offset = params[3] if kind == 2 else 0
-        active = normalized >= -b/a
-        values = np.full(normalized.shape, offset, dtype=np.float64)
-    else:
-        c,d = params[3:5]
-        active = normalized >= d
-        offset = params[5] if kind == 4 else 0
-        values = c*normalized+(params[6] if kind == 4 else 0)
-    power_base = a*normalized[active]+b
-    if np.any(power_base < -1e-12):
-        raise ValueError('Negative active parametric power base')
-    values[active] = np.maximum(power_base,0)**gamma+offset
-    return values
-
-
-def sampled_input_curve(tag):
-    """Candidate Win CMM RGB8 interpolation for ICC sampled curveType.
-
-    Independently matches all 256 entries of the measured 33-point green
-    curve. Other sampled table sizes and profiles still require evidence.
-    """
-    count = struct.unpack_from('>I', tag, 8)[0]
-    if tag[:4] != b'curv' or count < 2 or len(tag) != 12 + 2*count:
-        raise ValueError('Invalid sampled source curve length')
-    samples = np.frombuffer(tag[12:], '>u2').astype(np.int64)
-    if np.any(np.diff(samples)<0):
-        raise ValueError('Expected a monotone sampled source curve')
-    # Expand the 8-bit input to 16 bits, then use a Q16 table coordinate.
-    # Truncate the unsigned difference to an even value before interpolation.
-    # At an exact half-integer, round the increment down, not up.
-    position = np.arange(256, dtype=np.int64)*257*(count-1)
-    index, fraction = position>>16, position&65535
-    slope = ((samples[index+1]-samples[index])>>1)<<1
-    return samples[index]+((slope*fraction+32767)>>16)
-
-
-def input_curves(profile, decode):
-    """Generate per-channel source curves using the measured candidate rules."""
-    tags = tuple(profile[key] for key in (b'rTRC',b'gTRC',b'bTRC'))
-    codes = np.r_[np.arange(0,256,4),255]
-    # Preserve the reciprocal multiplication and binary64 floor order.
-    # Division by 255 is not interchangeable at integral linear samples.
-    normalized = codes*(1.0/255.0)
-    # Retain the previously verified arithmetic for the original shared
-    # parametric controls; the general ICC evaluator covers other forms.
-    if (tags[0]==tags[1]==tags[2] and tags[0][:4]==b'para'
-            and len(tags[0])>=12 and struct.unpack_from('>H',tags[0],8)[0] in (0,3)):
-        curves = (decode(profile, normalized),)*3
-    else:
-        curves = tuple(None if tag[:4]==b'curv' and len(tag)>=12
-                       and struct.unpack_from('>I',tag,8)[0]>1
-                       else candidate_trc_values(tag, normalized) for tag in tags)
-    output = []
-    for tag, linear in zip(tags, curves):
-        if linear is None:
-            # Sampled curveType has a different fixed-point path from the
-            # four-code anchor scheme used by the measured analytic TRCs.
-            output.append(sampled_input_curve(tag))
-            continue
-        anchors = np.floor(linear*65535)
-        if not np.isfinite(anchors).all() or np.any(anchors<0) or np.any(anchors>65535):
-            raise ValueError('Invalid sampled source curve')
-        anchors = anchors.astype(np.int64)
-        if np.any(np.diff(anchors)<0):
-            raise ValueError('Expected a monotone source curve')
-        output.append(interpolate_anchors(anchors, codes, np.arange(256), 4))
-    return np.stack(output)
+def input_curves(profile, _decode):
+    """Share the installed source curve generator with offline diagnostics."""
+    generator = matrix_runtime()['matrix_input_curve']
+    return np.asarray([generator(profile[key]) for key in (b'rTRC',b'gTRC',b'bTRC')],
+                      dtype=np.int64)
 
 
 def output_curves(profile):
@@ -371,11 +267,15 @@ def analyze(root, report, target_path, full_rgb8=False):
         native_cache = cache_metrics(curves_only,name)
         if native_cache['different_pixels']:
             raise ValueError('Native table replay does not reproduce archived cache')
+        # Little CMS is an explicitly labelled research comparator only.
         with Image.frombytes('RGB',(1280,800),source_rgb) as image:
-            width,height,baseline = runtime['_icc_rgb_bitmap'](image,data)
+            with ImageCms.profileToProfile(image, ImageCms.ImageCmsProfile(BytesIO(data)),
+                    ImageCms.createProfile('sRGB'), renderingIntent=ImageCms.Intent.RELATIVE_COLORIMETRIC,
+                    outputMode='RGB') as converted:
+                width,height,baseline = prepare(converted.tobytes(),converted.width,converted.height)
         if (width,height)!=(256,256):
             raise ValueError('Unexpected baseline bitmap dimensions')
-        row = {'native_replay_cache':native_cache,'runtime_lcms_cache':bitmap_metrics(baseline,name),'input_curve':table_metrics(source,native_source,sha),
+        row = {'native_replay_cache':native_cache,'offline_lcms_cache':bitmap_metrics(baseline,name),'input_curve':table_metrics(source,native_source,sha),
                'output_curve':table_metrics(destination,native_destination,sha),
                'generated_curves_native_grid':partitions(curves_only,reference,n), 'grids':{}}
         for model, grid in candidate_grids(matrix(profile),matrix(target_tags)).items():

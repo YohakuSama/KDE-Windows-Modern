@@ -1514,10 +1514,11 @@ dimensions, prepares the existing 256-pixel-capped bitmap, combines
 all supplied image statistics, and then derives the normalized RGB,
 Alpha, and seven-role candidate palette. The original file is never
 modified or recompressed. Untagged images use their decoded RGB values.
-Tagged RGB images use verified private links or independent generation
-for the reviewed matrix/TRC branch; unsupported opaque profiles retain
-the existing Little CMS path. Arbitrary ICC and non-RGB native parity
-have not been established.
+Tagged RGB images use one fixed-point RGB8 executor, with independently
+generated matrix/TRC tables or full-domain verified supplemental data.
+The former Little CMS runtime approximation is removed; unsupported ICC
+and non-RGB tagged images are explicit decoder errors. Arbitrary ICC
+and non-RGB native parity have not been established.
 
 The opt-in command accepts explicitly selected files, not an assumed
 primary containment or wallpaper-package directory. A source with
@@ -1526,11 +1527,12 @@ invalid orientation, unsupported transparency or a failed decode is an
 error, not a request to use a guessed accent. Opaque RGBA and
 indexed/gray images within the supported format contract can be
 converted to RGB. Untagged transparent PNG and transparent RGB PNG
-with a verified local RGB8 link or a supported generated matrix/TRC
-transform use premultiplied resampling and the measured candidate
-fixed-point unpremultiplication rule. Unsupported tagged transparency
-and other transparent formats remain outside the reviewed contract. Nonzero resized alpha is a validity marker, not a
-weight in the native analysis loop.
+with a verified supplemental RGB8 table or a supported generated
+matrix/TRC transform use the same executor, premultiplied resampling
+and the measured candidate fixed-point unpremultiplication rule.
+Unsupported tagged transparency and other transparent formats remain
+outside the reviewed contract. Nonzero resized alpha is a validity
+marker, not a weight in the native analysis loop.
 
 ```bash
 python3 -I scripts/theme/sync-accent.py --analyze-wallpaper /absolute/path/to/image.jpg

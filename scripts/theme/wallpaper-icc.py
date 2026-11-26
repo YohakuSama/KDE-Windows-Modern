@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Generate reviewed RGB matrix/TRC tables and replay measured Windows RGB8 links.
+"""Single fixed-point RGB8 ICC execution path for Windows wallpaper analysis.
 
-Measured local bundles retain priority. For supported monitor matrix/TRC
-profiles the independent generator requires no native file or private
-table. Other profile families keep the existing color-managed baseline.
+Generate supported matrix/TRC tables independently. Full-domain verified
+local tables supply otherwise unmeasured profile identities to the same
+executor. No approximate secondary color engine or v1 runtime receipt.
 """
 import argparse
 import base64
@@ -54,18 +54,14 @@ def sha(data):
     return hashlib.sha256(data).hexdigest().upper()
 
 
-def bundle_path():
-    return (Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
-            / "windows-modern" / "icc-replay-v1.bin")
-
-
 def check_location(path):
     if any(p.is_symlink() for p in (path, path.parent, path.parent.parent)):
         raise ValueError("Refusing externally managed ICC replay data")
 
 
 def full_bundle_path():
-    return bundle_path().with_name("icc-replay-v2.bin")
+    return (Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
+            / "windows-modern" / "icc-replay-v2.bin")
 
 
 def read_private_file(path, limit):
@@ -85,15 +81,6 @@ def read_private_file(path, limit):
         data = stream.read(limit + 1)
     if len(data) > limit:
         raise ValueError("ICC replay data exceeds its size bound")
-    return data
-
-
-def read_bundle(path=None):
-    data = read_private_file(bundle_path() if path is None else path, BUNDLE_SIZE)
-    if data is None:
-        return None
-    if len(data) != BUNDLE_SIZE or sha(data) != BUNDLE_SHA:
-        raise ValueError("Private ICC replay data failed SHA-256 verification")
     return data
 
 
@@ -131,15 +118,10 @@ def read_full_bundle(path=None):
 
 
 def reference_identity():
-    # Preserve the old cache identity when no full-domain bundle is
-    # installed. Either bundle's publication or removal invalidates both
-    # existing accent and material caches.
-    legacy = read_bundle()
+    # Only full-domain verified supplemental data participates in runtime
+    # cache identity. The retired v1 receipt is never opened.
     full = read_full_bundle()
-    if full is None:
-        return BUNDLE_SHA if legacy is not None else None
-    return sha(FULL_MAGIC + (bytes.fromhex(BUNDLE_SHA) if legacy is not None else b"")
-               + hashlib.sha256(full).digest())
+    return sha(full) if full is not None else None
 
 
 def read_rgb8_tables(data, *, full_domain=False):
@@ -213,6 +195,9 @@ class Rgb8Replay:
 # These are colorimetric parameters, not a native profile or captured LUT.
 SRGB_COLORANTS = ((28578, 25241, 9376), (14581, 46981, 3972), (912, 6362, 46799))
 D50 = (63190, 65536, 54061)
+# Legacy registered sRGB v2 profile records D65 media white but its
+# colorants are already D50-adapted. Relative intent uses those colorants.
+D65_MEDIA_WHITE = (62289, 65536, 71372)
 GENERATED_GRID_SHA = "61A243BB0A50A4B0346873DA3D9C6F20FDDC7EC2945DD8946B6DD2E8D93658B2"
 GENERATED_OUTPUT_SHA = "1943A4178D0F62F28694CE524D529A944F04CBB4E7E9FC4722ABC906A13BF216"
 GENERATED_SOURCE_SHA = {
@@ -253,13 +238,17 @@ def matrix_profile_tags(data):
     # or another color representation. The remaining tags are metadata.
     allowed = {b"rXYZ", b"gXYZ", b"bXYZ", b"rTRC", b"gTRC", b"bTRC", b"wtpt",
                b"desc", b"cprt", b"chad", b"chrm", b"dmnd", b"dmdd", b"tech",
-               b"view", b"vued", b"lumi", b"meas", b"meta"}
+               b"view", b"vued", b"lumi", b"meas", b"meta", b"bkpt"}
     if set(tags) - allowed:
         raise UnsupportedMatrixProfile("ICC profile has unreviewed transform or metadata tags")
     white = tags.get(b"wtpt", b"")
     if (len(white) != 20 or white[:4] != b"XYZ "
-            or struct.unpack_from(">3i", white, 8) != D50):
-        raise UnsupportedMatrixProfile("Expected the reviewed D50 media white")
+            or struct.unpack_from(">3i", white, 8) not in (D50, D65_MEDIA_WHITE)):
+        raise UnsupportedMatrixProfile("Media white outside the reviewed relative-intent branch")
+    black = tags.get(b"bkpt")
+    if black is not None and (len(black) != 20 or black[:4] != b"XYZ "
+                              or struct.unpack_from(">3i", black, 8) != (0, 0, 0)):
+        raise UnsupportedMatrixProfile("Unreviewed media black point")
     return tags
 
 
@@ -337,55 +326,86 @@ def build_matrix_grid(source, target):
 
 
 def matrix_input_curve(tag):
-    """Reviewed analytic gamma/parametric and 33-point sampled paths."""
+    """Generate the native 256-entry RGB8 curve for supported ICC TRCs."""
     if len(tag) < 12:
         raise UnsupportedMatrixProfile("Truncated RGB tone curve")
     if tag[:4] == b"curv":
         count = struct.unpack_from(">I", tag, 8)[0]
-        if count not in (1, 33) or len(tag) != 12 + 2 * count:
-            raise UnsupportedMatrixProfile("Unreviewed sampled tone curve size")
+        if count >= 8192 or len(tag) != 12 + 2 * count:
+            raise UnsupportedMatrixProfile("Sampled ICC curve exceeds native bounds")
+        if count == 0:
+            return tuple(i * 257 for i in range(256))
         samples = struct.unpack_from(f">{count}H", tag, 12)
-        if count == 33:
+        if count > 1:
             if any(a > b for a, b in zip(samples, samples[1:])):
                 raise UnsupportedMatrixProfile("Nonmonotone sampled tone curve")
+            # Native sampled-curve construction uses a Q18 step and Q15
+            # position. A rounded position may hit the final sample exactly.
+            step = ((count - 1) << 18) // 255
             result = []
             for code in range(256):
-                position = code * 257 * (count - 1)
-                i, f = position >> 16, position & 65535
-                slope = (samples[i + 1] - samples[i]) & ~1
-                result.append(samples[i] + ((slope * f + 32767) >> 16))
+                position = (step * code + 4) >> 3
+                i, f = position >> 15, position & 32767
+                value = samples[i]
+                if f:
+                    delta = (samples[i + 1] - value) >> 1
+                    value += ((delta * f >> 1) + 4095) >> 13
+                result.append(value)
             return tuple(result)
         gamma = samples[0] / 256
         evaluate = lambda x: x if gamma == 1 else x ** gamma
     elif tag[:4] == b"para":
         kind = struct.unpack_from(">H", tag, 8)[0]
-        if kind not in (0, 3) or len(tag) != (16 if kind == 0 else 32):
-            raise UnsupportedMatrixProfile("Unreviewed parametric tone curve")
-        params = tuple(v / 65536 for v in struct.unpack_from(f">{1 if kind == 0 else 5}i", tag, 12))
+        sizes = (1, 3, 4, 5, 7)
+        if kind >= len(sizes) or len(tag) != 12 + 4 * sizes[kind]:
+            raise UnsupportedMatrixProfile("Invalid parametric tone curve")
+        params = tuple(v / 65536 for v in struct.unpack_from(f">{sizes[kind]}i", tag, 12))
         gamma = params[0]
         if kind == 0:
             evaluate = lambda x: x if gamma == 1 else x ** gamma
         else:
-            _, a, b, c, d = params
-            if a <= 0 or c < 0 or not 0 <= d <= 1 or a * d + b < 0:
-                raise UnsupportedMatrixProfile("Invalid parametric tone curve")
-            evaluate = lambda x: (a * x + b) ** gamma if x >= d else c * x
+            a, b = params[1:3]
+            if a <= 0:
+                raise UnsupportedMatrixProfile("Invalid parametric tone curve scale")
+            if kind in (1, 2):
+                threshold = -b / a
+                offset = params[3] if kind == 2 else 0
+                evaluate = lambda x: (a * x + b) ** gamma + offset if x >= threshold else offset
+            else:
+                c, d = params[3:5]
+                e, f = params[5:7] if kind == 4 else (0, 0)
+                if c < 0 or not 0 <= d <= 1 or a * d + b < 0:
+                    raise UnsupportedMatrixProfile("Invalid parametric tone curve branch")
+                evaluate = lambda x: (a * x + b) ** gamma + e if x >= d else c * x + f
     else:
         raise UnsupportedMatrixProfile("Unreviewed tone curve type")
     if not 0 < gamma <= 16:
         raise UnsupportedMatrixProfile("Tone curve gamma outside reviewed bounds")
-    anchors = []
-    for code in (*range(0, 256, 4), 255):
-        value = evaluate(code * (1.0 / 255.0))
-        if not math.isfinite(value) or not 0 <= value <= 1:
-            raise UnsupportedMatrixProfile("Tone curve exceeds normalized RGB range")
-        anchors.append(math.floor(value * 65535))
+
+    def sample(code):
+        try:
+            value = evaluate(code * (1.0 / 255.0))
+        except (ArithmeticError, ValueError) as error:
+            raise UnsupportedMatrixProfile("Invalid analytic tone curve") from error
+        if not isinstance(value, (float, int)) or not math.isfinite(value):
+            raise UnsupportedMatrixProfile("Invalid analytic tone curve")
+        # Native analytic callbacks clamp to the normalized interval.
+        return math.floor(min(1, max(0, value)) * 65535)
+
+    anchors = [sample(code) for code in (*range(0, 256, 4), 255)]
     if any(a > b for a, b in zip(anchors, anchors[1:])):
         raise UnsupportedMatrixProfile("Nonmonotone analytic tone curve")
-    return tuple(anchors[i // 4] + ((anchors[i // 4 + 1] - anchors[i // 4])
-                                    * (i % 4) * 2 + 4) // 8 for i in range(252)) + tuple(
-        anchors[63] + ((anchors[64] - anchors[63]) * (i - 252) * 2 + 3) // 6
-        for i in range(252, 256))
+    result = [anchors[i // 4] + ((anchors[i // 4 + 1] - anchors[i // 4])
+                                 * (i % 4) * 2 + 4) // 8 for i in range(252)]
+    result.extend(anchors[63] + ((anchors[64] - anchors[63]) * (i - 252) * 2 + 3) // 6
+                  for i in range(252, 256))
+    # For exponents below one, the original generator evaluates the first
+    # four input codes directly instead of interpolating from zero.
+    if gamma < 1:
+        result[:4] = [sample(i) for i in range(4)]
+    if any(a > b for a, b in zip(result, result[1:])):
+        raise UnsupportedMatrixProfile("Nonmonotone generated tone curve")
+    return tuple(result)
 
 
 def _table_hash(table):
@@ -437,7 +457,16 @@ def generated_transform(profile):
 
 
 def transform_for_profile(profile):
+    if not isinstance(profile, bytes) or not profile:
+        raise ValueError("Invalid embedded wallpaper ICC profile")
     digest = sha(profile)
+    if digest in GENERATED_SOURCE_SHA:
+        # The independently generated tables are already fully measured for
+        # these profiles; don't read or prefer an obsolete private receipt.
+        transform = generated_transform(profile)
+        if transform is None:
+            raise ValueError("Measured ICC profile rejected by the independent generator")
+        return transform
     full = read_full_bundle()
     if full is not None:
         entry = full_bundle_entries(full).get(digest)
@@ -446,16 +475,9 @@ def transform_for_profile(profile):
             values = struct.unpack(f">{TABLE_WORDS}H", packed)
             tables = values[:768], values[768:768 + 98304], values[768 + 98304:]
             return lru_cache(maxsize=32768)(Rgb8Replay(tables).convert)
-    for i, (_, source_sha, _) in enumerate(PROFILES):
-        if digest != source_sha:
-            continue
-        bundle = read_bundle()
-        if bundle is not None:
-            link = bundle[i * LINK_SIZE:(i + 1) * LINK_SIZE]
-            return lru_cache(maxsize=32768)(Rgb8Replay(read_rgb8_tables(link)).convert)
-        break
-    # Limit both parsing and cached profile bytes. The matrix-only branch
-    # uses the same resampling taps and scalar execution as private links.
+    # Other profiles may use the independently reconstructed matrix branch.
+    # A verified supplemental table is data for this same executor, never
+    # a second algorithm. Unsupported profiles are explicit failures.
     if len(profile) <= 1024 * 1024:
         return generated_transform(profile)
     return None
@@ -510,27 +532,6 @@ def extract_bundle(report_path):
     if sha(bundle) != BUNDLE_SHA:
         raise ValueError("Unexpected combined ICC reference hash")
     return bundle
-
-
-def import_report(report_path):
-    if os.geteuid() == 0:
-        raise ValueError("Import ICC replay data as the desktop user")
-    data = extract_bundle(report_path)
-    path = bundle_path()
-    check_location(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if read_bundle(path) is not None:
-        return path
-    # Atomic no-overwrite publication. A concurrent valid import is safe.
-    with tempfile.NamedTemporaryFile(prefix=".wm-icc-", dir=path.parent) as temp:
-        temp.write(data)
-        temp.flush()
-        try:
-            os.link(temp.name, path)
-        except FileExistsError:
-            if read_bundle(path) is None:
-                raise ValueError("ICC reference changed during import")
-    return path
 
 
 def digest_bytes(value):
@@ -642,19 +643,12 @@ def import_full_report(report_path, selected=()):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--import-report", type=Path)
-    group.add_argument("--import-full-report", type=Path)
+    parser.add_argument("--import-full-report", type=Path, required=True)
     parser.add_argument("--profile-sha256", action="append", default=[],
                         help="Select exact source identities from the full-domain report")
     args = parser.parse_args()
-    if args.profile_sha256 and args.import_full_report is None:
-        parser.error("--profile-sha256 requires --import-full-report")
     try:
-        if args.import_full_report is not None:
-            path = import_full_report(args.import_full_report, args.profile_sha256)
-        else:
-            path = import_report(args.import_report)
+        path = import_full_report(args.import_full_report, args.profile_sha256)
     except (OSError, ValueError, KeyError, TypeError, struct.error) as error:
         parser.exit(1, f"ICC replay import: {error}\n")
     print(f"Imported verified local RGB8 replay: {path}")

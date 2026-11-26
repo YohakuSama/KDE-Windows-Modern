@@ -9,6 +9,7 @@ from io import BytesIO
 from pathlib import Path
 import re
 import runpy
+import struct
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -1249,13 +1250,11 @@ class WindowMaterialTests(unittest.TestCase):
 
     def test_icc_wallpaper_conversion(self):
         try:
-            from PIL import Image, ImageCms
+            from PIL import Image
         except ImportError:
-            self.skipTest("optional Pillow ImageCms unavailable")
+            self.skipTest("optional Pillow unavailable")
         sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
         decode = sync["decode_wallpaper_bitmap"]
-        # Reuse the exact synthetic linear profile embedded in the Windows
-        # collector; no device or Windows-owned profile is bundled.
         collector = (ROOT / "scripts/capture-windows-wallpaper-probes.ps1").read_text(encoding="utf-8-sig")
         match = re.search(r"'linear-srgb' = @\{\s+sha256 = '([0-9A-F]{64})'\s+payload = '([^']+)'",
                           collector)
@@ -1265,31 +1264,23 @@ class WindowMaterialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "linear.png"
             with Image.new("RGB", (512, 1)) as image:
-                # Every output pixel mixes two different encoded colors.
-                # Color conversion must precede, not follow, resampling.
                 image.putdata([(20, 138, 20), (225, 48, 48)] * 256)
                 image.save(path, icc_profile=profile)
-                with ImageCms.profileToProfile(
-                        image, ImageCms.ImageCmsProfile(BytesIO(profile)),
-                        ImageCms.createProfile("sRGB"),
-                        renderingIntent=ImageCms.Intent.RELATIVE_COLORIMETRIC,
-                        outputMode="RGB") as converted:
-                    expected = sync["prepare_opaque_wallpaper_bitmap"](
-                        converted.tobytes(), converted.width, converted.height)
                 raw = sync["prepare_opaque_wallpaper_bitmap"](image.tobytes(), image.width, image.height)
-                self.assertNotEqual(expected, raw)
+            # The two exact RGB outputs are from the existing full-domain
+            # native control. Conversion must precede resampling.
+            expected = sync["prepare_opaque_wallpaper_bitmap"](
+                bytes((79, 195, 79, 242, 120, 120)) * 256, 512, 1)
+            self.assertNotEqual(expected, raw)
             before = path.read_bytes()
-            # Test the existing color-managed fallback even when the owner
-            # has imported the optional exact native reference locally.
-            with patch.dict(sync["_icc_rgb_bitmap"].__globals__, {
-                    "_native_icc_module": lambda: {"transform_for_profile": lambda profile: None}}):
-                self.assertEqual(decode(path), expected)
+            self.assertEqual(decode(path), expected)
             self.assertEqual(path.read_bytes(), before)
-            invalid = Path(tmp) / "invalid.png"
-            with Image.new("RGB", (1, 1), (20, 138, 20)) as image:
-                image.save(invalid, icc_profile=b"invalid ICC")
-            with self.assertRaisesRegex(ValueError, "ICC conversion failed"):
-                decode(invalid)
+            for mode in ("RGB", "RGBA"):
+                invalid = Path(tmp) / (mode + ".png")
+                with Image.new(mode, (1, 1)) as image:
+                    image.save(invalid, icc_profile=b"invalid ICC")
+                with self.assertRaisesRegex(ValueError, "reviewed RGB8 ICC transform"):
+                    decode(invalid)
 
     def test_native_rgb8_replay_and_preconversion(self):
         native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
@@ -1311,11 +1302,27 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual(sync["_prepare_wallpaper_bitmap"](pixels, 512, 1, 3, transform),
                          (256, 1, bytes((127, 127, 127, 255)) * 256))
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "icc-replay-v1.bin"
-            self.assertIsNone(native["read_bundle"](path))
+            path = Path(tmp) / "icc-replay-v2.bin"
+            self.assertIsNone(native["read_full_bundle"](path))
             path.write_bytes(b"not a verified link")
-            with self.assertRaisesRegex(ValueError, "SHA-256"):
-                native["read_bundle"](path)
+            with self.assertRaisesRegex(ValueError, "header"):
+                native["read_full_bundle"](path)
+
+    def test_native_sampled_curve_bounds(self):
+        native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
+        curve = native["matrix_input_curve"]
+        # Formula-level boundaries reconstructed from the native routine;
+        # these are not additional Windows measurements.
+        expected = {0: (0, 257, 32896, 65535), 2: (0, 258, 32895, 65535),
+                    3: (0, 257, 32895, 65534), 256: (0, 257, 32896, 65535),
+                    1024: (0, 257, 32895, 65534), 8191: (0, 257, 32895, 65534)}
+        for count, endpoints in expected.items():
+            values = [i * 65535 // (count - 1) for i in range(count)] if count else []
+            tag = b"curv" + bytes(4) + struct.pack(">I", count) + struct.pack(f">{count}H", *values)
+            generated = curve(tag)
+            self.assertEqual(tuple(generated[i] for i in (0, 1, 128, 255)), endpoints)
+        with self.assertRaises(native["UnsupportedMatrixProfile"]):
+            curve(b"curv" + bytes(4) + struct.pack(">I", 8192) + bytes(8192 * 2))
 
     def test_generated_matrix_tables_without_native_files(self):
         native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
@@ -1333,7 +1340,7 @@ class WindowMaterialTests(unittest.TestCase):
             self.assertIsNotNone(match)
             profiles[digest] = base64.b64decode(match[1], validate=True)
         select = native["transform_for_profile"]
-        with patch.dict(select.__globals__, {"read_full_bundle": lambda: None, "read_bundle": lambda: None}):
+        with patch.dict(select.__globals__, {"read_full_bundle": lambda: None}):
             for digest, profile in profiles.items():
                 with self.subTest(profile=digest):
                     self.assertEqual(hashlib.sha256(profile).hexdigest().upper(), digest)
@@ -1378,7 +1385,7 @@ class WindowMaterialTests(unittest.TestCase):
             path = Path(tmp) / "icc-replay-v2.bin"
             path.write_bytes(receipt)
             with patch.dict(native["transform_for_profile"].__globals__, {
-                    "full_bundle_path": lambda: path, "read_bundle": lambda: None}):
+                    "full_bundle_path": lambda: path}):
                 self.assertEqual(native["read_full_bundle"](), receipt)
                 self.assertEqual(native["transform_for_profile"](profile)(255, 12, 88), (0, 0, 0))
                 self.assertIsNone(native["transform_for_profile"](b"different source"))

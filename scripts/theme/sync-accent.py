@@ -4,7 +4,6 @@
 import argparse
 from fractions import Fraction
 from functools import lru_cache
-from io import BytesIO
 import hashlib
 import json
 import math
@@ -406,7 +405,7 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 # Bump when decoder/analysis semantics change; installed automatic state
 # must not reuse a palette computed by the previous decoder.
-WALLPAPER_ANALYSIS_REVISION = 6
+WALLPAPER_ANALYSIS_REVISION = 7
 
 
 @lru_cache(maxsize=1)
@@ -418,51 +417,25 @@ def icc_reference_identity():
     return _native_icc_module()["reference_identity"]()
 
 
-def _icc_rgb_bitmap(image, profile_bytes):
-    """Convert an opaque tagged RGB/gray image to the standard sRGB space.
-
-    Privately imported RGB8 links and independently generated, reviewed
-    matrix/TRC tables use the fixed-point Windows replay. Other profiles
-    use the existing Little CMS color-managed baseline.
-    Conversion precedes the existing analysis resampling step.
-    """
+def _icc_rgb_transform(image, profile_bytes):
+    """Select the same reviewed ICC executor for opaque and alpha pixels."""
     if not isinstance(profile_bytes, bytes) or not profile_bytes:
         raise ValueError("Invalid embedded wallpaper ICC profile")
-    if image.mode in ("RGB", "RGBA", "P"):
-        transform = _native_icc_module()["transform_for_profile"](profile_bytes)
-        if transform is not None:
-            if image.mode == "RGB":
-                return _prepare_wallpaper_bitmap(image.tobytes(), image.width, image.height, 3, transform)
-            with image.convert("RGB") as decoded:
-                return _prepare_wallpaper_bitmap(decoded.tobytes(), decoded.width, decoded.height, 3, transform)
-    try:
-        from PIL import ImageCms
-    except ImportError as error:
-        raise ValueError("Pillow ImageCms is required for tagged wallpapers") from error
-    try:
-        profile = ImageCms.ImageCmsProfile(BytesIO(profile_bytes))
-        space = profile.profile.xcolor_space.strip()
-        if space == "RGB" and image.mode in ("RGB", "RGBA", "P"):
-            input_mode = "RGB"
-        elif space == "GRAY" and image.mode in ("1", "L", "LA"):
-            input_mode = "L"
-        else:
-            raise ValueError("Embedded ICC color space does not match the reviewed image format")
+    if image.mode not in ("RGB", "RGBA", "P"):
+        raise ValueError("Embedded ICC requires a reviewed RGB8 image mode")
+    transform = _native_icc_module()["transform_for_profile"](profile_bytes)
+    if transform is None:
+        raise ValueError("Wallpaper ICC requires a reviewed RGB8 ICC transform")
+    return transform
 
-        def convert(decoded):
-            with ImageCms.profileToProfile(
-                    decoded, profile, ImageCms.createProfile("sRGB"),
-                    renderingIntent=ImageCms.Intent.RELATIVE_COLORIMETRIC,
-                    outputMode="RGB") as managed:
-                return prepare_opaque_wallpaper_bitmap(
-                    managed.tobytes(), managed.width, managed.height)
 
-        if image.mode == input_mode:
-            return convert(image)
-        with image.convert(input_mode) as decoded:
-            return convert(decoded)
-    except (ImportError, OSError, TypeError, ImageCms.PyCMSError) as error:
-        raise ValueError("Wallpaper ICC conversion failed: " + str(error)) from error
+def _icc_rgb_bitmap(image, profile_bytes):
+    """Convert contributing straight RGB taps before opaque resampling."""
+    transform = _icc_rgb_transform(image, profile_bytes)
+    if image.mode == "RGB":
+        return _prepare_wallpaper_bitmap(image.tobytes(), image.width, image.height, 3, transform)
+    with image.convert("RGB") as decoded:
+        return _prepare_wallpaper_bitmap(decoded.tobytes(), decoded.width, decoded.height, 3, transform)
 
 
 class WallpaperFileChangedError(ValueError):
@@ -481,13 +454,11 @@ def wallpaper_file_identity(path):
 def decode_wallpaper_bitmap(path):
     """Decode a local still image into the candidate WIC analysis buffer.
 
-    Preserve the untagged opaque RGB path. Convert tagged opaque RGB or
-    grayscale images to sRGB before resampling, using reviewed RGB8
-    transforms when available and the standard ICC transform otherwise.
-    For untagged transparent PNG use Pillow's premultiplied RGBa path.
-    Tagged transparent RGB PNG uses a verified local link or the reviewed
-    independent matrix/TRC generator before premultiplication. Unsupported
-    tagged transparency is rejected.
+    Preserve the untagged opaque RGB path. Tagged RGB images use the
+    reviewed fixed-point RGB8 executor before resampling. For untagged
+    transparent PNG use Pillow's premultiplied RGBa path. Tagged RGB PNG
+    uses the same transform before premultiplication. Unsupported ICC
+    profiles and non-RGB tagged images are explicit decoder errors.
     Do not re-encode or alter the source.
     """
     try:
@@ -523,13 +494,7 @@ def decode_wallpaper_bitmap(path):
                                 if source.format != "PNG":
                                     raise ValueError("Transparent wallpaper outside the reviewed PNG contract")
                                 if profile is not None:
-                                    if image.mode not in ("RGB", "RGBA", "P"):
-                                        raise ValueError("Transparent tagged PNG requires an RGB8 source")
-                                    if not isinstance(profile, bytes) or not profile:
-                                        raise ValueError("Invalid embedded wallpaper ICC profile")
-                                    transform = _native_icc_module()["transform_for_profile"](profile)
-                                    if transform is None:
-                                        raise ValueError("Transparent tagged PNG requires a reviewed RGB8 ICC transform")
+                                    transform = _icc_rgb_transform(image, profile)
                                     return _prepare_wallpaper_bitmap(
                                         rgba.tobytes(), rgba.width, rgba.height, 4, transform)
                                 with rgba.convert("RGBa") as premultiplied:

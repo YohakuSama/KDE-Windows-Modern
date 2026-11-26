@@ -2,6 +2,12 @@
 
 Reference: build 26300.9974, [DecodeProfile capture](windows11-26h2-wallpaper-probes-decode-profile.json), original runtime revision 2.
 
+Current runtime policy: see the final section. Earlier sections are
+historical measurements and commands, not current installation steps.
+In particular, the v1 private receipt and Little CMS runtime baseline
+have been retired. Neither is needed for independently generated ICC
+profiles.
+
 ## Reproducible comparison
 
 Run from the repository root:
@@ -1158,3 +1164,76 @@ not been executed.
 
 This completes independent generation for the measured matrix/TRC
 branch, not arbitrary ICC LUTs or all native profile families.
+
+## Unified RGB8 execution and native general tone-curve construction
+
+The reference icm32.dll (10.0.26100.9974, previously recorded hash)
+dispatches curveType and parametricCurveType at RVA 0x153B0.
+The sampled curve branch at RVA 0x153F0 checks a sample count below
+8192 and handles identity (count zero) and single gamma separately.
+For 16-bit output and an 8-bit input coordinate, its general sampled
+curve uses a Q18 step and Q15 coordinate rather than the earlier
+33-point-only observation:
+
+    step = ((count - 1) << 18) // 255
+    position = (step * code + 4) >> 3
+    i, f = position >> 15, position & 32767
+    value = sample[i]
+    if f != 0:
+        delta = (sample[i+1] - sample[i]) >> 1
+        value += (((delta * f) >> 1) + 4095) >> 13
+
+The exact endpoint case does not read a following sample. The
+generator supports monotone sampled tables of 2 through 8191 entries
+and the native identity case; it deliberately rejects longer or
+nonmonotone tables. The analytic dispatcher (RVA 0x19F2C) selects all
+five ICC parametric function forms. The callbacks clamp to [0,1].
+The common anchor generator (RVA 0x16F64) samples at four-code
+intervals, and for gamma below one evaluates the first four codes
+directly. The installed implementation now handles these forms with
+bounded, monotone parameters. It retains the prior source hash checks.
+The new sampled formula was compared directly with the 33-entry
+native control; it matches all 256 generated entries. The revised
+source-curve calculation was compared with all four original
+native source tables (3072 entries): zero differences and all four
+source SHA-256 values match. This is an isolated numerical archive
+comparison, not a run of the repository tests. Other sampled lengths,
+additional parametric forms and exponents below one are supported
+from static control-flow evidence, not independently measured for
+every input profile.
+
+The relative-colorimetric matrix loader uses the ICC colorants
+without the absolute-intent white scaling. The registered legacy
+sRGB v2 profile records D65 media white and a zero media black point
+but D50-adapted colorants. Recognize this exact media-white encoding
+and optional zero black point alongside the existing D50 branch;
+other white points and nonzero black points remain unsupported.
+This removes an avoidable rejection of the ordinary registered
+sRGB profile shape without asserting native full-domain equivalence
+for every such input.
+
+Runtime changes: opaque and alpha-tagged PNG now call the same
+transform selection and fixed-point RGB8 executor. Remove the
+Little CMS fallback from automatic wallpaper analysis; keep it
+only as an explicit offline comparator. Remove live v1 receipt
+loading, publishing and watching. Its extraction from the original
+report remains available only to the historical alpha diagnostic.
+Old v1 files are not deleted from user storage. The four already
+fully measured source profiles always use independent generation;
+full-domain verified v2 tables remain an optional source of exact
+table data for other RGB identities, not an alternate color
+calculation. Other supported matrix/TRC inputs are generated.
+Unsupported profiles are explicit failures; the automatic state
+controller retains its last accepted ramp (or pending default)
+instead of applying a guessed accent. Existing material sampling
+reports the unavailable tint and uses its existing static material
+behavior. Revision 7 invalidates automatic caches once. No new
+runtime dependency, Windows file or service is required.
+
+This is implementation consolidation, not arbitrary ICC coverage.
+LUT-based profile generation, tagged grayscale, unreviewed
+transparent formats, remaining palette boundaries and the broader
+Kvantum version/integration acceptance remain open. Do not count
+unsupported profiles as exact merely because the approximate
+runtime path has been removed. Existing regression definitions
+have been updated, not executed.
