@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "windows_build": "26300.9974",
+  "original_report_sha256": "6A16AAF40FFC7179298758F67D9BFB4888137EF4AB5C2EB4A99D18DCC06A4912",
+  "input_rgb_sha256": "DDFCE7C3B7CA3AEB95ADC28356EE50430CD0FEAB5530FA602D36FB0DEEC4B484",
+  "color_count": 1024,
+  "successful_candidates": 274,
+  "failed_candidates": 0,
+  "distinct_source_outputs": 60,
+  "exact_candidates": 24,
+  "exact_candidates_per_source": 12,
+  "description": "Compact evidence excerpt: one exact WIC BGR24 candidate per source, from the original native report. Not a runtime LUT. All 274 candidate output hashes were validated before selection.",
+  "target": {
+    "name": "registered-srgb",
+    "sha256": "2B3AA1645779A9E634744FAF9B01E9102B0C9B88FD6DECED7934DF86B949AF7E",
+    "length": 3144,
+    "aliases": [
+      "registered-windows",
+      "installed-srgb"
+    ]
+  },
+  "matching_paths": [
+    {
+      "api": "WIC",
+      "targets": [
+        "registered-srgb",
+        "exif-srgb"
+      ],
+      "formats": [
+        "BGR24",
+        "BGR32",
+        "BGRA32"
+      ]
+    },
+    {
+      "api": "ICM",
+      "targets": [
+        "registered-srgb"
+      ],
+      "formats": [
+        "RGB24",
+        "BGRX32"
+      ],
+      "intents": [
+        0,
+        1,
+        2
+      ],
+      "flags": 3
+    }
+  ],
+  "samples": [
+    {
+      "source": "srgb",
+      "source_icc_sha256": "47FDA5236B74B9F11DA23C9834FAE1DBF0C0E195DEBEB22EFD147268C1CEC98C",
+      "output_rgb_sha256": "77C3BF278E4B3E94BA3D90E88EE6542AB0F12763E57F9BCD76601A06E89CF875",
+      "bitmap_sha256": "123EE8BF8CF9FD4D3BA2B1DF7EF97269AE4F9D5B35D10FD3981B78133EEF9457",
+      "output_rgb_gzip_base64": "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"
+    },
+    {
+      "source": "linear-srgb",
+      "source_icc_sha256": "BC77188D9AABAF2F17730FBE0C3B3954579190954C6E273C35C33D52CFB193B6",
+      "output_rgb_sha256": "71DE1B5639948C1851D53BDBF9D363630D768D9A96A799D633B4ABC27044BF23",
+      "bitmap_sha256": "A74EBEA234218D6D695216FA3CDEADEA2A0E76ACDEB463A0FBFA9E3CEA469E28",
+      "output_rgb_gzip_base64": "H4sIAAAAAAAC/+2Wa0sedBiHr7eDvRt7E3vRXjRo0GgwEAQRZCAiMkQRUSaioqg4ccrmnHjePJ/m0mnqUtNcmuZctpmZbZllWVlZbXbc+djBzud+9/20GH2CBd1c/J7nA/yv63lAtx42wibYDFtgK2yD7bADgiAYQiAUwmAnhEMEREIU7IJoiIFYiIN4SIBE2A1JkAwpkAppkA4ZkAlZkA05sAdyIQ/2Qj4UwD7YD4VwAIrgIBRDCZRCGZRDBVRCFRyCw1ANNVALdVAPDdAITdAMLdAKR6ANjsJjTjt0wDHohC543OmGHuiF4/CE0wf9MABPOoMwBE85w3ACnnZGYBSeccZgHJ51JuCkMwmn4DlnCp53TsMZZxpecGbgRWcWXnLm4GXnrHMOXnHm4VVnAV5zXncW4Q3nTWcJ3nLedt5xluFd5z3nfWcFPnA+dD5yzjsXnFX42PnE+dT5zPnc+cK56FxyLjtXnKvONbju3HBuOrec284d58u7fOV87XzjrDnfOt853zs/3OVH5yfnZ+cX59e7/Ob87vzh/Pk3/7/9+/btn/sPvv1/Pfz7++2vg3Xr122ADRs3PiAJNm16UB5s3vyQVNiy5WHZsHXrIxJi27ZH5cT27XJix44d0iIoKEhmBAcHS46QkBD5ERoaKkXCwsJkyc6dOyVKeHi4XImIiJAukZGRMiYqKkrS7NKd2yV1oqOjZU9MTIwEio2NlUNxcXHSKD4+XiYlJCRIpsTERPm0e/duKZWUlCSrkpOTJVZKSorcSk1NlV5paWkyLD09XZJlZGTIs8zMTKmWlZUl27KzsyVcTk6OnNuzZ4+0y83NlXl5eXmSb+/evfIvPz9fChYUFMjCffv2ScT9+/fLxcLCQul44MABGVlUVCQpDx48KC+Li4ulZklJiewsLS2VoGVlZXK0vLxcmlZUVMjUyspKyVpVVSVfDx06JGUPHz4sa6urqyVuTU2N3K2trZW+dXV1Mri+vl4SNzQ0yOPGxkap3NTUJJubm5sldEtLi5xubW2V1keOHJHZbW1tkvto21HzW+cry9vb2yV6R0eHXD927Jh07+zslPFdXV0mvc5X6nd3d8v+np4eBaC3t1cNOH78uGVA56sY9PX1qQf9/f1KwsDAgFVB56s2DA4OKg9DQ0NWCJ2vOjE8PKxUnDhxwmqh81UzRkZGlI3R0VErh85X/RgbG1NCxsfHrSI6X7VkYmLCcqJTUU6eVFQmJyfVlVOnTlladL4KzNTUlDVG56vSnD592mJz5oxiMx3Y6Wmrjs5X7ZmZmbH86HwVodnZWeuQzlc1mpubsyDpfO0n+exZK5PO1/qk81Wl5ufnLVQ6X+VqYWHBiqXztW7pfFWvxcVFC5jO1zKm81XMlpaWrGc6X6uaztfapvNV4ZaXly1yOl9Lnc7XgqfzVfZWVlasfDpf65/O1yqo87UW6tTC8+etiDpF8cIFdXF1ddXSqPO1QOp8LZM6X4ulzteSqfO1cOp8LZ8XL1o+A3vpkv2BCOzly1bTwF65Yk29GtirVtZrgb1mfb0e2OtW2RuBvWGtvRnYm1bcW4G9Zd29HdjbVt87gb1jAdbdsxZjna8lWedrYdb5Wp4LC9d0+rK2Zp3W+Vqtdb7WbJ2vZVt3z1rCdb4Wcp2v5Vzna1HX+VrXdfesNV7na6XX+Vrvdb6WfN0/659/AYAoF8oADAAA"
+    }
+  ]
+}

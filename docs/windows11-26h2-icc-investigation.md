@@ -65,3 +65,21 @@ python3 scripts/theme/analyze-wallpaper-icc.py --native-report /path/to/windows-
 ```
 
 The comparator requires build 26300.9974, exact input colors and source ICC hashes, and valid output hashes. It reconstructs full candidate BGRX buffers with the existing resize helper, checks all six archived reference buffers, and ranks candidates by total absolute error. Unsupported API/format combinations stay visible as failures. A fixture-only local test derived candidate colors from the archived buffers; both reconstructed buffers matched their original SHA-256, and a deliberately incorrect output hash was rejected. This verifies the comparison plumbing, not a native transform match. Python syntax was checked locally on the isolated reconstruction. The PowerShell/C# collector has been reviewed against published SDK signatures but has not been compiled or executed on Windows; no native results are claimed. An exact candidate on the calibration set would still need independent mixed-color and transparency validation. Runtime revision 2 remains unchanged.
+
+
+## Native API results: exact calibration-buffer match
+
+The standalone probe was executed successfully on the reference build 26300.9974. All 274 candidates succeeded (256 ICM and 18 WIC); every 3,072-byte output and the input SHA-256 verified. The registered sRGB, registered Windows and installed sRGB targets all resolved to the same 3,144-byte ICC profile, SHA-256 `2B3AA1645779A9E634744FAF9B01E9102B0C9B88FD6DECED7934DF86B949AF7E`. The synthetic target is a separate profile. There are 29 distinct outputs for the sRGB input and 31 for linear sRGB.
+
+The offline comparator was executed in the isolated reconstruction of the repository with the existing resize helper; all six original buffer hashes and the source BGRA hash verified. A separate vectorized resampling check independently reproduced the same full-buffer hashes. The following paths matched both native cache buffers in every byte:
+
+| API | Destination | Formats | Intent | Flags |
+| --- | --- | --- | --- | --- |
+| WIC | registered sRGB or EXIF sRGB | BGR24, BGR32, BGRA32 | API default | API default |
+| ICM | registered sRGB | RGB24, BGRX32 | 0, 1, 2 | 3 (BEST_MODE) |
+
+There were 12 exact candidates per source (24 total); these are equivalent outputs on this calibration set, not 24 independent algorithms. Both reconstructed 256x256 BGRX buffers matched their archived SHA-256. No other candidate matched, including forced WCS_ALWAYS. The best forced WCS candidates still differed by 65,536 and 42,328 pixels, with maximum errors 24 and 32 respectively for the two profiles. The tested evidence shifts priority from forced WCS quantization to the high-quality ICC-compatible transform. It does not uniquely prove the shell's private call sequence or rendering intent.
+
+A [compact native evidence excerpt](windows11-26h2-icc-native-matches.json) preserves the original report SHA-256, the two exact WIC output buffers, their source/target identities and the matching parameter families. The full user-supplied report was analyzed locally; only representative synthetic outputs are archived. Regression coverage reconstructs both exact buffers from these independently captured RGB values using the existing runtime resampler. These bytes are test evidence only, not runtime lookup tables.
+
+The Windows reference operation is now reproduced for the measured opaque ICC calibration set. The portable Linux implementation remains revision 2 and is not byte-identical. Next investigate the ICC-compatible CMM's high-quality transform and the verified destination profile's structure; independently validate mixed RGB inputs and tagged transparency before a runtime change. No additional capture is required for this comparison. No full repository test or CI has been run.

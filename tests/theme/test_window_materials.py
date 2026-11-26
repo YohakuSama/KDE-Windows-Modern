@@ -977,6 +977,32 @@ class WindowMaterialTests(unittest.TestCase):
         self.assertEqual((native, srgb_native, linear_native),
                          ("0xAFD44343", "0xAFD24444", "0xAFD44343"))
 
+
+    def test_native_icc_transform_calibration_matches_cache(self):
+        try:
+            from PIL import ImageCms
+        except ImportError:
+            self.skipTest("optional Pillow ImageCms unavailable")
+        diagnostic = runpy.run_path(str(ROOT / "scripts/theme/analyze-wallpaper-icc.py"))
+        fixture = json.loads((ROOT / "docs/windows11-26h2-icc-native-matches.json").read_text(encoding="utf-8"))
+        samples, _, prepare, rows, layout, colors, _, _, references = diagnostic["reference_data"](ROOT)
+        self.assertEqual(fixture["windows_build"], "26300.9974")
+        self.assertEqual(fixture["color_count"], len(colors))
+        self.assertEqual(diagnostic["sha"](b"".join(map(bytes, colors))), fixture["input_rgb_sha256"])
+        self.assertEqual({item["source"] for item in fixture["samples"]}, {"srgb", "linear-srgb"})
+        for item in fixture["samples"]:
+            source = item["source"]
+            with self.subTest(source=source):
+                self.assertEqual(item["source_icc_sha256"],
+                                 samples[source]["image"]["pixel_validation"]["icc_profile_sha256"])
+                output = gzip.decompress(base64.b64decode(item["output_rgb_gzip_base64"], validate=True))
+                self.assertEqual(len(output), len(colors) * 3)
+                self.assertEqual(diagnostic["sha"](output), item["output_rgb_sha256"])
+                mapping = {color: output[3*i:3*i+3] for i, color in enumerate(colors)}
+                prepared = diagnostic["bitmap"](rows, layout, mapping, prepare)
+                self.assertEqual(diagnostic["sha"](prepared), item["bitmap_sha256"])
+                self.assertEqual(prepared, references[source])
+
     def test_wallpaper_file_to_reference_palette(self):
         try:
             from PIL import Image
