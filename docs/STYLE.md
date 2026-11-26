@@ -941,17 +941,21 @@ Reference:
 
 ### Quick Settings page structure, icon and blur consistency
 
-Both shared detail containers now instantiate their declared footer outside
-the scrollable body. This restores the already-connected settings actions
-for Wi-Fi, Bluetooth, battery, brightness (two links), volume, devices and
-power profiles. A null footer consumes no layout space. The links keep a
-stable intrinsic width while their host fills the available width.
+Both shared detail containers now own one PageFooter outside the scroll
+viewport. The previous StackView footer overlay has been removed so the
+same settings component cannot be instantiated twice. The original divider
+and four logical pixels of separation are retained. A null footer consumes
+no layout space; existing settings actions and multi-link footers retain
+their stable intrinsic width. The native applet footer path is unchanged.
 
 The common detail back button, Bluetooth add-device button, main Settings
 gear and its settings menu now resolve their artwork only through the
 existing private Windows import. Missing artwork leaves a text action
-instead of an implicit Breeze icon. This does not establish complete
-system icon coverage or change third-party identities.
+instead of an implicit Breeze icon. Clipboard close, more, delete, pin
+and unpin actions and the mapped emoji/clipboard tabs now also resolve
+through the private import; the fallback text retains access to actions.
+The keyboard brightness role uses the same resolver. This does not
+establish complete system icon coverage or change third-party identities.
 
 The two halves of the split tile paint from their actual hit-target
 positions in mirrored layouts, including outside corner radii, divider
@@ -964,8 +968,10 @@ geometry and radius as well as the media card position/size, so a layout
 or scale change updates the existing rounded blur region. The same
 debounced timer and compositor availability checks are retained. This
 is not a new DWM Acrylic shader, Mica implementation or a claim of
-compositor parity; live compositor preference changes and physical
-rendering still require validation.
+compositor parity. Both tray and clock refresh their existing blur region
+on delivered KConfig notifications for KWin's blurEnabled preference.
+No polling or compositor preference writes are added; notification delivery,
+effect availability timing and physical rendering still require validation.
 
 ### System accent propagation
 

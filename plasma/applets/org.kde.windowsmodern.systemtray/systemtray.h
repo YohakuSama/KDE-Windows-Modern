@@ -84,6 +84,7 @@ Q_SIGNALS:
     void clipboardHistoryRequested();
     void runDialogRequested();
     void accentPreferencesChanged();
+    void popupBlurPreferencesChanged();
 
 private Q_SLOTS:
     void scheduleWallpaperAccentSync();
@@ -99,6 +100,7 @@ private:
     void refreshWallpaperWatch(const KConfigGroup &group);
 
     KConfigWatcher::Ptr m_configWatcher;
+    KConfigWatcher::Ptr m_blurConfigWatcher;
     QFileSystemWatcher m_wallpaperWatch;
     QPointer<WallpaperAccentSource> m_wallpaperAccentSource;
     bool m_automaticWallpaperAccent = false;

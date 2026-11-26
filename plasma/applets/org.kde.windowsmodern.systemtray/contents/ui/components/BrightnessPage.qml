@@ -65,10 +65,13 @@ Lib.Page {
             Layout.leftMargin: 12
             Layout.rightMargin: 12
             visible: keyboardControl.isBrightnessAvailable
-            Kirigami.Icon {
+            Item {
                 Layout.preferredWidth: 20
                 Layout.preferredHeight: 20
-                source: "input-keyboard-brightness"
+                NativeGlyph {
+                    anchors.fill: parent
+                    roleName: "input-keyboard-brightness"
+                }
             }
             ColumnLayout {
                 Layout.fillWidth: true

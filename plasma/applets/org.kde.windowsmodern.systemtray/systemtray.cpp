@@ -784,6 +784,16 @@ void SystemTray::init()
         }
     });
 
+    // KConfig notifications are event driven; do not alter KWin's settings.
+    m_blurConfigWatcher = KConfigWatcher::create(
+        KSharedConfig::openConfig(QStringLiteral("kwinrc"), KConfig::NoGlobals));
+    connect(m_blurConfigWatcher.data(), &KConfigWatcher::configChanged, this,
+            [this](const KConfigGroup &group, const QByteArrayList &names) {
+        if (group.name() == u"Plugins" && names.contains(QByteArrayLiteral("blurEnabled"))) {
+            Q_EMIT popupBlurPreferencesChanged();
+        }
+    });
+
     // Use the existing tray and debounced sync rather than a polling process.
     // Wallpaper changes through the shell API and ordinary desktop config
     // saves both reach this path, as do activity and screen changes.

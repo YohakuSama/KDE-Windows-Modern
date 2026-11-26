@@ -105,6 +105,10 @@ Item {
     onSeparatedMediaChanged: scheduleSplitBlur()
     onCustomCardChanged: scheduleSplitBlur()
     onAllowSplitAcrylicChanged: scheduleSplitBlur()
+    Connections {
+        target: Plasmoid
+        function onPopupBlurPreferencesChanged() { popup.scheduleSplitBlur(); }
+    }
     onWidthChanged: scheduleSplitBlur()
     onHeightChanged: scheduleSplitBlur()
 

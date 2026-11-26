@@ -28,6 +28,11 @@ ColumnLayout {
     property var historyController: historyModel
     readonly property int historyCount: historyModel ? historyModel.count : 0
 
+    NativeGlyph {
+        id: iconResolver
+        visible: false
+    }
+
     Keys.onEscapePressed: page.closeRequested()
     Loader {
         id: historyLoader
@@ -47,11 +52,13 @@ ColumnLayout {
             font.weight: Font.DemiBold
         }
         PlasmaComponents3.ToolButton {
-            Layout.preferredWidth: 32
+            objectName: "wmClipboardClose"
+            readonly property string nativeIcon: iconResolver.resolveRole("window-close-symbolic")
+            Layout.preferredWidth: nativeIcon.length > 0 ? 32 : implicitWidth
             Layout.preferredHeight: 32
-            display: PlasmaComponents3.AbstractButton.IconOnly
+            display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly : PlasmaComponents3.AbstractButton.TextOnly
             text: i18n("Close")
-            icon.name: "window-close-symbolic"
+            icon.source: nativeIcon
             icon.width: 18
             icon.height: 18
             onClicked: page.closeRequested()
@@ -81,21 +88,24 @@ ColumnLayout {
                 text: modelData.label
                 onClicked: page.activeTab = modelData.key
                 contentItem: Item {
-                    Kirigami.Icon {
+                    NativeGlyph {
+                        id: tabGlyph
                         anchors.centerIn: parent
                         width: 22
                         height: 22
-                        visible: tab.modelData.glyph === ""
-                        source: tab.modelData.icon
-                        color: Kirigami.Theme.textColor
-                        isMask: true
+                        visible: tab.modelData.glyph === "" && nativeSource.length > 0
+                        roleName: tab.modelData.icon
                     }
                     Text {
                         anchors.centerIn: parent
-                        visible: tab.modelData.glyph !== ""
-                        text: tab.modelData.glyph
+                        width: Math.max(0, parent.width - 4)
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
+                        visible: tab.modelData.glyph !== "" || tabGlyph.nativeSource.length === 0
+                        text: tab.modelData.glyph || tab.modelData.label
+                        textFormat: Text.PlainText
                         color: Kirigami.Theme.textColor
-                        font.pixelSize: 17
+                        font.pixelSize: tab.modelData.glyph !== "" ? 17 : 12
                     }
                 }
                 background: Rectangle {
@@ -227,7 +237,7 @@ ColumnLayout {
                 anchors.topMargin: 8
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 8
-                width: Math.max(1, Math.min(card.width - 62, 220))
+                width: Math.max(1, Math.min(card.width - actionsColumn.width - 30, 220))
                 source: card.isImage ? card.model.decoration : ""
                 sourceSize.width: 300
                 sourceSize.height: 200
@@ -265,16 +275,20 @@ ColumnLayout {
                 anchors.topMargin: 4
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 4
-                width: 32
+                width: Math.min(Math.max(0, card.width - 20), Math.max(32,
+                    moreButton.nativeIcon.length > 0 ? 32 : Math.min(112, moreButton.implicitWidth),
+                    pinButton.visible && pinButton.nativeIcon.length === 0 ? Math.min(112, pinButton.implicitWidth) : 32))
                 spacing: Math.max(0, height - 64)
 
                 PlasmaComponents3.ToolButton {
                     id: moreButton
-                    width: 32
+                    objectName: "wmClipboardMore"
+                    readonly property string nativeIcon: iconResolver.resolveRole("view-more-symbolic")
+                    width: actionsColumn.width
                     height: 32
                     text: i18n("More actions")
-                    display: PlasmaComponents3.AbstractButton.IconOnly
-                    icon.name: "view-more-symbolic"
+                    display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly : PlasmaComponents3.AbstractButton.TextOnly
+                    icon.source: nativeIcon
                     icon.width: 16
                     icon.height: 16
                     onClicked: actions.opened ? actions.close() : actions.open()
@@ -287,20 +301,22 @@ ColumnLayout {
                         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
                         QQC2.MenuItem {
                             text: i18n("Delete")
-                            icon.name: "edit-delete-symbolic"
+                            icon.source: iconResolver.resolveRole("edit-delete-symbolic")
                             onTriggered: page.historyController.remove(card.model.uuid)
                         }
                     }
                 }
 
                 PlasmaComponents3.ToolButton {
-                    width: 32
+                    id: pinButton
+                    readonly property string nativeIcon: iconResolver.resolveRole(card.pinned ? "window-unpin" : "window-pin")
+                    width: actionsColumn.width
                     height: 32
                     objectName: "wmClipboardPin"
                     visible: card.supportsPin
                     text: card.pinned ? i18n("Unpin") : i18n("Pin")
-                    display: PlasmaComponents3.AbstractButton.IconOnly
-                    icon.name: card.pinned ? "window-unpin" : "window-pin"
+                    display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly : PlasmaComponents3.AbstractButton.TextOnly
+                    icon.source: nativeIcon
                     icon.width: 16
                     icon.height: 16
                     icon.color: card.pinned ? page.accent : Kirigami.Theme.textColor

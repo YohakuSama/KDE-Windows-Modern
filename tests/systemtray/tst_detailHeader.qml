@@ -93,14 +93,14 @@ Item {
             const link = findChild(loader.item, "wmTestFooterLink");
             verify(link);
             tryVerify(() => Math.abs(loader.y + loader.height - page.height) <= 1);
-            compare(loader.height, loader.item.implicitHeight);
+            compare(loader.height, loader.item.implicitHeight + 4);
             tryCompare(link, "width", loader.width);
             fixture.footerClicks = 0;
             mouseClick(link, link.width / 2, link.height / 2);
             compare(fixture.footerClicks, 1);
             page.footer = null;
             tryCompare(loader, "visible", false);
-            tryVerify(() => loader.item === null && loader.Layout.preferredHeight === 0);
+            tryVerify(() => loader.item === null && loader.implicitHeight === 0);
         }
 
         function test_conditionalAction() {

@@ -71,6 +71,11 @@ FocusScope {
     }
     onAllowSplitAcrylicChanged: scheduleSplitBlur()
     Connections {
+        target: expandedRoot.splitBlurProvider
+        ignoreUnknownSignals: true
+        function onPopupBlurPreferencesChanged() { expandedRoot.scheduleSplitBlur(); }
+    }
+    Connections {
         target: expandedRoot.clockApplet
         function onFlyoutOpenChanged() { expandedRoot.scheduleSplitBlur(); }
     }

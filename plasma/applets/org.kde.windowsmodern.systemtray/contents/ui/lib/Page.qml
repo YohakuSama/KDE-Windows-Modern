@@ -57,16 +57,7 @@ ColumnLayout {
         }
     }
 
-    // Instantiate the supplied settings actions outside the scrolling body.
-    // Keep a missing footer collapsed and allow multi-link footers.
-    Loader {
-        objectName: "wmDetailPageFooter"
-        active: page.footer !== null
+    PageFooter {
         sourceComponent: page.footer
-        visible: item !== null
-        Layout.fillWidth: true
-        Layout.preferredHeight: item ? item.implicitHeight : 0
-        Layout.minimumHeight: 0
-        Layout.maximumHeight: Layout.preferredHeight
     }
 }

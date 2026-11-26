@@ -15,7 +15,6 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
 import "components" as Components
-import "js/colorType.js" as ColorType
 QQC2.StackView {
     id: mainStack
     focus: true
@@ -29,9 +28,6 @@ QQC2.StackView {
     // Whether the active applet is one we render a themed flyout for.
     readonly property bool themedActive: !!(themedPages && themedPages[flyoutRouter.flyoutNameForApplet(activeApplet)])
 
-    // Height reserved at the bottom for the themed page's footer link.
-    readonly property int themedFooterHeight: (themedActive && footerLoader.item) ? themedFooter.implicitHeight : 0
-
     /* Heading — only relevant for unknown (non-themed) applets */
     property bool appletHasHeading: false
     property bool mergeHeadings: appletHasHeading && activeApplet && activeApplet.fullRepresentationItem && activeApplet.fullRepresentationItem.header && activeApplet.fullRepresentationItem.header.visible
@@ -43,10 +39,6 @@ QQC2.StackView {
 
     FlyoutRouter {
         id: flyoutRouter
-    }
-
-    function _themedContentHeight(): int {
-        return Math.max(0, mainStack.height - mainStack.themedFooterHeight)
     }
 
     onActiveAppletChanged: Qt.callLater(mainStack.showActiveApplet)
@@ -72,7 +64,7 @@ QQC2.StackView {
         if (comp) {
             const properties = {
                     "width": Qt.binding(() => mainStack.width),
-                    "height": Qt.binding(() => mainStack._themedContentHeight()),
+                    "height": Qt.binding(() => mainStack.height),
                     "x": 0,
                     "focus": Qt.binding(() => !mainStack.busy),
                     "opacity": 1,
@@ -144,37 +136,6 @@ QQC2.StackView {
                 systemTrayState.setActiveApplet(null)
                 mainStack.clear(QQC2.StackView.Immediate)
             }
-        }
-    }
-
-    // Footer link for themed pages (e.g. "More Wi-Fi settings"). Lib.Page
-    // declares `footer` as a Component but does not render it — we render it
-    // here so the link sits at the bottom of the flyout, Win11-style.
-    Rectangle {
-        id: themedFooter
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        visible: mainStack.themedActive && footerLoader.sourceComponent !== null
-        color: "transparent"
-        z: 10
-        implicitHeight: footerLoader.item ? footerLoader.item.implicitHeight + 4 : 0
-        height: implicitHeight
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            height: 1
-            color: ColorType.divider(ColorType.isDark(Kirigami.Theme.backgroundColor))
-        }
-
-        Loader {
-            id: footerLoader
-            anchors.fill: parent
-            sourceComponent: mainStack.themedActive && mainStack.currentItem && mainStack.currentItem.footer !== undefined ? mainStack.currentItem.footer : null
         }
     }
 
