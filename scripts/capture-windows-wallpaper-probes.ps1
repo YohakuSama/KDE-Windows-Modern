@@ -98,7 +98,7 @@ function Read-Capture([string]$Path) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
     if ($ProbeSet -in @('Refinement', 'Extraction') -and $sample.schema_version -lt 4) {
-        throw 'Refinement requires capture-windows-accent.ps1 schema 4 or newer.'
+        throw 'Refinement and Extraction require capture-windows-accent.ps1 schema 4 or newer.'
     }
     return $sample
 }

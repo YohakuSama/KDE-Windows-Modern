@@ -670,9 +670,10 @@ matching ImageColor before and after the call. Its alpha is 175, and
 its RGB matches DWM ColorizationColor. This confirms the native
 ARGB/ImageColor relationship for this wallpaper on build 26300.9974.
 The other eight probes were not individually checked through COM, so
-do not generalize this result to every probe or Windows build. The
-runtime still does not interpret the alpha byte. This is the first measured link between the shell's
-wallpaper candidate and the seven-color calculation.
+do not generalize this result to every probe or Windows build. Together,
+the matching RGB values link the native result, ImageColor and DWM
+candidate used by the seven-color calculation. The runtime still does
+not interpret the alpha byte.
 
 For eight chromatic captures, passing the ImageColor low 24-bit RGB
 through derive_automatic_palette() reproduces all seven UISettings
@@ -782,7 +783,7 @@ COM diagnostic. Run it in the same disposable Windows VM with Automatic
 accent and a static Picture background:
 
 ```powershell
-.\\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet Extraction
+.\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet Extraction
 ```
 
 Submit only the new report. Preserve the Basic and Refinement fixtures.
