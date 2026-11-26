@@ -46,14 +46,15 @@ Lib.DetailPage {
         height: page.radioOn ? 44 : 0
         visible: page.radioOn
         PlasmaComponents3.Button {
+            id: addDevice
             anchors.left: parent.left
             anchors.leftMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             text: i18n("Add device")
-            icon.source: addDeviceGlyph.nativeSource
-            NativeGlyph {
-                id: addDeviceGlyph
-                visible: false
+            icon.source: addDeviceContent.nativeSource
+            contentItem: NativeButtonContent {
+                id: addDeviceContent
+                button: addDevice
                 roleName: "list-add-symbolic"
             }
             onClicked: PlasmaBt.LaunchApp.launchWizard()

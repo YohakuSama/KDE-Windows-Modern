@@ -57,6 +57,8 @@ ColumnLayout {
         ignoreUnknownSignals: true
         function onDataChanged() { history.modelRevision++; }
         function onModelReset() { history.modelRevision++; }
+        function onRowsMoved() { history.modelRevision++; }
+        function onLayoutChanged() { history.modelRevision++; }
     }
 
     Win11Palette { id: palette }
@@ -120,7 +122,8 @@ ColumnLayout {
 
         FlyoutButton {
             id: dndToggle
-            Layout.preferredWidth: 28
+            Layout.preferredWidth: textFallback ? Math.min(84, implicitWidth) : 28
+            missingIconText: i18n("DND")
             text: history.effectiveDnd && !history.manualDnd
                 ? i18n("Do not disturb is active due to a rule or application")
                 : i18n("Manual do not disturb")
@@ -309,8 +312,10 @@ ColumnLayout {
                     Kirigami.Icon {
                         Layout.preferredWidth: Kirigami.Units.iconSizes.small
                         Layout.preferredHeight: Layout.preferredWidth
-                        visible: !card.inGroup
-                        source: card.model.applicationIconName || "preferences-desktop-notification"
+                        source: card.model.applicationIconName || dndToggle.resolveNativeIcon("notifications-symbolic")
+                        fallback: ""
+                        visible: !card.inGroup && String(source).length > 0
+                        isMask: !card.model.applicationIconName
                     }
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
@@ -329,8 +334,9 @@ ColumnLayout {
                         Layout.maximumWidth: 96
                     }
                     FlyoutButton {
-                        Layout.preferredWidth: 24
+                        Layout.preferredWidth: textFallback ? Math.min(72, implicitWidth) : 24
                         Layout.preferredHeight: 24
+                        missingIconText: card.model.isGroupExpanded ? i18n("Less") : i18n("More")
                         quiet: true
                         visible: card.isGroup
                         text: card.model.isGroupExpanded ? i18n("Show fewer") : i18n("Show more")
@@ -341,8 +347,9 @@ ColumnLayout {
                         PlasmaComponents.ToolTip { text: parent.text }
                     }
                     FlyoutButton {
-                        Layout.preferredWidth: 24
+                        Layout.preferredWidth: textFallback ? Math.min(72, implicitWidth) : 24
                         Layout.preferredHeight: 24
+                        missingIconText: i18n("Close")
                         quiet: true
                         text: card.isGroup ? i18n("Dismiss group") : i18n("Dismiss notification")
                         nativeIconName: "window-close"
@@ -388,8 +395,9 @@ ColumnLayout {
                             }
 
                             FlyoutButton {
-                                Layout.preferredWidth: 20
+                                Layout.preferredWidth: textFallback ? Math.min(72, implicitWidth) : 20
                                 Layout.preferredHeight: 20
+                                missingIconText: card.bodyExpanded ? i18n("Less") : i18n("More")
                                 quiet: true
                                 visible: !!card.model.body
                                 text: card.bodyExpanded ? i18n("Show fewer") : i18n("Show more")
@@ -401,8 +409,9 @@ ColumnLayout {
                             Item { Layout.fillWidth: true }
 
                             FlyoutButton {
-                                Layout.preferredWidth: 20
+                                Layout.preferredWidth: textFallback ? Math.min(72, implicitWidth) : 20
                                 Layout.preferredHeight: 20
+                                missingIconText: i18n("Close")
                                 quiet: true
                                 visible: card.inGroup && card.model.closable
                                 text: i18n("Dismiss notification")

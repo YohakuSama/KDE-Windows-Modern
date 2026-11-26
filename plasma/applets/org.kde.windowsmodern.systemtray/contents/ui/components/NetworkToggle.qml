@@ -8,11 +8,6 @@ import "../lib" as Lib
 Lib.SplitTile {
     id: tile
 
-    NativeGlyph {
-        id: menuGlyphs
-        visible: false
-    }
-
     PlasmaNM.Handler {
         id: handler
     }
@@ -94,15 +89,15 @@ Lib.SplitTile {
     PlasmaComponents3.Menu {
         id: networkMenu
 
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: tile.wifiAvailable ? i18n("Open Wi-Fi settings") : i18n("Network settings")
-            icon.source: menuGlyphs.resolveRole("configure")
+            nativeRole: "configure"
             onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Create hotspot…")
             visible: tile.wifiAvailable
-            icon.source: menuGlyphs.resolveRole("network-wireless-hotspot")
+            nativeRole: "network-wireless-hotspot"
             enabled: handler.hotspotSupported && !handler.hotspotActive
             onClicked: handler.createHotspot()
         }

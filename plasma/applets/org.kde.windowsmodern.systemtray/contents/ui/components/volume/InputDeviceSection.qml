@@ -4,13 +4,17 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.volume as Vol
 import "../../lib" as Lib
+import ".." as Components
 
 ColumnLayout {
     id: section
 
     property var models
     property bool expanded: false
+    // A single available device must remain selectable if the preferred
+    // backend device is temporarily absent or unusable.
     readonly property bool hasMultiple: models.sourceFilterModel.count > 1
+        || (models.sourceFilterModel.count > 0 && !models.sourceAvailable)
     onHasMultipleChanged: if (!hasMultiple) expanded = false
 
     spacing: 0
@@ -33,19 +37,15 @@ ColumnLayout {
     Component {
         id: arrowComponent
 
-        Kirigami.Icon {
+        Components.NativeGlyph {
             width: 16
             height: 16
-            source: "arrow-down"
-            color: Kirigami.Theme.textColor
-            isMask: true
+            roleName: "go-down-symbolic"
             rotation: section.expanded ? 180 : 0
-
             Behavior on rotation {
-                NumberAnimation {
-                    duration: 120
-                }
+                NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 120 : 0 }
             }
+
         }
     }
 
@@ -53,11 +53,12 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: section.expanded ? deviceList.implicitHeight : 0
         clip: true
-        visible: section.expanded
+        visible: section.expanded || height > 0
+        enabled: section.expanded
 
         Behavior on Layout.preferredHeight {
             NumberAnimation {
-                duration: 150
+                duration: Kirigami.Units.shortDuration > 0 ? 150 : 0
                 easing.type: Easing.OutQuad
             }
         }
@@ -77,8 +78,8 @@ ColumnLayout {
                     iconSource: model.Muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"
                     text: model.Description || model.Name || i18n("Unknown device")
                     onClicked: {
-                        models.setDefaultSource(model.PulseObject);
-                        section.expanded = false;
+                        if (models.setDefaultSource(model.PulseObject))
+                            section.expanded = false;
                     }
                 }
             }

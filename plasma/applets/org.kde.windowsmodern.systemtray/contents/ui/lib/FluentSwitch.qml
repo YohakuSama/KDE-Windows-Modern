@@ -42,7 +42,7 @@ QQC2.Switch {
             readonly property bool enlarged: control.enabled && (control.hovered || control.down)
             readonly property int stateDuration: Kirigami.Units.shortDuration <= 0 ? 0
                 : control.enabled ? 83 : 250
-            property real sidePosition: control.checked !== control.mirrored ? 1 : 0
+            property real sidePosition: control.visualPosition
             width: engaged ? 17 : enlarged ? 14 : 12
             height: enlarged ? 14 : 12
             radius: height / 2
@@ -53,6 +53,9 @@ QQC2.Switch {
                 + (engaged ? (1 - 2 * sidePosition) * 1.5 : 0)
             color: ColorType.switchKnobFill(control.dark, control.checked, control.enabled, control.accent)
             Behavior on sidePosition {
+                // During a real drag, the knob follows the native switch's
+                // visualPosition immediately, including mirrored layouts.
+                enabled: !control.pressed
                 NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutQuad }
             }
             Behavior on width {

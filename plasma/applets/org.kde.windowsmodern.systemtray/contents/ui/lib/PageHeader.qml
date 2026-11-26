@@ -28,22 +28,14 @@ RowLayout {
     Layout.bottomMargin: 4
     spacing: 8
 
-    PlasmaComponents3.ToolButton {
+    Components.NativeToolButton {
         objectName: "wmDetailBack"
-        readonly property string nativeIcon: backGlyph.nativeSource
+        nativeRole: header.LayoutMirroring.enabled || Application.layoutDirection === Qt.RightToLeft
+            ? "go-next-symbolic" : "go-previous-symbolic"
         Layout.preferredWidth: nativeIcon.length > 0 ? 36 : implicitWidth
         Layout.preferredHeight: 36
         Layout.alignment: Qt.AlignVCenter
         text: i18n("Back")
-        display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly
-            : PlasmaComponents3.AbstractButton.TextOnly
-        icon.source: nativeIcon
-        Components.NativeGlyph {
-            id: backGlyph
-            visible: false
-            roleName: header.LayoutMirroring.enabled || Application.layoutDirection === Qt.RightToLeft
-                ? "go-next-symbolic" : "go-previous-symbolic"
-        }
         icon.width: 18
         icon.height: 18
         onClicked: header.back()

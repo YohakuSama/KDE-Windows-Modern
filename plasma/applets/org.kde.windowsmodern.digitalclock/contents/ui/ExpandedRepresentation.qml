@@ -246,8 +246,9 @@ FocusScope {
                     }
 
                     FlyoutButton {
-                        Layout.preferredWidth: 24
+                        Layout.preferredWidth: textFallback ? Math.min(88, implicitWidth) : 24
                         Layout.preferredHeight: 24
+                        missingIconText: expandedRoot.calendarBodyShown ? i18n("Hide") : i18n("Show")
                         enabled: expandedRoot.calendarCanExpand
                         text: expandedRoot.calendarBodyShown ? i18n("Collapse calendar") : i18n("Expand calendar")
                         nativeIconName: expandedRoot.calendarBodyShown ? "go-down-symbolic" : "go-up-symbolic"
@@ -394,6 +395,7 @@ FocusScope {
                             && expandedRoot.focusSession.durationMinutes > 5
                         text: i18n("Decrease focus duration")
                         nativeIconName: "list-remove"
+                        missingIconText: "−"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: expandedRoot.focusSession.adjust(-5)
                         PlasmaComponents.ToolTip { text: parent.text }
@@ -418,6 +420,7 @@ FocusScope {
                             && expandedRoot.focusSession.durationMinutes < 240
                         text: i18n("Increase focus duration")
                         nativeIconName: "list-add"
+                        missingIconText: "+"
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: expandedRoot.focusSession.adjust(5)
                         PlasmaComponents.ToolTip { text: parent.text }

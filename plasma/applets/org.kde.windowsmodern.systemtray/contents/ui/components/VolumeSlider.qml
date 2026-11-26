@@ -19,6 +19,7 @@ Lib.Slider {
     soundOutputDetails: true
     detailsAccessibleName: i18n("Sound output")
     iconClickable: sinkAvailable
+    iconAccessibleName: sinkAvailable && sink.muted ? i18n("Unmute") : i18n("Mute")
 
     readonly property int maxVol: sinkAvailable && sink.canRaiseVolume ? 98304 : 65536
 
@@ -60,24 +61,24 @@ Lib.Slider {
     PlasmaComponents3.Menu {
         id: volumeMenu
 
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: sinkAvailable && sink.muted ? i18n("Unmute") : i18n("Mute")
             enabled: root.sinkAvailable
-            icon.name: sinkAvailable && sink.muted ? "audio-volume-muted" : "audio-volume-high"
+            nativeRole: sinkAvailable && sink.muted ? "audio-volume-muted" : "audio-volume-high"
             onClicked: {
                 if (sinkAvailable)
                     sink.muted = !sink.muted;
             }
         }
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Test sound")
-            icon.name: "audio-volume-high"
+            nativeRole: "audio-volume-high"
             enabled: root.sinkAvailable
             onClicked: if (root.sinkAvailable) feedback.play(root.sink.index)
         }
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Audio settings")
-            icon.name: "configure"
+            nativeRole: "configure"
             onClicked: KCMLauncher.openSystemSettings("kcm_pulseaudio")
         }
     }

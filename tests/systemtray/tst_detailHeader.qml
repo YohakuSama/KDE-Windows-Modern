@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib" as Lib
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
 
 Item {
     id: fixture
@@ -51,6 +52,13 @@ Item {
             footer: footerContent
         }
     }
+    Component {
+        id: missingMenuComponent
+        Components.NativeMenuItem {
+            text: "More settings"
+            nativeRole: "wm-test-absent-glyph-not-installed"
+        }
+    }
     SignalSpy { id: toggled; target: header; signalName: "switchToggled" }
     SignalSpy { id: wentBack; target: header; signalName: "back" }
     SignalSpy { id: action; target: header; signalName: "actionTriggered" }
@@ -58,6 +66,21 @@ Item {
         name: "DetailHeaderGeometry"
         when: windowShown
         function center(item) { return item.mapToItem(header, 0, item.height / 2).y; }
+        function test_nativeButtonAndMenuMaskContract() {
+            const back = findChild(header, "wmDetailBack");
+            const glyph = findChild(back, "wmNativeButtonGlyph");
+            verify(back && glyph);
+            verify(glyph.isMask);
+            compare(glyph.nativeSource, back.nativeIcon);
+            compare(back.contentItem.labelShown, back.nativeIcon.length === 0);
+            const menu = createTemporaryObject(missingMenuComponent, fixture);
+            verify(menu);
+            compare(menu.nativeIcon, "");
+            const menuGlyph = findChild(menu, "wmNativeMenuGlyph");
+            verify(menuGlyph && menuGlyph.isMask);
+            compare(menuGlyph.nativeSource, "");
+            compare(menu.text, "More settings");
+        }
         function test_commonCenterlineAndSwitch() {
             header.showSwitch = true;
             header.showAction = false;

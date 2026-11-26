@@ -28,11 +28,6 @@ ColumnLayout {
     property var historyController: historyModel
     readonly property int historyCount: historyModel ? historyModel.count : 0
 
-    NativeGlyph {
-        id: iconResolver
-        visible: false
-    }
-
     Keys.onEscapePressed: page.closeRequested()
     Loader {
         id: historyLoader
@@ -51,14 +46,12 @@ ColumnLayout {
             text: picker.status === Loader.Ready ? i18n("Emoji and more") : i18n("Clipboard history")
             font.weight: Font.DemiBold
         }
-        PlasmaComponents3.ToolButton {
+        NativeToolButton {
             objectName: "wmClipboardClose"
-            readonly property string nativeIcon: iconResolver.resolveRole("window-close-symbolic")
+            nativeRole: "window-close-symbolic"
             Layout.preferredWidth: nativeIcon.length > 0 ? 32 : implicitWidth
             Layout.preferredHeight: 32
-            display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly : PlasmaComponents3.AbstractButton.TextOnly
             text: i18n("Close")
-            icon.source: nativeIcon
             icon.width: 18
             icon.height: 18
             onClicked: page.closeRequested()
@@ -286,15 +279,13 @@ ColumnLayout {
                     pinButton.visible && pinButton.nativeIcon.length === 0 ? Math.min(112, pinButton.implicitWidth) : 32))
                 spacing: Math.max(0, height - 64)
 
-                PlasmaComponents3.ToolButton {
+                NativeToolButton {
                     id: moreButton
                     objectName: "wmClipboardMore"
-                    readonly property string nativeIcon: iconResolver.resolveRole("view-more-symbolic")
+                    nativeRole: "view-more-symbolic"
                     width: actionsColumn.width
                     height: 32
                     text: i18n("More actions")
-                    display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly : PlasmaComponents3.AbstractButton.TextOnly
-                    icon.source: nativeIcon
                     icon.width: 16
                     icon.height: 16
                     onClicked: actions.opened ? actions.close() : actions.open()
@@ -305,24 +296,22 @@ ColumnLayout {
                         x: moreButton.width - width
                         y: moreButton.height + 4
                         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
-                        QQC2.MenuItem {
+                        NativeMenuItem {
                             text: i18n("Delete")
-                            icon.source: iconResolver.resolveRole("edit-delete-symbolic")
+                            nativeRole: "edit-delete-symbolic"
                             onTriggered: page.historyController.remove(card.model.uuid)
                         }
                     }
                 }
 
-                PlasmaComponents3.ToolButton {
+                NativeToolButton {
                     id: pinButton
-                    readonly property string nativeIcon: iconResolver.resolveRole(card.pinned ? "window-unpin" : "window-pin")
+                    nativeRole: card.pinned ? "window-unpin" : "window-pin"
                     width: actionsColumn.width
                     height: 32
                     objectName: "wmClipboardPin"
                     visible: card.supportsPin
                     text: card.pinned ? i18n("Unpin") : i18n("Pin")
-                    display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly : PlasmaComponents3.AbstractButton.TextOnly
-                    icon.source: nativeIcon
                     icon.width: 16
                     icon.height: 16
                     icon.color: card.pinned ? page.accent : Kirigami.Theme.textColor

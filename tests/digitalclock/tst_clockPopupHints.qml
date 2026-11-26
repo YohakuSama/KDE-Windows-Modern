@@ -4,6 +4,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtTest
+import org.kde.plasma.components as PlasmaComponents
 import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui"
 
 Item {
@@ -57,6 +58,16 @@ Item {
         property string currentTimeZone: "Local"
         function selectedTimeZonesDeduplicatingExplicitLocalTimeZone() { return []; }
     }
+    FlyoutButton {
+        id: missingGlyphAction
+        x: 360
+        y: 580
+        text: "Dismiss notification"
+        nativeIconName: "wm-test-absent-glyph-not-installed"
+        missingIconText: "Close"
+        display: PlasmaComponents.AbstractButton.IconOnly
+        width: 58
+    }
     ExpandedRepresentation {
         id: popup
         clockApplet: clock
@@ -66,6 +77,13 @@ Item {
     TestCase {
         name: "ClockExpandedRepresentation"
         when: windowShown
+        function test_missingNativeActionRemainsVisible() {
+            compare(missingGlyphAction.nativeIconSource, "");
+            verify(missingGlyphAction.missingIcon);
+            verify(missingGlyphAction.textFallback);
+            verify(missingGlyphAction.contentItem.labelShown);
+            verify(!missingGlyphAction.contentItem.iconShown);
+        }
         function test_splitAcrylicUsesExistingBackendOrSolidFallback() {
             const panel = findChild(popup, "wmNotificationPanel");
             compare(popup.splitAcrylic, false);

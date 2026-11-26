@@ -23,7 +23,7 @@ QtObject {
             {
                 role: "Name",
                 value: function (name) {
-                    return name.indexOf("speech-dispatcher") !== 0;
+                    return String(name || "").indexOf("speech-dispatcher") !== 0;
                 }
             }
         ]
@@ -44,10 +44,14 @@ QtObject {
     }
 
     function setDefaultSink(pulseObject) {
+        if (!pulseObject || pulseObject.name === "auto_null") return false;
         pulseObject.default = true;
+        return true;
     }
 
     function setDefaultSource(pulseObject) {
+        if (!pulseObject || pulseObject.name === "auto_null") return false;
         pulseObject.default = true;
+        return true;
     }
 }

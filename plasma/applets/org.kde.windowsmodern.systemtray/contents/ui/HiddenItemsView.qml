@@ -14,27 +14,35 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.extras as PlasmaExtras
+import "lib" as Lib
+import "js/colorType.js" as ColorType
 
 PlasmaComponents3.ScrollView {
     id: hiddenTasksView
 
     property alias layout: hiddenTasks
 
-    // Shows up to this many rows; more hidden items scroll.
-    readonly property int maximumRows: 3
-    readonly property int rows: Math.ceil(hiddenTasks.count / hiddenTasks.columns)
-    // Decided from the item count, never from geometry: the view's height
-    // follows its content, so a geometry-based scrollbar would change the
-    // width, the cell size, the height, and loop.
-    readonly property bool scrolls: rows > maximumRows
-    // Height of the tiles actually present, so the Quick Settings flyout fits
-    // its content instead of padding it with empty space.
-    readonly property int contentRowsHeight: Math.min(rows, maximumRows) * hiddenTasks.cellHeight
+    // One geometry plan from ExpandedRepresentation, including work-area
+    // limits and the optional scroll rail. Do not recompute from the
+    // ScrollView's effective width after its scrollbar becomes visible.
+    required property var metrics
+    readonly property int maximumRows: metrics.maximumRows
+    readonly property int rows: metrics.rows
+    readonly property bool scrolls: metrics.scrolls
+    readonly property int contentRowsHeight: metrics.contentHeight
 
     hoverEnabled: true
+    padding: 0
     background: null
+    HoverHandler { id: viewportHover }
     QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
-    QQC2.ScrollBar.vertical.policy: scrolls ? QQC2.ScrollBar.AlwaysOn : QQC2.ScrollBar.AlwaysOff
+    QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
+        width: hiddenTasksView.metrics.railWidth
+        policy: hiddenTasksView.scrolls ? QQC2.ScrollBar.AlwaysOn : QQC2.ScrollBar.AlwaysOff
+        dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+        viewportHovered: viewportHover.hovered
+        scrolling: hiddenTasks.moving || hiddenTasks.flicking
+    }
 
     GridView {
         id: hiddenTasks
@@ -43,13 +51,9 @@ PlasmaComponents3.ScrollView {
 
         // Compact Windows 11 overflow grid, independent of Quick Settings.
 
-        // From the full width (not availableWidth, which changes with the
-        // scrollbar) so cell size cannot feed back into the view's height.
-        // Not floored: flooring loses a pixel per column and leaves the grid's
-        // right edge short of the toggles below (pixelAligned rounds anyway).
-        cellWidth: (hiddenTasksView.width
-                    - (hiddenTasksView.scrolls ? hiddenTasksView.QQC2.ScrollBar.vertical.width : 0)) / columns
-        cellHeight: Math.round(cellWidth)
+        cellWidth: hiddenTasksView.metrics.cellWidth
+        cellHeight: hiddenTasksView.metrics.cellHeight
+        boundsBehavior: Flickable.StopAtBounds
 
         currentIndex: -1
         highlight: PlasmaExtras.Highlight {}

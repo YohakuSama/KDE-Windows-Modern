@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../../lib" as Lib
+import ".." as Components
 import "../../js/colorType.js" as ColorType
 
 ColumnLayout {
@@ -39,12 +40,25 @@ ColumnLayout {
                     anchors.rightMargin: 10
                     spacing: 8
 
-                    Kirigami.Icon {
+                    Item {
                         Layout.preferredWidth: 20
                         Layout.preferredHeight: 20
-                        source: model.IconName || "audio-volume-high"
-                        color: Kirigami.Theme.textColor
-                        isMask: true
+                        // Preserve genuine application branding. Only the
+                        // generic system fallback comes from Windows.
+                        Kirigami.Icon {
+                            anchors.fill: parent
+                            source: model.IconName || ""
+                            fallback: ""
+                            visible: !!model.IconName && valid
+                            isMask: false
+                            roundToIconSize: false
+                            id: applicationIcon
+                        }
+                        Components.NativeGlyph {
+                            anchors.fill: parent
+                            roleName: "audio-volume-high-symbolic"
+                            visible: !applicationIcon.visible && nativeSource.length > 0
+                        }
                     }
 
                     PlasmaComponents3.Label {

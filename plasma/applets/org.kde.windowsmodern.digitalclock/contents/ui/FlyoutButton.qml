@@ -10,11 +10,16 @@ PlasmaComponents.Button {
     property bool quiet: false
     property bool attentionActive: false
     property string nativeIconName: ""
-    readonly property string nativeIconSource: {
-        if (!/^[A-Za-z0-9_.+-]+$/.test(nativeIconName)) return "";
-        const names = nativeIconName.endsWith("-symbolic")
-            ? [nativeIconName, nativeIconName.slice(0, -9)]
-            : [nativeIconName + "-symbolic", nativeIconName];
+    property string missingIconText: text
+    readonly property bool missingIcon: nativeIconName.length > 0 && nativeIconSource.length === 0
+    readonly property bool textFallback: missingIcon && display === PlasmaComponents.AbstractButton.IconOnly
+    Accessible.name: text
+    readonly property string nativeIconSource: resolveNativeIcon(nativeIconName)
+    function resolveNativeIcon(role) {
+        if (!/^[A-Za-z0-9_.+-]+$/.test(role)) return "";
+        const names = role.endsWith("-symbolic")
+            ? [role, role.slice(0, -9)]
+            : [role + "-symbolic", role];
         for (const name of names) {
             for (const context of ["actions", "status"]) {
                 const file = StandardPaths.locate(StandardPaths.GenericDataLocation,
@@ -41,14 +46,14 @@ PlasmaComponents.Button {
     icon.color: selected ? colors.accentText : colors.text
     palette.buttonText: selected ? colors.accentText : colors.text
     // The stock ButtonContent uses a theme-aware Kirigami.Icon but does not
-    // force a mask for file URLs. Explicitly tint the private SVG and reserve
-    // the same logical icon slot even when a resource is missing.
+    // force a mask for file URLs. Explicitly tint the private SVG; if an
+    // icon-only action lacks its import, show its text instead of a blank slot.
     contentItem: GridLayout {
         id: content
-        readonly property bool iconShown: control.nativeIconName.length > 0
+        readonly property bool iconShown: control.nativeIconSource.length > 0
             && control.display !== PlasmaComponents.AbstractButton.TextOnly
-        readonly property bool labelShown: control.text.length > 0
-            && control.display !== PlasmaComponents.AbstractButton.IconOnly
+        readonly property bool labelShown: control.textFallback ? control.missingIconText.length > 0
+            : control.text.length > 0 && control.display !== PlasmaComponents.AbstractButton.IconOnly
         columns: control.display === PlasmaComponents.AbstractButton.TextBesideIcon ? 2 : 1
         rowSpacing: control.spacing
         columnSpacing: control.spacing
@@ -83,7 +88,8 @@ PlasmaComponents.Button {
             visible: content.labelShown
             Layout.fillWidth: true
             Layout.fillHeight: true
-            text: control.Kirigami.MnemonicData.richTextLabel
+            text: control.textFallback ? control.missingIconText : control.Kirigami.MnemonicData.richTextLabel
+            textFormat: control.textFallback ? Text.PlainText : Text.AutoText
             font: control.font
             color: control.selected ? colors.accentText : colors.text
             horizontalAlignment: control.display === PlasmaComponents.AbstractButton.TextBesideIcon

@@ -24,10 +24,13 @@ Item {
         reserveDetailsSpace: true
         showArrow: true
         soundOutputDetails: true
+        iconClickable: true
+        iconAccessibleName: "Mute"
         iconSource: "audio-volume-high-symbolic"
         value: 35
         onMoved: v => value = v
     }
+    SignalSpy { id: iconClicks; target: volume; signalName: "iconClicked" }
     TestCase {
         name: "InputMethodAndSlider"
         when: windowShown
@@ -148,6 +151,29 @@ Item {
             tryCompare(control, "enabled", true);
             mouseClick(control, Math.round(control.width * 0.8), Math.round(control.height / 2));
             tryVerify(() => volume.value >= 70);
+        }
+
+        function test_leadingActionKeyboard() {
+            const slot = findChild(volume, "wmFluentSliderLeadingSlot");
+            const passive = findChild(brightness, "wmFluentSliderLeadingSlot");
+            verify(slot && passive);
+            verify(slot.activeFocusOnTab);
+            verify(!passive.activeFocusOnTab);
+            iconClicks.clear();
+            try {
+                slot.forceActiveFocus();
+                tryCompare(slot, "activeFocus", true);
+                keyClick(Qt.Key_Space);
+                compare(iconClicks.count, 1);
+                keyClick(Qt.Key_Return);
+                compare(iconClicks.count, 2);
+                volume.iconClickable = false;
+                tryCompare(slot, "activeFocusOnTab", false);
+                keyClick(Qt.Key_Space);
+                compare(iconClicks.count, 2);
+            } finally {
+                volume.iconClickable = true;
+            }
         }
 
         function test_realPointerAndWheel_data() {

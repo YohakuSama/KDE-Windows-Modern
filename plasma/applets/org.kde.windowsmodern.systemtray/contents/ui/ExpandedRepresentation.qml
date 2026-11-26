@@ -49,9 +49,9 @@ Item {
     readonly property int frameHeight: customCard ? 0 : Math.round(dialog.margins.top + dialog.margins.bottom)
     readonly property int popupWidth: TrayMetrics.flyoutWidth(availableWidth, uiScale,
         overflowHome, frameWidth, quickHome || quickDetail)
-    readonly property int overflowHeight: Math.max(1, Math.min(3, hiddenItemsView.rows))
-        * Math.max(24, Math.round((popupWidth - 16 * uiScale) / 5))
-        + Math.round(16 * uiScale)
+    readonly property var overflowMetrics: TrayMetrics.overflowGeometry(popupWidth,
+        availableHeight - frameHeight, uiScale, root.hiddenModel ? root.hiddenModel.count : 0)
+    readonly property int overflowHeight: overflowMetrics.height
     Mpris.Mpris2Model { id: mediaModel }
     readonly property int mediaGap: Math.round(TrayMetrics.mediaCardGap * uiScale)
     readonly property int mediaHeight: Math.round(TrayMetrics.mediaCardHeight * uiScale)
@@ -203,11 +203,10 @@ Item {
             Layout.fillWidth: true
             visible: plasmoidHeading.visible
 
-            PlasmaComponents.ToolButton {
+            Components.NativeToolButton {
                 id: backButton
                 visible: systemTrayState.activeApplet && systemTrayState.activeApplet.expanded
-                icon.name: mirrored ? "go-previous-symbolic-rtl" : "go-previous-symbolic"
-                display: PlasmaComponents.AbstractButton.IconOnly
+                nativeRole: mirrored ? "go-next-symbolic" : "go-previous-symbolic"
                 text: i18nc("@action:button", "Go Back")
                 KeyNavigation.down: container
                 onClicked: if (typeof systemTrayState.activeApplet?.backAction !== "undefined" && systemTrayState.activeApplet.backAction.enabled) {
@@ -256,7 +255,7 @@ Item {
                 }
             }
 
-            PlasmaComponents.ToolButton {
+            Components.NativeToolButton {
                 id: actionsButton
                 visible: visibleActions > 0
                 enabled: visibleActions > 1 || (singleAction && singleAction.enabled)
@@ -270,10 +269,11 @@ Item {
                     if (!action.isSeparator) { const p = src[i - 1]; if (p?.isSeparator && dst.length > 0) dst.push(p); dst.push(action) }
                     return dst
                 }, []) : []
-                icon.name: "application-menu"
+                nativeRole: "application-menu"
                 checkable: visibleActions > 1 || (singleAction && singleAction.checkable)
-                contentItem.opacity: visibleActions > 1
-                display: PlasmaComponents.AbstractButton.IconOnly
+                contentItem.opacity: visibleActions > 1 ? 1 : 0
+                display: visibleActions > 1 && nativeIcon.length === 0 ? PlasmaComponents.AbstractButton.TextOnly
+                    : PlasmaComponents.AbstractButton.IconOnly
                 text: singleAction ? singleAction.text : i18n("More actions")
                 Accessible.role: singleAction ? Accessible.Button : Accessible.ButtonMenu
                 KeyNavigation.down: backButton.KeyNavigation.down
@@ -299,11 +299,10 @@ Item {
                     onObjectRemoved: (index, object) => configMenu.removeMenuItem(object)
                 }
             }
-            PlasmaComponents.ToolButton {
+            Components.NativeToolButton {
                 id: configureButton
-                icon.name: "configure"
+                nativeRole: "configure"
                 visible: actionsButton.applet && actionsButton.applet.plasmoid.internalAction("configure")
-                display: PlasmaComponents.AbstractButton.IconOnly
                 text: {
                     const a = actionsButton.applet
                     const action = a ? a.plasmoid.internalAction("configure") : null
@@ -315,13 +314,12 @@ Item {
                 PlasmaComponents.ToolTip { text: parent.visible ? parent.text : "" }
                 onClicked: actionsButton.applet.plasmoid.internalAction("configure").trigger()
             }
-            PlasmaComponents.ToolButton {
+            Components.NativeToolButton {
                 id: pinButton
                 checkable: true
                 checked: Plasmoid.configuration.pin
                 onToggled: Plasmoid.configuration.pin = checked
-                icon.name: "window-pin"
-                display: PlasmaComponents.AbstractButton.IconOnly
+                nativeRole: "window-pin"
                 text: i18n("Keep Open")
                 KeyNavigation.down: backButton.KeyNavigation.down
                 KeyNavigation.left: configureButton.visible ? configureButton : configureButton.KeyNavigation.left
@@ -340,12 +338,14 @@ Item {
 
             HiddenItemsView {
                 id: hiddenItemsView
+                metrics: popup.overflowMetrics
                 Layout.fillWidth: true
+                Layout.minimumHeight: 0
                 Layout.preferredHeight: hiddenItemsView.contentRowsHeight
-                Layout.leftMargin: Math.round(8 * actionPanel.uiScale)
-                Layout.rightMargin: Math.round(8 * actionPanel.uiScale)
-                Layout.topMargin: Math.round(8 * actionPanel.uiScale)
-                Layout.bottomMargin: Math.round(8 * actionPanel.uiScale)
+                Layout.leftMargin: popup.overflowMetrics.inset
+                Layout.rightMargin: popup.overflowMetrics.inset
+                Layout.topMargin: popup.overflowMetrics.inset
+                Layout.bottomMargin: popup.overflowMetrics.inset
                 visible: popup.overflowHome && root.hiddenLayout.itemCount > 0
                 KeyNavigation.up: pinButton
                 onVisibleChanged: {

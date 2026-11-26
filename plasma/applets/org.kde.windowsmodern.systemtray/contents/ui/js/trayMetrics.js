@@ -175,6 +175,29 @@ function flyoutWidth(availableWidth, scale, overflow, frameWidth, paginated = tr
     const base = overflow ? 216 : paginated ? quickPanelWidth : standardFlyoutWidth;
     return Math.max(1, Math.min(availableWidth, Math.round(base * scale)) - frameWidth);
 }
+// Overflow content and its native popup must use the same pitch. Decide
+// rail visibility before deriving the rail-reduced cell width, so a
+// scrollbar cannot create a width/height/visibility feedback loop.
+function overflowGeometry(width, availableHeight, scale, count) {
+    const w = Math.max(1, Math.floor(width));
+    const budget = Math.max(1, Math.floor(availableHeight));
+    const inset = Math.max(0, Math.min(Math.round(8 * scale),
+        Math.floor((w - 1) / 2), Math.floor((budget - 1) / 2)));
+    const innerWidth = w - 2 * inset;
+    const innerBudget = budget - 2 * inset;
+    const columns = 5;
+    const rows = Math.ceil(Math.max(0, count) / columns);
+    const nominalPitch = Math.max(1, Math.round(innerWidth / columns));
+    const maximumRows = Math.max(1, Math.min(3, Math.floor(innerBudget / nominalPitch)));
+    const scrolls = rows > maximumRows || rows * nominalPitch > innerBudget;
+    const railWidth = scrolls ? Math.min(16, Math.max(0, innerWidth - columns)) : 0;
+    const cellWidth = (innerWidth - railWidth) / columns;
+    const cellHeight = Math.max(1, Math.round(cellWidth));
+    const contentHeight = Math.min(innerBudget, Math.max(1, Math.min(Math.max(1, rows), maximumRows) * cellHeight));
+    return {inset, rows, maximumRows, scrolls, railWidth, cellWidth, cellHeight,
+        contentHeight, height: contentHeight + 2 * inset};
+}
+
 function quickSettingsHeight(availableHeight, nominalHeight, detailMinimum = 0) {
     return Math.max(1, Math.min(availableHeight, Math.max(nominalHeight, detailMinimum)));
 }

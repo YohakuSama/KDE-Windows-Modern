@@ -298,18 +298,15 @@ Lib.DetailPage {
                                 }
                                 onAccepted: if (acceptableInput) delegate.doNext()
 
-                                PlasmaComponents3.ToolButton {
+                                NativeToolButton {
                                     id: passwordButton
-                                    readonly property string nativeIcon: connectionGlyph.resolveRole(delegate.showPassword ? "view-visible" : "view-hidden")
+                                    nativeRole: delegate.showPassword ? "view-visible" : "view-hidden"
                                     anchors.right: parent.right
                                     anchors.rightMargin: 2
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: nativeIcon.length > 0 ? 30 : implicitWidth
                                     height: 30
                                     text: delegate.showPassword ? i18n("Hide password") : i18n("Show password")
-                                    display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly
-                                        : PlasmaComponents3.AbstractButton.TextOnly
-                                    icon.source: nativeIcon
                                     icon.width: 16
                                     icon.height: 16
                                     onClicked: delegate.showPassword = !delegate.showPassword

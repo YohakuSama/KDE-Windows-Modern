@@ -50,6 +50,15 @@ Current implementation values are provisional until verified on the desktop.
 - Follow the Fluent scroll control baseline: 16px input region, 2px
   indicator, 6px expanded thumb, native attached dragging. Wheel detents
   accumulate to 120 units; handle continuous pixel gestures correctly.
+- The hidden tray grid and its popup consume one geometry plan: five
+  columns, up to three visible rows, a bounded work area, and the existing
+  16px scroll rail when needed. Short screens can scroll instead of
+  clipping remaining icons. The native KSVG frame and shadow are retained;
+  exact Windows overflow dimensions and material compositing remain open.
+- Audio input/output lists retain a selectable row when the preferred
+  device is absent but one real device is available. The main mute action
+  is keyboard accessible, the switch knob follows native drag position,
+  and mirrored sound-output chevrons follow the slider layout direction.
 
 ## Calendar and notifications
 
@@ -61,6 +70,12 @@ Current implementation values are provisional until verified on the desktop.
 - Preserve translated calendar labels, actual history, events, optional
   agenda and time zones. Clear history without cancelling transfer jobs.
   Focus owns only its own inhibition; keep native DND state.
+- Missing private system artwork uses the original action's short text
+  where needed, never a silently substituted KDE icon. Genuine
+  application icons remain untouched by the system glyph mapping.
+  Shared system button and menu content explicitly masks imported
+  monochrome SVGs using the active foreground; the native control still
+  owns its background, padding, focus, check state and activation.
 - Calendar wheel paging handles 120-unit detents and continuous pixel
   input without repeated inertia paging. Verify real touchpad gestures.
 

@@ -92,15 +92,12 @@ Rectangle {
                 }
             }
 
-            PlasmaComponents3.ToolButton {
+            NativeToolButton {
                 objectName: "wmDeviceMoreActions"
                 visible: row.hasOtherActions && row.canOperate
                 enabled: row.canOperate
-                readonly property string nativeIcon: deviceGlyph.resolveRole(row.expanded ? "go-up-symbolic" : "view-more-symbolic")
-                display: nativeIcon.length > 0 ? PlasmaComponents3.AbstractButton.IconOnly
-                    : PlasmaComponents3.AbstractButton.TextOnly
+                nativeRole: row.expanded ? "go-up-symbolic" : "view-more-symbolic"
                 text: row.expanded ? i18n("Show less") : i18n("More actions")
-                icon.source: nativeIcon
                 icon.width: 16
                 icon.height: 16
                 onClicked: row.expanded = !row.expanded
@@ -109,6 +106,7 @@ Rectangle {
         }
 
         PlasmaComponents3.Button {
+            id: defaultAction
             objectName: "wmDeviceDefaultAction"
             Layout.alignment: Qt.AlignRight
             visible: row.hasDefault && row.present
@@ -116,7 +114,12 @@ Rectangle {
             text: row.defaultText
             // Backend actions can carry arbitrary KDE icons; show only
             // roles that resolve in the private Windows import.
-            icon.source: deviceGlyph.resolveRole(row.actions?.defaultActionIcon || "")
+            icon.source: defaultActionPaint.nativeSource
+            contentItem: NativeButtonContent {
+                id: defaultActionPaint
+                button: defaultAction
+                roleName: row.actions?.defaultActionIcon || ""
+            }
             onClicked: row.triggerAction(row.defaultName)
         }
 
@@ -124,6 +127,7 @@ Rectangle {
             id: otherActions
             model: row.actions ?? null
             delegate: PlasmaComponents3.Button {
+                id: otherAction
                 // Native KDE DeviceItem uses the delegate model object for
                 // these uppercase role names. QML property names cannot
                 // start with uppercase letters.
@@ -133,7 +137,12 @@ Rectangle {
                 visible: row.expanded && row.canOperate
                 enabled: row.canOperate
                 text: model.Text
-                icon.source: deviceGlyph.resolveRole(model.Icon || "")
+                icon.source: otherActionPaint.nativeSource
+                contentItem: NativeButtonContent {
+                    id: otherActionPaint
+                    button: otherAction
+                    roleName: otherAction.model.Icon || ""
+                }
                 onClicked: row.triggerAction(model.Name)
             }
         }

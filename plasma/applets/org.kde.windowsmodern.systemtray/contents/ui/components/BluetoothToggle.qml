@@ -7,11 +7,6 @@ import "../lib" as Lib
 Lib.SplitTile {
     id: tile
 
-    NativeGlyph {
-        id: menuGlyphs
-        visible: false
-    }
-
     property QtObject btManager: BluezQt.Manager
 
     readonly property bool available: btManager.bluetoothBlocked || btManager.adapters.length > 0
@@ -55,14 +50,14 @@ Lib.SplitTile {
     PlasmaComponents3.Menu {
         id: btMenu
 
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Bluetooth devices")
-            icon.source: menuGlyphs.resolveRole("preferences-system-bluetooth")
+            nativeRole: "preferences-system-bluetooth"
             onClicked: tile.arrowClicked()
         }
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Bluetooth settings")
-            icon.source: menuGlyphs.resolveRole("configure")
+            nativeRole: "configure"
             onClicked: KCMLauncher.openSystemSettings("kcm_bluetooth")
         }
     }

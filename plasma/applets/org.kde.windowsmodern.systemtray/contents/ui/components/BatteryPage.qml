@@ -238,10 +238,15 @@ Lib.Page {
             Layout.fillWidth: true
             spacing: 8
 
-            Kirigami.Icon {
+            Item {
                 Layout.preferredWidth: 20
                 Layout.preferredHeight: 20
-                source: page.blockSleep ? "system-suspend-inhibited" : "system-suspend-uninhibited"
+                visible: sleepGlyph.nativeSource.length > 0
+                NativeGlyph {
+                    id: sleepGlyph
+                    anchors.fill: parent
+                    roleName: page.blockSleep ? "system-suspend-inhibited" : "system-suspend-uninhibited"
+                }
             }
 
             PlasmaComponents3.Label {

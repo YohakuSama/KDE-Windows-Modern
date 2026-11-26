@@ -23,6 +23,12 @@ fi
 state="$TRANSPARENCY_OFF_FILE"
 mode="${1:-status}"
 
+# Hold the shared lock across the full explicit operation, not just
+# individual renderer writes. Read the saved state only after acquiring it.
+case "$mode" in
+    on|off|refresh) lock_appearance_writes || exit 1 ;;
+esac
+
 case "$mode" in
     off)
         if [ -f "$state" ] && [ "$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)" = false ]; then

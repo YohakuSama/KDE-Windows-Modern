@@ -94,29 +94,29 @@ Rectangle {
     PlasmaComponents3.Menu {
         id: gearMenu
 
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Display settings")
-            icon.source: settingsBtn.resolveIcon("preferences-desktop-display")
+            nativeRole: "preferences-desktop-display"
             onClicked: KCMLauncher.openSystemSettings("kcm_kscreen")
         }
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Sound settings")
-            icon.source: settingsBtn.resolveIcon("audio-volume-high")
+            nativeRole: "audio-volume-high"
             onClicked: KCMLauncher.openSystemSettings("kcm_pulseaudio")
         }
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Network settings")
-            icon.source: settingsBtn.resolveIcon("network-wireless")
+            nativeRole: "network-wireless"
             onClicked: KCMLauncher.openSystemSettings("kcm_networkmanagement")
         }
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Power settings")
-            icon.source: settingsBtn.resolveIcon("battery")
+            nativeRole: "battery"
             onClicked: KCMLauncher.openSystemSettings("kcm_powerdevilprofilesconfig")
         }
-        PlasmaComponents3.MenuItem {
+        NativeMenuItem {
             text: i18n("Notification settings")
-            icon.source: settingsBtn.resolveIcon("notifications")
+            nativeRole: "notifications"
             onClicked: KCMLauncher.openSystemSettings("kcm_notifications")
         }
     }

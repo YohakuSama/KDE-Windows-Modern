@@ -45,6 +45,7 @@ Item {
     property string detailsIconSource: ""
     property string detailsAccessibleName: ""
     property bool iconClickable: false
+    property string iconAccessibleName: ""
     // Keep the details action usable even when there is no audio output.
     property bool trackEnabled: true
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
@@ -80,6 +81,28 @@ Item {
         Item {
             objectName: "wmFluentSliderLeadingSlot"
             visible: root.iconSource.length > 0
+            activeFocusOnTab: root.iconClickable
+            Accessible.ignored: !root.iconClickable
+            Accessible.role: Accessible.Button
+            Accessible.name: root.iconAccessibleName || root.sliderAccessibleName
+            Accessible.onPressAction: if (root.iconClickable) root.iconClicked()
+            Keys.onReturnPressed: event => {
+                if (root.iconClickable && !event.isAutoRepeat) root.iconClicked();
+            }
+            Keys.onEnterPressed: event => {
+                if (root.iconClickable && !event.isAutoRepeat) root.iconClicked();
+            }
+            Keys.onSpacePressed: event => {
+                if (root.iconClickable && !event.isAutoRepeat) root.iconClicked();
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 4
+                color: "transparent"
+                border.width: parent.activeFocus && root.iconClickable ? 1 : 0
+                border.color: root.accent
+            }
             Layout.minimumWidth: root.leadingWidth
             Layout.preferredWidth: root.leadingWidth
             Layout.maximumWidth: root.leadingWidth
@@ -255,7 +278,7 @@ Item {
                     objectName: "wmFluentSliderDetailsChevron"
                     width: Math.max(6, Math.round((root.reserveDetailsSpace ? 8 : 12) * root.controlScale))
                     height: parent.glyphExtent
-                    roleName: "go-next-symbolic"
+                    roleName: slider.mirrored ? "go-previous-symbolic" : "go-next-symbolic"
                     roundToIconSize: false
                     isMask: true
                     color: Kirigami.Theme.textColor

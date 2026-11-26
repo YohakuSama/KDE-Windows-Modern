@@ -369,13 +369,17 @@ apply_appearance_mode() {
 # they are off, holding the blur setting to restore.
 TRANSPARENCY_OFF_FILE="$HOME/.local/share/windows-modern/transparency-off"
 
-# Serialize local color-scheme and Kvantum writes with switch-mode.sh.
+# Serialize local color-scheme, popup and Kvantum writes with switch-mode.sh.
+# Nested helpers inherit the parent's open lock descriptor in a subshell.
 # System-wide installation does not modify the user's appearance files.
+_wm_appearance_lock_held=false
 lock_appearance_writes() {
+    [ "$_wm_appearance_lock_held" = false ] || return 0
     [ "$UID" -ne 0 ] && [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] || return 0
     command -v flock >/dev/null || { warn "Missing flock for appearance changes."; return 1; }
     exec 8>"$XDG_RUNTIME_DIR/windows-modern-appearance.lock" || return 1
     flock -w 8 8 || { warn "An appearance change is already running."; return 1; }
+    _wm_appearance_lock_held=true
 }
 
 # Long-lived application windows stay opaque in both modes. KWin supplies
@@ -418,6 +422,7 @@ apply_window_materials() (
 # Preserve panel layout, opacity preferences and inner widget backgrounds.
 apply_popup_materials() (
     [ "$UID" -ne 0 ] || return 0
+    lock_appearance_writes || return 1
     local mode variant role source target
     appearance_stage="$(mktemp -d)" || return 1
     trap 'rm -rf -- "$appearance_stage"' EXIT

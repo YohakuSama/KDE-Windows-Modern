@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../../lib" as Lib
+import ".." as Components
 import "../../js/funcs.js" as Funcs
 
 ColumnLayout {
@@ -10,7 +11,10 @@ ColumnLayout {
 
     property var models
     property bool expanded: false
+    // A single available device must remain selectable if the preferred
+    // backend device is temporarily absent or unusable.
     readonly property bool hasMultiple: models.sinkFilterModel.count > 1
+        || (models.sinkFilterModel.count > 0 && !models.sinkAvailable)
     onHasMultipleChanged: if (!hasMultiple) expanded = false
 
     spacing: 0
@@ -34,14 +38,14 @@ ColumnLayout {
 
     Component {
         id: arrowComponent
-        Kirigami.Icon {
+        Components.NativeGlyph {
             width: 16
             height: 16
-            source: "arrow-down"
-            color: Kirigami.Theme.textColor
-            isMask: true
+            roleName: "go-down-symbolic"
             rotation: section.expanded ? 180 : 0
-            Behavior on rotation { NumberAnimation { duration: 120 } }
+            Behavior on rotation {
+                NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 120 : 0 }
+            }
         }
     }
 
@@ -49,10 +53,11 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: section.expanded ? deviceList.implicitHeight : 0
         clip: true
-        visible: section.expanded
+        visible: section.expanded || height > 0
+        enabled: section.expanded
 
         Behavior on Layout.preferredHeight {
-            NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 150 : 0; easing.type: Easing.OutQuad }
         }
 
         ColumnLayout {
@@ -70,9 +75,11 @@ ColumnLayout {
                     iconSource: Funcs.volIconName(model.Volume, model.Muted)
                     text: model.Description || model.Name || i18n("Unknown device")
                     onClicked: {
-                        models.setDefaultSink(model.PulseObject)
-                        models.playFeedback(model.PulseObject.index)
-                        section.expanded = false
+                        const device = model.PulseObject;
+                        if (models.setDefaultSink(device)) {
+                            models.playFeedback(device.index);
+                            section.expanded = false;
+                        }
                     }
                 }
             }

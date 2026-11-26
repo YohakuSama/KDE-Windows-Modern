@@ -51,7 +51,7 @@ Lib.Page {
                     case "balanced":
                         return "emblem-ok";
                     case "power-saver":
-                        return "battery-low";
+                        return "battery-profile-powersave-symbolic";
                     default:
                         return "";
                     }

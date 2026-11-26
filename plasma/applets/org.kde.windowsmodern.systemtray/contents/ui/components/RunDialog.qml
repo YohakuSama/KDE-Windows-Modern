@@ -82,11 +82,17 @@ Item {
                 height: 62
                 spacing: 12
 
-                Kirigami.Icon {
-                    source: "system-run"
+                Item {
                     Layout.preferredWidth: 28
                     Layout.preferredHeight: 28
                     Layout.minimumWidth: 0
+                    visible: runGlyph.nativeSource.length > 0
+                    NativeGlyph {
+                        id: runGlyph
+                        objectName: "wmRunGlyph"
+                        anchors.fill: parent
+                        roleName: "system-run"
+                    }
                 }
 
                 PlasmaComponents3.TextField {

@@ -137,6 +137,27 @@ TestCase {
         compare(Metrics.splitSecondaryWidth(72, 1), 36);
         compare(Metrics.splitSecondaryWidth(180, 1.5), 72);
     }
+    function test_overflowUsesOneGeometryPlan() {
+        for (const scale of [0.35, 0.75, 1, 1.25, 1.5, 2]) {
+            const width = Math.round(216 * scale);
+            for (const count of [0, 1, 5, 6, 15, 16, 40]) {
+                const g = Metrics.overflowGeometry(width, 720, scale, count);
+                compare(g.rows, Math.ceil(count / 5));
+                compare(g.height, g.contentHeight + g.inset * 2);
+                verify(Math.abs(g.cellWidth * 5 + g.railWidth + g.inset * 2 - width) < 0.001);
+                compare(g.scrolls, count > 15);
+                verify(g.contentHeight <= Math.max(1, Math.min(Math.max(1, g.rows), 3) * g.cellHeight));
+                verify(g.cellWidth > 0 && g.cellHeight > 0);
+            }
+        }
+        const short = Metrics.overflowGeometry(216, 65, 1, 12);
+        verify(short.scrolls);
+        verify(short.height <= 65);
+        verify(short.maximumRows < 3);
+        const tiny = Metrics.overflowGeometry(10, 5, 1, 1);
+        verify(tiny.height <= 5 && tiny.cellWidth > 0);
+    }
+
     function test_systemGroup() {
         verify(Metrics.isQuickSettings("org.kde.plasma.networkmanagement"));
         verify(Metrics.isQuickSettings("org.kde.plasma.volume"));
