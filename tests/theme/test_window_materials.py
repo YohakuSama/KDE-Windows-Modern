@@ -56,6 +56,7 @@ class WindowMaterialTests(unittest.TestCase):
                         dynamic = [node for node in stops if node.get("stop-color") == "currentColor"
                                    or "stop-color:currentColor" in node.get("style", "")]
                         self.assertEqual(len(dynamic), count)
+                        self.assertEqual(len(dynamic), len(stops))
                         original_stops = list(original[gradient_id])
                         self.assertEqual(gradient.attrib, original[gradient_id].attrib)
                         self.assertEqual([node.get("offset") for node in stops],

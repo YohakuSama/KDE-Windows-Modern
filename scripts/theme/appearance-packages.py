@@ -232,12 +232,13 @@ NATIVE_ACCENT_FILLS = {
     "tabbar": 10, "lineedit": 3, "tasks": 2,
     "slider": 0, "switch": 0,
 }
-# These four paint servers contain actual accent stops. The other stop
-# colors in the analog meter and containment controls are distinct
-# historical gradient colors, not occurrences of the accent token.
+# All stops in these four accent paint servers share the native Highlight
+# role. The analog meter and containment editor are KDE-only controls;
+# their legacy teal companion paints have been retired, not replaced with
+# guessed Windows accent shades. Keep the paint-server IDs and geometry.
 NATIVE_ACCENT_GRADIENTS = {
-    "analog_meter": {"linearGradient3857": 1},
-    "containment-controls": {"linearGradient4303": 1, "linearGradient4291": 1},
+    "analog_meter": {"linearGradient3857": 2},
+    "containment-controls": {"linearGradient4303": 2, "linearGradient4291": 2},
     "glowbar": {"a": 3},
 }
 SCHEME_STYLESHEET = re.compile(
