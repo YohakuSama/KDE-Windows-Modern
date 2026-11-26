@@ -310,6 +310,7 @@ fi
 # Validate the extracted source before creating a build or touching the desktop.
 # No legacy nix-hash invocation on a directory or locale-sensitive path.
 for required in nix/test-runtime.nix scripts/nixos-test-state.py scripts/verify-nixos-runtime.py \
+    app-decorations/kvantum/live-reload-1.1.9.patch \
     plasma/applets/org.kde.windowsmodern.systemtray/CMakeLists.txt \
     plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/main.qml \
     plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt \
@@ -392,6 +393,12 @@ export GI_TYPELIB_PATH
 "$PYTHON" "$ROOT/scripts/check-startmenu-keys.py"
 prefix="$(cat "$PROFILE/wm-qt-plugin-prefix")"
 plugin="$PROFILE/$prefix"
+kvantum_reload="$(cat "$PROFILE/wm-kvantum-reload")"
+case "$kvantum_reload" in
+    live-reload:1.1.9) printf 'Kvantum 测试运行时：1.1.9 实时重载补丁\n' ;;
+    stock:*) printf 'Kvantum 测试运行时：%s（同名样式实时重载未接入）\n' "${kvantum_reload#stock:}" ;;
+    *) echo "Kvantum 运行时标记无效，拒绝切换桌面。" >&2; exit 1 ;;
+esac
 if [ "$with_konsole" -eq 1 ]; then
     konsole_package="$(cat "$PROFILE/wm-konsole-package")"
     if [[ "$konsole_package" != /nix/store/* ]] ||
@@ -620,11 +627,10 @@ busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null
 "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" clipboard-apply
 "$PYTHON" "$ROOT/scripts/windows-shortcuts.py" run-apply
 
-# Opt into native wallpaper extraction only when no accent mode was
-# specified. Never discard a saved Windows ramp during an upgrade.
-if [ -z "$(kreadconfig6 --file kdeglobals --group WindowsModernAccent --key Palette)" ] &&
-   [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
-    kwriteconfig6 --notify --file kdeglobals --group General --key accentColorFromWallpaper --type bool true
+# A fresh unconfigured installation uses the Windows wallpaper analyzer.
+# The helper preserves existing Windows and native KDE accent choices.
+if [ "$upgrading" -eq 0 ]; then
+    bash "$ROOT/scripts/theme/switch-mode.sh" --initialize-accent
 fi
 
 "$PYTHON" "$ROOT/scripts/app-appearance.py" apply

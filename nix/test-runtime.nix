@@ -99,6 +99,12 @@ let
     namespace = "containmentactions";
   };
   python = pkgs.python3.withPackages (p: [ p.pillow p.fonttools p.pygobject3 ]);
+  stockKvantum = pkgs.qt6Packages.qtstyleplugin-kvantum;
+  # Same Qt ABI and plugin key. Apply only to the reviewed upstream tag.
+  kvantumLiveReload = stockKvantum.version == "1.1.9";
+  kvantum = if kvantumLiveReload then stockKvantum.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ../app-decorations/kvantum/live-reload-1.1.9.patch ];
+  }) else stockKvantum;
   # Only the explicit full test includes Konsole. Never put its private
   # libraries or the stock command name in the shared Plasma runtime.
   konsole = import ./konsole-chrome.nix { inherit nixpkgsPath konsoleVersion; };
@@ -113,13 +119,14 @@ assert lib.assertMsg (k.plasma-workspace.version == plasmaVersion)
 pkgs.symlinkJoin {
   name = "windows-modern-nixos-test-runtime-" + plasmaVersion + "-" + buildToken;
   paths = [
-    tasks tray contextmenu pkgs.qt6Packages.qtstyleplugin-kvantum pkgs.bibata-cursors
+    tasks tray contextmenu kvantum pkgs.bibata-cursors
     python pkgs.git pkgs.curl pkgs.gnutar pkgs.zip pkgs.unzip pkgs.dbus
     pkgs.xdg-utils pkgs.haruna k.kate pkgs.mission-center
   ] ++ lib.optional (konsoleVersion != "") konsoleLauncher;
   postBuild = ''
     printf '%s\n' '${buildToken}' > "$out/wm-build-token"
     printf '%s\n' '${prefix}' > "$out/wm-qt-plugin-prefix"
+    printf '%s\n' '${if kvantumLiveReload then "live-reload:" + stockKvantum.version else "stock:" + stockKvantum.version}' > "$out/wm-kvantum-reload"
     printf '%s\n' '${lib.getLib pkgs.glib}/lib/girepository-1.0:${pkgs.gobject-introspection}/lib/girepository-1.0' > "$out/wm-gi-typelib-path"
   '' + lib.optionalString (konsoleVersion != "") ''
     printf '%s\n' '${konsole}' > "$out/wm-konsole-package"

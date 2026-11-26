@@ -342,6 +342,65 @@ class WindowMaterialTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Incomplete"):
             control["decode_state"](json.dumps(state))
 
+    def test_kvantum_reload_receipt_contains_both_complete_pairs(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        publish = sync["publish_kvantum_reload"]
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "Windows-modern"
+            directory.mkdir()
+            (directory / "accent-bindings.json").write_text("{}")
+            names = [name + suffix for name in ("Windows-modern", "Windows-modernDark")
+                     for suffix in (".kvconfig", ".svg")]
+            for name in names:
+                (directory / name).write_text(name)
+            with patch.object(publish.__globals__["os"], "geteuid", return_value=1000):
+                self.assertTrue(publish(directory))
+                receipt = directory / "live-reload.json"
+                old = receipt.read_bytes()
+                self.assertEqual(json.loads(old), {"schema_version": 1, "files": {
+                    name: hashlib.sha256(name.encode()).hexdigest() for name in names}})
+                self.assertFalse(publish(directory))
+                (directory / names[0]).unlink()
+                with self.assertRaises(ValueError):
+                    publish(directory)
+                self.assertEqual(receipt.read_bytes(), old)
+                (directory / names[0]).write_text("updated")
+                self.assertTrue(publish(directory))
+                self.assertNotEqual(receipt.read_bytes(), old)
+
+    def test_pending_automatic_request_is_not_a_sample(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        pending = control["pending_automatic_state"]()
+        self.assertTrue(pending["pending"])
+        self.assertNotIn("wallpapers", pending)
+        self.assertNotIn("analysis_revision", pending)
+        self.assertEqual(control["decode_state"](json.dumps(pending)),
+                         control["SYNC"]["derive_manual_palette"]("#0078D4"))
+        for invalid in ({**pending, "pending": False}, {**pending, "pending": 1},
+                        {**pending, "wallpapers": []}, {**pending, "source": "manual"}):
+            with self.assertRaises(ValueError):
+                control["decode_state"](json.dumps(invalid))
+
+    def test_initialize_preserves_existing_accent_choices(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        sync = control["SYNC"]
+        raw = json.dumps(control["pending_automatic_state"]())
+        for stored, native, wallpaper in ((raw, (False, None), None),
+                                          (None, (True, None), "true"),
+                                          (None, (False, "#FF0000"), None),
+                                          (None, (False, None), "false")):
+            def read(group, key):
+                if group == control["GROUP"]:
+                    return stored
+                return wallpaper if key == "accentColorFromWallpaper" else None
+            with patch.dict(control["synchronize"].__globals__, {
+                    "active_mode": lambda mode: True,
+                    "read": read, "native_accent": lambda: native,
+                    "automatic_state": Mock(side_effect=AssertionError("must not analyze"))}), \
+                 patch.dict(sync, {"write_pending": Mock(side_effect=AssertionError("must not write"))}):
+                self.assertEqual(control["synchronize"]("dark", "initialize", []),
+                                 False if stored is not None else None)
+
     def test_automatic_accent_stale_transaction(self):
         control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
         sync = control["SYNC"]

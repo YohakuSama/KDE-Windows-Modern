@@ -6,6 +6,10 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Add a content-addressed local Kvantum reload receipt and version-gated Qt 6 V1.1.9 NixOS style patch. Reload the same verified Windows Modern renderer on the GUI thread after committed accent changes, without style cycling or restarting an application. Preserve custom and stock style paths.
+
+- Initialize the Windows automatic accent path for unconfigured full installations rather than silently opting into KDE wallpaper extraction. Preserve existing selections and retain a distinct pending request when the first wallpaper is not ready.
+
 - Add a private, hash-pinned RGB8 ICC replay for the two measured Windows 26H2 source profiles, convert only the pre-resampling taps, and invalidate automatic accent/material caches when the reference changes. Verify every owned KDE color/WM role and recheck explicit wallpaper selection through publication. Keep arbitrary ICC table generation and same-style live reload open.
 
 - Bound split Acrylic regions to the actual logical popup window, reject empty or invalid cards, and switch back to opaque paint on blur preference changes. Include the saved transparency marker and KWin blur choice in the existing checked renderer transaction; preserve the original preference across repeated off and refresh.

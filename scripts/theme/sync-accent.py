@@ -6,6 +6,7 @@ import colorsys
 from fractions import Fraction
 from functools import lru_cache
 from io import BytesIO
+import hashlib
 import json
 import math
 import os
@@ -943,6 +944,46 @@ def write_pending(pending):
     return written
 
 
+def publish_kvantum_reload(directory):
+    """Publish the complete local renderer pairs while holding the writer lock.
+
+    A content-addressed receipt lets a live style reject intermediate or
+    rolled-back SVG/config pairs. No new theme or service is installed.
+    """
+    if os.geteuid() == 0:
+        raise ValueError("Publish the Kvantum reload receipt as the desktop user")
+    if not directory.is_dir():
+        return False
+    if directory.is_symlink() or directory.parent.is_symlink():
+        raise ValueError("Refusing externally managed Kvantum directory")
+    if not (directory / "accent-bindings.json").is_file():
+        return False
+    owned_file(directory / "accent-bindings.json")
+    files = {}
+    for name in ("Windows-modern", "Windows-modernDark"):
+        for suffix in (".kvconfig", ".svg"):
+            filename = name + suffix
+            path = owned_file(directory / filename)
+            with path.open("rb") as stream:
+                data = stream.read(8 * 1024 * 1024 + 1)
+            if not data or len(data) > 8 * 1024 * 1024:
+                raise ValueError("Invalid Kvantum reload asset length: " + filename)
+            files[filename] = hashlib.sha256(data).hexdigest()
+    payload = (json.dumps({"schema_version": 1, "files": files},
+                          separators=(",", ":"), sort_keys=True) + "\n").encode("ascii")
+    path = directory / "live-reload.json"
+    if path.exists() or path.is_symlink():
+        if owned_file(path).read_bytes() == payload:
+            return False
+        atomic_write(path, payload)
+    else:
+        with tempfile.NamedTemporaryFile(prefix=".wm-reload-", dir=directory) as temp:
+            temp.write(payload)
+            temp.flush()
+            os.link(temp.name, path)
+    return True
+
+
 def synchronize(directory, mode, selection):
     if os.geteuid() == 0:
         raise ValueError("Run accent synchronization as the desktop user")
@@ -956,7 +997,19 @@ def main():
     parser.add_argument("selection", nargs="?")
     parser.add_argument("--analyze-wallpaper", metavar="IMAGE", type=Path, nargs="+",
                         help="read-only candidate palette from one or more explicit local images")
+    parser.add_argument("--publish-kvantum-reload", type=Path, metavar="DIRECTORY",
+                        help="publish committed local Kvantum asset hashes under the appearance lock")
     args = parser.parse_args()
+    if args.publish_kvantum_reload is not None:
+        if args.analyze_wallpaper is not None or any(value is not None for value in (
+                args.directory, args.mode, args.selection)):
+            parser.error("--publish-kvantum-reload is a separate operation")
+        try:
+            changed = publish_kvantum_reload(args.publish_kvantum_reload)
+        except (OSError, ValueError) as error:
+            parser.exit(1, f"Kvantum reload receipt: {error}\n")
+        print("changed" if changed else "unchanged")
+        return
     if args.analyze_wallpaper is not None:
         if any(value is not None for value in (args.directory, args.mode, args.selection)):
             parser.error("--analyze-wallpaper cannot be combined with Kvantum synchronization")

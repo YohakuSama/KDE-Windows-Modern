@@ -10,9 +10,9 @@ missing="__windows_modern_missing_appearance_key__"
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 [ "$EUID" -ne 0 ] || fail "Switch appearance as the desktop user, not root."
 [ "$#" -ge 1 ] || fail "Specify an appearance operation."
-usage="Usage: switch-mode.sh light|dark|--migrate|--sync-accent|--manual-accent RGB|--wallpaper-accent IMAGE...|--automatic-accent|--native-accent"
+usage="Usage: switch-mode.sh light|dark|--migrate|--sync-accent|--manual-accent RGB|--wallpaper-accent IMAGE...|--automatic-accent|--native-accent|--initialize-accent"
 case "$1" in
-    light|dark|--migrate|--sync-accent|--automatic-accent|--native-accent) [ "$#" -eq 1 ] || fail "$usage" ;;
+    light|dark|--migrate|--sync-accent|--automatic-accent|--native-accent|--initialize-accent) [ "$#" -eq 1 ] || fail "$usage" ;;
     --manual-accent) [ "$#" -eq 2 ] || fail "$usage" ;;
     --wallpaper-accent) [ "$#" -ge 2 ] || fail "$usage" ;;
     *) fail "Unknown appearance mode: $1" ;;
@@ -177,10 +177,10 @@ sync_accent() {
     esac
     result="$(sync_renderer_accent "$current_mode" "$action" "$@")" || return $?
     if [ "$result" = changed ]; then
-        # This is a best-effort notification. Plasma-integration deliberately
-        # skips recreating a QStyle when its name has not changed.
+        # Stock plasma-integration skips same-name QStyle recreation.
+        # The version-matched Kvantum build consumes the committed receipt.
         busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
-        printf '%s\n' "Accent assets updated; open Kvantum applications may need reopening."
+        printf '%s\n' "Accent assets updated."
     fi
 }
 
@@ -209,6 +209,14 @@ sync_material() {
     esac
 }
 
+publish_kvantum_reload() {
+    local python
+    [ -f "$config/Kvantum/Windows-modern/accent-bindings.json" ] || return 0
+    python="$(accent_python)" || return 1
+    "$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/sync-accent.py" \
+        --publish-kvantum-reload "$config/Kvantum/Windows-modern" >/dev/null
+}
+
 sync_appearance() {
     local accent_status=0 material_status=0
     # They share the appearance lock and Kvantum atlas. Finish both paths
@@ -217,7 +225,9 @@ sync_appearance() {
     sync_material || material_status=$?
     if [ "$accent_status" -eq 75 ] || [ "$material_status" -eq 75 ]; then return 75; fi
     [ "$accent_status" -eq 0 ] || return "$accent_status"
-    return "$material_status"
+    [ "$material_status" -eq 0 ] || return "$material_status"
+    publish_kvantum_reload || echo "Appearance saved; live Kvantum reload receipt could not be published." >&2
+    return 0
 }
 
 case "$1" in
@@ -225,13 +235,14 @@ case "$1" in
         [ "$active" = "$theme_id" ] || exit 0
         sync_appearance
         exit $? ;;
-    --manual-accent|--wallpaper-accent|--automatic-accent|--native-accent)
+    --manual-accent|--wallpaper-accent|--automatic-accent|--native-accent|--initialize-accent)
         [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."
         action="${1#--}"
         action="${action%-accent}"
         shift
-        sync_accent "$action" "$@"
-        exit $? ;;
+        sync_accent "$action" "$@" || exit $?
+        publish_kvantum_reload || echo "Accent saved; live Kvantum reload receipt could not be published." >&2
+        exit 0 ;;
 esac
 
 [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."

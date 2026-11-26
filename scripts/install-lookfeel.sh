@@ -63,7 +63,7 @@ fi
 variant="$(ask_theme_variant)"
 theme="$(lookfeel_id "$variant")"
 
-apply_lookandfeel "$theme" reset
+apply_lookandfeel "$theme" reset native
 apply_appearance_mode "$variant"
 # Let the layout script finish writing panels before restarting Plasma.
 sleep 1

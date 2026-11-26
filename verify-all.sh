@@ -47,6 +47,7 @@ check_file "scripts/theme/switch-mode.sh"                    "Appearance-only mo
 check_file "scripts/theme/sync-accent.py"                    "Shared accent synchronization helper"
 check_file "scripts/theme/accent-control.py"                 "Windows global accent control"
 check_file "scripts/theme/wallpaper-icc.py"                  "Verified local ICC replay helper"
+check_file "app-decorations/kvantum/live-reload-1.1.9.patch" "Version-matched Qt 6 Kvantum live reload source"
 check_file "Kvantum/Windows-modern/Windows-modern.kvconfig.in" "Shared Kvantum configuration source"
 check_file "Kvantum/Windows-modern/Windows-modern.svg.in"      "Shared Kvantum artwork source"
 check_dir  "wallpaper/Windows-modern"                       "Wallpaper"

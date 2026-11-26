@@ -164,6 +164,13 @@ def automatic_state(previous):
     return state
 
 
+def pending_automatic_state():
+    # The default blue is the measured preset, not a sampled wallpaper.
+    # A separate pending flag prevents it from being cached as a result.
+    return {"schema_version": 1, "source": "automatic", "pending": True,
+            "palette": SYNC["derive_manual_palette"]("#0078D4")}
+
+
 def decode_state(raw):
     if raw is None:
         return None
@@ -171,6 +178,10 @@ def decode_state(raw):
     if (not isinstance(state, dict) or type(state.get("schema_version")) is not int
             or state["schema_version"] != 1 or state.get("source") not in ("manual", "wallpaper", "automatic")):
         raise ValueError("Unrecognized Windows accent state")
+    if "pending" in state:
+        if state != pending_automatic_state() or state["pending"] is not True:
+            raise ValueError("Invalid pending automatic accent state")
+        return state["palette"]
     if state["source"] == "automatic":
         images = state.get("wallpapers")
         if (not isinstance(state.get("activity"), str) or not isinstance(images, list)
@@ -297,6 +308,15 @@ def synchronize(mode, action, inputs):
     if action in ("sync", "reapply", "native") and previous is None:
         return None
     native = native_accent()
+    initializing = action == "initialize"
+    if initializing:
+        # Initialization is only for an unconfigured install. An existing
+        # Windows selection or explicit KDE wallpaper/manual choice wins.
+        if raw is not None:
+            return False
+        if any(native) or read("General", "accentColorFromWallpaper") is not None:
+            return None
+        action = "automatic"
     fresh_state = None
     explicit_files = None
     explicit_reference = None
@@ -334,8 +354,16 @@ def synchronize(mode, action, inputs):
                 verify_source()
                 raise
         else:
-            state = automatic_state(json.loads(raw) if raw is not None else None)
-            fresh_state = state
+            try:
+                state = automatic_state(json.loads(raw) if raw is not None else None)
+                fresh_state = state
+            except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+                if not initializing:
+                    raise
+                # The shell may still be loading its new wallpaper. Store
+                # the automatic request, but never cache a guessed sample.
+                print(f"Automatic wallpaper accent awaiting a settled image: {error}", file=sys.stderr)
+                state = pending_automatic_state()
         desired_raw = json.dumps(state, separators=(",", ":"), sort_keys=True)
         desired = decode_state(desired_raw)
     elif action == "native" or any(native):
@@ -451,12 +479,12 @@ def synchronize(mode, action, inputs):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=MODES)
-    parser.add_argument("action", choices=("sync", "reapply", "manual", "wallpaper", "automatic", "native"))
+    parser.add_argument("action", choices=("sync", "reapply", "manual", "wallpaper", "automatic", "native", "initialize"))
     parser.add_argument("inputs", nargs="*")
     args = parser.parse_args()
     if ((args.action == "manual" and len(args.inputs) != 1)
             or (args.action == "wallpaper" and not args.inputs)
-            or (args.action in ("sync", "reapply", "automatic", "native") and args.inputs)):
+            or (args.action in ("sync", "reapply", "automatic", "native", "initialize") and args.inputs)):
         parser.error("manual requires one RGB value; wallpaper requires one or more image paths")
     if os.geteuid() == 0:
         parser.error("Run accent control as the desktop user")

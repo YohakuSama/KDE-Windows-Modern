@@ -100,6 +100,7 @@ def verify(revision, filename):
             "INTEGRATION-BUILD", "install.sh", "install-nixos.sh",
             "uninstall.sh", "third_party/plasma-login-manager/CMakeLists.txt",
             "nix/test-runtime.nix", "scripts/prepare-native-assets.sh",
+            "app-decorations/kvantum/live-reload-1.1.9.patch",
             "nix/konsole-chrome.nix", "app-decorations/konsole/CMakeLists.txt",
             "app-decorations/konsole/windowsmodernchrome.cpp",
             "app-decorations/konsole/windowsmodernchrome.in.json",

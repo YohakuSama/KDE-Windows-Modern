@@ -334,11 +334,14 @@ apply_lookandfeel() {
     fi
     info "Applying $id ${reset_flag:+with layout reset}..."
     plasma-apply-lookandfeel -a "$id" $reset_flag
-    # Do not enable KDE wallpaper extraction over an explicit Windows ramp
-    # or a previously selected native manual accent.
-    if command -v kreadconfig6 >/dev/null && command -v kwriteconfig6 >/dev/null &&
+    # Preview and standalone look-and-feel installation may lack the
+    # wallpaper bridge. Retain their native default without overriding
+    # an explicit accent selection. Full install initializes Windows mode.
+    if [ "${3:-}" = native ] &&
+       command -v kreadconfig6 >/dev/null && command -v kwriteconfig6 >/dev/null &&
        [ -z "$(kreadconfig6 --file kdeglobals --group WindowsModernAccent --key Palette)" ] &&
-       [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ]; then
+       [ -z "$(kreadconfig6 --file kdeglobals --group General --key accentColorFromWallpaper)" ] &&
+       [ -z "$(kreadconfig6 --file kdeglobals --group General --key AccentColor)" ]; then
         kwriteconfig6 --notify --file kdeglobals --group General --key accentColorFromWallpaper --type bool true
     fi
     # Apply the wallpaper only after the caller has completed layout reset
@@ -436,6 +439,11 @@ apply_window_materials() (
         warn "Window material update failed; existing artwork was retained where possible."
         return 1
     }
+    if [ -f "$KVANTUM_DIR/Windows-modern/accent-bindings.json" ]; then
+        "$python" -I "$SRC_DIR/scripts/theme/sync-accent.py" \
+            --publish-kvantum-reload "$KVANTUM_DIR/Windows-modern" >/dev/null ||
+            warn "Materials saved; live Kvantum reload receipt could not be published."
+    fi
 )
 
 # A panel may explicitly select translucent artwork even when blur is

@@ -46,6 +46,7 @@ def verify(revision, filename):
             "color-schemes/WindowsModern.colors.in",
             "scripts/theme/appearance-packages.py", "scripts/theme/sync-accent.py",
             "scripts/theme/accent-control.py", "scripts/theme/wallpaper-icc.py",
+            "app-decorations/kvantum/live-reload-1.1.9.patch",
             "prebuilt/SHA256SUMS",
             "bundled-store-artwork/manifest.json",
             "bundled-store-artwork/Microsoft_Store_logo_dark.svg",

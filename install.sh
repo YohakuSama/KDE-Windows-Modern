@@ -117,6 +117,7 @@ install_everything() {
     restart_plasmashell
     if [ "$UID" -ne 0 ]; then
         bash "$SRC_DIR/scripts/set-wallpaper.sh" || FAILED_COMPONENTS+=(wallpaper)
+        bash "$SRC_DIR/scripts/theme/switch-mode.sh" --initialize-accent || FAILED_COMPONENTS+=(accent)
     fi
 
     # ── Phase D: behaviour (needs the new panel and a running shell) ──
@@ -175,7 +176,7 @@ install_preview() {
         return 1
     fi
     # Deliberately omit --resetLayout; keep the user's existing panel.
-    apply_lookandfeel "$(lookfeel_id "$variant")"
+    apply_lookandfeel "$(lookfeel_id "$variant")" "" native
     apply_appearance_mode "$variant"
     restart_plasmashell
     bash "$SRC_DIR/scripts/set-wallpaper.sh" || FAILED_COMPONENTS+=(wallpaper)
