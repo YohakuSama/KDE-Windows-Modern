@@ -3,6 +3,7 @@
 """Offline ICC table construction experiments, not a runtime color engine."""
 import argparse
 import hashlib
+from functools import lru_cache
 import json
 from pathlib import Path
 import runpy
@@ -201,52 +202,22 @@ def integer_fixed14_grid(source, target):
     return raw.clip(0,65535).reshape(32,32,32,3)
 
 
+@lru_cache(maxsize=1)
+def matrix_runtime():
+    return runpy.run_path(str(ROOT / 'scripts/theme/wallpaper-icc.py'))
+
+
 def staged_matrix_grid(source, target):
-    """Reconstruct the measured two-stage RGB matrix/TRC CLUT.
-
-    Each matrix stage uses an internal identity curve on both sides. The
-    source matrix operates in half-range PCS; the destination applies its
-    inverse. Keep the intermediate words and both interpolation steps.
-    Verified for the reference 32-cube, 16-bit matrix-only path.
-    """
+    """Use the same exact-integer staged grid as the installed decoder."""
+    matrices = []
     for matrix in (source, target):
-        if (matrix.shape != (3, 3) or not np.isfinite(matrix).all()
-                or np.any(np.abs(matrix) > 2)
-                or np.any(matrix * 65536 != np.rint(matrix * 65536))):
+        values = matrix * 65536
+        if (values.shape != (3, 3) or not np.isfinite(values).all()
+                or np.any(np.abs(values) > 131072) or np.any(values != np.rint(values))):
             raise ValueError('Expected small signed 16.16 ICC colorants')
-    if np.linalg.det(target) <= 0:
-        raise ValueError('Expected a positive destination determinant')
-    try:
-        inverse = np.linalg.inv(target * 0.5)
-    except np.linalg.LinAlgError as error:
-        raise ValueError('Singular destination matrix') from error
-    if not np.isfinite(inverse).all() or np.any(np.abs(inverse) > 16):
-        raise ValueError('Destination inverse exceeds diagnostic bounds')
-
-    axis = np.arange(32, dtype=np.int64)
-    axis = (axis << 11) | (axis << 6) | (axis << 1) | (axis >> 4)
-    nodes = axis[np.indices((32, 32, 32)).transpose(1, 2, 3, 0)]
-    identity = np.minimum(65535, (2047 + np.arange(1024, dtype=np.int64) * 262396) >> 12)
-
-    def stage(words, matrix):
-        # Expand the linear 256-entry input curve at an 8-bit fraction.
-        # Subtract the high byte before interpolation, not afterwards.
-        linear = ((words - (words >> 8)) * 257) >> 8
-        q14 = (linear + 2) >> 2
-        scaled = matrix * (1023 * 16)
-        coefficients = np.trunc(scaled + np.where(scaled > 0, 0.5, -0.5)).astype(np.int64)
-        # The observed native multiply/accumulate is signed 32-bit. Do
-        # not silently extend this candidate to overflowing profiles.
-        low = np.minimum(coefficients, 0).sum(axis=1) * 16384 + 511
-        high = np.maximum(coefficients, 0).sum(axis=1) * 16384 + 511
-        if np.any(low < -(1 << 31)) or np.any(high >= (1 << 31)):
-            raise ValueError('Matrix accumulator exceeds signed 32-bit range')
-        coordinate = ((q14 @ coefficients.T + 511) >> 10).clip(0, 1023 * 256)
-        index, fraction = coordinate >> 8, coordinate & 255
-        return ((identity[index] * (256 - fraction)
-                 + identity[np.minimum(index + 1, 1023)] * fraction) >> 8)
-
-    return stage(stage(nodes, source * 0.5), inverse)
+        matrices.append(tuple(tuple(int(v) for v in row) for row in values))
+    grid = matrix_runtime()['build_matrix_grid'](*matrices)
+    return np.asarray(grid, dtype=np.int64).reshape(32,32,32,3)
 
 
 def candidate_grids(source, target):
@@ -495,6 +466,18 @@ def analyze_full_generation(root, report, target_path, source_paths, full_rgb8=F
             continue
         item = report['results'][name]
         native_source,native_grid,native_destination = read(checked(item['intents']['1']['link_profile']))
+        runtime = matrix_runtime()
+        try:
+            runtime_tables = runtime['generate_matrix_tables'](data)
+        except runtime['UnsupportedMatrixProfile'] as error:
+            row['installed_generator'] = {'status':'unsupported','reason':str(error)}
+        else:
+            references = (native_source,native_grid,native_destination)
+            row['installed_generator'] = {
+                'status':'compared',
+                'tables':[table_metrics(np.asarray(table,dtype=np.int64).reshape(reference.shape),
+                                        reference,sha)
+                          for table,reference in zip(runtime_tables,references)]}
         native_output = checked(item['wic'],len(pixels)*3)
         if native_output is None:
             row['status'] = 'missing-native-calibration'

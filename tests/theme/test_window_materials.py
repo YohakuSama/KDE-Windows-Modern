@@ -1112,7 +1112,7 @@ class WindowMaterialTests(unittest.TestCase):
             self.assertEqual(decode(rgba), (1, 1, bytes(4)))
             with Image.new("RGBA", (1, 1), (10, 20, 30, 128)) as image:
                 image.save(rgba, icc_profile=b"unreviewed")
-            with self.assertRaisesRegex(ValueError, "verified RGB8 ICC replay"):
+            with self.assertRaisesRegex(ValueError, "reviewed RGB8 ICC transform"):
                 decode(rgba)
             with Image.new("RGBA", (1, 1), (10, 20, 30, 128)) as image:
                 webp = root / "transparent.webp"
@@ -1316,6 +1316,45 @@ class WindowMaterialTests(unittest.TestCase):
             path.write_bytes(b"not a verified link")
             with self.assertRaisesRegex(ValueError, "SHA-256"):
                 native["read_bundle"](path)
+
+    def test_generated_matrix_tables_without_native_files(self):
+        native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))
+        collector = (ROOT / "scripts/capture-windows-wallpaper-probes.ps1").read_text(encoding="utf-8-sig")
+        precision = (ROOT / "scripts/capture-windows-icc-precision.ps1").read_text(encoding="utf-8-sig")
+        profiles = {}
+        for name, digest, _ in native["PROFILES"]:
+            match = re.search(r"'" + re.escape(name) + r"' = @\{\s+sha256 = '([0-9A-F]{64})'\s+payload = '([^']+)'",
+                              collector)
+            self.assertIsNotNone(match)
+            self.assertEqual(match[1], digest)
+            profiles[digest] = zlib.decompress(base64.b64decode(match[2], validate=True))
+        for digest in set(native["GENERATED_SOURCE_SHA"]) - set(profiles):
+            match = re.search(r"'" + re.escape(digest) + r"' = '([^']+)'", precision)
+            self.assertIsNotNone(match)
+            profiles[digest] = base64.b64decode(match[1], validate=True)
+        select = native["transform_for_profile"]
+        with patch.dict(select.__globals__, {"read_full_bundle": lambda: None, "read_bundle": lambda: None}):
+            for digest, profile in profiles.items():
+                with self.subTest(profile=digest):
+                    self.assertEqual(hashlib.sha256(profile).hexdigest().upper(), digest)
+                    tables = native["generate_matrix_tables"](profile)
+                    self.assertEqual(tuple(map(len, tables)), (768, 98304, 3072))
+                    self.assertEqual(tuple(map(native["_table_hash"], tables)),
+                                     (native["GENERATED_SOURCE_SHA"][digest],
+                                      native["GENERATED_GRID_SHA"], native["GENERATED_OUTPUT_SHA"]))
+                    transform = select(profile)
+                    self.assertIsNotNone(transform)
+                    self.assertEqual(transform(225, 48, 48), native["Rgb8Replay"](tables).convert(225, 48, 48))
+                    # An unrelated creator signature must not affect generation.
+                    alternate = profile[:80] + b"TEST" + profile[84:]
+                    self.assertEqual(native["generate_matrix_tables"](alternate), tables)
+                    # A device-link profile must never enter the matrix branch.
+                    self.assertIsNone(select(profile[:12] + b"link" + profile[16:]))
+            self.assertIsNone(select(b"invalid ICC"))
+            srgb = profiles[native["PROFILES"][0][1]]
+            linear = profiles[native["PROFILES"][1][1]]
+            self.assertEqual(select(srgb)(225, 48, 48), (225, 47, 47))
+            self.assertEqual(select(linear)(225, 48, 48), (242, 120, 120))
 
     def test_full_domain_icc_bundle_selection(self):
         native = runpy.run_path(str(ROOT / "scripts/theme/wallpaper-icc.py"))

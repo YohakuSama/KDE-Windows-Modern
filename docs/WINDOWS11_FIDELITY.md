@@ -1513,9 +1513,11 @@ images, applies EXIF orientation before calculating the analysis
 dimensions, prepares the existing 256-pixel-capped bitmap, combines
 all supplied image statistics, and then derives the normalized RGB,
 Alpha, and seven-role candidate palette. The original file is never
-modified or recompressed. The decoder uses its decoded RGB values
-without an additional ICC transform; WIC color-management parity
-and non-RGB source formats have not been established.
+modified or recompressed. Untagged images use their decoded RGB values.
+Tagged RGB images use verified private links or independent generation
+for the reviewed matrix/TRC branch; unsupported opaque profiles retain
+the existing Little CMS path. Arbitrary ICC and non-RGB native parity
+have not been established.
 
 The opt-in command accepts explicitly selected files, not an assumed
 primary containment or wallpaper-package directory. A source with
@@ -1524,10 +1526,10 @@ invalid orientation, unsupported transparency or a failed decode is an
 error, not a request to use a guessed accent. Opaque RGBA and
 indexed/gray images within the supported format contract can be
 converted to RGB. Untagged transparent PNG and transparent RGB PNG
-with a verified local RGB8 ICC replay use premultiplied resampling
-and the measured candidate fixed-point unpremultiplication rule.
-Unmeasured tagged transparency and other transparent formats remain
-unsupported. Nonzero resized alpha is a validity marker, not a
+with a verified local RGB8 link or a supported generated matrix/TRC
+transform use premultiplied resampling and the measured candidate
+fixed-point unpremultiplication rule. Unsupported tagged transparency
+and other transparent formats remain outside the reviewed contract. Nonzero resized alpha is a validity marker, not a
 weight in the native analysis loop.
 
 ```bash

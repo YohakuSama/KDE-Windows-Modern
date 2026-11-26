@@ -406,7 +406,7 @@ WALLPAPER_DECODE_PIXEL_LIMIT = 40_000_000
 WALLPAPER_IMAGE_FORMATS = ("BMP", "JPEG", "PNG", "WEBP")
 # Bump when decoder/analysis semantics change; installed automatic state
 # must not reuse a palette computed by the previous decoder.
-WALLPAPER_ANALYSIS_REVISION = 5
+WALLPAPER_ANALYSIS_REVISION = 6
 
 
 @lru_cache(maxsize=1)
@@ -421,9 +421,9 @@ def icc_reference_identity():
 def _icc_rgb_bitmap(image, profile_bytes):
     """Convert an opaque tagged RGB/gray image to the standard sRGB space.
 
-    Privately imported, hash-matched RGB8 links use the measured
-    fixed-point Windows replay. Other profiles use the existing Little
-    CMS color-managed baseline, not an exact WCS reconstruction.
+    Privately imported RGB8 links and independently generated, reviewed
+    matrix/TRC tables use the fixed-point Windows replay. Other profiles
+    use the existing Little CMS color-managed baseline.
     Conversion precedes the existing analysis resampling step.
     """
     if not isinstance(profile_bytes, bytes) or not profile_bytes:
@@ -482,12 +482,12 @@ def decode_wallpaper_bitmap(path):
     """Decode a local still image into the candidate WIC analysis buffer.
 
     Preserve the untagged opaque RGB path. Convert tagged opaque RGB or
-    grayscale images to sRGB before resampling, using verified local RGB8
-    replay when available and the standard ICC transform otherwise.
-    General WCS table generation remains unresolved. For untagged
-    transparent PNG use Pillow's premultiplied RGBa path. Tagged
-    transparent RGB PNG uses a privately imported verified RGB8 link
-    before premultiplication. Unmeasured tagged transparency is rejected.
+    grayscale images to sRGB before resampling, using reviewed RGB8
+    transforms when available and the standard ICC transform otherwise.
+    For untagged transparent PNG use Pillow's premultiplied RGBa path.
+    Tagged transparent RGB PNG uses a verified local link or the reviewed
+    independent matrix/TRC generator before premultiplication. Unsupported
+    tagged transparency is rejected.
     Do not re-encode or alter the source.
     """
     try:
@@ -529,7 +529,7 @@ def decode_wallpaper_bitmap(path):
                                         raise ValueError("Invalid embedded wallpaper ICC profile")
                                     transform = _native_icc_module()["transform_for_profile"](profile)
                                     if transform is None:
-                                        raise ValueError("Transparent tagged PNG requires a verified RGB8 ICC replay")
+                                        raise ValueError("Transparent tagged PNG requires a reviewed RGB8 ICC transform")
                                     return _prepare_wallpaper_bitmap(
                                         rgba.tobytes(), rgba.width, rgba.height, 4, transform)
                                 with rgba.convert("RGBa") as premultiplied:

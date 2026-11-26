@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Replay measured Windows RGB8 links, imported privately by the owner.
+"""Generate reviewed RGB matrix/TRC tables and replay measured Windows RGB8 links.
 
-The original two-profile bundle is unchanged. Additional RGB profiles
-require an explicit import with matching native full-domain output hashes.
-This is not independent CMM generation. No native profile or device-link
-payload is distributed; unverified profiles keep the color-managed baseline.
+Measured local bundles retain priority. For supported monitor matrix/TRC
+profiles the independent generator requires no native file or private
+table. Other profile families keep the existing color-managed baseline.
 """
 import argparse
 import base64
+from bisect import bisect_left
 from functools import lru_cache
 import gzip
 import hashlib
 from io import BytesIO
 import json
+import math
 import os
 from pathlib import Path
 import stat
@@ -208,6 +209,233 @@ class Rgb8Replay:
         return tuple(result)
 
 
+# Standard sRGB target: the three XYZ colorants in signed 16.16 units.
+# These are colorimetric parameters, not a native profile or captured LUT.
+SRGB_COLORANTS = ((28578, 25241, 9376), (14581, 46981, 3972), (912, 6362, 46799))
+D50 = (63190, 65536, 54061)
+GENERATED_GRID_SHA = "61A243BB0A50A4B0346873DA3D9C6F20FDDC7EC2945DD8946B6DD2E8D93658B2"
+GENERATED_OUTPUT_SHA = "1943A4178D0F62F28694CE524D529A944F04CBB4E7E9FC4722ABC906A13BF216"
+GENERATED_SOURCE_SHA = {
+    "47FDA5236B74B9F11DA23C9834FAE1DBF0C0E195DEBEB22EFD147268C1CEC98C": "888A2852424F361D9A87E68B17365304A7B49CFE4FCA63D22A0EFF13620F0ED3",
+    "BC77188D9AABAF2F17730FBE0C3B3954579190954C6E273C35C33D52CFB193B6": "8B814990ADF93775BF8BFAF2C3A54DCEDE47D1F68E81809388E7E1D9624B24D6",
+    "3633820C700F656C83A23C1D0DAA20214E73D040AB13E6B87262CEF513D0B5CA": "CDEAE3D012117A4CA09205FD85AC6674096EB179E1CC8FAE0A4287566A0F0E0F",
+    "6A907D854C58B4625AADACA152438EE1BC857B46EE106D31381208493023B268": "A59D9DE387CF63271412822721FED6A6338EAD3F6EA0CB3A84E47E3DDA7EACE5",
+}
+
+
+class UnsupportedMatrixProfile(ValueError):
+    """Outside the reviewed RGB matrix/TRC generation branch."""
+
+
+def matrix_profile_tags(data):
+    if (not isinstance(data, bytes) or not 132 <= len(data) <= 1024 * 1024
+            or struct.unpack_from(">I", data)[0] != len(data)
+            or data[8] not in (2, 4) or data[12:24] != b"mntrRGB XYZ "
+            or data[36:40] != b"acsp" or struct.unpack_from(">3i", data, 68) != D50):
+        raise UnsupportedMatrixProfile("Expected a D50 RGB monitor matrix profile")
+    count = struct.unpack_from(">I", data, 128)[0]
+    end = 132 + 12 * count
+    if count > 128 or end > len(data):
+        raise UnsupportedMatrixProfile("Invalid matrix profile tag directory")
+    tags = {}
+    extents = []
+    for sig, offset, size in struct.iter_unpack(">4sII", data[132:end]):
+        if (sig in tags or offset % 4 or offset < end or size < 8
+                or offset + size > len(data)):
+            raise UnsupportedMatrixProfile("Invalid matrix profile tag extent")
+        extent = (offset, offset + size)
+        if any(extent != previous and extent[0] < previous[1] and previous[0] < extent[1]
+               for previous in extents):
+            raise UnsupportedMatrixProfile("Overlapping matrix profile tags")
+        extents.append(extent)
+        tags[sig] = data[offset:offset + size]
+    # Do not substitute the matrix branch for a profile with LUT transforms
+    # or another color representation. The remaining tags are metadata.
+    allowed = {b"rXYZ", b"gXYZ", b"bXYZ", b"rTRC", b"gTRC", b"bTRC", b"wtpt",
+               b"desc", b"cprt", b"chad", b"chrm", b"dmnd", b"dmdd", b"tech",
+               b"view", b"vued", b"lumi", b"meas", b"meta"}
+    if set(tags) - allowed:
+        raise UnsupportedMatrixProfile("ICC profile has unreviewed transform or metadata tags")
+    white = tags.get(b"wtpt", b"")
+    if (len(white) != 20 or white[:4] != b"XYZ "
+            or struct.unpack_from(">3i", white, 8) != D50):
+        raise UnsupportedMatrixProfile("Expected the reviewed D50 media white")
+    return tags
+
+
+def matrix_colorants(tags):
+    columns = []
+    for key in (b"rXYZ", b"gXYZ", b"bXYZ"):
+        value = tags.get(key, b"")
+        if len(value) != 20 or value[:4] != b"XYZ ":
+            raise UnsupportedMatrixProfile("Missing RGB colorant")
+        columns.append(struct.unpack_from(">3i", value, 8))
+    matrix = tuple(zip(*columns))
+    if (any(not 0 <= v <= 131072 for row in matrix for v in row)
+            or any(abs(sum(row) - white) > 16 for row, white in zip(matrix, D50))):
+        raise UnsupportedMatrixProfile("RGB colorants outside the reviewed D50 matrix range")
+    return matrix
+
+
+def _round_signed_ratio(numerator, denominator):
+    if denominator <= 0:
+        raise UnsupportedMatrixProfile("Invalid matrix determinant")
+    magnitude = (2 * abs(numerator) + denominator) // (2 * denominator)
+    return -magnitude if numerator < 0 else magnitude
+
+
+def _inverse_parts(matrix):
+    a, b, c = zip(*matrix)
+
+    def cross(x, y):
+        return (x[1] * y[2] - x[2] * y[1], x[2] * y[0] - x[0] * y[2],
+                x[0] * y[1] - x[1] * y[0])
+
+    adj = (cross(b, c), cross(c, a), cross(a, b))
+    det = sum(x * y for x, y in zip(a, adj[0]))
+    if det <= 0:
+        raise UnsupportedMatrixProfile("Expected a positive matrix determinant")
+    return adj, det
+
+
+@lru_cache(maxsize=4)
+def build_matrix_grid(source, target):
+    """Generate the staged 32-cube from signed ICC 16.16 colorants."""
+    for matrix in (source, target):
+        if (len(matrix) != 3 or any(len(row) != 3 for row in matrix)
+                or any(type(v) is not int or abs(v) > 131072 for row in matrix for v in row)):
+            raise UnsupportedMatrixProfile("ICC matrix outside signed 16.16 bounds")
+    _inverse_parts(source)
+    adj, det = _inverse_parts(target)
+    if any(abs(v) * 2 * 65536 > 16 * det for row in adj for v in row):
+        raise UnsupportedMatrixProfile("Destination inverse outside reviewed bounds")
+    first = tuple(tuple(_round_signed_ratio(v * 16368, 2 * 65536) for v in row)
+                  for row in source)
+    second = tuple(tuple(_round_signed_ratio(v * 2 * 65536 * 16368, det) for v in row)
+                   for row in adj)
+    for matrix in (first, second):
+        for row in matrix:
+            low = sum(min(v, 0) for v in row) * 16384 + 511
+            high = sum(max(v, 0) for v in row) * 16384 + 511
+            if low < -(1 << 31) or high >= 1 << 31:
+                raise UnsupportedMatrixProfile("Matrix accumulator outside signed 32-bit range")
+    axis = tuple((i << 11) | (i << 6) | (i << 1) | (i >> 4) for i in range(32))
+    identity = tuple(min(65535, (2047 + i * 262396) >> 12) for i in range(1024))
+
+    def stage(rgb, matrix):
+        r, g, b = (((v - (v >> 8)) * 257 >> 8) + 2 >> 2 for v in rgb)
+        result = []
+        for a, c, d in matrix:
+            coordinate = min(261888, max(0, (r * a + g * c + b * d + 511) >> 10))
+            index, fraction = coordinate >> 8, coordinate & 255
+            result.append((identity[index] * (256 - fraction)
+                           + identity[min(index + 1, 1023)] * fraction) >> 8)
+        return result
+
+    return tuple(v for r in axis for g in axis for b in axis
+                 for v in stage(stage((r, g, b), first), second))
+
+
+def matrix_input_curve(tag):
+    """Reviewed analytic gamma/parametric and 33-point sampled paths."""
+    if len(tag) < 12:
+        raise UnsupportedMatrixProfile("Truncated RGB tone curve")
+    if tag[:4] == b"curv":
+        count = struct.unpack_from(">I", tag, 8)[0]
+        if count not in (1, 33) or len(tag) != 12 + 2 * count:
+            raise UnsupportedMatrixProfile("Unreviewed sampled tone curve size")
+        samples = struct.unpack_from(f">{count}H", tag, 12)
+        if count == 33:
+            if any(a > b for a, b in zip(samples, samples[1:])):
+                raise UnsupportedMatrixProfile("Nonmonotone sampled tone curve")
+            result = []
+            for code in range(256):
+                position = code * 257 * (count - 1)
+                i, f = position >> 16, position & 65535
+                slope = (samples[i + 1] - samples[i]) & ~1
+                result.append(samples[i] + ((slope * f + 32767) >> 16))
+            return tuple(result)
+        gamma = samples[0] / 256
+        evaluate = lambda x: x if gamma == 1 else x ** gamma
+    elif tag[:4] == b"para":
+        kind = struct.unpack_from(">H", tag, 8)[0]
+        if kind not in (0, 3) or len(tag) != (16 if kind == 0 else 32):
+            raise UnsupportedMatrixProfile("Unreviewed parametric tone curve")
+        params = tuple(v / 65536 for v in struct.unpack_from(f">{1 if kind == 0 else 5}i", tag, 12))
+        gamma = params[0]
+        if kind == 0:
+            evaluate = lambda x: x if gamma == 1 else x ** gamma
+        else:
+            _, a, b, c, d = params
+            if a <= 0 or c < 0 or not 0 <= d <= 1 or a * d + b < 0:
+                raise UnsupportedMatrixProfile("Invalid parametric tone curve")
+            evaluate = lambda x: (a * x + b) ** gamma if x >= d else c * x
+    else:
+        raise UnsupportedMatrixProfile("Unreviewed tone curve type")
+    if not 0 < gamma <= 16:
+        raise UnsupportedMatrixProfile("Tone curve gamma outside reviewed bounds")
+    anchors = []
+    for code in (*range(0, 256, 4), 255):
+        value = evaluate(code * (1.0 / 255.0))
+        if not math.isfinite(value) or not 0 <= value <= 1:
+            raise UnsupportedMatrixProfile("Tone curve exceeds normalized RGB range")
+        anchors.append(math.floor(value * 65535))
+    if any(a > b for a, b in zip(anchors, anchors[1:])):
+        raise UnsupportedMatrixProfile("Nonmonotone analytic tone curve")
+    return tuple(anchors[i // 4] + ((anchors[i // 4 + 1] - anchors[i // 4])
+                                    * (i % 4) * 2 + 4) // 8 for i in range(252)) + tuple(
+        anchors[63] + ((anchors[64] - anchors[63]) * (i - 252) * 2 + 3) // 6
+        for i in range(252, 256))
+
+
+def _table_hash(table):
+    return sha(struct.pack(f">{len(table)}H", *table))
+
+
+@lru_cache(maxsize=1)
+def srgb_output_curve():
+    # The measured registered-sRGB TRC equals these 1024 mathematically
+    # sampled standard sRGB values, including every rounded 16-bit entry.
+    def srgb_decode(x):
+        return x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4
+
+    curve = tuple(math.floor(65535 * srgb_decode(i / 1023) + 0.5) for i in range(1024))
+    values = []
+    for i in range(1024):
+        x = (i * 65535 + 511) // 1023
+        k = min(1022, max(0, bisect_left(curve, x) - 1))
+        value = k * 65536 // 1023 + (x - curve[k]) * 65536 // ((curve[k + 1] - curve[k]) * 1023)
+        values.append(min(65535, max(0, value)))
+    result = tuple(values) * 3
+    if _table_hash(result) != GENERATED_OUTPUT_SHA:
+        raise ValueError("Generated standard sRGB output curve differs from the native reference")
+    return result
+
+
+def generate_matrix_tables(profile):
+    tags = matrix_profile_tags(profile)
+    source = tuple(v for key in (b"rTRC", b"gTRC", b"bTRC")
+                   for v in matrix_input_curve(tags.get(key, b"")))
+    grid = build_matrix_grid(matrix_colorants(tags), SRGB_COLORANTS)
+    target = srgb_output_curve()
+    # These four full-domain measurements are hard acceptance anchors, not
+    # stored conversion tables. Other supported profiles are generated
+    # by the same reviewed branch, but have not been individually measured.
+    expected = GENERATED_SOURCE_SHA.get(sha(profile))
+    if expected is not None and (_table_hash(source) != expected or _table_hash(grid) != GENERATED_GRID_SHA):
+        raise ValueError("Generated ICC tables differ from the native reference")
+    return source, grid, target
+
+
+@lru_cache(maxsize=2)
+def generated_transform(profile):
+    try:
+        tables = generate_matrix_tables(profile)
+    except UnsupportedMatrixProfile:
+        return None
+    return lru_cache(maxsize=32768)(Rgb8Replay(tables).convert)
+
+
 def transform_for_profile(profile):
     digest = sha(profile)
     full = read_full_bundle()
@@ -226,7 +454,10 @@ def transform_for_profile(profile):
             link = bundle[i * LINK_SIZE:(i + 1) * LINK_SIZE]
             return lru_cache(maxsize=32768)(Rgb8Replay(read_rgb8_tables(link)).convert)
         break
-    # Unmeasured source profiles retain the existing ICC-managed path.
+    # Limit both parsing and cached profile bytes. The matrix-only branch
+    # uses the same resampling taps and scalar execution as private links.
+    if len(profile) <= 1024 * 1024:
+        return generated_transform(profile)
     return None
 
 
