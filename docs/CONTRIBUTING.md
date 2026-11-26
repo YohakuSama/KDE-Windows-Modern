@@ -62,12 +62,14 @@ remain open tasks.
   events do not start CI.
 - Complete the relevant local static checks, then have the maintainer install
   and manually verify the `testing` branch in the target Plasma session.
-- Do not open a pull request or request final merge review until manual
-  desktop acceptance is complete. Then open one pull request from
-  `testing` to `main`.
-- Start final CI only through Actions > CI > Run workflow after acceptance,
-  with `manual_test_completed` confirmed, or through the approved `v*`
-  release-tag flow in `scripts/release.sh`.
+- Keep manual desktop acceptance and explicit maintainer approval as
+  prerequisites for opening a pull request, merging `testing` into
+  `main`, or dispatching CI. Do not create extra development branches
+  or make per-file commits for a related change.
+- Only the maintainer or an explicitly authorized operator may start final
+  CI through Actions > CI > Run workflow after acceptance, with
+  `manual_test_completed` confirmed, or through the separately approved
+  `v*` release-tag flow in `scripts/release.sh`.
 - A manually dispatched run without the acceptance confirmation fails at
   the gate before health checks or builds start.
 - A newer run cancels an older run of the same workflow and ref. Different
@@ -75,12 +77,41 @@ remain open tasks.
 
 ## Checks
 
-Run these local checks before pushing to `testing`. An authorized CI run
-executes the repository health checks and Fedora build matrix. CI is not a
-substitute for live desktop acceptance.
+### Developer: static checks only
+
+Before pushing to `testing`, review the full diff, syntax, types, interfaces,
+dependencies, resource references, logic and performance. Reuse existing
+static-analysis tools. Installing missing analysis tools and matching
+development headers in an isolated developer environment is authorized;
+do not modify the maintainer's desktop. Static checks do not require a
+physical KDE machine.
+
+- Shell: `bash -n` and `shellcheck` on changed scripts.
+- QML: `scripts/check-qml-syntax.sh` (Qt parser only), and `qmllint`
+  with the matching import modules for changed QML.
+- C++: compiler syntax/type checks (for example `clang++ -fsyntax-only`)
+  with matching Qt/KDE/Konsole headers, generated declarations and compile
+  flags when available. Do not link or build the application or plugin.
+- Nix: `nix-instantiate --parse` on changed expressions; no derivation
+  realization or build.
+- JSON, XML and other declarative files: parse with existing format tools.
+
+Report unavailable tools, missing version-specific headers or imports,
+and incomplete checks. Never report a check as passed if it did not run.
+If only manual review is available, report that separately. Do not add
+one-off checkers merely to claim a passing result.
+
+### Maintainer: builds, tests and desktop acceptance
+
+The developer must not run full builds, automated tests, live desktop
+tests or CI without separate explicit authorization. In particular,
+`verify-all.sh` is not static-only: it also runs QML and other automated
+test suites. The maintainer retains the following commands for authorized
+verification. An authorized CI run executes repository health checks and
+the Fedora build matrix, but does not replace manual desktop acceptance.
 
 ```bash
-./verify-all.sh            # repository health check — must pass
+./verify-all.sh            # full repository health check, including tests
 ./scripts/ci-build.sh      # builds the native C++ plugins and checks linking
 ```
 
@@ -121,8 +152,9 @@ scenario against other code (e.g. a `git archive` of an older commit) to
 confirm a test fails where it should. It needs `python3-evdev`, access to
 `/dev/uinput`, and Spectacle.
 
-For QML changes, also run `qmllint` (`/usr/lib64/qt6/bin/qmllint` on Fedora)
-on the files you touched and don't add new warnings.
+For QML changes, the developer's static-check phase should use `qmllint`
+(`/usr/lib64/qt6/bin/qmllint` on Fedora) on touched files when the matching
+modules are available. Report any new warnings and unavailable imports.
 
 ## Conventions
 

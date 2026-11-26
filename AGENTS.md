@@ -7,16 +7,28 @@
 - Keep the full reference library separate from the mapped runtime
   resources. Do not remove original reference art or label compatibility
   drawings as verified Windows originals.
-- Run the relevant existing checks, including `./verify-all.sh`.
-  Report missing live desktop verification explicitly; do not add CI
-  workflows or treat a compile pass as visual acceptance.
+- Review the complete diff and perform relevant static checks only. The
+  developer may install missing static-analysis dependencies in an isolated
+  development environment, and use syntax, type, interface and lint checks
+  without building or running the software. Report missing tools and
+  unverified results explicitly.
+- Do not run `./verify-all.sh` (it includes automated tests),
+  `scripts/ci-build.sh`, builds, automated tests, CI or live desktop checks
+  without explicit maintainer authorization. The maintainer performs manual
+  compilation, installation and desktop acceptance. Never treat a static
+  check or compile pass as visual acceptance.
+- Batch related changes on `testing`. Do not create pull requests, merge
+  into `main`, dispatch CI, publish releases or change the CI trigger
+  policy without explicit maintainer approval.
 - NixOS uses the reversible installer and ABI-matched native plugins.
   Never modify the Nix store or substitute Fedora builds for NixOS.
 
-## Done means seen working on the desktop
+## Maintainer desktop acceptance
 
 Static checks and headless tests are not proof for anything KWin or Plasma
-loads. Verify in the live session:
+loads. The following live-session procedures are reference material for the
+maintainer or a separately authorized acceptance session, not instructions
+to run them during routine development:
 
 - Drive real input with uinput virtual devices (`python3-evdev`; the
   logged-in user can open `/dev/uinput`) and capture with
