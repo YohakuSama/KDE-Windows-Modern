@@ -420,8 +420,8 @@ apply_window_materials() (
     fi
     local python="${XDG_STATE_HOME:-$HOME/.local/state}/windows-modern-nixos-test/runtime/bin/python3"
     [ -x "$python" ] || python=python3
-    # Explicit on/off stages both popup variants, Kvantum config and window
-    # material files in the same checked Python transaction.
+    # Explicit on/off stages both popup variants, Kvantum config, window
+    # materials, and the saved KWin blur preference in one checked transaction.
     if [ "${3:-}" = all ]; then
         local stage
         stage="$(mktemp -d)" || return 1
@@ -429,7 +429,8 @@ apply_window_materials() (
         "$python" -I "$SRC_DIR/scripts/theme/appearance-packages.py" "$stage" --component desktopthemes || return 1
         local transparency=off
         [ "$1" != true ] || transparency=on
-        args+=(--plasma-dir "$PLASMA_DIR" --popup-source "$stage" --transparency "$transparency")
+        args+=(--plasma-dir "$PLASMA_DIR" --popup-source "$stage" --transparency "$transparency"
+               --transparency-state "$TRANSPARENCY_OFF_FILE")
     fi
     "$python" -I "$SRC_DIR/scripts/theme/window-frames.py" "${args[@]}" || {
         warn "Window material update failed; existing artwork was retained where possible."

@@ -107,10 +107,16 @@ Item {
     }
     onSeparatedMediaChanged: scheduleSplitBlur()
     onCustomCardChanged: scheduleSplitBlur()
-    onAllowSplitAcrylicChanged: scheduleSplitBlur()
+    onAllowSplitAcrylicChanged: {
+        if (!allowSplitAcrylic) splitAcrylic = false;
+        scheduleSplitBlur();
+    }
     Connections {
         target: Plasmoid
-        function onPopupBlurPreferencesChanged() { popup.scheduleSplitBlur(); }
+        function onPopupBlurPreferencesChanged() {
+            popup.splitAcrylic = false;
+            popup.scheduleSplitBlur();
+        }
     }
     onWidthChanged: scheduleSplitBlur()
     onHeightChanged: scheduleSplitBlur()

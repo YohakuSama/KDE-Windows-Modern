@@ -9,6 +9,7 @@ import re
 import runpy
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 import xml.etree.ElementTree as ET
 from urllib.parse import unquote, urlsplit
@@ -322,6 +323,122 @@ def plan_transparency(kvantum_dir, plasma_dir, popup_source, enabled, owned_file
     return pending
 
 
+def read_transparency_marker(path):
+    if any(parent.is_symlink() for parent in (path, path.parent, path.parent.parent)):
+        raise ValueError("Refusing externally managed transparency state")
+    if not path.exists():
+        return None
+    if not path.is_file() or path.stat().st_uid != os.getuid():
+        raise ValueError("Invalid or externally owned transparency state")
+    data = path.read_bytes()
+    if not re.fullmatch(rb"blurEnabled=(true|false)?\n?", data):
+        raise ValueError("Invalid saved blur preference")
+    return data
+
+
+def read_blur_preference():
+    config = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    path = config / "kwinrc"
+    if config.is_symlink() or path.is_symlink() or (path.exists() and (
+            not path.is_file() or path.stat().st_uid != os.getuid())):
+        raise ValueError("Refusing externally managed KWin configuration")
+    value = subprocess.check_output(
+        ["kreadconfig6", "--file", "kwinrc", "--group", "Plugins", "--key", "blurEnabled"],
+        text=True).rstrip("\n")
+    if value not in ("", "true", "false"):
+        raise ValueError("Invalid blur preference")
+    return value
+
+
+def write_blur_preference(expected, desired):
+    if read_blur_preference() != expected:
+        raise ValueError("KWin blur preference changed during transparency update")
+    if expected == desired:
+        return
+    command = ["kwriteconfig6", "--notify", "--file", "kwinrc", "--group", "Plugins", "--key", "blurEnabled"]
+    subprocess.run(command + ([desired] if desired else ["--delete"]), check=True)
+    if read_blur_preference() != desired:
+        raise ValueError("KWin blur preference was not saved")
+
+
+def write_transparency_marker(path, expected, desired):
+    if read_transparency_marker(path) != expected:
+        raise ValueError("Transparency marker changed during update")
+    if expected == desired:
+        return
+    if desired is None:
+        path.unlink()
+        return
+    # The only creation path starts with no marker. Publish complete bytes
+    # without overwriting a marker created by another writer.
+    if expected is not None:
+        raise ValueError("Refusing to replace an existing transparency marker")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if read_transparency_marker(path) is not None:
+        raise ValueError("Transparency marker appeared during update")
+    with tempfile.NamedTemporaryFile(prefix=".wm-transparency-", dir=path.parent) as temp:
+        temp.write(desired)
+        temp.flush()
+        os.link(temp.name, path)
+
+
+class TransparencyPreference:
+    """Stage the saved blur choice and marker alongside the renderer files."""
+
+    def __init__(self, path, enabled):
+        self.path = path
+        self.marker = read_transparency_marker(path)
+        self.blur = read_blur_preference()
+        if enabled:
+            if self.marker is None:
+                raise ValueError("No saved transparency-off state")
+            self.target_marker = None
+            self.target_blur = self.marker.decode("ascii").strip().split("=", 1)[1]
+        else:
+            self.target_marker = self.marker if self.marker is not None else (
+                "blurEnabled=" + self.blur + "\n").encode("ascii")
+            self.target_blur = "false"
+        self.blur_attempted = False
+        self.marker_attempted = False
+
+    def validate(self):
+        if read_transparency_marker(self.path) != self.marker or read_blur_preference() != self.blur:
+            raise ValueError("Transparency preference changed during update")
+
+    def apply(self):
+        self.validate()
+        self.blur_attempted = self.blur != self.target_blur
+        write_blur_preference(self.blur, self.target_blur)
+        self.marker_attempted = self.marker != self.target_marker
+        write_transparency_marker(self.path, self.marker, self.target_marker)
+        if (read_transparency_marker(self.path) != self.target_marker
+                or read_blur_preference() != self.target_blur):
+            raise ValueError("Transparency preference changed after update")
+
+    def rollback(self):
+        # A failed command may already have written the new value. Restore
+        # only our own target, leaving an unrelated external change intact.
+        failures = []
+        for attempted, reader, writer, before, after in (
+                (self.marker_attempted, lambda: read_transparency_marker(self.path),
+                 lambda old, new: write_transparency_marker(self.path, old, new),
+                 self.marker, self.target_marker),
+                (self.blur_attempted, read_blur_preference, write_blur_preference,
+                 self.blur, self.target_blur)):
+            if not attempted:
+                continue
+            try:
+                current = reader()
+                if current == after:
+                    writer(after, before)
+                elif current != before:
+                    raise ValueError("Transparency preference changed during rollback")
+            except (OSError, ValueError, subprocess.SubprocessError) as error:
+                failures.append(str(error))
+        if failures:
+            raise ValueError("; ".join(failures))
+
+
 MATERIAL_SAMPLE_REVISION = 1
 MATERIAL_GROUP = "WindowsModernMaterial"
 MATERIAL_KEY = "Sample"
@@ -450,11 +567,15 @@ def sync_live_material(mode, control):
 
 
 def apply_local(aurorae_dir, kvantum_dir, package=None, validate_selection=None,
-                transparency=None):
+                transparency=None, transparency_state=None):
     # Reuse the accent writer's optimistic ownership/byte checks, atomic
     # replacement and conditional rollback. The shell caller holds the
     # existing appearance lock. No independently edited lines are lost.
     sync = runpy.run_path(str(Path(__file__).with_name("sync-accent.py")))
+    if (transparency is None) != (transparency_state is None):
+        raise ValueError("Explicit transparency requires its saved preference path")
+    preference = (TransparencyPreference(transparency_state, transparency[2])
+                  if transparency is not None else None)
     colors, validate_files = wallpaper_tints(package, sync)
     if transparency is not None:
         # Explicit toggles must not silently update only a subset of an
@@ -474,11 +595,24 @@ def apply_local(aurorae_dir, kvantum_dir, package=None, validate_selection=None,
             validate_selection()
 
     validate()
+    if preference is not None:
+        preference.validate()
     written = sync["write_pending"](pending)
     try:
         validate()
-    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
-        sync["restore_pending"](pending, written)
+        if preference is not None:
+            preference.apply()
+            validate()
+    except Exception:
+        if preference is not None:
+            try:
+                preference.rollback()
+            except (OSError, ValueError, subprocess.SubprocessError) as error:
+                print(f"Transparency preference rollback incomplete: {error}", file=sys.stderr)
+        try:
+            sync["restore_pending"](pending, written)
+        except (OSError, ValueError) as error:
+            print(f"Window material rollback incomplete: {error}", file=sys.stderr)
         raise
     print(f"Window material update: {len(pending)} file(s) changed.")
 
@@ -496,6 +630,7 @@ def main():
     parser.add_argument('--plasma-dir', type=Path)
     parser.add_argument('--popup-source', type=Path)
     parser.add_argument('--transparency', choices=('on', 'off'))
+    parser.add_argument('--transparency-state', type=Path)
     wallpaper = parser.add_mutually_exclusive_group()
     wallpaper.add_argument('--wallpaper-package', type=Path)
     wallpaper.add_argument('--wallpaper-config', type=Path)
@@ -505,7 +640,7 @@ def main():
     if args.sync_live:
         if os.geteuid() == 0 or any((args.directory, args.aurorae_dir, args.kvantum_dir,
                                     args.plasma_dir, args.popup_source, args.transparency,
-                                    args.wallpaper_package, args.wallpaper_config, args.wallpaper_live)):
+                                    args.transparency_state, args.wallpaper_package, args.wallpaper_config, args.wallpaper_live)):
             parser.error("--sync-live requires a normal desktop user and no other asset arguments")
         control = runpy.run_path(str(Path(__file__).with_name("accent-control.py")))
         try:
@@ -516,9 +651,9 @@ def main():
             parser.exit(1, f"Window material synchronization: {error}\n")
         return
     transparency = None
-    if any((args.plasma_dir, args.popup_source, args.transparency)):
-        if not args.apply_local or not all((args.plasma_dir, args.popup_source, args.transparency)):
-            parser.error("Transparency requires --apply-local, --plasma-dir and --popup-source")
+    if any((args.plasma_dir, args.popup_source, args.transparency, args.transparency_state)):
+        if not args.apply_local or not all((args.plasma_dir, args.popup_source, args.transparency, args.transparency_state)):
+            parser.error("Transparency requires --apply-local, --plasma-dir, --popup-source and --transparency-state")
         if args.transparency == "off" and any((args.wallpaper_package, args.wallpaper_config, args.wallpaper_live)):
             parser.error("Transparency off uses neutral window bases")
         transparency = (args.plasma_dir, args.popup_source, args.transparency == "on")
@@ -546,7 +681,8 @@ def main():
                 validate_selection = lambda: control["require_wallpaper_snapshot"](snapshot, primary_only=True)
             if args.wallpaper_config and selected is None:
                 print("No unambiguous local image wallpaper; using neutral window bases.")
-            apply_local(args.aurorae_dir, args.kvantum_dir, selected, validate_selection, transparency)
+            apply_local(args.aurorae_dir, args.kvantum_dir, selected, validate_selection,
+                        transparency, args.transparency_state)
         except (OSError, ValueError, KeyError, TypeError, ET.ParseError, subprocess.SubprocessError) as error:
             parser.exit(1, f"Window material update: {error}\n")
         return

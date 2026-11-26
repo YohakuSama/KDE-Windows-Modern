@@ -48,7 +48,7 @@ case "$mode" in
         if [ -f "$state" ]; then
             saved="$(cat "$state")"
             case "$saved" in
-                blurEnabled=|blurEnabled=true|blurEnabled=false) previous="${saved#blurEnabled=}" ;;
+                blurEnabled=|blurEnabled=true|blurEnabled=false) ;;
                 *) err "Invalid saved blur preference."; exit 1 ;;
             esac
         fi
@@ -58,22 +58,9 @@ esac
 case "$mode" in
     off)
         ensure_dir "$(dirname "$state")"
-        # Even if the marker and blur preference already agree, re-apply
-        # the renderer transaction to repair an interrupted update.
-        # Preserve the original setting even if a previous config write
-        # failed. Empty means the KWin default was in effect.
-        if [ ! -f "$state" ]; then
-            previous="$(kreadconfig6 --file kwinrc --group Plugins --key blurEnabled)"
-            case "$previous" in ""|true|false) ;; *) err "Invalid blur preference."; exit 1 ;; esac
-            marker="$(mktemp "$(dirname "$state")/.wm-transparency.XXXXXX")"
-            trap 'rm -f -- "$marker"' EXIT
-            printf 'blurEnabled=%s\n' "$previous" > "$marker"
-        fi
+        # Repeat off safely to repair a previously interrupted update.
+        # The renderer transaction also saves/restores the blur preference.
         apply_window_materials false current all
-        if [ -n "${marker:-}" ]; then
-            mv -f -- "$marker" "$state"
-        fi
-        kwriteconfig6 --notify --file kwinrc --group Plugins --key blurEnabled false
         kwin_reconfigure
         info "Transparency effects off."
         step "Restart open apps; if the panel retains cached artwork, log out and back in."
@@ -84,19 +71,13 @@ case "$mode" in
             exit 0
         fi
         apply_window_materials true current all
-        if [ -n "$previous" ]; then
-            kwriteconfig6 --notify --file kwinrc --group Plugins --key blurEnabled "$previous"
-        else
-            kwriteconfig6 --notify --file kwinrc --group Plugins --key blurEnabled --delete
-        fi
-        rm -f "$state"
         kwin_reconfigure
         info "Transparency effects on."
         step "Restart open apps; if the panel retains cached artwork, log out and back in."
         ;;
     refresh)
         if [ -f "$state" ]; then
-            apply_window_materials false
+            apply_window_materials false current all
         else
             apply_window_materials true current
         fi

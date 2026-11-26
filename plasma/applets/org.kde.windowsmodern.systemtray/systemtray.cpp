@@ -739,17 +739,43 @@ bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuic
     KConfig config(QStringLiteral("kwinrc"), KConfig::NoGlobals);
     enabled = enabled && KConfigGroup(&config, QStringLiteral("Plugins")).readEntry("blurEnabled", true)
         && KWindowEffects::isEffectAvailable(KWindowEffects::BlurBehind);
+    const QRect windowRect(QPoint(0, 0), window->size());
+    const QRectF windowBounds(windowRect);
+    enabled = enabled && !windowRect.isEmpty() && std::isfinite(radius) && radius >= 0;
     QRegion mask;
     if (enabled) {
+        QPainterPath clip;
+        clip.addRect(windowBounds);
         for (auto *item : {first, second}) {
-            if (!item || item->window() != window || !item->isVisible()
-                || item->width() <= 0 || item->height() <= 0) {
+            if (!item || item->window() != window || !item->isVisible()) {
                 enabled = false;
                 break;
             }
+            const QRectF bounds = item->mapRectToScene(item->boundingRect());
+            if (!bounds.isValid() || !std::isfinite(bounds.left()) || !std::isfinite(bounds.top())
+                || !std::isfinite(bounds.right()) || !std::isfinite(bounds.bottom())
+                || !bounds.intersects(windowBounds)) {
+                enabled = false;
+                break;
+            }
+            // Use window-local logical pixels, including fractional scales.
+            // Match Rectangle's radius limit; clip before integer conversion.
+            const qreal corner = qMin(radius, qMin(bounds.width(), bounds.height()) / 2);
             QPainterPath path;
-            path.addRoundedRect(item->mapRectToScene(item->boundingRect()), radius, radius);
-            mask |= QRegion(path.toFillPolygon().toPolygon(), Qt::WindingFill);
+            path.addRoundedRect(bounds, corner, corner);
+            if (!windowBounds.contains(bounds)) {
+                path = path.intersected(clip);
+            }
+            const QRegion card = QRegion(path.toFillPolygon().toPolygon(), Qt::WindingFill)
+                .intersected(windowRect);
+            if (card.isEmpty()) {
+                enabled = false;
+                break;
+            }
+            mask |= card;
+            if (first == second) {
+                break;
+            }
         }
     }
     // An empty QRegion means whole-window blur in KWindowEffects.

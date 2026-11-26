@@ -6,6 +6,8 @@ the `Version` field shared by every component's metadata.
 
 ## [Unreleased]
 
+- Bound split Acrylic regions to the actual logical popup window, reject empty or invalid cards, and switch back to opaque paint on blur preference changes. Include the saved transparency marker and KWin blur choice in the existing checked renderer transaction; preserve the original preference across repeated off and refresh.
+
 - Reconcile the shared native icon resolver across Start, tray and both greeter packages; share the original default account portrait selector and SysBatt renderer without changing account or status-control placement. Keep plugged-in and unknown battery fallback states accurate, and preserve private resource boundaries.
 
 - Share popup extent and stale-output guards across Start, Quick Settings and calendar; mirror the quick tile grid, drag hit targets and keyboard direction together. Give the media card a separate height budget when one full tile row fits and preserve fixed slider/footer space on constrained screens.

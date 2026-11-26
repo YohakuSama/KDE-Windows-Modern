@@ -1781,6 +1781,65 @@ class WindowMaterialTests(unittest.TestCase):
                 frames.plan_transparency(kvantum, plasma, source, True, sync["owned_file"])
             self.assertEqual(changed.read_text(), "<svg/>")
 
+    def test_transparency_preference_preserves_original_blur(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            marker = Path(tmp) / "windows-modern/transparency-off"
+            for original in ("", "true", "false"):
+                current = [original]
+
+                def write(expected, desired):
+                    self.assertEqual(current[0], expected)
+                    current[0] = desired
+
+                with patch.object(frames, "read_blur_preference", side_effect=lambda: current[0]), \
+                     patch.object(frames, "write_blur_preference", side_effect=write):
+                    off = frames.TransparencyPreference(marker, False)
+                    off.apply()
+                    self.assertEqual(marker.read_bytes(), ("blurEnabled=" + original + "\n").encode())
+                    self.assertEqual(current[0], "false")
+                    frames.TransparencyPreference(marker, False).apply()
+                    self.assertEqual(marker.read_bytes(), ("blurEnabled=" + original + "\n").encode())
+                    on = frames.TransparencyPreference(marker, True)
+                    on.apply()
+                    self.assertFalse(marker.exists())
+                    self.assertEqual(current[0], original)
+                    on.rollback()
+                    self.assertTrue(marker.exists())
+                    self.assertEqual(current[0], "false")
+                    off.rollback()
+                    self.assertFalse(marker.exists())
+                    self.assertEqual(current[0], original)
+
+    def test_transparency_marker_failure_rolls_back_renderer_and_blur(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            aurorae, kvantum = root / "aurorae", root / "kvantum"
+            kvantum.mkdir()
+            for mode, name in (("dark", "Windows-modernDark"), ("light", "Windows-modern")):
+                deco = aurorae / f"windows-modern-{mode}-aurorae" / "decoration.svg"
+                deco.parent.mkdir(parents=True)
+                deco.write_text(frames.render(mode))
+                (kvantum / (name + ".svg")).write_text(SVG)
+            files = [*aurorae.rglob("*.svg"), *kvantum.glob("*.svg")]
+            before = {path: path.read_bytes() for path in files}
+            marker = root / "windows-modern/transparency-off"
+            current = ["true"]
+
+            def write(expected, desired):
+                self.assertEqual(current[0], expected)
+                current[0] = desired
+
+            with patch.object(frames, "read_blur_preference", side_effect=lambda: current[0]), \
+                 patch.object(frames, "write_blur_preference", side_effect=write), \
+                 patch.object(frames, "plan_transparency", return_value={}), \
+                 patch.object(frames, "write_transparency_marker", side_effect=OSError("Marker write failed")):
+                with self.assertRaisesRegex(OSError, "Marker write failed"):
+                    frames.apply_local(aurorae, kvantum, transparency=(root, root, False),
+                                       transparency_state=marker)
+            self.assertEqual(current[0], "true")
+            self.assertFalse(marker.exists())
+            self.assertEqual({path: path.read_bytes() for path in files}, before)
+
     def test_current_wallpaper_selection(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

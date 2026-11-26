@@ -70,11 +70,17 @@ FocusScope {
             clockApplet.closeFlyout();
         scheduleSplitBlur();
     }
-    onAllowSplitAcrylicChanged: scheduleSplitBlur()
+    onAllowSplitAcrylicChanged: {
+        if (!allowSplitAcrylic) splitAcrylic = false;
+        scheduleSplitBlur();
+    }
     Connections {
         target: expandedRoot.splitBlurProvider
         ignoreUnknownSignals: true
-        function onPopupBlurPreferencesChanged() { expandedRoot.scheduleSplitBlur(); }
+        function onPopupBlurPreferencesChanged() {
+            expandedRoot.splitAcrylic = false;
+            expandedRoot.scheduleSplitBlur();
+        }
     }
     Connections {
         target: expandedRoot.clockApplet
@@ -175,6 +181,7 @@ FocusScope {
             onYChanged: expandedRoot.scheduleSplitBlur()
             onWidthChanged: expandedRoot.scheduleSplitBlur()
             onHeightChanged: expandedRoot.scheduleSplitBlur()
+            onRadiusChanged: expandedRoot.scheduleSplitBlur()
             border.width: 1
             border.color: palette.surfaceBorder
 
@@ -205,6 +212,7 @@ FocusScope {
             onYChanged: expandedRoot.scheduleSplitBlur()
             onWidthChanged: expandedRoot.scheduleSplitBlur()
             onHeightChanged: expandedRoot.scheduleSplitBlur()
+            onRadiusChanged: expandedRoot.scheduleSplitBlur()
             border.width: 1
             border.color: palette.surfaceBorder
 
