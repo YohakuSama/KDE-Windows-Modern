@@ -83,3 +83,31 @@ There were 12 exact candidates per source (24 total); these are equivalent outpu
 A [compact native evidence excerpt](windows11-26h2-icc-native-matches.json) preserves the original report SHA-256, the two exact WIC output buffers, their source/target identities and the matching parameter families. The full user-supplied report was analyzed locally; only representative synthetic outputs are archived. Regression coverage reconstructs both exact buffers from these independently captured RGB values using the existing runtime resampler. These bytes are test evidence only, not runtime lookup tables.
 
 The Windows reference operation is now reproduced for the measured opaque ICC calibration set. The portable Linux implementation remains revision 2 and is not byte-identical. Next investigate the ICC-compatible CMM's high-quality transform and the verified destination profile's structure; independently validate mixed RGB inputs and tagged transparency before a runtime change. No additional capture is required for this comparison. No full repository test or CI has been run.
+
+
+## Exact destination profile and fixed-point investigation
+
+The 3,144-byte standard sRGB profile from the native probe was obtained independently for local analysis from [a publicly accessible historical ImageMagick source tree](https://github.com/mikesplain/imagemagick/blob/master/config/sRGB.icm). Its SHA-256 exactly matches the measured registered target: `2B3AA1645779A9E634744FAF9B01E9102B0C9B88FD6DECED7934DF86B949AF7E`. It is ICC v2.1, XYZ PCS, with preferred CMM signature Lino, three XYZ colorants and a shared 1,024-point monotone TRC. There is no embedded A2B/B2A transform CLUT in this destination. The header CMM preference does not establish which CMM actually created the Windows transform. The profile is not redistributed in this repository.
+
+The new [offline diagnostic](../scripts/theme/analyze-wallpaper-icc-engine.py) requires NumPy and Pillow (research only, not runtime) and refuses a nonmatching destination hash. It checks the original RGB input and source-profile/output hashes against the compact native evidence and computes errors over 1,024 unique RGB colors (3,072 channels per source), not repeated image pixels.
+
+```sh
+python3 scripts/theme/analyze-wallpaper-icc-engine.py --target /path/to/local/sRGB.icm
+```
+
+Pillow 12.3.0 / Little CMS 2.19 / NumPy 2.3.5, isolated local reconstruction using native RGB bytes verified against the archived hashes. Forty-eight Little CMS candidates (the exact destination, four intents, six flag choices, two sources) still do not match. The diagnostic then evaluates 32,768 shared multi-stage fixed-point parameter sets on both source profiles (65,536 comparisons), using only their actual profile matrices and curves. It compares input scaling, rounding at source linear RGB, XYZ and destination linear RGB, and final output scaling. The best shared model must use the same options for both profiles.
+
+| Model | sRGB absolute channel error sum / differing channels / max error | Linear sRGB absolute channel error sum / differing channels / max error |
+| --- | --- | --- |
+| Best Little CMS with exact target | 541 / 415 / 3 | 485 / 469 / 4 |
+| Direct profile matrix and inverse TRC, round 255 | 541 / 415 / 3 | 485 / 469 / 4 |
+| Same direct transform, floor 256 and clamp | 523 / 403 / 3 | 139 / 130 / 3 |
+| Best shared multi-stage candidate | 107 / 103 / 2 | 141 / 132 / 3 |
+
+The best shared parameter set uses input normalization by 255, floor at 10-bit source linear RGB, ceil at 14-bit XYZ, ceil at 16-bit destination linear RGB, linear interpolation of the inverse target TRC and final floor after scaling by 256 (clamp to 255). Total absolute error falls from 1,026 to 248, but no set is exact. This is a hypothesis selected on the calibration inputs, not a verified CMM implementation. No runtime logic or cache revision is changed.
+
+Additional local exploratory sweeps tested single-stage quantization with sampled TRC inversion (3,912 comparisons) and uniform RGB grids with trilinear/tetrahedral interpolation (1,152 comparisons); neither achieved equality. The committed diagnostic reproduces the exact-target Little CMS and shared multi-stage sweep, not those separate exploratory scripts.
+
+Next measure the actual CMM identifier/version with [GetCMMInfo](https://learn.microsoft.com/en-us/windows/win32/api/icm/nf-icm-getcmminfo), distinguish intermediate from final rounding with native higher-bit RGB outputs, and test whether [CreateDeviceLinkProfile](https://learn.microsoft.com/en-us/windows/win32/api/icm/nf-icm-createdevicelinkprofile) exposes a usable intermediate transform. The public API's success and agreement with the measured BEST_MODE bitmap path must be established before relying on its output. Do not bundle a device link as a general replacement for arbitrary input ICCs. Independent mixed-color/transparent reference validation is still outstanding.
+
+Local checks: Python syntax compilation, execution of the diagnostic with the hash-matching target, and rejection of a different target profile. The source tree in the local test directory is an isolated reconstruction using the original native report and matching archived input/output hashes; no full repository build, desktop acceptance, or CI was executed.
