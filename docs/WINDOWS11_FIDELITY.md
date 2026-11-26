@@ -760,6 +760,37 @@ provides the remaining observations. Do not make a runtime extractor
 or calibrate an image-specific lookup until the candidate transform
 has been checked against independent samples.
 
+### Extraction probe set
+
+The collector now accepts `-ProbeSet Extraction`. This set separates
+color selection from the already measured shade-generation stage. Its
+solid red, green and blue inputs have approximately equal CIELAB L* 50
+and HSL saturation 0.75. The muted-red input keeps the red hue and
+approximately the same CIELAB lightness, with HSL saturation 0.15.
+
+The mixed images test vivid-red area ratios of 6.25%, 25%, 50% and 75%
+against muted red. Two additional images compare 25% red with 75% green,
+then reverse the ratio. A final corner-position sample repeats the
+25% red/75% green composition away from the center. These observations
+are intended to distinguish saturation/chroma preference, hue bias,
+area weighting and spatial weighting. They do not assume any of those
+mechanisms is used by Windows.
+
+The Extraction set requires capture-windows-accent.ps1 schema 4 or newer
+so the report includes ImageColor. It does not call the private native
+COM diagnostic. Run it in the same disposable Windows VM with Automatic
+accent and a static Picture background:
+
+```powershell
+.\\capture-windows-wallpaper-probes.ps1 -ApplyTemporarily -ProbeSet Extraction
+```
+
+Submit only the new report. Preserve the Basic and Refinement fixtures.
+The collector records every exact image recipe, source hash, stable
+observation and restoration result. If a palette does not change, the
+sample remains in the report as an ambiguous observation rather than
+being discarded.
+
 ### Native automatic-color diagnostic
 
 OpenGlass reverse-engineers the private

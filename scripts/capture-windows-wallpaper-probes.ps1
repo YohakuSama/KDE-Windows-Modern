@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [switch]$ApplyTemporarily,
-    [ValidateSet('Basic', 'Refinement')]
+    [ValidateSet('Basic', 'Refinement', 'Extraction')]
     [string]$ProbeSet = 'Basic'
 )
 
@@ -97,7 +97,7 @@ function Read-Capture([string]$Path) {
     if ($sample.schema_version -lt 2) {
         throw 'Use capture-windows-accent.ps1 schema 2 or newer.'
     }
-    if ($ProbeSet -eq 'Refinement' -and $sample.schema_version -lt 4) {
+    if ($ProbeSet -in @('Refinement', 'Extraction') -and $sample.schema_version -lt 4) {
         throw 'Refinement requires capture-windows-accent.ps1 schema 4 or newer.'
     }
     return $sample
@@ -280,6 +280,33 @@ try {
                 color='#FF8C00'; x=0; y=0;
                 width=[int][Math]::Floor($width / 4);
                 height=[int][Math]::Floor($height / 4)}}
+        )
+    } elseif ($ProbeSet -eq 'Extraction') {
+        # Hold approximate CIELAB lightness near 50. The vivid red, green
+        # and blue also share HSL saturation 0.75; muted red keeps the hue
+        # while reducing HSL saturation to 0.15. Mixed probes vary only
+        # color proportion or rectangle position.
+        $quarterWidth = [int][Math]::Floor($width / 4)
+        $quarterHeight = [int][Math]::Floor($height / 4)
+        $probes = @(
+            @{name='solid-red-vivid'; background='#E13030'; rectangle=$null},
+            @{name='solid-green-vivid'; background='#148A14'; rectangle=$null},
+            @{name='solid-blue-vivid'; background='#6767E9'; rectangle=$null},
+            @{name='solid-red-muted'; background='#936E6E'; rectangle=$null},
+            @{name='vivid-red-small-on-muted-red'; background='#936E6E'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=$quarterWidth; height=$quarterHeight}},
+            @{name='vivid-red-quarter-on-muted-red'; background='#936E6E'; rectangle=@{
+                color='#E13030'; x=$cx; y=$cy; width=$rw; height=$rh}},
+            @{name='vivid-red-half-on-muted-red'; background='#936E6E'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=$rw; height=$height}},
+            @{name='vivid-red-dominant-on-muted-red'; background='#E13030'; rectangle=@{
+                color='#936E6E'; x=$cx; y=$cy; width=$rw; height=$rh}},
+            @{name='red-quarter-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=$cx; y=$cy; width=$rw; height=$rh}},
+            @{name='red-dominant-on-green'; background='#E13030'; rectangle=@{
+                color='#148A14'; x=$cx; y=$cy; width=$rw; height=$rh}},
+            @{name='red-quarter-corner-on-green'; background='#148A14'; rectangle=@{
+                color='#E13030'; x=0; y=0; width=$rw; height=$rh}}
         )
     } else {
         $probes = @(
