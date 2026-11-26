@@ -3,6 +3,7 @@
 """Synchronize template-owned Kvantum accent paints, not window materials."""
 import argparse
 import colorsys
+from fractions import Fraction
 import json
 import math
 import os
@@ -55,6 +56,20 @@ def rgb(value):
     return "#" + "".join(f"{x:02X}" for x in channels[:3])
 
 
+def custom_hsl_coordinates(channels):
+    lo, hi = min(channels), max(channels)
+    lightness = Fraction(lo + hi, 510)
+    saturation = (Fraction(hi - lo, 255 - abs(lo + hi - 255))
+                  if hi != lo else Fraction(0))
+    return lightness, saturation
+
+
+def uses_custom_lab(channels):
+    lightness, saturation = custom_hsl_coordinates(channels)
+    return (Fraction(1, 4) <= lightness <= Fraction(3, 4)
+            and saturation >= Fraction(3, 20))
+
+
 # Candidate for the central custom-color branch, not the preset lookup
 # or the wallpaper extractor. Mathematical description:
 # https://gist.github.com/cnbluefire/7ffa04c493c57b8a67f6a8baa2c726f7
@@ -62,8 +77,7 @@ def rgb(value):
 # Keep the original input distinct from the normalized output Accent.
 def derive_custom_lab_palette(selection):
     source = tuple(bytes.fromhex(rgb(selection)[1:]))
-    hue, lightness, saturation = colorsys.rgb_to_hls(*(x / 255 for x in source))
-    if not 0.25 <= lightness <= 0.75 or saturation < 0.15:
+    if not uses_custom_lab(source):
         raise ValueError("Custom accent outside the reviewed CIELAB branch")
 
     def linear(channel):
@@ -125,6 +139,39 @@ def derive_custom_lab_palette(selection):
     }
     return {role: "#" + bytes(channels).hex().upper()
             for role, channels in colors.items()}
+
+
+# Candidate for the legacy HSL branch, based on the same mathematical
+# research lead. Use exact rational arithmetic for 8-bit input and nominal
+# decimal offsets: the measured near-gray vector exposes integer
+# boundaries where float32 offsets plus truncation can differ by one.
+# This is not a claim of Windows bitwise parity for all boundary colors.
+def derive_custom_palette(selection):
+    source = tuple(bytes.fromhex(rgb(selection)[1:]))
+    if uses_custom_lab(source):
+        return derive_custom_lab_palette(selection)
+
+    lightness, saturation = custom_hsl_coordinates(source)
+    lightness = max(Fraction(1, 4), min(Fraction(3, 4), lightness))
+    scale = 4 * abs(Fraction(1, 2) - lightness)
+    lo, hi = min(source), max(source)
+    span = hi - lo
+    # The relative channel positions retain the input hue. Scaling the
+    # chroma at the new lightness is equivalent to an HSL hue conversion.
+    positions = tuple(Fraction(c - lo, span) if span else Fraction(0)
+                      for c in source)
+    result = {}
+    for role, offset in (
+            ("AccentLight3", 17), ("AccentLight2", 10), ("AccentLight1", 5),
+            ("Accent", 0), ("AccentDark1", -5), ("AccentDark2", -10),
+            ("AccentDark3", -17)):
+        level = lightness + scale * Fraction(offset, 100)
+        chroma = (1 - abs(2 * level - 1)) * saturation
+        floor = level - chroma / 2
+        # The HSL branch truncates, unlike the rounded CIELAB branch.
+        channels = (int(255 * (floor + chroma * p)) for p in positions)
+        result[role] = "#" + bytes(channels).hex().upper()
+    return result
 
 
 def contrast_ink(color):

@@ -310,7 +310,7 @@ implementation; it is not evidence of Windows-equivalent colors.
 
 ### Captured Windows 11 26H2 baseline
 
-The maintainer supplied six UISettings captures from build 26300.9974,
+The maintainer supplied seven UISettings captures from build 26300.9974,
 preserved in [the runtime accent reference](windows11-26h2-accent-captures.json).
 The original blue samples were produced with the v1 script argument
 Automatic, but the Settings screenshot and the owner's correction
@@ -411,8 +411,15 @@ for the current shell accent. Do not treat their persistence as a failure
 of the automatic palette capture.
 
 The matching registered wallpaper hash establishes a controlled
-manual-to-automatic comparison for the cached file, not its original
-image identity or a general wallpaper extraction algorithm.
+manual-to-automatic comparison. The archived resources/windows11 branch,
+commit 272e06c87be0f548cebb2558392019b941df20d4, lists in verification.json
+two byte-identical original wallpapers with this exact SHA-256:
+Windows/img0.jpg and Spotlight/img14.jpg under original/Windows/Web/Wallpaper.
+The fixture now records that reference separately from the v2 script's
+null source_wallpaper_sha256. The archived index identifies the reference
+image bytes without establishing which path the operator selected.
+Do not copy the proprietary wallpaper into this development branch.
+The automatic generation and extraction algorithms are still unverified.
 
 ### Manual palette generation research
 
@@ -454,21 +461,55 @@ The existing sync-accent.py module now exposes a pure
 derive_custom_lab_palette() function for the central CIELAB branch.
 It uses standard-library color conversion and rounds intermediate RGB
 values before saturation correction. It rejects extreme-lightness and
-near-gray inputs pending verification of the legacy HSL branch. Callers
-must not use it for Windows preset colors or wallpaper extraction.
-The existing window-material regression suite contains the conditional
-purple vector and rejected-input checks. No third-party source code is
-imported and no dependency is added.
+near-gray inputs, which belong to the separate legacy HSL branch.
+Callers must not use either custom branch for Windows preset colors or
+wallpaper extraction. The existing window-material regression suite
+contains the conditional purple vector and branch rejection checks.
+
+### Near-gray custom color (legacy HSL candidate)
+
+The v2 capture following the request to enter #808482 reports that same
+base color. The seven API colors are:
+
+| UISettings role | Observed RGB |
+| --- | --- |
+| Accent | #808482 |
+| AccentDark1 | #7F8381 |
+| AccentDark2 | #7E8381 |
+| AccentDark3 | #7E8280 |
+| AccentLight1 | #808482 |
+| AccentLight2 | #818483 |
+| AccentLight3 | #818583 |
+
+The input's HSL saturation is 0.016 and lightness is 130/255. The
+research lead describes a low-saturation or extreme-lightness HSL branch.
+Direct calculation with float32 offsets and truncation can differ by
+one unit at integer boundaries for this sample. Using
+the nominal decimal offsets in exact rational arithmetic matches all
+seven measured RGB colors. The staged derive_custom_palette() function
+dispatches the two custom branches using exact HSL boundaries and keeps
+HSL truncation separate from CIELAB rounding. The exact rational
+precision choice is a candidate based on this observation, not evidence
+of Windows's actual arithmetic or universal equivalence. Further
+boundary and independently recorded inputs remain unverified.
+
+The raw palette has FF in the fourth byte of all seven API slots,
+unlike the 00 seen in the saturated custom, preset orange and automatic
+captures. The eighth slot stays #881798 followed by 00. Preserve these
+observations without interpreting the fourth byte as alpha or the eighth
+slot as a color role. The regression fixture records the original
+requested input provenance and the separate byte pattern. No
+third-party source code or additional dependency is imported.
 
 This is a staged calculation core, not a change to the installed
 accent propagation: KDE's effective selection color remains authoritative
 for Plasma and Kvantum. Applying the new ramp only to Kvantum or custom
 QML while leaving KColorScheme unchanged would break color consistency.
-The next useful manual sample is an explicitly recorded non-preset
-near-gray or very dark input, to check the separate HSL path. A second
-central-color sample with an explicit input would independently verify
-the CIELAB formula. For wallpaper extraction, obtain the original image
-or its source hash separately. No repeat of blue or orange is needed.
+Both custom calculation branches are now staged. Preset handling,
+independent boundary validation and automatic palette generation are
+open. The original automatic wallpaper is identified in the resource
+index, so do not ask the maintainer to export the same image again.
+No repeat of the existing color captures is needed.
 
 ### Capture procedure
 

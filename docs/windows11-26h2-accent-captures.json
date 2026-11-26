@@ -1,7 +1,7 @@
 {
   "windows_build": "26300.9974",
   "display_version": "26H2",
-  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In every sample, the observed manual base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1. The v2 orange capture independently records the registry mode and raw palette, with the same seven UISettings colors as the v1 orange capture. The v2 automatic sample reports Automatic at both registry locations; unlike the manual captures, the current API/Explorer palette differs from DWM's unchanged manual orange values. The v2 custom-color capture records a third manual palette; the requested input was #9F5A8C, but the capture itself does not attest to the exact entered RGB.",
+  "description": "The blue captures were invoked with the v1 script argument Automatic, but the Settings screenshot and owner's correction confirm the UI was set to Manual. Preserve that provenance rather than treating the script argument as detected system state. The orange sample was invoked with Manual. In the manual samples, the observed base color is UISettings Accent. Registry mode and AccentPalette bytes were not captured by v1. The v2 orange capture independently records the registry mode and raw palette, with the same seven UISettings colors as the v1 orange capture. The v2 automatic sample reports Automatic at both registry locations; unlike the manual captures, the current API/Explorer palette differs from DWM's unchanged manual orange values. The v2 custom-color capture records a third manual palette; the requested input was #9F5A8C, but the capture itself does not attest to the exact entered RGB. The low-saturation capture preserves the requested near-gray color and uses FF, rather than 00, in the fourth byte of each of its first seven registry slots.",
   "winui_roles": {
     "dark": {
       "primary_fill": "AccentLight2",
@@ -248,13 +248,57 @@
           "accent_palette_hex": "EECEEB00D8ADD000B173A100A25D8F0088497600662F56004011320088179800"
         }
       }
+    },
+    "manual_custom_low_saturation_light_registry": {
+      "script_schema_version": 2,
+      "script_mode_argument": "Manual",
+      "verified_settings_mode": "Manual",
+      "accent_mode_registry": "Manual",
+      "accent_mode_registry_conflict": false,
+      "manual_color_argument": "",
+      "requested_manual_color": "#808482",
+      "requested_manual_color_provenance": "Requested in the preceding capture instructions; v2 omitted the entered RGB. The observed base equals the requested value.",
+      "accent_observed_from_ui_settings": "#FF808482",
+      "manual_color_observed_from_ui_settings": "#FF808482",
+      "appearance": {
+        "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+        "source_wallpaper_sha256": null,
+        "wallpaper_style_raw": "10",
+        "tile_wallpaper_raw": "0",
+        "apps_use_light_theme": 1,
+        "system_uses_light_theme": 1,
+        "transparency_raw": 1,
+        "reported_display_width": 1280,
+        "reported_display_height": 800,
+        "colors_argb": {
+          "Accent": "#FF808482",
+          "AccentDark1": "#FF7F8381",
+          "AccentDark2": "#FF7E8381",
+          "AccentDark3": "#FF7E8280",
+          "AccentLight1": "#FF808482",
+          "AccentLight2": "#FF818483",
+          "AccentLight3": "#FF818583",
+          "Background": "#FFFFFFFF",
+          "Foreground": "#FF000000"
+        },
+        "registry": {
+          "control_panel_auto_colorization_raw": 0,
+          "themes_history_auto_color_raw": 0,
+          "dwm_accent_color_raw": -8223616,
+          "dwm_colorization_color_raw": -998210430,
+          "explorer_accent_color_menu_raw": -8223616,
+          "explorer_start_color_menu_raw": -8289409,
+          "accent_palette_length_bytes": 32,
+          "accent_palette_hex": "818583FF818483FF808482FF808482FF7F8381FF7E8381FF7E8280FF88179800"
+        }
+      }
     }
   },
   "registry_palette_observation": {
     "capture": "manual_orange_light_registry",
     "slot_size_bytes": 4,
     "slot_count": 8,
-    "observed_color_byte_order": "RGB followed by 00 in this sample",
+    "observed_color_byte_order": "RGB followed by a fourth byte (00 or FF observed); not interpreted as alpha",
     "ui_settings_roles_in_slot_order": [
       "AccentLight3",
       "AccentLight2",
@@ -266,10 +310,25 @@
     ],
     "unassigned_slot_index": 7,
     "unassigned_slot_rgb": "#0063B1",
-    "limitations": "Observed on build 26300.9974 with two manual accents and one automatic accent. The eighth slot and fourth byte semantics are not established; these observations do not specify the Windows palette-generation algorithm.",
+    "limitations": "Observed on build 26300.9974 with three manual accents and one automatic accent with raw registry bytes. Neither the eighth slot nor the fourth byte semantics are established; the registry layout stores the generated colors, not their derivation.",
     "automatic_capture": "automatic_blue_light_registry",
     "automatic_unassigned_slot_rgb": "#881798",
     "custom_capture": "manual_custom_light_registry",
-    "custom_unassigned_slot_rgb": "#881798"
+    "custom_unassigned_slot_rgb": "#881798",
+    "low_saturation_capture": "manual_custom_low_saturation_light_registry",
+    "low_saturation_unassigned_slot_rgb": "#881798"
+  },
+  "wallpaper_reference_matches": {
+    "automatic_blue_light_registry": {
+      "registered_wallpaper_sha256": "A37491A5E479E191CFE547B484426037455CE8AACFF7AB15F91925330C24864F",
+      "resource_branch": "resources/windows11",
+      "resource_commit": "272e06c87be0f548cebb2558392019b941df20d4",
+      "evidence_path": "verification.json",
+      "matching_original_paths": [
+        "original/Windows/Web/Wallpaper/Windows/img0.jpg",
+        "original/Windows/Web/Wallpaper/Spotlight/img14.jpg"
+      ],
+      "provenance": "The resource branch verification.json lists these two files with identical SHA-256 equal to the captured registered wallpaper hash. The script's original source hash remains null. This establishes a reference byte-identity from the archived index, not the operator-selected path or the extraction algorithm."
+    }
   }
 }

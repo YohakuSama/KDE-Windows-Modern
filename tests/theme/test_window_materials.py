@@ -110,6 +110,8 @@ class WindowMaterialTests(unittest.TestCase):
             "Accent", "AccentLight1", "AccentLight2", "AccentLight3",
             "AccentDark1", "AccentDark2", "AccentDark3")}
         self.assertEqual(candidate, expected)
+        self.assertEqual(sync["derive_custom_palette"](sample["requested_manual_color"]),
+                         expected)
         self.assertNotEqual(candidate["Accent"], sample["requested_manual_color"])
         # The normalized Accent is not interchangeable with the original input.
         self.assertNotEqual(derive(candidate["Accent"]), candidate)
@@ -129,6 +131,44 @@ class WindowMaterialTests(unittest.TestCase):
             with self.subTest(color=unsupported):
                 with self.assertRaises(ValueError):
                     derive(unsupported)
+
+    def test_custom_hsl_accent_reference(self):
+        sync = runpy.run_path(str(ROOT / "scripts/theme/sync-accent.py"))
+        reference = json.loads((ROOT / "docs/windows11-26h2-accent-captures.json").read_text(
+            encoding="utf-8"))
+        observation = reference["registry_palette_observation"]
+        sample = reference["captures"][observation["low_saturation_capture"]]
+        observed = sample["appearance"]["colors_argb"]
+        registry = sample["appearance"]["registry"]
+        order = observation["ui_settings_roles_in_slot_order"]
+        expected = {role: "#" + observed[role][3:] for role in order}
+        self.assertEqual(sample["accent_mode_registry"], "Manual")
+        self.assertEqual(registry["control_panel_auto_colorization_raw"], 0)
+        self.assertEqual(registry["themes_history_auto_color_raw"], 0)
+        self.assertEqual(sample["manual_color_argument"], "")
+        self.assertEqual(expected["Accent"], sample["requested_manual_color"])
+        self.assertEqual(sync["derive_custom_palette"](sample["requested_manual_color"]),
+                         expected)
+        with self.assertRaises(ValueError):
+            sync["derive_custom_lab_palette"](sample["requested_manual_color"])
+        raw = bytes.fromhex(registry["accent_palette_hex"])
+        self.assertEqual(len(raw), registry["accent_palette_length_bytes"])
+        self.assertEqual(len(raw), 32)
+        for i, role in enumerate(order):
+            slot = raw[i * 4:i * 4 + 4]
+            self.assertEqual("#" + slot[:3].hex().upper(), expected[role])
+            self.assertEqual(slot[3], 255)
+        self.assertEqual("#" + raw[28:31].hex().upper(),
+                         observation["low_saturation_unassigned_slot_rgb"])
+        self.assertEqual(raw[31], 0)
+        # Formula invariants, not measured Windows boundary vectors.
+        for source, base in (("#000000", "#3F3F3F"), ("#FFFFFF", "#BFBFBF")):
+            with self.subTest(source=source):
+                ramp = sync["derive_custom_palette"](source)
+                self.assertEqual(ramp["Accent"], base)
+                self.assertEqual(set(ramp), set(order))
+        self.assertEqual(set(sync["derive_custom_palette"]("#808080")),
+                         set(order))
 
     def test_bounded_tint(self):
         self.assertEqual(frames.tint_color('dark', (0, 0, 0)), '#1D1D1D')
