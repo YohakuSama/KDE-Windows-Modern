@@ -5,6 +5,12 @@
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
 
+# The source checkout keeps one canonical SVG per alias group. The full
+# installation archive already contains the materialized compatibility files.
+if [ -f "$SRC_DIR/icons/windows-modern-aliases.json" ]; then
+    python3 -I "$SRC_DIR/scripts/verify-svg-aliases.py" --check
+fi
+
 THEME_NAME="windows-modern"
 PROJECT_DIR="$SRC_DIR"
 SRC_DIR="$SRC_DIR/icons/$THEME_NAME"

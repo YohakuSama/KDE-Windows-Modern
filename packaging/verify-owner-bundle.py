@@ -170,6 +170,7 @@ def verify(revision, filename):
             "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/main.qml",
             "scripts/install-icons.sh", "scripts/install-themes.sh",
             "scripts/install-sounds.sh", "scripts/verify-nixos-runtime.py",
+            "icons/windows-modern-aliases.json", "scripts/verify-svg-aliases.py",
             "plasma/applets/org.kde.windowsmodern.systemtray/systemtray.cpp",
             "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/PanelStatusGlyph.qml",
             "plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt",

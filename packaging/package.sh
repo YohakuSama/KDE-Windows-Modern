@@ -165,6 +165,9 @@ fi
 
 # Refresh generated deployment files and validate source-only aliases.
 python3 -I "$SCRIPT_DIR/materialize-modules.py" --prepare
+if [[ -f "$SRC_DIR/icons/windows-modern-aliases.json" ]]; then
+    python3 -I "$SCRIPT_DIR/verify-svg-aliases.py" --check
+fi
 mkdir -p "$DIST_DIR"
 OWNER=0
 if [[ "${1:-}" == "--owner" ]]; then

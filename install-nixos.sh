@@ -404,6 +404,9 @@ PYTHON="$PROFILE/bin/python3"
 if [ -f "$ROOT/core/source-map.json" ]; then
     "$PYTHON" -I "$ROOT/scripts/materialize-modules.py" --check
 fi
+if [ -f "$ROOT/icons/windows-modern-aliases.json" ]; then
+    "$PYTHON" -I "$ROOT/scripts/verify-svg-aliases.py" --check
+fi
 export PATH="$PROFILE/bin:$PATH"
 GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
 export GI_TYPELIB_PATH
