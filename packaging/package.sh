@@ -163,7 +163,7 @@ if [[ "${1:-}" == "--list" ]]; then
     exit 0
 fi
 
-# Refresh untracked deployment files; refuse stale tracked mirrors.
+# Refresh generated deployment files and validate source-only aliases.
 python3 -I "$SCRIPT_DIR/materialize-modules.py" --prepare
 mkdir -p "$DIST_DIR"
 OWNER=0
@@ -240,7 +240,7 @@ if [[ "$OWNER" -eq 1 ]]; then
 fi
 rm -f "$FULL_OUT"
 # One source policy for all full installable archives.
-exclusions="$(python3 "$SCRIPT_DIR/verify-owner-bundle.py" --archive-excludes)"
+exclusions="$(python3 "$SCRIPT_DIR/verify-owner-bundle.py" --archive-excludes "$build_revision")"
 mapfile -t archive_excludes <<< "$exclusions"
 archive_paths=(. "${archive_excludes[@]}")
 git -C "$SRC_DIR" archive --format=zip --prefix="KDE-Windows-Modern-${FULL_VER}/" \

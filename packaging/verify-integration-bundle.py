@@ -36,6 +36,7 @@ def verify(revision, filename):
         for name in members:
             if THEME_POLICY["is_development_file"](name[len(prefix):]):
                 raise ValueError("Development payload in integration ZIP: " + name)
+        THEME_POLICY["verify_script_payload"](bundle, prefix)
         required = (
             "INTEGRATION-BUILD", "install.sh", "install-nixos.sh",
             "config/kxmlgui5/dolphin/dolphinui.rc",

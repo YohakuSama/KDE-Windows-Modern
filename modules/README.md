@@ -33,8 +33,9 @@ panel scripts use the same taskbar/layout/panel-body.js; the wrappers
 preserve their distinct single-panel/all-screen behaviors.
 
 Run `python3 -I scripts/materialize-modules.py --prepare` to refresh
-generated-only outputs and `--write` after editing canonical sources
-with remaining tracked mirrors; `--check` compares without writing.
+generated-only outputs and validate source-only aliases.
+`--check` compares without writing. The older `--write` command is equivalent
+to `--prepare`.
 Never edit generated mirrors directly. A fully mapped source subtree
 includes new files automatically; otherwise add an explicit mapping.
 Remove obsolete outputs deliberately. Do not execute relocated tools that
@@ -49,7 +50,11 @@ unmapped preview assets and the shared Plasma visual atlas remain
 tracked. Standard install and developer entry points prepare generated
 files; full install ZIPs reconstruct them from the archived commit.
 Aurorae, Plymouth, application configuration and Dolphin patches are also
-generated-only. Konsole's plugin sources retain native mirrors for the
-existing independent compiler syntax check. The remaining Nix and script
-mirrors are transitional. Keep packages self-contained and prepare before
+generated-only. The only native Konsole plugin source is
+[app-decorations/konsole](../app-decorations/konsole/); its module entry
+[terminal/plugin](terminal/plugin/README.md) documents that ownership.
+Nix build expressions likewise retain their native paths as unique sources.
+The remaining 43 script/data entry paths are source-only relative symlinks
+to their canonical files. Install ZIPs and appearance packages use real
+files, never these aliases. Keep packages self-contained and prepare before
 direct low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LEDGER.md).

@@ -17,7 +17,7 @@ import sys
 from string import Template
 import xml.etree.ElementTree as ET
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).absolute().parents[2]
 PACKAGE = "org.kde.windowsmodern.dark"
 LIGHT_PACKAGE = "org.kde.windowsmodern.light"
 

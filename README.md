@@ -39,7 +39,11 @@ The testing source tree generates ignored native package files from the
 canonical modules before installation; the installer uses a temporary Python
 interpreter on NixOS if needed. Use the root install.sh driver for component
 installs from a fresh checkout. Direct invocation of generated low-level
-scripts requires `python3 -I scripts/materialize-modules.py --prepare` first. Install ZIPs already contain those files.
+scripts requires `python3 -I scripts/materialize-modules.py --prepare` first.
+Independent script paths in the Git checkout may be relative source-only
+aliases. Use a normal Linux Git checkout, not individual raw symlink
+downloads. Install ZIPs contain real native files and do not depend on
+the editable module directories.
 
 ```bash
 bash install.sh

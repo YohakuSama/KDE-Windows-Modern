@@ -14,7 +14,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 from urllib.parse import unquote, urlsplit
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).absolute().parents[2]
 BASE_COLORS = {mode: values['window'] for mode, values in
                json.loads(Path(__file__).with_name('palette.json').read_text(encoding='utf-8')).items()}
 PADDING = 12

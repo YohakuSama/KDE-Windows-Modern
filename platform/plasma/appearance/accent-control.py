@@ -12,7 +12,7 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).absolute().parent
 SYNC = runpy.run_path(str(HERE / "sync-accent.py"))
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
 DATA = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))

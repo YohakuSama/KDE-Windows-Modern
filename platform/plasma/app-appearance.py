@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).absolute().parents[1]
 DATA = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))

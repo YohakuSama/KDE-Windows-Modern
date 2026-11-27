@@ -16,13 +16,15 @@
   and [core/README.md](core/README.md), plus
   [platform/README.md](platform/README.md) and
   [packaging/README.md](packaging/README.md). Edit only the canonical source for
-  paths owned by core/source-map.json; native package mirrors are generated.
-  Generated-only native files are ignored by Git. Refresh them with
-  python3 -I scripts/materialize-modules.py --prepare; use --write when
-  editing canonical sources whose native mirrors are still tracked. Review
-  the complete diff, then use --check for read-only comparison. Install,
-  packaging and existing static-check entry points prepare their inputs.
-  Full install ZIPs reconstruct generated files from the archived commit.
+  paths owned by core/source-map.json; generated package outputs are ignored
+  by Git and independent scripts use validated source-only aliases. Refresh
+  outputs with python3 -I scripts/materialize-modules.py --prepare (--write
+  is equivalent). Review the complete diff, then use --check for read-only
+  comparison. The unique native Konsole and Nix sources remain at their
+  original locations, documented from modules/terminal and platform/nixos.
+  Install, packaging and existing static-check entry points prepare their
+  inputs. Full install ZIPs reconstruct generated files and replace aliases
+  with real files from the archived commit.
   Before invoking lower-level native development tools directly, prepare
   the checkout. Never add generated outputs back to Git. Do not add runtime
   imports between independently installed applets or greeter packages.

@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Materialize self-contained native packages from their editable sources.
 
---prepare refreshes untracked outputs and rejects stale tracked mirrors.
---check is read-only; --write also refreshes the remaining tracked mirrors.
-The archive mode uses only canonical inputs from the requested Git commit.
+--prepare refreshes generated outputs and validates source-only aliases.
+--check is read-only; --write refreshes the same generated outputs.
+The archive mode replaces source-only aliases with real files from the commit.
 Obsolete native files must be removed deliberately, never silently deleted.
 """
 import argparse
@@ -25,10 +25,11 @@ OUTPUT_ROOTS = ("plasma", "app-decorations", "boot", "config", "nix",
                 "scripts", "Kvantum", "aurorae", "color-schemes")
 PANEL_MARKER = "@PANEL_BODY@"
 SOURCE_METADATA = {"core/README.md", "core/source-map.json", "modules/README.md",
-                   "platform/README.md", "packaging/README.md"}
+                   "platform/README.md", "packaging/README.md",
+                   "modules/terminal/plugin/README.md", "platform/nixos/README.md"}
 
 
-def checked_path(relative, prefixes, root):
+def checked_path(relative, prefixes, root, *, allow_leaf_link=False):
     path = PurePosixPath(relative)
     if (path.is_absolute() or not path.parts or path.parts[0] not in prefixes
             or len(path.parts) < 2 or ".." in path.parts
@@ -38,7 +39,7 @@ def checked_path(relative, prefixes, root):
     for part in (result, *result.parents):
         if part == root:
             break
-        if part.is_symlink():
+        if part.is_symlink() and not (allow_leaf_link and part == result):
             raise ValueError(f"Symlink in source-map path: {part}")
     return result
 
@@ -48,6 +49,10 @@ def regular_files(directory, prefixes, root):
         raise ValueError(f"Missing or invalid directory: {directory.relative_to(root)}")
     for entry in sorted(directory.rglob("*")):
         path = checked_path(entry.relative_to(root).as_posix(), prefixes, root)
+        # Importing an editable Python module through its source alias can
+        # create bytecode here; it is never a canonical source or an output.
+        if prefixes == SOURCE_ROOTS and "__pycache__" in path.relative_to(root).parts:
+            continue
         if path.is_dir():
             continue
         if not path.is_file():
@@ -59,11 +64,16 @@ def file_mode(path):
     return 0o755 if path.stat().st_mode & stat.S_IXUSR else 0o644
 
 
-def source_plan(root=ROOT):
+def source_plan(root=ROOT, *, validate_links=True):
     manifest = checked_path("core/source-map.json", SOURCE_ROOTS, root)
     mapping = json.loads(manifest.read_text(encoding="utf-8"))
-    if mapping["schema_version"] != 3:
+    if mapping["schema_version"] != 4:
         raise ValueError("Unsupported source map")
+    link_names = mapping["linked_files"]
+    if not isinstance(link_names, list) or len(link_names) != len(set(link_names)):
+        raise ValueError("Invalid source-only aliases")
+    linked = {checked_path(name, OUTPUT_ROOTS, root, allow_leaf_link=True)
+              for name in link_names}
     expected = {}
     owned_trees = set()
     used_sources = set()
@@ -94,7 +104,13 @@ def source_plan(root=ROOT):
         if not isinstance(outputs, list) or not outputs:
             raise ValueError(f"Missing outputs for {relative}")
         for output in outputs:
-            copy(source, checked_path(output, OUTPUT_ROOTS, root))
+            destination = checked_path(output, OUTPUT_ROOTS, root,
+                                       allow_leaf_link=output in link_names)
+            if destination in linked and validate_links:
+                target = os.path.relpath(source, destination.parent)
+                if not destination.is_symlink() or os.readlink(destination) != target:
+                    raise ValueError(f"Invalid source-only alias: {output}; restore it from Git")
+            copy(source, destination)
 
     for output, recipe in mapping["rendered"].items():
         template = checked_path(recipe["template"], SOURCE_ROOTS, root)
@@ -125,6 +141,14 @@ def source_plan(root=ROOT):
             raise ValueError(f"Empty or overlapping generated root: {relative}")
         generated.update(members)
 
+    # Aliases are allowed only for explicitly mapped script/data files.
+    # Never link an independently installed package to the developer tree.
+    if (linked & generated or not linked <= expected.keys()
+            or any(path.relative_to(root).parts[0] != "scripts" for path in linked)):
+        raise ValueError("Invalid linked output scope")
+    if generated | linked != set(expected):
+        raise ValueError("Every native output must be generated or a source-only alias")
+
     for directory in sorted(owned_trees):
         if directory.exists():
             for item in regular_files(directory, OUTPUT_ROOTS, root):
@@ -137,7 +161,7 @@ def source_plan(root=ROOT):
         for item in regular_files(root / name, SOURCE_ROOTS, root):
             if item not in used_sources and item.relative_to(root).as_posix() not in SOURCE_METADATA:
                 raise ValueError(f"Unmapped editable source: {item.relative_to(root)}")
-    return expected, generated
+    return expected, generated, linked
 
 
 def replace_file(destination, payload, mode):
@@ -176,7 +200,7 @@ def append_archive(filename, revision, prefix):
                     raise ValueError(f"Duplicate canonical archive member: {member.name}")
                 with source.extractfile(member) as payload:
                     replace_file(path, payload.read(), 0o755 if member.mode & stat.S_IXUSR else 0o644)
-        expected, generated = source_plan(root)
+        expected, generated, linked = source_plan(root, validate_links=False)
         with ZipFile(filename, "a", compression=ZIP_DEFLATED) as archive:
             names = archive.namelist()
             if (not names or len(names) != len(set(names))
@@ -185,10 +209,14 @@ def append_archive(filename, revision, prefix):
                 raise ValueError("Archive is not the requested committed source ZIP")
             have = set(names)
             pending = []
-            for path in sorted(generated):
+            for path in sorted(generated | linked):
                 name = path.relative_to(root).as_posix()
-                if policy(name) or prefix + name in have:
-                    raise ValueError(f"Invalid or already archived generated output: {name}")
+                if policy(name):
+                    if path in linked:
+                        continue  # Development-only script; absent from install ZIP.
+                    raise ValueError(f"Generated installation output is excluded: {name}")
+                if prefix + name in have:
+                    raise ValueError(f"Already archived generated output: {name}")
                 _, data, mode = expected[path]
                 info = ZipInfo(prefix + name, archive.infolist()[0].date_time)
                 info.create_system = 3
@@ -197,15 +225,15 @@ def append_archive(filename, revision, prefix):
                 pending.append((info, data))
             for info, data in pending:
                 archive.writestr(info, data)
-        print(f"Archived {len(generated)} generated native files from {revision}")
+        print(f"Archived {len(pending)} real native files from {revision}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true", help="compare without writing")
-    mode.add_argument("--write", action="store_true", help="refresh all declared mirrors")
-    mode.add_argument("--prepare", action="store_true", help="refresh untracked outputs only")
+    mode.add_argument("--write", action="store_true", help="refresh generated files (same as --prepare)")
+    mode.add_argument("--prepare", action="store_true", help="refresh generated files and validate aliases")
     mode.add_argument("--append-archive", type=Path, metavar="ZIP")
     parser.add_argument("--revision")
     parser.add_argument("--prefix")
@@ -218,23 +246,24 @@ def main():
             return 0
         if args.revision is not None or args.prefix is not None:
             parser.error("--revision/--prefix require --append-archive")
-        expected, generated = source_plan()
+        expected, generated, linked = source_plan()
         drift = [
             (destination, source, payload, permissions)
             for destination, (source, payload, permissions) in sorted(expected.items())
-            if (not destination.is_file() or destination.read_bytes() != payload
+            if destination in generated and (
+                not destination.is_file() or destination.read_bytes() != payload
                 or file_mode(destination) != permissions)
         ]
-        blocked = drift if args.check else [row for row in drift if row[0] not in generated] if args.prepare else []
-        if blocked:
-            for destination, source, _, _ in blocked:
+        if args.check and drift:
+            for destination, source, _, _ in drift:
                 print(f"Out of date: {destination.relative_to(ROOT)} <- {source.relative_to(ROOT)}")
-            print("Review the source map and run python3 -I scripts/materialize-modules.py --write.")
+            print("Run python3 -I scripts/materialize-modules.py --prepare.")
             return 1
         if not args.check:
             for destination, _, payload, permissions in drift:
                 replace_file(destination, payload, permissions)
-        print(f"Native outputs: {len(expected)} mapped, {len(generated)} untracked, {len(drift)} refreshed or stale")
+        print(f"Native outputs: {len(generated)} generated, {len(linked)} source aliases, "
+              f"{len(drift)} refreshed or stale")
         return 0
     except (OSError, ValueError, KeyError, TypeError, tarfile.TarError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"Module source map: {error}\n")

@@ -10,7 +10,7 @@ import sys
 import tarfile
 import tempfile
 
-SCRIPTS = Path(__file__).resolve().parent
+SCRIPTS = Path(__file__).absolute().parent
 MARKER = '.windows-modern-greeter'
 LIMIT = 64 * 1024 * 1024
 

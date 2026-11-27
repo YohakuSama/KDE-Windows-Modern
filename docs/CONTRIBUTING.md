@@ -52,7 +52,7 @@ implemented, and do not infer visual parity from the task count.
 | Path | What lives there |
 |------|------------------|
 | `install.sh`, `uninstall.sh`, `install-nixos.sh` | User entry points and the reversible NixOS backend. Conventional component installers are in `scripts/`. |
-| `scripts/install-lib.sh` | Shared helpers (paths, logging, apply/restart). Every installer sources it. |
+| `scripts/install-lib.sh` | Source-only alias of packaging/install-lib.sh. Every installer sources this stable native entry. |
 | [`core/`](../core/README.md) | Editable shared control, geometry, palette, animation, logic and resource sources. `source-map.json` declares native package outputs. |
 | [`modules/`](../modules/README.md) | Editable feature sources: all seven applets, local flyouts, shell surfaces, window management, login/lock and app appearance. |
 | [`platform/`](../platform/README.md) | Editable Qt/Plasma adapters, CMake, NixOS definitions and host tools. |
@@ -64,20 +64,22 @@ implemented, and do not infer visual parity from the task count.
 | `color-schemes/`, `scripts/theme/palette.json` | Native mirrors of core/palette template and fixed color roles. |
 | `plasma/layout-templates/` | Generated Add Panel wrapper and common body from modules/taskbar/layout. The global-theme entry uses the same body. |
 | `plasma/windowswitcher/` | The Alt+Tab switcher (a KWin window-switcher layout). |
+| `nix/`, `app-decorations/konsole/` | Unique native source locations needed by path-relative Nix builds and the existing independent Konsole syntax check; indexed from platform/nixos and modules/terminal/plugin. |
 | `tests/` | Headless regression tests, previews, and separate live desktop tests. |
 | `plasma/shells/` | Session lock screen (installed as a shell overlay). |
 | `third_party/plasma-login-manager/` | Git submodule for the boot greeter (pinned). |
 | `docs/` | Current UI contracts, architecture references, native asset and release guides. |
 
-## Modular source migration
+## Modular source ownership
 
 For mapped files, edit the canonical source in core/, modules/, platform/
-or packaging/, not the generated native destination. Use
-`python3 -I scripts/materialize-modules.py --prepare` to refresh generated-only
-outputs; it refuses drift in the remaining tracked mirrors. Use `--write`
-to refresh those tracked mirrors after deliberately editing their canonical
-sources. Review the resulting diff, then use `--check` for a read-only
-consistency check.
+or packaging/, not the generated native destination or a source-only alias.
+Use `python3 -I scripts/materialize-modules.py --prepare` to refresh generated
+outputs and validate source aliases; `--write` is equivalent. Review the
+resulting diff, then use `--check` for a read-only consistency check.
+The original 436 mapped deployment positions now have one editable
+implementation each: 382 generated files, 43 source-only aliases, and 11
+native files retained as unique source locations outside the map.
 
 All mapped Plasma native outputs are ignored by Git, including the
 seven applets, C++ backends, native metadata, desktop context-menu
@@ -99,9 +101,18 @@ plugin), component installers and selected frame tools are generated-only.
 Use the root install.sh component driver for a fresh checkout; run
 --prepare before directly invoking generated low-level scripts. The direct
 Dolphin and Plymouth paths read canonical inputs in a source checkout.
-Keep rollback available without requiring generated files. The remaining
-bootstrap, recovery, independent command, Nix and Konsole mirrors are
-transitional. Do not re-add generated files.
+Keep rollback available without requiring generated files. The 43 independent
+script/data entry paths are tracked relative symlinks validated against
+the explicit source map. They are only for a Linux source checkout, not
+installed modules. Full archives exclude these links and restore the
+canonical bytes and executable modes as regular files; installed
+appearance packages also copy real files. Invoke scripts through scripts/
+rather than their relocated source paths, and do not download a Git
+symlink as a standalone raw script. The seven Konsole native plugin files
+and four Nix expressions retain their existing native source locations
+to avoid changing the independent static workflow or build identity.
+The duplicate module/platform copies have been removed. Do not re-add
+generated files or replace an alias with a second implementation.
 
 A complete module can add files within a mapped source tree. Delete obsolete
 generated files deliberately when removing their sources; the generator
@@ -111,7 +122,7 @@ hosts self-contained, with no new runtime dependency between applets.
 The materializer checks content and executable mode, rejects unowned source
 and duplicate outputs, and renders the shared taskbar body into both native
 scripts. Keep tools with relative dependencies at their existing execution
-paths until staging is migrated. A source-generating developer tool that
+paths. A source-generating developer tool that
 still targets a mapped native file must be migrated before use; do not
 silently edit or overwrite its canonical source.
 

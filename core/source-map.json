@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "trees": {
     "modules/boot/plymouth": "boot/plymouth",
     "modules/boot/splash": "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash",
@@ -28,7 +28,6 @@
     "modules/taskview/ui": "plasma/applets/org.kde.windowsmodern.taskview/contents/ui",
     "modules/terminal/config": "config/konsole",
     "modules/terminal/kxmlgui": "config/kxmlgui5/konsole",
-    "modules/terminal/plugin": "app-decorations/konsole",
     "modules/windowmanager/alttab": "plasma/windowswitcher/org.kde.windowsmodern.alttab",
     "modules/windowmanager/decoration": "aurorae/windows-modern-dark-aurorae",
     "modules/windowmanager/osd": "plasma/kwinscripts/org.kde.windowsmodern.osd",
@@ -374,18 +373,6 @@
     "packaging/verify-owner-bundle.py": [
       "scripts/verify-owner-bundle.py"
     ],
-    "platform/nixos/dolphin-chrome.nix": [
-      "nix/dolphin-chrome.nix"
-    ],
-    "platform/nixos/konsole-chrome.nix": [
-      "nix/konsole-chrome.nix"
-    ],
-    "platform/nixos/plymouth-theme.nix": [
-      "nix/plymouth-theme.nix"
-    ],
-    "platform/nixos/test-runtime.nix": [
-      "nix/test-runtime.nix"
-    ],
     "platform/nixos/tools/check-nixos-assets.py": [
       "scripts/check-nixos-assets.py"
     ],
@@ -730,5 +717,50 @@
     "scripts/theme/popup-frame.svg.in",
     "scripts/theme/popup-frames.py",
     "scripts/theme/tasks-frames.py"
+  ],
+  "linked_files": [
+    "scripts/app-appearance.py",
+    "scripts/check-nixos-assets.py",
+    "scripts/config-backup.sh",
+    "scripts/cursor-assets.sh",
+    "scripts/desktop-contextmenu.py",
+    "scripts/fix-dolphin-statusbar.sh",
+    "scripts/greeter-colors.py",
+    "scripts/greeter-native-assets.py",
+    "scripts/import-shell-assets.py",
+    "scripts/import-windows-assets.py",
+    "scripts/install-deps.sh",
+    "scripts/install-greeter-live.sh",
+    "scripts/install-greeter.sh",
+    "scripts/install-lib.sh",
+    "scripts/install-transparency.sh",
+    "scripts/keyboard-labels.py",
+    "scripts/konsole-chrome.sh",
+    "scripts/native-assets-map.json",
+    "scripts/native_assets_index.py",
+    "scripts/native_assets_input.py",
+    "scripts/native_pe_resources.py",
+    "scripts/native_pri_resources.py",
+    "scripts/nixos-test-state.py",
+    "scripts/package-plugins.sh",
+    "scripts/package.sh",
+    "scripts/prepare-native-assets.sh",
+    "scripts/qt-plugin-dir.sh",
+    "scripts/set-wallpaper.sh",
+    "scripts/stage-native-resources.sh",
+    "scripts/store-artwork.py",
+    "scripts/theme/accent-control.py",
+    "scripts/theme/appearance-packages.py",
+    "scripts/theme/boot-frames.py",
+    "scripts/theme/palette.json",
+    "scripts/theme/switch-mode.sh",
+    "scripts/theme/sync-accent.py",
+    "scripts/theme/wallpaper-icc.py",
+    "scripts/theme/window-frames.py",
+    "scripts/uninstall-greeter-system.sh",
+    "scripts/verify-integration-bundle.py",
+    "scripts/verify-nixos-runtime.py",
+    "scripts/verify-owner-bundle.py",
+    "scripts/windows-shortcuts.py"
   ]
 }

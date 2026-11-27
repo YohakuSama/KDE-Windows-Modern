@@ -14,7 +14,7 @@ and version-specific adapters; do not replace the system backends.
 | plasma/shortcuts/ | Native shortcut and context-menu integration |
 | plasma/app-appearance.py | Host application configuration adapter |
 | qt/kvantum/ | Style templates and ABI-matched reload patch |
-| nixos/ | Native runtime derivations and transaction tools |
+| nixos/ | Native transaction tools; [unique Nix expression locations](nixos/README.md) |
 
 The [source map](../core/source-map.json) preserves native include,
 package, Nix and Python paths during the migration. All mapped Plasma
@@ -25,5 +25,8 @@ here, and review login-manager patches here. Run native tools from their
 existing output paths; use --prepare before direct lower-level commands.
 Mapped Qt style/patch and application configuration outputs are now
 generated-only. The documented isolated Dolphin Nix command reads canonical
-patches when the source map exists. The Nix expressions, bootstrap and
-other directly consumed script mirrors remain transitional. Source ownership does not itself remove runtime coupling.
+patches when the source map exists. The only editable Nix expressions
+remain in [nix/](../nix/) to preserve their original relative inputs and
+recipe identity. Independent scripts retain native entry paths through
+validated relative source aliases; installation archives carry real files.
+Source ownership does not itself remove runtime coupling.

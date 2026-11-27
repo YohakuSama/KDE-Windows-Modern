@@ -34,7 +34,7 @@ echo -e "${BOLD}Windows Modern — Project Health Check${RESET}"
 echo "======================================"
 
 # The first generated-only native packages must exist before old-path
-# checks and tests. A tracked source mirror mismatch remains fatal.
+# checks and tests. Invalid source-only aliases remain fatal.
 python3 -I scripts/materialize-modules.py --prepare
 
 # ── Theme source (shared base + mode-specific renderer outputs) ──────
@@ -271,11 +271,11 @@ else
     fail "app appearance tests failed — run: python3 -m unittest discover -s tests/apps -v"
 fi
 
-# ── Module source mirrors ───────────────────────────────────────────
+# ── Canonical source outputs ────────────────────────────────────────
 if python3 -I scripts/materialize-modules.py --check; then
-    pass "native package mirrors match the editable shared and module sources"
+    pass "native outputs and aliases match canonical sources"
 else
-    fail "module source drift — review and run scripts/materialize-modules.py --write"
+    fail "module source drift — restore invalid aliases or run scripts/materialize-modules.py --prepare"
     FAILED=1
 fi
 

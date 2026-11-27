@@ -7,11 +7,13 @@ import hashlib
 import json
 import re
 import runpy
+import stat
+import subprocess
 import sys
 from zipfile import ZipFile
 
 # runpy-based tests and direct invocation use the same runtime resource selector.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).absolute().parent))
 from native_assets_index import mapped_resource_entries, verify_reference_index
 
 
@@ -45,8 +47,20 @@ DEV_PATHS = (
 )
 
 
-def archive_excludes():
-    return [*(":(exclude,literal)" + p for p in DEV_PATHS),
+def archive_excludes(revision=None):
+    # Source-only aliases must never enter a self-contained installation ZIP.
+    # Select their list from the very same commit that will be archived.
+    root = Path(__file__).absolute().parents[1]
+    if revision is not None:
+        if not re.fullmatch(r"[0-9a-f]{40}", revision):
+            raise ValueError("Invalid source revision")
+        manifest = json.loads(subprocess.check_output(
+            ["git", "-C", str(root), "show", revision + ":core/source-map.json"]))
+    else:
+        path = root / "core/source-map.json"
+        manifest = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    aliases = manifest.get("linked_files", [])
+    return [*(":(exclude,literal)" + p for p in dict.fromkeys((*DEV_PATHS, *aliases))),
             ":(exclude,glob)View-*.png", ":(exclude,glob)plasma/**/tests/**"]
 
 
@@ -57,6 +71,15 @@ def is_development_file(name):
             or (len(parts) == 1 and re.fullmatch(r"View-.*\.png", name))
             or (parts[0] == "plasma" and "tests" in parts[1:-1])
             or any(p in (".git", "__pycache__", "wm-build") for p in parts))
+
+
+def verify_script_payload(bundle, prefix):
+    """Source-only aliases must not survive in a standalone archive."""
+    for item in bundle.infolist():
+        if (item.filename.startswith(prefix + "scripts/")
+                and item.create_system == 3
+                and stat.S_ISLNK(item.external_attr >> 16)):
+            raise ValueError("Script source alias in installation ZIP: " + item.filename)
 
 
 def verify_resource_index(z, prefix, index, mapping):
@@ -97,6 +120,7 @@ def verify(revision, filename):
         for name in members:
             if not name.startswith(prefix) or is_development_file(name[len(prefix):]):
                 raise ValueError("Development payload in owner ZIP: " + name)
+        verify_script_payload(z, prefix)
         native = "native-resources/"
         required = (
             "INTEGRATION-BUILD", "install.sh", "install-nixos.sh",
@@ -190,8 +214,8 @@ def verify(revision, filename):
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--archive-excludes"]:
-        print("\n".join(archive_excludes()))
+    if len(sys.argv) in (2, 3) and sys.argv[1] == "--archive-excludes":
+        print("\n".join(archive_excludes(sys.argv[2] if len(sys.argv) == 3 else None)))
         raise SystemExit(0)
     if len(sys.argv) != 3:
         raise SystemExit("usage: verify-owner-bundle.py SHA ZIP")
