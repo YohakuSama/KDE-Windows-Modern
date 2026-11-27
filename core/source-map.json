@@ -67,6 +67,9 @@
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml",
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentScrollBar.qml"
     ],
+    "core/controls/FlyoutButton.qml": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FlyoutButton.qml"
+    ],
     "core/controls/NativeGlyph.qml": [
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/NativeGlyph.qml",
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeGlyph.qml",
@@ -92,6 +95,9 @@
     "core/controls/TaskbarGlyph.qml": [
       "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml",
       "plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml"
+    ],
+    "core/controls/Win11Palette.qml": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Win11Palette.qml"
     ],
     "core/controls/plasma/flyouts/components/Battery.qml": [
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/Battery.qml"

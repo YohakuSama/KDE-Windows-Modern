@@ -54,12 +54,9 @@ Quick Settings and Clipboard consume shared palette/flyout resources from
 receives `commandRunner` and `workArea` from its host. These dependencies
 preserve native KDE backends and keep feature UI in its owning module.
 
-One shared-control placement remains for the next existing work item:
-`NotificationHistory.qml` uses `Win11Palette.qml` and `FlyoutButton.qml`,
-which currently live under `calendar/ui`. They serve both Calendar and
-Notifications and belong to the shared-control classification, not to
-Calendar's feature logic. Keep one implementation; consolidate their
-canonical ownership during Public Controls Categorization.
+Shared controls used by Calendar and Notifications are canonically owned
+under `core/controls/`; their existing Digital Clock package paths are
+materialized by `core/source-map.json`. Do not add feature-local copies.
 
 Source modules are ownership boundaries, not new installed applet IDs.
 No service or system backend is duplicated. All Apps and Search pages
@@ -122,8 +119,8 @@ direct low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LE
 ## Functional module ownership audit
 
 On testing commit `01ad5c1f`, the complete Git tree contains 19 feature
-module roots and 233 module source/configuration/resource files. The source
-map accounts for all of them: 230 are direct tree/file mappings and the
+module roots and 231 module source/configuration/resource files. The source
+map accounts for all of them: 228 are direct tree/file mappings and the
 three taskbar layout sources feed the two rendered layout recipes. The
 module mappings have no duplicate output destinations. This is a static
 ownership/source-map review, not a build or runtime validation.

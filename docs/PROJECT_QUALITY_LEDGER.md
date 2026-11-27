@@ -310,6 +310,22 @@ Calendar 目录中的 Win11Palette/FlyoutButton，这两项已识别为公共控
 A14 公共源码或第二项公共控件归类完成。未修改运行时代码，未运行构建、
 自动化测试、CI、打包或实机验收。
 
+### 公共控件归类首轮复核（2026-11-27）
+
+基于 testing 提交 `ac25c680`，确认 `Win11Palette.qml` 与
+`FlyoutButton.qml` 同时服务 Calendar 和 Notifications。此前两者
+位于 `modules/calendar/ui`，造成 Notifications 依赖 Calendar 功能目录。
+现将两份源码原样迁入 `core/controls`，Git blob SHA 保持不变；
+`core/source-map.json` 继续将它们生成到 Digital Clock 原有的
+`contents/ui` 路径，因此 QML 类型名称、相对导入和运行时包布局不变。
+Calendar 与 Notifications 仍共享同一原生通知模型和弹窗宿主。
+
+模块源码由 233 降为 231，公共控件源码增加 2；模块目录的 228 个
+直接映射源与 3 个布局渲染输入均保持唯一输出。此轮只处理已确认的
+跨功能共享控件，不代表公共控件全量归类或 A10–A12 视觉验收完成。
+未修改控件属性、尺寸、颜色、状态或交互；未运行构建、测试、CI、
+打包或实机验收。
+
 ### 已具备的合理边界（保留）
 
 | 层 | 源码依据与结论 |
