@@ -48,6 +48,12 @@ core/logic/panelCapabilities.js. Replacing their coordinator closes an
 already mapped popup; reopening uses the current provider or the native
 fallback. The tray forwards palette events and registers its ready UI
 with the Corona-owned controllers in platform/plasma.
+Start now owns the Search actions at the applet root, independently of
+its compact UI. Search watches the same-panel provider's native action
+registration and readiness, keeps open/state actions paired and resolves
+again on activation. The original Start model and editor remain the
+single search implementation; no unrelated launcher or second model
+is started when the provider is unavailable.
 
 Run `python3 -I scripts/materialize-modules.py --prepare` to refresh
 generated-only outputs and validate source-only aliases.
@@ -72,7 +78,7 @@ generated-only. The only native Konsole plugin source is
 [app-decorations/konsole](../app-decorations/konsole/); its module entry
 [terminal/plugin](terminal/plugin/README.md) documents that ownership.
 Nix build expressions likewise retain their native paths as unique sources.
-The remaining 43 script/data entry paths are source-only relative symlinks
+The 44 script/data entry paths are source-only relative symlinks
 to their canonical files. Install ZIPs and appearance packages use real
 files, never these aliases. Keep packages self-contained and prepare before
 direct low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LEDGER.md).

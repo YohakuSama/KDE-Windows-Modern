@@ -43,6 +43,11 @@ geometry and interaction constraints, not a second progress inventory.
   change the width. Narrow screens may clamp both to the same width.
 - The full taskbar Search box opens at its own anchor with no duplicate
   input on the empty Search page; Start keeps its own top input.
+  Start's native search actions live at applet scope, not button scope.
+  The Search entry binds to the same-panel ready provider's open action
+  and mirrored state together, watching native action registration and
+  readiness without polling. Without a ready provider, it clears its
+  mirrored state and does not launch an unrelated search backend.
 - Preserve real Kicker/Milou actions, configurable Pinned/Recent/All,
   category/list/grid views, alphabetical navigation, user preferences,
   app previews and the footer. No dummy Windows services or promotions.

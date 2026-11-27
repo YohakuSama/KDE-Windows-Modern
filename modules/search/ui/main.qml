@@ -5,19 +5,17 @@
     Windows 11 taskbar Search (optional; not on the default panel). By
     default the search box: a pill with a magnifier and "Search"
     (SearchBox.qml); "Search icon only" is a setting, and vertical panels
-    always get the icon. Either opens the Start menu, which focuses its
-    search field, so typing searches straight away. It asks Plasma for "the launcher" exactly as
-    the Meta key does (org.kde.PlasmaShell.activateLauncherMenu, see
-    plasma-workspace shell/shellcorona.cpp), so it works with the Windows
-    Modern Start menu, Kickoff, or any applet that provides
-    org.kde.plasma.launchermenu on the active screen.
+    always get the icon. Either opens the Windows Modern Start menu's
+    search surface through its native Applet actions on the same panel.
+    The launcher owns the search model and editor; this applet mirrors
+    state and supplies the panel anchor without a second backend.
 
-    This applet must not provide org.kde.plasma.launchermenu itself, or
-    Plasma would "activate the launcher" by activating this button.
+    This applet must not provide org.kde.plasma.launchermenu itself.
 */
 
 import QtQuick
 import QtQuick.Layouts
+import QtQml.Models
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
@@ -31,50 +29,93 @@ PlasmoidItem {
     readonly property int searchMode: Math.max(0, Math.min(2,
         Number(Plasmoid.configuration.searchMode) || 0))
 
-    // A local action communicates popup state without polling or guessing from hover.
+    // Keep the open action and mirrored state from the same ready provider.
+    // The panel list alone does not notify when a launcher registers its
+    // actions later or its representation is reconstructed.
+    readonly property var startProviders: {
+        const providers = [];
+        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
+        for (const applet of applets) {
+            if (applet && applet.pluginName === "org.kde.windowsmodern.startmenu")
+                providers.push(applet);
+        }
+        return providers;
+    }
+    property var openSearchAction: null
     property var searchStateAction: null
-    readonly property bool searchSelected: searchStateAction ? searchStateAction.enabled : false
+    readonly property bool searchSelected: !!openSearchAction?.enabled && !!searchStateAction?.enabled
     readonly property string queryText: searchSelected ? (searchStateAction?.queryText ?? "") : ""
-    readonly property int queryCursor: searchStateAction?.queryCursor ?? 0
+    readonly property int queryCursor: searchSelected ? (searchStateAction?.queryCursor ?? 0) : 0
     readonly property bool queryFocused: searchSelected && (searchStateAction?.queryFocused ?? false)
 
     function refreshSearchState(): void {
-        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
-        for (const applet of applets) {
-            if (applet && applet.pluginName === "org.kde.windowsmodern.startmenu") {
-                root.searchStateAction = applet.internalAction("windowsModernSearchSelected");
-                return;
+        let open = null;
+        let state = null;
+        for (const applet of root.startProviders) {
+            if (!applet || applet.destroyed === true)
+                continue;
+            const action = applet.internalAction("windowsModernSearch");
+            if (action && action.enabled) {
+                open = action;
+                state = applet.internalAction("windowsModernSearchSelected");
+                break;
             }
         }
-        root.searchStateAction = null;
+        root.openSearchAction = open;
+        root.searchStateAction = state;
     }
 
-    Connections {
-        target: Plasmoid.containment
-        ignoreUnknownSignals: true
-        function onAppletsChanged() { Qt.callLater(root.refreshSearchState); }
+    onStartProvidersChanged: Qt.callLater(root.refreshSearchState)
+
+    // One event-driven observer per Start applet, normally just one.
+    // Observe action replacement as well as readiness, with no polling.
+    Instantiator {
+        model: root.startProviders
+        delegate: QtObject {
+            id: watcher
+            required property var modelData
+            property var action: null
+
+            function refresh(): void {
+                action = modelData && modelData.destroyed !== true
+                    ? modelData.internalAction("windowsModernSearch") : null;
+                Qt.callLater(root.refreshSearchState);
+            }
+
+            property Connections providerEvents: Connections {
+                target: watcher.modelData
+                function onInternalActionsChanged() { watcher.refresh(); }
+                function onDestroyedChanged() { watcher.refresh(); }
+            }
+
+            property Connections actionEvents: Connections {
+                target: watcher.action
+                function onEnabledChanged() { Qt.callLater(root.refreshSearchState); }
+                function onDestroyed() { Qt.callLater(root.refreshSearchState); }
+            }
+
+            Component.onCompleted: refresh()
+        }
     }
 
     function openSearch(): void {
-        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
-        for (const applet of applets) {
-            if (!applet || applet.pluginName !== "org.kde.windowsmodern.startmenu") continue;
-            const action = applet.internalAction("windowsModernSearch");
-            if (action && action.enabled) {
-                root.searchStateAction = applet.internalAction("windowsModernSearchSelected");
-                // New Start versions accept the real source rectangle; older
-                // versions still respond to the original action.
-                if ("searchAnchor" in action && "taskbarBox" in action) {
-                    const surface = searchBox.surfaceRect;
-                    const p = root.mapToGlobal(root.showBox ? surface.x : 0, 0);
-                    action.searchAnchor = {x: p.x, width: Math.max(1, root.showBox ? surface.width : root.width)};
-                    action.taskbarBox = root.showBox && root.searchMode === 0;
-                }
-                action.trigger();
-                return;
-            }
+        // Re-resolve synchronously before activation in case a deferred
+        // panel/action notification has not yet been delivered.
+        refreshSearchState();
+        const action = root.openSearchAction;
+        if (!action || !action.enabled) {
+            console.warn("Windows Modern Search requires a ready Windows Modern Start applet on the same panel.");
+            return;
         }
-        console.warn("Windows Modern Search requires the Windows Modern Start applet on the same panel.");
+        // New Start versions accept the real source rectangle; older
+        // versions still respond to the original action.
+        if ("searchAnchor" in action && "taskbarBox" in action) {
+            const surface = searchBox.surfaceRect;
+            const p = root.mapToGlobal(root.showBox ? surface.x : 0, 0);
+            action.searchAnchor = {x: p.x, width: Math.max(1, root.showBox ? surface.width : root.width)};
+            action.taskbarBox = root.showBox && root.searchMode === 0;
+        }
+        action.trigger();
     }
 
     // searchMode (contents/config/main.xml), as Windows' Settings >

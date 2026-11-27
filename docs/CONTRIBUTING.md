@@ -84,7 +84,8 @@ The shared Plasma atlas adds 166 generated native files to the map,
 the shared taskbar geometry helper adds four native outputs, and the
 shell-session controllers and panel capability helper add six more.
 The panel popup and native effects adapters add four generated sources.
-The map now has 562 generated files and 43 aliases.
+The shared theme-file transaction helper adds one source-only alias.
+The map now has 562 generated files and 44 aliases.
 
 All mapped Plasma native outputs are ignored by Git, including the
 seven applets, C++ backends, native metadata, desktop context-menu
@@ -107,7 +108,7 @@ plugin), component installers and selected frame tools are generated-only.
 Use the root install.sh component driver for a fresh checkout; run
 --prepare before directly invoking generated low-level scripts. The direct
 Dolphin and Plymouth paths read canonical inputs in a source checkout.
-Keep rollback available without requiring generated files. The 43 independent
+Keep rollback available without requiring generated files. The 44 independent
 script/data entry paths are tracked relative symlinks validated against
 the explicit source map. They are only for a Linux source checkout, not
 installed modules. Full archives exclude these links and restore the

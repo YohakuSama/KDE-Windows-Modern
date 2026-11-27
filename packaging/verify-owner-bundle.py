@@ -160,6 +160,7 @@ def verify(revision, filename):
             "color-schemes/WindowsModern.colors.in",
             "scripts/theme/appearance-packages.py", "scripts/theme/sync-accent.py",
             "scripts/theme/accent-control.py", "scripts/theme/wallpaper-icc.py",
+            "scripts/theme/theme-files.py",
             "translations/zh_CN.json",
             "config/kxmlgui5/dolphin/dolphinui.rc",
             "config/kxmlgui5/konsole/sessionui.rc",

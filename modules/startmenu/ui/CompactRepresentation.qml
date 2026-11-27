@@ -163,35 +163,8 @@ Item {
         onClicked: root.activateStart(true)
     }
 
-    // Register on the native Applet object, not a second launcher or
-    // a shell scripting call. Search resolves this action on its own panel.
-    PlasmaCore.Action {
-        id: openSearchAction
-        property var searchAnchor: null
-        property bool taskbarBox: false
-        text: i18n("Search")
-        onTriggered: {
-            if (root.dashWindow) root.dashWindow.openSearch(searchAnchor, taskbarBox);
-            searchAnchor = null;
-            taskbarBox = false;
-        }
-    }
-
-    PlasmaCore.Action {
-        id: searchStateAction
-        enabled: root.dashWindow?.taskbarSearchActive ?? false
-        readonly property string queryText: root.dashWindow?.taskbarQuery ?? ""
-        readonly property int queryCursor: root.dashWindow?.taskbarCursor ?? 0
-        readonly property bool queryFocused: root.dashWindow?.taskbarEditorFocused ?? false
-    }
-
     Component.onCompleted: {
         dashWindow = menuRepComponent.createObject(root);
-        Plasmoid.setInternalAction("windowsModernSearch", openSearchAction);
-        Plasmoid.setInternalAction("windowsModernSearchSelected", searchStateAction);
-        Plasmoid.activated.connect(function() {
-            root.activateStart();
-        });
     }
 
     Component {

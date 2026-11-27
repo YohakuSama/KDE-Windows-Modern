@@ -31,6 +31,41 @@ PlasmoidItem {
         CompactRepresentation {}
     }
 
+    // The native applet owns the actions for its entire lifetime. The
+    // representation may be created later or replaced by the framework.
+    readonly property var startButton: compactRepresentationItem || fullRepresentationItem
+    readonly property MenuRepresentation searchWindow: startButton?.dashWindow ?? null
+
+    Plasmoid.onActivated: {
+        if (kicker.startButton)
+            kicker.startButton.activateStart();
+    }
+
+    PlasmaCore.Action {
+        id: openSearchAction
+        enabled: kicker.searchWindow !== null
+        property var searchAnchor: null
+        property bool taskbarBox: false
+        text: i18n("Search")
+        onTriggered: {
+            const window = kicker.searchWindow;
+            const anchor = searchAnchor;
+            const box = taskbarBox;
+            searchAnchor = null;
+            taskbarBox = false;
+            if (window)
+                window.openSearch(anchor, box);
+        }
+    }
+
+    PlasmaCore.Action {
+        id: searchStateAction
+        enabled: kicker.searchWindow?.taskbarSearchActive ?? false
+        readonly property string queryText: kicker.searchWindow?.taskbarQuery ?? ""
+        readonly property int queryCursor: kicker.searchWindow?.taskbarCursor ?? 0
+        readonly property bool queryFocused: kicker.searchWindow?.taskbarEditorFocused ?? false
+    }
+
     property QtObject globalFavorites: rootModel.favoritesModel
     property QtObject systemFavorites: rootModel.systemFavoritesModel
 
@@ -148,6 +183,8 @@ PlasmoidItem {
     ]
 
     Component.onCompleted: {
+        Plasmoid.setInternalAction("windowsModernSearch", openSearchAction);
+        Plasmoid.setInternalAction("windowsModernSearchSelected", searchStateAction);
         // Never force optional footer shortcuts on. Preserve saved choices.
         if (!Plasmoid.configuration.footerShortcutsMigrated)
             Plasmoid.configuration.footerShortcutsMigrated = true;

@@ -231,6 +231,9 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/portrait.LICENSE",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/portrait.LICENSE"
     ],
+    "core/transactions/theme-files.py": [
+      "scripts/theme/theme-files.py"
+    ],
     "modules/boot/design/boot-frames.py": [
       "scripts/theme/boot-frames.py"
     ],
@@ -799,6 +802,7 @@
     "scripts/theme/palette.json",
     "scripts/theme/switch-mode.sh",
     "scripts/theme/sync-accent.py",
+    "scripts/theme/theme-files.py",
     "scripts/theme/wallpaper-icc.py",
     "scripts/theme/window-frames.py",
     "scripts/uninstall-greeter-system.sh",

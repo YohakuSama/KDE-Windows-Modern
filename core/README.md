@@ -8,6 +8,7 @@ declares the generated native outputs, not a second implementation.
 | design/ | Shared popup, taskbar icon canvas, panel and lock-screen geometry |
 | palette/ | Color classification, fixed roles, ICC/automatic accent and scheme template |
 | materials/ | Window material and popup frame generation |
+| transactions/ | Shared user-owned file validation, atomic replacement and rollback |
 | controls/ | Shared glyphs, buttons, sliders, scrollbars and flyout controls |
 | resources/ | Shared portrait/license and original resource import/validation |
 | animations/ | Shared sign-in progress |
@@ -16,7 +17,9 @@ declares the generated native outputs, not a second implementation.
 Common QML/JS files retain their native filenames and relative imports.
 Python tools are edited here and executed via their existing native
 script paths. Source-only aliases preserve those paths without duplicate
-implementations. Do not create separate light/dark functionality.
+implementations. The file transaction module is copied into the installed
+appearance package and does not own the caller's writer lock or renderer
+plan. Do not create separate light/dark functionality.
 Equal numeric values alone do not establish equal semantic roles.
 
 Run `python3 -I scripts/materialize-modules.py --prepare` to generate

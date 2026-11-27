@@ -5,6 +5,7 @@ import argparse
 from fractions import Fraction
 from functools import lru_cache
 import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -17,6 +18,17 @@ from string import Template
 import tempfile
 import warnings
 import xml.etree.ElementTree as ET
+
+# Use the adjacent, trusted package file even with Python -I or runpy.
+# Keep these named functions available to the existing script consumers.
+_theme_files_spec = importlib.util.spec_from_file_location(
+    "windows_modern_theme_files", Path(__file__).with_name("theme-files.py"))
+_theme_files = importlib.util.module_from_spec(_theme_files_spec)
+_theme_files_spec.loader.exec_module(_theme_files)
+owned_file = _theme_files.owned_file
+atomic_write = _theme_files.atomic_write
+restore_pending = _theme_files.restore_pending
+write_pending = _theme_files.write_pending
 
 ROLES = ("accent", "accent_link", "highlight_text", "selected_item_text",
          "checked_backing", "button_accent_text")
@@ -1012,24 +1024,6 @@ def patch(text, spec, values):
     return "".join(lines)
 
 
-def owned_file(path):
-    if path.is_symlink() or not path.is_file() or path.stat().st_uid != os.getuid():
-        raise ValueError(f"Not a user-owned theme file: {path}")
-    return path
-
-
-def atomic_write(path, data):
-    mode = stat.S_IMODE(path.stat().st_mode)
-    fd, name = tempfile.mkstemp(prefix=".wm-accent-", dir=path.parent)
-    try:
-        with os.fdopen(fd, "wb") as out:
-            os.fchmod(out.fileno(), mode)
-            out.write(data)
-        os.replace(name, path)
-    finally:
-        Path(name).unlink(missing_ok=True)
-
-
 def plan_kvantum(directory, mode, selection, link=None):
     if any(p.is_symlink() for p in (directory, directory.parent)):
         raise ValueError("Refusing externally managed Kvantum directory")
@@ -1055,34 +1049,6 @@ def plan_kvantum(directory, mode, selection, link=None):
         if old != new.encode("utf-8"):
             pending[path] = (old, new.encode("utf-8"))
     return pending
-
-
-def restore_pending(pending, written):
-    failures = []
-    for path in reversed(written):
-        old, new = pending[path]
-        try:
-            if owned_file(path).read_bytes() != new:
-                raise ValueError(f"Theme changed during accent rollback: {path}")
-            atomic_write(path, old)
-        except (OSError, ValueError) as error:
-            failures.append(str(error))
-    if failures:
-        raise ValueError("; ".join(failures))
-
-
-def write_pending(pending):
-    written = []
-    try:
-        for path, (old, new) in pending.items():
-            if owned_file(path).read_bytes() != old:
-                raise ValueError(f"Theme changed during accent synchronization: {path}")
-            atomic_write(path, new)
-            written.append(path)
-    except (OSError, ValueError):
-        restore_pending(pending, written)
-        raise
-    return written
 
 
 def publish_kvantum_reload(directory):
