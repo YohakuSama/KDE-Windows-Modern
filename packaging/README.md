@@ -10,12 +10,15 @@ as stable bootstrap entry points; NixOS runtime-specific tools live in
 
 Edit mapped scripts here and review the complete diff. Refresh generated
 component installers with `python3 -I scripts/materialize-modules.py --prepare`;
-validate source aliases using the same command. A fresh checkout should
-invoke the root install.sh component driver, which prepares native outputs
-before invoking component scripts. Dependency installation, bootstrap and
-recovery entry points remain available before generation. For direct
-low-level invocation prepare first; execute scripts at their native paths,
-not from this relocated source tree. The independent bootstrap, recovery,
+validate source aliases using the same command. Preparation also rejects
+untracked files beside individually mapped native outputs, which can be stale
+ignored copies left by an earlier checkout. Remove obsolete files deliberately;
+the materializer never deletes them. A fresh checkout should invoke the root
+install.sh component driver, which prepares native outputs before invoking
+component scripts. Dependency installation, bootstrap and recovery entry
+points remain available before generation. For direct low-level invocation
+prepare first; execute scripts at their native paths, not from this relocated
+source tree. The independent bootstrap, recovery,
 resource and packaging commands use source-only relative links at their
 old paths. Full install archives exclude those links and append real
 native files from the same Git commit as the base archive, never from

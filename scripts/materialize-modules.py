@@ -157,6 +157,43 @@ def source_plan(root=ROOT, *, validate_links=True):
                         f"Unmapped native output: {item.relative_to(root)}; "
                         "map it to an editable source or remove it deliberately"
                     )
+
+    # Tree-owned outputs are checked recursively above. Individually mapped
+    # files also need a sibling check: an ignored output removed from the map
+    # can otherwise survive a branch update and be copied by an installer.
+    # Preserve tracked developer files, reject untracked extras, and never
+    # delete user files automatically. Archive staging uses a temporary root.
+    if root.resolve() == ROOT.resolve():
+        try:
+            tracked_bytes = subprocess.check_output(
+                ["git", "-C", str(root), "ls-files", "-z", "--", *OUTPUT_ROOTS],
+                stderr=subprocess.DEVNULL,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            tracked_bytes = None
+        if tracked_bytes is not None:
+            tracked = {os.fsdecode(name) for name in tracked_bytes.split(b"\0") if name}
+            parent_scopes = {
+                destination.parent
+                for destination in expected
+                if not any(parent in owned_trees for parent in destination.parents)
+            }
+            for directory in sorted(parent_scopes):
+                if directory.is_symlink():
+                    raise ValueError(f"Invalid native output parent: {directory.relative_to(root)}")
+                if not directory.is_dir():
+                    continue
+                for item in directory.iterdir():
+                    relative = item.relative_to(root).as_posix()
+                    if item.is_symlink():
+                        if relative not in expected:
+                            raise ValueError(f"Unmapped native symlink: {relative}")
+                        continue
+                    if item.is_file() and relative not in expected and relative not in tracked:
+                        raise ValueError(
+                            f"Unmapped native output: {relative}; "
+                            "remove it deliberately or add it to the source map"
+                        )
     for name in SOURCE_ROOTS:
         for item in regular_files(root / name, SOURCE_ROOTS, root):
             if item not in used_sources and item.relative_to(root).as_posix() not in SOURCE_METADATA:
