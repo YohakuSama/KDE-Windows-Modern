@@ -197,7 +197,7 @@ ColumnLayout {
             readonly property color fg: Kirigami.Theme.textColor
             width: Math.max(1, history.width - (history.contentHeight > history.height ? 16 : 0))
             height: isImage ? 108 : 76
-            radius: 6
+            radius: ControlMetrics.controlCornerRadius
             color: ColorType.rowFill(page.dark, true, selectArea.containsMouse, selectArea.containsPress)
             border.width: 1
             border.color: selectArea.activeFocus ? page.accent

@@ -2,6 +2,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js" as ControlMetrics
 
 Item {
     width: 360
@@ -60,6 +61,13 @@ Item {
             page.historyController.clearCalls = 0;
             selection.clear();
         }
+        function test_clipboardItemsUseSharedControlRadius() {
+            const list = findChild(page, "wmClipboardHistory");
+            const card = list.itemAtIndex(0);
+            verify(card);
+            compare(card.radius, ControlMetrics.controlCornerRadius);
+        }
+
         function test_realRolesAndSelection() {
             const list = findChild(page, "wmClipboardHistory");
             tryCompare(list, "count", 2);

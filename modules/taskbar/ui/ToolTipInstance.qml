@@ -110,7 +110,7 @@ Item {
     // off below the title). Declared before contentColumn: stays behind it.
     Rectangle {
         anchors.fill: parent
-        radius: 6
+        radius: ControlMetrics.cardSurfaceRadius
         visible: root.thumbnailMode && tileHover.hovered
         color: Qt.alpha(Kirigami.Theme.textColor,
             ((hoverHandler.item as MouseArea)?.containsPress || (headerHoverHandler.item as MouseArea)?.containsPress)
