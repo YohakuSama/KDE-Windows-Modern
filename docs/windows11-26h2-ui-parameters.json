@@ -31,6 +31,8 @@
       "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
       "resource": "Files\\Taskbar\\TaskbarConstants.xbf",
       "xbf_sha256": "94a0923951b901fbc1028b543392d02aa2b2cb95587d9993c91d84075b9c84b4",
+      "pri_payload_offset": 7903156,
+      "xbf_payload_bytes": 5234,
       "resource_values": {
         "root": {
           "ThumbnailIconSize": {
@@ -146,6 +148,8 @@
       "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
       "resource": "Files\\Taskbar\\TaskbarThemeLight.xbf",
       "xbf_sha256": "a3f86436c02fe8b8e1b2c6a745df5a5d4f46df40d0b152ac0e2edcf2569d6e0e",
+      "pri_payload_offset": 7630108,
+      "xbf_payload_bytes": 27520,
       "resource_values": {
         "root": {
           "ShellTaskbarItemStrokeColorPrimary": {
@@ -204,6 +208,8 @@
       "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
       "resource": "Files\\Taskbar\\TaskbarThemeDark.xbf",
       "xbf_sha256": "441c11a95a17e0695beb21292a2922d684d6f4a3509ee01cb5989401331351cd",
+      "pri_payload_offset": 7677412,
+      "xbf_payload_bytes": 27161,
       "resource_values": {
         "root": {
           "ShellTaskbarItemStrokeColorPrimary": {
@@ -271,6 +277,8 @@
       "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
       "resource": "Files\\SystemTray\\SystemTrayResources.xbf",
       "xbf_sha256": "3d0a74d7b6271c257436961a40185de45aaa7ba477d4b1a33d6f4e941afda369",
+      "pri_payload_offset": 7961264,
+      "xbf_payload_bytes": 33520,
       "resource_values": {
         "unqualified": {
           "SystemTray_IconRotateDuration": {
@@ -414,6 +422,8 @@
       "pri_sha256": "b6c11035a2011487516cda4f3b8e7bc2651d55a8a8fd58840a8c0456b574043b",
       "resource": "Files\\ControlCenter\\ControlCenterResources.xbf",
       "xbf_sha256": "7a8b791bb77ec17788d832a8657cff827e5457adebc4a8e4c8dfc1123a25598b",
+      "pri_payload_offset": 120856,
+      "xbf_payload_bytes": 96855,
       "resource_values": {
         "Light": {
           "SplitToggleSecondaryWidth": {
@@ -540,6 +550,8 @@
       "pri_sha256": "98f34192ec2d03d73eeba5123a7ad2e11b86eb93272e8ab2702d5728b18f0b8a",
       "resource": "Files\\QuickActions\\ControlCenter\\controlcenterstyles.xbf",
       "xbf_sha256": "cb4f2d7d47c56339869b7f910a8d5f798e33e3c6f0c33c779e0da5226862f098",
+      "pri_payload_offset": 1236580,
+      "xbf_payload_bytes": 59238,
       "resource_values": {
         "unqualified": {
           "VisibleAnimationDuration": {
@@ -640,6 +652,8 @@
       "pri_sha256": "87564f326bdf857606aabe817df193bf22535d6ed670895b1662c944e687cdee",
       "resource": "Files\\CommonStyles.xbf",
       "xbf_sha256": "1cf177f642b5a3af75cd3292e62d33bc57e499da8a285c2c9193081f2b20aa38",
+      "pri_payload_offset": 111132,
+      "xbf_payload_bytes": 36831,
       "resource_values": {
         "Dark": {
           "OverlayCornerRadius": {
@@ -712,6 +726,8 @@
       "pri_sha256": "87564f326bdf857606aabe817df193bf22535d6ed670895b1662c944e687cdee",
       "resource": "Files\\RequestCredentialUserControl.xbf",
       "xbf_sha256": "c01dc41c648e18e22f026da4f37e267afd57d13c95c72367139b932c39dd9e8c",
+      "pri_payload_offset": 40056,
+      "xbf_payload_bytes": 28100,
       "resource_values": {
         "unqualified": {
           "TextfieldCornerRadius": {
@@ -739,6 +755,8 @@
       "pri_sha256": "98f34192ec2d03d73eeba5123a7ad2e11b86eb93272e8ab2702d5728b18f0b8a",
       "resource": "Files\\QuickActions\\ControlCenter\\paginatedcontrolcenterview.xbf",
       "xbf_sha256": "1fa5e1d85cb857f51281550a07961c27ea38e9dc96fafa9f33c0716403497ad0",
+      "pri_payload_offset": 1187740,
+      "xbf_payload_bytes": 2312,
       "resource_values": {
         "root": {
           "FrameworkElement.MaxWidth": {
@@ -778,6 +796,8 @@
       "pri_sha256": "b6c11035a2011487516cda4f3b8e7bc2651d55a8a8fd58840a8c0456b574043b",
       "resource": "Files\\ControlCenter\\MediaTransportControls.xbf",
       "xbf_sha256": "d55476dec88b3cb7a5adbb2e978457c25c08018304fe633d855c94ca28820504",
+      "pri_payload_offset": 85260,
+      "xbf_payload_bytes": 4230,
       "resource_values": {
         "PreviousButton": {
           "ContentControl.Content": {
@@ -836,6 +856,8 @@
       "pri_sha256": "b6c11035a2011487516cda4f3b8e7bc2651d55a8a8fd58840a8c0456b574043b",
       "resource": "Files\\ControlCenter\\MediaTransportControlsResources.xbf",
       "xbf_sha256": "47489ab4bb0e7b6468106230f5c8faf0cc236a45f06bba540025ffe25440a859",
+      "pri_payload_offset": 76428,
+      "xbf_payload_bytes": 8829,
       "resource_values": {
         "IconRepeatButtonStyle": {
           "FrameworkElement.MinHeight": {
@@ -880,6 +902,8 @@
       "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
       "resource": "Files\\Taskbar\\TaskbarResources.xbf",
       "xbf_sha256": "7321e20bef2784dc8ebce1240acaede543bc29ddb67598e7020e2b0c8485757f",
+      "pri_payload_offset": 7704576,
+      "xbf_payload_bytes": 166744,
       "resource_values": {
         "root": {
           "SearchPillButtonMinExtent": {

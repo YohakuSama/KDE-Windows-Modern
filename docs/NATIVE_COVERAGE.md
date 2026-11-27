@@ -733,3 +733,30 @@ and existing icon installation path remain unchanged. No font, original
 artwork, new renderer or new runtime dependency is added to testing.
 Keep ambiguous shared names, platform-specific functions and unverified
 roles unchanged until their semantics and artwork are established.
+
+### Reference archive recovery and reproducibility
+
+The owner re-supplied the private layout-review archive. Its complete
+compressed SHA-256 is
+`c0e66b05371a0ea1f6447146d21c2b835083c35d448b4e5a0428cda66f315450`.
+All 19 original source files (55,960,726 bytes) were re-read and matched
+their recorded hashes. All 1,481 non-placeholder named XBF candidates
+were located within their original PRI bytes by header, length and
+SHA-256; the other 32 named candidates were one-byte placeholders.
+This checks resource integrity, not complete node decoding or runtime
+qualifier selection.
+
+The existing UI parameter ledger now also records the zero-based
+`pri_payload_offset` and `xbf_payload_bytes` for each of the 12 reviewed
+XBF resources. To reproduce a lookup, use the matching source PRI,
+read exactly that byte range, verify its `xbf_sha256`, then use the
+recorded XBF-relative property and usage offsets. No new layout values
+are inferred from the integrity check.
+
+Retain the original archive on the owner's local storage or an authorized
+private resource store; the public repository contains only the evidence
+metadata. Do not rely on an earlier chat attachment being readable in a
+new session, and do not put the original PRI/XBF payloads into this public
+repository. If the raw bytes are unavailable, use only the previously
+recorded evidence for its stated scope and leave other native-dependent
+changes open.
