@@ -8,7 +8,8 @@ and version-specific adapters; do not replace the system backends.
 | plasma/systemtray/ | Native containment, D-Bus models, CMake and host |
 | plasma/taskbar/ | Native tasks backend, launcher/tooltip and CMake |
 | plasma/desktopmenu/ | Native containment action and CMake |
-| plasma/appearance/ | Appearance generation, shell-session wallpaper monitoring, host accent control and mode switching |
+| plasma/appearance/ | Appearance generation, shell-session wallpaper monitoring, popup compositor effects, host accent control and mode switching |
+| plasma/popup/ | Panel-local popup focus, mutual exclusion and dismissal policy |
 | plasma/appearance/atlas/ | Single editable Plasma desktop theme SVG atlas and metadata |
 | plasma/globaltheme/ | Global-theme metadata/defaults |
 | plasma/login/ | Greeter host patch and private asset/color adapter |
@@ -44,5 +45,7 @@ does not destroy these shell-session objects. With no ready tray, the
 router uses the native KRunner/Klipper actions. No new process remains
 resident outside plasmashell. A fresh shell session that never loads the
 tray binary still cannot initialize these capabilities. Popup coordination
-and split blur are optional panel-local capabilities and remain supplied
-by the tray. Full lifecycle acceptance is still open.
+and split blur are optional panel-local capabilities. The tray delegates
+these to PanelPopupController and PopupEffects, which own their state and
+watchers independently of the tray model. The tray remains their host;
+full lifecycle acceptance and a stable tray-independent host are still open.

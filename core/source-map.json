@@ -405,6 +405,12 @@
     "platform/plasma/appearance/light-store-dependencies.json": [
       "scripts/theme/light-store-dependencies.json"
     ],
+    "platform/plasma/appearance/popupeffects.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.cpp"
+    ],
+    "platform/plasma/appearance/popupeffects.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.h"
+    ],
     "platform/plasma/appearance/shellappearancemonitor.cpp": [
       "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.cpp"
     ],
@@ -437,6 +443,12 @@
     ],
     "platform/plasma/login/greeter-native-assets.py": [
       "scripts/greeter-native-assets.py"
+    ],
+    "platform/plasma/popup/panelpopupcontroller.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.cpp"
+    ],
+    "platform/plasma/popup/panelpopupcontroller.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.h"
     ],
     "platform/plasma/shortcuts/desktop-contextmenu.py": [
       "scripts/desktop-contextmenu.py"
@@ -675,8 +687,12 @@
     "plasma/applets/org.kde.windowsmodern.systemtray/metadata.json",
     "plasma/applets/org.kde.windowsmodern.systemtray/org.freedesktop.DBus.Properties.xml",
     "plasma/applets/org.kde.windowsmodern.systemtray/panelglyph.h",
+    "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.cpp",
+    "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.cpp",
     "plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.h",
+    "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.cpp",
+    "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.cpp",
     "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.cpp",

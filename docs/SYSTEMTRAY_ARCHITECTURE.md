@@ -31,6 +31,8 @@ The Windows Modern system tray (`org.kde.windowsmodern.systemtray`) is a C++ `Pl
 | `systemtray.cpp/.h` | C++ `Plasma::Containment` — manages child applets, DBus model, XDG activation |
 | `shellappearancemonitor.cpp/.h` | Corona-owned wallpaper bridge, file/config observers and debounced appearance helper |
 | `shellshortcutrouter.cpp/.h` | Corona-owned Win+R/V actions, ready tray selection and native fallback |
+| `panelpopupcontroller.cpp/.h` | Panel-local focus group, mutual exclusion and dismissal policy |
+| `popupeffects.cpp/.h` | Native KWin slide and split blur, compositor preference observation |
 | `contents/ui/main.qml` | Root `ContainmentItem` — GridView of active icons, AppletPopup, ExpanderArrow |
 | `contents/ui/SystemTrayState.qml` | State machine — expanded/collapsed, active applet tracking |
 | `contents/ui/ExpandedRepresentation.qml` | Popup content — heading, PlasmoidPopupsContainer, HiddenItemsView |
@@ -91,7 +93,11 @@ The installed tray binary must still have been loaded once in that
 session; a tray-free cold start is not yet covered.
 
 Start/clock discover popup coordination separately from split blur.
-Coordination still uses the same-panel tray; on a provider replacement
+The same-panel tray delegates to PanelPopupController and PopupEffects;
+these do not access its applet registry or model. The controller keeps
+its own guarded window registrations and 180 ms dismissal timer, while
+the effects adapter owns the KWin configuration watcher and preserves
+window-local logical geometry. On a provider replacement
 they close a mapped popup and use the current provider when reopened.
 Clock's native deactivation and opaque fallback remain available.
 No separate daemon is installed. Compilation and live multi-screen,

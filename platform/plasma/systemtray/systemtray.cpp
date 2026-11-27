@@ -4,7 +4,6 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
-#include <cmath>
 #include <utility>
 
 #include "debug.h"
@@ -26,9 +25,6 @@
 #include <QFileInfo>
 #include <QUrl>
 #include <QMenu>
-#include <QPainterPath>
-#include <QRegion>
-#include <QMetaObject>
 #include <QPointer>
 #include <QQueue>
 #include <QQuickItem>
@@ -55,7 +51,6 @@
 #include <KActionCollection>
 #include <KSharedConfig>
 #include <KWindowSystem>
-#include <KWindowEffects>
 
 using namespace Qt::StringLiterals;
 
@@ -65,90 +60,16 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     connect(KSycoca::self(), &KSycoca::databaseChanged, this, &SystemTray::castAvailabilityChanged);
     setHasConfigurationInterface(true);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
-
-    // A single focus group per panel; never close Start just because a
-    // different window in the same group receives keyboard focus.
-    m_shellPopupDismissTimer.setSingleShot(true);
-    m_shellPopupDismissTimer.setInterval(180);
-    connect(qGuiApp, &QGuiApplication::focusWindowChanged, this,
-            [this](QWindow *) { scheduleShellPopupDismissal(); });
-    connect(&m_shellPopupDismissTimer, &QTimer::timeout, this, [this] {
-        if (shellPopupHasFocus())
-            return;
-        // A panel button's release may be the actual activation. Let that
-        // gesture finish before deciding whether this was an outside click.
-        if (QGuiApplication::mouseButtons() != Qt::NoButton) {
-            scheduleShellPopupDismissal();
-            return;
-        }
-        for (const auto &entry : std::as_const(m_shellPopups)) {
-            auto *window = entry.data();
-            if (window && window->isVisible() && !window->property("wmKeepOnDeactivate").toBool())
-                dismissShellPopup(window);
-        }
-    });
-}
-
-bool SystemTray::shellPopupHasFocus() const
-{
-    // Native submenus may own a transient window. Preserve the same
-    // focus group through their parent chain, not unrelated shell windows.
-    for (auto *focus = QGuiApplication::focusWindow(); focus; focus = focus->transientParent()) {
-        for (const auto &entry : m_shellPopups) {
-            if (entry && entry->isVisible() && entry.data() == focus)
-                return true;
-        }
-    }
-    return false;
-}
-
-void SystemTray::scheduleShellPopupDismissal()
-{
-    m_shellPopupDismissTimer.stop();
-    if (shellPopupHasFocus())
-        return;
-    for (const auto &entry : std::as_const(m_shellPopups)) {
-        if (entry && entry->isVisible() && !entry->property("wmKeepOnDeactivate").toBool()) {
-            m_shellPopupDismissTimer.start();
-            return;
-        }
-    }
-}
-
-void SystemTray::dismissShellPopup(QWindow *window)
-{
-    if (!window || !window->isVisible())
-        return;
-    // The QML owner updates its own route/state before hiding the window.
-    if (!QMetaObject::invokeMethod(window, "closeCoordinatedPopup", Qt::DirectConnection))
-        window->hide();
 }
 
 void SystemTray::prepareShellPopup(const QString &role, QWindow *window)
 {
-    if (!window || (role != u"start"_s && role != u"tray"_s && role != u"clock"_s))
-        return;
-    m_shellPopups.insert(role, window);
-    if (role == u"tray"_s)
-        dismissShellPopup(m_shellPopups.value(u"clock"_s).data());
-    else if (role == u"clock"_s)
-        dismissShellPopup(m_shellPopups.value(u"tray"_s).data());
-    // Explicit activation is in progress; focusWindowChanged will settle
-    // the next real focus transition after the new window is mapped.
-    m_shellPopupDismissTimer.stop();
+    m_popupController.prepareShellPopup(role, window);
 }
 
 void SystemTray::restoreShellPopupFocus()
 {
-    for (const auto &role : {u"start"_s, u"clock"_s, u"tray"_s}) {
-        auto *window = m_shellPopups.value(role).data();
-        if (window && window->isVisible()) {
-            m_shellPopupDismissTimer.stop();
-            window->requestActivate();
-            return;
-        }
-    }
-    m_shellPopupDismissTimer.stop();
+    m_popupController.restoreShellPopupFocus();
 }
 
 void SystemTray::registerShellShortcuts(QQuickItem *representation)
@@ -231,69 +152,13 @@ QRectF SystemTray::panelGlyphBounds(const QString &source)
 
 void SystemTray::setNotificationPopupSlide(QQuickItem *content)
 {
-    // Keep the native shell positioning and let KWin animate the actual
-    // window. Only the notification flyout uses this independent edge.
-    if (auto *window = content ? content->window() : nullptr) {
-        KWindowEffects::slideWindow(window, KWindowEffects::RightEdge, -1);
-    }
+    m_popupEffects.setNotificationPopupSlide(content);
 }
 
 bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
                                    qreal radius, bool enabled)
 {
-    auto *window = content ? content->window() : nullptr;
-    if (!window || !window->isVisible()) {
-        return false;
-    }
-    // Honor the actual compositor/user setting. Never advertise an
-    // acrylic surface when blur is unavailable or disabled.
-    KConfig config(QStringLiteral("kwinrc"), KConfig::NoGlobals);
-    enabled = enabled && KConfigGroup(&config, QStringLiteral("Plugins")).readEntry("blurEnabled", true)
-        && KWindowEffects::isEffectAvailable(KWindowEffects::BlurBehind);
-    const QRect windowRect(QPoint(0, 0), window->size());
-    const QRectF windowBounds(windowRect);
-    enabled = enabled && !windowRect.isEmpty() && std::isfinite(radius) && radius >= 0;
-    QRegion mask;
-    if (enabled) {
-        QPainterPath clip;
-        clip.addRect(windowBounds);
-        for (auto *item : {first, second}) {
-            if (!item || item->window() != window || !item->isVisible()) {
-                enabled = false;
-                break;
-            }
-            const QRectF bounds = item->mapRectToScene(item->boundingRect());
-            if (!bounds.isValid() || !std::isfinite(bounds.left()) || !std::isfinite(bounds.top())
-                || !std::isfinite(bounds.right()) || !std::isfinite(bounds.bottom())
-                || !bounds.intersects(windowBounds)) {
-                enabled = false;
-                break;
-            }
-            // Use window-local logical pixels, including fractional scales.
-            // Match Rectangle's radius limit; clip before integer conversion.
-            const qreal corner = qMin(radius, qMin(bounds.width(), bounds.height()) / 2);
-            QPainterPath path;
-            path.addRoundedRect(bounds, corner, corner);
-            if (!windowBounds.contains(bounds)) {
-                path = path.intersected(clip);
-            }
-            const QRegion card = QRegion(path.toFillPolygon().toPolygon(), Qt::WindingFill)
-                .intersected(windowRect);
-            if (card.isEmpty()) {
-                enabled = false;
-                break;
-            }
-            mask |= card;
-            if (first == second) {
-                break;
-            }
-        }
-    }
-    // An empty QRegion means whole-window blur in KWindowEffects.
-    // Explicitly disable in that case so the desktop gap stays clear.
-    enabled = enabled && !mask.isEmpty();
-    KWindowEffects::enableBlurBehind(window, enabled, enabled ? mask : QRegion());
-    return enabled;
+    return m_popupEffects.setSplitPopupBlur(content, first, second, radius, enabled);
 }
 
 SystemTray::~SystemTray()
@@ -328,15 +193,9 @@ void SystemTray::init()
         }
     });
 
-    // KConfig notifications are event driven; do not alter KWin's settings.
-    m_blurConfigWatcher = KConfigWatcher::create(
-        KSharedConfig::openConfig(QStringLiteral("kwinrc"), KConfig::NoGlobals));
-    connect(m_blurConfigWatcher.data(), &KConfigWatcher::configChanged, this,
-            [this](const KConfigGroup &group, const QByteArrayList &names) {
-        if (group.name() == u"Plugins" && names.contains(QByteArrayLiteral("blurEnabled"))) {
-            Q_EMIT popupBlurPreferencesChanged();
-        }
-    });
+    connect(&m_popupEffects, &PopupEffects::preferencesChanged,
+            this, &SystemTray::popupBlurPreferencesChanged, Qt::UniqueConnection);
+    m_popupEffects.startMonitoring();
 
     if (!m_appearanceMonitor)
         m_appearanceMonitor = ShellAppearanceMonitor::forShell(corona());

@@ -11,12 +11,14 @@
 #include <QRect>
 #include <QRectF>
 #include <QHash>
-#include <QTimer>
 #include <QWindow>
 
 #include <KConfigWatcher>
 
 #include <Plasma/Containment>
+
+#include "panelpopupcontroller.h"
+#include "popupeffects.h"
 
 class QQuickItem;
 class ShellAppearanceMonitor;
@@ -97,7 +99,6 @@ private:
     void initSettingsAndRegistry();
 
     KConfigWatcher::Ptr m_configWatcher;
-    KConfigWatcher::Ptr m_blurConfigWatcher;
     QPointer<ShellAppearanceMonitor> m_appearanceMonitor;
     QPointer<ShellShortcutRouter> m_shortcutRouter;
     bool m_xwaylandClientsScale = true;
@@ -113,9 +114,6 @@ private:
 
     QHash<QString /*plugin id*/, int /*config group*/> m_configGroupIds;
     QHash<QString, QRectF> m_panelGlyphBounds;
-    QHash<QString, QPointer<QWindow>> m_shellPopups;
-    QTimer m_shellPopupDismissTimer;
-    bool shellPopupHasFocus() const;
-    void dismissShellPopup(QWindow *window);
-    void scheduleShellPopupDismissal();
+    PanelPopupController m_popupController;
+    PopupEffects m_popupEffects;
 };

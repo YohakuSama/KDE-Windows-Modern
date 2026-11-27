@@ -84,6 +84,8 @@ set(SRCS
     systemtray.cpp systemtray.h
     shellappearancemonitor.cpp shellappearancemonitor.h
     shellshortcutrouter.cpp shellshortcutrouter.h
+    panelpopupcontroller.cpp panelpopupcontroller.h
+    popupeffects.cpp popupeffects.h
     systemtraymodel.cpp systemtraymodel.h
     systemtraysettings.cpp systemtraysettings.h
     plasmoidregistry.cpp plasmoidregistry.h

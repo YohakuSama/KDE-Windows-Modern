@@ -83,7 +83,8 @@ native files retained as unique source locations outside the map.
 The shared Plasma atlas adds 166 generated native files to the map,
 the shared taskbar geometry helper adds four native outputs, and the
 shell-session controllers and panel capability helper add six more.
-The map now has 558 generated files and 43 aliases.
+The panel popup and native effects adapters add four generated sources.
+The map now has 562 generated files and 43 aliases.
 
 All mapped Plasma native outputs are ignored by Git, including the
 seven applets, C++ backends, native metadata, desktop context-menu

@@ -96,6 +96,10 @@ __pycache__/
 /plasma/applets/org.kde.windowsmodern.systemtray/metadata.json
 /plasma/applets/org.kde.windowsmodern.systemtray/org.freedesktop.DBus.Properties.xml
 /plasma/applets/org.kde.windowsmodern.systemtray/panelglyph.h
+/plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.cpp
+/plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.h
+/plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.cpp
+/plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.h
 /plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.cpp
 /plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.h
 /plasma/applets/org.kde.windowsmodern.systemtray/sortedsystemtraymodel.cpp
