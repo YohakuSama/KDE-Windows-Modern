@@ -11,6 +11,8 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
+import "../code/controlMetrics.js" as ControlMetrics
+
 RowLayout {
     id: searchBox
 
@@ -73,13 +75,13 @@ RowLayout {
             color: dark
                 ? (searchFieldInput.hovered && !searchBox.searchMode ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.22))
                 : (searchFieldInput.hovered && !searchBox.searchMode ? Qt.rgba(1, 1, 1, 0.9) : Qt.rgba(1, 1, 1, 0.68))
-            Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? 100 : 0 } }
+            Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.microInteractionDuration : 0 } }
             radius: height / 2
             border.width: 1
             border.color: Qt.rgba(Kirigami.Theme.textColor.r,
                                   Kirigami.Theme.textColor.g,
                                   Kirigami.Theme.textColor.b, searchFieldInput.activeFocus ? 0.15 : 0.08)
-            Behavior on border.color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+            Behavior on border.color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.microInteractionDuration : 0 } }
         }
 
         // No onTextChanged here: searchText aliases this text, so QML already
