@@ -2,6 +2,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Tray
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js" as ControlMetrics
 
 Item {
     width: 800
@@ -32,6 +33,11 @@ Item {
             runDialog.commandText = "";
         }
         function cleanup() { runDialog.close(); }
+        function test_runButtonUsesSharedControlRadius() {
+            const button = findChild(runDialog, "wmRunButton");
+            verify(button);
+            compare(button.background.radius, ControlMetrics.controlCornerRadius);
+        }
         function test_submitOnce() {
             runDialog.commandText = "  konsole --new-tab  ";
             verify(runDialog.canRun);

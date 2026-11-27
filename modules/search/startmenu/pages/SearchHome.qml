@@ -49,7 +49,7 @@ Item {
         focusPolicy: Qt.StrongFocus
         Accessible.name: text
         background: Rectangle {
-            radius: entry.tile ? ControlMetrics.controlCornerRadius : 5
+            radius: ControlMetrics.controlCornerRadius
             color: Qt.rgba(home.ink.r, home.ink.g, home.ink.b,
                 entry.down ? 0.12 : entry.hovered || entry.activeFocus ? 0.09 : entry.tile ? 0.045 : 0)
             border.width: entry.activeFocus ? 1 : 0

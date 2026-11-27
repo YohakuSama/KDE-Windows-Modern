@@ -22,7 +22,7 @@ Column {
         return Qt.locale().toString(d, DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)));
     }
 
-    spacing: Kirigami.Units.smallSpacing / 2
+    spacing: Kirigami.Units.smallSpacing * WinStyle.clockLineSpacingFactor
     opacity: uiVisible ? opacityWhenActive : opacityWhenInactive
 
     Behavior on opacity {

@@ -345,7 +345,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 anchors.margins: 0
-                radius: Kirigami.Units.smallSpacing
+                radius: ControlMetrics.controlCornerRadius
                 color: Kirigami.Theme.hoverColor
                 opacity: {
                     if (resultMouse.containsMouse && searchPage.pointerMoved) return 1.0

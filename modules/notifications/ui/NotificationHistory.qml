@@ -14,6 +14,7 @@ import org.kde.notificationmanager as NotificationManager
 import org.kde.kcmutils as KCMUtils
 import "code/dateformat.js" as DateFormat
 import "code/clockMetrics.js" as ClockMetrics
+import "code/controlMetrics.js" as ControlMetrics
 
 // Use Plasma's shared notification history, not a second notification server
 // or a watcher that only sees notifications received after opening.
@@ -365,7 +366,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: !card.isGroup
                     implicitHeight: messageContent.implicitHeight + 20
-                    radius: ClockMetrics.flyoutCardRadius
+                    radius: ControlMetrics.cardSurfaceRadius
                     color: palette.cardTint
                     border.width: ClockMetrics.flyoutCardBorderWidth
                     border.color: Qt.rgba(palette.text.r, palette.text.g, palette.text.b, 0.08)

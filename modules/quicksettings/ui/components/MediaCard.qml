@@ -33,7 +33,7 @@ Rectangle {
 
     implicitWidth: Math.round(TrayMetrics.quickPanelWidth * uiScale)
     implicitHeight: Math.round(TrayMetrics.mediaCardHeight * uiScale)
-    radius: Math.round(8 * uiScale)
+    radius: Math.round(ControlMetrics.cardSurfaceRadius * uiScale)
     color: surfaceColor
     border.width: 1
     border.color: outlineColor

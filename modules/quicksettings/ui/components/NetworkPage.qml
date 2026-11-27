@@ -7,6 +7,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
 import "../js/controlMetrics.js" as ControlMetrics
+import "../js/trayMetrics.js" as TrayMetrics
 import "../js/colorType.js" as ColorType
 
 Lib.DetailPage {
@@ -149,8 +150,8 @@ Lib.DetailPage {
             id: container
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
+            anchors.leftMargin: TrayMetrics.detailRowOuterInset
+            anchors.rightMargin: TrayMetrics.detailRowOuterInset
             height: contentLayout.implicitHeight
             radius: ControlMetrics.controlCornerRadius
             color: delegate.expanded ? delegate.subtleBg
@@ -184,15 +185,15 @@ Lib.DetailPage {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
-                        spacing: 12
+                        anchors.leftMargin: TrayMetrics.detailContentInset
+                        anchors.rightMargin: TrayMetrics.detailContentInset
+                        spacing: TrayMetrics.detailRowSpacing
 
                         // Keep the same row geometry even when a backend
                         // connection state has no reviewed Windows mapping.
                         Item {
-                            Layout.preferredWidth: 24
-                            Layout.preferredHeight: 24
+                            Layout.preferredWidth: TrayMetrics.detailRowIconExtent
+                            Layout.preferredHeight: TrayMetrics.detailRowIconExtent
                             Layout.alignment: Qt.AlignVCenter
                             NativeGlyph {
                                 id: connectionGlyph
@@ -239,8 +240,8 @@ Lib.DetailPage {
                         id: expandedCol
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
+                        anchors.leftMargin: TrayMetrics.detailContentInset
+                        anchors.rightMargin: TrayMetrics.detailContentInset
                         spacing: 0
 
                         Item { Layout.fillWidth: true; Layout.preferredHeight: 8 }
@@ -255,13 +256,13 @@ Lib.DetailPage {
 
                             Item {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 30
+                                Layout.preferredHeight: TrayMetrics.detailActionButtonHeight
 
                                 PlasmaComponents3.Button {
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: Math.max(90, implicitWidth)
-                                    height: 30
+                                    height: TrayMetrics.detailActionButtonHeight
                                     text: i18n("Connect")
                                     onClicked: delegate.doConnect()
                                 }
@@ -305,8 +306,8 @@ Lib.DetailPage {
                                     anchors.right: parent.right
                                     anchors.rightMargin: 2
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: nativeIcon.length > 0 ? 30 : implicitWidth
-                                    height: 30
+                                    width: nativeIcon.length > 0 ? TrayMetrics.detailActionButtonHeight : implicitWidth
+                                    height: TrayMetrics.detailActionButtonHeight
                                     text: delegate.showPassword ? i18n("Hide password") : i18n("Show password")
                                     icon.width: 16
                                     icon.height: 16
@@ -323,14 +324,14 @@ Lib.DetailPage {
 
                                 PlasmaComponents3.Button {
                                     Layout.preferredWidth: Math.max(80, implicitWidth)
-                                    Layout.preferredHeight: 30
+                                    Layout.preferredHeight: TrayMetrics.detailActionButtonHeight
                                     text: i18n("Cancel")
                                     onClicked: delegate.clearPassword()
                                 }
 
                                 PlasmaComponents3.Button {
                                     Layout.preferredWidth: Math.max(80, implicitWidth)
-                                    Layout.preferredHeight: 30
+                                    Layout.preferredHeight: TrayMetrics.detailActionButtonHeight
                                     text: i18n("Next")
                                     enabled: pwField.acceptableInput
                                     onClicked: delegate.doNext()
@@ -365,13 +366,13 @@ Lib.DetailPage {
 
                             Item {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 30
+                                Layout.preferredHeight: TrayMetrics.detailActionButtonHeight
 
                                 PlasmaComponents3.Button {
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: Math.max(100, implicitWidth)
-                                    height: 30
+                                    height: TrayMetrics.detailActionButtonHeight
                                     text: i18n("Disconnect")
                                     onClicked: delegate.doDisconnect()
                                 }

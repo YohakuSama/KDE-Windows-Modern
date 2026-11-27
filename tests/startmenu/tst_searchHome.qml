@@ -49,6 +49,14 @@ Item {
             compare(apps.launches, 2);
             compare(launchSpy.count, 2);
         }
+        function test_entryButtonsUseSharedControlRadius() {
+            const suggestion = findChild(page, "wmSuggested_0");
+            const topApp = findChild(page, "wmTopApp_0");
+            verify(suggestion);
+            verify(topApp);
+            compare(suggestion.background.radius, ControlMetrics.controlCornerRadius);
+            compare(topApp.background.radius, ControlMetrics.controlCornerRadius);
+        }
         function test_sharedCardSurfaceRadius() {
             const surface = findChild(page, "wmSearchQuickSearchSurface");
             verify(surface);

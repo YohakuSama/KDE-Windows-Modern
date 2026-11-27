@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.core as PlasmaCore
+import "../js/controlMetrics.js" as ControlMetrics
 
 Item {
     id: root
@@ -119,7 +120,7 @@ Item {
                     Accessible.name: i18n("Run")
                     enabled: root.canRun
                     background: Rectangle {
-                        radius: 5
+                        radius: ControlMetrics.controlCornerRadius
                         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                             Kirigami.Theme.textColor.b, runButton.down ? 0.15
                                 : runButton.hovered ? 0.10 : runButton.enabled ? 0.07 : 0.04)

@@ -263,7 +263,7 @@ Item {
             Column {
                 id: windowsClock
                 property Item shadow: clockShadow
-                spacing: Kirigami.Units.smallSpacing / 2
+                spacing: Kirigami.Units.smallSpacing * LockMetrics.clockLineSpacingFactor
 
                 Text {
                     id: timeText
@@ -466,8 +466,8 @@ Item {
                 popupType: Popup.Item
                 x: LayoutMirroring.enabled ? 0 : powerButton.width - width
                 y: -height - 4
-                width: 160
-                padding: 4
+                width: LockMetrics.lockScreenPowerMenuWidth
+                padding: LockMetrics.powerMenuPadding
                 closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
                 background: Rectangle {

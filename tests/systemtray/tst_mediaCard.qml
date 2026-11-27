@@ -3,6 +3,7 @@ import QtQuick
 import QtTest
 import org.kde.plasma.private.mpris as Mpris
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js" as ControlMetrics
 
 Item {
     id: fixture
@@ -101,6 +102,14 @@ Item {
             // Other cases expect fresh counters.
             fakeState.previousCount = 0;
             fakeState.nextCount = 0;
+        }
+
+        function test_sharedCardRadiusTracksUiScale() {
+            compare(card.radius, Math.round(ControlMetrics.cardSurfaceRadius * card.uiScale));
+            card.uiScale = 1.25;
+            compare(card.radius, Math.round(ControlMetrics.cardSurfaceRadius * card.uiScale));
+            card.uiScale = 1;
+            compare(card.radius, ControlMetrics.cardSurfaceRadius);
         }
 
         function test_stateAndControls() {

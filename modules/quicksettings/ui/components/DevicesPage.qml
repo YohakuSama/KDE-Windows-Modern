@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../lib" as Lib
+import "../js/trayMetrics.js" as TrayMetrics
 
 // Reuse the already-loaded native Device Notifier model. Do not start a
 // second device monitor or replace KDE's mount/eject action implementation.
@@ -47,8 +48,8 @@ Lib.Page {
             required property var deviceActions
 
             Layout.fillWidth: true
-            Layout.leftMargin: 8
-            Layout.rightMargin: 8
+            Layout.leftMargin: TrayMetrics.detailRowOuterInset
+            Layout.rightMargin: TrayMetrics.detailRowOuterInset
             description: deviceDescription
             iconName: deviceIcon
             busy: deviceIsBusy

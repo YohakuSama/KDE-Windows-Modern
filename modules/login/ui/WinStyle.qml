@@ -32,9 +32,9 @@ QtObject {
     readonly property int loginButtonRadius: LockMetrics.loginButtonRadius
     readonly property int userSwitcherAvatarSize: 40
     readonly property int userSwitcherItemHeight: 52
-    readonly property int powerMenuWidth: 150
-    readonly property int powerMenuItemHeight: 36
+    readonly property int powerMenuWidth: LockMetrics.loginPowerMenuWidth
 
+    readonly property real clockLineSpacingFactor: LockMetrics.clockLineSpacingFactor
     readonly property int clockTimePixelSize: LockMetrics.clockTimePixelSize
     readonly property int clockDatePixelSize: LockMetrics.clockDatePixelSize
     readonly property int usernamePixelSize: 28

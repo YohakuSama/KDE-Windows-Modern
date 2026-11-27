@@ -8,6 +8,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
 import "../js/controlMetrics.js" as ControlMetrics
+import "../js/trayMetrics.js" as TrayMetrics
 import "../js/colorType.js" as ColorType
 
 Lib.DetailPage {
@@ -49,7 +50,7 @@ Lib.DetailPage {
         PlasmaComponents3.Button {
             id: addDevice
             anchors.left: parent.left
-            anchors.leftMargin: 12
+            anchors.leftMargin: TrayMetrics.detailContentInset
             anchors.verticalCenter: parent.verticalCenter
             text: i18n("Add device")
             icon.source: addDeviceContent.nativeSource
@@ -88,8 +89,8 @@ Lib.DetailPage {
         Rectangle {
             id: deviceSurface
             anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
+            anchors.leftMargin: TrayMetrics.detailRowOuterInset
+            anchors.rightMargin: TrayMetrics.detailRowOuterInset
             radius: ControlMetrics.controlCornerRadius
             color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
                 deviceRow.model.Connected, deviceHover.hovered, false)
@@ -98,13 +99,13 @@ Lib.DetailPage {
 
         RowLayout {
             anchors.fill: deviceSurface
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            spacing: 12
+            anchors.leftMargin: TrayMetrics.detailContentInset
+            anchors.rightMargin: TrayMetrics.detailContentInset
+            spacing: TrayMetrics.detailRowSpacing
 
             Item {
-                Layout.preferredWidth: 24
-                Layout.preferredHeight: 24
+                Layout.preferredWidth: TrayMetrics.detailRowIconExtent
+                Layout.preferredHeight: TrayMetrics.detailRowIconExtent
                 Layout.alignment: Qt.AlignVCenter
                 NativeGlyph {
                     anchors.fill: parent
@@ -140,7 +141,7 @@ Lib.DetailPage {
 
             PlasmaComponents3.Button {
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: 30
+                Layout.preferredHeight: TrayMetrics.detailActionButtonHeight
                 visible: !!deviceRow.model.Device
                 enabled: !deviceRow.busy
                 text: deviceRow.model.Connected ? i18n("Disconnect") : i18n("Connect")

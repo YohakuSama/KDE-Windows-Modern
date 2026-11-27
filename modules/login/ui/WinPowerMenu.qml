@@ -14,7 +14,7 @@ QQC2.Menu {
     id: root
 
     width: WinStyle.powerMenuWidth
-    padding: 4
+    padding: LockMetrics.powerMenuPadding
 
     background: Rectangle {
         color: WinStyle.menuBackground

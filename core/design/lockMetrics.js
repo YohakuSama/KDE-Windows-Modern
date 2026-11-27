@@ -18,6 +18,14 @@ const submitButtonMinHeight = 24;
 const submitButtonFontSize = 12;
 // CommonStyles.xbf: DefaultMenuFlyoutPresenterStyle -> OverlayCornerRadius.
 const menuRadius = ControlMetrics.overlayCornerRadius;
+
+// Shared clock line spacing scales with KDE's logical UI spacing.
+const clockLineSpacingFactor = 0.5;
+
+// Shared power-menu padding; widths remain host-specific pending 26H2 evidence.
+const powerMenuPadding = 4;
+const loginPowerMenuWidth = 150;
+const lockScreenPowerMenuWidth = 160;
 // Host-specific heights remain distinct pending native template evidence.
 const passwordHeight = 30;
 

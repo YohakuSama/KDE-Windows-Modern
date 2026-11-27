@@ -119,6 +119,13 @@ TestCase {
         compare(vertical.width, 40);
         compare(vertical.x + vertical.width / 2, 24);
     }
+    function test_quickSettingsDetailPageMetrics() {
+        compare(Metrics.detailActionButtonHeight, 30);
+        compare(Metrics.detailRowOuterInset, 8);
+        compare(Metrics.detailContentInset, 12);
+        compare(Metrics.detailRowSpacing, 12);
+        compare(Metrics.detailRowIconExtent, 24);
+    }
     function test_quickTileRadiusUsesControlCornerRadius() {
         for (const scale of [0.75, 1, 1.25, 1.5, 2])
             compare(Metrics.quickTileRadius(scale),

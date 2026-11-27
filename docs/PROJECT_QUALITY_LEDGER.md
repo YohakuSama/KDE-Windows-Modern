@@ -72,7 +72,7 @@
 | A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何已有共享方案，Qt 负责输出缩放 | 审查其余尺寸、锚点、边距、RTL、多屏和窄屏限制；禁止重复应用 DPI |
 | A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量 | 落实字号、字重、基线、行高、截断、语言回退与辅助文字缩放；尊重系统字体 |
 | A13 | I | 单一主题、深浅色生成架构 | Plasma、Aurorae、Kvantum 和配色采用共享源/生成路径，保留原有安装接口 | 该范围仅为源码统一；色彩语义归 D16/D17，具体控件差距归各自任务 |
-| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 569 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行、面板内容边距、登录/锁屏共用时钟和头像参数、数字时钟飞出面板几何、开始菜单弹出菜单几何、Snap Layouts 两种预览共享参数、Alt+Tab 小圆角参数，以及跨 Digital Clock、开始菜单、快捷设置和锁屏的 WinUI 通用圆角与菜单最小行高已统一；日历紧凑时钟、搜索筛选/分类、托盘隐藏项/快捷设置组、登录用户切换及快捷设置滑块按钮继续接入同一 ControlCornerRadius；Start 上下文菜单/视图菜单与锁屏电源菜单共用 WinUI 菜单最小行高；任务栏窗口预览关闭按钮接入 ControlCornerRadius；登录与锁屏无密码 Sign in 按钮共用 loginButtonRadius；Login 与 LockScreen 电源菜单共用 OverlayCornerRadius；Start/Search 快捷搜索与 All Apps 分类卡片共用独立 cardSurfaceRadius；Start 列表悬停/焦点背景及平面操作按钮改用 ControlCornerRadius；Alt+Tab 卡片与小圆角共用 cardSurfaceRadius/ControlCornerRadius，并保留原 UI 缩放；壁纸包 4 个文件经哈希核对无重复；静态核对 source-map 物化、常规/NixOS/组件安装及打包入口；安装包不依赖源码链接 | 继续核对非字节相同的重复语义实现；新 clone/安装/打包未执行验证；参数真实性归 A02/A08 |
+| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 569 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行、面板内容边距、登录/锁屏共用时钟和头像参数、数字时钟飞出面板几何、开始菜单弹出菜单几何、Snap Layouts 两种预览共享参数、Alt+Tab 小圆角参数，以及跨 Digital Clock、开始菜单、快捷设置和锁屏的 WinUI 通用圆角与菜单最小行高已统一；日历紧凑时钟、搜索筛选/分类、托盘隐藏项/快捷设置组、登录用户切换及快捷设置滑块按钮继续接入同一 ControlCornerRadius；Start 上下文菜单/视图菜单与锁屏电源菜单共用 WinUI 菜单最小行高；任务栏窗口预览关闭按钮接入 ControlCornerRadius；登录与锁屏无密码 Sign in 按钮共用 loginButtonRadius；Login 与 LockScreen 电源菜单共用 OverlayCornerRadius；时钟行距比例与电源菜单内边距归入 lockMetrics.js，150/160px 宿主宽度集中管理并保留现值；Start/Search 快捷搜索与 All Apps 分类卡片共用独立 cardSurfaceRadius；Start 列表悬停/焦点背景及平面操作按钮改用 ControlCornerRadius；SearchHome 建议/Top Apps 按钮与 SearchPage 结果悬停背景接入同一参数；Alt+Tab 卡片与小圆角共用 cardSurfaceRadius/ControlCornerRadius，并保留原 UI 缩放；RunDialog 主操作按钮接入 ControlCornerRadius；Quick Settings MediaCard 接入 cardSurfaceRadius 并保留 uiScale；NotificationHistory 消息卡片与外层飞出面板圆角分离；Bluetooth/Network 详情页操作按钮共用 detailActionButtonHeight；Wi-Fi/Bluetooth/设备列表共用 detailRowOuterInset，详情内容共用 detailContentInset/detailRowSpacing，设备列表前导图标共用 detailRowIconExtent；壁纸包 4 个文件经哈希核对无重复；静态核对 source-map 物化、常规/NixOS/组件安装及打包入口；安装包不依赖源码链接 | 继续核对非字节相同的重复语义实现；新 clone/安装/打包未执行验证；参数真实性归 A02/A08 |
 
 <a name="block-02"></a>
 
@@ -555,3 +555,20 @@ Clipboard 页签、Start 字母索引磁贴、系统位置快捷按钮和 Search
 - 2026-11-28 Start 控件圆角统一：基于 628c51e70641，Start 列表项悬停背景、焦点边框及 AToolButton 从依赖 `Kirigami.Units.smallSpacing` 改为读取 `ControlMetrics.controlCornerRadius`，避免控件圆角随 KDE 间距设置漂移。保留列表高度、内边距、焦点状态和拖放指示线；增加 QML 断言覆盖三个圆角消费者。未运行测试、构建、CI、打包或实机验收。
 
 - 2026-11-28 Alt+Tab 公共圆角接入：基于 82d9d50aac78，窗口切换器卡片半径改为 `ControlMetrics.cardSurfaceRadius`，关闭按钮与预览遮罩的小圆角改为 `ControlMetrics.controlCornerRadius`，继续乘以原有 `unit`，不改变现有 UI/DPI 缩放关系。将公共指标映射到 Alt+Tab 唯一包路径，并补充对应参数断言。未改变卡片尺寸、排布、焦点环宽度或缩略图行为；未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 RunDialog 按钮圆角统一：基于 f67285c1101c，RunDialog 的标准 Run 操作按钮从独立 5px 圆角改为读取 WinUI `ControlCornerRadius`（4px）。该 Run 模块由现有 source-map 物化到 System Tray 包，复用已部署的 `controlMetrics.js`，无需新增生成副本。保留按钮尺寸、边框、悬停/按压状态及命令执行逻辑；增加 QML 参数断言。未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 Quick Settings 媒体卡片圆角统一：基于 4aef4a00071e，MediaCard 外层卡片从独立 `8 * uiScale` 改为 `ControlMetrics.cardSurfaceRadius * uiScale`，与 Start/Search/Alt+Tab 卡片共用语义参数。保留 UI scale 乘数和内部传输按钮/封面 artwork 的独立圆角；增加 100% 与 125% UI scale 参数断言。无需新增 source-map 输出；未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 Quick Settings 详情页按钮高度统一：基于 583e347427e9，将 Bluetooth 与 Network 详情页的 Connect/Disconnect/Cancel/Next 及密码显隐操作按钮统一读取 `TrayMetrics.detailActionButtonHeight`（30 logical px）。同步统一 Network 展开态中为按钮预留的同高布局槽；Bluetooth 分组标题高度、设备列表行高及其他非操作布局保持独立。新增 trayMetrics 参数断言；未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 Quick Settings 详情页行布局参数统一：基于 28ec2fc59a4f，将 Wi-Fi、Bluetooth 与安全移除设备列表的 8px 行外边距收敛到 `detailRowOuterInset`；Wi-Fi/Bluetooth 行内 12px 内容边距与图标文本间距分别收敛到 `detailContentInset` 和 `detailRowSpacing`。保留 section header、ListView 行高、Network 展开动画和设备操作布局。扩展 trayMetrics 参数断言；未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 Quick Settings 设备列表图标槽统一：基于 768335d5171b，将 Bluetooth、Network 与 Device Notifier 设备列表的 24px 前导图标槽收敛到 `detailRowIconExtent`。保留图标源、绘制边界、文字布局及各列表自身行高；扩展 trayMetrics 参数断言。未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 Digital Clock 通知卡片语义拆分：基于 04090e995d40，NotificationHistory 内部消息卡片从复用外层 `ClockMetrics.flyoutCardRadius` 改为读取公共 `ControlMetrics.cardSurfaceRadius`。外层通知/日历飞出面板继续使用 overlay 半径；两者当前均为 8px，视觉数值不变，但语义来源分离。复用 Digital Clock 已有的 controlMetrics 生成输出，无新增部署副本。未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 Search 列表控件圆角统一：基于 d88cb0977670，SearchHome 建议列表按钮、Top Apps 磁贴及 SearchPage 结果悬停背景统一读取 `ControlMetrics.controlCornerRadius`，消除建议项 5px 与其余列表控件的分叉，并移除对 KDE `smallSpacing` 的视觉依赖。保留 Top Apps 磁贴尺寸、建议行高度、搜索结果布局和交互；为 SearchHome 两类按钮增加参数断言。未运行测试、构建、CI、打包或实机验收。
+
+
+- 2026-11-28 Login/LockScreen 公共几何参数收敛：基于 33842d43894e，将两处时钟的行距比例及电源菜单内边距移入 `core/design/lockMetrics.js`；登录与锁屏菜单宽度改为具名宿主参数，保留当前 150/160 逻辑像素，未在缺少 26H2 模板证据时强行统一数值。两个菜单继续共用现有 OverlayCornerRadius 和菜单项组件。移除 `WinStyle.powerMenuItemHeight=36` 未使用参数。更新布局参数断言与核心所有权说明；未运行构建、测试、CI、打包或实机验收，A14 仍为 P。

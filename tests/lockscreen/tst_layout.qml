@@ -14,6 +14,10 @@ TestCase {
         compare(LockMetrics.passwordWidth, 296);
         compare(LockMetrics.passwordHeight, 30);
         compare(LockMetrics.loginButtonRadius, 6);
+        compare(LockMetrics.clockLineSpacingFactor, 0.5);
+        compare(LockMetrics.powerMenuPadding, 4);
+        compare(LockMetrics.loginPowerMenuWidth, 150);
+        compare(LockMetrics.lockScreenPowerMenuWidth, 160);
         compare(LockMetrics.menuRadius, ControlMetrics.overlayCornerRadius);
         compare(ControlMetrics.controlCornerRadius, 4);
         compare(ControlMetrics.menuItemMinimumHeight, 32);

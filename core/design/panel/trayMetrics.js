@@ -162,6 +162,13 @@ const quickContentInset = 24;
 const quickTileCaptionLines = 2;
 const quickSliderRowHeight = 36;
 const quickSliderGlyphSize = 20;
+// Shared compact action height for Quick Settings detail pages.
+const detailActionButtonHeight = 30;
+// Shared detail-list row geometry across Wi-Fi, Bluetooth and device pages.
+const detailRowOuterInset = 8;
+const detailContentInset = 12;
+const detailRowSpacing = 12;
+const detailRowIconExtent = 24;
 const splitSecondaryExtent = 48;
 const sliderTrackHeight = 4;
 const mediaCardHeight = 178;

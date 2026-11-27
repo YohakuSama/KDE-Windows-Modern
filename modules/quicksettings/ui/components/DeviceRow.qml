@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../js/trayMetrics.js" as TrayMetrics
 
 // Presentation only. Every operation is dispatched through KDE ActionsInfo.
 Rectangle {
@@ -54,8 +55,8 @@ Rectangle {
             spacing: 10
 
             Item {
-                Layout.preferredWidth: 24
-                Layout.preferredHeight: 24
+                Layout.preferredWidth: TrayMetrics.detailRowIconExtent
+                Layout.preferredHeight: TrayMetrics.detailRowIconExtent
                 Layout.alignment: Qt.AlignVCenter
                 NativeGlyph {
                     id: deviceGlyph
