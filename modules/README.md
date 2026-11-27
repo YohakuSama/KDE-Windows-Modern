@@ -118,7 +118,7 @@ direct low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LE
 
 ## Functional module ownership audit
 
-On testing commit `01ad5c1f`, the complete Git tree contains 19 feature
+On testing commit `40b546cb`, the complete Git tree contains 19 feature
 module roots and 231 module source/configuration/resource files. The source
 map accounts for all of them: 228 are direct tree/file mappings and the
 three taskbar layout sources feed the two rendered layout recipes. The
