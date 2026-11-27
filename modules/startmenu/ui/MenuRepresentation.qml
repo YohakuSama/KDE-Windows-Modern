@@ -458,6 +458,7 @@ Item {
                     gridMode: Plasmoid.configuration.allAppsViewMode === 1
                     alphabeticalGrouping: Plasmoid.configuration.allAppsSortMode === 0
                         || Plasmoid.configuration.allAppsSortMode === 1
+                    onApplicationActivated: root.closeMenu()
                     onAppContextMenuRequested: function(entry, x, y) {
                         const actions = Tools.buildAppActions(i18n, globalFavorites,
                             entry.favoriteId || "", entry.url || "", entry.actionList || null);
@@ -632,6 +633,8 @@ Item {
                     anchors.fill: parent
                     visible: root.searching && startSearch.searchText.length > 0
                     scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
+                    searching: root.searching
+                    onApplicationActivated: root.closeMenu()
                     onFocusSearchRequested: startSearch.focusSearch()
                     onContextMenuRequested: function(actions, x, y, context) {
                         var pos = searchPage.mapToItem(sharedContextMenu, x, y);

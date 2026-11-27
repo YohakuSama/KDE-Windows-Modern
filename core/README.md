@@ -29,8 +29,10 @@ have generated-only native paths. The renderer-specific appearance
 materializer prepares these inputs and generates the actual packages.
 Window-frame regeneration without an explicit staged directory writes
 modules/windowmanager/decoration/decoration.svg, the editable owner.
-The Plasma SVG atlas and large icon/wallpaper inputs retain their current
-ownership until their generators and consumers are migrated.
+The Plasma SVG atlas is owned by platform/plasma/appearance/atlas;
+its native tree is generated from the source map. Popup and panel frame
+generators write that atlas by default. The large icon/wallpaper inputs
+retain their current ownership until their consumers are migrated.
 
 See [modules](../modules/README.md), [platform](../platform/README.md),
 [packaging](../packaging/README.md) and the

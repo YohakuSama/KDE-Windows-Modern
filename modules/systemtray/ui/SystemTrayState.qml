@@ -17,6 +17,15 @@ QtObject {
     // - 'Status and Notification' with hidden items is shown
     property bool expanded: false
     property bool popupVisible: false
+    signal hostExpansionRequested(bool value)
+
+    function reconcileHostExpansion(value) {
+        if (acceptExpandedChange) {
+            expanded = value;
+        } else {
+            hostExpansionRequested(expanded);
+        }
+    }
     // Overflow and Quick Settings are distinct homes of the same native popup.
     // Keep the originating home when navigating to a child applet page.
     property bool overflowMode: false
@@ -108,7 +117,7 @@ QtObject {
             quickSettingsRoute = false
         }
         acceptExpandedChange = false
-        root.expanded = expanded
+        hostExpansionRequested(expanded)
     }
 
     //listen on SystemTray AppletInterface signals
@@ -117,17 +126,6 @@ QtObject {
         //emitted when activation is requested, for example by using a global keyboard shortcut
         function onActivated() {
             systemTrayState.acceptExpandedChange = true
-        }
-    }
-
-    readonly property Connections rootConnections: Connections {
-        target: root
-        function onExpandedChanged() {
-            if (systemTrayState.acceptExpandedChange) {
-                systemTrayState.expanded = root.expanded
-            } else {
-                root.expanded = systemTrayState.expanded
-            }
         }
     }
 

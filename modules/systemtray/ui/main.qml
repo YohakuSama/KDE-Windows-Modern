@@ -269,6 +269,14 @@ ContainmentItem {
         SystemTrayState {
             id: systemTrayState
             popupVisible: dialog.visible
+            onHostExpansionRequested: value => { root.expanded = value; }
+        }
+
+        Connections {
+            target: root
+            function onExpandedChanged() {
+                systemTrayState.reconcileHostExpansion(root.expanded);
+            }
         }
 
         CurrentItemHighLight {

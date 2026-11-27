@@ -35,6 +35,7 @@ Item {
     property bool alphabeticalGrouping: true
     property int scrollbarEdgeOffset: 0
     signal appContextMenuRequested(var entry, real x, real y)
+    signal applicationActivated
     HoverHandler { id: homeViewportHover; enabled: !allAppsPage.inCategory }
     readonly property bool showCategoryCards: categoryMode
     readonly property var activeView: inCategory ? categoryGrid : allAppsList
@@ -142,7 +143,7 @@ Item {
         if (flatModel && row >= 0 && row < alphabeticalView.sourceEntries.length
                 && typeof flatModel.trigger === "function"
                 && flatModel.trigger(row, "", null))
-            root.closeMenu();
+            allAppsPage.applicationActivated();
     }
 
     signal backRequested

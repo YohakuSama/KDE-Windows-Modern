@@ -58,7 +58,7 @@ implemented, and do not infer visual parity from the task count.
 | [`platform/`](../platform/README.md) | Editable Qt/Plasma adapters, CMake, NixOS definitions and host tools. |
 | [`packaging/`](../packaging/README.md) | Editable component installers and packaging tools. |
 | `plasma/applets/` | Native KPackage/build layout, generated from the canonical map except developer tools. |
-| `plasma/look-and-feel/`, `plasma/desktoptheme/` | Shared global theme and Plasma style sources. Generate both renderer modes with the appearance materializer. |
+| `plasma/look-and-feel/`, `plasma/desktoptheme/` | Generated global theme and Plasma style inputs. Edit platform/plasma/globaltheme and platform/plasma/appearance/atlas; generate both renderer modes with the appearance materializer. |
 | `aurorae/` | Native mirror of modules/windowmanager/decoration. Generate both mode packages with the appearance materializer. |
 | `Kvantum/` | Native mirror of platform/qt/kvantum/style; generate both modes through the appearance materializer. |
 | `color-schemes/`, `scripts/theme/palette.json` | Native mirrors of core/palette template and fixed color roles. |
@@ -80,12 +80,15 @@ resulting diff, then use `--check` for a read-only consistency check.
 The original 436 mapped deployment positions now have one editable
 implementation each: 382 generated files, 43 source-only aliases, and 11
 native files retained as unique source locations outside the map.
+The shared Plasma atlas adds 166 generated native files to the map,
+bringing the mapped outputs to 548 generated files and 43 aliases.
 
 All mapped Plasma native outputs are ignored by Git, including the
 seven applets, C++ backends, native metadata, desktop context-menu
 plugin, window scripts, Alt+Tab, panel layouts, lockscreen and greeter
-payloads. Existing developer entry points, tests, preview artwork and
-the unmapped desktoptheme atlas remain tracked. The Store dependency
+payloads and the Plasma desktoptheme atlas. Existing developer entry
+points, tests and preview artwork remain tracked. Frame and switch
+generators target the editable atlas by default. The Store dependency
 editor writes to platform/plasma/globaltheme and platform/plasma/appearance,
 and the login-manager updater reads canonical patches. Existing installers,
 QML parsing, icon coverage, native build and QML test entry points

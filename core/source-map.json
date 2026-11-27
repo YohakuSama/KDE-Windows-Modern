@@ -33,6 +33,7 @@
     "modules/windowmanager/osd": "plasma/kwinscripts/org.kde.windowsmodern.osd",
     "modules/windowmanager/snapkeys": "plasma/kwinscripts/org.kde.windowsmodern.snapkeys",
     "modules/windowmanager/snaplayouts": "plasma/kwinscripts/org.kde.windowsmodern.snaplayouts",
+    "platform/plasma/appearance/atlas/Windows-modern-dark": "plasma/desktoptheme/Windows-modern-dark",
     "platform/plasma/login/patches": "plasma/look-and-feel/org.kde.windowsmodern.dark/patches",
     "platform/qt/kvantum/patches": "app-decorations/kvantum",
     "platform/qt/kvantum/style": "Kvantum/Windows-modern"
@@ -679,6 +680,7 @@
     "plasma/containmentactions/org.kde.windowsmodern.contextmenu/menulayout.h",
     "plasma/containmentactions/org.kde.windowsmodern.contextmenu/metadata.json",
     "plasma/containmentactions/org.kde.windowsmodern.contextmenu/nativecontextmenu.cpp",
+    "plasma/desktoptheme/Windows-modern-dark",
     "plasma/kwinscripts/org.kde.windowsmodern.osd",
     "plasma/kwinscripts/org.kde.windowsmodern.snapkeys",
     "plasma/kwinscripts/org.kde.windowsmodern.snaplayouts",

@@ -101,7 +101,10 @@ def svg(text, bg, hl, outline_op, knob_op):
 </svg>
 '''
 
-root = sys.argv[1] if len(sys.argv) > 1 else str(pathlib.Path(__file__).resolve().parents[1] / "plasma/desktoptheme")
+checkout = pathlib.Path(__file__).resolve().parents[1]
+source = ("platform/plasma/appearance/atlas"
+          if (checkout / "core/source-map.json").is_file() else "plasma/desktoptheme")
+root = sys.argv[1] if len(sys.argv) > 1 else checkout / source
 # Windows 11 strengths: outline = ControlStrongStroke, off knob = TextSecondary.
 pathlib.Path(root, "Windows-modern-dark/widgets/switch.svg").write_text(
     svg("#FFFFFF", "#2C2C2C", "#60CDFF", "0.55", "0.79"))

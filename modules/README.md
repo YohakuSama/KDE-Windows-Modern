@@ -28,7 +28,10 @@ belong to [core](../core/README.md). Native adapters belong to
 
 Modules are source owners, not new installed applet IDs. The tray remains
 the native composition host of its flyouts until interface/lifecycle work
-is complete. No service or system backend is duplicated. Both native
+is complete. No service or system backend is duplicated. All Apps and Search pages
+publish activation signals rather than closing their host directly;
+Search receives its mode explicitly. Tray expansion reconciliation uses
+an explicit state input and host-expansion signal. Both native
 panel scripts use the same taskbar/layout/panel-body.js; the wrappers
 preserve their distinct single-panel/all-screen behaviors.
 
@@ -46,8 +49,9 @@ seven applets' QML, configurations, metadata and C++ sources, the KWin
 scripts, Alt+Tab, desktop context-menu plugin, both panel layouts and
 global-theme/lockscreen/greeter/splash payloads. Git tracks their canonical
 editable sources only. Existing developer launchers, test sources,
-unmapped preview assets and the shared Plasma visual atlas remain
-tracked. Standard install and developer entry points prepare generated
+unmapped preview assets remain tracked. The shared Plasma visual atlas
+is owned by platform/plasma/appearance/atlas; its native path is generated.
+Standard install and developer entry points prepare generated
 files; full install ZIPs reconstruct them from the archived commit.
 Aurorae, Plymouth, application configuration and Dolphin patches are also
 generated-only. The only native Konsole plugin source is

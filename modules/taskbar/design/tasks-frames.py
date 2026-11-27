@@ -25,7 +25,7 @@ Generated elements live in one marked block before </svg>; re-running
 replaces it. The file is edited as text, never re-serialised (an XML
 round-trip once renamed xlink:href and broke the theme).
 
-Usage: scripts/theme/tasks-frames.py plasma/desktoptheme/Windows-modern-dark/widgets/tasks.svg
+Usage: scripts/theme/tasks-frames.py platform/plasma/appearance/atlas/Windows-modern-dark/widgets/tasks.svg
 The appearance materializer creates the light renderer from this source.
 """
 import re

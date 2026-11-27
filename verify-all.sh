@@ -43,7 +43,8 @@ echo " Themes:"
 check_file "color-schemes/WindowsModern.colors.in"          "Shared color scheme source"
 check_file "scripts/theme/palette.json"                     "Shared fixed palette roles"
 check_dir  "aurorae/windows-modern-dark-aurorae"           "Shared Aurorae source"
-check_dir  "plasma/desktoptheme/Windows-modern-dark"        "Shared Plasma theme source"
+check_dir  "platform/plasma/appearance/atlas/Windows-modern-dark" "Editable Plasma theme atlas"
+check_dir  "plasma/desktoptheme/Windows-modern-dark"        "Materialized Plasma theme source"
 check_dir  "plasma/look-and-feel/org.kde.windowsmodern.dark" "Shared global theme source"
 check_file "scripts/theme/light-store-dependencies.json"    "Mode-specific Store dependencies"
 check_file "scripts/theme/appearance-packages.py"            "Shared appearance package materializer"
@@ -123,7 +124,7 @@ if python3 -I scripts/theme/appearance-packages.py "$tasks_tmp/appearance"; then
     if [ -z "$drift" ]; then
         pass "Task frames match scripts/theme/tasks-frames.py"
     else
-        fail "tasks.svg differs from its generator (${drift# }) — run: scripts/theme/tasks-frames.py plasma/desktoptheme/Windows-modern-dark/widgets/tasks.svg"
+        fail "tasks.svg differs from its generator (${drift# }) — run: scripts/theme/tasks-frames.py platform/plasma/appearance/atlas/Windows-modern-dark/widgets/tasks.svg"
     fi
 else
     fail "Shared appearance packages could not be materialized"

@@ -27,6 +27,7 @@ Item {
 
     property alias resultsView: resultsView
     property int scrollbarEdgeOffset: 0
+    property bool searching: false
     HoverHandler { id: searchViewportHover }
 
     // Emitted by result delegates when the user right-clicks.  The shell
@@ -35,6 +36,7 @@ Item {
     // directly due to Qt 6 Repeater delegate scoping.
     signal contextMenuRequested(var actions, real globalX, real globalY, var context)
     signal focusSearchRequested
+    signal applicationActivated
 
     // Track collapsed categories as a comma-separated string so QML
     // binding updates fire reliably (var objects don't notify on nested
@@ -154,7 +156,7 @@ Item {
         anchors.topMargin: Kirigami.Units.smallSpacing
         anchors.left: parent.left
         anchors.right: parent.right
-        visible: root.searching
+        visible: searchPage.searching
         height: implicitHeight
         spacing: Kirigami.Units.smallSpacing
 
@@ -247,7 +249,7 @@ Item {
         // queryString is set explicitly by the shell on text change.
         limit: 50
 
-        onActivated: root.closeMenu()
+        onActivated: searchPage.applicationActivated()
 
         readonly property int scrollGutter: searchPage.scrollbarEdgeOffset > 0 ? 0 : 18
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)

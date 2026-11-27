@@ -79,7 +79,11 @@ def main():
     args = parser.parse_args()
     if args.mode == "light" and args.directory is None:
         parser.error("Light renderer frames require an explicit staged directory")
-    directory = args.directory or ROOT / "plasma/desktoptheme/Windows-modern-dark"
+    # Regenerate the editable atlas in a source checkout, not its mirror.
+    source = ("platform/plasma/appearance/atlas/Windows-modern-dark"
+              if (ROOT / "core/source-map.json").is_file() else
+              "plasma/desktoptheme/Windows-modern-dark")
+    directory = args.directory or ROOT / source
     try:
         write_frames(directory, args.mode, args.check)
     except ValueError as error:

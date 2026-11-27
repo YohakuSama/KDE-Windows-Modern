@@ -633,7 +633,8 @@ def kvantum(root, destination):
 def materialize(root, output, component="runtime"):
     output = output.resolve()
     if any(output.is_relative_to((root / source).resolve()) for source in
-           ("plasma/desktoptheme", "plasma/look-and-feel", "aurorae", "Kvantum", "color-schemes")):
+           ("platform/plasma/appearance/atlas", "plasma/desktoptheme",
+            "plasma/look-and-feel", "aurorae", "Kvantum", "color-schemes")):
         raise ValueError("Stage appearance packages outside their source directories")
     output.mkdir(parents=True, exist_ok=True)
     if component in ("runtime", "themes"):
