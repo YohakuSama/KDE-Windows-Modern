@@ -6,6 +6,12 @@
   acceptance in the same batched development commit; do not estimate
   fidelity from commit count or treat partial rows as complete. Keep
   research records in the existing technical documents.
+- Follow the ledger's architecture review (A14, D20, V07, V08): prefer
+  explicit inputs/actions and one editable source for true shared logic.
+  Keep independent applet/greeter packages self-contained, native service
+  backends and existing transactions. Address confirmed coupling alongside
+  related functional work; do not refactor only to reduce file count or
+  introduce a new mandatory runtime service. State the audit scope.
 - Read [the development guide](docs/CONTRIBUTING.md) for product scope,
   architecture, safety requirements and contribution conventions.
 - Read [the current UI contract](docs/PANEL_UI_CONTRACT.md) and
