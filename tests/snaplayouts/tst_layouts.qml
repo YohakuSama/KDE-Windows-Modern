@@ -46,6 +46,19 @@ TestCase {
         verify(!Layouts.fitsSize({width: 0, height: 10}, Qt.size(0, 0), max));
     }
 
+    function test_sharedPreviewMetrics() {
+        compare(Layouts.diagramGap, 10);
+        compare(Layouts.barDiagramWidth, 72);
+        compare(Layouts.barDiagramHeight, 44);
+        compare(Layouts.barCellGap, 3);
+        compare(Layouts.barCellRadius, 3);
+        compare(Layouts.captionCellGap, 4);
+        compare(Layouts.captionCellRadius, 4);
+        compare(Layouts.cellBorderWidth, 1);
+        compare(Layouts.captionDiagramMaxWidth, 96);
+        compare(Layouts.captionDiagramAspectRatio, 0.6);
+    }
+
     function test_narrowAndShortOutputMetrics() {
         for (const size of [[300, 600], [1920, 25], [1920, 1080]]) {
             const m = Layouts.barMetrics(size[0], size[1]);

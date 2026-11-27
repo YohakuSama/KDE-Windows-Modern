@@ -4,7 +4,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import "../code/theme.js" as Theme
+import "../code/startMenuMetrics.js" as Metrics
 
 Item {
     id: contextMenu
@@ -14,9 +14,9 @@ Item {
     property var context: ({})
     property var actions: []
     property var pendingAction: null
-    readonly property int rowHeight: Theme.menuRowExtent(metrics.height)
-    readonly property int separatorHeight: 9
-    readonly property int gap: 8
+    readonly property int rowHeight: Metrics.menuRowExtent(metrics.height)
+    readonly property int separatorHeight: Metrics.menuSeparatorHeight
+    readonly property int gap: Metrics.popupEdgeInset
 
     FontMetrics { id: metrics; font: Kirigami.Theme.defaultFont }
 
@@ -72,16 +72,16 @@ Item {
         context = details || ({});
         pendingAction = null;
         let widest = 0;
-        let wantedHeight = 2 * Theme.menuInset;
+        let wantedHeight = 2 * Metrics.menuInset;
         for (const action of actions) {
             wantedHeight += action.type === "separator" ? separatorHeight : rowHeight;
-            widest = Math.max(widest, metrics.advanceWidth(action.text || "") + (action.shortcut ? metrics.advanceWidth(action.shortcut) + 24 : 0));
+            widest = Math.max(widest, metrics.advanceWidth(action.text || "") + (action.shortcut ? metrics.advanceWidth(action.shortcut) + Metrics.contextMenuShortcutGap : 0));
         }
-        popup.width = Math.min(width - 2 * gap, Math.max(184, Math.min(400, widest + 72)));
+        popup.width = Math.min(width - 2 * gap, Math.max(Metrics.contextMenuMinimumWidth, Math.min(Metrics.contextMenuMaximumWidth, widest + Metrics.contextMenuWidthPadding)));
         popup.height = Math.min(height - 2 * gap, wantedHeight);
         popup.x = Math.max(gap, Math.min(localX, width - popup.width - gap));
-        const below = localY + 4;
-        const above = localY - popup.height - 4;
+        const below = localY + Metrics.popupAnchorGap;
+        const above = localY - popup.height - Metrics.popupAnchorGap;
         popup.y = Math.max(gap, Math.min(below + popup.height <= height - gap ? below : above,
                                         height - popup.height - gap));
         popup.open();
@@ -102,7 +102,7 @@ Item {
         modal: true
         dim: false
         focus: true
-        padding: Theme.menuInset
+        padding: Metrics.menuInset
         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
         onOpened: {
             list.forceActiveFocus();
@@ -149,13 +149,13 @@ Item {
                 readonly property bool separator: modelData.type === "separator"
                 width: list.width
                 height: separator ? contextMenu.separatorHeight : contextMenu.rowHeight
-                leftPadding: Theme.menuTextInset
-                rightPadding: Theme.menuTextInset
+                leftPadding: Metrics.menuTextInset
+                rightPadding: Metrics.menuTextInset
                 enabled: contextMenu.selectable(index)
                 focusPolicy: Qt.NoFocus
                 text: modelData.text || ""
                 background: Rectangle {
-                    radius: Theme.menuRowRadius
+                    radius: Metrics.menuRowRadius
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, row.separator ? 0
                             : row.down ? 0.12 : row.hovered || (row.ListView.isCurrentItem && list.activeFocus) ? 0.08 : 0)
@@ -164,18 +164,18 @@ Item {
                     visible: row.separator
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.leftMargin: 6
-                    anchors.rightMargin: 6
+                    anchors.leftMargin: Metrics.contextMenuSeparatorInset
+                    anchors.rightMargin: Metrics.contextMenuSeparatorInset
                     anchors.verticalCenter: parent.verticalCenter
-                    height: 1
+                    height: Metrics.contextMenuSeparatorThickness
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10)
                 }
                 contentItem: RowLayout {
                     visible: !row.separator
-                    spacing: Theme.menuIconGap
+                    spacing: Metrics.menuIconGap
                     Item {
-                        Layout.preferredWidth: Theme.menuGlyphSize
-                        Layout.preferredHeight: Theme.menuGlyphSize
+                        Layout.preferredWidth: Metrics.menuGlyphSize
+                        Layout.preferredHeight: Metrics.menuGlyphSize
                         Layout.alignment: Qt.AlignVCenter
                         NativeGlyph {
                             objectName: "wmStartActionGlyph"

@@ -85,9 +85,9 @@ PlasmaCore.Window {
                         y: modelData[1] * bar.diagramHeight + bar.cellGap / 2
                         width: Math.max(0, modelData[2] * bar.diagramWidth - bar.cellGap)
                         height: Math.max(0, modelData[3] * bar.diagramHeight - bar.cellGap)
-                        radius: 3
+                        radius: Layouts.barCellRadius
                         color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.10 : 0.04)
-                        border.width: 1
+                        border.width: Layouts.cellBorderWidth
                         border.color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.35 : 0.15)
                     }
                 }

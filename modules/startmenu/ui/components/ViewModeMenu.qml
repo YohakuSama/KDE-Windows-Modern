@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import "../code/theme.js" as Theme
+import "../code/startMenuMetrics.js" as Metrics
 
 QQC2.Popup {
     id: menu
@@ -12,7 +12,7 @@ QQC2.Popup {
     property int pendingMode: -1
     property Item anchorItem: null
     signal modeChosen(int mode)
-    readonly property int rowExtent: Theme.menuRowExtent(metrics.height)
+    readonly property int rowExtent: Metrics.menuRowExtent(metrics.height)
     FontMetrics { id: metrics; font: Kirigami.Theme.defaultFont }
 
     // Keep the popup in the Plasma dialog's scene. Native popup windows can
@@ -21,11 +21,16 @@ QQC2.Popup {
     modal: true
     dim: false
     focus: true
-    padding: Theme.menuInset
-    readonly property real preferredMenuWidth: Math.max(160, ...modes.map(label =>
-        metrics.advanceWidth(label) + Theme.menuGlyphSize + 8 + 2 * Theme.menuInset + 24))
-    width: Math.max(1, Math.min(parent ? parent.width - 16 : preferredMenuWidth, preferredMenuWidth))
-    height: Math.max(1, Math.min(parent ? parent.height - 16 : 120, modes.length * rowExtent + 2 * Theme.menuInset))
+    padding: Metrics.menuInset
+    readonly property real preferredMenuWidth: Math.max(Metrics.viewModeMenuMinimumWidth, ...modes.map(label =>
+        metrics.advanceWidth(label) + Metrics.menuGlyphSize + Metrics.viewModeMenuIconGap
+            + 2 * Metrics.menuInset + Metrics.viewModeMenuRightReserve))
+    width: Math.max(1, Math.min(
+        parent ? parent.width - 2 * Metrics.popupEdgeInset : preferredMenuWidth,
+        preferredMenuWidth))
+    height: Math.max(1, Math.min(
+        parent ? parent.height - 2 * Metrics.popupEdgeInset : Metrics.viewModeMenuFallbackHeight,
+        modes.length * rowExtent + 2 * Metrics.menuInset))
     closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
 
     function openAt(button) {
@@ -36,12 +41,14 @@ QQC2.Popup {
         }
         pendingMode = -1;
         anchorItem = button;
-        const gap = 4;
+        const gap = Metrics.popupAnchorGap;
         const p = button.mapToItem(parent, 0, 0);
-        x = Math.max(8, Math.min(p.x + button.width - width, parent.width - width - 8));
+        x = Math.max(Metrics.popupEdgeInset,
+            Math.min(p.x + button.width - width, parent.width - width - Metrics.popupEdgeInset));
         const below = p.y + button.height + gap;
         const above = p.y - height - gap;
-        y = below + height <= parent.height - 8 ? below : Math.max(8, above);
+        y = below + height <= parent.height - Metrics.popupEdgeInset
+            ? below : Math.max(Metrics.popupEdgeInset, above);
         open();
     }
     function choose(mode) {
@@ -88,10 +95,10 @@ QQC2.Popup {
             height: menu.rowExtent
             text: menu.modes[mode]
             contentItem: RowLayout {
-                spacing: 8
+                spacing: Metrics.viewModeMenuIconGap
                 Item {
-                    Layout.preferredWidth: Theme.menuGlyphSize
-                    Layout.preferredHeight: Theme.menuGlyphSize
+                    Layout.preferredWidth: Metrics.menuGlyphSize
+                    Layout.preferredHeight: Metrics.menuGlyphSize
                     Layout.alignment: Qt.AlignVCenter
                     NativeGlyph {
                         anchors.fill: parent
@@ -108,7 +115,7 @@ QQC2.Popup {
                 }
             }
             background: Rectangle {
-                radius: Theme.menuRowRadius
+                radius: Metrics.menuRowRadius
                 color: entry.hovered || (entry.ListView.isCurrentItem && list.activeFocus)
                     ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
                     : "transparent"

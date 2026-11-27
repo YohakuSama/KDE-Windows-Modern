@@ -136,6 +136,7 @@ Item {
             mouseMove(c, c.width / 2, c.height / 2);        // hover the card
             const button = closeButtonOf(c);
             verify(button !== null, "card should have a close button");
+            compare(button.radius, view.smallCornerRadius);
             tryVerify(() => button.visible, 1000, "hovering the card shows its close button");
             const p = button.mapToItem(c, button.width / 2, button.height / 2);
             let flips = 0;

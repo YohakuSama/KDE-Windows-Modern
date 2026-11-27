@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components" as Start
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/startMenuMetrics.js" as Metrics
 
 Item {
     id: host
@@ -16,10 +17,12 @@ Item {
         when: windowShown
         function init() { menu.close(); anchor.y = 80; menu.currentMode = 0; changed.clear(); }
         function test_anchorAndOutsideDismiss() {
+            compare(menu.padding, Metrics.menuInset);
+            verify(menu.rowExtent >= Metrics.menuRowHeight);
             mouseClick(anchor);
             tryCompare(menu, "opened", true);
             compare(menu.x + menu.width, anchor.x + anchor.width);
-            compare(menu.y, anchor.y + anchor.height + 4);
+            compare(menu.y, anchor.y + anchor.height + Metrics.popupAnchorGap);
             mouseClick(host, 30, 30);
             tryCompare(menu, "opened", false);
             compare(changed.count, 0);
@@ -45,7 +48,7 @@ Item {
             anchor.y = 470;
             menu.openAt(anchor);
             tryCompare(menu, "opened", true);
-            compare(menu.y + menu.height, anchor.y - 4);
+            compare(menu.y + menu.height, anchor.y - Metrics.popupAnchorGap);
             keyClick(Qt.Key_Escape);
             tryCompare(menu, "opened", false);
             compare(changed.count, 0);

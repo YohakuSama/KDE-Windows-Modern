@@ -7,6 +7,19 @@
 */
 .pragma library
 
+// Shared preview geometry. The two hosts retain their distinct cell radii
+// and internal cell gaps while using the same diagram-to-diagram spacing.
+const diagramGap = 10;
+const barDiagramWidth = 72;
+const barDiagramHeight = 44;
+const barCellGap = 3;
+const barCellRadius = 3;
+const captionCellGap = 4;
+const captionCellRadius = 4;
+const cellBorderWidth = 1;
+const captionDiagramMaxWidth = 96;
+const captionDiagramAspectRatio = 0.6;
+
 const layouts = [
     [[0, 0, 1 / 2, 1], [1 / 2, 0, 1 / 2, 1]],
     [[0, 0, 2 / 3, 1], [2 / 3, 0, 1 / 3, 1]],
@@ -44,12 +57,13 @@ function hasFittingCell(area, minimum, maximum) {
 function barMetrics(availableWidth, availableHeight) {
     const count = layouts.length;
     const scale = Math.max(0, Math.min(1,
-        availableWidth / (count * 72 + (count - 1) * 10), availableHeight / 44));
+        availableWidth / (count * barDiagramWidth + (count - 1) * diagramGap),
+        availableHeight / barDiagramHeight));
     return {
-        width: Math.max(1, Math.floor(72 * scale)),
-        height: Math.max(1, Math.floor(44 * scale)),
-        gap: Math.floor(10 * scale),
-        cellGap: Math.floor(3 * scale)
+        width: Math.max(1, Math.floor(barDiagramWidth * scale)),
+        height: Math.max(1, Math.floor(barDiagramHeight * scale)),
+        gap: Math.floor(diagramGap * scale),
+        cellGap: Math.floor(barCellGap * scale)
     };
 }
 

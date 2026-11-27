@@ -16,13 +16,13 @@ PlasmaCore.Window {
     property rect anchorRect: Qt.rect(0, 0, 1, 1)
     property size minimumWindowSize: Qt.size(0, 0)
     property size maximumWindowSize: Qt.size(0, 0)
-    readonly property int gap: 10
-    readonly property int cellGap: 4
+    readonly property int gap: Layouts.diagramGap
+    readonly property int cellGap: Layouts.captionCellGap
     readonly property int diagramColumns: Math.max(1, Math.min(2,
-        Math.floor((screenGeometry.width - leftPadding - rightPadding + gap) / (96 + gap))))
-    readonly property int diagramWidth: Math.max(1, Math.min(96,
+        Math.floor((screenGeometry.width - leftPadding - rightPadding + gap) / (Layouts.captionDiagramMaxWidth + gap))))
+    readonly property int diagramWidth: Math.max(1, Math.min(Layouts.captionDiagramMaxWidth,
         Math.floor((screenGeometry.width - leftPadding - rightPadding - (diagramColumns - 1) * gap) / diagramColumns)))
-    readonly property int diagramHeight: Math.max(1, Math.round(diagramWidth * 0.6))
+    readonly property int diagramHeight: Math.max(1, Math.round(diagramWidth * Layouts.captionDiagramAspectRatio))
     readonly property int diagramRows: Math.ceil(Layouts.layouts.length / diagramColumns)
 
     visible: false
@@ -97,10 +97,10 @@ PlasmaCore.Window {
                         y: modelData[1] * diagram.height + picker.cellGap / 2
                         width: Math.max(0, modelData[2] * diagram.width - picker.cellGap)
                         height: Math.max(0, modelData[3] * diagram.height - picker.cellGap)
-                        radius: 4
+                        radius: Layouts.captionCellRadius
                         enabled: picker.fitsCell(modelData)
                         color: enabled && hit.containsMouse ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.10 : 0.04)
-                        border.width: 1
+                        border.width: Layouts.cellBorderWidth
                         border.color: enabled && hit.containsMouse ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.35 : 0.15)
                         Accessible.role: Accessible.Button
                         Accessible.name: qsTr("Layout %1, position %2").arg(diagram.index + 1).arg(index + 1)

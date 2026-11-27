@@ -2,6 +2,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components" as Start
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/startMenuMetrics.js" as Metrics
 
 Item {
     id: host
@@ -43,10 +44,12 @@ Item {
             compare(popup.contentItem.currentIndex, -1);
             tryVerify(() => popup.contentItem.itemAtIndex(0) !== null);
             const row = popup.contentItem.itemAtIndex(0);
-            compare(row.height, 32);
+            compare(row.height, menu.rowHeight);
+            verify(menu.rowHeight >= Metrics.menuRowHeight);
+            compare(row.background.radius, Metrics.menuRowRadius);
             const glyph = findChild(row, "wmStartActionGlyph");
             verify(glyph);
-            tryCompare(glyph, "width", 16);
+            tryCompare(glyph, "width", Metrics.menuGlyphSize);
             keyClick(Qt.Key_Up);
             compare(popup.contentItem.currentIndex, 2);
             keyClick(Qt.Key_Escape);
@@ -66,8 +69,8 @@ Item {
             menu.open(actions, 410, 290, {});
             const popup = findChild(menu, "wmStartContextPopup");
             tryCompare(popup, "opened", true);
-            verify(popup.x >= 8 && popup.x + popup.width <= host.width - 8);
-            verify(popup.y >= 8 && popup.y + popup.height <= host.height - 8);
+            verify(popup.x >= Metrics.popupEdgeInset && popup.x + popup.width <= host.width - Metrics.popupEdgeInset);
+            verify(popup.y >= Metrics.popupEdgeInset && popup.y + popup.height <= host.height - Metrics.popupEdgeInset);
             keyClick(Qt.Key_Escape);
             tryCompare(menu, "opened", false);
             compare(invoked.count, 0);

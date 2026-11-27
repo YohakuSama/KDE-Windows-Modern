@@ -42,7 +42,7 @@ FocusScope {
     readonly property int cardSpacing: Math.round(4 * unit)
     readonly property int cardPadding: Math.round(6 * unit)
     readonly property int cardRadius: Math.round(8 * unit)
-    readonly property int thumbnailRadius: Math.round(4 * unit)
+    readonly property int smallCornerRadius: Math.round(4 * unit)
     readonly property int ringWidth: Math.max(2, Math.round(3 * unit))
     readonly property int headerHeight: Math.round(30 * unit)
     readonly property int headerIconSize: Kirigami.Units.iconSizes.small
@@ -322,7 +322,7 @@ FocusScope {
                         anchors.verticalCenter: parent.verticalCenter
                         width: Math.round(26 * root.unit)
                         height: width
-                        radius: Math.round(4 * root.unit)
+                        radius: root.smallCornerRadius
                         visible: card.showClose
                         color: closeMouse.containsMouse ? root.closeHoverFill : "transparent"
 
@@ -384,7 +384,7 @@ FocusScope {
                     Rectangle {
                         id: previewMask
                         anchors.fill: parent
-                        radius: root.thumbnailRadius
+                        radius: root.smallCornerRadius
                         visible: false
                         layer.enabled: true
                     }

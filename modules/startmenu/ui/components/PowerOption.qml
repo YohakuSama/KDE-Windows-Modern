@@ -13,6 +13,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
 import "../code/theme.js" as Theme
+import "../code/startMenuMetrics.js" as Metrics
 
 Item {
     id: option
@@ -38,14 +39,14 @@ Item {
     Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
     width: parent ? parent.width : Kirigami.Units.gridUnit * 10
-    height: Theme.menuRowExtent(labelMetrics.height)
+    height: Metrics.menuRowExtent(labelMetrics.height)
 
     FontMetrics { id: labelMetrics; font: Kirigami.Theme.defaultFont }
 
     Rectangle {
         anchors.fill: parent
-        anchors.margins: 1
-        radius: Theme.menuRowRadius
+        anchors.margins: Metrics.menuRowBackgroundInset
+        radius: Metrics.menuRowRadius
         color: Kirigami.Theme.textColor
         opacity: !option.optionEnabled ? 0
             : hoverArea.containsPress ? 0.11
@@ -57,15 +58,15 @@ Item {
         id: powerRow
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        anchors.leftMargin: Theme.menuTextInset
+        anchors.leftMargin: Metrics.menuTextInset
         anchors.right: parent.right
-        anchors.rightMargin: Theme.menuTextInset
-        spacing: Theme.menuIconGap
+        anchors.rightMargin: Metrics.menuTextInset
+        spacing: Metrics.menuIconGap
 
         Item {
             objectName: "wmStartPowerGlyph"
-            Layout.preferredWidth: Theme.menuGlyphSize
-            Layout.preferredHeight: Theme.menuGlyphSize
+            Layout.preferredWidth: Metrics.menuGlyphSize
+            Layout.preferredHeight: Metrics.menuGlyphSize
             Layout.alignment: Qt.AlignVCenter
             NativeGlyph {
                 anchors.fill: parent

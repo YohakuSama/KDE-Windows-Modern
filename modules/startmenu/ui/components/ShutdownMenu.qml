@@ -15,7 +15,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.sessions
 import org.kde.kirigami as Kirigami
 
-import "../code/theme.js" as Theme
+import "../code/startMenuMetrics.js" as Metrics
 import "../code/footerNavigation.js" as FooterNavigation
 
 Item {
@@ -77,17 +77,17 @@ Item {
         visible: false
         z: 100
 
-        readonly property real panelWidth: Math.max(0, Math.min(root.width - 16,
-            Math.max(168, ...root.options.filter(option => option && option.visible)
-                .map(option => footerMetrics.advanceWidth(option.label) + 64))))
+        readonly property real panelWidth: Math.max(0, Math.min(root.width - 2 * Metrics.popupEdgeInset,
+            Math.max(Metrics.shutdownMenuMinimumWidth, ...root.options.filter(option => option && option.visible)
+                .map(option => footerMetrics.advanceWidth(option.label) + Metrics.shutdownMenuTextWidthPadding))))
         width: panelWidth
-        height: Math.min(powerColumn.implicitHeight + 2 * Theme.menuInset, Math.max(0, root.height - 16))
+        height: Math.min(powerColumn.implicitHeight + 2 * Metrics.menuInset, Math.max(0, root.height - 2 * Metrics.popupEdgeInset))
 
 
         Flickable {
             id: powerScroll
             anchors.fill: parent
-            anchors.margins: Theme.menuInset
+            anchors.margins: Metrics.menuInset
             contentWidth: width
             contentHeight: powerColumn.implicitHeight
             clip: true
@@ -235,7 +235,7 @@ Item {
         powerScroll.contentY = 0;
         var popupW = popup.width
         var popupH = popup.height
-        var gap = 8
+        var gap = Metrics.shutdownMenuAnchorGap
 
         // Account opens at the leading edge; Power stays at the trailing edge.
         const alignLeft = root.accountMode !== root.visualParent.LayoutMirroring.enabled;
