@@ -694,6 +694,16 @@
             "value": 14,
             "xbf_offset": 25723
           }
+        },
+        "SubmitButtonStyle": {
+          "FrameworkElement.MinWidth": {
+            "value": 28,
+            "xbf_offset": 26851
+          },
+          "FrameworkElement.MinHeight": {
+            "value": 24,
+            "xbf_offset": 26859
+          }
         }
       },
       "brushes": {
@@ -719,7 +729,48 @@
             }
           }
         }
-      }
+      },
+      "reviewed_usages": [
+        {
+          "template": "SubmitButtonStyle",
+          "template_xbf_offset": 26825,
+          "node_section": 47,
+          "resource": "TextFieldButtonCornerRadius",
+          "xbf_offset": 31670
+        },
+        {
+          "template": "SubmitButtonStyle",
+          "template_xbf_offset": 26825,
+          "node_section": 47,
+          "resource": "SubmitButtonFontSize",
+          "xbf_offset": 31676
+        },
+        {
+          "element": "RootGrid",
+          "node_section": 48,
+          "property": "Grid.CornerRadius",
+          "resource": "TextFieldButtonCornerRadius",
+          "xbf_offset": 31727
+        },
+        {
+          "element": "ButtonLayoutGrid",
+          "node_section": 37,
+          "property": "Grid.CornerRadius",
+          "resource": "TextFieldButtonCornerRadius",
+          "xbf_offset": 29777
+        },
+        {
+          "template": "DefaultMenuFlyoutPresenterStyle",
+          "template_xbf_offset": 27463,
+          "node_section": 61,
+          "resource": "OverlayCornerRadius",
+          "xbf_offset": 32910
+        }
+      ],
+      "review_notes": [
+        "The submit minimum dimensions do not establish the host credential field height. Both Qt hosts retain their previous button extents, subject to their existing constraints. The 12px font-size resource is used for the lock screen's text fallback. The actual FlowDirectionToForwardArrowConverter glyph remains unverified.",
+        "The separately installed system greeter currently installs its compatibility icon theme under /usr/share/icons; it does not deploy the private windows-modern/native-assets tree. Retain its existing icon loading path until a verified local asset deployment is designed. No new fallback path is introduced."
+      ]
     },
     {
       "pri_path": "SystemResources/Windows.UI.Logon/Windows.UI.Logon.pri",
@@ -1174,6 +1225,439 @@
       "review_notes": [
         "These are minimum extents. KDE uses 220 as the full-search preferred baseline and grows the compact preferred size to fit translated text with the template's content padding. Existing constrained-height scaling is retained.",
         "The exact runtime frame height, full-search icon extent and text style are not established."
+      ]
+    },
+    {
+      "pri_path": "SystemApps/Microsoft.UI.Xaml.CBS_8wekyb3d8bbwe/resources.pri",
+      "pri_sha256": "2a93db6aded19eb8026b2de11f583271505b26e9a47536d364d4e9ed93a57421",
+      "resource": "Files\\Microsoft.UI.Xaml\\Themes\\21h1_themeresources.xbf",
+      "xbf_sha256": "3c781c86e9f769962a41ae02791fcb0fa77d358a53f079174f58e378c4f58f63",
+      "pri_payload_offset": 968724,
+      "xbf_payload_bytes": 781280,
+      "resource_values": {
+        "Default": {
+          "SliderTrackThemeHeight": {
+            "value": 4,
+            "xbf_offset": 344647
+          },
+          "ControlCornerRadius": {
+            "value": "4,4,4,4",
+            "xbf_offset": 340524
+          },
+          "OverlayCornerRadius": {
+            "value": "8,8,8,8",
+            "xbf_offset": 340551
+          },
+          "ListViewItemMinHeight": {
+            "value": 40,
+            "xbf_offset": 338289
+          },
+          "TextControlThemePadding": {
+            "value": [
+              10,
+              5,
+              6,
+              6
+            ],
+            "xbf_offset": 325685
+          },
+          "TextControlBorderThemeThicknessFocused": {
+            "value": [
+              1,
+              1,
+              1,
+              2
+            ],
+            "xbf_offset": 325660
+          },
+          "ToolTipBorderThemePadding": {
+            "value": [
+              8,
+              5,
+              8,
+              7
+            ],
+            "xbf_offset": 333587
+          }
+        },
+        "Light": {
+          "SliderTrackThemeHeight": {
+            "value": 4,
+            "xbf_offset": 379785
+          },
+          "ControlCornerRadius": {
+            "value": "4,4,4,4",
+            "xbf_offset": 375662
+          },
+          "OverlayCornerRadius": {
+            "value": "8,8,8,8",
+            "xbf_offset": 375689
+          },
+          "ListViewItemMinHeight": {
+            "value": 40,
+            "xbf_offset": 373427
+          },
+          "TextControlThemePadding": {
+            "value": [
+              10,
+              5,
+              6,
+              6
+            ],
+            "xbf_offset": 360806
+          },
+          "TextControlBorderThemeThicknessFocused": {
+            "value": [
+              1,
+              1,
+              1,
+              2
+            ],
+            "xbf_offset": 360781
+          },
+          "ToolTipBorderThemePadding": {
+            "value": [
+              8,
+              5,
+              8,
+              7
+            ],
+            "xbf_offset": 368731
+          }
+        },
+        "HighContrast": {
+          "SliderTrackThemeHeight": {
+            "value": 2,
+            "xbf_offset": 413306
+          },
+          "TextControlBorderThemeThicknessFocused": {
+            "value": [
+              2,
+              2,
+              2,
+              2
+            ],
+            "xbf_offset": 395913
+          }
+        },
+        "unqualified": {
+          "SliderHorizontalThumbWidth": {
+            "value": 18,
+            "xbf_offset": 440260
+          },
+          "SliderHorizontalThumbHeight": {
+            "value": 18,
+            "xbf_offset": 440269
+          },
+          "SliderHorizontalHeight": {
+            "value": 32,
+            "xbf_offset": 440242
+          },
+          "MenuFlyoutThemeMinHeight": {
+            "value": 32,
+            "xbf_offset": 428630
+          },
+          "MenuFlyoutSeparatorThemePadding": {
+            "value": [
+              -4,
+              1,
+              -4,
+              1
+            ],
+            "xbf_offset": 428660
+          },
+          "MenuFlyoutPresenterThemePadding": {
+            "value": [
+              0,
+              2,
+              0,
+              2
+            ],
+            "xbf_offset": 428609
+          },
+          "MenuFlyoutItemThemePadding": {
+            "value": [
+              11,
+              8,
+              11,
+              9
+            ],
+            "xbf_offset": 428702
+          },
+          "MenuFlyoutItemThemePaddingNarrow": {
+            "value": [
+              11,
+              4,
+              11,
+              5
+            ],
+            "xbf_offset": 428723
+          },
+          "ComboBoxMinHeight": {
+            "value": 32,
+            "xbf_offset": 445369
+          },
+          "ButtonPadding": {
+            "value": [
+              11,
+              5,
+              11,
+              6
+            ],
+            "xbf_offset": 436112
+          },
+          "TabViewItemScrollButtonWidth": {
+            "value": 32,
+            "xbf_offset": 444749
+          },
+          "TabViewItemScrollButtonHeight": {
+            "value": 24,
+            "xbf_offset": 444758
+          }
+        }
+      },
+      "review_notes": [
+        "Named literal resources are resolved through keyed dictionary references (root offsets 293331, 303185, 313041 and 322653 to node sections 1–4). They establish generic WinUI resource values, not the active runtime template for every shell surface. The current Quick Settings slider already uses an 18 logical-pixel thumb and a 4px track at its normal component scale; no duplicate implementation is needed."
+      ]
+    },
+    {
+      "pri_path": "SystemApps/Microsoft.UI.Xaml.CBS_8wekyb3d8bbwe/resources.pri",
+      "pri_sha256": "2a93db6aded19eb8026b2de11f583271505b26e9a47536d364d4e9ed93a57421",
+      "resource": "Files\\Microsoft.UI.Xaml\\Themes\\21h1_themeresources_v1.xbf",
+      "xbf_sha256": "0a62d081e75a107a644153472b558027cf5a4b4eb4f93afde7fe8c0768aa324a",
+      "pri_payload_offset": 289552,
+      "xbf_payload_bytes": 679172,
+      "resource_values": {
+        "Default": {
+          "SliderTrackThemeHeight": {
+            "value": 2,
+            "xbf_offset": 287990
+          },
+          "ControlCornerRadius": {
+            "value": "2,2,2,2",
+            "xbf_offset": 283727
+          },
+          "OverlayCornerRadius": {
+            "value": "4,4,4,4",
+            "xbf_offset": 283754
+          }
+        },
+        "Light": {
+          "SliderTrackThemeHeight": {
+            "value": 2,
+            "xbf_offset": 318114
+          },
+          "ControlCornerRadius": {
+            "value": "2,2,2,2",
+            "xbf_offset": 313851
+          },
+          "OverlayCornerRadius": {
+            "value": "4,4,4,4",
+            "xbf_offset": 313878
+          }
+        },
+        "unqualified": {
+          "SliderHorizontalThumbWidth": {
+            "value": 20,
+            "xbf_offset": 366345
+          },
+          "SliderHorizontalThumbHeight": {
+            "value": 20,
+            "xbf_offset": 366354
+          },
+          "TabViewItemScrollButtonWidth": {
+            "value": 29,
+            "xbf_offset": 369866
+          },
+          "TabViewItemScrollButtonHeight": {
+            "value": 29,
+            "xbf_offset": 369875
+          },
+          "ButtonPadding": {
+            "value": [
+              8,
+              5,
+              8,
+              6
+            ],
+            "xbf_offset": 363472
+          }
+        }
+      },
+      "review_notes": [
+        "This alternative dictionary from the same original PRI disagrees with the modern generic dictionary. Presence in the image does not establish active template selection; do not use these values interchangeably."
+      ]
+    },
+    {
+      "pri_path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/resources.pri",
+      "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
+      "resource": "Files\\StartMenu\\StartResources.xbf",
+      "xbf_sha256": "c9bda46e1762784654cd89e01f1eaa7c1da9577893bd88090b25377bf88e1749",
+      "pri_payload_offset": 8037716,
+      "xbf_payload_bytes": 108443,
+      "resource_values": {
+        "unqualified": {
+          "Metrics_SmallStartWidth": {
+            "value": 642,
+            "xbf_offset": 51468
+          },
+          "Metrics_SmallStartMaxHeight": {
+            "value": 750,
+            "xbf_offset": 51459
+          },
+          "Metrics_LargeStartWidth": {
+            "value": 834,
+            "xbf_offset": 51531
+          },
+          "Metrics_LargeStartMaxHeight": {
+            "value": 890,
+            "xbf_offset": 51522
+          },
+          "PinnedListItemWidth": {
+            "value": 96,
+            "xbf_offset": 51615
+          },
+          "PinnedListItemHeight": {
+            "value": 84,
+            "xbf_offset": 51606
+          },
+          "AllAppsListItemWidth": {
+            "value": 536,
+            "xbf_offset": 51678
+          },
+          "AllAppsGridItemWidth": {
+            "value": 96,
+            "xbf_offset": 51714
+          },
+          "AllAppsCategoryCardWidth": {
+            "value": 156,
+            "xbf_offset": 51741
+          },
+          "AllAppsCategoryCardHeight": {
+            "value": 156,
+            "xbf_offset": 51732
+          },
+          "StartHeaderButtonPadding": {
+            "value": [
+              11,
+              5,
+              9,
+              6
+            ],
+            "xbf_offset": 51585
+          },
+          "Metrics_SmallStartScreenWidthThreshold": {
+            "value": 884,
+            "xbf_offset": 51450
+          },
+          "Metrics_LargeStartScreenWidthThreshold": {
+            "value": 1600,
+            "xbf_offset": 51513
+          },
+          "SmallStart_AllAppsListItemWidth": {
+            "value": 536,
+            "xbf_offset": 51687
+          },
+          "LargeStart_AllAppsListItemWidth": {
+            "value": 728,
+            "xbf_offset": 51696
+          },
+          "AllAppsIconSize_Small": {
+            "value": 16,
+            "xbf_offset": 51651
+          },
+          "AllAppsIconSize_Medium": {
+            "value": 24,
+            "xbf_offset": 51660
+          },
+          "AllAppsIconSize_Large": {
+            "value": 32,
+            "xbf_offset": 51669
+          }
+        }
+      },
+      "review_notes": [
+        "Keyed root dictionary reference at XBF offset 47483 points to node section 4. Both small and large Start resource values exist. Do not substitute them into the KDE layout before establishing their active template and relationship to the Photon Start bundle in this build."
+      ],
+      "reviewed_usages": [
+        {
+          "node_section": 56,
+          "property": "FrameworkElement.Height",
+          "resource": "PinnedListItemHeight",
+          "xbf_offset": 69833
+        },
+        {
+          "node_section": 56,
+          "property": "FrameworkElement.Width",
+          "resource": "PinnedListItemWidth",
+          "xbf_offset": 69839
+        },
+        {
+          "node_section": 67,
+          "property": "FrameworkElement.Width",
+          "resource": "AllAppsGridItemWidth",
+          "xbf_offset": 74341
+        },
+        {
+          "node_section": 105,
+          "property": "FrameworkElement.Width",
+          "resource": "AllAppsListItemWidth",
+          "xbf_offset": 81787
+        },
+        {
+          "node_section": 126,
+          "property": "FrameworkElement.Height",
+          "resource": "AllAppsCategoryCardHeight",
+          "xbf_offset": 86745
+        },
+        {
+          "node_section": 126,
+          "property": "FrameworkElement.Width",
+          "resource": "AllAppsCategoryCardWidth",
+          "xbf_offset": 86751
+        }
+      ]
+    },
+    {
+      "pri_path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/resources.pri",
+      "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
+      "resource": "Files\\StartMenu\\StartBlendedFlexFrame.xbf",
+      "xbf_sha256": "0b081937b3694c5eabfb567dcb9a65d1f2722f1e9161c5c4752b35b19e15483f",
+      "pri_payload_offset": 8174480,
+      "xbf_payload_bytes": 17333,
+      "resource_values": {},
+      "reviewed_usages": [
+        {
+          "node_section": 0,
+          "property": "FrameworkElement.MaxHeight",
+          "resource": "Metrics_SmallStartMaxHeight",
+          "xbf_offset": 8286
+        },
+        {
+          "node_section": 0,
+          "property": "FrameworkElement.Height",
+          "resource": "Metrics_SmallStartMaxHeight",
+          "xbf_offset": 8918
+        },
+        {
+          "node_section": 0,
+          "property": "FrameworkElement.Width",
+          "resource": "Metrics_SmallStartWidth",
+          "xbf_offset": 9072
+        },
+        {
+          "node_section": 3,
+          "resource": "Metrics_LargeStartWidth",
+          "xbf_offset": 10131
+        },
+        {
+          "node_section": 3,
+          "resource": "Metrics_LargeStartMaxHeight",
+          "xbf_offset": 10148
+        }
+      ],
+      "review_notes": [
+        "The native XAML frame explicitly references the StartResources geometry. The separate Photon bundle also exists in this build; active implementation and screen state selection are not established. Do not apply the XAML frame's dimensions to every Start configuration on this evidence alone."
       ]
     }
   ],

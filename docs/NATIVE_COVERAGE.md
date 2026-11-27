@@ -760,3 +760,41 @@ new session, and do not put the original PRI/XBF payloads into this public
 repository. If the raw bytes are unavailable, use only the previously
 recorded evidence for its stated scope and leave other native-dependent
 changes open.
+
+### Shared control evidence and credential hosts
+
+The restored original WinUI PRI contains both the modern generic theme
+resource dictionary and its v1 alternative. The former declares a 4px
+slider track, 18px thumb, 4px control radius and 8px overlay radius;
+the latter declares a 2px track, 20px thumb, 2px control radius and 4px
+overlay radius. These are separate dictionaries, not measurements to
+average or interchangeable defaults. The source ledger records exact
+resource offsets for the selected values. The existing Quick Settings
+slider already matches the modern track and thumb baseline and is left
+unchanged. Generic values for other controls are evidence for subsequent
+consumer-specific review, not a reason to resize unrelated shell controls.
+
+CommonStyles.xbf directly references the 3px field-button radius in the
+submit template and reveal ButtonLayoutGrid. SubmitButtonStyle declares
+28px minimum width, 24px minimum height and 12px font size. The KDE
+credential hosts now share the 3px button radius through their existing
+lockMetrics.js copies. The 12px font resource is used for the lock
+screen's existing text fallback, not to infer glyph bounds. Their
+existing host extents, authentication, focus and password reveal
+behavior remain unchanged. The original forward-arrow converter's glyph
+and optical bounds still need confirmation; the existing mapped arrow
+roles are retained. The greeter power-menu frame uses the recorded 8px
+overlay radius as the corresponding Qt menu role. The separately
+installed greeter currently deploys the compatibility icon theme but not
+the private native-assets tree. Its existing icon loading path is retained
+to avoid a regression to text-only controls. Verified greeter asset
+deployment remains an A06 blocker.
+
+The same restored archive supplies StartResources.xbf, including the
+separate small and large frame maximums (642/834 wide, 750/890 high),
+96 by 84 pinned cells, 96px all-apps grid width and 156px category cards.
+The source ledger records the literal resources and their pinned, grid,
+category and frame references. The existing pinned cell height of 84
+already matches the reference. The frame size and column-count changes
+remain open until the XAML frame and the separate Photon bundle are
+reconciled. No layout branch is selected by file name alone.

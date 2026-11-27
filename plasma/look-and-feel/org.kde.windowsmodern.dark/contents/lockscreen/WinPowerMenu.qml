@@ -8,6 +8,7 @@ import QtQuick
 import QtQuick.Controls 2.15 as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.login as PlasmaLogin
+import "lockMetrics.js" as LockMetrics
 
 QQC2.Menu {
     id: root
@@ -19,7 +20,7 @@ QQC2.Menu {
         color: WinStyle.menuBackground
         border.color: WinStyle.menuBorder
         border.width: 1
-        radius: 6
+        radius: LockMetrics.menuRadius
     }
 
     FluentPowerMenuItem {

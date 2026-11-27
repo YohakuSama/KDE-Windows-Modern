@@ -196,7 +196,7 @@ FocusScope {
             onVisibleChanged: if (!visible) passwordBox.showPassword = false
             onActiveFocusChanged: if (!activeFocus && !pressed) passwordBox.showPassword = false
             background: Rectangle {
-                radius: 4
+                radius: LockMetrics.fieldButtonRadius
                 color: revealButton.hovered || revealButton.pressed ? "#33FFFFFF" : "transparent"
             }
         }
@@ -218,7 +218,7 @@ FocusScope {
 
             background: Rectangle {
                 color: parent.hovered ? "#33FFFFFF" : "transparent"
-                radius: 4
+                radius: LockMetrics.fieldButtonRadius
             }
         }
     }
@@ -244,8 +244,8 @@ FocusScope {
     // is absent, show the real action label instead of a toolkit fallback.
     component CredentialToolButton : ToolButton {
         id: actionButton
-        width: Math.max(0, Math.min(parent.width / 3, Math.max(28,
-            actionGlyph.nativeSource.length > 0 ? 28 : actionLabel.implicitWidth + 8)))
+        width: Math.max(0, Math.min(parent.width / 3, Math.max(LockMetrics.submitButtonMinWidth,
+            actionGlyph.nativeSource.length > 0 ? LockMetrics.submitButtonMinWidth : actionLabel.implicitWidth + 8)))
         height: Math.min(parent.height, 26)
         padding: 2
         display: AbstractButton.IconOnly
@@ -265,7 +265,7 @@ FocusScope {
                 visible: actionGlyph.nativeSource.length === 0
                 text: actionButton.text
                 font.family: Kirigami.Theme.defaultFont.family
-                font.pixelSize: 12
+                font.pixelSize: LockMetrics.submitButtonFontSize
                 textFormat: Text.PlainText
                 color: actionButton.icon.color
                 horizontalAlignment: Text.AlignHCenter

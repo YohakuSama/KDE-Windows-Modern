@@ -7,6 +7,12 @@ const passwordWidth = 296;
 // CommonStyles.xbf: LogonDefaultFontSize and TextFieldCornerRadius.
 const credentialFontSize = 14;
 const fieldCornerRadius = 4;
+// CommonStyles.xbf: SubmitButtonStyle and ButtonLayoutGrid.
+const fieldButtonRadius = 3;
+const submitButtonMinWidth = 28;
+const submitButtonMinHeight = 24;
+const submitButtonFontSize = 12;
+const menuRadius = 8;
 // Host-specific heights remain distinct pending native template evidence.
 const passwordHeight = 30;
 
