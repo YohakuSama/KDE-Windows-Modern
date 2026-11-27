@@ -6,6 +6,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kitemmodels as KItemModels
 import "../components"
 import "../code/alphabeticalApps.js" as Alphabetical
+import "../code/controlMetrics.js" as ControlMetrics
 
 FocusScope {
     id: view
@@ -193,7 +194,7 @@ FocusScope {
                 font.pixelSize: Math.max(13, Kirigami.Theme.defaultFont.pixelSize)
                 font.weight: Font.Medium
                 background: Rectangle {
-                    radius: 4
+                    radius: ControlMetrics.controlCornerRadius
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, sectionHeadingMouse.containsPress ? 0.12
                             : sectionLabel.hovered || sectionLabel.activeFocus ? 0.07 : 0)

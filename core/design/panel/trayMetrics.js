@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
+.import "controlMetrics.js" as ControlMetrics
+
 // Microsoft Windows 11 app-icon construction specifies 16px tray and
 // 24px taskbar app icon resources at 100%, 24px/36px at 150%.
 // The 16px value is the optical design slot, not a requirement to render
@@ -182,7 +184,7 @@ function quickTileSpacing(scale) {
 }
 
 function quickTileRadius(scale) {
-    return Math.max(3, Math.round(4 * scale));
+    return Math.max(3, Math.round(ControlMetrics.controlCornerRadius * scale));
 }
 
 function quickTileGlyphSize(scale) {

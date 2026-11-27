@@ -9,6 +9,7 @@ import org.kde.plasma.private.mpris as Mpris
 import "../js/colorType.js" as ColorType
 import "../js/mediaSource.js" as MediaSource
 import "../js/trayMetrics.js" as TrayMetrics
+import "../js/controlMetrics.js" as ControlMetrics
 
 Rectangle {
     id: card
@@ -66,7 +67,7 @@ Rectangle {
         autoRepeatInterval: 250
         display: QQC2.AbstractButton.IconOnly
         background: Rectangle {
-            radius: 4
+            radius: ControlMetrics.controlCornerRadius
             color: Qt.rgba(card.foreground.r, card.foreground.g, card.foreground.b,
                            control.down ? 0.12 : control.hovered || control.activeFocus ? 0.07 : 0)
         }

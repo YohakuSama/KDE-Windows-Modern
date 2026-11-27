@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
+import "../js/controlMetrics.js" as ControlMetrics
 import "../js/colorType.js" as ColorType
 
 Lib.DetailPage {
@@ -151,7 +152,7 @@ Lib.DetailPage {
             anchors.leftMargin: 8
             anchors.rightMargin: 8
             height: contentLayout.implicitHeight
-            radius: 4
+            radius: ControlMetrics.controlCornerRadius
             color: delegate.expanded ? delegate.subtleBg
                  : (headerMA.containsMouse ? delegate.hoverBg : "transparent")
             Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }

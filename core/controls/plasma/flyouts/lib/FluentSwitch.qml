@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import "../js/colorType.js" as ColorType
+import "../js/controlMetrics.js" as ControlMetrics
 
 QQC2.Switch {
     id: control
@@ -15,7 +16,7 @@ QQC2.Switch {
     padding: 0
     hoverEnabled: true
     background: Rectangle {
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         color: "transparent"
         border.width: control.activeFocus ? 1 : 0
         border.color: control.accent

@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "../code/controlMetrics.js" as ControlMetrics
 
 FocusScope {
     id: root
@@ -115,7 +116,7 @@ FocusScope {
                     Rectangle {
                         anchors.fill: parent
                         anchors.margins: 3
-                        radius: 4
+                        radius: ControlMetrics.controlCornerRadius
                         color: Qt.rgba(tile.foreground.r, tile.foreground.g, tile.foreground.b,
                             tile.available ? (tileMouse.containsPress ? 0.12
                                 : tile.hovered || tile.selected ? 0.07 : 0) : 0)

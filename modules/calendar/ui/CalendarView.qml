@@ -16,6 +16,7 @@ import org.kde.kirigami as Kirigami
 
 import "Calendar.js" as Calendar
 import "code/dateformat.js" as DateFormat
+import "code/controlMetrics.js" as ControlMetrics
 
 ColumnLayout {
     id: calendarView
@@ -369,8 +370,9 @@ ColumnLayout {
                 onClicked: calendarView.zoomOut()
 
                 Rectangle {
+                    objectName: "wmCalendarHeaderButtonBackground"
                     anchors.fill: parent
-                    radius: 4
+                    radius: ControlMetrics.controlCornerRadius
                     color: headerButton.containsPress ? palette.pressed
                                                       : (headerButton.containsMouse || headerTitle.activeFocus ? palette.hover : "transparent")
 

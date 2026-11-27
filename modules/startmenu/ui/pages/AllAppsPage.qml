@@ -14,6 +14,7 @@ import org.kde.kirigami as Kirigami
 
 import "../components"
 import "../code/tools.js" as Tools
+import "../code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: allAppsPage
@@ -413,7 +414,7 @@ Item {
                     height: 24
                     verticalAlignment: Text.AlignVCenter
                     background: Rectangle {
-                        radius: 4
+                        radius: ControlMetrics.controlCornerRadius
                         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                             Kirigami.Theme.textColor.b, categoryLabelMouse.containsPress ? 0.12
                                 : categoryLabel.hovered ? 0.07 : 0)

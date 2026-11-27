@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib" as Lib
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js" as ControlMetrics
 
 Item {
     id: fixture
@@ -95,6 +96,7 @@ Item {
             verify(Math.abs(center(title) - center(track)) <= 1);
             compare(track.width, 40);
             compare(track.height, 20);
+            compare(sw.background.radius, ControlMetrics.controlCornerRadius);
             toggled.clear();
             mouseClick(sw, sw.width / 2, sw.height / 2);
             compare(toggled.count, 1);
@@ -143,6 +145,9 @@ Item {
             tryVerify(() => loader.item !== null && loader.height > 0);
             const link = findChild(loader.item, "wmTestFooterLink");
             verify(link);
+            const linkBackground = findChild(link, "wmMoreSettingsLinkBackground");
+            verify(linkBackground);
+            compare(linkBackground.radius, ControlMetrics.controlCornerRadius);
             tryVerify(() => Math.abs(loader.y + loader.height - page.height) <= 1);
             compare(loader.height, loader.item.implicitHeight + 4);
             tryCompare(link, "width", loader.width);

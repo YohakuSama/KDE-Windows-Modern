@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
+.import "controlMetrics.js" as ControlMetrics
+
 // Start menu geometry in logical pixels. Color and opacity tokens remain in theme.js.
 const menuGlyphSize = 16;
 const menuRowHeight = 32;
-const menuRowRadius = 4;
+const menuRowRadius = ControlMetrics.controlCornerRadius;
 const menuRowTextVerticalPadding = 8;
 
 function menuRowExtent(textHeight) {
@@ -12,7 +14,7 @@ function menuRowExtent(textHeight) {
 }
 
 const menuInset = 4;
-const menuRadius = 8;
+const menuRadius = ControlMetrics.overlayCornerRadius;
 const menuBorderWidth = 1;
 const menuRowBackgroundInset = 1;
 const menuTextInset = 10;

@@ -3,6 +3,7 @@ import QtQuick
 import QtTest
 import "../../plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockMetrics.js" as LockMetrics
 import "../../plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockText.js" as LockText
+import "../../plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/controlMetrics.js" as ControlMetrics
 
 TestCase {
     name: "SessionLockLayout"
@@ -12,6 +13,9 @@ TestCase {
         compare(LockMetrics.formTop(400, 270), 66);
         compare(LockMetrics.passwordWidth, 296);
         compare(LockMetrics.passwordHeight, 30);
+        compare(LockMetrics.menuRadius, ControlMetrics.overlayCornerRadius);
+        compare(ControlMetrics.controlCornerRadius, 4);
+        compare(ControlMetrics.menuItemMinimumHeight, 32);
     }
     function test_localLanguageFallback() {
         compare(LockText.tr("Password", "Password", "zh-CN", "en_US"), "密码");

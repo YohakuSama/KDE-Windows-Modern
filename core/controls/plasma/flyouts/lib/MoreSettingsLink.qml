@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../js/controlMetrics.js" as ControlMetrics
 
 Item {
     id: root
@@ -26,9 +27,10 @@ Item {
     Keys.onSpacePressed: root.clicked()
 
     Rectangle {
+        objectName: "wmMoreSettingsLinkBackground"
         anchors.fill: parent
         anchors.margins: 4
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         color: ColorType.rowFill(root.dark, false, ma.containsMouse || root.activeFocus, ma.containsPress)
         border.width: root.activeFocus ? 1 : 0
         border.color: Kirigami.Theme.textColor

@@ -3,12 +3,13 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "controlMetrics.js" as ControlMetrics
 
 // Explicit menu items must use this type: Menu.delegate only styles
 // dynamically generated items, not explicitly declared MenuItems.
 QQC2.MenuItem {
     id: control
-    implicitHeight: Math.max(32, contentItem.implicitHeight + 8)
+    implicitHeight: Math.max(ControlMetrics.menuItemMinimumHeight, contentItem.implicitHeight + 8)
     property bool actionAvailable: true
     visible: actionAvailable
     enabled: actionAvailable
@@ -42,7 +43,7 @@ QQC2.MenuItem {
         }
     }
     background: Rectangle {
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         color: control.down ? "#26FFFFFF" : control.highlighted || control.hovered ? "#20FFFFFF" : "transparent"
         border.width: control.activeFocus ? 1 : 0
         border.color: "#FFFFFF"

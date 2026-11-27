@@ -3,6 +3,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../components" as Components
+import "../js/controlMetrics.js" as ControlMetrics
 
 Item {
     id: root
@@ -31,7 +32,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
             Kirigami.Theme.textColor.b, mouseArea.containsPress ? 0.10
                 : mouseArea.containsMouse || root.activeFocus ? 0.06 : 0)

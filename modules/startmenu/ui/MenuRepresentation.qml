@@ -16,6 +16,7 @@ import QtQuick.Window
 import QtQuick.Controls
 import QtCore
 import Qt5Compat.GraphicalEffects
+import "code/controlMetrics.js" as ControlMetrics
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
@@ -575,7 +576,7 @@ Item {
                                         }
                                     }
                                     background: Rectangle {
-                                        radius: 4
+                                        radius: ControlMetrics.controlCornerRadius
                                         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                             Kirigami.Theme.textColor.b, viewSelector.hovered || viewSelector.activeFocus ? 0.06 : 0)
                                     }

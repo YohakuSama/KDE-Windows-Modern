@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 .pragma library
 
+.import "controlMetrics.js" as ControlMetrics
+
 // Windows 26300.9974 RequestCredentialUserControl.xbf: CredentialControlsWidth.
 // See docs/windows11-26h2-ui-parameters.json for the resource and template evidence.
 const passwordWidth = 296;
@@ -12,7 +14,7 @@ const fieldButtonRadius = 3;
 const submitButtonMinWidth = 28;
 const submitButtonMinHeight = 24;
 const submitButtonFontSize = 12;
-const menuRadius = 8;
+const menuRadius = ControlMetrics.overlayCornerRadius;
 // Host-specific heights remain distinct pending native template evidence.
 const passwordHeight = 30;
 

@@ -144,6 +144,13 @@
     "core/design/clockMetrics.js": [
       "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/clockMetrics.js"
     ],
+    "core/design/controlMetrics.js": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/controlMetrics.js",
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/controlMetrics.js",
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js",
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/controlMetrics.js",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/controlMetrics.js"
+    ],
     "core/design/lockMetrics.js": [
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockMetrics.js",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockMetrics.js"

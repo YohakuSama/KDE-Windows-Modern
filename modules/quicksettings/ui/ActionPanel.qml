@@ -414,7 +414,7 @@ ColumnLayout {
                 y: destination ? destination.y : 0
                 width: destination ? destination.width : 0
                 height: destination ? destination.buttonHeight : 0
-                radius: 4
+                radius: TrayMetrics.quickTileRadius(actionPanel.uiScale)
                 color: "transparent"
                 border.width: 2
                 border.color: Kirigami.Theme.highlightColor

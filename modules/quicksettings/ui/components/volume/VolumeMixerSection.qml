@@ -5,6 +5,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import "../../lib" as Lib
 import ".." as Components
 import "../../js/colorType.js" as ColorType
+import "../../js/controlMetrics.js" as ControlMetrics
 
 ColumnLayout {
     id: section
@@ -30,7 +31,7 @@ ColumnLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
-                radius: 4
+                radius: ControlMetrics.controlCornerRadius
                 color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
                     false, rowHover.hovered, false)
 

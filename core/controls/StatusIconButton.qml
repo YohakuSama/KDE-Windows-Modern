@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
+import "controlMetrics.js" as ControlMetrics
 
 PlasmaComponents3.ToolButton {
     id: button
@@ -26,7 +27,7 @@ PlasmaComponents3.ToolButton {
     flat: true
     focusPolicy: Qt.NoFocus
     background: Rectangle {
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         color: parent.down ? "#33FFFFFF" : parent.hovered ? "#20FFFFFF" : "transparent"
         border.width: parent.activeFocus ? 1 : 0
         border.color: "#FFFFFF"

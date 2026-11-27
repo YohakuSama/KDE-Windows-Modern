@@ -7,6 +7,7 @@ import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui"
 import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/Calendar.js" as Calendar
+import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: root
@@ -57,6 +58,12 @@ Item {
                 }
             }
             return true;
+        }
+
+        function test_headerButtonUsesSharedControlRadius() {
+            const background = findAll(view, it => it.objectName === "wmCalendarHeaderButtonBackground")[0];
+            verify(background);
+            compare(background.radius, ControlMetrics.controlCornerRadius);
         }
 
         // The only bold text in the calendar.

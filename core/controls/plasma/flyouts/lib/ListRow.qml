@@ -4,6 +4,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
 import "../components" as Components
+import "../js/controlMetrics.js" as ControlMetrics
 
 Item {
     id: row
@@ -33,7 +34,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: row.inset
         anchors.rightMargin: row.inset
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         color: ColorType.rowFill(row.dark, row.selected, rowMouse.containsMouse, rowMouse.containsPress)
         border.width: row.activeFocus ? 1 : 0
         border.color: row.accent

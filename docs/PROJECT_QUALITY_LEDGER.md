@@ -72,7 +72,7 @@
 | A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何已有共享方案，Qt 负责输出缩放 | 审查其余尺寸、锚点、边距、RTL、多屏和窄屏限制；禁止重复应用 DPI |
 | A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量 | 落实字号、字重、基线、行高、截断、语言回退与辅助文字缩放；尊重系统字体 |
 | A13 | I | 单一主题、深浅色生成架构 | Plasma、Aurorae、Kvantum 和配色采用共享源/生成路径，保留原有安装接口 | 该范围仅为源码统一；色彩语义归 D16/D17，具体控件差距归各自任务 |
-| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 569 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行、面板内容边距、登录/锁屏共用时钟和头像参数、数字时钟飞出面板几何、开始菜单弹出菜单几何、Snap Layouts 两种预览的共享参数，以及 Alt+Tab 小圆角参数已统一；安装包不依赖源码链接 | 继续统一其余同语义参数，继续核对壁纸及未映射的重复语义实现，核对新克隆/安装/打包消费者；参数真实性归 A02/A08 |
+| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 569 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行、面板内容边距、登录/锁屏共用时钟和头像参数、数字时钟飞出面板几何、开始菜单弹出菜单几何、Snap Layouts 两种预览共享参数、Alt+Tab 小圆角参数，以及跨 Digital Clock、开始菜单、快捷设置和锁屏的 WinUI 通用圆角与菜单最小行高已统一；安装包不依赖源码链接 | 继续统一其余同语义参数，继续核对壁纸及未映射的重复语义实现，核对新克隆/安装/打包消费者；参数真实性归 A02/A08 |
 
 <a name="block-02"></a>
 
@@ -434,6 +434,12 @@ Digital Clock 的日历/通知卡片共用圆角和边框宽度，日历导航�
 Snap Layouts 的拖顶栏与标题栏预览共用布局表，但原先各自维护相同的 10px 图间距和 1px 描边。现将基础图间距、栏/标题栏尺寸基准、各自的单元格内间距与圆角、共同描边宽度及标题栏预览宽高比收敛到既有 `layouts.js`。保留两种预览不同的圆角和单元格间距、栏的自适应缩放、标题栏的固定间距与屏幕约束。测试补充参数基线断言，未运行。
 
 Alt+Tab 卡片的关闭按钮和预览遮罩原先分别重复计算相同的 4×UI scale 圆角。现共用 `smallCornerRadius`，卡片大圆角保持独立。测试增加关闭按钮圆角与共享参数的一致性断言，未运行。
+
+26H2 的 WinUI 通用资源确认 `ControlCornerRadius=4`、`OverlayCornerRadius=8` 和 `MenuFlyoutThemeMinHeight=32`。现由 `core/design/controlMetrics.js` 唯一维护，并通过 source-map 输出到 Start、Quick Settings、Login 和 LockScreen 包。开始菜单的行圆角/弹出面板圆角、锁屏电源菜单圆角、快捷设置的 ListRow、MoreSettingsLink、FooterButton、FluentSwitch，以及锁屏 StatusIconButton 均读取共享圆角来源；FluentPowerMenuItem 使用共享的 32px 最小行高。保持各控件的边距、尺寸、焦点边框和状态逻辑独立。测试补充跨包参数一致性断言，未运行。
+
+Digital Clock 的通知/日历飞出卡片圆角与按钮圆角原先保存在 `clockMetrics.js`。现分别引用同一 OverlayCornerRadius 和 ControlCornerRadius，`controlMetrics.js` 同时映射到 Digital Clock 的 code 目录。卡片边框宽度与按钮尺寸仍由 clockMetrics 单独管理。 CalendarView 的月份标题按钮也读取 ControlCornerRadius，日历日期圆形标记与紧凑任务栏悬停面保持各自几何。
+
+Clipboard 页签、Start 字母索引磁贴、系统位置快捷按钮和 SearchHome 应用磁贴也使用通用 4px 控件圆角，现改为读取同一参数。Clipboard 历史卡片 6px、SearchHome 非磁贴入口 5px 及圆形快捷搜索 chip 保留各自几何，不合并。AllAppsPage 分类标签、AlphabeticalAppsView 分组标题和 Start 视图切换按钮也接入 ControlCornerRadius；Kirigami 动态 smallSpacing 圆角保持独立。Quick Settings 的 NetworkPage/BluetoothPage 设备行和 MediaCard 传输按钮也使用该参数；DeviceRow 卡片及媒体封面保留独立圆角。Quick Settings 磁贴圆角的缩放基数也改为读取 ControlCornerRadius，拖放焦点框复用同一缩放函数；VolumeMixerSection 设备行接入共享圆角。
 
 继续审查 Clipboard、Run、ShowDesktop 与其他渲染器：Clipboard 历史项圆角 6px、通知卡片圆角 8px 属于不同表面，不合并；RunDialog 保留独立窗口尺寸；ShowDesktop 的面板边距已由 `PanelMargins.qml` 单独维护。Aurorae 窗口装饰、Plasma 九宫格弹窗与 Kvantum 控件各有独立渲染坐标和资源生成器，数值相同不构成相同角色，本轮不跨渲染器强行合并。
 

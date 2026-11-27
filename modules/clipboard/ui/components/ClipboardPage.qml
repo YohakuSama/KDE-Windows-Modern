@@ -8,6 +8,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../lib" as Lib
 import "../js/colorType.js" as ColorType
+import "../js/controlMetrics.js" as ControlMetrics
 
 ColumnLayout {
     id: page
@@ -102,7 +103,7 @@ ColumnLayout {
                     }
                 }
                 background: Rectangle {
-                    radius: 4
+                    radius: ControlMetrics.controlCornerRadius
                     readonly property color fg: Kirigami.Theme.textColor
                     color: tab.hovered || tab.activeFocus ? Qt.rgba(fg.r, fg.g, fg.b, 0.08) : "transparent"
                     Rectangle {

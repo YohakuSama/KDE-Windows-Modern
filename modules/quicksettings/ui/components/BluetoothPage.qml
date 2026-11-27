@@ -7,6 +7,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
+import "../js/controlMetrics.js" as ControlMetrics
 import "../js/colorType.js" as ColorType
 
 Lib.DetailPage {
@@ -89,7 +90,7 @@ Lib.DetailPage {
             anchors.fill: parent
             anchors.leftMargin: 8
             anchors.rightMargin: 8
-            radius: 4
+            radius: ControlMetrics.controlCornerRadius
             color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
                 deviceRow.model.Connected, deviceHover.hovered, false)
             HoverHandler { id: deviceHover }

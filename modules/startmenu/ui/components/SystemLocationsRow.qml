@@ -5,6 +5,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 import "../code/footerLocations.js" as Locations
+import "../code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: placesRow
@@ -79,7 +80,7 @@ Item {
                         }
                     }
                     background: Rectangle {
-                        radius: 4
+                        radius: ControlMetrics.controlCornerRadius
                         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                        Kirigami.Theme.textColor.b, shortcut.down ? 0.12
                                            : shortcut.hovered || shortcut.activeFocus ? 0.07 : 0)

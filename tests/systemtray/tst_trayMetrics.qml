@@ -2,6 +2,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/trayMetrics.js" as Metrics
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js" as ControlMetrics
 
 TestCase {
     name: "WindowsTrayMetrics"
@@ -117,6 +118,11 @@ TestCase {
         const vertical = Metrics.groupHoverRect({x: 3, y: 0, width: 42, height: 72}, 48, true);
         compare(vertical.width, 40);
         compare(vertical.x + vertical.width / 2, 24);
+    }
+    function test_quickTileRadiusUsesControlCornerRadius() {
+        for (const scale of [0.75, 1, 1.25, 1.5, 2])
+            compare(Metrics.quickTileRadius(scale),
+                Math.max(3, Math.round(ControlMetrics.controlCornerRadius * scale)));
     }
     function test_sharedFlyoutGeometry() {
         for (const scale of [0.75, 1, 1.25, 1.5, 2]) {

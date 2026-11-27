@@ -3,6 +3,7 @@ import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components" as Start
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/startMenuMetrics.js" as Metrics
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: host
@@ -45,6 +46,9 @@ Item {
             tryVerify(() => popup.contentItem.itemAtIndex(0) !== null);
             const row = popup.contentItem.itemAtIndex(0);
             compare(row.height, menu.rowHeight);
+            compare(Metrics.menuRowHeight, 32);
+            compare(Metrics.menuRowRadius, ControlMetrics.controlCornerRadius);
+            compare(Metrics.menuRadius, ControlMetrics.overlayCornerRadius);
             verify(menu.rowHeight >= Metrics.menuRowHeight);
             compare(row.background.radius, Metrics.menuRowRadius);
             const glyph = findChild(row, "wmStartActionGlyph");

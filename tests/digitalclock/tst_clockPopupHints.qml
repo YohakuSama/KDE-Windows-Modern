@@ -7,6 +7,7 @@ import QtTest
 import org.kde.plasma.components as PlasmaComponents
 import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui"
 import "../../core/design/clockMetrics.js" as ClockMetrics
+import "../../core/design/controlMetrics.js" as ControlMetrics
 
 Item {
     id: root
@@ -82,7 +83,8 @@ Item {
             compare(ClockMetrics.flyoutCardRadius, 8);
             compare(ClockMetrics.flyoutCardBorderWidth, 1);
             compare(ClockMetrics.flyoutButtonExtent, 28);
-            compare(ClockMetrics.flyoutButtonRadius, 4);
+            compare(ClockMetrics.flyoutButtonRadius, ControlMetrics.controlCornerRadius);
+            compare(ClockMetrics.flyoutCardRadius, ControlMetrics.overlayCornerRadius);
             const panel = findChild(popup, "wmNotificationPanel");
             verify(panel !== null);
             compare(panel.radius, ClockMetrics.flyoutCardRadius);
