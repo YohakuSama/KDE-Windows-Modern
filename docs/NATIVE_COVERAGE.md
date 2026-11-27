@@ -618,44 +618,12 @@ The NixOS test runtime uses a narrowly scoped patch against Qt 6 Kvantum V1.1.9 
 
 ## Dynamic accent source-completion ledger
 
-The target remains Windows 11 26H2 build 26300.9974. This ledger
-replaces informal near-completion estimates. Each row has a distinct
-acceptance scope. A source-complete row means the stated scope has
-an implemented path, not that arbitrary inputs or live KDE behavior
-have passed acceptance. A partial row requires additional implementation,
-reference comparison or both. An open row has a known missing path.
-Diagnostic tools, fixture collection and documentation do not count as
-completed runtime functionality. Do not convert the unweighted row
-count into an overall percentage.
-
-| Acceptance scope | Source status | Remaining evidence or work |
-| --- | --- | --- |
-| Manual preset dispatcher and 48 stored ramps | Partial | Two preset ramps independently measured; compare the remaining 46. |
-| Custom saturated CIELAB and near-gray HSL branches | Partial | Both branches exist; original-input boundary and rounding checks remain. |
-| Weighted bitmap statistics and pooled image reduction | Implemented | Recorded buffer cases match; arbitrary real desktop sources require acceptance. |
-| Automatic candidate normalization and fallback | Partial | Native normalization and seven-role generation are implemented; exact saturation/lightness boundaries remain open. |
-| Colorization strength (alpha) calculation | Implemented | Measured candidate formula exists, distinct from surface opacity; broader image acceptance remains. |
-| Opaque BMP/JPEG/PNG/WebP decoding and orientation | Partial | Supported decode path exists; WIC parity across formats and pixel variants is not established. |
-| Transparent PNG processing | Partial | Shared RGB/GrayAlpha path exists; tagged GrayAlpha and additional pixel modes need reference comparison. |
-| Transparent non-PNG and unreviewed pixel formats | Open | No verified decoder path for these combinations. Establish native handling before enabling. |
-| Reviewed RGB matrix/TRC ICC transforms | Implemented | Independent tables and full-domain evidence for measured controls; broader profile coverage remains outside this scope. |
-| Reviewed D50 Gray8 monitor ICC transforms | Implemented | Independent grid and two measured gamma ramps; extended sampled/v4 curves require reference comparison. |
-| Forward RGB LUT ICC transforms | Open | Input/output curves and measured execution exist; independently generated CLUT and general supported profile dispatch remain open. |
-| Remaining ICC families and profile combinations | Open | Determine the Windows decoder's supported scope; do not silently accept an approximate transform. |
-| Live wallpaper discovery, events and cache invalidation | Implemented | Native Plasma still/slideshow/scheduled-image adapter; multi-screen, scale, activity and file-replacement acceptance pending. |
-| Accent selection ownership and persisted original manual input | Implemented | Native selection precedence, pending automatic state, transactional writes and manual recomputation; legacy states without original input remain unchanged. |
-| Full Windows-style accent selection UI and interaction | Partial | Command-based selection exists; equivalent graphical controls and native interaction coverage not established. |
-| Shared dark/light palette publication, primary fill and link roles | Implemented | Both generated schemes and Kvantum use mode-specific shades; desktop acceptance pending. |
-| Independent selection background, pressed/hover and on-accent roles | Partial | Host selection role currently also supplies the primary fill; audit each renderer rather than changing every KColorScheme Highlight consumer. |
-| Live application refresh | Partial | Version-matched Qt 6 Kvantum path exists; stock/other renderer refresh and actual process behavior unverified. |
-| Full install and mode-switch integration | Implemented | Initialization and synchronization paths exist; full installation, upgrades and live mode switches require owner acceptance. |
-
-At this review there are 19 source acceptance scopes: eight implemented,
-eight partial and three open. No live acceptance is claimed. The
-remaining reference-dependent work should be batched (manual palette,
-format/alpha handling and ICC scope), while renderer-role and UI work
-can proceed separately. Do not spend another development batch only
-adding diagnostics if an independent runtime task is ready.
+Current source states and remaining work for the 19 accent scopes are
+maintained in [the project quality ledger](PROJECT_QUALITY_LEDGER.md#block-04)
+as D01–D19. The initial statuses and bounded reference scope are retained
+there. Keep the technical evidence and investigation history here; do
+not maintain a parallel progress table or claim that measured controls
+establish general ICC/renderer fidelity.
 
 Manual selections now recompute from the persisted original RGB on
 synchronization and mode reapply. The previous saved palette remains the
@@ -666,23 +634,16 @@ corrections reach existing installations without requiring reselection.
 ## Phase A: shared visual foundation (Windows 11 26H2)
 
 Reference build: 26300.9974. The layout source manifest and parameter
-ledger distinguish recovered native values from host adaptations. A valid
-XBF header does not establish a decoded layout or a native control mapping.
+ledger distinguish recovered native values from host adaptations.
+A valid XBF header does not establish a decoded layout or a native
+control mapping.
 
-| Scope | Source status | Remaining work |
-| --- | --- | --- |
-| A01 PRI/XBF mapping | Partial | Recover remaining layout dictionaries and map properties to their actual consumers. The recorded 19 original files are private; the repository stores selected decoded evidence, not the full archive. |
-| A02 Layout parameters | Partial | Apply all verified values and recover missing geometry. Credential width now uses the recorded 296 logical-pixel value in both hosts; their field heights remain host-specific. |
-| A03 Logical pixels/DPI | Partial | Shared popup geometry exists; audit remaining layout constraints and all screen configurations. |
-| A04 Typography | Partial | Start search and menu rows use actual system font metrics; baseline, line-height, fallback fonts and other surfaces need reference mapping. |
-| A05 Native icons | Partial | Private import supports selected shell resources; confirm exact build, role and state coverage, including the hibernate candidate. |
-| A06 Icon fallback | Partial | Lock credential actions now use mapped glyphs or action text rather than painting a toolkit fallback. Audit dynamic, implicit and same-name resolution elsewhere. |
-| A07 System and application coverage | Partial | Finish native application, settings and plugin inventory; retain third-party brand identities. |
-| A08 Icon optics and interaction | Partial | Establish original visible bounds, state variants and hit-area geometry for all controls. |
-| A09 Cursors | Open | The current Bibata Modern Ice theme is an approximation. Original 26H2 cursor frames, hotspots and timing are not established. |
-| A10 Basic controls | Partial | Shared control styling exists; compare each control's geometry and state against native evidence. |
-| A11 Input, scrolling and lists | Partial | Start search adapts to system font metrics and RTL. Start, tray and clock scrollbar copies are identical again. Audit list, tab and dropdown geometry and remaining input states. |
-| A12 Menus and popups | Partial | Start context, power and view-mode menus use common row extent and radius; measure other menu and popup roles against original parameters. |
+Current task states A01–A12 are maintained in the project quality ledger:
+[layout and DPI](PROJECT_QUALITY_LEDGER.md#block-01),
+[icons and cursors](PROJECT_QUALITY_LEDGER.md#block-02), and
+[shared controls](PROJECT_QUALITY_LEDGER.md#block-03).
+The following sections retain the original implementation evidence and
+limitations rather than a separate progress table.
 
 The menu font sizing, minimum row extent, RTL padding and scrollbar
 synchronization are host integration corrections, not newly decoded Windows
@@ -692,7 +653,7 @@ are unavailable; that fallback is not counted as native icon coverage.
 Package-local copies are necessary for separately installed applets and
 lock/login packages. Shared-copy equality is checked by the existing
 verification script; appearance and behavior still require the owner's
-manual acceptance. A01–A12 are not closed by this ledger.
+manual acceptance. Refer to the project quality ledger for the current task states.
 
 The existing icon coverage report compares the private manifest's recorded
 input hashes with the seven hashes in the 26300.9974 owner audit, and

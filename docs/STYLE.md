@@ -1,5 +1,11 @@
 # Windows Modern — Style Specification
 
+This document records implementation details and historical design
+observations. The [project quality ledger](PROJECT_QUALITY_LEDGER.md)
+is the current task and acceptance inventory. Use the current source
+and the reviewed parameter evidence when older notes describe a
+superseded implementation.
+
 This document records the visual style, color palette and layout of the
 theme. For current Windows 11 requirements, use
 [WINDOWS11_FIDELITY.md](WINDOWS11_FIDELITY.md) and

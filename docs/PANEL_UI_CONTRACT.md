@@ -3,6 +3,9 @@
 Compare the owner-provided Windows 11 build at the same display scale,
 language, light/dark variant and settings. Use Qt logical coordinates.
 Current implementation values are provisional until verified on the desktop.
+Use the [project quality ledger](PROJECT_QUALITY_LEDGER.md) for task
+status and unresolved requirements. This contract records implementation
+geometry and interaction constraints, not a second progress inventory.
 
 ## Taskbar
 
@@ -21,9 +24,11 @@ Current implementation values are provisional until verified on the desktop.
 - One grouped hover surface per contiguous run of network, volume and
   battery cells. Keep real device availability and overflow semantics.
 - Battery percentage defaults off and is independently configurable.
-  Real backend level, charge and saver state drive the current compatibility
-  drawing. The exact newer Microsoft artwork has not been identified;
-  native visual parity remains open. Do not claim the drawing is original.
+  Real backend level, charge and saver state drive the state renderer.
+  It prefers the privately imported 26H2 SysBatt outline/fill assets and
+  retains the reviewed legacy Windows glyph path when unavailable.
+  The owner audit records the 38 imported outputs; installed coverage
+  and actual optical/state parity remain open.
 - Preserve native tooltip ownership, window preview lifecycle, compact
   close affordance and real app actions.
 
@@ -40,7 +45,9 @@ Current implementation values are provisional until verified on the desktop.
   category/list/grid views, alphabetical navigation, user preferences,
   app previews and the footer. No dummy Windows services or promotions.
 - Follow the system font and locale. Use reviewed original icon roles.
-  The newer colored Search artwork remains a fidelity blocker.
+  The owner audit records all four original Search state outputs and
+  the source can select the private PNGs. Verify local installation,
+  state selection and optical bounds; the legacy mask is not 26H2 parity.
 
 ## Quick Settings
 

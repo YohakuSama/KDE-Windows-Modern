@@ -39,6 +39,14 @@ interaction acceptance. Actual live comparisons are required for
 visual parity. Missing original artwork and unverified desktop behavior
 remain open tasks.
 
+The [project quality ledger](PROJECT_QUALITY_LEDGER.md) is the single
+maintained task/status inventory. Read it before each batch and update
+the affected stable IDs, evidence, scoped implementation counts and
+remaining acceptance in the same testing commit. Keep underlying
+reference measurements and implementation contracts in their existing
+documents. Do not count diagnostic-only work or an unreviewed scope as
+implemented, and do not infer visual parity from the task count.
+
 ## Repository layout
 
 | Path | What lives there |

@@ -1,6 +1,10 @@
 # Native Windows 11 visual fidelity
 
 This fork replaces the upstream Windows 10/11 hybrid target. KDE and KWin remain the platform; do not fork backends or introduce a second renderer just to change appearance. Pixel-level parity is an acceptance target, not a claim about current code.
+Use the [project quality ledger](PROJECT_QUALITY_LEDGER.md) for current
+source and desktop acceptance status. This document preserves technical
+requirements and historical observations; older research notes do not
+override later implementation evidence in the ledger.
 
 ## Reference
 
@@ -54,7 +58,7 @@ remain outside Git. The chosen target is Windows 11 26H2 General Availability (O
 | Icons | Freedesktop name and alias resolution, symbolic/color states, DPI, dark/light |
 | Installer | Upgrade without layout reset, reversible changes, system fonts unchanged |
 
-Development and live acceptance are separate gates. Finish the scoped code/design changes, perform relevant source checks and use the existing CI before the combined integration merge. The owner then tests at 100%, 125%, 150%, 200%; light/dark, zh-CN and en-US, different wallpaper and system fonts, transparency on/off, and multiple monitors. Pending owner tests alone do not reduce code completion. Keep changes reversible, and do not label the integration a verified stable release or pixel-identical before live acceptance.
+Development and live acceptance are separate gates. Finish the scoped code/design changes, perform relevant static checks and submit the batch to testing. The owner tests at 100%, 125%, 150%, 200%; light/dark, zh-CN and en-US, different wallpaper and system fonts, transparency on/off, and multiple monitors. CI, pull requests and merging into main require explicit maintainer approval after manual acceptance. Pending owner tests alone do not reduce code completion. Keep changes reversible, and do not label the integration a verified stable release or pixel-identical before live acceptance.
 
 The [native resource importer](NATIVE_ASSETS.md) takes an explicit owner-provided archive. It generates the local canonical assets and a SHA-256 source manifest; the installer overlays only the mapped roles on the existing theme. Do not commit generated files or substitute unrelated Windows glyphs for KDE-only actions.
 
@@ -98,11 +102,11 @@ Implementation references: [KDE Bluedevil](https://github.com/KDE/bluedevil/tree
 
 ### Modern battery and grouped hover follow-up
 
-The QML battery uses imported Windows battery-state glyphs. Replacing this legacy native family with reviewed original 26H2 artwork remains an open requirement. Compare the actual states and optional percentage against the matching Windows reference. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The legacy glyphs come from Windows; the exact newer artwork is unresolved.
+The QML battery uses imported Windows battery-state glyphs. The owner audit subsequently recorded the original 26H2 SysBatt outputs and the current renderer prefers the privately imported artwork. The legacy family remains only a compatibility path; verify the installed original and actual role/state coverage. Compare the actual states and optional percentage against the matching Windows reference. Verify charging, charge limits, unplugged power saver, critical and unavailable battery states. The shared highlight must have no seams between adjacent network, audio and battery cells, including when percentage is enabled. Test AM/PM across midnight/noon, with the numeric date unchanged. The legacy glyphs come from Windows but are not evidence of the newer 26H2 state artwork. See NATIVE_COVERAGE.md for the later owner audit and import boundary.
 
 ### Search home, clock and media source (owner reference, 2026-11-25)
 
-The Search home reuses local Kicker usage models, existing Milou results and native applet actions. Compare both entrypoints, empty-query state, cleared filters, IME/keyboard input, actual recent/popular app launches and settings queries in the running desktop. The reference's promotional items and rewards controls are intentionally omitted. The modern colored Start search magnifier has not been verified in an owner-provided Windows resource set; the explicit local search glyph and scheme accent are a compatibility presentation, not a claim of exact original artwork. Check the region-default clock with 12- and 24-hour locales and real timezone changes; the migration of legacy forced formats is one-time. Check Firefox Nightly and Edge live MPRIS sources, controls and icon availability. No pixel similarity score or live acceptance is asserted without a same-scale screenshot comparison.
+The Search home reuses local Kicker usage models, existing Milou results and native applet actions. Compare both entrypoints, empty-query state, cleared filters, IME/keyboard input, actual recent/popular app launches and settings queries in the running desktop. The reference's promotional items and rewards controls are intentionally omitted. The later owner audit records all four original Search state outputs. The current source selects the private state PNGs when available; the mapped legacy mask is still a compatibility presentation. Installed role/state and optical parity remain open. Check the region-default clock with 12- and 24-hour locales and real timezone changes; the migration of legacy forced formats is one-time. Check Firefox Nightly and Edge live MPRIS sources, controls and icon availability. No pixel similarity score or live acceptance is asserted without a same-scale screenshot comparison.
 
 ## Opt-in nested Wayland capture
 

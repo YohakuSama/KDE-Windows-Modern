@@ -1,5 +1,11 @@
 # AGENTS.md
 
+- Read [the project quality ledger](docs/PROJECT_QUALITY_LEDGER.md) first.
+  Use its stable task IDs, dependency order and scoped source/desktop
+  statuses. Update affected rows, evidence, totals and outstanding
+  acceptance in the same batched development commit; do not estimate
+  fidelity from commit count or treat partial rows as complete. Keep
+  research records in the existing technical documents.
 - Read [the development guide](docs/CONTRIBUTING.md) for product scope,
   architecture, safety requirements and contribution conventions.
 - Read [the current UI contract](docs/PANEL_UI_CONTRACT.md) and

@@ -172,8 +172,13 @@ Restart Plasma after importing to refresh the resource paths.
 
 The standard owner bundle retains the import code, not this new local
 artwork, until verified resources are available in the private runtime
-library. The importer and rendering are not evidence that the original
-26H2 binaries have already been obtained.
+library. The importer and rendering alone do not establish original binary
+provenance. The later owner audit in
+[NATIVE_COVERAGE.md](https://github.com/YohakuSama/KDE-Windows-Modern/blob/testing/docs/NATIVE_COVERAGE.md#owner-audit-26h2-build-263009974-and-plasma-683)
+records the 26300.9974 local extraction and 45 generated outputs;
+installation and actual rendering remain separate checks. See the
+[project quality ledger](https://github.com/YohakuSama/KDE-Windows-Modern/blob/testing/docs/PROJECT_QUALITY_LEDGER.md#block-02) for current
+coverage tasks.
 
 ## Current coverage boundaries
 
@@ -195,7 +200,9 @@ library. The importer and rendering are not evidence that the original
   portrait, then the Fluent fallback. Hidden Start account identity
   always uses the generic fallback. A separate login service account must
   have access to its own authorized local resource directory; a desktop
-  user's private assets are not copied to a system location.
+  user's private assets are not automatically visible in that account.
+  The explicitly invoked optional system greeter transfer is described
+  below.
 - The existing login battery control and desktop tray share the original
   SysBatt renderer, level selection, 5:4 canvas and private lookup.
   The existing lock-screen control visibility policy is unchanged.

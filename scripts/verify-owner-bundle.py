@@ -26,6 +26,7 @@ DEV_PATHS = (
     "docs/RELEASE.md", "docs/STYLE.md",
     "docs/SYSTEMTRAY_ARCHITECTURE.md",
     "docs/WINDOWS11_FIDELITY.md", "docs/NATIVE_COVERAGE.md",
+    "docs/PROJECT_QUALITY_LEDGER.md",
     "docs/windows11-resource-index.json",
     "scripts/ci-build.sh", "scripts/check-qml-syntax.sh",
     "scripts/capture-screenshots.sh", "scripts/commit-icons.sh",
