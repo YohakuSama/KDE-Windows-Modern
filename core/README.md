@@ -5,7 +5,7 @@ declares the generated native outputs, not a second implementation.
 
 | Directory | Ownership |
 | --- | --- |
-| design/ | Shared popup, taskbar icon canvas, panel and lock-screen geometry |
+| design/ | Shared popup, taskbar icon canvas, panel, clock flyout and lock-screen geometry/metrics |
 | palette/ | Color classification, fixed roles, ICC/automatic accent and scheme template |
 | materials/ | Window material and popup frame generation |
 | transactions/ | Shared user-owned file validation, atomic replacement and rollback |
@@ -20,7 +20,7 @@ script paths. Source-only aliases preserve those paths without duplicate
 implementations. The file transaction module is copied into the installed
 appearance package and does not own the caller's writer lock or renderer
 plan. Do not create separate light/dark functionality.
-The Digital Clock package consumes shared `FlyoutButton.qml` and `Win11Palette.qml` from this directory; Calendar and Notifications do not maintain separate copies. Their native package paths remain unchanged through `source-map.json`.
+The Digital Clock package consumes shared `FlyoutButton.qml` and `Win11Palette.qml` from this directory; Calendar and Notifications do not maintain separate copies. Their native package paths remain unchanged through `source-map.json`. Its card and button geometry is centralized in `design/clockMetrics.js`; colors remain in `Win11Palette.qml`.
 The greeter and lock-screen packages also consume shared `AccountAvatar.qml` and `VirtualKeyboardButton.qml`; host-specific presentation is configured without maintaining feature-local implementations.
 Quick Settings uses `design/panel/trayMetrics.js` for the shared normal/split tile geometry, caption line budget, slider row and glyph dimensions, and the panel/footer/media horizontal inset. Login and LockScreen share the avatar maximum, clock metrics and credential dim opacity through `design/lockMetrics.js`, while retaining the host-specific viewport clamps and field dimensions.
 Equal numeric values alone do not establish equal semantic roles.

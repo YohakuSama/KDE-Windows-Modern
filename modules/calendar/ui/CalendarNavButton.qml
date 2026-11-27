@@ -7,6 +7,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "code/clockMetrics.js" as ClockMetrics
 
 import org.kde.kirigami as Kirigami
 
@@ -20,8 +21,8 @@ MouseArea {
     property color hoverColor: "#3F3F3F"
     property color pressedColor: "#4A4A4A"
 
-    implicitWidth: 28
-    implicitHeight: 28
+    implicitWidth: ClockMetrics.flyoutButtonExtent
+    implicitHeight: ClockMetrics.flyoutButtonExtent
     width: implicitWidth
     height: implicitHeight
 
@@ -36,7 +37,7 @@ MouseArea {
 
     Rectangle {
         anchors.fill: parent
-        radius: 4
+        radius: ClockMetrics.flyoutButtonRadius
         color: root.containsPress ? root.pressedColor
                                   : (root.containsMouse || root.activeFocus ? root.hoverColor : "transparent")
 

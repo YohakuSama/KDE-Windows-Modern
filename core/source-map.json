@@ -141,6 +141,9 @@
     "core/controls/plasma/flyouts/lib/Slider.qml": [
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/Slider.qml"
     ],
+    "core/design/clockMetrics.js": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/clockMetrics.js"
+    ],
     "core/design/lockMetrics.js": [
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockMetrics.js",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockMetrics.js"

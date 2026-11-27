@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtCore
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
+import "code/clockMetrics.js" as ClockMetrics
 
 PlasmaComponents.Button {
     id: control
@@ -32,7 +33,7 @@ PlasmaComponents.Button {
     }
     icon.name: ""
     focusPolicy: Qt.TabFocus
-    implicitHeight: 28
+    implicitHeight: ClockMetrics.flyoutButtonExtent
     padding: 6
     leftPadding: 8
     rightPadding: 8
@@ -100,7 +101,7 @@ PlasmaComponents.Button {
     }
 
     background: Rectangle {
-        radius: 4
+        radius: ClockMetrics.flyoutButtonRadius
         color: control.selected ? colors.accent
             : control.down ? colors.pressed
             : control.hovered || control.keyboardFocus ? colors.hover

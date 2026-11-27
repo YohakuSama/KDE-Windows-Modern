@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import QtTest
 import org.kde.plasma.components as PlasmaComponents
 import "../../plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui"
+import "../../core/design/clockMetrics.js" as ClockMetrics
 
 Item {
     id: root
@@ -77,6 +78,22 @@ Item {
     TestCase {
         name: "ClockExpandedRepresentation"
         when: windowShown
+        function test_sharedClockFlyoutMetrics() {
+            compare(ClockMetrics.flyoutCardRadius, 8);
+            compare(ClockMetrics.flyoutCardBorderWidth, 1);
+            compare(ClockMetrics.flyoutButtonExtent, 28);
+            compare(ClockMetrics.flyoutButtonRadius, 4);
+            const panel = findChild(popup, "wmNotificationPanel");
+            verify(panel !== null);
+            compare(panel.radius, ClockMetrics.flyoutCardRadius);
+            compare(panel.border.width, ClockMetrics.flyoutCardBorderWidth);
+            const calendarPanel = findChild(popup, "wmCalendarPanel");
+            verify(calendarPanel !== null);
+            compare(calendarPanel.radius, ClockMetrics.flyoutCardRadius);
+            compare(calendarPanel.border.width, ClockMetrics.flyoutCardBorderWidth);
+            compare(missingGlyphAction.implicitHeight, ClockMetrics.flyoutButtonExtent);
+            compare(missingGlyphAction.background.radius, ClockMetrics.flyoutButtonRadius);
+        }
         function test_missingNativeActionRemainsVisible() {
             compare(missingGlyphAction.nativeIconSource, "");
             verify(missingGlyphAction.missingIcon);

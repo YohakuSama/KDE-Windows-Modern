@@ -18,6 +18,7 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
 
 import "code/dateformat.js" as DateFormat
+import "code/clockMetrics.js" as ClockMetrics
 
 FocusScope {
     id: expandedRoot
@@ -175,14 +176,14 @@ FocusScope {
             Layout.preferredHeight: expandedRoot.notificationPanelHeight
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
-            radius: 8
+            radius: ClockMetrics.flyoutCardRadius
             color: expandedRoot.splitAcrylic ? palette.acrylicPanel : palette.detachedPanel
             onXChanged: expandedRoot.scheduleSplitBlur()
             onYChanged: expandedRoot.scheduleSplitBlur()
             onWidthChanged: expandedRoot.scheduleSplitBlur()
             onHeightChanged: expandedRoot.scheduleSplitBlur()
             onRadiusChanged: expandedRoot.scheduleSplitBlur()
-            border.width: 1
+            border.width: ClockMetrics.flyoutCardBorderWidth
             border.color: palette.surfaceBorder
 
             NotificationHistory {
@@ -206,14 +207,14 @@ FocusScope {
             Layout.preferredHeight: expandedRoot.calendarPanelHeight
             Layout.minimumHeight: Layout.preferredHeight
             Layout.maximumHeight: Layout.preferredHeight
-            radius: 8
+            radius: ClockMetrics.flyoutCardRadius
             color: expandedRoot.splitAcrylic ? palette.acrylicPanel : palette.detachedPanel
             onXChanged: expandedRoot.scheduleSplitBlur()
             onYChanged: expandedRoot.scheduleSplitBlur()
             onWidthChanged: expandedRoot.scheduleSplitBlur()
             onHeightChanged: expandedRoot.scheduleSplitBlur()
             onRadiusChanged: expandedRoot.scheduleSplitBlur()
-            border.width: 1
+            border.width: ClockMetrics.flyoutCardBorderWidth
             border.color: palette.surfaceBorder
 
             Rectangle {
