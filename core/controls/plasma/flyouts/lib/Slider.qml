@@ -8,6 +8,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
 import "../js/trayMetrics.js" as TrayMetrics
+import "../js/controlMetrics.js" as ControlMetrics
 import "../components" as Components
 
 Item {
@@ -142,7 +143,7 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                radius: 4
+                radius: ControlMetrics.controlCornerRadius
                 color: "transparent"
                 border.width: parent.activeFocus && root.iconClickable ? 1 : 0
                 border.color: root.accent
@@ -291,7 +292,7 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                radius: 4
+                radius: ControlMetrics.controlCornerRadius
                 color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                     Kirigami.Theme.textColor.b, detailsMouse.containsPress ? 0.10
                         : detailsMouse.containsMouse || detailsButton.activeFocus ? 0.06 : 0)

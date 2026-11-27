@@ -22,6 +22,7 @@ import "code/dateformat.js" as DateFormat
 import "code/popupGeometry.js" as PopupGeometry
 import "code/notificationPresentation.js" as NotificationPresentation
 import "code/colorType.js" as ColorType
+import "code/controlMetrics.js" as ControlMetrics
 
 MouseArea {
     id: main
@@ -299,7 +300,7 @@ MouseArea {
     Rectangle {
         anchors.fill: parent
         anchors.margins: 2
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         visible: main.containsMouse || main.activeFocus || main.plasmoidItem.flyoutOpen
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                        Kirigami.Theme.textColor.b, main.containsPress ? 0.12 : 0.06)

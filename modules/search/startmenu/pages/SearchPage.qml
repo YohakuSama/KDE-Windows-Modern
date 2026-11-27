@@ -18,6 +18,7 @@ import org.kde.milou as Milou
 import "../components"
 import "../code/tools.js" as Tools
 import "../code/theme.js" as Theme
+import "../code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: searchPage
@@ -176,7 +177,7 @@ Item {
 
                 readonly property bool active: resultsView.singleRunner === modelData.runner
 
-                radius: 4
+                radius: ControlMetrics.controlCornerRadius
                 implicitHeight: Math.max(28, pillLabel.implicitHeight + 8)
                 implicitWidth: pillLabel.implicitWidth + Kirigami.Units.largeSpacing * 2
                 width: Math.max(1, Math.min(implicitWidth, filterPillsWrapper.width))
@@ -274,7 +275,7 @@ Item {
         section.delegate: Rectangle {
             width: resultsView.contentColumnWidth
             height: headerRow.implicitHeight + Kirigami.Units.smallSpacing
-            radius: 4
+            radius: ControlMetrics.controlCornerRadius
             color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                 Kirigami.Theme.textColor.b, headerMouse.containsPress ? 0.12 : headerMouse.containsMouse ? 0.07 : 0)
 

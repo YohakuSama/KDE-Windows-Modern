@@ -18,6 +18,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.battery as BatteryBackend
 import "js/trayMetrics.js" as TrayMetrics
+import "js/controlMetrics.js" as ControlMetrics
 import "js/funcs.js" as Funcs
 import "js/popupGeometry.js" as PopupGeometry
 import "components" as Components
@@ -300,7 +301,7 @@ ContainmentItem {
                     y: hoverRect.y
                     width: hoverRect.width
                     height: hoverRect.height
-                    radius: 4
+                    radius: ControlMetrics.controlCornerRadius
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                                    Kirigami.Theme.textColor.b, 0.08)
                 }

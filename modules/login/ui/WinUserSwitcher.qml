@@ -7,6 +7,7 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.login as PlasmaLogin
+import "controlMetrics.js" as ControlMetrics
 
 ListView {
     id: root
@@ -29,7 +30,7 @@ ListView {
 
         Rectangle {
             anchors.fill: parent
-            radius: 4
+            radius: ControlMetrics.controlCornerRadius
             color: accountRow.ListView.isCurrentItem ? "#20FFFFFF"
                 : pointer.containsMouse ? "#16FFFFFF" : "transparent"
         }

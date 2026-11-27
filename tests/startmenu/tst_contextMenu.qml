@@ -46,7 +46,7 @@ Item {
             tryVerify(() => popup.contentItem.itemAtIndex(0) !== null);
             const row = popup.contentItem.itemAtIndex(0);
             compare(row.height, menu.rowHeight);
-            compare(Metrics.menuRowHeight, 32);
+            compare(Metrics.menuRowHeight, ControlMetrics.menuItemMinimumHeight);
             compare(Metrics.menuRowRadius, ControlMetrics.controlCornerRadius);
             compare(Metrics.menuRadius, ControlMetrics.overlayCornerRadius);
             verify(menu.rowHeight >= Metrics.menuRowHeight);

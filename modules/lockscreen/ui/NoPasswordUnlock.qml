@@ -63,7 +63,7 @@ FocusScope {
         Layout.preferredWidth: Math.min(144, screen.width)
         Layout.preferredHeight: LockMetrics.passwordHeight
         background: Rectangle {
-            radius: 6
+            radius: LockMetrics.loginButtonRadius
             color: loginButton.down ? "#26FFFFFF" : loginButton.hovered ? "#33FFFFFF" : "#20FFFFFF"
             border.width: loginButton.activeFocus ? 2 : 1
             border.color: loginButton.activeFocus ? "#FFFFFF" : "#88FFFFFF"

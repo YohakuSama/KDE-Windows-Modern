@@ -15,6 +15,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+import "js/controlMetrics.js" as ControlMetrics
 
 PlasmaCore.ToolTipArea {
     id: abstractItem
@@ -134,7 +135,7 @@ PlasmaCore.ToolTipArea {
     Rectangle {
         visible: abstractItem.inHiddenLayout
         anchors.fill: parent
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         border.width: mouseArea.containsMouse ? 1 : 0
         border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
         color: {

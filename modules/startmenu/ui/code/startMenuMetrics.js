@@ -5,7 +5,7 @@
 
 // Start menu geometry in logical pixels. Color and opacity tokens remain in theme.js.
 const menuGlyphSize = 16;
-const menuRowHeight = 32;
+const menuRowHeight = ControlMetrics.menuItemMinimumHeight;
 const menuRowRadius = ControlMetrics.controlCornerRadius;
 const menuRowTextVerticalPadding = 8;
 

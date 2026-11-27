@@ -29,6 +29,7 @@ QtObject {
     readonly property color textFieldBorderColor: "#66FFFFFF"
     readonly property int textFieldMaxWidth: LockMetrics.passwordWidth
     readonly property int loginButtonSize: 38
+    readonly property int loginButtonRadius: LockMetrics.loginButtonRadius
     readonly property int userSwitcherAvatarSize: 40
     readonly property int userSwitcherItemHeight: 52
     readonly property int powerMenuWidth: 150

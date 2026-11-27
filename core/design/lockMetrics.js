@@ -9,11 +9,14 @@ const passwordWidth = 296;
 // CommonStyles.xbf: LogonDefaultFontSize and TextFieldCornerRadius.
 const credentialFontSize = 14;
 const fieldCornerRadius = 4;
+// Shared Sign in button surface used by the Login and LockScreen hosts.
+const loginButtonRadius = 6;
 // CommonStyles.xbf: SubmitButtonStyle and ButtonLayoutGrid.
 const fieldButtonRadius = 3;
 const submitButtonMinWidth = 28;
 const submitButtonMinHeight = 24;
 const submitButtonFontSize = 12;
+// CommonStyles.xbf: DefaultMenuFlyoutPresenterStyle -> OverlayCornerRadius.
 const menuRadius = ControlMetrics.overlayCornerRadius;
 // Host-specific heights remain distinct pending native template evidence.
 const passwordHeight = 30;

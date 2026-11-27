@@ -4,6 +4,7 @@ import QtQuick.Controls as QQC2
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components" as Start
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/startMenuMetrics.js" as Metrics
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: host
@@ -18,6 +19,7 @@ Item {
         function init() { menu.close(); anchor.y = 80; menu.currentMode = 0; changed.clear(); }
         function test_anchorAndOutsideDismiss() {
             compare(menu.padding, Metrics.menuInset);
+            compare(Metrics.menuRowHeight, ControlMetrics.menuItemMinimumHeight);
             verify(menu.rowExtent >= Metrics.menuRowHeight);
             mouseClick(anchor);
             tryCompare(menu, "opened", true);

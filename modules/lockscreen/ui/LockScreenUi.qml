@@ -474,7 +474,7 @@ Item {
                     color: "#2C2C2C"
                     border.color: "#3F3F3F"
                     border.width: 1
-                    radius: 6
+                    radius: LockMetrics.menuRadius
                 }
 
                 FluentPowerMenuItem {

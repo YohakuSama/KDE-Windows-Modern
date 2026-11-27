@@ -282,7 +282,7 @@ SessionManagementScreen {
         visible: !root.showUsernamePrompt && userList.currentItem && !userList.currentItem.needsPassword
         onClicked: root.startLogin()
         background: Rectangle {
-            radius: 6
+            radius: WinStyle.loginButtonRadius
             color: parent.down ? "#26FFFFFF" : parent.hovered ? "#33FFFFFF" : "#20FFFFFF"
             border.color: parent.activeFocus ? "#FFFFFF" : "#88FFFFFF"
             border.width: parent.activeFocus ? 2 : 1

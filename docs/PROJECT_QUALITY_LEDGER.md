@@ -72,7 +72,7 @@
 | A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何已有共享方案，Qt 负责输出缩放 | 审查其余尺寸、锚点、边距、RTL、多屏和窄屏限制；禁止重复应用 DPI |
 | A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量 | 落实字号、字重、基线、行高、截断、语言回退与辅助文字缩放；尊重系统字体 |
 | A13 | I | 单一主题、深浅色生成架构 | Plasma、Aurorae、Kvantum 和配色采用共享源/生成路径，保留原有安装接口 | 该范围仅为源码统一；色彩语义归 D16/D17，具体控件差距归各自任务 |
-| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 569 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行、面板内容边距、登录/锁屏共用时钟和头像参数、数字时钟飞出面板几何、开始菜单弹出菜单几何、Snap Layouts 两种预览共享参数、Alt+Tab 小圆角参数，以及跨 Digital Clock、开始菜单、快捷设置和锁屏的 WinUI 通用圆角与菜单最小行高已统一；安装包不依赖源码链接 | 继续统一其余同语义参数，继续核对壁纸及未映射的重复语义实现，核对新克隆/安装/打包消费者；参数真实性归 A02/A08 |
+| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 569 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行、面板内容边距、登录/锁屏共用时钟和头像参数、数字时钟飞出面板几何、开始菜单弹出菜单几何、Snap Layouts 两种预览共享参数、Alt+Tab 小圆角参数，以及跨 Digital Clock、开始菜单、快捷设置和锁屏的 WinUI 通用圆角与菜单最小行高已统一；日历紧凑时钟、搜索筛选/分类、托盘隐藏项/快捷设置组、登录用户切换及快捷设置滑块按钮继续接入同一 ControlCornerRadius；Start 上下文菜单/视图菜单与锁屏电源菜单共用 WinUI 菜单最小行高；任务栏窗口预览关闭按钮接入 ControlCornerRadius；登录与锁屏无密码 Sign in 按钮共用 loginButtonRadius；Login 与 LockScreen 电源菜单共用 OverlayCornerRadius；壁纸包 4 个文件经哈希核对无重复；静态核对 source-map 物化、常规/NixOS/组件安装及打包入口；安装包不依赖源码链接 | 继续核对非字节相同的重复语义实现；新 clone/安装/打包未执行验证；参数真实性归 A02/A08 |
 
 <a name="block-02"></a>
 
@@ -537,3 +537,15 @@ Clipboard 页签、Start 字母索引磁贴、系统位置快捷按钮和 Search
 - 2026-11-27 模块迁移第十一批：基于 5838d900603f，Start 的两个原生 Search 动作迁至 PlasmoidItem 根对象，使用框架表示属性追踪实际弹窗；搜索入口监视候选的原生动作列表与就绪状态，不轮询，点击同步解析同一提供者的动作，保留原动作名称、真实搜索模型、锚点及交互。将 owned_file、atomic_write、restore_pending、write_pending 原样迁入 core/transactions/theme-files.py，经同步入口提供原命名接口；新增 1 个受源映射校验的相对链接，安装外观包复制实体文件，现有完整包校验和外观静态入口包含此依赖。保持既有锁、文件模式、竞争检查、回滚顺序、色阶、ICC 与材质算法。V08/D20/A14 仍 P，功能完成任务数不变；托盘无加载冷启动、独立弹窗宿主、渲染职责及实机生命周期仍待处理。未运行构建、自动化测试、CI、打包或实机验收。
 
 - 2026-11-27 功能模块归类复核：基于 01ad5c1f，完整核对 19 个模块目录及 233 个模块源码、配置及资源文件，确认 source-map 已覆盖 230 个直接映射源和 3 个布局渲染输入，未发现未归属模块源或重复输出目标。明确 System Tray、Digital Clock、Start 三个共享宿主的功能所有权和跨模块接口；将 NotificationHistory 复用的两个 Calendar 控件列入既有公共控件归类范围。八项冻结清单第 1 项完成；V07/V08/A14 及第 2 项不因此结项。仅更新架构文档，未修改运行时代码，未运行构建、测试、CI、打包或实机验收。
+
+- 2026-11-28 公共视觉参数统一批次：基于 73277b54dbc4，日历紧凑时钟悬停、搜索筛选与分类标题、托盘隐藏图标与快捷设置组、登录用户切换列表，以及快捷设置滑块的图标/详情操作按钮改为读取 `core/design/controlMetrics.js` 的 `ControlCornerRadius`。保留通知/媒体/剪贴板卡片、任务预览卡片及其他专用表面几何。共享指标源与现有 source-map 输出不变，未新增部署副本。仅做源码和提交 diff 静态审查，未运行构建、测试、CI、打包或实机验收；A14 仍为 P。
+
+- 2026-11-28 任务栏预览控件参数收敛：基于 4b7c17e94953，任务栏窗口预览关闭按钮的交互背景改为读取公共 `ControlCornerRadius`，并将 `controlMetrics.js` 映射到 Icon Tasks 的唯一生成目录。保留预览卡片自身圆角和关闭按钮的红色悬停/按压状态。更新 A14 记录；未运行构建、测试、CI、打包或实机验收。
+
+- 2026-11-28 WinUI 菜单行高统一：基于 08673f168c25，Start ContextMenu 与 ViewModeMenu 的 32px 最小行高改为读取 `ControlMetrics.menuItemMinimumHeight`，与锁屏/登录 `FluentPowerMenuItem` 共用 `MenuFlyoutThemeMinHeight`。补充两个菜单消费者的一致性断言，并更新 core 所有权说明。未改变菜单宽度、文本高度扩展、分隔线、内边距、键盘导航或弹出定位；未运行测试、构建、CI 或实机验收。
+
+- 2026-11-28 登录按钮圆角归一：基于 24284e2ff305，Login 与 LockScreen 的无密码 Sign in 按钮将相同的 6px 圆角收敛到 `core/design/lockMetrics.js`，由 WinStyle 和 NoPasswordUnlock 分别消费。保留两个宿主不同的按钮高度、宽度、字体及状态反馈；补充共享参数断言。未运行构建、测试、CI、打包或实机验收。
+
+- 2026-11-28 登录与锁屏电源菜单半径统一：基于 80acbf25612f，LockScreen 原生电源菜单从独立 6px 圆角改为读取 `LockMetrics.menuRadius`，与 Login 电源菜单共用 26H2 `OverlayCornerRadius=8`。依据 `CommonStyles.xbf` 中 `DefaultMenuFlyoutPresenterStyle` 对该资源的实际引用。菜单内容、尺寸、锚点和交互不变；未运行构建、测试、CI、打包或实机验收。
+
+- 2026-11-28 A14 部署与资源审计：检查 testing 的 5,851 个跟踪文件及精确 SHA 重复组，未发现 icons/Plasma SVG atlas 之外的重复 QML、JS、Python 或 C++ 文件。壁纸包共 4 个文件，哈希无重复。静态核对 `materialize-modules.py`、普通安装、NixOS 安装、独立组件安装及完整 ZIP 生成入口，均有对应的源码准备/映射检查或归档物化步骤。发现 3 组 Plasma SVG atlas 文件跨 solid/translucent 目录字节相同，留在既有 SVG 资源统一工作块，本项不修改。未执行新 clone、安装、打包、构建或测试。

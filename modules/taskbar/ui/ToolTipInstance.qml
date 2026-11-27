@@ -21,6 +21,7 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 import org.kde.kwindowsystem
 import org.kde.plasma.private.mpris as Mpris
+import "controlMetrics.js" as ControlMetrics
 
 Item {
     id: root
@@ -304,7 +305,7 @@ Item {
                     Rectangle {
                         objectName: "wmTaskPreviewCloseBackground"
                         anchors.fill: parent
-                        radius: 4
+                        radius: ControlMetrics.controlCornerRadius
                         color: closeButton.pressed ? "#9E1B1B"
                             : closeButton.hovered ? "#C42B1C" : "transparent"
                         Behavior on color { ColorAnimation { duration: Math.min(83, Kirigami.Units.shortDuration) } }

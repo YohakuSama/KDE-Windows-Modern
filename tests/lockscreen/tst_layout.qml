@@ -13,6 +13,7 @@ TestCase {
         compare(LockMetrics.formTop(400, 270), 66);
         compare(LockMetrics.passwordWidth, 296);
         compare(LockMetrics.passwordHeight, 30);
+        compare(LockMetrics.loginButtonRadius, 6);
         compare(LockMetrics.menuRadius, ControlMetrics.overlayCornerRadius);
         compare(ControlMetrics.controlCornerRadius, 4);
         compare(ControlMetrics.menuItemMinimumHeight, 32);
