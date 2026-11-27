@@ -288,6 +288,29 @@
 
 上述条目数不含其他顶层目录、第三方子模块内部文件及私有原版资源。目录和哈希核对不等于逐文件语义审查。结论：项目已有组件分离、部分公共资源与接口；尚未彻底解耦。
 
+
+### 功能模块归类复核（2026-11-27）
+
+基于 testing 提交 `01ad5c1f`，递归检查完整 Git tree 与
+`core/source-map.json`。确认 19 个功能模块目录、233 个实现及配置源文件。
+其中 230 个由 source-map 的 tree/file 映射直接收录，另外 3 个任务栏布局
+模板/正文由两条 rendered 规则消费。没有未归属的模块实现源，也没有重复
+的生成输出目标。
+
+原生宿主与功能源码所有权已明确：System Tray 组合 systemtray、
+quicksettings、clipboard、run；Digital Clock 组合 calendar、notifications；
+Start 组合 startmenu 与 search/startmenu 页面，Search 另有独立任务栏 applet。
+Search 使用 Start 所有的模型辅助函数和原生动作。Calendar 使用
+notifications 所有的提示图标策略。NotificationHistory 当前复用
+Calendar 目录中的 Win11Palette/FlyoutButton，这两项已识别为公共控件归属，
+留待既有的「公共控件归类」处理。详细边界记录在
+[功能模块目录说明](../modules/README.md)。
+
+结论：八项冻结清单中的「功能模块归类」完成。此结论只表示源码所有者、
+宿主组合和已知跨模块依赖已经归类，不代表 V07 模块接口、V08 生命周期、
+A14 公共源码或第二项公共控件归类完成。未修改运行时代码，未运行构建、
+自动化测试、CI、打包或实机验收。
+
 ### 已具备的合理边界（保留）
 
 | 层 | 源码依据与结论 |
@@ -374,3 +397,5 @@
 - 2026-11-27 模块迁移第十批：基于 f6b495b63de9，提取 platform/plasma/popup/panelpopupcontroller.{cpp,h} 和 platform/plasma/appearance/popupeffects.{cpp,h}，不依赖托盘模型。保留面板级焦点策略、180ms 外部失焦防抖、KWin 原生效果、模糊偏好通知和原 QML 接口。关闭时遍历 QPointer 快照并跳过已替换的注册项，避免同步 QML 回调使迭代器失效；不改变逻辑像素、圆角、模糊区域或动作身份。原生输出增加 4 个，仍由原 CMake 目标编译。V08/A14 保持 P，功能完成任务数不变；独立面板宿主、冷启动和多屏/重建验收尚未解决。仅做源码及映射静态审查，未执行构建、自动化测试、CI 或实机验收。
 
 - 2026-11-27 模块迁移第十一批：基于 5838d900603f，Start 的两个原生 Search 动作迁至 PlasmoidItem 根对象，使用框架表示属性追踪实际弹窗；搜索入口监视候选的原生动作列表与就绪状态，不轮询，点击同步解析同一提供者的动作，保留原动作名称、真实搜索模型、锚点及交互。将 owned_file、atomic_write、restore_pending、write_pending 原样迁入 core/transactions/theme-files.py，经同步入口提供原命名接口；新增 1 个受源映射校验的相对链接，安装外观包复制实体文件，现有完整包校验和外观静态入口包含此依赖。保持既有锁、文件模式、竞争检查、回滚顺序、色阶、ICC 与材质算法。V08/D20/A14 仍 P，功能完成任务数不变；托盘无加载冷启动、独立弹窗宿主、渲染职责及实机生命周期仍待处理。未运行构建、自动化测试、CI、打包或实机验收。
+
+- 2026-11-27 功能模块归类复核：基于 01ad5c1f，完整核对 19 个模块目录及 233 个实现/配置源文件，确认 source-map 已覆盖 230 个直接映射源和 3 个布局渲染输入，未发现未归属模块源或重复输出目标。明确 System Tray、Digital Clock、Start 三个共享宿主的功能所有权和跨模块接口；将 NotificationHistory 复用的两个 Calendar 控件列入既有公共控件归类范围。八项冻结清单第 1 项完成；V07/V08/A14 及第 2 项不因此结项。仅更新架构文档，未修改运行时代码，未运行构建、测试、CI、打包或实机验收。
