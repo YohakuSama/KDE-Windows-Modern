@@ -10,6 +10,7 @@ import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+import "js/controlMetrics.js" as ControlMetrics
 
 PlasmaCore.ToolTipArea {
     id: tooltip
@@ -56,7 +57,7 @@ PlasmaCore.ToolTipArea {
 
     Rectangle {
         anchors.fill: parent
-        radius: 4
+        radius: ControlMetrics.controlCornerRadius
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                        Kirigami.Theme.textColor.b, 0.08)
         visible: arrowHover.hovered || systemTrayState.overflowOpen
