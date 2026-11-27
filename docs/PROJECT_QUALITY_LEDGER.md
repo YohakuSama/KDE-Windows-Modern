@@ -326,6 +326,30 @@ Calendar 与 Notifications 仍共享同一原生通知模型和弹窗宿主。
 未修改控件属性、尺寸、颜色、状态或交互；未运行构建、测试、CI、
 打包或实机验收。
 
+### 公共控件归类后续复核（2026-11-27）
+
+继续复核 Login 与 LockScreen 两个独立宿主。确认 `WinAvatar.qml` 与
+`AccountAvatar.qml` 的图片裁切、圆形遮罩和默认头像回退实现一致，差异仅为
+默认尺寸；当前所有调用方均显式传入尺寸，两个宿主的默认值也均为 160。
+现由 `core/controls/AccountAvatar.qml` 作为唯一编辑源，source-map 将它分别
+生成到原有 `WinAvatar.qml` 与 `AccountAvatar.qml` 路径，保留原 QML 类型名、
+包路径、布局输入和资源解析位置。
+
+Login 与 LockScreen 的 `VirtualKeyboardButton.qml` 使用同一
+`KWinVirtualKeyboard` 状态和切换动作，差异在不可用时的呈现及标签。
+现统一到 `core/controls/VirtualKeyboardButton.qml`，通过
+`lockScreenPresentation` 保留 Login 隐藏不可用入口、LockScreen 保留禁用的
+Accessibility 入口；继续使用原 `Loader` 隔离可选键盘模块，并保留
+`LockText.tr` 中文回退。没有增加服务或后端。
+
+本轮删除 4 份模块内重复实现，新增 2 个 core 唯一编辑源。当前 19 个功能模块
+含 227 个源码、配置和资源文件，224 个直接 tree/file 映射，另有 3 个布局
+渲染输入。source-map 输出目标唯一。结合既有共享控件映射和模块宿主关系复核，
+未发现其他已确认的跨模块控件遗漏。冻结架构清单第 2 项「公共控件归类」完成。
+A14 仍为 P，其余公共视觉参数和语义角色统一属于既有独立工作，不在本项结项范围内。
+
+仅做源码和映射静态审查，未运行构建、自动化测试、CI、打包或实机验收。
+
 ### 已具备的合理边界（保留）
 
 | 层 | 源码依据与结论 |

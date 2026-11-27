@@ -58,6 +58,13 @@ Shared controls used by Calendar and Notifications are canonically owned
 under `core/controls/`; their existing Digital Clock package paths are
 materialized by `core/source-map.json`. Do not add feature-local copies.
 
+The greeter and lock-screen shell likewise share `AccountAvatar.qml` and
+`VirtualKeyboardButton.qml` from `core/controls/`. The keyboard control keeps
+the greeter's hidden-when-unavailable behavior and the lock screen's
+visible-but-disabled Accessibility entry through `lockScreenPresentation`.
+Both hosts retain their loaders so a missing optional keyboard module cannot
+break the rest of the shell.
+
 Source modules are ownership boundaries, not new installed applet IDs.
 No service or system backend is duplicated. All Apps and Search pages
 publish activation signals rather than closing their host directly;
@@ -118,9 +125,10 @@ direct low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LE
 
 ## Functional module ownership audit
 
-On testing commit `40b546cb`, the complete Git tree contains 19 feature
-module roots and 231 module source/configuration/resource files. The source
-map accounts for all of them: 228 are direct tree/file mappings and the
-three taskbar layout sources feed the two rendered layout recipes. The
+After the shared-control consolidation on testing (2026-11-27), the complete
+Git tree contains 19 feature module roots and 227 module
+source/configuration/resource files. The source map accounts for all of them:
+224 are direct tree/file mappings and the three taskbar layout sources feed
+the two rendered layout recipes. The
 module mappings have no duplicate output destinations. This is a static
 ownership/source-map review, not a build or runtime validation.

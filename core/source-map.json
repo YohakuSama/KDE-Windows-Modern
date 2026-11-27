@@ -624,6 +624,14 @@
     ],
     "platform/plasma/taskbar/smartlauncheritem.h": [
       "plasma/applets/org.kde.windowsmodern.icontasks/smartlauncheritem.h"
+    ],
+    "core/controls/AccountAvatar.qml": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/WinAvatar.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/AccountAvatar.qml"
+    ],
+    "core/controls/VirtualKeyboardButton.qml": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/VirtualKeyboardButton.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/VirtualKeyboardButton.qml"
     ]
   },
   "rendered": {

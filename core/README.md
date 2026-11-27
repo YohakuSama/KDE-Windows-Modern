@@ -9,7 +9,7 @@ declares the generated native outputs, not a second implementation.
 | palette/ | Color classification, fixed roles, ICC/automatic accent and scheme template |
 | materials/ | Window material and popup frame generation |
 | transactions/ | Shared user-owned file validation, atomic replacement and rollback |
-| controls/ | Shared glyphs, buttons, sliders, scrollbars, flyout buttons and palette tokens |
+| controls/ | Shared glyphs, buttons, avatars, sliders, scrollbars, flyout controls and palette tokens |
 | resources/ | Shared portrait/license and original resource import/validation |
 | animations/ | Shared sign-in progress |
 | logic/ | Shared formatting, battery state, lock-screen text and optional panel capability lookup |
@@ -21,6 +21,7 @@ implementations. The file transaction module is copied into the installed
 appearance package and does not own the caller's writer lock or renderer
 plan. Do not create separate light/dark functionality.
 The Digital Clock package consumes shared `FlyoutButton.qml` and `Win11Palette.qml` from this directory; Calendar and Notifications do not maintain separate copies. Their native package paths remain unchanged through `source-map.json`.
+The greeter and lock-screen packages also consume shared `AccountAvatar.qml` and `VirtualKeyboardButton.qml`; host-specific presentation is configured without maintaining feature-local implementations.
 Equal numeric values alone do not establish equal semantic roles.
 
 Run `python3 -I scripts/materialize-modules.py --prepare` to generate

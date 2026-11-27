@@ -449,6 +449,7 @@ Item {
                 Layout.preferredHeight: 32
                 Layout.alignment: Qt.AlignVCenter
                 source: "VirtualKeyboardButton.qml"
+                onLoaded: item.lockScreenPresentation = true
             }
             StatusIconButton {
                 visible: footerAccessibility.status === Loader.Error

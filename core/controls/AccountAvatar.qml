@@ -2,10 +2,11 @@
 import QtQuick
 import Qt5Compat.GraphicalEffects
 
+// Shared personal/default avatar presentation for the greeter and lock screen.
 Item {
     id: avatar
     property url source
-    property int size: WinStyle.avatarSize
+    property int size: 160
     implicitWidth: size
     implicitHeight: size
 
