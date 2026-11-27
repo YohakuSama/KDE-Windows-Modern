@@ -266,8 +266,8 @@ for arg in "$@"; do
 done
 set -- "${args[@]}"
 
-# Generate the native QML/script payload before changing any desktop
-# configuration. Component entry points also handle standalone invocation.
+# Generate native packages and component installers before changing any
+# desktop configuration. Use this driver for components in a fresh checkout.
 case "${1:-menu}" in
     --help|-h|deps) ;;
     *) prepare_module_sources ;;

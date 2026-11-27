@@ -5,6 +5,9 @@ let
   pkgs = import (builtins.toPath nixpkgsPath) { };
   lib = pkgs.lib;
   dolphin = pkgs.kdePackages.dolphin;
+  patchDirectory = if builtins.pathExists ../core/source-map.json
+    then ../modules/explorer/patches
+    else ../app-decorations/dolphin;
 in
 assert lib.assertMsg (dolphin.version == dolphinVersion)
   "The pinned nixpkgs Dolphin version must match the installed version.";
@@ -13,8 +16,8 @@ assert lib.assertMsg (lib.hasPrefix "26.08." dolphinVersion)
 dolphin.overrideAttrs (old: {
   pname = "windows-modern-dolphin";
   patches = (old.patches or [ ]) ++ [
-    ../app-decorations/dolphin/statusbar-margins.patch
-    ../app-decorations/dolphin/tab-controls.patch
+    (patchDirectory + "/statusbar-margins.patch")
+    (patchDirectory + "/tab-controls.patch")
   ];
   cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DBUILD_TESTING=OFF" ];
   doCheck = false;

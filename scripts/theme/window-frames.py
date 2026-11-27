@@ -694,7 +694,11 @@ def main():
     directory = args.directory or ROOT / 'aurorae'
     modes = ('dark', 'light') if args.directory else ('dark',)
     for mode in modes:
-        path = directory / f'windows-modern-{mode}-aurorae' / 'decoration.svg'
+        if args.directory is None and (ROOT / "core/source-map.json").is_file():
+            # Developer regeneration writes the single editable source.
+            path = ROOT / "modules/windowmanager/decoration/decoration.svg"
+        else:
+            path = directory / f'windows-modern-{mode}-aurorae' / 'decoration.svg'
         expected = render(mode)
         if args.check:
             if path.read_text(encoding='utf-8') != expected:

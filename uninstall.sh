@@ -250,6 +250,10 @@ uninstall_component() {
             # Revert any applied PLM patches and remove the user-level theme.
             PLM_DIR="$SRC_DIR/third_party/plasma-login-manager"
             PATCH_DIR="$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/patches"
+            # Rollback must not require regenerating the source checkout.
+            if [ -f "$SRC_DIR/core/source-map.json" ]; then
+                PATCH_DIR="$SRC_DIR/platform/plasma/login/patches"
+            fi
             if [ -d "${PLM_DIR}" ]; then
                 # shellcheck disable=SC2043  # one patch today; the list may grow
                 for p in main-cpp.patch; do
@@ -276,8 +280,10 @@ uninstall_component() {
             else
                 warn "No Plasma session — log in and run ./uninstall.sh shortcuts to restore the keys."
             fi
-            for pkg in "$SRC_DIR"/plasma/kwinscripts/*/; do
-                id="$(basename "$pkg")"
+            # Use the owned package IDs, even in a fresh unprepared checkout.
+            # Uninstall must not depend on the existence of generated files.
+            for id in org.kde.windowsmodern.osd org.kde.windowsmodern.snapkeys \
+                      org.kde.windowsmodern.snaplayouts; do
                 kwriteconfig6 --file kwinrc --group Plugins --key "${id}Enabled" --delete
                 kpackagetool6 --type KWin/Script --remove "$id" &>/dev/null || true
             done

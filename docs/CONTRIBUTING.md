@@ -93,7 +93,14 @@ NixOS uses an existing Python, its previous test runtime or temporary
 nix-shell Python before checking build inputs. For privileged conventional
 installs, prepare as the desktop user first. Full bundles reconstruct
 generated native files from the exact archived commit, excluding development
-trees. The other tracked renderer, app, Nix and script mirrors remain
+trees. Mapped Aurorae, Kvantum and color-scheme templates, Plymouth source,
+application configuration/patches (except the independently checked Konsole
+plugin), component installers and selected frame tools are generated-only.
+Use the root install.sh component driver for a fresh checkout; run
+--prepare before directly invoking generated low-level scripts. The direct
+Dolphin and Plymouth paths read canonical inputs in a source checkout.
+Keep rollback available without requiring generated files. The remaining
+bootstrap, recovery, independent command, Nix and Konsole mirrors are
 transitional. Do not re-add generated files.
 
 A complete module can add files within a mapped source tree. Delete obsolete

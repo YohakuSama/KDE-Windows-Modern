@@ -22,8 +22,12 @@ Run `python3 -I scripts/materialize-modules.py --prepare` to generate
 the ignored native files. For the remaining tracked native mirrors, use
 `--write` after editing their canonical sources; `--check` compares bytes
 and executable modes without writing.
-The taskbar layout uses one shared body. The renderer-specific appearance
-materializer still generates the actual Plasma/Kvantum/Aurorae packages.
+The taskbar layout uses one shared body. The mapped Aurorae and Kvantum
+source templates, color-scheme template and selected frame tools now
+have generated-only native paths. The renderer-specific appearance
+materializer prepares these inputs and generates the actual packages.
+Window-frame regeneration without an explicit staged directory writes
+modules/windowmanager/decoration/decoration.svg, the editable owner.
 The Plasma SVG atlas and large icon/wallpaper inputs retain their current
 ownership until their generators and consumers are migrated.
 

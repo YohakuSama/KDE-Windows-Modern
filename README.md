@@ -37,7 +37,9 @@ Run the installer as your normal desktop user in a running Plasma 6 session.
 Extract the complete private theme ZIP first, or use a current source checkout.
 The testing source tree generates ignored native package files from the
 canonical modules before installation; the installer uses a temporary Python
-interpreter on NixOS if needed. Install ZIPs already contain those files.
+interpreter on NixOS if needed. Use the root install.sh driver for component
+installs from a fresh checkout. Direct invocation of generated low-level
+scripts requires `python3 -I scripts/materialize-modules.py --prepare` first. Install ZIPs already contain those files.
 
 ```bash
 bash install.sh

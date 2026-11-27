@@ -60,6 +60,9 @@ fi
 # 4. Reuse the same source-reviewed patch as the isolated NixOS build.
 # A patch that does not match the extracted source must stop before rpmbuild.
 PATCH="$ROOT/app-decorations/dolphin/statusbar-margins.patch"
+if [ -f "$ROOT/core/source-map.json" ]; then
+    PATCH="$ROOT/modules/explorer/patches/statusbar-margins.patch"
+fi
 patch --dry-run --batch --forward --fuzz=0 -d src -p1 < "$PATCH" || die "Status-bar patch does not match this Dolphin source."
 cp -- "$PATCH" dolphin-wm-statusbar-margins.patch
 

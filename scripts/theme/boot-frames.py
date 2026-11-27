@@ -47,8 +47,12 @@ def build(destination, image_dir=None):
     logo_frame().save(destination / "logo.png")
     for index in range(FRAMES):
         ring_frame(index).save(destination / f"ring-{index}.png")
-    shutil.copyfile(ROOT / "boot/plymouth/windows-modern.script",
-                    destination / "windows-modern.script")
+    # Declarative Nix builds may start from an unprepared source checkout.
+    # Full install archives carry the same script at its native path.
+    script = (ROOT / "modules/boot/plymouth/windows-modern.script"
+              if (ROOT / "core/source-map.json").is_file()
+              else ROOT / "boot/plymouth/windows-modern.script")
+    shutil.copyfile(script, destination / "windows-modern.script")
     (destination / "windows-modern.plymouth").write_text(
         "[Plymouth Theme]\nName=Windows Modern\n"
         "Description=Windows-style logo and loading ring\nModuleName=script\n\n"

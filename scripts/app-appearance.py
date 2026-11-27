@@ -29,6 +29,20 @@ FILES = {
     "konsole/WindowsModern-tabs.css": "config/konsole/WindowsModern-tabs.css",
 }
 
+
+def source_file(relative):
+    """Use the editable configuration without requiring generated mirrors."""
+    manifest = ROOT / "core/source-map.json"
+    if not manifest.is_file():
+        return ROOT / relative
+    trees = json.loads(manifest.read_text(encoding="utf-8"))["trees"]
+    for source, destination in trees.items():
+        prefix = destination + "/"
+        if relative.startswith(prefix):
+            return ROOT / source / relative[len(prefix):]
+    raise ValueError("Unmapped application appearance input: " + relative)
+
+
 def settings():
     return [
         ("dolphinrc", "General", "AlwaysShowTabBar", "true"),
@@ -85,7 +99,7 @@ def apply():
             print("Keeping managed app file:", path)
             continue
         old = path.read_bytes() if path.is_file() else None
-        new = (ROOT / source).read_bytes()
+        new = source_file(source).read_bytes()
         record = state["files"].get(relative)
         if record is None:
             if old is not None and old != new and not (
@@ -109,7 +123,7 @@ def apply():
     def installed_by_theme(relative):
         path = DATA / relative
         return (relative in state["files"] and path.is_file() and not path.is_symlink()
-                and path.read_bytes() == (ROOT / FILES[relative]).read_bytes())
+                and path.read_bytes() == source_file(FILES[relative]).read_bytes())
 
     for file, group, key, value in settings():
         if file in ("dolphinrc", str(STATE / "dolphinstaterc")):

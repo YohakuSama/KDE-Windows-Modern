@@ -48,6 +48,8 @@ editable sources only. Existing developer launchers, test sources,
 unmapped preview assets and the shared Plasma visual atlas remain
 tracked. Standard install and developer entry points prepare generated
 files; full install ZIPs reconstruct them from the archived commit.
-Other tracked renderer, application, Nix and script mirrors are
-transitional. Keep packages self-contained and prepare before direct
-low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LEDGER.md).
+Aurorae, Plymouth, application configuration and Dolphin patches are also
+generated-only. Konsole's plugin sources retain native mirrors for the
+existing independent compiler syntax check. The remaining Nix and script
+mirrors are transitional. Keep packages self-contained and prepare before
+direct low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LEDGER.md).
