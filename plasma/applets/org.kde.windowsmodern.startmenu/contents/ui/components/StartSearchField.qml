@@ -11,8 +11,6 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
-import "../code/theme.js" as Theme
-
 RowLayout {
     id: searchBox
 
@@ -57,18 +55,25 @@ RowLayout {
             gesturePolicy: TapHandler.DragThreshold
             onTapped: searchBox.searchRequested()
         }
-        Layout.preferredHeight: 32
+        // The leading glyph and text inset must move together in RTL.
+        // Use the system font and keep a 32px minimum logical control.
+        readonly property bool layoutMirrored: LayoutMirroring.enabled
+        readonly property int leadingInset: 36
+        readonly property int trailingInset: 12
+        Layout.preferredHeight: Math.max(32, Math.ceil(editorMetrics.height) + topPadding + bottomPadding)
         topPadding: 4
         bottomPadding: 4
-        leftPadding: 36
-        font.pixelSize: 14
+        leftPadding: layoutMirrored ? trailingInset : leadingInset
+        rightPadding: layoutMirrored ? leadingInset : trailingInset
+        font: Kirigami.Theme.defaultFont
+        FontMetrics { id: editorMetrics; font: searchFieldInput.font }
 
         background: Rectangle {
             readonly property bool dark: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Dark
             color: dark
                 ? (searchFieldInput.hovered && !searchBox.searchMode ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.22))
                 : (searchFieldInput.hovered && !searchBox.searchMode ? Qt.rgba(1, 1, 1, 0.9) : Qt.rgba(1, 1, 1, 0.68))
-            Behavior on color { ColorAnimation { duration: 100 } }
+            Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? 100 : 0 } }
             radius: height / 2
             border.width: 1
             border.color: Qt.rgba(Kirigami.Theme.textColor.r,
@@ -115,10 +120,9 @@ RowLayout {
         }
 
         SearchGlyph {
-            anchors.left: searchFieldInput.left
             anchors.verticalCenter: searchFieldInput.verticalCenter
-            anchors.leftMargin: 12
-            height: 18
+            x: searchFieldInput.layoutMirrored ? searchFieldInput.width - 12 - width : 12
+            height: Math.max(0, Math.min(18, searchFieldInput.height, searchFieldInput.width - 24))
             width: height
             accented: false
         }

@@ -662,3 +662,47 @@ synchronization and mode reapply. The previous saved palette remains the
 ownership and rollback reference; a normalized Accent is never used as
 a substitute for missing original input. This lets subsequent reference
 corrections reach existing installations without requiring reselection.
+
+## Phase A: shared visual foundation (Windows 11 26H2)
+
+Reference build: 26300.9974. The layout source manifest and parameter
+ledger distinguish recovered native values from host adaptations. A valid
+XBF header does not establish a decoded layout or a native control mapping.
+
+| Scope | Source status | Remaining work |
+| --- | --- | --- |
+| A01 PRI/XBF mapping | Partial | Recover remaining layout dictionaries and map properties to their actual consumers. The recorded 19 original files are private; the repository stores selected decoded evidence, not the full archive. |
+| A02 Layout parameters | Partial | Apply all verified values and recover missing geometry. Credential width now uses the recorded 296 logical-pixel value in both hosts; their field heights remain host-specific. |
+| A03 Logical pixels/DPI | Partial | Shared popup geometry exists; audit remaining layout constraints and all screen configurations. |
+| A04 Typography | Partial | Start search and menu rows use actual system font metrics; baseline, line-height, fallback fonts and other surfaces need reference mapping. |
+| A05 Native icons | Partial | Private import supports selected shell resources; confirm exact build, role and state coverage, including the hibernate candidate. |
+| A06 Icon fallback | Partial | Lock credential actions now use mapped glyphs or action text rather than painting a toolkit fallback. Audit dynamic, implicit and same-name resolution elsewhere. |
+| A07 System and application coverage | Partial | Finish native application, settings and plugin inventory; retain third-party brand identities. |
+| A08 Icon optics and interaction | Partial | Establish original visible bounds, state variants and hit-area geometry for all controls. |
+| A09 Cursors | Open | The current Bibata Modern Ice theme is an approximation. Original 26H2 cursor frames, hotspots and timing are not established. |
+| A10 Basic controls | Partial | Shared control styling exists; compare each control's geometry and state against native evidence. |
+| A11 Input, scrolling and lists | Partial | Start search adapts to system font metrics and RTL. Start, tray and clock scrollbar copies are identical again. Audit list, tab and dropdown geometry and remaining input states. |
+| A12 Menus and popups | Partial | Start context, power and view-mode menus use common row extent and radius; measure other menu and popup roles against original parameters. |
+
+The menu font sizing, minimum row extent, RTL padding and scrollbar
+synchronization are host integration corrections, not newly decoded Windows
+parameters. Text is retained as a functional fallback where private glyphs
+are unavailable; that fallback is not counted as native icon coverage.
+
+Package-local copies are necessary for separately installed applets and
+lock/login packages. Shared-copy equality is checked by the existing
+verification script; appearance and behavior still require the owner's
+manual acceptance. A01–A12 are not closed by this ledger.
+
+The existing icon coverage report compares the private manifest's recorded
+input hashes with the seven hashes in the 26300.9974 owner audit, and
+reports the two reference-only outputs (dark idle Search and default PNG
+portrait) alongside the generic required outputs. It does not claim that
+manifest metadata independently verifies the original Windows files or
+runtime rendering. The broader importer remains unchanged.
+
+The recorded KDE 6.8.3 metadata has 98 module declarations. Against the
+current source mapping, 66 declarations have a matching declared icon name
+or its symbolic alias and 32 do not. These are source name matches only,
+not installed coverage or exact Windows semantic matches. Do not replace
+KDE-specific functions or application identities just to increase counts.

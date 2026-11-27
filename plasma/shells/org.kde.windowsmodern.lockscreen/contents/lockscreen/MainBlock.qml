@@ -128,7 +128,7 @@ FocusScope {
             anchors.fill: parent
             color: "#40000000"
             border.color: "#66FFFFFF"
-            radius: 4
+            radius: LockMetrics.fieldCornerRadius
 
             Rectangle {
                 anchors.left: parent.left
@@ -146,7 +146,7 @@ FocusScope {
             id: passwordBox
             anchors.left: parent.left
             anchors.right: revealButton.visible ? revealButton.left : loginButton.left
-            anchors.rightMargin: 4
+            anchors.rightMargin: Math.min(4, parent.width / 6)
             anchors.verticalCenter: parent.verticalCenter
             height: parent.height
 
@@ -155,7 +155,7 @@ FocusScope {
             placeholderText: LockText.tr("Password", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Password"), Qt.uiLanguage, Qt.locale().name)
             placeholderTextColor: "#A0A0A0"
             font.family: Kirigami.Theme.defaultFont.family
-            font.pixelSize: 14
+            font.pixelSize: LockMetrics.credentialFontSize
             color: "#FFFFFF"
             focus: true
             leftPadding: 8
@@ -184,18 +184,13 @@ FocusScope {
             }
         }
 
-        ToolButton {
+        CredentialToolButton {
             id: revealButton
             anchors.right: loginButton.left
             anchors.verticalCenter: parent.verticalCenter
-            width: 28
-            height: 26
             visible: passwordBox.text.length > 0
             text: LockText.tr("Show password", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Show password"), Qt.uiLanguage, Qt.locale().name)
-            display: AbstractButton.IconOnly
             icon.name: "view-visible"
-            icon.width: 14
-            icon.height: 14
             icon.color: "#FFFFFF"
             onPressedChanged: passwordBox.showPassword = pressed && visible
             onVisibleChanged: if (!visible) passwordBox.showPassword = false
@@ -206,19 +201,14 @@ FocusScope {
             }
         }
 
-        ToolButton {
+        CredentialToolButton {
             id: loginButton
             anchors.right: parent.right
             anchors.rightMargin: 2
             anchors.verticalCenter: parent.verticalCenter
-            width: 28
-            height: 26
 
             text: LockText.tr("Sign in", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in"), Qt.uiLanguage, Qt.locale().name)
-            display: AbstractButton.IconOnly
             icon.name: LayoutMirroring.enabled ? "go-previous" : "go-next"
-            icon.width: 14
-            icon.height: 14
             opacity: passwordBox.text.length > 0 ? 1 : 0.65
             icon.color: hovered ? "#FFFFFF" : "#E0E0E0"
 
@@ -247,6 +237,42 @@ FocusScope {
         id: errorPulse
         NumberAnimation { target: errorLabel; property: "scale"; from: 1; to: 1.06; duration: 100 }
         NumberAnimation { target: errorLabel; property: "scale"; to: 1; duration: 100 }
+    }
+
+    // Both credential actions retain the native ToolButton input behavior,
+    // but only draw explicitly mapped Windows artwork. If the local import
+    // is absent, show the real action label instead of a toolkit fallback.
+    component CredentialToolButton : ToolButton {
+        id: actionButton
+        width: Math.max(0, Math.min(parent.width / 3, Math.max(28,
+            actionGlyph.nativeSource.length > 0 ? 28 : actionLabel.implicitWidth + 8)))
+        height: Math.min(parent.height, 26)
+        padding: 2
+        display: AbstractButton.IconOnly
+        Accessible.name: text
+        contentItem: Item {
+            NativeGlyph {
+                id: actionGlyph
+                anchors.centerIn: parent
+                width: Math.max(0, Math.min(14, parent.width, parent.height))
+                height: width
+                roleName: actionButton.icon.name
+                foreground: actionButton.icon.color
+            }
+            Text {
+                id: actionLabel
+                anchors.fill: parent
+                visible: actionGlyph.nativeSource.length === 0
+                text: actionButton.text
+                font.family: Kirigami.Theme.defaultFont.family
+                font.pixelSize: 12
+                textFormat: Text.PlainText
+                color: actionButton.icon.color
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+        }
     }
 
     component FailableLabel : PlasmaComponents3.Label {

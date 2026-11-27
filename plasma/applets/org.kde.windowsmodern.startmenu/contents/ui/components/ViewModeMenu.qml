@@ -12,6 +12,8 @@ QQC2.Popup {
     property int pendingMode: -1
     property Item anchorItem: null
     signal modeChosen(int mode)
+    readonly property int rowExtent: Theme.menuRowExtent(metrics.height)
+    FontMetrics { id: metrics; font: Kirigami.Theme.defaultFont }
 
     // Keep the popup in the Plasma dialog's scene. Native popup windows can
     // lose their transient parent or be positioned in the wrong output space.
@@ -20,8 +22,10 @@ QQC2.Popup {
     dim: false
     focus: true
     padding: Theme.menuInset
-    width: Math.max(1, Math.min(parent ? parent.width - 16 : 160, 160))
-    height: Math.max(1, Math.min(parent ? parent.height - 16 : 120, modes.length * Theme.menuRowHeight + 2 * Theme.menuInset))
+    readonly property real preferredMenuWidth: Math.max(160, ...modes.map(label =>
+        metrics.advanceWidth(label) + Theme.menuGlyphSize + 8 + 2 * Theme.menuInset + 24))
+    width: Math.max(1, Math.min(parent ? parent.width - 16 : preferredMenuWidth, preferredMenuWidth))
+    height: Math.max(1, Math.min(parent ? parent.height - 16 : 120, modes.length * rowExtent + 2 * Theme.menuInset))
     closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
 
     function openAt(button) {
@@ -81,7 +85,7 @@ QQC2.Popup {
             readonly property int mode: menu.modes.length - 1 - index
             objectName: "wmViewMode_" + mode
             width: ListView.view.width
-            height: Theme.menuRowHeight
+            height: menu.rowExtent
             text: menu.modes[mode]
             contentItem: RowLayout {
                 spacing: 8
@@ -98,12 +102,13 @@ QQC2.Popup {
                 QQC2.Label {
                     Layout.fillWidth: true
                     text: entry.text
+                    font: metrics.font
                     elide: Text.ElideRight
                     verticalAlignment: Text.AlignVCenter
                 }
             }
             background: Rectangle {
-                radius: 4
+                radius: Theme.menuRowRadius
                 color: entry.hovered || (entry.ListView.isCurrentItem && list.activeFocus)
                     ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
                     : "transparent"

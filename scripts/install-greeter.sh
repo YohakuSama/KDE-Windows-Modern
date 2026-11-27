@@ -160,7 +160,7 @@ cp -r "${THEME_SRC}" "${THEME_DST}"
 echo "    Theme installed to: ${THEME_DST}"
 echo ""
 echo "  To reload theme changes without rebuild:"
-echo "    cp plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/*.qml \\"
+echo "    cp plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/{*.qml,*.js} \\"
 echo "       ~/.local/share/plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/"
 
 echo ""

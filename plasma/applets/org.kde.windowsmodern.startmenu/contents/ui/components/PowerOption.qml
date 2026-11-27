@@ -38,12 +38,14 @@ Item {
     Keys.onTabPressed: event => navigationRequested(event.modifiers & Qt.ShiftModifier ? -1 : 1)
 
     width: parent ? parent.width : Kirigami.Units.gridUnit * 10
-    height: Theme.menuRowHeight
+    height: Theme.menuRowExtent(labelMetrics.height)
+
+    FontMetrics { id: labelMetrics; font: Kirigami.Theme.defaultFont }
 
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1
-        radius: 5
+        radius: Theme.menuRowRadius
         color: Kirigami.Theme.textColor
         opacity: !option.optionEnabled ? 0
             : hoverArea.containsPress ? 0.11
@@ -75,7 +77,7 @@ Item {
         PlasmaComponents3.Label {
             text: option.label
             color: option.optionEnabled ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
-            font.pixelSize: 13
+            font: labelMetrics.font
             Layout.fillWidth: true
             elide: Text.ElideRight
         }

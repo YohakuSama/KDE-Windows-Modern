@@ -31,7 +31,7 @@ Item {
     signal accountSettingsRequested
     signal actionInvoked
 
-    FontMetrics { id: footerMetrics; font.family: Kirigami.Theme.defaultFont.family; font.pixelSize: 13 }
+    FontMetrics { id: footerMetrics; font: Kirigami.Theme.defaultFont }
 
     function moveFocus(direction) {
         const available = options.map(option => option.visible && option.optionEnabled);

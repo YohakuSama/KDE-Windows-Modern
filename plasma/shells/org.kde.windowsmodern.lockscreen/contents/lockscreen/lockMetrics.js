@@ -4,6 +4,10 @@
 // Windows 26300.9974 RequestCredentialUserControl.xbf: CredentialControlsWidth.
 // See docs/windows11-26h2-ui-parameters.json for the resource and template evidence.
 const passwordWidth = 296;
+// CommonStyles.xbf: LogonDefaultFontSize and TextFieldCornerRadius.
+const credentialFontSize = 14;
+const fieldCornerRadius = 4;
+// Host-specific heights remain distinct pending native template evidence.
 const passwordHeight = 30;
 
 function avatarSize(width, height) {

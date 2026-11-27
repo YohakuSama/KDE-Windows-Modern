@@ -7,6 +7,7 @@ pragma Singleton
  */
 
 import QtQuick
+import "lockMetrics.js" as LockMetrics
 
 QtObject {
     readonly property color foregroundColor: "#FFFFFF"
@@ -24,9 +25,9 @@ QtObject {
 
     readonly property int avatarSize: 160
     readonly property int textFieldHeight: 42
-    readonly property int textFieldRadius: 4
+    readonly property int textFieldRadius: LockMetrics.fieldCornerRadius
     readonly property color textFieldBorderColor: "#66FFFFFF"
-    readonly property int textFieldMaxWidth: 280
+    readonly property int textFieldMaxWidth: LockMetrics.passwordWidth
     readonly property int loginButtonSize: 38
     readonly property int userSwitcherAvatarSize: 40
     readonly property int userSwitcherItemHeight: 52
@@ -36,6 +37,6 @@ QtObject {
     readonly property int clockTimePixelSize: 96
     readonly property int clockDatePixelSize: 24
     readonly property int usernamePixelSize: 28
-    readonly property int bodyPixelSize: 14
+    readonly property int bodyPixelSize: LockMetrics.credentialFontSize
     readonly property int userSwitcherNamePixelSize: 14
 }

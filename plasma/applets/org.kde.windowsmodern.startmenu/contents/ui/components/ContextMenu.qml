@@ -14,11 +14,11 @@ Item {
     property var context: ({})
     property var actions: []
     property var pendingAction: null
-    readonly property int rowHeight: Theme.menuRowHeight
+    readonly property int rowHeight: Theme.menuRowExtent(metrics.height)
     readonly property int separatorHeight: 9
     readonly property int gap: 8
 
-    FontMetrics { id: metrics; font.family: Kirigami.Theme.defaultFont.family; font.pixelSize: 13 }
+    FontMetrics { id: metrics; font: Kirigami.Theme.defaultFont }
 
     // Every source model can change while a menu is open (not just All
     // Apps). Discard captured row indexes before an action can use them.
@@ -155,7 +155,7 @@ Item {
                 focusPolicy: Qt.NoFocus
                 text: modelData.text || ""
                 background: Rectangle {
-                    radius: 4
+                    radius: Theme.menuRowRadius
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, row.separator ? 0
                             : row.down ? 0.12 : row.hovered || (row.ListView.isCurrentItem && list.activeFocus) ? 0.08 : 0)
@@ -188,15 +188,16 @@ Item {
                     QQC2.Label {
                         Layout.fillWidth: true
                         text: row.text
-                        font.pixelSize: 13
+                        font: metrics.font
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
                     }
                     QQC2.Label {
                         visible: !!row.modelData.shortcut
                         text: row.modelData.shortcut || ""
+                        elide: Text.ElideRight
                         opacity: 0.65
-                        font.pixelSize: 12
+                        font: metrics.font
                         textFormat: Text.PlainText
                     }
                 }

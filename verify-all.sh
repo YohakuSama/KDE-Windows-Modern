@@ -279,6 +279,7 @@ for pair in \
     "$LOCK/dateformat.js $LOGIN/dateformat.js" \
     "$LOCK/StatusIconButton.qml $LOGIN/StatusIconButton.qml" \
     "$LOCK/lockText.js $LOGIN/lockText.js" \
+    "$LOCK/lockMetrics.js $LOGIN/lockMetrics.js" \
     "$LOCK/NativeGlyph.qml $LOGIN/NativeGlyph.qml" \
     "$LOCK/NativeGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/NativeGlyph.qml" \
     "$LOCK/NativeGlyph.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeGlyph.qml" \

@@ -346,9 +346,35 @@ def shell_inventory(manifest_path):
             changed.append(relative)
         else:
             verified.append(relative)
+    # Output hashes only prove consistency with the local manifest. Compare
+    # its recorded inputs with the owner's independently recorded build audit.
+    # A different or incomplete extraction remains usable, but is not an
+    # exact match to this reference. Do not change the importer or UI here.
+    reference = json.loads((ROOT / "docs/windows11-26h2-resource-audit.json")
+                           .read_text(encoding="utf-8"))["windows"]
+    recorded_sources = {name.casefold(): digest
+                        for name, digest in manifest.get("sources", {}).items()}
+    matched_sources, missing_sources, changed_sources = [], [], []
+    for name, digest in sorted(reference["source_sha256"].items()):
+        actual_digest = recorded_sources.get(name.casefold())
+        if actual_digest is None:
+            missing_sources.append(name)
+        elif actual_digest != digest:
+            changed_sources.append(name)
+        else:
+            matched_sources.append(name)
+    # The reference includes both assets which are optional for other builds.
+    reference_required = required | {"search/dark-off.png", "account/default.png"}
+    reference_missing_outputs = sorted(reference_required - set(verified))
     return {
         "manifest_present": True,
         "declared_source_build": manifest.get("declared_source_build"),
+        "reference_build": reference["build"],
+        "declared_build_matches_reference": manifest.get("declared_source_build") == reference["build"],
+        "reference_sources_matched": matched_sources,
+        "reference_sources_missing": missing_sources,
+        "reference_sources_changed": changed_sources,
+        "reference_outputs_missing_or_changed": reference_missing_outputs,
         "declared_output_count": len(outputs),
         "verified_outputs": verified,
         "missing_or_changed_outputs": changed,
@@ -426,7 +452,7 @@ def main():
             "A verified output hash in an indexed directory establishes local import parity, not semantic identity, Windows version or actual runtime icon resolution.",
             "Native name counts mean at least one verified path; same-name alternate files may have different contexts or bytes and are not independently verified.",
             "KCM metadata lists declared icons, not the runtime-resolved theme file or category and page-internal controls.",
-            "Private shell manifest hashes establish output parity, not independent verification of the declared Windows build."
+            "Private shell manifest hashes establish output parity; reference input hashes are compared with the recorded owner audit, not independently rehashed from the original Windows image."
         ],
     }, indent=2, ensure_ascii=False))
 

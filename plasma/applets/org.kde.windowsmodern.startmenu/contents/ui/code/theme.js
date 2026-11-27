@@ -52,6 +52,12 @@ function menuBorder(bg) { return ColorType.cardBorder(isDark(bg)); }
 // Shared Start transient menu geometry in logical pixels.
 var menuGlyphSize = 16;
 var menuRowHeight = 32;
+var menuRowRadius = 4;
+// Preserve the normal logical row baseline; grow only when the actual
+// system font needs more space. The same font is used to measure and paint.
+function menuRowExtent(textHeight) {
+    return Math.max(menuRowHeight, Math.ceil(textHeight) + 8);
+}
 var menuInset = 4;
 var menuRadius = 8;
 var menuTextInset = 10;
