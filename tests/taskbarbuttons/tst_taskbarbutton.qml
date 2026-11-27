@@ -6,6 +6,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.search/contents/ui"
+import "../../plasma/applets/org.kde.windowsmodern.search/contents/ui/controlMetrics.js" as ControlMetrics
 
 Item {
     id: root
@@ -197,7 +198,7 @@ Item {
             const pill = findChild(box, "wmSearchPill");
             const icon = findChild(box, "searchBoxIcon");
             const label = findChild(box, "wmSearchPlaceholder");
-            compare(pill.radius, Math.min(pill.height / 2, 16));
+            compare(pill.radius, Math.min(pill.height / 2, ControlMetrics.searchBoxCornerRadius));
             compare(icon.width, Math.round(pill.height * 20 / 36));
             compare(label.font.pixelSize, Math.round(data.boxHeight * 16 / 36));
         }

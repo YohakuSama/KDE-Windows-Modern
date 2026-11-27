@@ -13,6 +13,8 @@ const overlayCornerRadius = 8;
 const cardSurfaceRadius = 8;
 // WinUI 21h1_themeresources.xbf: MenuFlyoutThemeMinHeight.
 const menuItemMinimumHeight = 32;
+// TaskbarResources.xbf: SearchBoxRoundCornerRadius.
+const searchBoxCornerRadius = 16;
 // Existing Start/Search hover, focus and drag micro-interaction target.
 // Project-owned timing, not claimed as a native XAML resource value.
 const microInteractionDuration = 90;

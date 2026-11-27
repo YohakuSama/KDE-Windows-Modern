@@ -8,6 +8,7 @@
 */
 import QtQuick
 import org.kde.kirigami as Kirigami
+import "controlMetrics.js" as ControlMetrics
 
 MouseArea {
     id: box
@@ -112,7 +113,7 @@ MouseArea {
         anchors.centerIn: parent
         width: Math.max(0, Math.min(box.boxWidth, box.width - 2 * box.sideMargin))
         height: Math.min(box.boxHeight, width)
-        radius: Math.min(height / 2, 16)
+        radius: Math.min(height / 2, ControlMetrics.searchBoxCornerRadius)
         color: box.selected ? selectedFill : (box.showPressed ? pressedFill : (box.showHovered ? hoverFill : restFill))
         border.width: width > 0 && height > 0 ? 1 : 0
         border.color: box.selected && compact ? selectedFill

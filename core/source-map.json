@@ -151,7 +151,8 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/controlMetrics.js",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/controlMetrics.js",
       "plasma/applets/org.kde.windowsmodern.icontasks/contents/ui/controlMetrics.js",
-      "plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/ui/controlMetrics.js"
+      "plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/ui/controlMetrics.js",
+      "plasma/applets/org.kde.windowsmodern.search/contents/ui/controlMetrics.js"
     ],
     "core/design/lockMetrics.js": [
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockMetrics.js",
