@@ -44,7 +44,7 @@ Rectangle {
         return (mouseItem.containsMouse || item.activeFocus) ? hover : Kirigami.Theme.backgroundColor;
     }
 
-    Behavior on color { ColorAnimation { duration: 90 } }
+    Behavior on color { ColorAnimation { duration: ControlMetrics.microInteractionDuration } }
 
     smooth: true
     focus: true

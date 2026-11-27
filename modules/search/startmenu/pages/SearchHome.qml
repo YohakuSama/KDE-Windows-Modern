@@ -54,7 +54,7 @@ Item {
                 entry.down ? 0.12 : entry.hovered || entry.activeFocus ? 0.09 : entry.tile ? 0.045 : 0)
             border.width: entry.activeFocus ? 1 : 0
             border.color: Kirigami.Theme.highlightColor
-            Behavior on color { ColorAnimation { duration: 90 } }
+            Behavior on color { ColorAnimation { duration: ControlMetrics.microInteractionDuration } }
         }
         contentItem: Item {
             Kirigami.Icon {
@@ -198,7 +198,7 @@ Item {
                                         chip.down ? 0.16 : chip.hovered || chip.activeFocus ? 0.12 : 0.06)
                                     border.width: chip.activeFocus ? 1 : 0
                                     border.color: Kirigami.Theme.highlightColor
-                                    Behavior on color { ColorAnimation { duration: 90 } }
+                                    Behavior on color { ColorAnimation { duration: ControlMetrics.microInteractionDuration } }
                                 }
                                 contentItem: Text {
                                     id: chipLabel

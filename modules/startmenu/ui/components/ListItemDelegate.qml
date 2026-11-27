@@ -86,7 +86,7 @@ Item {
             if (item.hostView && item.hostView.activeFocus && item.currentApp) return 0.08;
             return 0;
         }
-        Behavior on opacity { NumberAnimation { duration: 90 } }
+        Behavior on opacity { NumberAnimation { duration: ControlMetrics.microInteractionDuration } }
     }
 
     // ── Drop indicator line ────────────────────────────────────────────
@@ -153,7 +153,7 @@ Item {
         ]
         opacity: item._dragging ? Theme.draggingOpacity : Theme.opacityFull
 
-        Behavior on opacity { NumberAnimation { duration: 90 } }
+        Behavior on opacity { NumberAnimation { duration: ControlMetrics.microInteractionDuration } }
 
         Kirigami.Icon {
             id: icon

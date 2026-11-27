@@ -16,6 +16,7 @@ import org.kde.plasma.private.sessions
 import org.kde.kirigami as Kirigami
 
 import "../code/startMenuMetrics.js" as Metrics
+import "../code/controlMetrics.js" as ControlMetrics
 import "../code/footerNavigation.js" as FooterNavigation
 
 Item {
@@ -219,7 +220,7 @@ Item {
             }
         }
 
-        Behavior on opacity { NumberAnimation { duration: 90 } }
+        Behavior on opacity { NumberAnimation { duration: ControlMetrics.microInteractionDuration } }
     }
 
     // ── Positioning logic ──────────────────────────────────────────────

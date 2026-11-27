@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
+import "../js/controlMetrics.js" as ControlMetrics
 import "../js/trayMetrics.js" as TrayMetrics
 
 // Presentation only. Every operation is dispatched through KDE ActionsInfo.
@@ -36,7 +37,7 @@ Rectangle {
     onCanOperateChanged: if (!canOperate) expanded = false
 
     implicitHeight: body.implicitHeight + 16
-    radius: 6
+    radius: ControlMetrics.controlCornerRadius
     color: row.expanded ? ColorType.rowFill(dark, true, false, false)
          : pointer.hovered ? ColorType.rowFill(dark, false, true, false) : "transparent"
     border.width: row.expanded ? 1 : 0

@@ -2,6 +2,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js" as ControlMetrics
 
 Item {
     function i18n(message) { return message; }
@@ -37,6 +38,10 @@ Item {
             row.present = true;
             row.busy = false;
             row.expanded = false;
+        }
+
+        function test_sharedDetailRowRadius() {
+            compare(row.radius, ControlMetrics.controlCornerRadius);
         }
 
         function test_nativeDefaultAction() {

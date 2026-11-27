@@ -202,7 +202,7 @@ Item {
                 border.color: activeFocus ? Kirigami.Theme.highlightColor
                     : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
-                Behavior on color { ColorAnimation { duration: 90 } }
+                Behavior on color { ColorAnimation { duration: ControlMetrics.microInteractionDuration } }
 
                 PlasmaComponents3.Label {
                     id: pillLabel
@@ -352,7 +352,7 @@ Item {
                     if (resultDelegate.isCurrent) return 0.5
                     return 0.0
                 }
-                Behavior on opacity { NumberAnimation { duration: 90 } }
+                Behavior on opacity { NumberAnimation { duration: ControlMetrics.microInteractionDuration } }
             }
 
             RowLayout {
