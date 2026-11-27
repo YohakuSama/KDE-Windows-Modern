@@ -14,6 +14,7 @@ import org.kde.kirigami as Kirigami
 
 import "../code/theme.js" as Theme
 import "../code/startMenuMetrics.js" as Metrics
+import "../code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: option
@@ -51,7 +52,7 @@ Item {
         opacity: !option.optionEnabled ? 0
             : hoverArea.containsPress ? 0.11
             : hoverArea.containsMouse || option.activeFocus ? 0.065 : 0
-        Behavior on opacity { NumberAnimation { duration: 80 } }
+        Behavior on opacity { NumberAnimation { duration: ControlMetrics.microInteractionDuration } }
     }
 
     RowLayout {
