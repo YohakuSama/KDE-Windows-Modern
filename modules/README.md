@@ -74,9 +74,11 @@ is owned by platform/plasma/appearance/atlas; its native path is generated.
 Standard install and developer entry points prepare generated
 files; full install ZIPs reconstruct them from the archived commit.
 Aurorae, Plymouth, application configuration and Dolphin patches are also
-generated-only. The only native Konsole plugin source is
-[app-decorations/konsole](../app-decorations/konsole/); its module entry
-[terminal/plugin](terminal/plugin/README.md) documents that ownership.
+generated-only. The terminal module's version-matched Konsole adapter is maintained in
+[platform/qt/konsole](../platform/qt/konsole/); its module entry
+[terminal/plugin](terminal/plugin/README.md) documents the feature boundary.
+The native build input at app-decorations/konsole is generated from that
+platform source and must not be edited directly.
 Nix build expressions likewise retain their native paths as unique sources.
 The 44 script/data entry paths are source-only relative symlinks
 to their canonical files. Install ZIPs and appearance packages use real

@@ -64,7 +64,8 @@ implemented, and do not infer visual parity from the task count.
 | `color-schemes/`, `scripts/theme/palette.json` | Native mirrors of core/palette template and fixed color roles. |
 | `plasma/layout-templates/` | Generated Add Panel wrapper and common body from modules/taskbar/layout. The global-theme entry uses the same body. |
 | `plasma/windowswitcher/` | The Alt+Tab switcher (a KWin window-switcher layout). |
-| `nix/`, `app-decorations/konsole/` | Unique native source locations needed by path-relative Nix builds and the existing independent Konsole syntax check; indexed from platform/nixos and modules/terminal/plugin. |
+| `nix/` | Unique native Nix expression locations needed by path-relative build recipes; indexed from platform/nixos. |
+| `app-decorations/konsole/` | Generated Konsole build input from `platform/qt/konsole/`; do not edit directly. |
 | `tests/` | Headless regression tests, previews, and separate live desktop tests. |
 | `plasma/shells/` | Session lock screen (installed as a shell overlay). |
 | `third_party/plasma-login-manager/` | Git submodule for the boot greeter (pinned). |
@@ -77,15 +78,16 @@ or packaging/, not the generated native destination or a source-only alias.
 Use `python3 -I scripts/materialize-modules.py --prepare` to refresh generated
 outputs and validate source aliases; `--write` is equivalent. Review the
 resulting diff, then use `--check` for a read-only consistency check.
-The original 436 mapped deployment positions now have one editable
-implementation each: 382 generated files, 43 source-only aliases, and 11
-native files retained as unique source locations outside the map.
+The original 436 mapped deployment positions were consolidated into 382
+generated files, 43 source-only aliases and 11 unique native source files.
+The seven Konsole plugin sources are now generated from platform/qt/konsole;
+four Nix expressions remain unique native sources.
 The shared Plasma atlas adds 166 generated native files to the map,
 the shared taskbar geometry helper adds four native outputs, and the
 shell-session controllers and panel capability helper add six more.
 The panel popup and native effects adapters add four generated sources.
 The shared theme-file transaction helper adds one source-only alias.
-The map now has 562 generated files and 44 aliases.
+The map now has 569 generated files and 44 aliases.
 
 All mapped Plasma native outputs are ignored by Git, including the
 seven applets, C++ backends, native metadata, desktop context-menu
@@ -103,8 +105,8 @@ nix-shell Python before checking build inputs. For privileged conventional
 installs, prepare as the desktop user first. Full bundles reconstruct
 generated native files from the exact archived commit, excluding development
 trees. Mapped Aurorae, Kvantum and color-scheme templates, Plymouth source,
-application configuration/patches (except the independently checked Konsole
-plugin), component installers and selected frame tools are generated-only.
+application configuration/patches, including the Konsole plugin, component
+installers and selected frame tools are generated-only.
 Use the root install.sh component driver for a fresh checkout; run
 --prepare before directly invoking generated low-level scripts. The direct
 Dolphin and Plymouth paths read canonical inputs in a source checkout.
@@ -115,9 +117,10 @@ installed modules. Full archives exclude these links and restore the
 canonical bytes and executable modes as regular files; installed
 appearance packages also copy real files. Invoke scripts through scripts/
 rather than their relocated source paths, and do not download a Git
-symlink as a standalone raw script. The seven Konsole native plugin files
-and four Nix expressions retain their existing native source locations
-to avoid changing the independent static workflow or build identity.
+symlink as a standalone raw script. The seven Konsole plugin sources are owned by platform/qt/konsole and
+materialized at app-decorations/konsole for the Nix build. Four Nix
+expressions retain their native source paths. The static workflow prepares
+the generated plugin directory from the same source.
 The duplicate module/platform copies have been removed. Do not re-add
 generated files or replace an alias with a second implementation.
 

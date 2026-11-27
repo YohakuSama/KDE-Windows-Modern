@@ -54,7 +54,7 @@ version="$(LC_ALL=C konsole --version | sed -n 's/^konsole \([0-9][0-9.]*\)$/\1/
 [[ "$version" =~ ^26\.08\.[0-9]+$ ]] || fail "Unsupported Konsole version: ${version:-unknown}. This source targets 26.08.x."
 source_identity() {
     (cd "$ROOT" && {
-        find app-decorations/konsole -maxdepth 1 -type f -print0 | sort -z | xargs -0 -r sha256sum
+        find platform/qt/konsole -maxdepth 1 -type f -print0 | sort -z | xargs -0 -r sha256sum
         sha256sum nix/konsole-chrome.nix
     }) | sha256sum | cut -d' ' -f1
 }
@@ -71,6 +71,9 @@ if [ "$action" = build ]; then
             --expr "(builtins.getFlake \"github:NixOS/nixpkgs/$revision\").outPath")"
     fi
     [[ "$nixpkgs" = /* && -d "$nixpkgs" ]] || fail 'WM_KONSOLE_NIXPKGS must be an absolute nixpkgs directory.'
+    python_bin="${PYTHON:-python3}"
+    command -v "$python_bin" >/dev/null || fail 'Python 3 is required to prepare the canonical Konsole plugin source.'
+    "$python_bin" -I "$ROOT/scripts/materialize-modules.py" --prepare
     nix-build "$ROOT/nix/konsole-chrome.nix" --argstr nixpkgsPath "$nixpkgs" \
         --argstr konsoleVersion "$version" --out-link "$STATE/result"
     [ "$identity" = "$(source_identity)" ] || fail 'Source changed during the build. Build again.'

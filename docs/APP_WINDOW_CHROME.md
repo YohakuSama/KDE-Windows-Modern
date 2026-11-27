@@ -2,8 +2,9 @@
 
 ## Konsole: integrated Windows Terminal-style title bar
 
-The optional plugin in `app-decorations/konsole` is source-reviewed against
+The optional plugin source in `platform/qt/konsole` is source-reviewed against
 [Konsole release/26.08](https://github.com/KDE/konsole/tree/release/26.08/src).
+The source map materializes its build input at `app-decorations/konsole`.
 Its layout follows the public Windows Terminal
 [TabRowControl](https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalApp/TabRowControl.xaml)
 and [TitlebarControl](https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalApp/TitlebarControl.xaml).
@@ -136,7 +137,7 @@ terminal profiles; the isolated Konsole application itself still shares
 the usual Konsole configuration and session state.
 
 For another distribution, build inside a matching Konsole source tree
-by copying the plugin directory into `src/plugins/WindowsModernChrome`
+by copying `platform/qt/konsole` into `src/plugins/WindowsModernChrome`
 and appending `add_subdirectory(WindowsModernChrome)` to
 `src/plugins/CMakeLists.txt`. Use the upstream dependencies plus Qt SVG,
 Qt DBus and KWindowSystem. Do not mix an arbitrary compiled plugin with

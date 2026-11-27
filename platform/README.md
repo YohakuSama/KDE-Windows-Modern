@@ -15,16 +15,20 @@ and version-specific adapters; do not replace the system backends.
 | plasma/login/ | Greeter host patch and private asset/color adapter |
 | plasma/shortcuts/ | Shell-session shortcut routing and native shortcut/context-menu integration |
 | plasma/app-appearance.py | Host application configuration adapter |
+| qt/konsole/ | Version-matched Konsole private-plugin adapter |
 | qt/kvantum/ | Style templates and ABI-matched reload patch |
 | nixos/ | Native transaction tools; [unique Nix expression locations](nixos/README.md) |
 
 The [source map](../core/source-map.json) preserves native include,
 package, Nix and Python paths during the migration. All mapped Plasma
 native outputs, including C++ plugin sources and metadata, are generated
-rather than tracked. The existing build and install entry points prepare
-them before use. Edit global-theme metadata and Store dependency overrides
-here, and review login-manager patches here. Run native tools from their
-existing output paths; use --prepare before direct lower-level commands.
+rather than tracked. The Konsole adapter is maintained in qt/konsole/ and
+materialized at app-decorations/konsole/ for the version-matched Nix build
+and static compiler check. The existing build and install entry points
+prepare generated outputs before use. Edit global-theme metadata and Store
+dependency overrides here, and review login-manager patches here. Run native
+tools from their existing output paths; use --prepare before direct
+lower-level commands.
 The Plasma atlas is materialized to its historic native location; both
 renderer modes continue to use that generated native input. Frame and
 switch generators write the editable atlas by default.

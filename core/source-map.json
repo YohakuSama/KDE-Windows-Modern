@@ -35,6 +35,7 @@
     "modules/windowmanager/snaplayouts": "plasma/kwinscripts/org.kde.windowsmodern.snaplayouts",
     "platform/plasma/appearance/atlas/Windows-modern-dark": "plasma/desktoptheme/Windows-modern-dark",
     "platform/plasma/login/patches": "plasma/look-and-feel/org.kde.windowsmodern.dark/patches",
+    "platform/qt/konsole": "app-decorations/konsole",
     "platform/qt/kvantum/patches": "app-decorations/kvantum",
     "platform/qt/kvantum/style": "Kvantum/Windows-modern"
   },
@@ -635,6 +636,7 @@
     "Kvantum/Windows-modern",
     "app-decorations/dolphin",
     "app-decorations/firefox",
+    "app-decorations/konsole",
     "app-decorations/kvantum",
     "aurorae/windows-modern-dark-aurorae",
     "boot/plymouth",
