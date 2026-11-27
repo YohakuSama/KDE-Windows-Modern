@@ -236,9 +236,14 @@ release_tag() {
     if [ -d "$SRC_DIR/.git" ]; then
         git -C "$SRC_DIR" describe --exact-match --tags HEAD 2>/dev/null || true
     elif command -v python3 &>/dev/null; then
-        # A release tarball (no git): its version is the applets' Version.
+        # A release tarball already contains native metadata. An exported
+        # source checkout owns the metadata in modules/ before generation.
+        local meta="$SRC_DIR/plasma/applets/org.kde.windowsmodern.systemtray/metadata.json"
+        if [ -f "$SRC_DIR/core/source-map.json" ]; then
+            meta="$SRC_DIR/modules/systemtray/metadata.json"
+        fi
         python3 -c 'import json,sys; print("v" + json.load(open(sys.argv[1]))["KPlugin"]["Version"])' \
-            "$SRC_DIR/plasma/applets/org.kde.windowsmodern.systemtray/metadata.json" 2>/dev/null || true
+            "$meta" 2>/dev/null || true
     fi
 }
 

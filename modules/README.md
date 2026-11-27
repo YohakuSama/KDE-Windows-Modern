@@ -40,13 +40,14 @@ includes new files automatically; otherwise add an explicit mapping.
 Remove obsolete outputs deliberately. Do not execute relocated tools that
 depend on their native runtime paths.
 
-Start, Search, Task View, Show Desktop and Calendar/Notifications applet
-contents, the three KWin script contents, Alt+Tab contents and both panel
-layout scripts are generated-only. Git tracks their editable sources,
-not the generated native files. Source installers and standard developer
-entry points generate them; full install ZIPs contain the reconstructed
-native files from the archived commit. The remaining mirrors are
+All mapped Plasma native sources are generated-only, including the
+seven applets' QML, configurations, metadata and C++ sources, the KWin
+scripts, Alt+Tab, desktop context-menu plugin, both panel layouts and
+global-theme/lockscreen/greeter/splash payloads. Git tracks their canonical
+editable sources only. Existing developer launchers, test sources,
+unmapped preview assets and the shared Plasma visual atlas remain
+tracked. Standard install and developer entry points prepare generated
+files; full install ZIPs reconstruct them from the archived commit.
+Other tracked renderer, application, Nix and script mirrors are
 transitional. Keep packages self-contained and prepare before direct
-low-level tool invocation. The remaining visual atlas and original
-resource libraries retain their current locations. See the
-[quality ledger](../docs/PROJECT_QUALITY_LEDGER.md).
+low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LEDGER.md).

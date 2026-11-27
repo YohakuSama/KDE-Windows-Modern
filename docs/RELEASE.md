@@ -19,7 +19,8 @@ owner resource package. NixOS builds its own ABI-matched plugins.
 ## Public GitHub releases
 
 A public release requires a clean main checkout, consistent component
-metadata versions, the existing repository checks, actual desktop
+metadata versions (edit canonical metadata in modules/ and platform/, not
+native generated outputs), the existing repository checks, actual desktop
 acceptance and reviewed release notes. A CI pass alone does not establish
 visual parity.
 

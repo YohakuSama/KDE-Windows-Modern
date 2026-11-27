@@ -77,6 +77,13 @@ if [ ! -x "$BUILT_BINARY" ]; then
     exit 1
 fi
 
+# A source checkout must have the complete generated greeter payload before
+# any privileged replacement. The desktop-user build prepared it above;
+# the root process only verifies it.
+if [ -f "$SRC_DIR/core/source-map.json" ]; then
+    python3 -I "$SRC_DIR/scripts/materialize-modules.py" --check
+fi
+
 # ── Typed confirmation ──
 read -r -p "Type YES to proceed with system install: " CONFIRM
 echo ""

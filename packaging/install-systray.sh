@@ -4,6 +4,7 @@
 # ───────────────────────────────────────────────────────────────────
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
+prepare_module_sources
 
 dir="$SRC_DIR/plasma/applets/org.kde.windowsmodern.systemtray"
 [ -d "$dir" ] || { warn "System Tray source not found — skipping."; exit 0; }

@@ -47,7 +47,7 @@ def save_ids(products):
 
 
 def release_version():
-    meta = ROOT / "plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.json"
+    meta = ROOT / "platform/plasma/globaltheme/metadata.json"
     return json.loads(meta.read_text())["KPlugin"]["Version"]
 
 

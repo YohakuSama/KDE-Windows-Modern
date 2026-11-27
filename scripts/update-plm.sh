@@ -22,7 +22,7 @@ set -euo pipefail
 
 SRC_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PLM_DIR="${SRC_DIR}/third_party/plasma-login-manager"
-PATCH_DIR="${SRC_DIR}/plasma/look-and-feel/org.kde.windowsmodern.dark/patches"
+PATCH_DIR="${SRC_DIR}/platform/plasma/login/patches"
 TARGET_REF="${1:-Plasma/6.8}"
 PATCHES=(
     "main-cpp.patch"

@@ -42,12 +42,12 @@ def dependencies(variant):
 
 
 dark, light = (dependencies(variant) for variant in ("dark", "light"))
-path = ROOT / "plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.json"
+path = ROOT / "platform/plasma/globaltheme/metadata.json"
 meta = json.loads(path.read_text())
 meta["X-KPackage-Dependencies"] = dark
 path.write_text(json.dumps(meta, indent=4, ensure_ascii=False) + "\n")
 print(f"{path.relative_to(ROOT)}: {len(dark)} dependencies")
 overrides = {a: b for a, b in zip(dark, light, strict=True) if a != b}
-path = ROOT / "scripts/theme/light-store-dependencies.json"
+path = ROOT / "platform/plasma/appearance/light-store-dependencies.json"
 path.write_text(json.dumps(overrides, indent=4, ensure_ascii=False) + "\n")
 print(f"{path.relative_to(ROOT)}: {len(overrides)} light dependency overrides")

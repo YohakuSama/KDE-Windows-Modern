@@ -17,6 +17,11 @@ and version-specific adapters; do not replace the system backends.
 | nixos/ | Native runtime derivations and transaction tools |
 
 The [source map](../core/source-map.json) preserves native include,
-package, Nix and Python paths during the migration. Run native tools at
-their existing output paths until staging is complete. This is a source
-ownership boundary, not proof that all runtime dependencies are gone.
+package, Nix and Python paths during the migration. All mapped Plasma
+native outputs, including C++ plugin sources and metadata, are generated
+rather than tracked. The existing build and install entry points prepare
+them before use. Edit global-theme metadata and Store dependency overrides
+here, and review login-manager patches here. Run native tools from their
+existing output paths; use --prepare before direct lower-level commands.
+Nix expressions and other tracked script/renderer mirrors remain
+transitional. Source ownership does not itself remove runtime coupling.

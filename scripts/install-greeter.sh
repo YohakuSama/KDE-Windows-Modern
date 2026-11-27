@@ -12,6 +12,20 @@
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
 
+# ── Never build as root ──
+# The source tree is user-owned. Building as root leaves root-owned files
+# behind that later user runs cannot overwrite, and it means root executes
+# build steps from a user-writable directory. The system install step
+# (install-greeter-live.sh) re-invokes this script as the invoking user.
+if [ "$UID" -eq 0 ]; then
+    err "Do not run install-greeter.sh as root."
+    err "Build as your normal user, then install system-wide with:"
+    err "  sudo bash scripts/install-greeter-live.sh"
+    exit 1
+fi
+
+prepare_module_sources
+
 PLM_DIR="$SRC_DIR/third_party/plasma-login-manager"
 PATCH_DIR="$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/patches"
 THEME_SRC="$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen"
@@ -43,18 +57,6 @@ fi
 if [[ "$(git -C "$SRC_DIR" submodule status "$PLM_REL" 2>/dev/null)" == +* ]]; then
     warn "The login manager source is not at the commit this checkout pins."
     warn "To build the pinned one:  git -C \"$SRC_DIR\" submodule update $PLM_REL"
-fi
-
-# ── Never build as root ──
-# The source tree is user-owned. Building as root leaves root-owned files
-# behind that later user runs cannot overwrite, and it means root executes
-# build steps from a user-writable directory. The system install step
-# (install-greeter-live.sh) re-invokes this script as the invoking user.
-if [ "$UID" -eq 0 ]; then
-    err "Do not run install-greeter.sh as root."
-    err "Build as your normal user, then install system-wide with:"
-    err "  sudo bash scripts/install-greeter-live.sh"
-    exit 1
 fi
 
 # ── Verify PLM is clean ──

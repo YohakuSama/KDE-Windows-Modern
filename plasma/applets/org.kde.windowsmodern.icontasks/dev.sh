@@ -11,6 +11,15 @@
 set -euo pipefail
 
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Generated native files belong to the source checkout, not a second
+# editable implementation. Privileged callers may verify, never regenerate.
+if [ -f "$SRC_DIR/../../../core/source-map.json" ]; then
+    if [ "$EUID" -eq 0 ]; then
+        python3 -I "$SRC_DIR/../../../scripts/materialize-modules.py" --check
+    else
+        python3 -I "$SRC_DIR/../../../scripts/materialize-modules.py" --prepare
+    fi
+fi
 BUILD_DIR="$SRC_DIR/build"
 APP_ID="org.kde.plasma.icontasks"
 LAYOUT_FILE="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"

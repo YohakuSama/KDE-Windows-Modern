@@ -79,18 +79,22 @@ to refresh those tracked mirrors after deliberately editing their canonical
 sources. Review the resulting diff, then use `--check` for a read-only
 consistency check.
 
-The first generated-only batch covers the contents of five pure-QML applets,
-three KWin scripts, Alt+Tab and both panel layout scripts. Their native
-outputs are ignored by Git. Existing installers, QML parsing, icon coverage,
-native build and QML test entry points prepare them. Direct lower-level
-CMake/Nix commands, generators and individual Python test scripts should
-be preceded by `--prepare`. NixOS uses an existing Python, its previous
-test runtime or a temporary nix-shell Python before checking build inputs.
-For privileged conventional installs, prepare as the desktop user first.
-Full bundles reconstruct these generated files from the exact archived
-commit, excluding the development trees and retaining native package paths.
-The other tracked mirrors remain transitional. Do not maintain two editable
-implementations or re-add ignored generated files.
+All mapped Plasma native outputs are ignored by Git, including the
+seven applets, C++ backends, native metadata, desktop context-menu
+plugin, window scripts, Alt+Tab, panel layouts, lockscreen and greeter
+payloads. Existing developer entry points, tests, preview artwork and
+the unmapped desktoptheme atlas remain tracked. The Store dependency
+editor writes to platform/plasma/globaltheme and platform/plasma/appearance,
+and the login-manager updater reads canonical patches. Existing installers,
+QML parsing, icon coverage, native build and QML test entry points
+prepare their native inputs. Direct low-level CMake/Nix commands,
+generators and individual Python tests should be preceded by `--prepare`.
+NixOS uses an existing Python, its previous test runtime or temporary
+nix-shell Python before checking build inputs. For privileged conventional
+installs, prepare as the desktop user first. Full bundles reconstruct
+generated native files from the exact archived commit, excluding development
+trees. The other tracked renderer, app, Nix and script mirrors remain
+transitional. Do not re-add generated files.
 
 A complete module can add files within a mapped source tree. Delete obsolete
 generated files deliberately when removing their sources; the generator

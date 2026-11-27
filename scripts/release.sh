@@ -37,7 +37,7 @@ for arg in "$@"; do
     esac
 done
 
-META_VERSION="$(python3 -c "import json;print(json.load(open('plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.json'))['KPlugin']['Version'])" 2>/dev/null || true)"
+META_VERSION="$(python3 -c "import json;print(json.load(open('platform/plasma/globaltheme/metadata.json'))['KPlugin']['Version'])" 2>/dev/null || true)"
 if [[ -z "$VERSION" ]]; then
     VERSION="$META_VERSION"
 fi

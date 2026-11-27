@@ -10,8 +10,14 @@
 set -euo pipefail
 
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Generated native files belong to the source checkout, not a second
+# editable implementation. Privileged callers may verify, never regenerate.
 if [ -f "$SRC_DIR/../../../core/source-map.json" ]; then
-    python3 -I "$SRC_DIR/../../../scripts/materialize-modules.py" --prepare
+    if [ "$EUID" -eq 0 ]; then
+        python3 -I "$SRC_DIR/../../../scripts/materialize-modules.py" --check
+    else
+        python3 -I "$SRC_DIR/../../../scripts/materialize-modules.py" --prepare
+    fi
 fi
 APP_ID="org.kde.windowsmodern.startmenu"
 APPLETS_DIR="$HOME/.local/share/plasma/plasmoids"
