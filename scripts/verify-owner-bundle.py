@@ -19,6 +19,7 @@ from native_assets_index import mapped_resource_entries, verify_reference_index
 # Exclude only known development material; upstream build sources stay intact.
 DEV_PATHS = (
     "tests", ".github", "plans", "AGENTS.md", "CLAUDE.md",
+    "core", "modules", "scripts/materialize-modules.py",
     ".editorconfig", ".shellcheckrc", ".gitignore", ".gitattributes", ".gitmodules",
     "CONTRIBUTING.md", "PRODUCT.md", "docs/CONTRIBUTING.md",
     "verify-all.sh", "docs/icon-pack", "docs/screenshots",

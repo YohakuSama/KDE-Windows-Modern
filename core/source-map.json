@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "trees": {
+    "modules/calendar/config": "plasma/applets/org.kde.windowsmodern.digitalclock/contents/config",
+    "modules/calendar/ui": "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui",
+    "modules/notifications/ui": "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui",
+    "modules/search/config": "plasma/applets/org.kde.windowsmodern.search/contents/config",
+    "modules/search/startmenu": "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui",
+    "modules/search/ui": "plasma/applets/org.kde.windowsmodern.search/contents/ui",
+    "modules/showdesktop/config": "plasma/applets/org.kde.windowsmodern.showdesktop/contents/config",
+    "modules/showdesktop/ui": "plasma/applets/org.kde.windowsmodern.showdesktop/contents/ui",
+    "modules/startmenu/config": "plasma/applets/org.kde.windowsmodern.startmenu/contents/config",
+    "modules/startmenu/ui": "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui",
+    "modules/taskview/ui": "plasma/applets/org.kde.windowsmodern.taskview/contents/ui"
+  },
+  "files": {
+    "core/animations/SignInProgress.qml": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/SignInProgress.qml",
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash/SignInProgress.qml"
+    ],
+    "core/controls/BatteryGlyph.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/BatteryGlyph.qml",
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/BatteryGlyph.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/BatteryGlyph.qml"
+    ],
+    "core/controls/BatteryStatusIcon.qml": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/BatteryStatusIcon.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/BatteryStatusIcon.qml"
+    ],
+    "core/controls/DefaultAccountPortrait.qml": [
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/DefaultAccountPortrait.qml",
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/DefaultAccountPortrait.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/DefaultAccountPortrait.qml"
+    ],
+    "core/controls/FluentPowerMenuItem.qml": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/FluentPowerMenuItem.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/FluentPowerMenuItem.qml"
+    ],
+    "core/controls/FluentScrollBar.qml": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml",
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml",
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentScrollBar.qml"
+    ],
+    "core/controls/NativeGlyph.qml": [
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/NativeGlyph.qml",
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeGlyph.qml",
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/NativeGlyph.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/NativeGlyph.qml"
+    ],
+    "core/controls/NetworkStatusIcon.qml": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/NetworkStatusIcon.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/NetworkStatusIcon.qml"
+    ],
+    "core/controls/SearchGlyph.qml": [
+      "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml",
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml"
+    ],
+    "core/controls/StatusIconButton.qml": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/StatusIconButton.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/StatusIconButton.qml"
+    ],
+    "core/controls/TaskbarButton.qml": [
+      "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml",
+      "plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml"
+    ],
+    "core/controls/TaskbarGlyph.qml": [
+      "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml",
+      "plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml"
+    ],
+    "core/design/lockMetrics.js": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockMetrics.js",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockMetrics.js"
+    ],
+    "core/design/popupGeometry.js": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/popupGeometry.js",
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupGeometry.js",
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/popupGeometry.js"
+    ],
+    "core/logic/batteryState.js": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/batteryState.js",
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/batteryState.js",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/batteryState.js"
+    ],
+    "core/logic/dateformat.js": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/dateformat.js",
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/dateformat.js",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/dateformat.js"
+    ],
+    "core/logic/lockText.js": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockText.js",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockText.js"
+    ],
+    "core/palette/colorType.js": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/colorType.js",
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js",
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js"
+    ],
+    "core/resources/default-avatar-small.svg": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/default-avatar-small.svg",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/default-avatar-small.svg"
+    ],
+    "core/resources/default-avatar.svg": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/default-avatar.svg",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/default-avatar.svg"
+    ],
+    "modules/calendar/metadata.json": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/metadata.json"
+    ],
+    "modules/search/metadata.json": [
+      "plasma/applets/org.kde.windowsmodern.search/metadata.json"
+    ],
+    "modules/showdesktop/metadata.json": [
+      "plasma/applets/org.kde.windowsmodern.showdesktop/metadata.json"
+    ],
+    "modules/startmenu/metadata.json": [
+      "plasma/applets/org.kde.windowsmodern.startmenu/metadata.json"
+    ],
+    "modules/taskview/metadata.json": [
+      "plasma/applets/org.kde.windowsmodern.taskview/metadata.json"
+    ]
+  }
+}

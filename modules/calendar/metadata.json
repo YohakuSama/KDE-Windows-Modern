@@ -1,0 +1,34 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "jeysef@users.noreply.github.com",
+                "Name": "Jeysef"
+            }
+        ],
+        "BugReportUrl": "https://github.com/YohakuSama/KDE-Windows-Modern/issues",
+        "Category": "Date and Time",
+        "Description": "Windows 11 style digital clock with calendar popup for Plasma 6.",
+        "EnabledByDefault": true,
+        "FormFactors": [
+            "desktop"
+        ],
+        "Icon": "preferences-system-time",
+        "Id": "org.kde.windowsmodern.digitalclock",
+        "License": "GPL-2.0-or-later",
+        "Name": "Digital Clock (Windows Modern)",
+        "Version": "1.2.2",
+        "Website": "https://github.com/YohakuSama/KDE-Windows-Modern",
+        "Name[zh_CN]": "数字时钟（Windows Modern）",
+        "Description[zh_CN]": "Windows 11 风格时钟、日历和通知中心",
+        "Name[zh_SG]": "数字时钟（Windows Modern）",
+        "Description[zh_SG]": "Windows 11 风格时钟、日历和通知中心",
+        "Name[zh_Hans]": "数字时钟（Windows Modern）",
+        "Description[zh_Hans]": "Windows 11 风格时钟、日历和通知中心"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": [
+        "org.kde.plasma.digitalclock"
+    ]
+}

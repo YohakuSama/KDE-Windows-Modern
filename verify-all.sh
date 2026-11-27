@@ -267,50 +267,11 @@ else
     fail "app appearance tests failed — run: python3 -m unittest discover -s tests/apps -v"
 fi
 
-# ── Shared code copies ──────────────────────────────────────────────
-# The lock screen is its own package, so it carries a copy of the clock's
-# date formatting; the two must not drift apart. Likewise the Search and
-# Task View applets each carry the shared taskbar button and glyph.
-SHARED_DRIFT=""
-LOCK=plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen
-LOGIN=plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen
-for pair in \
-    "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/dateformat.js $LOCK/dateformat.js" \
-    "$LOCK/dateformat.js $LOGIN/dateformat.js" \
-    "$LOCK/StatusIconButton.qml $LOGIN/StatusIconButton.qml" \
-    "$LOCK/lockText.js $LOGIN/lockText.js" \
-    "$LOCK/lockMetrics.js $LOGIN/lockMetrics.js" \
-    "$LOCK/NativeGlyph.qml $LOGIN/NativeGlyph.qml" \
-    "$LOCK/NativeGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/NativeGlyph.qml" \
-    "$LOCK/NativeGlyph.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeGlyph.qml" \
-    "$LOCK/DefaultAccountPortrait.qml $LOGIN/DefaultAccountPortrait.qml" \
-    "$LOCK/DefaultAccountPortrait.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/DefaultAccountPortrait.qml" \
-    "$LOCK/BatteryGlyph.qml $LOGIN/BatteryGlyph.qml" \
-    "$LOCK/BatteryGlyph.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/BatteryGlyph.qml" \
-    "$LOCK/batteryState.js $LOGIN/batteryState.js" \
-    "$LOCK/batteryState.js plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/batteryState.js" \
-    "$LOCK/default-avatar.svg $LOGIN/default-avatar.svg" \
-    "$LOCK/default-avatar-small.svg $LOGIN/default-avatar-small.svg" \
-    "$LOCK/FluentPowerMenuItem.qml $LOGIN/FluentPowerMenuItem.qml" \
-    "$LOCK/NetworkStatusIcon.qml $LOGIN/NetworkStatusIcon.qml" \
-    "$LOCK/BatteryStatusIcon.qml $LOGIN/BatteryStatusIcon.qml" \
-    "$LOGIN/SignInProgress.qml plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash/SignInProgress.qml" \
-    "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml" \
-    "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml" \
-    "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml" \
-    "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentScrollBar.qml" \
-    "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/StartScrollBar.qml plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/FluentScrollBar.qml" \
-    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/colorType.js" \
-    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js" \
-    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/popupGeometry.js plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupGeometry.js" \
-    "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/popupGeometry.js plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/popupGeometry.js"; do
-    # shellcheck disable=SC2086  # two paths on purpose
-    cmp -s $pair || SHARED_DRIFT="$SHARED_DRIFT ${pair##* }"
-done
-if [ -z "$SHARED_DRIFT" ]; then
-    pass "shared copies (date format, lock/login status icons, taskbar button + glyph) are identical"
+# ── Module source mirrors ───────────────────────────────────────────
+if python3 -I scripts/materialize-modules.py --check; then
+    pass "native package mirrors match the editable shared and module sources"
 else
-    fail "copies drifted from their source:$SHARED_DRIFT"
+    fail "module source drift — review and run scripts/materialize-modules.py --write"
     FAILED=1
 fi
 

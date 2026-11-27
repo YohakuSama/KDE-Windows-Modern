@@ -1,0 +1,64 @@
+/***************************************************************************
+ *   License: GPL-3.0-or-later
+ *   Author: Jeysef
+ *
+ *   Centralized translucency / opacity constants for the start menu.
+ *   Import as a namespace, e.g.:
+ *       import "../code/theme.js" as Theme
+ *   then reference values like Theme.buttonFlatBackgroundOpacity.
+ ***************************************************************************/
+
+.import "colorType.js" as ColorType
+
+// Flat buttons / chips ("All apps", "Back", filter pills, shutdown split)
+var buttonFlatBackgroundOpacity = 0.06;
+var buttonFlatHoverOpacity      = 0.08;
+
+// Raised / hover-filled controls (legacy AToolButton hover, list items)
+var buttonHoverOpacity          = 0.08;
+
+// Borders and dividers
+var buttonBorderOpacity         = 0.08;
+var buttonDividerOpacity        = 0.10;
+var fieldBorderOpacity          = 0.12;
+var popupBorderOpacity          = 0.10;
+var separatorOpacity            = 0.09;
+var headerSeparatorOpacity      = 0.08;
+
+// Icons and text that are de-emphasized
+var buttonChevronOpacity        = 0.70;
+var dimmedIconOpacity           = 0.60;
+var dimmedTextOpacity           = 0.60;
+var disabledIconOpacity         = 0.40;
+
+// List / drag states
+var listItemCurrentOpacity      = 0.50;
+var draggingOpacity             = 0.85;
+
+// Whole-menu translucency modes (must match main.xml menuTranslucency enum)
+var menuTranslucencyFollowTheme = 0;
+var menuTranslucencyTranslucent = 1;
+var menuTranslucencyOpaque      = 2;
+
+// Convenience constants for fully visible / fully hidden states
+var opacityFull   = 1.0;
+var opacityHidden = 0.0;
+
+// Use the same neutral surfaces as the shell popup frames.
+function isDark(color) { return ColorType.isDark(color); }
+function menuSurface(bg) { return isDark(bg) ? "#2C2C2C" : "#F9F9F9"; }
+function menuBorder(bg) { return ColorType.cardBorder(isDark(bg)); }
+
+// Shared Start transient menu geometry in logical pixels.
+var menuGlyphSize = 16;
+var menuRowHeight = 32;
+var menuRowRadius = 4;
+// Preserve the normal logical row baseline; grow only when the actual
+// system font needs more space. The same font is used to measure and paint.
+function menuRowExtent(textHeight) {
+    return Math.max(menuRowHeight, Math.ceil(textHeight) + 8);
+}
+var menuInset = 4;
+var menuRadius = 8;
+var menuTextInset = 10;
+var menuIconGap = 10;

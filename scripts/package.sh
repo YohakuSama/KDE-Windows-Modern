@@ -163,6 +163,8 @@ if [[ "${1:-}" == "--list" ]]; then
     exit 0
 fi
 
+# A source checkout must not package stale generated native files.
+python3 -I "$SCRIPT_DIR/materialize-modules.py" --check
 mkdir -p "$DIST_DIR"
 OWNER=0
 if [[ "${1:-}" == "--owner" ]]; then
