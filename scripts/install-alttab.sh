@@ -7,6 +7,7 @@
 # ───────────────────────────────────────────────────────────────────
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
+prepare_module_sources
 
 src="$SRC_DIR/plasma/windowswitcher/$ALT_TAB_LAYOUT"
 [ -d "$src" ] || { err "Window switcher source not found at $src"; exit 1; }

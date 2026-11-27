@@ -266,6 +266,13 @@ for arg in "$@"; do
 done
 set -- "${args[@]}"
 
+# Generate the native QML/script payload before changing any desktop
+# configuration. Component entry points also handle standalone invocation.
+case "${1:-menu}" in
+    --help|-h|deps) ;;
+    *) prepare_module_sources ;;
+esac
+
 # Save the settings we may change before anything happens (issue #7):
 # ./uninstall.sh --list-backups / --restore puts them back.
 case "${1:-menu}" in

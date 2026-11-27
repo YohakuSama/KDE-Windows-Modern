@@ -9,6 +9,9 @@
 set -euo pipefail
 
 SRC_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+if [ -f "$SRC_DIR/core/source-map.json" ]; then
+    python3 -I "$SRC_DIR/scripts/materialize-modules.py" --prepare
+fi
 BUILD_ROOT="${1:-$(mktemp -d)}"
 COMPONENTS="${2:-systemtray,icontasks,contextmenu}"
 IFS=',' read -r -a TARGETS <<< "$COMPONENTS"

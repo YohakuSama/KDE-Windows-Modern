@@ -8,6 +8,7 @@
 # ───────────────────────────────────────────────────────────────────
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
+python3 -I "$HERE/../scripts/materialize-modules.py" --prepare
 REQUESTED=("$@")
 for name in "${REQUESTED[@]}"; do
     if [[ "$name" == */* || ! -d "$HERE/$name" ]] || ! compgen -G "$HERE/$name/tst_*.qml" >/dev/null; then

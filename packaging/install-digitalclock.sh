@@ -4,6 +4,7 @@
 # ───────────────────────────────────────────────────────────────────
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
+prepare_module_sources
 
 src="$SRC_DIR/plasma/applets/org.kde.windowsmodern.digitalclock"
 [ -d "$src" ] || { warn "Digital Clock not found — skipping."; exit 0; }

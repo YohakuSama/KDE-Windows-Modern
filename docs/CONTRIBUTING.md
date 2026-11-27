@@ -71,15 +71,26 @@ implemented, and do not infer visual parity from the task count.
 
 ## Modular source migration
 
-For mapped files, edit the canonical source in core/, modules/, platform/ or packaging/, not
-the generated native destination. Run `python3 -I scripts/materialize-modules.py --write`
-in a development checkout after editing, review the resulting diff, and use
-`--check` for a read-only consistency check. Existing Qt parser and
-package creation call the same check; the NixOS source install checks using its runtime Python
-before desktop changes. Installation still consumes the original native
-package layout. The migration keeps generated mirrors in
-Git temporarily until every native build, install, resource audit and
-acceptance consumer has been migrated. Do not maintain both copies by hand.
+For mapped files, edit the canonical source in core/, modules/, platform/
+or packaging/, not the generated native destination. Use
+`python3 -I scripts/materialize-modules.py --prepare` to refresh generated-only
+outputs; it refuses drift in the remaining tracked mirrors. Use `--write`
+to refresh those tracked mirrors after deliberately editing their canonical
+sources. Review the resulting diff, then use `--check` for a read-only
+consistency check.
+
+The first generated-only batch covers the contents of five pure-QML applets,
+three KWin scripts, Alt+Tab and both panel layout scripts. Their native
+outputs are ignored by Git. Existing installers, QML parsing, icon coverage,
+native build and QML test entry points prepare them. Direct lower-level
+CMake/Nix commands, generators and individual Python test scripts should
+be preceded by `--prepare`. NixOS uses an existing Python, its previous
+test runtime or a temporary nix-shell Python before checking build inputs.
+For privileged conventional installs, prepare as the desktop user first.
+Full bundles reconstruct these generated files from the exact archived
+commit, excluding the development trees and retaining native package paths.
+The other tracked mirrors remain transitional. Do not maintain two editable
+implementations or re-add ignored generated files.
 
 A complete module can add files within a mapped source tree. Delete obsolete
 generated files deliberately when removing their sources; the generator

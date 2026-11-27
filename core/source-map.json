@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "trees": {
     "modules/boot/plymouth": "boot/plymouth",
     "modules/boot/splash": "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash",
@@ -605,5 +605,22 @@
       "body": "modules/taskbar/layout/panel-body.js",
       "indent": 4
     }
-  }
+  },
+  "generated_roots": [
+    "plasma/applets/org.kde.windowsmodern.digitalclock/contents/config",
+    "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui",
+    "plasma/applets/org.kde.windowsmodern.search/contents/config",
+    "plasma/applets/org.kde.windowsmodern.search/contents/ui",
+    "plasma/applets/org.kde.windowsmodern.showdesktop/contents/config",
+    "plasma/applets/org.kde.windowsmodern.showdesktop/contents/ui",
+    "plasma/applets/org.kde.windowsmodern.startmenu/contents/config",
+    "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui",
+    "plasma/applets/org.kde.windowsmodern.taskview/contents/ui",
+    "plasma/kwinscripts/org.kde.windowsmodern.osd/contents",
+    "plasma/kwinscripts/org.kde.windowsmodern.snapkeys/contents",
+    "plasma/kwinscripts/org.kde.windowsmodern.snaplayouts/contents",
+    "plasma/layout-templates/org.kde.windowsmodern.panel/contents/layout.js",
+    "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/layouts/org.kde.plasma.desktop-layout.js",
+    "plasma/windowswitcher/org.kde.windowsmodern.alttab/contents"
+  ]
 }

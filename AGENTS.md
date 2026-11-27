@@ -17,12 +17,15 @@
   [platform/README.md](platform/README.md) and
   [packaging/README.md](packaging/README.md). Edit only the canonical source for
   paths owned by core/source-map.json; native package mirrors are generated.
-  Refresh the mirrors with scripts/materialize-modules.py --write and review
-  the complete diff, then check with --check. The existing QML parser and
-  packaging entry point reject stale mirrors. Do not add runtime imports
-  between independently installed applets or greeter packages. The native
-  directory contains generated mirrors where mapped; run tools from their
-  existing output paths until the staging migration is complete.
+  Generated-only native files are ignored by Git. Refresh them with
+  python3 -I scripts/materialize-modules.py --prepare; use --write when
+  editing canonical sources whose native mirrors are still tracked. Review
+  the complete diff, then use --check for read-only comparison. Install,
+  packaging and existing static-check entry points prepare their inputs.
+  Full install ZIPs reconstruct generated files from the archived commit.
+  Before invoking lower-level native development tools directly, prepare
+  the checkout. Never add generated outputs back to Git. Do not add runtime
+  imports between independently installed applets or greeter packages.
 - Read [the development guide](docs/CONTRIBUTING.md) for product scope,
   architecture, safety requirements and contribution conventions.
 - Read [the current UI contract](docs/PANEL_UI_CONTRACT.md) and

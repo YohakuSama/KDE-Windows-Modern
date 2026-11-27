@@ -12,6 +12,8 @@ from pathlib import Path
 import re
 import runpy
 import shutil
+import subprocess
+import sys
 from string import Template
 import xml.etree.ElementTree as ET
 
@@ -674,4 +676,8 @@ if __name__ == "__main__":
                                  "aurorae-dark", "aurorae-light",
                                  "lookfeel-dark", "lookfeel-light"))
     args = parser.parse_args()
+    if ((args.component == "runtime" or args.component.startswith("lookfeel"))
+            and (ROOT / "core/source-map.json").is_file()):
+        subprocess.run([sys.executable, "-I", str(ROOT / "scripts/materialize-modules.py"),
+                        "--prepare"], check=True)
     materialize(ROOT, args.output, args.component)

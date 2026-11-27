@@ -35,6 +35,9 @@ The isolated manual build/run commands remain available.
 
 Run the installer as your normal desktop user in a running Plasma 6 session.
 Extract the complete private theme ZIP first, or use a current source checkout.
+The testing source tree generates ignored native package files from the
+canonical modules before installation; the installer uses a temporary Python
+interpreter on NixOS if needed. Install ZIPs already contain those files.
 
 ```bash
 bash install.sh

@@ -36,3 +36,20 @@ __pycache__/
 /icon-coverage-source.json
 /icon-coverage-installed.json
 /windows-resource-catalog.json
+
+# Generated native deployment files (canonical source-map.json owners)
+/plasma/applets/org.kde.windowsmodern.digitalclock/contents/config/
+/plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/
+/plasma/applets/org.kde.windowsmodern.search/contents/config/
+/plasma/applets/org.kde.windowsmodern.search/contents/ui/
+/plasma/applets/org.kde.windowsmodern.showdesktop/contents/config/
+/plasma/applets/org.kde.windowsmodern.showdesktop/contents/ui/
+/plasma/applets/org.kde.windowsmodern.startmenu/contents/config/
+/plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/
+/plasma/applets/org.kde.windowsmodern.taskview/contents/ui/
+/plasma/kwinscripts/org.kde.windowsmodern.osd/contents/
+/plasma/kwinscripts/org.kde.windowsmodern.snapkeys/contents/
+/plasma/kwinscripts/org.kde.windowsmodern.snaplayouts/contents/
+/plasma/layout-templates/org.kde.windowsmodern.panel/contents/layout.js
+/plasma/look-and-feel/org.kde.windowsmodern.dark/contents/layouts/org.kde.plasma.desktop-layout.js
+/plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/

@@ -307,6 +307,19 @@ elif [ -f "$STATE/original/manifest.json" ]; then
     exit 1
 fi
 
+# A Git/source checkout has ignored generated package files; archives
+# already contain the complete native payload. Use an ephemeral interpreter
+# on NixOS rather than requiring a permanent Python installation.
+if [ -f "$ROOT/core/source-map.json" ]; then
+    if command -v python3 >/dev/null; then
+        python3 -I "$ROOT/scripts/materialize-modules.py" --prepare
+    elif [ "$upgrading" -eq 1 ]; then
+        "$old_profile/bin/python3" -I "$ROOT/scripts/materialize-modules.py" --prepare
+    else
+        WM_MODULE_ROOT="$ROOT" nix-shell -p python3 --run 'python3 -I "$WM_MODULE_ROOT/scripts/materialize-modules.py" --prepare'
+    fi
+fi
+
 # Validate the extracted source before creating a build or touching the desktop.
 # No legacy nix-hash invocation on a directory or locale-sensitive path.
 for required in nix/test-runtime.nix scripts/nixos-test-state.py scripts/verify-nixos-runtime.py \

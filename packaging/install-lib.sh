@@ -27,6 +27,21 @@ warn()  { echo -e "${YELLOW}==>${RESET} $*"; }
 err()   { echo -e "${RED}==>${RESET} $*"; }
 step()  { echo -e "${CYAN}  >>${RESET} $*"; }
 
+# Source checkouts no longer track every native package file. Installed
+# archives already contain the complete native payload and need no generator.
+prepare_module_sources() {
+    [ -f "$SRC_DIR/core/source-map.json" ] || return 0
+    if [ "$EUID" -eq 0 ]; then
+        # Never create root-owned build output in a user's source checkout.
+        if ! python3 -I "$SRC_DIR/scripts/materialize-modules.py" --check; then
+            err "Prepare the source checkout as your desktop user before using sudo."
+            return 1
+        fi
+    else
+        python3 -I "$SRC_DIR/scripts/materialize-modules.py" --prepare
+    fi
+}
+
 # ── Detect install target ──────────────────────────────────────────
 
 if [ "$UID" -eq 0 ]; then

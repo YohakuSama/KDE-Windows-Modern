@@ -32,15 +32,21 @@ is complete. No service or system backend is duplicated. Both native
 panel scripts use the same taskbar/layout/panel-body.js; the wrappers
 preserve their distinct single-panel/all-screen behaviors.
 
-Run `python3 -I scripts/materialize-modules.py --write` to refresh outputs,
-then `--check` to compare them. Never edit generated mirrors directly.
-A fully mapped source subtree includes new files automatically; otherwise
-add an explicit mapping. Remove obsolete outputs deliberately. Do not run
-a relocated tool directly when it expects its original runtime path.
+Run `python3 -I scripts/materialize-modules.py --prepare` to refresh
+generated-only outputs and `--write` after editing canonical sources
+with remaining tracked mirrors; `--check` compares without writing.
+Never edit generated mirrors directly. A fully mapped source subtree
+includes new files automatically; otherwise add an explicit mapping.
+Remove obsolete outputs deliberately. Do not execute relocated tools that
+depend on their native runtime paths.
 
-Tracked native mirrors are transitional; keep independent native packages
-self-contained. The next stage must migrate all build, install, resource
-and development consumers to generated staging before deleting mirrors.
-Remaining visual atlas, original resource libraries and development/test
-tools retain their current locations. See the
+Start, Search, Task View, Show Desktop and Calendar/Notifications applet
+contents, the three KWin script contents, Alt+Tab contents and both panel
+layout scripts are generated-only. Git tracks their editable sources,
+not the generated native files. Source installers and standard developer
+entry points generate them; full install ZIPs contain the reconstructed
+native files from the archived commit. The remaining mirrors are
+transitional. Keep packages self-contained and prepare before direct
+low-level tool invocation. The remaining visual atlas and original
+resource libraries retain their current locations. See the
 [quality ledger](../docs/PROJECT_QUALITY_LEDGER.md).

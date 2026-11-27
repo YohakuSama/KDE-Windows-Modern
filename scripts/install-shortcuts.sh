@@ -11,6 +11,7 @@
 # ───────────────────────────────────────────────────────────────────
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
+prepare_module_sources
 
 if [ "$UID" -eq 0 ]; then
     warn "Shortcuts are per user — run this as yourself, not root. Skipping."

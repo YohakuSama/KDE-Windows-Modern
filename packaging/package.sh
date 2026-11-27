@@ -163,8 +163,8 @@ if [[ "${1:-}" == "--list" ]]; then
     exit 0
 fi
 
-# A source checkout must not package stale generated native files.
-python3 -I "$SCRIPT_DIR/materialize-modules.py" --check
+# Refresh untracked deployment files; refuse stale tracked mirrors.
+python3 -I "$SCRIPT_DIR/materialize-modules.py" --prepare
 mkdir -p "$DIST_DIR"
 OWNER=0
 if [[ "${1:-}" == "--owner" ]]; then
@@ -208,9 +208,9 @@ else
 fi
 
 # ── GitHub release bundle ──────────────────────────────────────────
-# Built with `git archive` so the bundle contains exactly the committed
-# tree — never untracked local files or build directories. Paths marked
-# export-ignore in .gitattributes (screenshots, plans) are left out.
+# Archive the committed tree and materialize its generated native outputs
+# from the same revision. Never include local untracked files or builds.
+# Development-only paths remain excluded from the installation ZIP.
 info "Building full GitHub release bundle..."
 FULL_VER="$(get_version "$SRC_DIR/plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.json")"
 [[ -z "$FULL_VER" ]] && FULL_VER="1.0.0"
@@ -245,6 +245,12 @@ mapfile -t archive_excludes <<< "$exclusions"
 archive_paths=(. "${archive_excludes[@]}")
 git -C "$SRC_DIR" archive --format=zip --prefix="KDE-Windows-Modern-${FULL_VER}/" \
     -o "$FULL_OUT" "$build_revision" -- "${archive_paths[@]}"
+if ! python3 -I "$SCRIPT_DIR/materialize-modules.py" --append-archive "$FULL_OUT" \
+        --revision "$build_revision" --prefix "KDE-Windows-Modern-${FULL_VER}/"; then
+    rm -f "$FULL_OUT"
+    err "Failed to materialize the committed native package payload."
+    exit 1
+fi
 # `git archive` leaves submodules out, so the greeter could not be built
 # from the bundle (#15). Add the login manager source at the commit HEAD pins.
 PLM_REL="third_party/plasma-login-manager"

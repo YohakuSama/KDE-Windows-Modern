@@ -3,8 +3,8 @@
 # Use Qt's parser without editing any source or requiring a Plasma session.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# Parse the self-contained native packages only after verifying their sources.
-python3 -I "$ROOT/scripts/materialize-modules.py" --check
+# Generate the ignored native payload before parsing the package layout.
+python3 -I "$ROOT/scripts/materialize-modules.py" --prepare
 tool=""
 for candidate in /usr/lib64/qt6/bin/qmlformat /usr/lib/qt6/bin/qmlformat qmlformat6 qmlformat; do
     if command -v "$candidate" >/dev/null 2>&1; then tool="$candidate"; break; fi

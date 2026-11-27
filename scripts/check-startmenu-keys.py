@@ -3,6 +3,7 @@
 """Reject nonexistent Qt Quick Keys attached signals before installation."""
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +22,9 @@ ALLOWED = {
 }
 
 def main():
+    if (ROOT / "core/source-map.json").is_file():
+        subprocess.run([sys.executable, "-I", str(ROOT / "scripts/materialize-modules.py"),
+                        "--prepare"], check=True)
     files = sorted(START.rglob("*.qml"))
     if not files:
         raise SystemExit("Start menu QML source is missing")

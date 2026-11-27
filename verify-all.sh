@@ -33,6 +33,10 @@ echo ""
 echo -e "${BOLD}Windows Modern — Project Health Check${RESET}"
 echo "======================================"
 
+# The first generated-only native packages must exist before old-path
+# checks and tests. A tracked source mirror mismatch remains fatal.
+python3 -I scripts/materialize-modules.py --prepare
+
 # ── Theme source (shared base + mode-specific renderer outputs) ──────
 echo ""
 echo " Themes:"

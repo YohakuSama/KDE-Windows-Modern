@@ -10,6 +10,9 @@
 set -euo pipefail
 
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SRC_DIR/../../../core/source-map.json" ]; then
+    python3 -I "$SRC_DIR/../../../scripts/materialize-modules.py" --prepare
+fi
 APP_ID="org.kde.windowsmodern.startmenu"
 APPLETS_DIR="$HOME/.local/share/plasma/plasmoids"
 

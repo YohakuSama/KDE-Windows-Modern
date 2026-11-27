@@ -18,8 +18,10 @@ Python tools are edited here but executed from their existing native paths
 until staging is migrated. Do not create separate light/dark functionality.
 Equal numeric values alone do not establish equal semantic roles.
 
-Run `python3 -I scripts/materialize-modules.py --write` from the checkout
-after editing; `--check` checks bytes and executable modes without writing.
+Run `python3 -I scripts/materialize-modules.py --prepare` to generate
+the ignored native files. For the remaining tracked native mirrors, use
+`--write` after editing their canonical sources; `--check` compares bytes
+and executable modes without writing.
 The taskbar layout uses one shared body. The renderer-specific appearance
 materializer still generates the actual Plasma/Kvantum/Aurorae packages.
 The Plasma SVG atlas and large icon/wallpaper inputs retain their current

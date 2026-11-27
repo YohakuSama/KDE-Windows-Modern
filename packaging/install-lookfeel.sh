@@ -9,6 +9,7 @@
 # ───────────────────────────────────────────────────────────────────
 # shellcheck source=scripts/install-lib.sh
 source "$(dirname "$0")/install-lib.sh"
+prepare_module_sources
 
 info "Installing the shared Windows Modern global theme..."
 

@@ -9,6 +9,8 @@ import os
 from collections import defaultdict
 from pathlib import Path
 import re
+import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 EXTENSIONS = {".svg", ".svgz", ".png", ".xpm"}
@@ -390,6 +392,10 @@ def main():
     parser.add_argument("--kcm-metadata", type=Path, help="Read a Qt plugin metadata log from kcmshell6 --list")
     parser.add_argument("--shell-manifest", type=Path, help="Override the private shell artwork manifest path")
     args = parser.parse_args()
+    if (ROOT / "core/source-map.json").is_file():
+        # Preserve the existing native-consumer path inventory on a fresh checkout.
+        subprocess.run([sys.executable, "-I", str(ROOT / "scripts/materialize-modules.py"),
+                        "--prepare"], check=True, stdout=sys.stderr)
     data_home = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
     theme = args.theme or (data_home / "icons/windows-modern" if args.installed else ROOT / "icons/windows-modern")
     manifest_path = args.manifest or data_home / "windows-modern/native-assets/manifest.json"
