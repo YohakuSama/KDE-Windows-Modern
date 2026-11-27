@@ -798,3 +798,29 @@ category and frame references. The existing pinned cell height of 84
 already matches the reference. The frame size and column-count changes
 remain open until the XAML frame and the separate Photon bundle are
 reconciled. No layout branch is selected by file name alone.
+
+### Shared native widget geometry
+
+The original modern 21h1_generic.xbf slider template has direct width and
+height resource references in node section 38, for both orientations.
+The corresponding modern theme dictionary declares 18px outer extent,
+12px inner extent, 4px track and 2px track radius. The shared Plasma
+slider resource and the Kvantum slider atlas/config now use those
+geometry baselines. Qt retains its native slider interaction and
+accessibility; hover/press/disabled ink sizes follow the existing
+project's 14/10/14 state convention, not a newly verified exact Windows
+animation. Plasma's separate visualFocus cue remains a platform
+adaptation. The existing Quick Settings slider is unchanged.
+
+The Kvantum popup menu item and combo-box style now use a 32 logical-pixel
+minimum from the modern generic dictionary. These are minima, not fixed
+heights: Kvantum 1.1.9 calculates size from the actual font and content,
+and its separator sizing path is separate. The existing 20px check
+indicator configuration is retained. These theme-level adaptations do
+not change application models, global font settings, output scale or
+native input logic. Progress bar, scrollbar, radio indicator and tab
+resource literals have been recorded for their later consumer-specific
+review. No claim of complete A10/A11/A12 parity is made by these values.
+
+Renderer reference: https://github.com/tsujan/Kvantum/tree/V1.1.9 and
+https://github.com/KDE/libplasma/tree/v6.8.3.

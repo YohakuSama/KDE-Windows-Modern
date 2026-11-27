@@ -19,9 +19,9 @@ scroll_width=9
 scroll_arrows=false
 scroll_min_extent=32
 slider_width=4
-slider_handle_width=16
-slider_handle_length=16
-tickless_slider_handle_size=16
+slider_handle_width=18
+slider_handle_length=18
+tickless_slider_handle_size=18
 center_toolbar_handle=true
 check_size=20
 textless_progressbar=false
@@ -477,6 +477,7 @@ frame.left=5
 frame.right=5
 text.bold=false
 frame.expansion=0
+min_height=32
 
 [MenuBar]
 inherits=PanelButtonCommand
@@ -544,6 +545,7 @@ text.normal.color=${text}
 text.focus.color=${text}
 text.press.color=${text_lower}
 text.toggle.color=${text_lower}
+min_height=32
 
 [GroupBox]
 inherits=GenericFrame

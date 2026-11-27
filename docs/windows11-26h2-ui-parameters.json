@@ -1413,6 +1413,82 @@
           "TabViewItemScrollButtonHeight": {
             "value": 24,
             "xbf_offset": 444758
+          },
+          "SliderInnerThumbWidth": {
+            "value": 12,
+            "xbf_offset": 440296
+          },
+          "SliderInnerThumbHeight": {
+            "value": 12,
+            "xbf_offset": 440233
+          },
+          "SliderTrackCornerRadius": {
+            "value": "2",
+            "xbf_offset": 440201
+          },
+          "CheckBoxSize": {
+            "value": 20,
+            "xbf_offset": 437674
+          },
+          "CheckBoxHeight": {
+            "value": 32,
+            "xbf_offset": 437692
+          },
+          "CheckBoxGlyphSize": {
+            "value": 12,
+            "xbf_offset": 437683
+          },
+          "RadioButtonCheckGlyphSize": {
+            "value": 12,
+            "xbf_offset": 432465
+          },
+          "RadioButtonCheckGlyphPointerOverSize": {
+            "value": 14,
+            "xbf_offset": 432474
+          },
+          "RadioButtonCheckGlyphPressedOverSize": {
+            "value": 10,
+            "xbf_offset": 432483
+          },
+          "ProgressBarMinHeight": {
+            "value": 3,
+            "xbf_offset": 446201
+          },
+          "ProgressBarTrackHeight": {
+            "value": 1,
+            "xbf_offset": 446210
+          },
+          "ProgressBarCornerRadius": {
+            "value": "1.5",
+            "xbf_offset": 446219
+          },
+          "ProgressBarTrackCornerRadius": {
+            "value": "0.5",
+            "xbf_offset": 446234
+          },
+          "ScrollBarSize": {
+            "value": 12,
+            "xbf_offset": 439444
+          },
+          "ScrollBarVerticalThumbMinHeight": {
+            "value": 30,
+            "xbf_offset": 439453
+          },
+          "ScrollBarThumbStrokeThickness": {
+            "value": 6,
+            "xbf_offset": 439489
+          },
+          "TabViewItemMinHeight": {
+            "value": 32,
+            "xbf_offset": 444626
+          },
+          "TabViewItemHeaderCloseButtonWidth": {
+            "value": 32,
+            "xbf_offset": 444701
+          },
+          "TabViewItemHeaderCloseButtonHeight": {
+            "value": 24,
+            "xbf_offset": 444692
           }
         }
       },
@@ -1658,6 +1734,100 @@
       ],
       "review_notes": [
         "The native XAML frame explicitly references the StartResources geometry. The separate Photon bundle also exists in this build; active implementation and screen state selection are not established. Do not apply the XAML frame's dimensions to every Start configuration on this evidence alone."
+      ]
+    },
+    {
+      "pri_path": "SystemApps/Microsoft.UI.Xaml.CBS_8wekyb3d8bbwe/resources.pri",
+      "pri_sha256": "2a93db6aded19eb8026b2de11f583271505b26e9a47536d364d4e9ed93a57421",
+      "resource": "Files\\Microsoft.UI.Xaml\\Themes\\21h1_generic.xbf",
+      "xbf_sha256": "3d4d3e18a34f15ccb43a01716d89cf02e32266f1acd58a88c11dfadafdb6cfb8",
+      "pri_payload_offset": 1929668,
+      "xbf_payload_bytes": 194902,
+      "resource_values": {
+        "HorizontalTemplate": {
+          "FrameworkElement.MinHeight": {
+            "value": 32,
+            "xbf_offset": 131507
+          }
+        },
+        "VerticalTemplate": {
+          "FrameworkElement.MinWidth": {
+            "value": 32,
+            "xbf_offset": 131863
+          }
+        }
+      },
+      "reviewed_usages": [
+        {
+          "node_section": 38,
+          "element": "HorizontalTrackRect",
+          "property": "FrameworkElement.Height",
+          "resource": "SliderTrackThemeHeight",
+          "xbf_offset": 131639
+        },
+        {
+          "node_section": 38,
+          "element": "HorizontalThumb",
+          "property": "FrameworkElement.Height",
+          "resource": "SliderHorizontalThumbHeight",
+          "xbf_offset": 131798
+        },
+        {
+          "node_section": 38,
+          "element": "HorizontalThumb",
+          "property": "FrameworkElement.Width",
+          "resource": "SliderHorizontalThumbWidth",
+          "xbf_offset": 131826
+        },
+        {
+          "node_section": 38,
+          "element": "VerticalTrackRect",
+          "property": "FrameworkElement.Width",
+          "resource": "SliderTrackThemeHeight",
+          "xbf_offset": 131995
+        },
+        {
+          "node_section": 38,
+          "element": "VerticalThumb",
+          "property": "FrameworkElement.Height",
+          "resource": "SliderHorizontalThumbHeight",
+          "xbf_offset": 132178
+        },
+        {
+          "node_section": 38,
+          "element": "VerticalThumb",
+          "property": "FrameworkElement.Width",
+          "resource": "SliderHorizontalThumbWidth",
+          "xbf_offset": 132190
+        },
+        {
+          "node_section": 92,
+          "property": "Setter.Value",
+          "resource": "ButtonPadding",
+          "xbf_offset": 145289
+        },
+        {
+          "node_section": 122,
+          "property": "Setter.Value",
+          "resource": "TabViewItemMinHeight",
+          "xbf_offset": 158724
+        },
+        {
+          "node_section": 131,
+          "property": "Setter.Value",
+          "resource": "ProgressBarMinHeight",
+          "xbf_offset": 165504
+        },
+        {
+          "node_section": 132,
+          "element": "ProgressBarTrack",
+          "property": "FrameworkElement.Height",
+          "resource": "ProgressBarTrackHeight",
+          "xbf_offset": 165893
+        }
+      ],
+      "review_notes": [
+        "Both slider orientations directly use the modern 18px thumb dimensions and 4px track. The existing KDE slider control paths remain responsible for keyboard, touch, wheel, tick marks, range and direction. WinUI progress bars separate a 1px track from the 3px minimum indicator; a single Qt style thickness cannot establish exact visual equivalence. Keep native Qt label layout and do not force this height onto capacity meters or unrelated app widgets."
       ]
     }
   ],
