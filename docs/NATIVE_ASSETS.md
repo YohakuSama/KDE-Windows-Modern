@@ -209,3 +209,13 @@ library. The importer and rendering are not evidence that the original
 
 The owner retains the full reference material for filling these gaps.
 Do not remove unused development sources merely to reduce package size.
+
+The optional non-NixOS system greeter uses the same generated native icon
+import. When invoked via sudo from the desktop user, the live installer
+prepares that user's import and transfers only the verified generated
+artwork into /usr/share/windows-modern/native-assets. If the private shell
+manifest matches the recorded 26H2 reference, its generated artwork is
+also installed in /usr/share/windows-modern/shell-assets. Missing private
+artwork is reported, not claimed to be original coverage. A direct root
+invocation can only reuse a valid system import. The greeter uninstaller
+removes only directories marked as installed by this path.

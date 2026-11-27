@@ -34,10 +34,10 @@
   <g id="shadow-bottomleft" transform="translate(0 @SYEND@) scale(1 -1)"><rect width="@SR@" height="@SR@" fill="url(#shade-corner)"/></g>
   <g id="shadow-bottomright" transform="translate(@SEND@ @SYEND@) scale(-1 -1)"><rect width="@SR@" height="@SR@" fill="url(#shade-corner)"/></g>
   <rect id="hint-stretch-borders" x="160" y="4" width="1" height="1"/>
-  <rect id="hint-top-margin" x="160" y="20" width="@R@" height="@R@"/>
-  <rect id="hint-bottom-margin" x="160" y="36" width="@R@" height="@R@"/>
-  <rect id="hint-left-margin" x="160" y="52" width="@R@" height="@R@"/>
-  <rect id="hint-right-margin" x="160" y="68" width="@R@" height="@R@"/>
+  <rect id="hint-top-margin" x="160" y="20" width="@R@" height="@MT@"/>
+  <rect id="hint-bottom-margin" x="160" y="36" width="@R@" height="@MB@"/>
+  <rect id="hint-left-margin" x="160" y="52" width="@ML@" height="@R@"/>
+  <rect id="hint-right-margin" x="160" y="68" width="@MR@" height="@R@"/>
   <rect id="shadow-hint-top-margin" x="160" y="84" width="12" height="12"/>
   <rect id="shadow-hint-bottom-margin" x="160" y="100" width="12" height="12"/>
   <rect id="shadow-hint-left-margin" x="160" y="116" width="12" height="12"/>

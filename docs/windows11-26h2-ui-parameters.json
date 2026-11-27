@@ -1278,6 +1278,10 @@
               7
             ],
             "xbf_offset": 333587
+          },
+          "ToolTipContentThemeFontSize": {
+            "value": 12,
+            "xbf_offset": 345626
           }
         },
         "Light": {
@@ -1323,6 +1327,10 @@
               7
             ],
             "xbf_offset": 368731
+          },
+          "ToolTipContentThemeFontSize": {
+            "value": 12,
+            "xbf_offset": 380764
           }
         },
         "HighContrast": {
@@ -1489,11 +1497,84 @@
           "TabViewItemHeaderCloseButtonHeight": {
             "value": 24,
             "xbf_offset": 444692
+          },
+          "ToolTipBorderPadding": {
+            "value": [
+              9,
+              6,
+              9,
+              8
+            ],
+            "xbf_offset": 448353
+          },
+          "ToolTipMaxWidth": {
+            "value": 320,
+            "xbf_offset": 448374
+          },
+          "BodyTextBlockFontSize": {
+            "value": 14,
+            "xbf_offset": 435583
+          },
+          "CaptionTextBlockFontSize": {
+            "value": 12,
+            "xbf_offset": 435574
+          },
+          "SubtitleTextBlockFontSize": {
+            "value": 20,
+            "xbf_offset": 435592
+          },
+          "TitleTextBlockFontSize": {
+            "value": 28,
+            "xbf_offset": 435601
           }
         }
       },
       "review_notes": [
         "Named literal resources are resolved through keyed dictionary references (root offsets 293331, 303185, 313041 and 322653 to node sections 1–4). They establish generic WinUI resource values, not the active runtime template for every shell surface. The current Quick Settings slider already uses an 18 logical-pixel thumb and a 4px track at its normal component scale; no duplicate implementation is needed."
+      ],
+      "reviewed_usages": [
+        {
+          "template": "DefaultButtonStyle",
+          "template_xbf_offset": 436155,
+          "node_section": 256,
+          "resource": "ButtonPadding",
+          "xbf_offset": 603103
+        },
+        {
+          "template": "DefaultButtonStyle",
+          "template_xbf_offset": 436155,
+          "node_section": 256,
+          "resource": "ButtonBorderThemeThickness",
+          "xbf_offset": 603097
+        },
+        {
+          "template": "DefaultToolTipStyle",
+          "template_xbf_offset": 440739,
+          "node_section": 428,
+          "resource": "ToolTipBorderPadding",
+          "xbf_offset": 688507
+        },
+        {
+          "template": "DefaultToolTipStyle",
+          "template_xbf_offset": 440739,
+          "node_section": 428,
+          "resource": "ToolTipContentThemeFontSize",
+          "xbf_offset": 688501
+        },
+        {
+          "template": "DefaultToolTipStyle",
+          "template_xbf_offset": 440739,
+          "node_section": 428,
+          "resource": "ToolTipMaxWidth",
+          "xbf_offset": 688513
+        },
+        {
+          "template": "DefaultTextBoxStyle",
+          "template_xbf_offset": 435444,
+          "node_section": 236,
+          "resource": "TextControlThemePadding",
+          "xbf_offset": 599401
+        }
       ]
     },
     {

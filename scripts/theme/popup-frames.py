@@ -34,6 +34,10 @@ def render(template, mode, role, variant):
                   SEND=send, SYEND=84+send,
                   FILL=f'fill="{fill}" fill-opacity="{opacity}"',
                   BORDER=border)
+    # Content padding is independent of the nine-slice corner geometry.
+    # WinUI DefaultToolTipStyle directly references ToolTipBorderPadding.
+    top, bottom, left, right = (r, r, r, r) if dialog else (6, 8, 9, 9)
+    values.update(MT=top, MB=bottom, ML=left, MR=right)
     result = re.sub(r"@([A-Z]+)@", lambda m: str(values[m[1]]), template)
     # Validate unique required frame IDs and masks for KSVG.
     root = ET.fromstring(result)

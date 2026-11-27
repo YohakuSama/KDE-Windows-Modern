@@ -32,6 +32,15 @@ elif [ -n "${GREETER_HOME}" ] && [ -f "$GREETER_BACKUP.none" ]; then
     echo "  Greeter colors restored (it had none)"
 fi
 
+# Remove only artwork installed by this greeter path; leave desktop-user
+# imports and independently installed system data untouched.
+for dir in /usr/share/windows-modern/native-assets /usr/share/windows-modern/shell-assets; do
+    if [ ! -L "$dir" ] && [ -f "$dir/.windows-modern-greeter" ]; then
+        rm -rf -- "$dir"
+        echo "  Removed $dir"
+    fi
+done
+
 if [ -f "${SYSTEM_ICONS}/.windows-modern-greeter" ]; then
     rm -rf "${SYSTEM_ICONS}"
     echo "  Removed ${SYSTEM_ICONS}"

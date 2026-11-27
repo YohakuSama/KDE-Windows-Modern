@@ -28,6 +28,7 @@ PLM_BINARY="/usr/libexec/plasma-login-greeter"
 SYSTEM_LOOKFEEL="/usr/share/plasma/look-and-feel/org.kde.windowsmodern.dark"
 REPO_LOOKFEEL="${SRC_DIR}/plasma/look-and-feel/org.kde.windowsmodern.dark"
 SYSTEM_WALLPAPER="/usr/share/wallpapers/Windows-modern"
+SYSTEM_ARTWORK="/usr/share/windows-modern"
 
 # ── Require root for system install (checked first: no wasted build) ──
 if [ "$EUID" -ne 0 ]; then
@@ -96,6 +97,30 @@ if command -v getcap &>/dev/null && [ -f "$PLM_BINARY" ] && [ -n "$(getcap "$PLM
     echo "Refusing to overwrite it — the patched copy would lose them."
     echo "Check your distro's plasma-login-manager packaging before continuing."
     exit 1
+fi
+
+# Import as the invoking desktop user, not root. Transfer only the generated
+# and checked artwork that NativeGlyph and the shell artwork readers use.
+# Complete this before replacing the login binary or its theme.
+if [ -n "${SUDO_USER:-}" ] && [ "${SUDO_USER}" != "root" ]; then
+    sudo -u "$SUDO_USER" -H bash -c '
+        set -euo pipefail
+        data="${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern"
+        WM_NATIVE_ASSETS_DIR="$data/native-assets" bash "$1/scripts/prepare-native-assets.sh" >&2
+        exec python3 -I "$1/scripts/greeter-native-assets.py" export "$data"
+    ' bash "$SRC_DIR" |
+        python3 -I "$SRC_DIR/scripts/greeter-native-assets.py" install "$SYSTEM_ARTWORK"
+else
+    # Root-only reuse is allowed, but cannot import from another user's home.
+    if ! python3 -I "$SRC_DIR/scripts/greeter-native-assets.py" verify "$SYSTEM_ARTWORK"; then
+        echo "Run the system install via sudo from the desktop user with native artwork." >&2
+        exit 1
+    fi
+fi
+if command -v restorecon &>/dev/null; then
+    for dir in "$SYSTEM_ARTWORK/native-assets" "$SYSTEM_ARTWORK/shell-assets"; do
+        [ ! -d "$dir" ] || restorecon -R "$dir" 2>/dev/null || true
+    done
 fi
 
 # True when the installed greeter is exactly the distro package's file (a

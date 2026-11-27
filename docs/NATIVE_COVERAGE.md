@@ -784,11 +784,9 @@ existing host extents, authentication, focus and password reveal
 behavior remain unchanged. The original forward-arrow converter's glyph
 and optical bounds still need confirmation; the existing mapped arrow
 roles are retained. The greeter power-menu frame uses the recorded 8px
-overlay radius as the corresponding Qt menu role. The separately
-installed greeter currently deploys the compatibility icon theme but not
-the private native-assets tree. Its existing icon loading path is retained
-to avoid a regression to text-only controls. Verified greeter asset
-deployment remains an A06 blocker.
+overlay radius as the corresponding Qt menu role. The separately installed greeter now has a verified generated artwork
+transfer path, described below. Live deployment and the exact original
+forward-arrow converter remain unverified.
 
 The same restored archive supplies StartResources.xbf, including the
 separate small and large frame maximums (642/834 wide, 750/890 high),
@@ -824,3 +822,37 @@ review. No claim of complete A10/A11/A12 parity is made by these values.
 
 Renderer reference: https://github.com/tsujan/Kvantum/tree/V1.1.9 and
 https://github.com/KDE/libplasma/tree/v6.8.3.
+
+### Shared padding and greeter artwork deployment
+
+The original 21h1_themeresources.xbf directly identifies DefaultButtonStyle
+and DefaultToolTipStyle. The native content padding resources are 11/5/11/6
+and 9/6/9/8 (left/top/right/bottom). Plasma 6.8.3 reads the active raised
+button frame's margins as padding; normal and pressed states now share the
+same logical padding. Flat toolbutton and focus/hover overlay geometry
+remain unchanged. The shared popup generator separates tooltip content
+padding from its corner radius and shadow. All three dark tooltip variants
+use the same padding; light geometry is generated from the same template.
+These are semantic padding mappings, not measured optical bounds. Qt
+Widgets tooltip margins use a separate uniform-frame API and are not
+claimed to match the asymmetric WinUI padding. The TextBox padding and
+font-role references are recorded; native system font preferences and the
+existing Qt RTL implementation are retained until their consumer mapping
+is confirmed.
+
+The optional system greeter previously installed only the compatibility
+icon theme. Its explicit NativeGlyph and private shell-artwork readers
+search GenericDataLocation/windows-modern instead. The live installer now
+prepares the existing verified native import as the invoking desktop user,
+transfers generated files into a root-owned staging directory and reuses
+the existing icon and shell manifest verifiers before publishing. It does
+not import Windows source files as root. The optional private shell assets
+are transferred only when the recorded reference checks match, otherwise
+reported missing. A previously installed shell import must still verify.
+Only directories marked as greeter-owned are replaced or removed. The
+login submit button now uses the same direct mapped glyph lookup as the
+other greeter controls, retaining its native ToolButton and accessible
+text fallback. This does not establish that the existing go-next/previous
+roles equal the original WinUI converter glyph. The non-NixOS system
+greeter deployment and missing private shell assets still require owner
+acceptance; the NixOS session installer and authentication code are unchanged.

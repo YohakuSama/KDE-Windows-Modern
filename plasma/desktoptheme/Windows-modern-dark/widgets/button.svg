@@ -1118,13 +1118,13 @@
      style="fill:#4e9a06;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.00000846"
      id="normal-hint-bottom-margin"
      width="2"
-     height="6.0001016"
+     height="6"
      x="133"
      y="51.999897" />
   <rect
      y="20"
      x="133"
-     height="6"
+     height="5"
      width="2"
      id="normal-hint-top-margin"
      style="fill:#4e9a06;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1" />
@@ -1133,15 +1133,21 @@
      style="fill:#4e9a06;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.99999803"
      id="normal-hint-left-margin"
      width="2"
-     height="5.9999771"
+     height="11"
      x="-39.999928"
      y="103.00002" />
   <rect
      y="158.99995"
      x="-40"
-     height="6.0000415"
+     height="11"
      width="2"
      id="normal-hint-right-margin"
      style="fill:#4e9a06;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.00000346"
      transform="rotate(-90)" />
+  <!-- RaisedButtonBackground reads the active frame's margins.
+       Keep the normal and pressed content padding identical. -->
+  <rect id="pressed-hint-top-margin" x="0" y="180" width="2" height="5" fill="#4e9a06"/>
+  <rect id="pressed-hint-bottom-margin" x="4" y="180" width="2" height="6" fill="#4e9a06"/>
+  <rect id="pressed-hint-left-margin" x="8" y="180" width="11" height="2" fill="#4e9a06"/>
+  <rect id="pressed-hint-right-margin" x="8" y="184" width="11" height="2" fill="#4e9a06"/>
 </svg>
