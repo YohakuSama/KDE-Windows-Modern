@@ -13,6 +13,7 @@ import org.kde.breeze.components
 
 import "dateformat.js" as DateFormat
 import "lockText.js" as LockText
+import "lockMetrics.js" as LockMetrics
 
 Item {
     id: lockScreenUi
@@ -218,7 +219,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: "#000000"
-            opacity: lockScreenRoot.loginUiActive ? 0.30 : 0.0
+            opacity: lockScreenRoot.loginUiActive ? LockMetrics.credentialDimOpacity : 0.0
 
             Behavior on opacity {
                 NumberAnimation {
@@ -233,7 +234,7 @@ Item {
             id: clockContainer
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.topMargin: parent.height * 0.15
+            anchors.topMargin: parent.height * LockMetrics.clockTopRatio
             width: childrenRect.width
             height: childrenRect.height
 
@@ -269,7 +270,7 @@ Item {
                     text: Qt.formatTime(new Date(), Qt.locale().timeFormat(Locale.ShortFormat))
                     font.family: Kirigami.Theme.defaultFont.family
                     font.weight: Font.DemiBold
-                    font.pixelSize: 96
+                    font.pixelSize: LockMetrics.clockTimePixelSize
                     color: "#FFFFFF"
                     anchors.horizontalCenter: parent.horizontalCenter
                     horizontalAlignment: Text.AlignHCenter
@@ -280,7 +281,7 @@ Item {
                     text: lockScreenRoot.dateLine(new Date())
                     font.family: Kirigami.Theme.defaultFont.family
                     font.weight: Font.Normal
-                    font.pixelSize: 24
+                    font.pixelSize: LockMetrics.clockDatePixelSize
                     color: "#E0E0E0"
                     anchors.horizontalCenter: parent.horizontalCenter
                     horizontalAlignment: Text.AlignHCenter

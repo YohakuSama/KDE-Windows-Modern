@@ -16,8 +16,16 @@ const menuRadius = 8;
 // Host-specific heights remain distinct pending native template evidence.
 const passwordHeight = 30;
 
+// Shared existing login and lock-screen presentation. Keep the host-specific
+// viewport clamps, field heights and user-switcher geometry separate.
+const accountAvatarMaximum = 160;
+const clockTimePixelSize = 96;
+const clockDatePixelSize = 24;
+const clockTopRatio = 0.15;
+const credentialDimOpacity = 0.30;
+
 function avatarSize(width, height) {
-    return Math.max(1, Math.floor(Math.min(160, width * 0.55, height * 0.24)));
+    return Math.max(1, Math.floor(Math.min(accountAvatarMaximum, width * 0.55, height * 0.24)));
 }
 
 function formTop(height, contentHeight) {

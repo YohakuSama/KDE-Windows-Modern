@@ -156,6 +156,10 @@ const standardFlyoutWidth = 360;
 const quickDetailMinimumHeight = 400;
 const quickFooterHeight = 48;
 const quickToggleHeight = 48;
+const quickContentInset = 24;
+const quickTileCaptionLines = 2;
+const quickSliderRowHeight = 36;
+const quickSliderGlyphSize = 20;
 const splitSecondaryExtent = 48;
 const sliderTrackHeight = 4;
 const mediaCardHeight = 178;
@@ -163,6 +167,31 @@ const mediaCardGap = 12;
 const mediaButtonExtent = 40;
 const mediaGlyphExtent = 16;
 const mediaPlayPauseMargin = 26;
+
+// Normal and split tiles use the same geometry and caption metrics.
+function quickTileScale(buttonHeight) {
+    return buttonHeight > 0 ? buttonHeight / quickToggleHeight : 1;
+}
+
+function quickTileCaptionHeight(scale, lineSpacing) {
+    return Math.max(Math.round(30 * scale), Math.ceil(quickTileCaptionLines * lineSpacing));
+}
+
+function quickTileSpacing(scale) {
+    return Math.round(8 * scale);
+}
+
+function quickTileRadius(scale) {
+    return Math.max(3, Math.round(4 * scale));
+}
+
+function quickTileGlyphSize(scale) {
+    return Math.max(12, Math.round(16 * scale));
+}
+
+function quickTileCaptionFontSize(scale) {
+    return Math.max(10, Math.round(12 * scale));
+}
 
 function splitSecondaryWidth(width, scale) {
     // Clamp for a narrow cell; retain both targets with one shared border.

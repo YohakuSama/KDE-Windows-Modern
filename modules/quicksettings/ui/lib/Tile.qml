@@ -5,6 +5,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
 import "../js/quickSettingsOrder.js" as Order
+import "../js/trayMetrics.js" as TrayMetrics
 import "../components" as Components
 
 ColumnLayout {
@@ -19,9 +20,9 @@ ColumnLayout {
     property string orderKey: ""
     property Item orderView: null
     property real buttonHeight: -1
-    readonly property real uiScale: buttonHeight > 0 ? buttonHeight / 48 : 1
+    readonly property real uiScale: TrayMetrics.quickTileScale(buttonHeight)
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    readonly property int captionHeight: Math.max(Math.round(30 * uiScale), Math.ceil(2 * captionMetrics.lineSpacing))
+    readonly property int captionHeight: TrayMetrics.quickTileCaptionHeight(uiScale, captionMetrics.lineSpacing)
     FontMetrics { id: captionMetrics; font: caption.font }
     readonly property int orderIndex: orderView ? orderView.visibleKeys.indexOf(orderKey) : -1
     readonly property bool reordering: orderView !== null && orderView.dragKey === orderKey
@@ -72,7 +73,7 @@ ColumnLayout {
     readonly property color accent: ColorType.accentForSurface(shellAccent, ColorType.quickTileSurface(dark))
     readonly property color fg: active ? ColorType.contrastingForeground(bg.color) : Kirigami.Theme.textColor
 
-    spacing: Math.round(8 * uiScale)
+    spacing: TrayMetrics.quickTileSpacing(uiScale)
     Layout.fillWidth: true
     // Width is supplied by the explicitly sized three-column viewport.
     // A zero preferred-width hint is not a valid tile size.
@@ -84,7 +85,7 @@ ColumnLayout {
         Layout.preferredHeight: tile.buttonHeight > 0 ? tile.buttonHeight : width / 2
         Layout.minimumHeight: Layout.preferredHeight
         Layout.maximumHeight: Layout.preferredHeight
-        radius: Math.max(3, Math.round(4 * tile.uiScale))
+        radius: TrayMetrics.quickTileRadius(tile.uiScale)
         border.width: 1
         border.color: tile.activeFocus ? tile.fg : ColorType.quickTileStroke(tile.dark, tile.active)
         color: ColorType.quickTileFill(tile.dark, tile.active, ma.containsMouse, ma.containsPress, tile.accent)
@@ -122,7 +123,7 @@ ColumnLayout {
         Components.NativeGlyph {
             anchors.centerIn: parent
             objectName: "wmQuickTileGlyph"
-            width: Math.max(12, Math.round(16 * tile.uiScale))
+            width: TrayMetrics.quickTileGlyphSize(tile.uiScale)
             height: width
             roleName: tile.iconSource
             roundToIconSize: false
@@ -140,8 +141,8 @@ ColumnLayout {
         Layout.preferredHeight: tile.captionHeight
         Layout.minimumHeight: tile.captionHeight
         Layout.maximumHeight: tile.captionHeight
-        font.pixelSize: Math.max(10, Math.round(12 * tile.uiScale))
-        maximumLineCount: 2
+        font.pixelSize: TrayMetrics.quickTileCaptionFontSize(tile.uiScale)
+        maximumLineCount: TrayMetrics.quickTileCaptionLines
         wrapMode: Text.Wrap
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter

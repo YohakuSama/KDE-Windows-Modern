@@ -15,6 +15,7 @@ import org.kde.breeze.components as BreezeComponents
 import org.kde.plasma.private.keyboardindicator as KeyboardIndicator
 
 import org.kde.plasma.login as PlasmaLogin
+import "lockMetrics.js" as LockMetrics
 
 Item {
     id: root
@@ -95,7 +96,7 @@ Item {
         WinClock {
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.topMargin: parent.height * 0.15
+            anchors.topMargin: parent.height * LockMetrics.clockTopRatio
             uiVisible: loginScreenRoot.uiVisible
         }
 

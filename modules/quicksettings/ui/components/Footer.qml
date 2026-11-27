@@ -21,7 +21,7 @@ Rectangle {
     property real frameInset: 0
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
     readonly property real outerRadius: frameInset > 0 ? frameInset : Math.round(8 * uiScale)
-    readonly property real sideInset: Math.max(8, Math.round(24 * uiScale) - frameInset)
+    readonly property real sideInset: Math.max(8, Math.round(TrayMetrics.quickContentInset * uiScale) - frameInset)
 
     signal batteryClicked
 

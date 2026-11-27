@@ -85,7 +85,7 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: Math.round(24 * card.uiScale)
+        anchors.leftMargin: Math.round(TrayMetrics.quickContentInset * card.uiScale)
         anchors.rightMargin: anchors.leftMargin
         anchors.topMargin: Math.round(16 * card.uiScale)
         anchors.bottomMargin: Math.round(14 * card.uiScale)

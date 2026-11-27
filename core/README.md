@@ -22,6 +22,7 @@ appearance package and does not own the caller's writer lock or renderer
 plan. Do not create separate light/dark functionality.
 The Digital Clock package consumes shared `FlyoutButton.qml` and `Win11Palette.qml` from this directory; Calendar and Notifications do not maintain separate copies. Their native package paths remain unchanged through `source-map.json`.
 The greeter and lock-screen packages also consume shared `AccountAvatar.qml` and `VirtualKeyboardButton.qml`; host-specific presentation is configured without maintaining feature-local implementations.
+Quick Settings uses `design/panel/trayMetrics.js` for the shared normal/split tile geometry, caption line budget, slider row and glyph dimensions, and the panel/footer/media horizontal inset. Login and LockScreen share the avatar maximum, clock metrics and credential dim opacity through `design/lockMetrics.js`, while retaining the host-specific viewport clamps and field dimensions.
 Equal numeric values alone do not establish equal semantic roles.
 
 Run `python3 -I scripts/materialize-modules.py --prepare` to generate

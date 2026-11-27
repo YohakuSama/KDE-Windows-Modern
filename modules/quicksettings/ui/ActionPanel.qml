@@ -31,7 +31,7 @@ ColumnLayout {
     // The separated media window has no native frame and supplies the
     // same total spacing itself.
     property real frameInset: 0
-    readonly property int edgeInset: Math.round(24 * uiScale)
+    readonly property int edgeInset: Math.round(TrayMetrics.quickContentInset * uiScale)
     readonly property int contentInset: Math.max(0, edgeInset - Math.round(frameInset))
     // The grid, slider rows and footer use one outer content edge.
     // Keep the extra right-hand pager in the gutter, outside that edge.
@@ -39,7 +39,7 @@ ColumnLayout {
     readonly property int sliderTopInset: Math.round(8 * uiScale)
     readonly property int sliderBottomInset: Math.round(16 * uiScale)
     readonly property int sliderGap: Math.round(24 * uiScale)
-    readonly property int sliderHeight: Math.max(36, Math.round(36 * uiScale))
+    readonly property int sliderHeight: Math.max(TrayMetrics.quickSliderRowHeight, Math.round(TrayMetrics.quickSliderRowHeight * uiScale))
     readonly property int footerHeight: Math.max(24, Math.round(TrayMetrics.quickFooterHeight * uiScale) - Math.round(frameInset))
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
 
@@ -504,7 +504,7 @@ ColumnLayout {
             Layout.fillWidth: true
             controlScale: actionPanel.uiScale
             shellAccent: actionPanel.shellAccent
-            iconSize: Math.round(20 * controlScale)
+            iconSize: Math.round(TrayMetrics.quickSliderGlyphSize * controlScale)
             visible: actionPanel.brightnessShown
             showArrow: displayControlsAvailable && !brightnessAvailable
             reserveDetailsSpace: true
@@ -520,7 +520,7 @@ ColumnLayout {
             Layout.fillWidth: true
             controlScale: actionPanel.uiScale
             shellAccent: actionPanel.shellAccent
-            iconSize: Math.round(20 * controlScale)
+            iconSize: Math.round(TrayMetrics.quickSliderGlyphSize * controlScale)
             Layout.preferredHeight: actionPanel.sliderHeight
             implicitHeight: actionPanel.sliderHeight
             visible: actionPanel.volumeShown

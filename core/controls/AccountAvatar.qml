@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: LGPL-2.0-or-later
 import QtQuick
 import Qt5Compat.GraphicalEffects
+import "lockMetrics.js" as LockMetrics
 
 // Shared personal/default avatar presentation for the greeter and lock screen.
 Item {
     id: avatar
     property url source
-    property int size: 160
+    property int size: LockMetrics.accountAvatarMaximum
     implicitWidth: size
     implicitHeight: size
 

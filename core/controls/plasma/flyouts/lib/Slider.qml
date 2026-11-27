@@ -18,7 +18,7 @@ Item {
     property int to: 100
     property int value: 0
     property int stepSize: 1
-    property int iconSize: 20
+    property int iconSize: TrayMetrics.quickSliderGlyphSize
     readonly property bool pressed: slider.pressed
     property string sliderAccessibleName: ""
     // Home rows use balanced side slots. Qt applies output DPI once;
@@ -59,7 +59,7 @@ Item {
     signal rightClicked
     signal middleClicked
 
-    implicitHeight: 36
+    implicitHeight: TrayMetrics.quickSliderRowHeight
 
     // Keep fractional wheel detents per control and per input representation.
     // Pixel-only gestures use a provisional logical-pixel step, not DPI.
