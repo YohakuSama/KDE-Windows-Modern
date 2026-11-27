@@ -146,6 +146,12 @@
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupGeometry.js",
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/popupGeometry.js"
     ],
+    "core/design/taskbarGeometry.js": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/contents/ui/taskbarGeometry.js",
+      "plasma/applets/org.kde.windowsmodern.search/contents/ui/taskbarGeometry.js",
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/taskbarGeometry.js",
+      "plasma/applets/org.kde.windowsmodern.taskview/contents/ui/taskbarGeometry.js"
+    ],
     "core/logic/batteryState.js": [
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/batteryState.js",
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/batteryState.js",

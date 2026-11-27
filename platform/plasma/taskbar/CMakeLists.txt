@@ -135,6 +135,7 @@ ecm_target_qml_sources(org.kde.plasma.icontasks
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/TaskList.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/TaskProgressOverlay.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/Task.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/taskbarGeometry.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/ToolTipDelegate.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/ToolTipInstance.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/ToolTipWindowMouseArea.qml

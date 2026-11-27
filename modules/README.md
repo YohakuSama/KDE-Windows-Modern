@@ -34,6 +34,13 @@ Search receives its mode explicitly. Tray expansion reconciliation uses
 an explicit state input and host-expansion signal. Both native
 panel scripts use the same taskbar/layout/panel-body.js; the wrappers
 preserve their distinct single-panel/all-screen behaviors.
+Icon Tasks supplies live per-instance geometry and configuration inputs to
+LayoutMetrics.js; the grid, task delegates and group dialog read those
+inputs without resolving foreign IDs. The drag and audio components
+receive their task manager or task items explicitly. Start, Search, Task
+View and Icon Tasks use core/design/taskbarGeometry.js for their shared
+logical icon canvas. The source map materializes it into each independent
+applet; Icon Tasks also registers it in its native QML resources.
 
 Run `python3 -I scripts/materialize-modules.py --prepare` to refresh
 generated-only outputs and validate source-only aliases.

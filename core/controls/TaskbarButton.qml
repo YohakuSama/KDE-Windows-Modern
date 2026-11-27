@@ -19,6 +19,7 @@
 */
 
 import QtQuick
+import "taskbarGeometry.js" as TaskbarGeometry
 
 import org.kde.kirigami as Kirigami
 
@@ -59,7 +60,7 @@ MouseArea {
 
     // Match the fixed logical canvas of Start and icon-only tasks. Do not
     // snap 30 to a different icon size at fractional output scaling.
-    readonly property int glyphSize: Math.max(0, Math.min(30, Math.floor(Math.min(width, height) - 2 * tileInset)))
+    readonly property int glyphSize: TaskbarGeometry.iconCanvasSize(width, height)
 
     hoverEnabled: true
     activeFocusOnTab: true
@@ -90,7 +91,7 @@ MouseArea {
     // cell, stroke included (its 27 x 27 bounds). In a 48 px cell: a
     // 44 x 44 tile inset 2 px with ~6.5 px corners. This renders the same
     // rect the same way, minus hover-center's running-app bar.
-    readonly property real tileInset: 2
+    readonly property real tileInset: TaskbarGeometry.panelTileInset()
     readonly property real tileSize: Math.max(0, Math.min(width, height) - 2 * tileInset)
 
     Image {

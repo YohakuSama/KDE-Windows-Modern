@@ -34,6 +34,25 @@ PlasmoidItem {
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool iconsOnly: true
 
+    // Keep individual inputs as live QML bindings: callers only read the
+    // dimensions they need, including during panel resize and theme changes.
+    readonly property QtObject layoutInputs: QtObject {
+        readonly property bool vertical: tasks.vertical
+        readonly property bool iconsOnly: tasks.iconsOnly
+        readonly property real width: tasks.width
+        readonly property real height: tasks.height
+        readonly property int maxStripes: tasks.plasmoid.configuration.maxStripes
+        readonly property bool forceStripes: tasks.plasmoid.configuration.forceStripes
+        readonly property int taskMaxWidth: tasks.plasmoid.configuration.taskMaxWidth
+        readonly property real spacingAdjustment: tasks.plasmoid.pluginName === "org.kde.plasma.icontasks"
+            ? tasks.plasmoid.configuration.iconSpacing : 1
+        readonly property real frameLeft: taskFrame.margins.left
+        readonly property real frameRight: taskFrame.margins.right
+        readonly property real frameTop: taskFrame.margins.top
+        readonly property real frameBottom: taskFrame.margins.bottom
+    }
+    readonly property var audioModel: pulseAudio.item
+
     property Task toolTipOpenedByClick
     property Task toolTipAreaItem
 
@@ -58,7 +77,7 @@ PlasmoidItem {
         if (shouldShrinkToZero) {
             return Kirigami.Units.gridUnit; // For edit mode
         }
-        return vertical ? 0 : TaskManagerApplet.LayoutMetrics.preferredMinWidth();
+        return vertical ? 0 : TaskManagerApplet.LayoutMetrics.preferredMinWidth(tasks.layoutInputs);
     }
     Layout.minimumHeight: {
         if (shouldShrinkToZero) {
@@ -177,7 +196,7 @@ PlasmoidItem {
         groupMode: groupModeEnumValue(Plasmoid.configuration.groupingStrategy)
         groupInline: !Plasmoid.configuration.groupPopups && !tasks.iconsOnly
         groupingWindowTasksThreshold: (Plasmoid.configuration.onlyGroupWhenFull && !tasks.iconsOnly
-            ? TaskManagerApplet.LayoutMetrics.optimumCapacity(tasks.width, tasks.height) + 1 : -1)
+            ? TaskManagerApplet.LayoutMetrics.optimumCapacity(tasks.layoutInputs) + 1 : -1)
 
         onLauncherListChanged: {
             Plasmoid.configuration.launchers = launcherList;
@@ -387,6 +406,7 @@ PlasmoidItem {
 
         MouseHandler {
             id: mouseHandler
+            tasksRoot: tasks
 
             anchors.fill: parent
 
@@ -461,6 +481,7 @@ PlasmoidItem {
                 }
 
                 count: tasksModel.count
+                layoutInputs: tasks.layoutInputs
                 availableWidth: tasks.width
                 availableHeight: tasks.height
 

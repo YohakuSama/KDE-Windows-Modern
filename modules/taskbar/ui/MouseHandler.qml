@@ -14,6 +14,9 @@ DropArea {
     id: dropArea
     signal urlsDropped(var urls)
 
+    required property Item tasksRoot
+    readonly property var tasksModel: tasksRoot.tasksModel
+
     property Item target
     property Item ignoredItem
     property Item hoveredItem
@@ -62,7 +65,7 @@ DropArea {
         // the movement direction has reversed, establishing user intent to
         // move back.
         if (!Plasmoid.configuration.separateLaunchers
-                && tasks.dragSource?.model.IsLauncher
+                && dropArea.tasksRoot.dragSource?.model.IsLauncher
                 && !above.model.IsLauncher
                 && above === ignoredItem) {
             return;
@@ -70,26 +73,26 @@ DropArea {
             ignoredItem = null;
         }
 
-        if (tasksModel.sortMode === TaskManager.TasksModel.SortManual && tasks.dragSource) {
+        if (tasksModel.sortMode === TaskManager.TasksModel.SortManual && dropArea.tasksRoot.dragSource) {
             // Reject drags between different TaskList instances.
-            if (tasks.dragSource.parent !== above.parent) {
+            if (dropArea.tasksRoot.dragSource.parent !== above.parent) {
                 return;
             }
 
             const insertAt = above.index;
 
-            if (tasks.dragSource !== above && tasks.dragSource.index !== insertAt) {
-                if (tasks.groupDialog) {
-                    tasksModel.move(tasks.dragSource.index, insertAt,
-                        tasksModel.makeModelIndex(tasks.groupDialog.visualParent.index));
+            if (dropArea.tasksRoot.dragSource !== above && dropArea.tasksRoot.dragSource.index !== insertAt) {
+                if (dropArea.tasksRoot.groupDialog) {
+                    tasksModel.move(dropArea.tasksRoot.dragSource.index, insertAt,
+                        tasksModel.makeModelIndex(dropArea.tasksRoot.groupDialog.visualParent.index));
                 } else {
-                    tasksModel.move(tasks.dragSource.index, insertAt);
+                    tasksModel.move(dropArea.tasksRoot.dragSource.index, insertAt);
                 }
 
                 ignoredItem = above;
                 ignoreItemTimer.restart();
             }
-        } else if (!tasks.dragSource && hoveredItem !== above) {
+        } else if (!dropArea.tasksRoot.dragSource && hoveredItem !== above) {
             hoveredItem = above;
             activationTimer.restart();
         }
@@ -120,10 +123,10 @@ DropArea {
     }
 
     Connections {
-        target: tasks
+        target: dropArea.tasksRoot
 
         function onDragSourceChanged(): void {
-            if (!dragSource) {
+            if (!dropArea.tasksRoot.dragSource) {
                 dropArea.ignoredItem = null;
                 ignoreItemTimer.stop();
             }
@@ -149,7 +152,7 @@ DropArea {
 
         onTriggered: {
             if (parent.hoveredItem.model.IsGroupParent) {
-                TaskManagerApplet.TaskTools.createGroupDialog(parent.hoveredItem, tasks);
+                TaskManagerApplet.TaskTools.createGroupDialog(parent.hoveredItem, dropArea.tasksRoot);
             } else if (!parent.hoveredItem.model.IsLauncher) {
                 tasksModel.requestActivate(parent.hoveredItem.modelIndex());
             }
@@ -180,20 +183,22 @@ DropArea {
             const anchor = dropArea.target.childAt(event.x, event.y);
             if (Plasmoid.configuration.wheelEnabled === 3) {
                 const loudest = anchor?.audioStreams?.reduce((loudest, stream) => Math.max(loudest, stream.volume), 0)
-                const step = (pulseAudio.item.normalVolume - pulseAudio.item.minimalVolume) * pulseAudio.item.globalConfig.volumeStep / 100;
+                const audio = dropArea.tasksRoot.audioModel;
+                if (!audio) return;
+                const step = (audio.normalVolume - audio.minimalVolume) * audio.globalConfig.volumeStep / 100;
                 anchor?.audioStreams?.forEach((stream) => {
                     let delta = step * increment;
                     if (loudest > 0) {
                         delta *= stream.volume / loudest;
                     }
                     const volume = stream.volume + delta;
-                    stream.model.Volume = Math.max(pulseAudio.item.minimalVolume, Math.min(volume, pulseAudio.item.normalVolume));
+                    stream.model.Volume = Math.max(audio.minimalVolume, Math.min(volume, audio.normalVolume));
                     stream.model.Muted = volume === 0
                 })
             return;
             }
             while (increment !== 0) {
-                TaskManagerApplet.TaskTools.activateNextPrevTask(anchor, increment < 0, Plasmoid.configuration.wheelSkipMinimized, Plasmoid.configuration.wheelEnabled, tasks);
+                TaskManagerApplet.TaskTools.activateNextPrevTask(anchor, increment < 0, Plasmoid.configuration.wheelSkipMinimized, Plasmoid.configuration.wheelEnabled, dropArea.tasksRoot);
                 increment += (increment < 0) ? 1 : -1;
             }
         }

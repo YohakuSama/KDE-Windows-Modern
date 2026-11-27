@@ -257,7 +257,7 @@ function createGroupDialog(visualParent, tasks) {
         return;
     }
 
-    tasks.groupDialog = tasks.groupDialogComponent.createObject(tasks, { visualParent });
+    tasks.groupDialog = tasks.groupDialogComponent.createObject(tasks, { visualParent, tasksRoot: tasks });
 }
 
 function foreachChildTask(callback, modelIndex, tasksModel) {

@@ -7,8 +7,6 @@
 import QtQuick
 import QtQuick.Layouts
 
-import org.kde.plasma.plasmoid
-import org.kde.plasma.core as PlasmaCore
 import plasma.applet.org.kde.plasma.icontasks as TaskManagerApplet
 
 GridLayout {
@@ -23,12 +21,13 @@ GridLayout {
     }
 
     required property int count
+    required property QtObject layoutInputs
     // The immediate parent's size follows this grid, so it cannot be used
     // to decide how many stripes the grid itself needs.
     required property real availableWidth
     required property real availableHeight
 
-    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+    readonly property bool vertical: layoutInputs.vertical
 
     readonly property real minimumWidth: {
         const minimum = children
@@ -38,15 +37,15 @@ GridLayout {
     }
 
     readonly property int stripeCount: {
-        const configured = Math.max(1, Plasmoid.configuration.maxStripes);
+        const configured = Math.max(1, layoutInputs.maxStripes);
         if (configured === 1 || count <= 0) {
             return 1;
         }
-        if (Plasmoid.configuration.forceStripes) {
+        if (layoutInputs.forceStripes) {
             return configured;
         }
 
-        const minWidth = Math.max(1, TaskManagerApplet.LayoutMetrics.preferredMinWidth());
+        const minWidth = Math.max(1, TaskManagerApplet.LayoutMetrics.preferredMinWidth(layoutInputs));
         const minHeight = Math.max(1, TaskManagerApplet.LayoutMetrics.preferredMinHeight());
         const width = Math.max(0, availableWidth);
         const height = Math.max(0, availableHeight);

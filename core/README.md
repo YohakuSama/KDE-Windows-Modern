@@ -5,7 +5,7 @@ declares the generated native outputs, not a second implementation.
 
 | Directory | Ownership |
 | --- | --- |
-| design/ | Shared popup, panel and lock-screen geometry |
+| design/ | Shared popup, taskbar icon canvas, panel and lock-screen geometry |
 | palette/ | Color classification, fixed roles, ICC/automatic accent and scheme template |
 | materials/ | Window material and popup frame generation |
 | controls/ | Shared glyphs, buttons, sliders, scrollbars and flyout controls |

@@ -11,7 +11,9 @@ geometry and interaction constraints, not a second progress inventory.
 
 - Standard panel height: 48 logical pixels. Start, Search, Task View and
   tasks use a 30px icon canvas constrained by their cells, with a 4px
-  total inset. Preserve aspect ratio and optical padding. Let Qt apply
+  total inset. `core/design/taskbarGeometry.js` is the shared source of
+  this canvas rule; each applet receives a self-contained native copy.
+  Preserve aspect ratio and optical padding. Let Qt apply
   fractional scaling; do not crop app artwork. Constrain the canvas by both
   cell dimensions and hide it when no usable extent remains. Task stripes
   use the available applet extent rather than their own grid's size. Check

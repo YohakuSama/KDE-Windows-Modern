@@ -17,6 +17,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 import plasma.applet.org.kde.plasma.icontasks as TaskManagerApplet
 import "code/JumpListPolicy.js" as JumpListPolicy
+import "taskbarGeometry.js" as TaskbarGeometry
 import org.kde.plasma.plasmoid
 
 import org.kde.taskmanager as TaskManager
@@ -32,25 +33,27 @@ FloatingToolTipArea {
     rotation: Plasmoid.configuration.reverseMode && Plasmoid.formFactor === PlasmaCore.Types.Vertical ? 180 : 0
 
     implicitHeight: inPopup
-                    ? TaskManagerApplet.LayoutMetrics.preferredHeightInPopup()
+                    ? TaskManagerApplet.LayoutMetrics.preferredHeightInPopup(task.layoutInputs)
                     : (tasksRoot.vertical
                         ? TaskManagerApplet.LayoutMetrics.preferredMinHeight()
-                        : Math.max(tasksRoot.height / Math.max(1, Plasmoid.configuration.maxStripes),
+                        : Math.max(tasksRoot.height / Math.max(1, task.layoutInputs.maxStripes),
                              TaskManagerApplet.LayoutMetrics.preferredMinHeight()))
     implicitWidth: tasksRoot.vertical
-        ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Math.min(TaskManagerApplet.LayoutMetrics.preferredMaxWidth(), tasksRoot.width / Math.max(1, Plasmoid.configuration.maxStripes)))
+        ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(task.layoutInputs), Math.min(TaskManagerApplet.LayoutMetrics.preferredMaxWidth(task.layoutInputs), tasksRoot.width / Math.max(1, task.layoutInputs.maxStripes)))
         : 0
 
     Layout.fillWidth: true
     Layout.fillHeight: !inPopup
     Layout.maximumWidth: tasksRoot.vertical
         ? -1
-        : ((!inPopup && model.IsLauncher && !tasksRoot.iconsOnly) ? tasksRoot.height / Math.max(1, taskList.rows) : TaskManagerApplet.LayoutMetrics.preferredMaxWidth())
-    Layout.maximumHeight: tasksRoot.vertical ? TaskManagerApplet.LayoutMetrics.preferredMaxHeight() : -1
+        : ((!inPopup && model.IsLauncher && !tasksRoot.iconsOnly) ? tasksRoot.height / Math.max(1, task.tasksRoot.taskList.rows) : TaskManagerApplet.LayoutMetrics.preferredMaxWidth(task.layoutInputs))
+    Layout.maximumHeight: tasksRoot.vertical ? TaskManagerApplet.LayoutMetrics.preferredMaxHeight(task.layoutInputs) : -1
 
     required property var model
     required property int index
     required property /*main.qml*/ Item tasksRoot
+    readonly property QtObject layoutInputs: tasksRoot.layoutInputs
+    readonly property var tasksModel: tasksRoot.tasksModel
 
     readonly property int pid: model.AppPid
     readonly property string appName: model.AppName
@@ -238,7 +241,7 @@ FloatingToolTipArea {
 
     onChildCountChanged: {
         if (TaskManagerApplet.TaskTools.taskManagerInstanceCount < 2 && childCount > previousChildCount) {
-            tasksModel.requestPublishDelegateGeometry(modelIndex(), backend.globalRect(task), task);
+            tasksModel.requestPublishDelegateGeometry(modelIndex(), task.tasksRoot.backend.globalRect(task), task);
         }
 
         previousChildCount = childCount;
@@ -277,7 +280,9 @@ FloatingToolTipArea {
         // Create item on demand instead of using Loader to reduce memory consumption,
         // because only a few applications have audio streams.
         const component = Qt.createComponent("AudioStream.qml");
-        audioStreamIcon = component.createObject(task);
+        audioStreamIcon = component.createObject(task, {
+            taskItem: task, taskIconBox: iconBox, taskTile: frame
+        });
         component.destroy();
     }
     onAudioIndicatorsEnabledChanged: task.hasAudioStreamChanged()
@@ -305,7 +310,7 @@ FloatingToolTipArea {
 
     function modelIndex(): /*QModelIndex*/ var {
         return inPopup
-            ? tasksModel.makeModelIndex(groupDialog.visualParent.index, index)
+            ? tasksModel.makeModelIndex(tasksRoot.groupDialog.visualParent.index, index)
             : tasksModel.makeModelIndex(index);
     }
 
@@ -329,7 +334,7 @@ FloatingToolTipArea {
             delayAudioStreamIndicator = !!args.delay;
         }
 
-        var pa = pulseAudio.item;
+        var pa = task.tasksRoot.audioModel;
         if (!pa || !task.isWindow) {
             task.audioStreams = [];
             return;
@@ -401,7 +406,7 @@ FloatingToolTipArea {
     }
 
     Connections {
-        target: pulseAudio.item
+        target: task.tasksRoot.audioModel
         ignoreUnknownSignals: true // Plasma-PA might not be available
         function onStreamsChanged(): void {
             task.updateAudioStreams({delay: true})
@@ -496,10 +501,10 @@ FloatingToolTipArea {
         anchors {
             fill: parent
 
-            topMargin: (!task.tasksRoot.vertical && taskList.rows > 1) ? TaskManagerApplet.LayoutMetrics.iconMargin : 0
-            bottomMargin: (!task.tasksRoot.vertical && taskList.rows > 1) ? TaskManagerApplet.LayoutMetrics.iconMargin : 0
-            leftMargin: ((task.inPopup || task.tasksRoot.vertical) && taskList.columns > 1) ? TaskManagerApplet.LayoutMetrics.iconMargin : 0
-            rightMargin: ((task.inPopup || task.tasksRoot.vertical) && taskList.columns > 1) ? TaskManagerApplet.LayoutMetrics.iconMargin : 0
+            topMargin: (!task.tasksRoot.vertical && task.tasksRoot.taskList.rows > 1) ? TaskManagerApplet.LayoutMetrics.iconMargin : 0
+            bottomMargin: (!task.tasksRoot.vertical && task.tasksRoot.taskList.rows > 1) ? TaskManagerApplet.LayoutMetrics.iconMargin : 0
+            leftMargin: ((task.inPopup || task.tasksRoot.vertical) && task.tasksRoot.taskList.columns > 1) ? TaskManagerApplet.LayoutMetrics.iconMargin : 0
+            rightMargin: ((task.inPopup || task.tasksRoot.vertical) && task.tasksRoot.taskList.columns > 1) ? TaskManagerApplet.LayoutMetrics.iconMargin : 0
         }
 
         imagePath: "widgets/tasks"
@@ -536,7 +541,7 @@ FloatingToolTipArea {
                         tasksRoot.dragSource = task;
                         dragHelper.Drag.imageSource = result.url;
                         dragHelper.Drag.mimeData = {
-                            "text/x-orgkdeplasmataskmanager_taskurl": backend.tryDecodeApplicationsUrl(model.LauncherUrlWithoutIcon).toString(),
+                            "text/x-orgkdeplasmataskmanager_taskurl": task.tasksRoot.backend.tryDecodeApplicationsUrl(model.LauncherUrlWithoutIcon).toString(),
                             [model.MimeType]: model.MimeData,
                             "application/x-orgkdeplasmataskmanager_taskbuttonitem": model.MimeData,
                         };
@@ -565,22 +570,22 @@ FloatingToolTipArea {
         id: iconBox
 
         readonly property bool panelIconOnly: !task.inPopup && task.tasksRoot.iconsOnly
-        readonly property real panelIconSize: Math.max(0, Math.min(30, Math.floor(Math.min(task.width, task.height) - 4)))
+        readonly property real panelIconSize: TaskbarGeometry.iconCanvasSize(task.width, task.height)
 
         anchors {
             left: parent.left
-            leftMargin: adjustMargin(true, parent.width, taskFrame.margins.left)
+            leftMargin: adjustMargin(true, parent.width, task.layoutInputs.frameLeft)
             top: iconBox.panelIconOnly ? undefined : parent.top
             verticalCenter: iconBox.panelIconOnly ? parent.verticalCenter : undefined
-            topMargin: adjustMargin(false, parent.height, taskFrame.margins.top)
+            topMargin: adjustMargin(false, parent.height, task.layoutInputs.frameTop)
         }
 
         width: panelIconOnly ? panelIconSize
             : task.inPopup ? Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium)
             : Math.min(task.parent?.minimumWidth ?? 0, task.height)
         height: panelIconOnly || task.inPopup ? width
-            : Math.max(0, parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)
-                 - adjustMargin(false, parent.height, taskFrame.margins.bottom))
+            : Math.max(0, parent.height - adjustMargin(false, parent.height, task.layoutInputs.frameTop)
+                 - adjustMargin(false, parent.height, task.layoutInputs.frameBottom))
 
         asynchronous: true
         active: height >= Kirigami.Units.iconSizes.small
@@ -592,7 +597,7 @@ FloatingToolTipArea {
                 return 0;
             }
 
-            var margins = isVertical ? TaskManagerApplet.LayoutMetrics.horizontalMargins() : TaskManagerApplet.LayoutMetrics.verticalMargins();
+            var margins = isVertical ? TaskManagerApplet.LayoutMetrics.horizontalMargins(task.layoutInputs) : TaskManagerApplet.LayoutMetrics.verticalMargins(task.layoutInputs);
 
             if ((size - margins) < Kirigami.Units.iconSizes.small) {
                 return Math.min(size / 2, Math.ceil((margin * (Kirigami.Units.iconSizes.small / size)) / 2));
@@ -634,8 +639,8 @@ FloatingToolTipArea {
                     iconBox.anchors.leftMargin: 0
                     iconBox.width: iconBox.panelIconOnly ? iconBox.panelIconSize
                         : Math.max(0, Math.min(task.parent.minimumWidth ?? 0, tasksRoot.height)
-                        - iconBox.adjustMargin(true, task.width, taskFrame.margins.left)
-                        - iconBox.adjustMargin(true, task.width, taskFrame.margins.right))
+                        - iconBox.adjustMargin(true, task.width, task.layoutInputs.frameLeft)
+                        - iconBox.adjustMargin(true, task.width, task.layoutInputs.frameRight))
                 }
             }
         ]
@@ -657,10 +662,10 @@ FloatingToolTipArea {
 
         anchors {
             fill: parent
-            leftMargin: taskFrame.margins.left + iconBox.width + TaskManagerApplet.LayoutMetrics.labelMargin
-            topMargin: taskFrame.margins.top
-            rightMargin: taskFrame.margins.right + (task.audioStreamIcon !== null && task.audioStreamIcon.visible ? (task.audioStreamIcon.width + TaskManagerApplet.LayoutMetrics.labelMargin) : 0)
-            bottomMargin: taskFrame.margins.bottom
+            leftMargin: task.layoutInputs.frameLeft + iconBox.width + TaskManagerApplet.LayoutMetrics.labelMargin
+            topMargin: task.layoutInputs.frameTop
+            rightMargin: task.layoutInputs.frameRight + (task.audioStreamIcon !== null && task.audioStreamIcon.visible ? (task.audioStreamIcon.width + TaskManagerApplet.LayoutMetrics.labelMargin) : 0)
+            bottomMargin: task.layoutInputs.frameBottom
         }
 
         wrapMode: (maximumLineCount === 1) ? Text.NoWrap : Text.Wrap

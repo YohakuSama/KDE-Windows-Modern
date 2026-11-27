@@ -7,6 +7,7 @@
  ***************************************************************************/
 
 import QtQuick
+import "taskbarGeometry.js" as TaskbarGeometry
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
@@ -99,7 +100,7 @@ Item {
     // Match the task icon canvas at 30 logical pixels, including the
     // original optical inset. Qt applies fractional output scaling.
     readonly property int startIconSize: inPanel
-        ? Math.max(0, Math.min(30, Math.floor(Math.min(width, height) - 4)))
+        ? TaskbarGeometry.iconCanvasSize(width, height)
         : Math.max(0, Math.floor(Math.min(width, height)))
 
     // Hover (and open menu) tile: the taskbar's own tile without a bar

@@ -19,6 +19,9 @@ import plasma.applet.org.kde.plasma.icontasks as TaskManagerApplet
 PlasmaCore.PopupPlasmaWindow {
     id: groupDialog
 
+    required property Item tasksRoot
+    readonly property var tasksModel: tasksRoot.tasksModel
+
     width: mouseHandler.implicitWidth + leftPadding + rightPadding
     height: mouseHandler.implicitHeight + topPadding + bottomPadding
 
@@ -83,6 +86,7 @@ PlasmaCore.PopupPlasmaWindow {
 
     mainItem: MouseHandler {
         id: mouseHandler
+        tasksRoot: groupDialog.tasksRoot
         implicitWidth: Math.min(groupDialog.preferredWidth, Math.max(groupListView.maxWidth, groupDialog.visualParent?.width || 0))
         implicitHeight: Math.min(groupDialog.preferredHeight, groupListView.maxHeight)
 
@@ -126,12 +130,12 @@ PlasmaCore.PopupPlasmaWindow {
                 id: groupListView
 
                 readonly property real maxWidth: groupFilter.maxTextWidth
-                                                + TaskManagerApplet.LayoutMetrics.horizontalMargins()
+                                                + TaskManagerApplet.LayoutMetrics.horizontalMargins(groupDialog.tasksRoot.layoutInputs)
                                                 + Kirigami.Units.iconSizes.medium
                                                 + 2 * (TaskManagerApplet.LayoutMetrics.labelMargin + TaskManagerApplet.LayoutMetrics.iconMargin)
                                                 + scrollView.leftPadding + scrollView.rightPadding
                 // Use groupFilter.count because sometimes count is not updated in time (BUG 446105)
-                readonly property real maxHeight: groupFilter.count * (TaskManagerApplet.LayoutMetrics.verticalMargins() + Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium))
+                readonly property real maxHeight: groupFilter.count * (TaskManagerApplet.LayoutMetrics.verticalMargins(groupDialog.tasksRoot.layoutInputs) + Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium))
 
                 model: DelegateModel {
                     id: groupFilter
@@ -147,7 +151,7 @@ PlasmaCore.PopupPlasmaWindow {
                         width: groupListView.width
                         visible: true
                         inPopup: true
-                        tasksRoot: tasks
+                        tasksRoot: groupDialog.tasksRoot
 
                         ListView.onRemove: Qt.callLater(groupFilter.updateMaxTextWidth)
                         Connections {
@@ -184,7 +188,7 @@ PlasmaCore.PopupPlasmaWindow {
 
                 onCountChanged: {
                     if (count > 0) {
-                        tasks.cancelHighlightWindows()
+                        groupDialog.tasksRoot.cancelHighlightWindows()
                     } else {
                         groupDialog.visible = false;
                     }
@@ -203,7 +207,7 @@ PlasmaCore.PopupPlasmaWindow {
             Qt.callLater(findActiveTaskIndex);
         } else {
             Plasmoid.status = _oldAppletStatus;
-            tasks.groupDialog = null;
+            groupDialog.tasksRoot.groupDialog = null;
             destroy();
         }
     }

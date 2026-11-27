@@ -9,18 +9,19 @@
 const iconMargin = Math.round(Kirigami.Units.smallSpacing / 6);
 const labelMargin = Kirigami.Units.smallSpacing;
 
-function horizontalMargins() {
-    const spacingAdjustment = (tasks.plasmoid.pluginName === "org.kde.plasma.icontasks") ? tasks.plasmoid.configuration.iconSpacing : 1
-    return (taskFrame.margins.left + taskFrame.margins.right) * (tasks.vertical ? 1 : spacingAdjustment);
+// Layout callers supply live geometry/configuration inputs explicitly.
+// No applet IDs, frame objects or instance state are resolved in this script.
+
+function horizontalMargins(inputs) {
+    return (inputs.frameLeft + inputs.frameRight) * (inputs.vertical ? 1 : inputs.spacingAdjustment);
 }
 
-function verticalMargins() {
-    const spacingAdjustment = (tasks.plasmoid.pluginName === "org.kde.plasma.icontasks") ? tasks.plasmoid.configuration.iconSpacing : 1
-    return (taskFrame.margins.top + taskFrame.margins.bottom) * (tasks.vertical ? spacingAdjustment : 1);
+function verticalMargins(inputs) {
+    return (inputs.frameTop + inputs.frameBottom) * (inputs.vertical ? inputs.spacingAdjustment : 1);
 }
 
-function adjustMargin(height, margin) {
-    const available = height - verticalMargins();
+function adjustMargin(inputs, height, margin) {
+    const available = height - verticalMargins(inputs);
 
     if (available <= 0) {
         return 0;
@@ -33,29 +34,29 @@ function adjustMargin(height, margin) {
     return margin;
 }
 
-function maxStripes() {
-    const length = tasks.vertical ? tasks.width : tasks.height;
-    const minimum = tasks.vertical ? preferredMinWidth() : preferredMinHeight();
+function maxStripes(inputs) {
+    const length = inputs.vertical ? inputs.width : inputs.height;
+    const minimum = inputs.vertical ? preferredMinWidth(inputs) : preferredMinHeight();
 
-    return Math.max(1, Math.min(tasks.plasmoid.configuration.maxStripes, Math.floor(length / Math.max(1, minimum))));
+    return Math.max(1, Math.min(inputs.maxStripes, Math.floor(length / Math.max(1, minimum))));
 }
 
-function optimumCapacity(width, height) {
-    const length = tasks.vertical ? height : width;
-    const maximum = tasks.vertical ? preferredMaxHeight() : preferredMaxWidth();
+function optimumCapacity(inputs) {
+    const length = inputs.vertical ? inputs.height : inputs.width;
+    const maximum = inputs.vertical ? preferredMaxHeight(inputs) : preferredMaxWidth(inputs);
 
-    if (!tasks.vertical) {
+    if (!inputs.vertical) {
         //  Fit more tasks in this case, that is possible to cut text, before combining tasks.
-        return Math.ceil(length / maximum) * maxStripes() + 1;
+        return Math.ceil(length / maximum) * maxStripes(inputs) + 1;
     }
 
-    return Math.floor(length / maximum) * maxStripes();
+    return Math.floor(length / maximum) * maxStripes(inputs);
 }
 
-function preferredMinWidth() {
-    let width = preferredMinLauncherWidth();
+function preferredMinWidth(inputs) {
+    let width = preferredMinLauncherWidth(inputs);
 
-    if (!tasks.vertical && !tasks.iconsOnly) {
+    if (!inputs.vertical && !inputs.iconsOnly) {
       width +=
           (Kirigami.Units.smallSpacing * 2) +
           (Kirigami.Units.gridUnit * 8);
@@ -64,24 +65,24 @@ function preferredMinWidth() {
     return width;
 }
 
-function preferredMaxWidth() {
-    if (tasks.iconsOnly) {
-        if (tasks.vertical) {
-            if (tasks.width === 0) {
+function preferredMaxWidth(inputs) {
+    if (inputs.iconsOnly) {
+        if (inputs.vertical) {
+            if (inputs.width === 0) {
                 return 0
             }
-            return tasks.width + verticalMargins();
+            return inputs.width + verticalMargins(inputs);
         } else {
-            if (tasks.height === 0) {
+            if (inputs.height === 0) {
                 return 0
             }
-            return tasks.height + horizontalMargins();
+            return inputs.height + horizontalMargins(inputs);
         }
     }
 
     // Avoid doing a bunch of unnecessary work below in vertical mode
-    if (tasks.vertical) {
-        return preferredMinWidth();
+    if (inputs.vertical) {
+        return preferredMinWidth(inputs);
     }
 
     // Visually, a large max item width on a tall panel looks cluttered even
@@ -91,9 +92,9 @@ function preferredMaxWidth() {
     // This allows for one default value for max item width where clutter is
     // reduced at low task counts for tall panels, while leaving low height
     // panels less affected (unaffected at 20px).
-    const laneHeight = tasks.height / maxStripes(); // correct for multiple rows
+    const laneHeight = inputs.height / maxStripes(inputs); // correct for multiple rows
     let baseFactor = 1; // sane default in case something goes wrong
-    switch (tasks.plasmoid.configuration.taskMaxWidth) {
+    switch (inputs.taskMaxWidth) {
     case 0: // narrow
         baseFactor = 1.2;
         break;
@@ -112,7 +113,7 @@ function preferredMaxWidth() {
     // Clamp the minimum factor to 1 to ensure max width is always >= min width.
     // and the factor reduction to 0 so we don't ever increase the factor
     const factor = Math.max(1, baseFactor - Math.max(0, factorReduction));
-    return Math.floor(preferredMinWidth() * factor);
+    return Math.floor(preferredMinWidth(inputs) * factor);
 }
 
 function preferredMinHeight() {
@@ -120,31 +121,31 @@ function preferredMinHeight() {
     return Kirigami.Units.iconSizes.sizeForLabels + 4;
 }
 
-function preferredMaxHeight() {
-    if (tasks.vertical) {
+function preferredMaxHeight(inputs) {
+    if (inputs.vertical) {
         let taskPreferredSize = 0;
-        if (tasks.iconsOnly) {
-            taskPreferredSize = tasks.width / maxStripes();
+        if (inputs.iconsOnly) {
+            taskPreferredSize = inputs.width / maxStripes(inputs);
         } else {
             taskPreferredSize = Math.max(Kirigami.Units.iconSizes.sizeForLabels,
                                          Kirigami.Units.iconSizes.medium);
         }
-        return verticalMargins() +
+        return verticalMargins(inputs) +
             Math.min(
                 // Do not allow the preferred icon size to exceed the width of
                 // the vertical task manager.
-                tasks.width / maxStripes(),
+                inputs.width / maxStripes(inputs),
                 taskPreferredSize);
     } else {
-        return verticalMargins() +
+        return verticalMargins(inputs) +
             Math.min(
                 Kirigami.Units.iconSizes.small * 3,
                 Kirigami.Units.iconSizes.sizeForLabels * 3);
     }
 }
 
-function preferredHeightInPopup() {
-    return verticalMargins() + Math.max(Kirigami.Units.iconSizes.sizeForLabels,
+function preferredHeightInPopup(inputs) {
+    return verticalMargins(inputs) + Math.max(Kirigami.Units.iconSizes.sizeForLabels,
                                         Kirigami.Units.iconSizes.medium);
 }
 
@@ -155,11 +156,11 @@ function spaceRequiredToShowText() {
     return Math.round(Kirigami.Units.gridUnit * 1.5);
 }
 
-function preferredMinLauncherWidth() {
-    const baseWidth = tasks.vertical ? preferredMinHeight() : Math.min(tasks.height, Kirigami.Units.iconSizes.small * 3);
+function preferredMinLauncherWidth(inputs) {
+    const baseWidth = inputs.vertical ? preferredMinHeight() : Math.min(inputs.height, Kirigami.Units.iconSizes.small * 3);
 
-    return Math.max(1, baseWidth + horizontalMargins()
-        - adjustMargin(baseWidth, taskFrame.margins.top) - adjustMargin(baseWidth, taskFrame.margins.bottom));
+    return Math.max(1, baseWidth + horizontalMargins(inputs)
+        - adjustMargin(inputs, baseWidth, inputs.frameTop) - adjustMargin(inputs, baseWidth, inputs.frameBottom));
 }
 
 function maximumContextMenuTextWidth() {
