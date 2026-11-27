@@ -13,12 +13,16 @@
   related functional work; do not refactor only to reduce file count or
   introduce a new mandatory runtime service. State the audit scope.
 - In the modular source migration, read [modules/README.md](modules/README.md)
-  and [core/README.md](core/README.md). Edit only the canonical source for
+  and [core/README.md](core/README.md), plus
+  [platform/README.md](platform/README.md) and
+  [packaging/README.md](packaging/README.md). Edit only the canonical source for
   paths owned by core/source-map.json; native package mirrors are generated.
   Refresh the mirrors with scripts/materialize-modules.py --write and review
   the complete diff, then check with --check. The existing QML parser and
   packaging entry point reject stale mirrors. Do not add runtime imports
-  between independently installed applets or greeter packages.
+  between independently installed applets or greeter packages. The native
+  directory contains generated mirrors where mapped; run tools from their
+  existing output paths until the staging migration is complete.
 - Read [the development guide](docs/CONTRIBUTING.md) for product scope,
   architecture, safety requirements and contribution conventions.
 - Read [the current UI contract](docs/PANEL_UI_CONTRACT.md) and

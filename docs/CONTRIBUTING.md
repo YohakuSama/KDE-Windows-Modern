@@ -54,13 +54,15 @@ implemented, and do not infer visual parity from the task count.
 | `install.sh`, `uninstall.sh`, `install-nixos.sh` | User entry points and the reversible NixOS backend. Conventional component installers are in `scripts/`. |
 | `scripts/install-lib.sh` | Shared helpers (paths, logging, apply/restart). Every installer sources it. |
 | [`core/`](../core/README.md) | Editable shared control, geometry, palette, animation, logic and resource sources. `source-map.json` declares native package outputs. |
-| [`modules/`](../modules/README.md) | Editable feature sources. First migration covers Start, Search, Task View, Show Desktop, Calendar and Notifications in five native applets. |
-| `plasma/applets/` | Native KPackage/build layout. The five migrated pure QML applets contain generated mirrors; `systemtray` and `icontasks` remain editable native C++ applets except their mapped shared files. |
+| [`modules/`](../modules/README.md) | Editable feature sources: all seven applets, local flyouts, shell surfaces, window management, login/lock and app appearance. |
+| [`platform/`](../platform/README.md) | Editable Qt/Plasma adapters, CMake, NixOS definitions and host tools. |
+| [`packaging/`](../packaging/README.md) | Editable component installers and packaging tools. |
+| `plasma/applets/` | Native KPackage/build layout, generated from the canonical map except developer tools. |
 | `plasma/look-and-feel/`, `plasma/desktoptheme/` | Shared global theme and Plasma style sources. Generate both renderer modes with the appearance materializer. |
-| `aurorae/` | Shared window decoration and caption states. Generate both native decoration packages with the appearance materializer. |
-| `Kvantum/` | Shared Qt style configuration and SVG geometry templates; generate both modes through the appearance materializer. |
-| `color-schemes/`, `scripts/theme/palette.json` | Shared KDE color scheme template and fixed palette roles used by KDE, Kvantum and Aurorae window bases. |
-| `plasma/layout-templates/` | The "Add Panel → Windows Modern Panel" template. |
+| `aurorae/` | Native mirror of modules/windowmanager/decoration. Generate both mode packages with the appearance materializer. |
+| `Kvantum/` | Native mirror of platform/qt/kvantum/style; generate both modes through the appearance materializer. |
+| `color-schemes/`, `scripts/theme/palette.json` | Native mirrors of core/palette template and fixed color roles. |
+| `plasma/layout-templates/` | Generated Add Panel wrapper and common body from modules/taskbar/layout. The global-theme entry uses the same body. |
 | `plasma/windowswitcher/` | The Alt+Tab switcher (a KWin window-switcher layout). |
 | `tests/` | Headless regression tests, previews, and separate live desktop tests. |
 | `plasma/shells/` | Session lock screen (installed as a shell overlay). |
@@ -69,12 +71,13 @@ implemented, and do not infer visual parity from the task count.
 
 ## Modular source migration
 
-For mapped files, edit the canonical source in core/ or modules/, not
+For mapped files, edit the canonical source in core/, modules/, platform/ or packaging/, not
 the generated native destination. Run `python3 -I scripts/materialize-modules.py --write`
 in a development checkout after editing, review the resulting diff, and use
 `--check` for a read-only consistency check. Existing Qt parser and
-package creation call the same check; installation still consumes the
-unchanged native package layout. The migration keeps generated mirrors in
+package creation call the same check; the NixOS source install checks using its runtime Python
+before desktop changes. Installation still consumes the original native
+package layout. The migration keeps generated mirrors in
 Git temporarily until every native build, install, resource audit and
 acceptance consumer has been migrated. Do not maintain both copies by hand.
 
@@ -83,6 +86,12 @@ generated files deliberately when removing their sources; the generator
 rejects unmapped files in a fully owned output tree rather than deleting
 untracked work. Shared controls use explicit output mappings. Keep separate
 hosts self-contained, with no new runtime dependency between applets.
+The materializer checks content and executable mode, rejects unowned source
+and duplicate outputs, and renders the shared taskbar body into both native
+scripts. Keep tools with relative dependencies at their existing execution
+paths until staging is migrated. A source-generating developer tool that
+still targets a mapped native file must be migrated before use; do not
+silently edit or overwrite its canonical source.
 
 ## Branch and merge flow
 

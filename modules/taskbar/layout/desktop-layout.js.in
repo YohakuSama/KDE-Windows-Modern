@@ -1,0 +1,33 @@
+// Windows Modern Panel — Win11-style centered taskbar layout for Plasma 6
+// Applied automatically when the global theme is applied and the user
+// chooses to use the desktop layout from this theme.
+// Creates a bottom panel on every currently connected screen with:
+//   [...........] [Start] [icon-only tasks] [...........] [system tray] [clock] [show desktop]
+//
+// Default height is 48px (authentic Win11 taskbar height). The same layout
+// works at 30/32px — just resize the panel after applying it.
+//
+// NOTE: this script runs once when the global theme is applied. Monitors
+// connected afterwards will not automatically get this panel; re-apply the
+// theme to update all screens.
+
+// Remove any existing panels so the global theme's layout replaces the
+// previous desktop layout rather than adding a second panel.
+var existingPanels = panels();
+for (var i = existingPanels.length - 1; i >= 0; i--) {
+    existingPanels[i].remove();
+}
+
+// Create one Windows Modern panel on every screen currently connected.
+for (var screenId = 0; screenId < screenCount; screenId++) {
+    createWindowsModernPanel(screenId);
+}
+
+// The panel body is generated from modules/taskbar/layout/panel-body.js.
+function createWindowsModernPanel(screenId) {
+    var panel = new Panel;
+
+    // Set the target screen immediately; panel config groups depend on it.
+    panel.screen = screenId;
+@PANEL_BODY@
+}

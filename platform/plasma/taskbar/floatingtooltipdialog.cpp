@@ -1,0 +1,179 @@
+/*
+    SPDX-FileCopyrightText: 2013 Sebastian Kügler <sebas@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
+
+#include "floatingtooltipdialog.h"
+
+#include <QDebug>
+#include <QFile>
+#include <QPlatformSurfaceEvent>
+#include <QQmlComponent>
+#include <QQmlEngine>
+#include <QQuickItem>
+#include <QQuickWindow>
+#include <QScreen>
+
+#include <KWindowSystem>
+#include <PlasmaQuick/PlasmaShellWaylandIntegration>
+
+FloatingToolTipDialog::FloatingToolTipDialog()
+    : PopupPlasmaWindow(QStringLiteral("widgets/tooltip"))
+    , m_hideTimeout(-1)
+    , m_interactive(false)
+    , m_owner(nullptr)
+{
+    Qt::WindowFlags flags = Qt::WindowDoesNotAcceptFocus | Qt::WindowStaysOnTopHint;
+    if (KWindowSystem::isPlatformX11()) {
+        flags |= Qt::ToolTip | Qt::BypassWindowManagerHint;
+    } else {
+        flags |= Qt::FramelessWindowHint;
+        // On Wayland the Qt flags above mean nothing to KWin: without a
+        // plasma-shell role the tooltip is a normal toplevel, gets activated
+        // when shown, and takes the keyboard from the window the user is
+        // typing in (#14). Same as libplasma's ToolTipDialog.
+        PlasmaShellWaylandIntegration::get(this)->setRole(QtWayland::org_kde_plasma_surface::role_tooltip);
+        PlasmaShellWaylandIntegration::get(this)->setTakesFocus(false);
+    }
+    setFlags(flags);
+
+    m_hideTimer.setSingleShot(true);
+    connect(&m_hideTimer, &QTimer::timeout, this, [this]() {
+        setVisible(false);
+    });
+
+    connect(this, &PlasmaQuick::PlasmaWindow::mainItemChanged, this, [this]() {
+        if (m_lastMainItem) {
+            disconnect(m_lastMainItem, &QQuickItem::implicitWidthChanged, this, &FloatingToolTipDialog::updateSize);
+            disconnect(m_lastMainItem, &QQuickItem::implicitHeightChanged, this, &FloatingToolTipDialog::updateSize);
+        }
+        m_lastMainItem = mainItem();
+
+        if (!m_lastMainItem) {
+            return;
+        }
+        connect(m_lastMainItem, &QQuickItem::implicitWidthChanged, this, &FloatingToolTipDialog::updateSize);
+        connect(m_lastMainItem, &QQuickItem::implicitHeightChanged, this, &FloatingToolTipDialog::updateSize);
+        updateSize();
+    });
+}
+
+FloatingToolTipDialog::~FloatingToolTipDialog() = default;
+
+void FloatingToolTipDialog::updateSize()
+{
+    QScreen *s = visualParent() && visualParent()->window()
+        ? visualParent()->window()->screen() : screen();
+    if (!s) {
+        return;
+    }
+    // mainItem() is null until the tooltip QML has finished loading.
+    QQuickItem *item = mainItem();
+    if (!item) {
+        return;
+    }
+    QSize popupSize = QSize(item->implicitWidth(), item->implicitHeight());
+    popupSize = popupSize.grownBy(padding());
+    popupSize = popupSize.boundedTo(s->availableGeometry().size());
+    if (!popupSize.isEmpty()) {
+        resize(popupSize);
+    }
+}
+
+QQuickItem *FloatingToolTipDialog::loadDefaultItem(QQmlEngine *engine)
+{
+    // libplasma 6.8 no longer exports PlasmaQuick::SharedQmlEngine, so load
+    // the stock DefaultToolTip with a plain QQmlComponent instead.
+    if (!m_defaultItem && engine) {
+        QQmlComponent component(engine);
+        component.loadFromModule("org.kde.plasma.core", "DefaultToolTip");
+        QObject *object = component.create();
+        if (!object) {
+            qWarning() << "FloatingToolTipDialog: could not create DefaultToolTip:" << component.errorString();
+            return nullptr;
+        }
+        auto *item = qobject_cast<QQuickItem *>(object);
+        if (!item) {
+            delete object;
+            return nullptr;
+        }
+        QQmlEngine::setObjectOwnership(item, QQmlEngine::CppOwnership);
+        item->setParent(this);
+        m_defaultItem = item;
+    }
+    return m_defaultItem.data();
+}
+
+void FloatingToolTipDialog::showEvent(QShowEvent *event)
+{
+    keepalive();
+    PlasmaQuick::PopupPlasmaWindow::showEvent(event);
+}
+
+void FloatingToolTipDialog::hideEvent(QHideEvent *event)
+{
+    m_hideTimer.stop();
+    PlasmaQuick::PopupPlasmaWindow::hideEvent(event);
+}
+
+bool FloatingToolTipDialog::event(QEvent *e)
+{
+    if (e->type() == QEvent::Enter) {
+        if (m_interactive) {
+            m_hideTimer.stop();
+        }
+    } else if (e->type() == QEvent::Leave) {
+        dismiss();
+    }
+
+    return PopupPlasmaWindow::event(e);
+}
+
+QObject *FloatingToolTipDialog::owner() const
+{
+    return m_owner;
+}
+
+void FloatingToolTipDialog::setOwner(QObject *owner)
+{
+    m_owner = owner;
+}
+
+void FloatingToolTipDialog::dismiss()
+{
+    m_hideTimer.start(200);
+}
+
+void FloatingToolTipDialog::keepalive()
+{
+    if (m_hideTimeout > 0) {
+        m_hideTimer.start(m_hideTimeout);
+    } else {
+        m_hideTimer.stop();
+    }
+}
+
+bool FloatingToolTipDialog::interactive()
+{
+    return m_interactive;
+}
+
+void FloatingToolTipDialog::setInteractive(bool interactive)
+{
+    m_interactive = interactive;
+}
+
+void FloatingToolTipDialog::valueChanged(const QVariant &value)
+{
+    setPosition(value.toPoint());
+}
+
+void FloatingToolTipDialog::setHideTimeout(int timeout)
+{
+    m_hideTimeout = timeout;
+}
+
+int FloatingToolTipDialog::hideTimeout() const
+{
+    return m_hideTimeout;
+}

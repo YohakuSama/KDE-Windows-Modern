@@ -2,8 +2,7 @@
 // Used by "Add Panel → Windows Modern Panel". Adds ONE panel to the screen
 // the user picked and leaves existing panels alone. The global themes'
 // layout scripts (plasma/look-and-feel/*/contents/layouts/) instead replace
-// all panels with one per screen. The widget section below is shared with
-// them and must stay identical — verify-all.sh checks this.
+// all panels with one per screen. The panel body is generated from modules/taskbar/layout/panel-body.js.
 // Creates a bottom panel with:
 //   [...........] [Start] [icon-only tasks] [...........] [system tray] [clock] [show desktop]
 //
@@ -27,7 +26,7 @@ panel.lengthMode = "fill";
 // plasmashell holds its config in memory (KSharedConfig) and won't see
 // an external write — PanelView reads floatingApplets from its in-memory
 // cache and gets the default (false). Users must toggle "Floating →
-// Applets Only" manually in Panel Settings after adding this panel.
+// Applets Only" manually in Panel Settings after creating the panel.
 panel.floating = false;
 
 // Stable translucent taskbar and acrylic-style flyouts, independent

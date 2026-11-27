@@ -1,0 +1,523 @@
+import QtQml
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
+
+import org.kde.plasma.components as PlasmaComponents3
+import org.kde.plasma.workspace.components as PW
+import org.kde.kirigami as Kirigami
+import org.kde.plasma.private.sessions
+import org.kde.plasma.private.keyboardindicator as KeyboardIndicator
+import org.kde.breeze.components
+
+import "dateformat.js" as DateFormat
+import "lockText.js" as LockText
+
+Item {
+    id: lockScreenUi
+
+    readonly property bool softwareRendering: GraphicsInfo.api === GraphicsInfo.Software
+
+    function handleMessage(msg) {
+        if (!msg) {
+            return;
+        }
+        if (!root.notification) {
+            root.notification += msg;
+        } else if (root.notification.includes(msg)) {
+            root.notificationRepeated();
+        } else {
+            root.notification += "\n" + msg
+        }
+        lockScreenRoot.uiVisible = true;
+    }
+
+    Kirigami.Theme.inherit: false
+    Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
+
+    // ── Authenticator connections ──
+    Connections {
+        target: authenticator
+        function onFailed(kind) {
+            if (kind != 0) return;
+            const msg = LockText.tr("Unlocking failed", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Unlocking failed"), Qt.uiLanguage, Qt.locale().name);
+            lockScreenUi.handleMessage(msg);
+            root.clearPassword();
+            authenticator.startAuthenticating();
+            notificationRemoveTimer.restart();
+            rejectPasswordAnimation.start();
+        }
+        function onSucceeded() {
+            authenticator.stopAuthenticating();
+            if (authenticator.hadPrompt) {
+                Qt.quit();
+            } else {
+                mainStack.replace(null, Qt.resolvedUrl("NoPasswordUnlock.qml"),
+                    { userListModel: users }, StackView.Immediate);
+                mainStack.forceActiveFocus();
+            }
+        }
+        function onInfoMessageChanged() {
+            lockScreenUi.handleMessage(authenticator.infoMessage);
+        }
+        function onErrorMessageChanged() {
+            lockScreenUi.handleMessage(authenticator.errorMessage);
+        }
+        function onPromptChanged(msg) {
+            lockScreenUi.handleMessage(authenticator.prompt);
+        }
+        function onPromptForSecretChanged(msg) {
+            if (mainBlock) {
+                mainBlock.showPassword = false;
+                mainBlock.mainPasswordBox.forceActiveFocus();
+            }
+        }
+    }
+
+    SessionManagement {
+        id: sessionManagement
+    }
+
+    Connections {
+        target: sessionManagement
+        function onAboutToSuspend() { root.clearPassword(); }
+    }
+
+    RejectPasswordAnimation {
+        id: rejectPasswordAnimation
+        target: mainBlock
+    }
+
+    KeyboardIndicator.KeyState {
+        id: capsLockState
+        key: Qt.Key_CapsLock
+    }
+
+    // ── Launch animation ──
+    PropertyAnimation {
+        id: launchAnimation
+        target: lockScreenRoot
+        property: "opacity"
+        from: 0
+        to: 1
+        duration: Kirigami.Units.veryLongDuration * 2
+    }
+
+    Component.onCompleted: launchAnimation.start();
+
+    // ── Interaction layer ──
+    MouseArea {
+        id: lockScreenRoot
+        anchors.fill: parent
+        hoverEnabled: true
+
+        property bool uiVisible: false
+        property bool blockUI: containsMouse && (mainStack.depth > 1 || (mainBlock?.mainPasswordBox.text.length ?? 0) > 0)
+        // The login UI is shown when woken or while a password is typed.
+        // Enter is accepted exactly then (MainBlock.lockScreenUiVisible):
+        // accepting it only while uiVisible dropped it silently when the
+        // user typed without moving the mouse, or the pointer left.
+        property bool loginUiActive: uiVisible || (mainBlock?.mainPasswordBox.text.length ?? 0) > 0
+        // Typing straight away (keys go to the password field, not to
+        // Keys.onPressed below) wakes the UI like the mouse does, which also
+        // starts authenticating.
+        onLoginUiActiveChanged: {
+            if (loginUiActive) { uiVisible = true }
+        }
+
+        // The locale's long date without the year ("Wednesday, November 11",
+        // "středa 11. listopadu"), as the Windows lock screen and the panel
+        // clock show it. dateformat.js is a copy of the digital clock's.
+        function dateLine(d: date): string {
+            return Qt.locale().toString(d, DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)));
+        }
+        cursorShape: Qt.ArrowCursor
+        drag.filterChildren: true
+
+        onEntered: {
+            uiVisible = true;
+            fadeoutTimer.restart();
+        }
+        onPressed: (mouse) => {
+            var item = lockScreenRoot.childAt(mouse.x, mouse.y);
+            while (item && item !== lockScreenRoot) {
+                if (item === statusIcons || item === mediaControlsLoader) {
+                    return;
+                }
+                item = item.parent;
+            }
+            uiVisible = true;
+        }
+        onUiVisibleChanged: {
+            if (uiVisible) { Window.window.requestActivate() }
+            if (blockUI) { fadeoutTimer.running = false }
+            else if (uiVisible) { fadeoutTimer.restart() }
+            authenticator.startAuthenticating();
+        }
+        onBlockUIChanged: {
+            if (blockUI) { fadeoutTimer.running = false; uiVisible = true }
+            else { fadeoutTimer.restart() }
+        }
+        // Heartbeat, as in stock Plasma: kscreenlocker drops a start request
+        // while its PAM worker is still starting ("Worker not ready yet"),
+        // and nothing else retries; PAM would then never ask for the
+        // password and Enter would do nothing.
+        Timer {
+            interval: 1000
+            running: !authenticator.unlocked && lockScreenRoot.loginUiActive
+            repeat: true
+            onTriggered: authenticator.startAuthenticating()
+        }
+        // Hide the prompt on a screen the pointer has left for another one
+        // (stock 6.8; replaces onExited, which also fired on one screen).
+        // ScreenMonitor.qml needs kscreenlocker 6.8; on older versions the
+        // Loader fails quietly and the prompt stays shown on every screen.
+        Loader {
+            id: screenMonitor
+            source: "ScreenMonitor.qml"
+        }
+        Connections {
+            target: screenMonitor.item
+            ignoreUnknownSignals: true
+            function onLeftScreen() {
+                if (!powerMenu.opened) { lockScreenRoot.uiVisible = false }
+            }
+        }
+        Keys.onEscapePressed: {
+            if (loginUiActive) { uiVisible = false; root.clearPassword() }
+        }
+        Keys.onPressed: event => { uiVisible = true; event.accepted = false }
+
+        Timer {
+            id: fadeoutTimer
+            interval: 60000
+            onTriggered: {
+                if (!lockScreenRoot.blockUI) {
+                    if (mainBlock) mainBlock.mainPasswordBox.showPassword = false;
+                    lockScreenRoot.uiVisible = false;
+                }
+            }
+        }
+        Timer { id: notificationRemoveTimer; interval: 3000; onTriggered: root.notification = "" }
+
+        // ── Wallpaper layer ──
+        WallpaperFader {
+            id: wallpaperFader
+            anchors.fill: parent
+            state: lockScreenRoot.loginUiActive ? "on" : "off"
+            source: wallpaper
+            mainStack: mainStack
+            footer: footer
+
+            clock: windowsClock
+            alwaysShowClock: true
+        }
+
+        // ── Dark overlay (Win11 lock dimming) ──
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: lockScreenRoot.loginUiActive ? 0.30 : 0.0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Kirigami.Units.veryLongDuration * 2
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
+
+        // ── Center clock (Windows 11 style) ──
+        Item {
+            id: clockContainer
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: parent.height * 0.15
+            width: childrenRect.width
+            height: childrenRect.height
+
+            opacity: lockScreenRoot.loginUiActive ? 0.0 : 1.0
+            visible: opacity > 0
+
+            Behavior on opacity {
+                OpacityAnimator {
+                    duration: Kirigami.Units.veryLongDuration * 2
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            DropShadow {
+                id: clockShadow
+                anchors.fill: windowsClock
+                source: windowsClock
+                visible: !lockScreenUi.softwareRendering
+                radius: 7
+                verticalOffset: 0.8
+                samples: 15
+                spread: 0.2
+                color: Qt.rgba(0, 0, 0, 0.7)
+            }
+
+            Column {
+                id: windowsClock
+                property Item shadow: clockShadow
+                spacing: Kirigami.Units.smallSpacing / 2
+
+                Text {
+                    id: timeText
+                    text: Qt.formatTime(new Date(), Qt.locale().timeFormat(Locale.ShortFormat))
+                    font.family: Kirigami.Theme.defaultFont.family
+                    font.weight: Font.DemiBold
+                    font.pixelSize: 96
+                    color: "#FFFFFF"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    horizontalAlignment: Text.AlignHCenter
+                    antialiasing: true
+                }
+                Text {
+                    id: dateText
+                    text: lockScreenRoot.dateLine(new Date())
+                    font.family: Kirigami.Theme.defaultFont.family
+                    font.weight: Font.Normal
+                    font.pixelSize: 24
+                    color: "#E0E0E0"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    horizontalAlignment: Text.AlignHCenter
+                    antialiasing: true
+                }
+            }
+        }
+
+        // ── Optional Media Controls (Idle only, below clock) ──
+        Loader {
+            id: mediaControlsLoader
+            anchors.top: clockContainer.bottom
+            anchors.topMargin: Kirigami.Units.largeSpacing * 2
+            anchors.horizontalCenter: parent.horizontalCenter
+            source: "MediaControls.qml"
+            active: config.showMediaControls
+            visible: !lockScreenRoot.loginUiActive
+        }
+
+        // ── Status icons (bottom-right, icon-only, idle only) ──
+        Row {
+            id: statusIcons
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.margins: Kirigami.Units.largeSpacing
+            spacing: Kirigami.Units.mediumSpacing
+            visible: !lockScreenRoot.loginUiActive
+
+            // Only the live network indicator on the idle lock view.
+            StatusIcons {}
+        }
+
+        // Full-height geometry gives the Windows account form an explicit
+        // reference to the screen, independent of Breeze's lower-half prompts.
+        StackView {
+            id: mainStack
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            width: Math.min(parent.width * 0.9, 480)
+            height: parent.height
+            focus: true
+            visible: opacity > 0
+            opacity: lockScreenRoot.loginUiActive ? 1.0 : 0.0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Kirigami.Units.veryLongDuration * 2
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            initialItem: MainBlock {
+                id: mainBlock
+                lockScreenUiVisible: lockScreenRoot.loginUiActive
+                StackView.onStatusChanged: {
+                    if (StackView.status === StackView.Activating) {
+                        mainPasswordBox.clear(); mainPasswordBox.focus = true; root.notification = "";
+                    }
+                }
+                userListModel: users
+                customErrorMessage: {
+                    const parts = [];
+                    if (capsLockState.locked) parts.push(LockText.tr("Caps Lock is on", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Caps Lock is on"), Qt.uiLanguage, Qt.locale().name));
+                    if (root.notification) parts.push(root.notification);
+                    return parts.join(" \u2022 ");
+                }
+                onPasswordResult: password => { authenticator.respond(password) }
+            }
+        }
+
+        // ── User list model ──
+        ListModel {
+            id: users
+            Component.onCompleted: {
+                users.append({
+                    name: kscreenlocker_userName,
+                    realName: kscreenlocker_userName,
+                    icon: kscreenlocker_userImage !== ""
+                        ? "file://" + kscreenlocker_userImage.split("/").map(encodeURIComponent).join("/")
+                        : "",
+                })
+            }
+        }
+
+        // ── Bottom-left user switcher (real available sessions) ──
+        ListView {
+            id: userListSwitcher
+            anchors {
+                left: parent.left
+                bottom: footer.top
+                leftMargin: Kirigami.Units.largeSpacing
+                bottomMargin: Kirigami.Units.smallSpacing
+            }
+            width: 200
+            height: contentHeight
+            model: users
+            clip: true
+            visible: count > 1 && lockScreenRoot.uiVisible
+
+            delegate: Item {
+                width: userListSwitcher.width
+                height: 32 // Match the height of your avatar/text
+                opacity: ListView.isCurrentItem ? 1.0 : 0.7
+
+                Row {
+                    anchors.fill: parent
+                    spacing: Kirigami.Units.smallSpacing
+
+                    AccountAvatar {
+                        width: 32
+                        height: 32
+                        size: 32
+                        source: model.icon
+                    }
+
+                    Text {
+                        text: model.realName || model.name
+                        font.family: Kirigami.Theme.defaultFont.family
+                        font.pixelSize: 14
+                        color: "#FFFFFF"
+                        verticalAlignment: Text.AlignVCenter
+                        height: 32
+                    }
+                }
+
+                // MouseArea sits on top of the Row to catch clicks
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        userListSwitcher.currentIndex = index
+                        sessionManagement.switchUser()
+                    }
+                }
+            }
+        }
+
+        // ── Footer: network, accessibility and power only ──
+        RowLayout {
+            id: footer
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 16 }
+            spacing: 8
+            visible: lockScreenRoot.loginUiActive
+            onVisibleChanged: if (!visible) powerMenu.close()
+
+            Item { Layout.fillWidth: true }
+            Loader {
+                id: footerNetwork
+                visible: status !== Loader.Error
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                Layout.alignment: Qt.AlignVCenter
+                source: "NetworkStatusIcon.qml"
+            }
+            StatusIconButton {
+                visible: footerNetwork.status === Loader.Error
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                icon.name: "network-unavailable-symbolic"
+                text: LockText.tr("Network", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Network"), Qt.uiLanguage, Qt.locale().name)
+                enabled: false
+            }
+            Loader {
+                id: footerAccessibility
+                visible: status !== Loader.Error
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                Layout.alignment: Qt.AlignVCenter
+                source: "VirtualKeyboardButton.qml"
+            }
+            StatusIconButton {
+                visible: footerAccessibility.status === Loader.Error
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                icon.name: "preferences-desktop-accessibility-symbolic"
+                text: LockText.tr("Accessibility", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Accessibility"), Qt.uiLanguage, Qt.locale().name)
+                enabled: false
+            }
+            Menu {
+                id: powerMenu
+                parent: powerButton
+                popupType: Popup.Item
+                x: LayoutMirroring.enabled ? 0 : powerButton.width - width
+                y: -height - 4
+                width: 160
+                padding: 4
+                closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+                background: Rectangle {
+                    color: "#2C2C2C"
+                    border.color: "#3F3F3F"
+                    border.width: 1
+                    radius: 6
+                }
+
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
+                    text: LockText.tr("Sleep", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sleep"), Qt.uiLanguage, Qt.locale().name)
+                    icon.name: "system-suspend"
+                    onTriggered: root.suspendToRam()
+                    actionAvailable: root.suspendToRamSupported
+                }
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
+                    text: LockText.tr("Shut down", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down"), Qt.uiLanguage, Qt.locale().name)
+                    icon.name: "system-shutdown"
+                    actionAvailable: sessionManagement.canShutdown
+                    onTriggered: sessionManagement.requestShutdown()
+                }
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
+                    text: LockText.tr("Restart", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Restart"), Qt.uiLanguage, Qt.locale().name)
+                    icon.name: "system-reboot"
+                    actionAvailable: sessionManagement.canReboot
+                    onTriggered: sessionManagement.requestReboot()
+                }
+            }
+            StatusIconButton {
+                id: powerButton
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                Layout.alignment: Qt.AlignVCenter
+                focusPolicy: Qt.TabFocus
+                icon.name: "system-shutdown-symbolic"
+                text: LockText.tr("Power", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power"), Qt.uiLanguage, Qt.locale().name)
+                enabled: root.suspendToRamSupported || sessionManagement.canShutdown || sessionManagement.canReboot
+                onClicked: powerMenu.opened ? powerMenu.close() : powerMenu.open()
+            }
+        }
+    }
+
+    // ── Clock update timer ──
+    Timer {
+        interval: 1000; running: true; repeat: true
+        onTriggered: {
+            var d = new Date();
+            timeText.text = Qt.formatTime(d, Qt.locale().timeFormat(Locale.ShortFormat));
+            dateText.text = lockScreenRoot.dateLine(d);
+        }
+    }
+}

@@ -386,6 +386,11 @@ if [ "$upgrading" -eq 1 ] && [ "$PROFILE" = "$old_profile" ]; then
     echo "新旧运行时路径相同，拒绝继续安装。" >&2; exit 1
 fi
 PYTHON="$PROFILE/bin/python3"
+# Source checkouts carry the canonical module map; installation archives
+# contain only self-contained native mirrors. Do not deploy stale ones.
+if [ -f "$ROOT/core/source-map.json" ]; then
+    "$PYTHON" -I "$ROOT/scripts/materialize-modules.py" --check
+fi
 export PATH="$PROFILE/bin:$PATH"
 GI_TYPELIB_PATH="$(cat "$PROFILE/wm-gi-typelib-path")${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
 export GI_TYPELIB_PATH

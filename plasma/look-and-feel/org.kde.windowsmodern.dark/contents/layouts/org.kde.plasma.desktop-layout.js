@@ -23,15 +23,13 @@ for (var screenId = 0; screenId < screenCount; screenId++) {
     createWindowsModernPanel(screenId);
 }
 
-// The widget section of this function is shared with the "Add Panel"
-// template (plasma/layout-templates/org.kde.windowsmodern.panel) and must
-// stay identical — verify-all.sh checks this.
+// The panel body is generated from modules/taskbar/layout/panel-body.js.
 function createWindowsModernPanel(screenId) {
     var panel = new Panel;
 
-    // --- Panel geometry & behavior -------------------------------------------
     // Set the target screen immediately; panel config groups depend on it.
     panel.screen = screenId;
+    // --- Panel geometry & behavior -------------------------------------------
     panel.location = "bottom";
     panel.height = 48;
     panel.alignment = "center";
@@ -46,7 +44,7 @@ function createWindowsModernPanel(screenId) {
     // plasmashell holds its config in memory (KSharedConfig) and won't see
     // an external write — PanelView reads floatingApplets from its in-memory
     // cache and gets the default (false). Users must toggle "Floating →
-    // Applets Only" manually in Panel Settings after applying this layout.
+    // Applets Only" manually in Panel Settings after creating the panel.
     panel.floating = false;
 
     // Stable translucent taskbar and acrylic-style flyouts, independent
@@ -78,8 +76,8 @@ function createWindowsModernPanel(screenId) {
     var tasks = panel.addWidget(pick("org.kde.windowsmodern.icontasks", "org.kde.plasma.icontasks"));
     tasks.currentConfigGroup = new Array("General");
     // Pinned like Windows 11's default taskbar: File Explorer, the browser,
-//    the Store (Plasma's preferred file manager and browser, and Discover).
-tasks.writeConfig("launchers", "preferred://filemanager,preferred://browser,applications:org.kde.discover.desktop");
+    //    the Store (Plasma's preferred file manager and browser, and Discover).
+    tasks.writeConfig("launchers", "preferred://filemanager,preferred://browser,applications:org.kde.discover.desktop");
     tasks.writeConfig("showOnlyCurrentScreen", "false");
     tasks.writeConfig("showOnlyCurrentDesktop", "false");
     tasks.writeConfig("showOnlyCurrentActivity", "false");
@@ -99,7 +97,7 @@ tasks.writeConfig("launchers", "preferred://filemanager,preferred://browser,appl
     //    custom Windows Modern digital clock; fall back to the upstream clock
     //    if the custom applet is not installed.
     //    autoFontAndSize = true lets the clock follow the system font.
-    //    Keep the installed clock's regional-format defaults.
+        //    Keep the installed clock's regional-format defaults.
     //    dateDisplayFormat = 2 forces the date below the time (BelowTime).
     var clock = panel.addWidget(pick("org.kde.windowsmodern.digitalclock", "org.kde.plasma.digitalclock"));
     clock.currentConfigGroup = new Array("Appearance");

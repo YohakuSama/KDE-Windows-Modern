@@ -1,0 +1,23 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "jeysef@users.noreply.github.com",
+                "Name": "Jeysef"
+            }
+        ],
+        "BugReportUrl": "https://github.com/YohakuSama/KDE-Windows-Modern/issues",
+        "Category": "Window Management",
+        "Description": "Windows 11 Snap Layouts for drag-to-top and the optional Konsole caption button.",
+        "EnabledByDefault": false,
+        "Icon": "view-split-left-right",
+        "Id": "org.kde.windowsmodern.snaplayouts",
+        "License": "GPL-3.0-or-later",
+        "Name": "Windows Modern: Snap Layouts",
+        "Version": "1.3.0",
+        "Website": "https://github.com/YohakuSama/KDE-Windows-Modern"
+    },
+    "X-Plasma-API": "declarativescript",
+    "X-Plasma-MainScript": "ui/main.qml"
+}

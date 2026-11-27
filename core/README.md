@@ -1,26 +1,30 @@
 # Shared core / 公共核心
 
-This is the editable source for the common files mapped in
-[source-map.json](source-map.json). Each shared file has one owner.
-Native package copies under plasma/ are generated, not a second source.
+Canonical editable shared sources. [source-map.json](source-map.json)
+declares the generated native outputs, not a second implementation.
 
-| Directory | Responsibility |
+| Directory | Ownership |
 | --- | --- |
-| design/ | Popup geometry and lock-screen metrics |
-| palette/ | Common color classification |
-| controls/ | Shared glyphs, buttons, scrollbars and sign-in controls |
-| resources/ | Shared default portrait fallback resources |
-| animations/ | Shared sign-in progress presentation |
-| logic/ | Date formatting, battery state and lock-screen text |
+| design/ | Shared popup, panel and lock-screen geometry |
+| palette/ | Color classification, fixed roles, ICC/automatic accent and scheme template |
+| materials/ | Window material and popup frame generation |
+| controls/ | Shared glyphs, buttons, sliders, scrollbars and flyout controls |
+| resources/ | Shared portrait/license and original resource import/validation |
+| animations/ | Shared sign-in progress |
+| logic/ | Shared formatting, battery state and lock-screen text |
 
-Edit here for a shared behavior. Keep genuinely different host behavior in
-the feature or platform code. The name of a shared file need not match its
-native filename; the map preserves the native name and relative imports.
-No QML runtime imports from this directory are introduced.
+Common QML/JS files retain their native filenames and relative imports.
+Python tools are edited here but executed from their existing native paths
+until staging is migrated. Do not create separate light/dark functionality.
+Equal numeric values alone do not establish equal semantic roles.
 
-After edits run `python3 -I scripts/materialize-modules.py --write` from
-the checkout, review the diff and use `--check` for read-only verification.
-The generated native mirrors are temporary source-control compatibility
-outputs. Installation packages continue to include only native consumers.
-See [module sources](../modules/README.md) and the
+Run `python3 -I scripts/materialize-modules.py --write` from the checkout
+after editing; `--check` checks bytes and executable modes without writing.
+The taskbar layout uses one shared body. The renderer-specific appearance
+materializer still generates the actual Plasma/Kvantum/Aurorae packages.
+The Plasma SVG atlas and large icon/wallpaper inputs retain their current
+ownership until their generators and consumers are migrated.
+
+See [modules](../modules/README.md), [platform](../platform/README.md),
+[packaging](../packaging/README.md) and the
 [quality ledger](../docs/PROJECT_QUALITY_LEDGER.md).

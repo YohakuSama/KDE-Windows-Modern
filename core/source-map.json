@@ -1,9 +1,19 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "trees": {
+    "modules/boot/plymouth": "boot/plymouth",
+    "modules/boot/splash": "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/splash",
+    "modules/browser/firefox": "app-decorations/firefox",
     "modules/calendar/config": "plasma/applets/org.kde.windowsmodern.digitalclock/contents/config",
     "modules/calendar/ui": "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui",
+    "modules/clipboard/ui": "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui",
+    "modules/explorer/config": "config/kxmlgui5/dolphin",
+    "modules/explorer/patches": "app-decorations/dolphin",
+    "modules/lockscreen/ui": "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen",
+    "modules/login/ui": "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen",
     "modules/notifications/ui": "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui",
+    "modules/quicksettings/ui": "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui",
+    "modules/run/ui": "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui",
     "modules/search/config": "plasma/applets/org.kde.windowsmodern.search/contents/config",
     "modules/search/startmenu": "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui",
     "modules/search/ui": "plasma/applets/org.kde.windowsmodern.search/contents/ui",
@@ -11,7 +21,22 @@
     "modules/showdesktop/ui": "plasma/applets/org.kde.windowsmodern.showdesktop/contents/ui",
     "modules/startmenu/config": "plasma/applets/org.kde.windowsmodern.startmenu/contents/config",
     "modules/startmenu/ui": "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui",
-    "modules/taskview/ui": "plasma/applets/org.kde.windowsmodern.taskview/contents/ui"
+    "modules/systemtray/config": "plasma/applets/org.kde.windowsmodern.systemtray/contents/config",
+    "modules/systemtray/ui": "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui",
+    "modules/taskbar/config": "plasma/applets/org.kde.windowsmodern.icontasks/contents/config",
+    "modules/taskbar/ui": "plasma/applets/org.kde.windowsmodern.icontasks/contents/ui",
+    "modules/taskview/ui": "plasma/applets/org.kde.windowsmodern.taskview/contents/ui",
+    "modules/terminal/config": "config/konsole",
+    "modules/terminal/kxmlgui": "config/kxmlgui5/konsole",
+    "modules/terminal/plugin": "app-decorations/konsole",
+    "modules/windowmanager/alttab": "plasma/windowswitcher/org.kde.windowsmodern.alttab",
+    "modules/windowmanager/decoration": "aurorae/windows-modern-dark-aurorae",
+    "modules/windowmanager/osd": "plasma/kwinscripts/org.kde.windowsmodern.osd",
+    "modules/windowmanager/snapkeys": "plasma/kwinscripts/org.kde.windowsmodern.snapkeys",
+    "modules/windowmanager/snaplayouts": "plasma/kwinscripts/org.kde.windowsmodern.snaplayouts",
+    "platform/plasma/login/patches": "plasma/look-and-feel/org.kde.windowsmodern.dark/patches",
+    "platform/qt/kvantum/patches": "app-decorations/kvantum",
+    "platform/qt/kvantum/style": "Kvantum/Windows-modern"
   },
   "files": {
     "core/animations/SignInProgress.qml": [
@@ -51,6 +76,48 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/NetworkStatusIcon.qml",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/NetworkStatusIcon.qml"
     ],
+    "core/controls/plasma/flyouts/components/Battery.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/Battery.qml"
+    ],
+    "core/controls/plasma/flyouts/components/NativeButtonContent.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeButtonContent.qml"
+    ],
+    "core/controls/plasma/flyouts/components/NativeMenuItem.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeMenuItem.qml"
+    ],
+    "core/controls/plasma/flyouts/components/NativeToolButton.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/NativeToolButton.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/DetailPage.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/DetailPage.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/FluentSwitch.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FluentSwitch.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/FooterButton.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/FooterButton.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/ListRow.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/ListRow.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/MoreSettingsLink.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/MoreSettingsLink.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/Page.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/Page.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/PageFooter.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/PageFooter.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/PageHeader.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/PageHeader.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/SectionHeader.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/SectionHeader.qml"
+    ],
+    "core/controls/plasma/flyouts/lib/Slider.qml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/Slider.qml"
+    ],
     "core/controls/SearchGlyph.qml": [
       "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml",
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml"
@@ -71,6 +138,9 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockMetrics.js",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockMetrics.js"
     ],
+    "core/design/panel/trayMetrics.js": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/trayMetrics.js"
+    ],
     "core/design/popupGeometry.js": [
       "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/popupGeometry.js",
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupGeometry.js",
@@ -90,12 +160,34 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockText.js",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockText.js"
     ],
+    "core/materials/popup-frame.svg.in": [
+      "scripts/theme/popup-frame.svg.in"
+    ],
+    "core/materials/popup-frames.py": [
+      "scripts/theme/popup-frames.py"
+    ],
+    "core/materials/window-frames.py": [
+      "scripts/theme/window-frames.py"
+    ],
     "core/palette/colorType.js": [
       "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/colorType.js",
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js",
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/colorType.js"
     ],
+    "core/palette/palette.json": [
+      "scripts/theme/palette.json"
+    ],
+    "core/palette/sync-accent.py": [
+      "scripts/theme/sync-accent.py"
+    ],
+    "core/palette/wallpaper-icc.py": [
+      "scripts/theme/wallpaper-icc.py"
+    ],
+    "core/palette/WindowsModern.colors.in": [
+      "color-schemes/WindowsModern.colors.in"
+    ],
     "core/resources/default-avatar-small.svg": [
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/default-account.svg",
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/default-avatar-small.svg",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/default-avatar-small.svg"
     ],
@@ -103,8 +195,49 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/default-avatar.svg",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/default-avatar.svg"
     ],
+    "core/resources/import/import-shell-assets.py": [
+      "scripts/import-shell-assets.py"
+    ],
+    "core/resources/import/import-windows-assets.py": [
+      "scripts/import-windows-assets.py"
+    ],
+    "core/resources/import/native_assets_index.py": [
+      "scripts/native_assets_index.py"
+    ],
+    "core/resources/import/native_assets_input.py": [
+      "scripts/native_assets_input.py"
+    ],
+    "core/resources/import/native_pe_resources.py": [
+      "scripts/native_pe_resources.py"
+    ],
+    "core/resources/import/native_pri_resources.py": [
+      "scripts/native_pri_resources.py"
+    ],
+    "core/resources/import/native-assets-map.json": [
+      "scripts/native-assets-map.json"
+    ],
+    "core/resources/portrait.LICENSE": [
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/portrait.LICENSE",
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/portrait.LICENSE",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/portrait.LICENSE"
+    ],
+    "modules/boot/design/boot-frames.py": [
+      "scripts/theme/boot-frames.py"
+    ],
     "modules/calendar/metadata.json": [
       "plasma/applets/org.kde.windowsmodern.digitalclock/metadata.json"
+    ],
+    "modules/desktopmenu/menulayout.cpp": [
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/menulayout.cpp"
+    ],
+    "modules/desktopmenu/menulayout.h": [
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/menulayout.h"
+    ],
+    "modules/desktopmenu/metadata.json": [
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/metadata.json"
+    ],
+    "modules/lockscreen/metadata.json": [
+      "plasma/shells/org.kde.windowsmodern.lockscreen/metadata.json"
     ],
     "modules/search/metadata.json": [
       "plasma/applets/org.kde.windowsmodern.search/metadata.json"
@@ -115,8 +248,362 @@
     "modules/startmenu/metadata.json": [
       "plasma/applets/org.kde.windowsmodern.startmenu/metadata.json"
     ],
+    "modules/systemtray/metadata.json": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/metadata.json"
+    ],
+    "modules/taskbar/design/panel-frames.py": [
+      "scripts/theme/panel-frames.py"
+    ],
+    "modules/taskbar/design/tasks-frames.py": [
+      "scripts/theme/tasks-frames.py"
+    ],
+    "modules/taskbar/layout/metadata.json": [
+      "plasma/layout-templates/org.kde.windowsmodern.panel/metadata.json"
+    ],
+    "modules/taskbar/metadata.json": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/metadata.json"
+    ],
     "modules/taskview/metadata.json": [
       "plasma/applets/org.kde.windowsmodern.taskview/metadata.json"
+    ],
+    "packaging/config-backup.sh": [
+      "scripts/config-backup.sh"
+    ],
+    "packaging/cursor-assets.sh": [
+      "scripts/cursor-assets.sh"
+    ],
+    "packaging/fix-dolphin-statusbar.sh": [
+      "scripts/fix-dolphin-statusbar.sh"
+    ],
+    "packaging/install-alttab.sh": [
+      "scripts/install-alttab.sh"
+    ],
+    "packaging/install-apps.sh": [
+      "scripts/install-apps.sh"
+    ],
+    "packaging/install-deps.sh": [
+      "scripts/install-deps.sh"
+    ],
+    "packaging/install-digitalclock.sh": [
+      "scripts/install-digitalclock.sh"
+    ],
+    "packaging/install-fonts.sh": [
+      "scripts/install-fonts.sh"
+    ],
+    "packaging/install-greeter-live.sh": [
+      "scripts/install-greeter-live.sh"
+    ],
+    "packaging/install-greeter.sh": [
+      "scripts/install-greeter.sh"
+    ],
+    "packaging/install-icons.sh": [
+      "scripts/install-icons.sh"
+    ],
+    "packaging/install-icontasks.sh": [
+      "scripts/install-icontasks.sh"
+    ],
+    "packaging/install-layout.sh": [
+      "scripts/install-layout.sh"
+    ],
+    "packaging/install-lib.sh": [
+      "scripts/install-lib.sh"
+    ],
+    "packaging/install-lookfeel.sh": [
+      "scripts/install-lookfeel.sh"
+    ],
+    "packaging/install-sessionlock.sh": [
+      "scripts/install-sessionlock.sh"
+    ],
+    "packaging/install-shortcuts.sh": [
+      "scripts/install-shortcuts.sh"
+    ],
+    "packaging/install-showdesk.sh": [
+      "scripts/install-showdesk.sh"
+    ],
+    "packaging/install-sounds.sh": [
+      "scripts/install-sounds.sh"
+    ],
+    "packaging/install-startmenu.sh": [
+      "scripts/install-startmenu.sh"
+    ],
+    "packaging/install-systray.sh": [
+      "scripts/install-systray.sh"
+    ],
+    "packaging/install-taskbarbuttons.sh": [
+      "scripts/install-taskbarbuttons.sh"
+    ],
+    "packaging/install-themes.sh": [
+      "scripts/install-themes.sh"
+    ],
+    "packaging/install-translations.py": [
+      "scripts/install-translations.py"
+    ],
+    "packaging/install-transparency.sh": [
+      "scripts/install-transparency.sh"
+    ],
+    "packaging/konsole-chrome.sh": [
+      "scripts/konsole-chrome.sh"
+    ],
+    "packaging/package-plugins.sh": [
+      "scripts/package-plugins.sh"
+    ],
+    "packaging/package.sh": [
+      "scripts/package.sh"
+    ],
+    "packaging/prepare-native-assets.sh": [
+      "scripts/prepare-native-assets.sh"
+    ],
+    "packaging/qt-plugin-dir.sh": [
+      "scripts/qt-plugin-dir.sh"
+    ],
+    "packaging/set-wallpaper.sh": [
+      "scripts/set-wallpaper.sh"
+    ],
+    "packaging/stage-native-resources.sh": [
+      "scripts/stage-native-resources.sh"
+    ],
+    "packaging/store-artwork.py": [
+      "scripts/store-artwork.py"
+    ],
+    "packaging/uninstall-greeter-system.sh": [
+      "scripts/uninstall-greeter-system.sh"
+    ],
+    "packaging/verify-integration-bundle.py": [
+      "scripts/verify-integration-bundle.py"
+    ],
+    "packaging/verify-owner-bundle.py": [
+      "scripts/verify-owner-bundle.py"
+    ],
+    "platform/nixos/dolphin-chrome.nix": [
+      "nix/dolphin-chrome.nix"
+    ],
+    "platform/nixos/konsole-chrome.nix": [
+      "nix/konsole-chrome.nix"
+    ],
+    "platform/nixos/plymouth-theme.nix": [
+      "nix/plymouth-theme.nix"
+    ],
+    "platform/nixos/test-runtime.nix": [
+      "nix/test-runtime.nix"
+    ],
+    "platform/nixos/tools/check-nixos-assets.py": [
+      "scripts/check-nixos-assets.py"
+    ],
+    "platform/nixos/tools/nixos-test-state.py": [
+      "scripts/nixos-test-state.py"
+    ],
+    "platform/nixos/tools/verify-nixos-runtime.py": [
+      "scripts/verify-nixos-runtime.py"
+    ],
+    "platform/plasma/app-appearance.py": [
+      "scripts/app-appearance.py"
+    ],
+    "platform/plasma/appearance/accent-control.py": [
+      "scripts/theme/accent-control.py"
+    ],
+    "platform/plasma/appearance/appearance-packages.py": [
+      "scripts/theme/appearance-packages.py"
+    ],
+    "platform/plasma/appearance/light-store-dependencies.json": [
+      "scripts/theme/light-store-dependencies.json"
+    ],
+    "platform/plasma/appearance/switch-mode.sh": [
+      "scripts/theme/switch-mode.sh"
+    ],
+    "platform/plasma/desktopmenu/CMakeLists.txt": [
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/CMakeLists.txt"
+    ],
+    "platform/plasma/desktopmenu/nativecontextmenu.cpp": [
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/nativecontextmenu.cpp"
+    ],
+    "platform/plasma/globaltheme/contents/defaults": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/defaults"
+    ],
+    "platform/plasma/globaltheme/contents/layouts/defaults": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/layouts/defaults"
+    ],
+    "platform/plasma/globaltheme/metadata.desktop": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.desktop"
+    ],
+    "platform/plasma/globaltheme/metadata.json": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/metadata.json"
+    ],
+    "platform/plasma/login/greeter-colors.py": [
+      "scripts/greeter-colors.py"
+    ],
+    "platform/plasma/login/greeter-native-assets.py": [
+      "scripts/greeter-native-assets.py"
+    ],
+    "platform/plasma/shortcuts/desktop-contextmenu.py": [
+      "scripts/desktop-contextmenu.py"
+    ],
+    "platform/plasma/shortcuts/keyboard-labels.py": [
+      "scripts/keyboard-labels.py"
+    ],
+    "platform/plasma/shortcuts/windows-shortcuts.py": [
+      "scripts/windows-shortcuts.py"
+    ],
+    "platform/plasma/shortcuts/windowsmodern-screenshot.desktop": [
+      "config/applications/windowsmodern-screenshot.desktop"
+    ],
+    "platform/plasma/systemtray/CMakeLists.txt": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/CMakeLists.txt"
+    ],
+    "platform/plasma/systemtray/com.canonical.dbusmenu.xml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/com.canonical.dbusmenu.xml"
+    ],
+    "platform/plasma/systemtray/dbusmenuimporter.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/dbusmenuimporter.cpp"
+    ],
+    "platform/plasma/systemtray/dbusmenuimporter.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/dbusmenuimporter.h"
+    ],
+    "platform/plasma/systemtray/dbusmenushortcut_p.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/dbusmenushortcut_p.cpp"
+    ],
+    "platform/plasma/systemtray/dbusmenushortcut_p.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/dbusmenushortcut_p.h"
+    ],
+    "platform/plasma/systemtray/dbusmenutypes_p.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/dbusmenutypes_p.cpp"
+    ],
+    "platform/plasma/systemtray/dbusmenutypes_p.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/dbusmenutypes_p.h"
+    ],
+    "platform/plasma/systemtray/dbusserviceobserver.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/dbusserviceobserver.cpp"
+    ],
+    "platform/plasma/systemtray/dbusserviceobserver.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/dbusserviceobserver.h"
+    ],
+    "platform/plasma/systemtray/kf6_org.kde.StatusNotifierItem.xml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/kf6_org.kde.StatusNotifierItem.xml"
+    ],
+    "platform/plasma/systemtray/kf6_org.kde.StatusNotifierWatcher.xml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/kf6_org.kde.StatusNotifierWatcher.xml"
+    ],
+    "platform/plasma/systemtray/org.freedesktop.DBus.Properties.xml": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/org.freedesktop.DBus.Properties.xml"
+    ],
+    "platform/plasma/systemtray/panelglyph.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/panelglyph.h"
+    ],
+    "platform/plasma/systemtray/plasmoidregistry.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.cpp"
+    ],
+    "platform/plasma/systemtray/plasmoidregistry.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.h"
+    ],
+    "platform/plasma/systemtray/sortedsystemtraymodel.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/sortedsystemtraymodel.cpp"
+    ],
+    "platform/plasma/systemtray/sortedsystemtraymodel.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/sortedsystemtraymodel.h"
+    ],
+    "platform/plasma/systemtray/statusnotifieritemhost.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/statusnotifieritemhost.cpp"
+    ],
+    "platform/plasma/systemtray/statusnotifieritemhost.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/statusnotifieritemhost.h"
+    ],
+    "platform/plasma/systemtray/statusnotifieritemsource.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/statusnotifieritemsource.cpp"
+    ],
+    "platform/plasma/systemtray/statusnotifieritemsource.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/statusnotifieritemsource.h"
+    ],
+    "platform/plasma/systemtray/systemtray.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtray.cpp"
+    ],
+    "platform/plasma/systemtray/systemtray.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtray.h"
+    ],
+    "platform/plasma/systemtray/systemtraymodel.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtraymodel.cpp"
+    ],
+    "platform/plasma/systemtray/systemtraymodel.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtraymodel.h"
+    ],
+    "platform/plasma/systemtray/systemtraysettings.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtraysettings.cpp"
+    ],
+    "platform/plasma/systemtray/systemtraysettings.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtraysettings.h"
+    ],
+    "platform/plasma/systemtray/systemtraytypedefs.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtraytypedefs.h"
+    ],
+    "platform/plasma/systemtray/systemtraytypes.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtraytypes.cpp"
+    ],
+    "platform/plasma/systemtray/systemtraytypes.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/systemtraytypes.h"
+    ],
+    "platform/plasma/systemtray/utils_p.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/utils_p.h"
+    ],
+    "platform/plasma/systemtray/utils.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/utils.cpp"
+    ],
+    "platform/plasma/systemtray/windowstray.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/windowstray.h"
+    ],
+    "platform/plasma/taskbar/backend.cpp": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/backend.cpp"
+    ],
+    "platform/plasma/taskbar/backend.h": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/backend.h"
+    ],
+    "platform/plasma/taskbar/CMakeLists.txt": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt"
+    ],
+    "platform/plasma/taskbar/floatingtooltiparea.cpp": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/floatingtooltiparea.cpp"
+    ],
+    "platform/plasma/taskbar/floatingtooltiparea.h": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/floatingtooltiparea.h"
+    ],
+    "platform/plasma/taskbar/floatingtooltipdialog.cpp": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/floatingtooltipdialog.cpp"
+    ],
+    "platform/plasma/taskbar/floatingtooltipdialog.h": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/floatingtooltipdialog.h"
+    ],
+    "platform/plasma/taskbar/kactivitymanagerd_plugins_settings.kcfg": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/kactivitymanagerd_plugins_settings.kcfg"
+    ],
+    "platform/plasma/taskbar/kactivitymanagerd_plugins_settings.kcfgc": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/kactivitymanagerd_plugins_settings.kcfgc"
+    ],
+    "platform/plasma/taskbar/panelicon.h": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/panelicon.h"
+    ],
+    "platform/plasma/taskbar/qwayland-plasma-shell.h": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/qwayland-plasma-shell.h"
+    ],
+    "platform/plasma/taskbar/smartlauncherbackend.cpp": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/smartlauncherbackend.cpp"
+    ],
+    "platform/plasma/taskbar/smartlauncherbackend.h": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/smartlauncherbackend.h"
+    ],
+    "platform/plasma/taskbar/smartlauncheritem.cpp": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/smartlauncheritem.cpp"
+    ],
+    "platform/plasma/taskbar/smartlauncheritem.h": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/smartlauncheritem.h"
     ]
+  },
+  "rendered": {
+    "plasma/layout-templates/org.kde.windowsmodern.panel/contents/layout.js": {
+      "template": "modules/taskbar/layout/add-panel.js.in",
+      "body": "modules/taskbar/layout/panel-body.js",
+      "indent": 0
+    },
+    "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/layouts/org.kde.plasma.desktop-layout.js": {
+      "template": "modules/taskbar/layout/desktop-layout.js.in",
+      "body": "modules/taskbar/layout/panel-body.js",
+      "indent": 4
+    }
   }
 }

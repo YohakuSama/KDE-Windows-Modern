@@ -1,0 +1,40 @@
+diff --git a/src/dolphinmainwindow.cpp b/src/dolphinmainwindow.cpp
+--- a/src/dolphinmainwindow.cpp
++++ b/src/dolphinmainwindow.cpp
+@@ -211,6 +211,24 @@
+ 
+     const bool usePhoneUi{KRuntimePlatform::runtimePlatform().contains(QLatin1String("phone"))};
+     setupGUI(Save | Create | ToolBar, usePhoneUi ? QStringLiteral("dolphinuiforphones.rc") : QString() /* load the default dolphinui.rc file */);
++    // Keep Dolphin's own tab model, actions and QTabWidget geometry. Only
++    // the Windows Modern desktop toolbar layout requests this control.
++    auto *commandBar = usePhoneUi ? nullptr
++                                 : findChild<KToolBar *>(QStringLiteral("wmCommandToolBar"), Qt::FindDirectChildrenOnly);
++    if (commandBar && !m_tabWidget->cornerWidget(Qt::TopRightCorner)) {
++        auto *newTabButton = new QToolButton(m_tabWidget);
++        newTabButton->setObjectName(QStringLiteral("wmNewTabButton"));
++        newTabButton->setDefaultAction(actionCollection()->action(QStringLiteral("new_tab")));
++        newTabButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
++        newTabButton->setAutoRaise(true);
++        m_tabWidget->setCornerWidget(newTabButton, Qt::TopRightCorner);
++        const auto updateNewTabButton = [this, newTabButton] {
++            newTabButton->setVisible(GeneralSettings::alwaysShowTabBar() || m_tabWidget->count() > 1);
++        };
++        connect(m_tabWidget, &DolphinTabWidget::tabCountChanged, newTabButton, updateNewTabButton);
++        connect(GeneralSettings::self(), &GeneralSettings::tabBarChanged, newTabButton, updateNewTabButton);
++        updateNewTabButton();
++    }
+     stateChanged(QStringLiteral("new_file"));
+ 
+     QClipboard *clipboard = QApplication::clipboard();
+@@ -243,7 +261,10 @@
+     hamburgerMenu->setShowMenuBarAction(showMenuBarAction);
+     connect(hamburgerMenu, &KHamburgerMenu::aboutToShowMenu, this, &DolphinMainWindow::updateHamburgerMenu);
+     hamburgerMenu->hideActionsOf(toolBar());
+-    if (GeneralSettings::version() < 201 && !toolBar()->actions().contains(hamburgerMenu)) {
++    if (commandBar)
++        hamburgerMenu->hideActionsOf(commandBar);
++    if (GeneralSettings::version() < 201 && !toolBar()->actions().contains(hamburgerMenu)
++        && (!commandBar || !commandBar->actions().contains(hamburgerMenu))) {
+         addHamburgerMenuToToolbar();
+     }
+ 
