@@ -26,7 +26,6 @@ belong to [core](../core/README.md). Native adapters belong to
 | terminal/ | Konsole UI configuration and native menu definitions | Konsole / private ABI adapter in platform/qt/konsole |
 | browser/ | Optional Firefox appearance | Firefox app-decoration |
 
-
 ## Runtime composition boundaries
 
 A native Plasma applet can compose several feature-owned source trees.
@@ -123,7 +122,7 @@ direct low-level invocation. See the [quality ledger](../docs/PROJECT_QUALITY_LE
 ## Functional module ownership audit
 
 On testing commit `01ad5c1f`, the complete Git tree contains 19 feature
-module roots and 233 implementation/configuration source files. The source
+module roots and 233 module source/configuration/resource files. The source
 map accounts for all of them: 230 are direct tree/file mappings and the
 three taskbar layout sources feed the two rendered layout recipes. The
 module mappings have no duplicate output destinations. This is a static
