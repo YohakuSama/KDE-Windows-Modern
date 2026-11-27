@@ -7,7 +7,6 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include <QFileSystemWatcher>
 #include <QPointer>
 #include <QRect>
 #include <QRectF>
@@ -20,7 +19,8 @@
 #include <Plasma/Containment>
 
 class QQuickItem;
-class WallpaperAccentSource;
+class ShellAppearanceMonitor;
+class ShellShortcutRouter;
 
 namespace Plasma
 {
@@ -50,8 +50,9 @@ public:
     bool accessibilityAvailable() const;
     bool castAvailable() const;
     Q_INVOKABLE void openCast();
-    Q_INVOKABLE void registerClipboardShortcut();
-    Q_INVOKABLE void registerRunShortcut();
+    Q_INVOKABLE void registerShellShortcuts(QQuickItem *representation);
+    Q_INVOKABLE void startAppearanceMonitoring();
+    Q_INVOKABLE void requestAppearanceSync();
     Q_INVOKABLE QRect runDialogArea(QQuickItem *anchor) const;
     Q_INVOKABLE bool runCommand(const QString &command);
     Q_INVOKABLE QRectF panelGlyphBounds(const QString &source);
@@ -83,11 +84,9 @@ Q_SIGNALS:
     void castAvailabilityChanged();
     void clipboardHistoryRequested();
     void runDialogRequested();
-    void accentPreferencesChanged();
     void popupBlurPreferencesChanged();
 
 private Q_SLOTS:
-    void scheduleWallpaperAccentSync();
     void onEnabledAppletsChanged();
     void startApplet(const QString &pluginId);
     void stopApplet(const QString &pluginId);
@@ -97,14 +96,10 @@ private:
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
 
-    void refreshWallpaperWatch();
-
     KConfigWatcher::Ptr m_configWatcher;
     KConfigWatcher::Ptr m_blurConfigWatcher;
-    QFileSystemWatcher m_wallpaperWatch;
-    QPointer<WallpaperAccentSource> m_wallpaperAccentSource;
-    bool m_automaticWallpaperAccent = false;
-    bool m_configWallpaperParent = false;
+    QPointer<ShellAppearanceMonitor> m_appearanceMonitor;
+    QPointer<ShellShortcutRouter> m_shortcutRouter;
     bool m_xwaylandClientsScale = true;
 
     QPointer<SystemTraySettings> m_settings;

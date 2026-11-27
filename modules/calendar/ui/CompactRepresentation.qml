@@ -51,10 +51,10 @@ MouseArea {
         plasmoidItem.notificationIcon, plasmoidItem.notificationsInhibited,
         ColorType.isDark(Kirigami.Theme.backgroundColor),
         filledDndAsset.length > 0)
-    readonly property var popupCoordinator: {
-        const provider = plasmoidItem.splitBlurProvider;
-        return provider && typeof provider.prepareShellPopup === "function" ? provider : null;
-    }
+    readonly property var popupCoordinator: plasmoidItem.popupCoordinator ?? null
+    // Close on reconfiguration; reopening uses the current focus group or
+    // native deactivation. The pin preference still governs focus loss.
+    onPopupCoordinatorChanged: if (clockDialog && clockDialog.visible) clockDialog.visible = false
     property bool wasExpanded: false
     function toggleFlyout(previous = plasmoidItem.flyoutOpen) {
         clockDialog.toggle(previous);

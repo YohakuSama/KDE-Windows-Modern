@@ -82,6 +82,8 @@ set(SRCS
     ${DBUS_SRCS}
     ${SRC_LOGGING}
     systemtray.cpp systemtray.h
+    shellappearancemonitor.cpp shellappearancemonitor.h
+    shellshortcutrouter.cpp shellshortcutrouter.h
     systemtraymodel.cpp systemtraymodel.h
     systemtraysettings.cpp systemtraysettings.h
     plasmoidregistry.cpp plasmoidregistry.h

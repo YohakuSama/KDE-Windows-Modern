@@ -33,6 +33,7 @@ import "code/tools.js" as Tools
 import "code/theme.js" as Theme
 import "code/popupPosition.js" as PopupPosition
 import "code/popupGeometry.js" as PopupGeometry
+import "code/panelCapabilities.js" as PanelCapabilities
 import "code/colorType.js" as FooterColors
 
 Item {
@@ -41,15 +42,11 @@ Item {
     // The compact representation is the actual Start button in the panel.
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
     readonly property Item startButton: parent
-    readonly property var popupCoordinator: {
-        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
-        for (const applet of applets) {
-            if (applet && applet.pluginName === "org.kde.windowsmodern.systemtray"
-                    && typeof applet.prepareShellPopup === "function")
-                return applet;
-        }
-        return null;
-    }
+    readonly property var popupCoordinator: PanelCapabilities.findTray(
+        Plasmoid.containment ? Plasmoid.containment.applets : [],
+        ["prepareShellPopup", "restoreShellPopupFocus"])
+    // A mapped popup must not retain the focus group of a replaced tray.
+    onPopupCoordinatorChanged: if (root && root.visible) root.closeMenu()
     readonly property bool menuShown: root.visible
     readonly property bool searchShown: root.visible && root.searching
     readonly property bool taskbarSearchActive: searchShown && root.taskbarSearchAnchor !== null

@@ -54,6 +54,7 @@ FloatingToolTipArea {
     required property /*main.qml*/ Item tasksRoot
     readonly property QtObject layoutInputs: tasksRoot.layoutInputs
     readonly property var tasksModel: tasksRoot.tasksModel
+    property int groupParentIndex: -1
 
     readonly property int pid: model.AppPid
     readonly property string appName: model.AppName
@@ -310,7 +311,7 @@ FloatingToolTipArea {
 
     function modelIndex(): /*QModelIndex*/ var {
         return inPopup
-            ? tasksModel.makeModelIndex(tasksRoot.groupDialog.visualParent.index, index)
+            ? tasksModel.makeModelIndex(groupParentIndex, index)
             : tasksModel.makeModelIndex(index);
     }
 

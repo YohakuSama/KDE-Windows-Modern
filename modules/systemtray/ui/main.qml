@@ -10,8 +10,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
-import QtCore
-import org.kde.plasma.plasma5support as Plasma5Support
 
 import org.kde.draganddrop as DnD
 import org.kde.kirigami as Kirigami
@@ -42,66 +40,12 @@ ContainmentItem {
         if (runLoader.item) runLoader.item.close();
     }
 
-    // Debounce native palette changes; reread the effective selection color
-    // in the helper. The helper serializes with the appearance mode switch.
+    // Native palette changes from all panels converge on the shell's
+    // single appearance monitor; QML no longer launches its own helper.
     readonly property color nativeAccent: Kirigami.Theme.highlightColor
     readonly property color nativeBackground: Kirigami.Theme.backgroundColor
-    readonly property string accentScript: {
-        const url = String(StandardPaths.locate(StandardPaths.GenericDataLocation,
-            "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/scripts/switch-mode.sh"));
-        return url.startsWith("file:///") ? decodeURIComponent(url.slice(7))
-            : url.startsWith("/") ? url : "";
-    }
-    property bool accentReady: false
-    property bool accentDirty: false
-    property int accentRetries: 0
-    property string accentCommand: ""
-
-    function scheduleAccentSync() {
-        if (!accentReady || accentScript.length === 0) return;
-        accentDirty = true;
-        accentRetries = 0;
-        accentTimer.restart();
-    }
-
-    onNativeAccentChanged: scheduleAccentSync()
-    onNativeBackgroundChanged: scheduleAccentSync()
-
-    Timer {
-        id: accentTimer
-        interval: 350
-        repeat: false
-        onTriggered: {
-            if (!root.accentDirty || root.accentCommand.length !== 0) return;
-            root.accentDirty = false;
-            const script = "'" + root.accentScript.replace(/'/g, "'\\''") + "'";
-            root.accentCommand = "bash " + script + " --sync-accent";
-            accentExec.connectSource(root.accentCommand);
-        }
-    }
-
-    Plasma5Support.DataSource {
-        id: accentExec
-        engine: "executable"
-        connectedSources: []
-        onNewData: function (sourceName, data) {
-            if (sourceName !== root.accentCommand || data["exit code"] === undefined) return;
-            disconnectSource(sourceName);
-            root.accentCommand = "";
-            const exitCode = Number(data["exit code"]);
-            // Only a stale accepted snapshot or lock conflict is retryable.
-            // Do not poll unsupported wallpapers or permanent failures.
-            if (exitCode === 75 && !root.accentDirty && root.accentRetries < 3) {
-                ++root.accentRetries;
-                root.accentDirty = true;
-            } else if (exitCode !== 0) {
-                console.warn("Windows Modern accent synchronization failed:", data["stderr"]);
-            } else if (String(data["stderr"] || "").trim().length > 0) {
-                console.warn("Windows Modern accent synchronization:", data["stderr"]);
-            }
-            if (root.accentDirty) accentTimer.restart();
-        }
-    }
+    onNativeAccentChanged: Plasmoid.requestAppearanceSync()
+    onNativeBackgroundChanged: Plasmoid.requestAppearanceSync()
 
     function panelAnchorForApplet(applet) {
         const revision = tasksGrid.delegateRevision;
@@ -161,15 +105,12 @@ ContainmentItem {
         // set active and not the model, as this will cause an assert deep in Qt
         activeInstantiator.active = true;
         hiddenInstantiator.active = true;
-        Plasmoid.registerClipboardShortcut();
-        Plasmoid.registerRunShortcut();
-        accentReady = true;
-        scheduleAccentSync();
+        Plasmoid.registerShellShortcuts(root);
+        Plasmoid.startAppearanceMonitoring();
     }
 
     Connections {
         target: Plasmoid
-        function onAccentPreferencesChanged() { root.scheduleAccentSync(); }
         function onActivated() {
             root.quickSettingsOrigin = null;
             systemTrayState.toggleHome(false);

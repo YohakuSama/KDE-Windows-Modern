@@ -152,6 +152,7 @@ PlasmaCore.PopupPlasmaWindow {
                         visible: true
                         inPopup: true
                         tasksRoot: groupDialog.tasksRoot
+                        groupParentIndex: groupDialog.visualParent ? (groupDialog.visualParent as Task).index : -1
 
                         ListView.onRemove: Qt.callLater(groupFilter.updateMaxTextWidth)
                         Connections {

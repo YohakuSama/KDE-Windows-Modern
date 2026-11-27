@@ -17,6 +17,7 @@ import org.kde.plasma.private.digitalclock as DigitalClockPrivate
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
 import "code/dateformat.js" as DateFormat
+import "code/panelCapabilities.js" as PanelCapabilities
 
 PlasmoidItem {
     id: root
@@ -30,17 +31,13 @@ PlasmoidItem {
     // Owned by the actual compact representation in the panel window.
     property var panelPopup: null
     readonly property bool flyoutOpen: !!panelPopup && panelPopup.visible
-    // The existing tray plugin already supplies rounded, split-window blur.
-    // The clock is also installable on its own; never require that plugin.
-    readonly property var splitBlurProvider: {
-        const applets = Plasmoid.containment ? Plasmoid.containment.applets : [];
-        for (const applet of applets) {
-            if (applet && applet.pluginName === "org.kde.windowsmodern.systemtray"
-                    && typeof applet.setSplitPopupBlur === "function")
-                return applet;
-        }
-        return null;
-    }
+    // Independent optional capabilities: a panel may coordinate popups
+    // without offering the rounded split-window blur renderer.
+    readonly property var panelApplets: Plasmoid.containment ? Plasmoid.containment.applets : []
+    readonly property var popupCoordinator: PanelCapabilities.findTray(panelApplets,
+        ["prepareShellPopup", "restoreShellPopupFocus"])
+    readonly property var splitBlurProvider: PanelCapabilities.findTray(panelApplets,
+        ["setSplitPopupBlur"])
     readonly property bool allowSplitAcrylic: (Plasmoid.containmentDisplayHints
         & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) === 0
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry

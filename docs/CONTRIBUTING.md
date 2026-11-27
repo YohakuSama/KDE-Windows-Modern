@@ -81,8 +81,9 @@ The original 436 mapped deployment positions now have one editable
 implementation each: 382 generated files, 43 source-only aliases, and 11
 native files retained as unique source locations outside the map.
 The shared Plasma atlas adds 166 generated native files to the map,
-and the shared taskbar geometry helper adds four native outputs, bringing
-the map to 552 generated files and 43 aliases.
+the shared taskbar geometry helper adds four native outputs, and the
+shell-session controllers and panel capability helper add six more.
+The map now has 558 generated files and 43 aliases.
 
 All mapped Plasma native outputs are ignored by Git, including the
 seven applets, C++ backends, native metadata, desktop context-menu

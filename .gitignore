@@ -104,6 +104,10 @@ __pycache__/
 /plasma/applets/org.kde.windowsmodern.systemtray/statusnotifieritemhost.h
 /plasma/applets/org.kde.windowsmodern.systemtray/statusnotifieritemsource.cpp
 /plasma/applets/org.kde.windowsmodern.systemtray/statusnotifieritemsource.h
+/plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.cpp
+/plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.h
+/plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.cpp
+/plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.h
 /plasma/applets/org.kde.windowsmodern.systemtray/systemtray.cpp
 /plasma/applets/org.kde.windowsmodern.systemtray/systemtray.h
 /plasma/applets/org.kde.windowsmodern.systemtray/systemtraymodel.cpp

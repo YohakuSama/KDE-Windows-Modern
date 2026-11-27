@@ -11,7 +11,7 @@ declares the generated native outputs, not a second implementation.
 | controls/ | Shared glyphs, buttons, sliders, scrollbars and flyout controls |
 | resources/ | Shared portrait/license and original resource import/validation |
 | animations/ | Shared sign-in progress |
-| logic/ | Shared formatting, battery state and lock-screen text |
+| logic/ | Shared formatting, battery state, lock-screen text and optional panel capability lookup |
 
 Common QML/JS files retain their native filenames and relative imports.
 Python tools are edited here and executed via their existing native

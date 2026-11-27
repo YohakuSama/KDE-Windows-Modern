@@ -41,6 +41,13 @@ receive their task manager or task items explicitly. Start, Search, Task
 View and Icon Tasks use core/design/taskbarGeometry.js for their shared
 logical icon canvas. The source map materializes it into each independent
 applet; Icon Tasks also registers it in its native QML resources.
+The window-group delegates receive the parent model index explicitly,
+including while the group dialog is being constructed. Start and the
+clock resolve independent optional panel capabilities through
+core/logic/panelCapabilities.js. Replacing their coordinator closes an
+already mapped popup; reopening uses the current provider or the native
+fallback. The tray forwards palette events and registers its ready UI
+with the Corona-owned controllers in platform/plasma.
 
 Run `python3 -I scripts/materialize-modules.py --prepare` to refresh
 generated-only outputs and validate source-only aliases.

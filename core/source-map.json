@@ -76,6 +76,22 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/NetworkStatusIcon.qml",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/NetworkStatusIcon.qml"
     ],
+    "core/controls/SearchGlyph.qml": [
+      "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml",
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml"
+    ],
+    "core/controls/StatusIconButton.qml": [
+      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/StatusIconButton.qml",
+      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/StatusIconButton.qml"
+    ],
+    "core/controls/TaskbarButton.qml": [
+      "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml",
+      "plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml"
+    ],
+    "core/controls/TaskbarGlyph.qml": [
+      "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml",
+      "plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml"
+    ],
     "core/controls/plasma/flyouts/components/Battery.qml": [
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components/Battery.qml"
     ],
@@ -118,22 +134,6 @@
     "core/controls/plasma/flyouts/lib/Slider.qml": [
       "plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib/Slider.qml"
     ],
-    "core/controls/SearchGlyph.qml": [
-      "plasma/applets/org.kde.windowsmodern.search/contents/ui/SearchGlyph.qml",
-      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/SearchGlyph.qml"
-    ],
-    "core/controls/StatusIconButton.qml": [
-      "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/StatusIconButton.qml",
-      "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/StatusIconButton.qml"
-    ],
-    "core/controls/TaskbarButton.qml": [
-      "plasma/applets/org.kde.windowsmodern.search/contents/ui/TaskbarButton.qml",
-      "plasma/applets/org.kde.windowsmodern.taskview/contents/ui/TaskbarButton.qml"
-    ],
-    "core/controls/TaskbarGlyph.qml": [
-      "plasma/applets/org.kde.windowsmodern.search/contents/ui/Glyph.qml",
-      "plasma/applets/org.kde.windowsmodern.taskview/contents/ui/Glyph.qml"
-    ],
     "core/design/lockMetrics.js": [
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockMetrics.js",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockMetrics.js"
@@ -166,6 +166,10 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/lockText.js",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/lockText.js"
     ],
+    "core/logic/panelCapabilities.js": [
+      "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/panelCapabilities.js",
+      "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/panelCapabilities.js"
+    ],
     "core/materials/popup-frame.svg.in": [
       "scripts/theme/popup-frame.svg.in"
     ],
@@ -174,6 +178,9 @@
     ],
     "core/materials/window-frames.py": [
       "scripts/theme/window-frames.py"
+    ],
+    "core/palette/WindowsModern.colors.in": [
+      "color-schemes/WindowsModern.colors.in"
     ],
     "core/palette/colorType.js": [
       "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/colorType.js",
@@ -188,9 +195,6 @@
     ],
     "core/palette/wallpaper-icc.py": [
       "scripts/theme/wallpaper-icc.py"
-    ],
-    "core/palette/WindowsModern.colors.in": [
-      "color-schemes/WindowsModern.colors.in"
     ],
     "core/resources/default-avatar-small.svg": [
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/default-account.svg",
@@ -207,6 +211,9 @@
     "core/resources/import/import-windows-assets.py": [
       "scripts/import-windows-assets.py"
     ],
+    "core/resources/import/native-assets-map.json": [
+      "scripts/native-assets-map.json"
+    ],
     "core/resources/import/native_assets_index.py": [
       "scripts/native_assets_index.py"
     ],
@@ -218,9 +225,6 @@
     ],
     "core/resources/import/native_pri_resources.py": [
       "scripts/native_pri_resources.py"
-    ],
-    "core/resources/import/native-assets-map.json": [
-      "scripts/native-assets-map.json"
     ],
     "core/resources/portrait.LICENSE": [
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/portrait.LICENSE",
@@ -401,6 +405,12 @@
     "platform/plasma/appearance/light-store-dependencies.json": [
       "scripts/theme/light-store-dependencies.json"
     ],
+    "platform/plasma/appearance/shellappearancemonitor.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.cpp"
+    ],
+    "platform/plasma/appearance/shellappearancemonitor.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.h"
+    ],
     "platform/plasma/appearance/switch-mode.sh": [
       "scripts/theme/switch-mode.sh"
     ],
@@ -433,6 +443,12 @@
     ],
     "platform/plasma/shortcuts/keyboard-labels.py": [
       "scripts/keyboard-labels.py"
+    ],
+    "platform/plasma/shortcuts/shellshortcutrouter.cpp": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.cpp"
+    ],
+    "platform/plasma/shortcuts/shellshortcutrouter.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.h"
     ],
     "platform/plasma/shortcuts/windows-shortcuts.py": [
       "scripts/windows-shortcuts.py"
@@ -533,23 +549,23 @@
     "platform/plasma/systemtray/systemtraytypes.h": [
       "plasma/applets/org.kde.windowsmodern.systemtray/systemtraytypes.h"
     ],
-    "platform/plasma/systemtray/utils_p.h": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/utils_p.h"
-    ],
     "platform/plasma/systemtray/utils.cpp": [
       "plasma/applets/org.kde.windowsmodern.systemtray/utils.cpp"
     ],
+    "platform/plasma/systemtray/utils_p.h": [
+      "plasma/applets/org.kde.windowsmodern.systemtray/utils_p.h"
+    ],
     "platform/plasma/systemtray/windowstray.h": [
       "plasma/applets/org.kde.windowsmodern.systemtray/windowstray.h"
+    ],
+    "platform/plasma/taskbar/CMakeLists.txt": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt"
     ],
     "platform/plasma/taskbar/backend.cpp": [
       "plasma/applets/org.kde.windowsmodern.icontasks/backend.cpp"
     ],
     "platform/plasma/taskbar/backend.h": [
       "plasma/applets/org.kde.windowsmodern.icontasks/backend.h"
-    ],
-    "platform/plasma/taskbar/CMakeLists.txt": [
-      "plasma/applets/org.kde.windowsmodern.icontasks/CMakeLists.txt"
     ],
     "platform/plasma/taskbar/floatingtooltiparea.cpp": [
       "plasma/applets/org.kde.windowsmodern.icontasks/floatingtooltiparea.cpp"
@@ -661,6 +677,10 @@
     "plasma/applets/org.kde.windowsmodern.systemtray/panelglyph.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.cpp",
     "plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.h",
+    "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.cpp",
+    "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.h",
+    "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.cpp",
+    "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/sortedsystemtraymodel.cpp",
     "plasma/applets/org.kde.windowsmodern.systemtray/sortedsystemtraymodel.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/statusnotifieritemhost.cpp",

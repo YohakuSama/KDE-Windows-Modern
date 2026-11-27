@@ -39,7 +39,7 @@
 
 维护者确认在 testing 中优先优化架构，再推进各功能还原。按公共核心、功能模块、平台适配与安装管理组织源码。所有任务完成并由维护者独立测试通过后，再由维护者决定创建新仓库。现阶段禁止创建新仓库或合并 main。
 
-首批采用低风险、内容不变的源码迁移：[core](../core/README.md) 管理公共源码，[modules](../modules/README.md) 管理开始菜单、搜索、任务视图、显示桌面、日历、通知等功能源码。原生 Plasma 路径暂为生成镜像，现有安装、构建与验收引用保持有效；现有静态检查与打包入口拒绝漂移。第二批已归类系统托盘、快捷中心、剪贴板、运行、任务栏、锁屏/登录、窗口管理、应用、配色/材质、平台适配及安装工具，七个 applet 的运行源码均已分配所有者。第三批开始取消原生镜像的 Git 跟踪：五个纯 QML applet 内容、三个 KWin 脚本内容、Alt+Tab 内容及两个任务栏布局脚本共 91 个文件改为按需生成。源码安装与主要开发入口使用 --prepare，安装 ZIP 从归档提交的唯一源码生成对应原生文件；第四批将全部已映射的 Plasma 原生源码（七个 applet 的元数据与 C++、锁屏/登录、桌面菜单、全局主题）及 Store 深浅依赖配置改为按需生成，第四批累计 332 个生成输出。第五批进一步移除 50 个 Aurorae/Kvantum/配色模板、Plymouth、应用配置/补丁、常规组件安装与部分资源生成工具的部署镜像，累计 382/436 个生成输出。第六批收敛剩余 54 个重复编辑位置：43 个脚本及工具数据的原生入口改为受映射校验的源码相对链接，安装包从归档提交恢复实体文件；7 个 Konsole 原生文件及 4 个 Nix 表达式保留原生路径为唯一编辑源，移除另一份相同源码。原 436 个映射位置全部完成编辑源唯一化，现映射 425 个输出（382 个生成文件、43 个源码入口），另外 11 个为不经映射的唯一原生源码。第七批将 166 个 Plasma SVG atlas 文件（165 个 SVG、1 个元数据）迁入 platform/plasma/appearance/atlas，保持 Git blob 与权限完全相同，原部署目录改为按需生成。第七批映射 591 个输出（548 个生成文件、43 个源码入口）；另有 11 个唯一原生源码。弹窗、任务栏面板和开关生成器默认写规范源；开始/搜索页与托盘状态改用明确的输入及信号。第八批将任务栏几何、窗口组弹窗、拖放和音频状态依赖改为显式输入；Start、Search、Task View、Icon Tasks 共用 30 逻辑像素图标画布函数，新增 4 个自包含生成输出。现映射 595 个输出（552 个生成文件、43 个源码入口）。图标/壁纸库、部分源生成工具与顶层安装入口保持原路径；后续完成其他公共视觉规范、全局能力生命周期与配色职责收敛。保留运行时自包含包，不新增常驻服务。此阶段没有宣称全部模块已解耦，A14/V07/V08/D20 仍为部分完成。
+首批采用低风险、内容不变的源码迁移：[core](../core/README.md) 管理公共源码，[modules](../modules/README.md) 管理开始菜单、搜索、任务视图、显示桌面、日历、通知等功能源码。原生 Plasma 路径暂为生成镜像，现有安装、构建与验收引用保持有效；现有静态检查与打包入口拒绝漂移。第二批已归类系统托盘、快捷中心、剪贴板、运行、任务栏、锁屏/登录、窗口管理、应用、配色/材质、平台适配及安装工具，七个 applet 的运行源码均已分配所有者。第三批开始取消原生镜像的 Git 跟踪：五个纯 QML applet 内容、三个 KWin 脚本内容、Alt+Tab 内容及两个任务栏布局脚本共 91 个文件改为按需生成。源码安装与主要开发入口使用 --prepare，安装 ZIP 从归档提交的唯一源码生成对应原生文件；第四批将全部已映射的 Plasma 原生源码（七个 applet 的元数据与 C++、锁屏/登录、桌面菜单、全局主题）及 Store 深浅依赖配置改为按需生成，第四批累计 332 个生成输出。第五批进一步移除 50 个 Aurorae/Kvantum/配色模板、Plymouth、应用配置/补丁、常规组件安装与部分资源生成工具的部署镜像，累计 382/436 个生成输出。第六批收敛剩余 54 个重复编辑位置：43 个脚本及工具数据的原生入口改为受映射校验的源码相对链接，安装包从归档提交恢复实体文件；7 个 Konsole 原生文件及 4 个 Nix 表达式保留原生路径为唯一编辑源，移除另一份相同源码。原 436 个映射位置全部完成编辑源唯一化，现映射 425 个输出（382 个生成文件、43 个源码入口），另外 11 个为不经映射的唯一原生源码。第七批将 166 个 Plasma SVG atlas 文件（165 个 SVG、1 个元数据）迁入 platform/plasma/appearance/atlas，保持 Git blob 与权限完全相同，原部署目录改为按需生成。第七批映射 591 个输出（548 个生成文件、43 个源码入口）；另有 11 个唯一原生源码。弹窗、任务栏面板和开关生成器默认写规范源；开始/搜索页与托盘状态改用明确的输入及信号。第八批将任务栏几何、窗口组弹窗、拖放和音频状态依赖改为显式输入；Start、Search、Task View、Icon Tasks 共用 30 逻辑像素图标画布函数，新增 4 个自包含生成输出。第八批映射 595 个输出（552 个生成文件、43 个源码入口）。第九批将壁纸桥接、文件/配置监听、防抖同步及 Win+R/V 注册迁入 Corona 所有的外观监听器和快捷键路由器，开始菜单与时钟共用可选面板能力查找函数，新增 6 个生成输出。现映射 601 个输出（558 个生成文件、43 个源码入口）。图标/壁纸库、部分源生成工具与顶层安装入口保持原路径；后续完成其他公共视觉规范、全局能力生命周期与配色职责收敛。保留运行时自包含包，不新增常驻服务。此阶段没有宣称全部模块已解耦，A14/V07/V08/D20 仍为部分完成。
 
 ## 开发顺序与批次
 
@@ -72,7 +72,7 @@
 | A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何已有共享方案，Qt 负责输出缩放 | 审查其余尺寸、锚点、边距、RTL、多屏和窄屏限制；禁止重复应用 DPI |
 | A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量 | 落实字号、字重、基线、行高、截断、语言回退与辅助文字缩放；尊重系统字体 |
 | A13 | I | 单一主题、深浅色生成架构 | Plasma、Aurorae、Kvantum 和配色采用共享源/生成路径，保留原有安装接口 | 该范围仅为源码统一；色彩语义归 D16/D17，具体控件差距归各自任务 |
-| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 552 个生成文件、43 个受校验的源码入口、11 个唯一原生构建文件；开始、搜索、任务视图和任务按钮共用画布规则；安装包不依赖源码链接 | 统一同语义参数，继续核对图标/壁纸及未映射的重复语义实现，核对新克隆/安装/打包消费者；参数真实性归 A02/A08 |
+| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 558 个生成文件、43 个受校验的源码入口、11 个唯一原生构建文件；开始、搜索、任务视图和任务按钮共用画布规则；安装包不依赖源码链接 | 统一同语义参数，继续核对图标/壁纸及未映射的重复语义实现，核对新克隆/安装/打包消费者；参数真实性归 A02/A08 |
 
 <a name="block-02"></a>
 
@@ -269,8 +269,8 @@
 | V04 | P | 全局源码与静态检查覆盖 | 独立静态工作流覆盖格式、QML parser、部分 qmllint、图标和 Konsole C++；verify-all.sh 含副本比较但也运行测试 | 补齐其他原生 applet 的类型/接口与共享源码静态覆盖，复用已有机制；本次只做人工源码/文件身份审查，不擅自执行或改变 CI |
 | V05 | P | 无障碍、语言与输入兼容 | 主要组件已有原生键盘、模型、RTL 等路径 | 全局核对焦点、读屏、翻译、中英文、IME、触摸及触控板；单组件修复归对应任务 |
 | V06 | U | 运行性能、资源开销与长时稳定性 | 已有事件驱动、缓存、节流等局部策略；尚无完整性能基线 | 静态审查重复解码、无界缓存/轮询、QML 绑定环和生命周期；由维护者记录目标机器内存/CPU/GPU、启动和交互数据 |
-| V07 | P | 模块间显式数据和动作接口 | 原生模型、路由及信号已有；AllAppsPage/SearchPage 通过 applicationActivated 通知宿主，SearchPage 显式接收 searching；SystemTrayState 通过 reconcileHostExpansion 输入及 hostExpansionRequested 信号同步宿主 | LayoutMetrics.js 及 task/grid/group、拖放、音频状态组件使用显式输入，保留原生模型及动作；继续核对其余组件的隐式依赖和消费者，保持原生激活/关闭逻辑 |
-| V08 | P | 全局能力与可选组件生命周期 | 托盘拥有壁纸桥接和事件触发、弹窗协调、split blur、Win+R/V 注册；Search 依赖同面板 Start，Start/clock 有协调缺失回退 | 明确能力接口、所有者与适用范围，避免移除/重建托盘或主面板时非托盘功能失效、重复注册；保留原生回退和事件驱动，优先现有 shell 宿主，不增加常驻服务 |
+| V07 | P | 模块间显式数据和动作接口 | 原生模型、路由及信号已有；AllAppsPage/SearchPage 通过 applicationActivated 通知宿主，SearchPage 显式接收 searching；SystemTrayState 通过 reconcileHostExpansion 输入及 hostExpansionRequested 信号同步宿主 | LayoutMetrics.js 及 task/grid/group、拖放、音频状态组件使用显式输入，窗口组 delegate 显式接收父模型索引；Start/clock 分别查找同面板协调和模糊能力；继续核对其余隐式依赖与原生激活/关闭逻辑 |
+| V08 | P | 全局能力与可选组件生命周期 | Corona 所有的 ShellAppearanceMonitor 统一壁纸桥接、监听和同步；ShellShortcutRouter 持有原有 Win+R/V 动作并选择就绪托盘，移除后保留当次会话原生回退；Start/clock 独立查找同面板协调和模糊能力 | 尚需解决未加载托盘二进制的冷启动、同面板协调和 split blur 的稳定宿主、Search 的 Start 生命周期；核对多屏、重建、退出与卸载回退，不增加常驻服务 |
 
 
 ## 架构与耦合复核（2026-11-27）
@@ -305,9 +305,9 @@
 | --- | --- | --- |
 | A14 公共源 | Plasma 283 个代码文件按 Git blob SHA 分组，18 组共 45 份完全相同；verify-all.sh L271–313 有 29 对比较（含 2 对 SVG）。Start CompactRepresentation、Search/Task View TaskbarButton、Icon Tasks Task.qml 原先分别写入 30px 画布逻辑，第八批统一到 core/design/taskbarGeometry.js | 图标画布复用现有生成/安装路径，保持四个独立包完整；继续统一其他同语义参数，不能仅凭相同数值合并不同角色 |
 | V07 隐式依赖 | 第七批消除 AllAppsPage/SearchPage 对外层 root 的直接访问，通过 applicationActivated 信号和 searching 输入连接 MenuRepresentation；SystemTrayState 通过明确的展开输入和信号连接 tray main.qml。第八批将 LayoutMetrics.js 的 tasks/taskFrame 依赖改为宿主提供的实时几何与配置属性；TaskList、Task、GroupDialog、MouseHandler、AudioStream 使用显式输入，动态创建者传递相应对象 | 保留原有应用激活条件、搜索筛选可见性、托盘展开同步及任务栏几何公式；继续核对其他隐式依赖，不以文件行数认定问题 |
-| V08 弹窗 | Start MenuRepresentation.qml L44–52/L94，clock CompactRepresentation.qml L54–159，systemtray.cpp L564–624：同面板查找托盘，由托盘保存 m_shellPopups 并通过定时器协调 | 共同协调本身必要；其所有者却是托盘。保持 tray/clock 互斥、Start 独立和外部焦点关闭；明确能力接口与缺失/重建行为，不另建弹窗服务 |
-| V08 全局事件和快捷键 | systemtray.cpp L82–124/L809–812/L817–913：WallpaperAccentSource 按 Corona 共用，最后一个 tray 释放桥接；tray main.qml L44–103/L164–172 执行防抖同步，accent-control.py L77–90 读取 /WindowsModernWallpaper；systemtray.cpp L626–667 由主屏 tray 拥有 Win+R/V QAction | 取色算法本身独立，自动同步及部分全局快捷键的生命周期与托盘绑定。核对移除/重建最后一个 tray、主屏变化、原生快捷键迁移和恢复；优先已有 shell 宿主与事件驱动，不增加后台服务 |
-| V08 可选组件 | Search main.qml L30–69 经 Start 的 internalAction 传递搜索状态与几何，无 Start 时警告后返回；clock main.qml L35–44、ExpandedRepresentation.qml L34–84 从托盘取得 split blur，缺失则不透明 | 搜索共用 Start 的真实模型属于合理依赖，勿重复开发；明确同面板能力与缺失行为。保留 clock 独立安装和降级，核对新旧包与面板生命周期 |
+| V08 弹窗 | Start MenuRepresentation.qml、clock main/CompactRepresentation.qml 共用 panelCapabilities.js 查找同面板协调器，协调与 split blur 独立选择；协调器更换时关闭已映射 popup | 原有托盘 m_shellPopups 协调所有权仍保留，tray/clock 互斥、Start 独立和外部焦点关闭不变；还需明确稳定宿主及验证重建/缺失回退 |
+| V08 全局事件和快捷键 | platform/plasma/appearance/shellappearancemonitor.cpp 将既有 WallpaperAccentSource、配置/文件观察及防抖执行集中到 Corona；platform/plasma/shortcuts/shellshortcutrouter.cpp 持有 Win+R/V QAction 并通过 QPointer 跟踪就绪表示 | 已分离单个 tray 的对象生命周期与重复执行，保留原 D-Bus 路径、动作 ID、350ms 防抖及退出码 75 的三次重试。当前会话移除 tray 后仍有监听和原生回退路径，但未加载托盘二进制的冷启动未解决；多屏、注销、卸载及事务退出待验收 |
+| V08 可选组件 | Search main.qml 经 Start 的 internalAction 传递状态与几何，无 Start 时警告后返回；clock main.qml 将 popupCoordinator 与 splitBlurProvider 独立查找，缺少 blur 时仍保留不透明回退 | 搜索共用 Start 的真实模型属于合理依赖，勿重复开发；继续核对 Search/Start 重建与 action 可用状态，保留 clock 独立安装并验证新旧包及面板生命周期 |
 | D20 外观管线 | sync-accent.py 1186 行，兼有色阶/解码、scheme/SVG 绑定、原子事务及刷新回执；accent-control.py L16 用 runpy 载入；window-frames.py L193–207/L501–559/L572–616 调用解码、宿主及事务；switch-mode.sh L161–209/L220–244 要求对应 Kvantum/KDE scheme 并统一调度 | 复用现有算法，但逐步明确计算、宿主控制、渲染输出与事务接口；保持缓存、原子性、锁和回滚。非 Kvantum 边界需要规定；当前完整主题安装的明确限制不等同于已发生的 bug |
 | V04 静态覆盖 | verify-all.sh 有副本比较但也运行测试；static-check.yml 含格式检查、QML parser、部分 qmllint、图标审查和 Konsole 语义检查，不覆盖全部 native applet 类型检查 | 按改动核查实际消费者、资源和包边界，复用已有静态机制。未经授权不改动 CI。未执行工具的检查不能标为通过 |
 
@@ -368,3 +368,5 @@
 - 2026-11-27 模块迁移第七批：基于 7ed76dee5ab6，Plasma atlas 的 166 个原生文件整体迁入 platform/plasma/appearance/atlas，原路径只由源映射生成；更新默认再生成路径与健康检查提示，保留显式目录参数及旧部署布局。AllAppsPage/SearchPage 的宿主关闭动作改为信号，SearchPage 显式接收模式；托盘的展开状态改由宿主传值及接收信号，保留原有同步与激活条件。V07、A14 仍为 P；V08/D20 未改动。未运行构建、测试、CI、打包或实机验收；继续核对任务栏几何、全局能力归属和配色职责，未增加功能完成数。
 
 - 2026-11-27 模块迁移第八批：基于 2809c1fcec2d，任务栏 LayoutMetrics.js 接收显式几何/配置输入，TaskList、Task、GroupDialog 共享宿主实时绑定，窗口组创建、拖放和音频状态不再依赖原有的隐式几何/宿主 ID；音频模型尚未加载时忽略音量滚轮操作。30 逻辑像素画布及 4 像素总内缩由 core/design/taskbarGeometry.js 统一供四个 applet 使用，保持各自资源独立，补充 Icon Tasks CMake 注册。未改动现有尺寸、任务模型、动画或已加载音频行为。A14/V07 保持 P，V08/D20 未改动，源码完成任务数不变。未运行构建、自动化测试、CI、打包或实机验收。
+
+- 2026-11-27 模块迁移第九批：基于 d97590a192ad，新增 Corona 所有的外观监听器与快捷键路由器，将每个 tray 的配置/文件观察、350ms 防抖和同步执行收敛为单一会话控制器，保留原算法、事务锁、D-Bus 路径和退出码 75 重试上限；全局动作保留原组件名和 ID，路由到就绪主屏或次屏托盘，无就绪托盘时走原生 Klipper/KRunner 路径。用 QPointer 区分重建前后的 UI 表示。Start/clock 共享面板能力查询并在协调器替换时关闭旧弹窗；窗口组显式传递父模型索引，修正第八批创建期间依赖宿主尚未赋值的风险。映射增加 6 个输出。未解决不加载托盘二进制的冷启动、稳定弹窗/模糊宿主及 Search 生命周期，V08、V07、A14、D20 保持 P，功能完成任务数不变。未执行构建、自动化测试、CI、打包或实机验收；环境无 Qt/KF6 开发头文件和 QML 检查工具。

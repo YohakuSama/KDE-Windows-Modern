@@ -29,6 +29,8 @@ The Windows Modern system tray (`org.kde.windowsmodern.systemtray`) is a C++ `Pl
 | File | Purpose |
 |------|---------|
 | `systemtray.cpp/.h` | C++ `Plasma::Containment` — manages child applets, DBus model, XDG activation |
+| `shellappearancemonitor.cpp/.h` | Corona-owned wallpaper bridge, file/config observers and debounced appearance helper |
+| `shellshortcutrouter.cpp/.h` | Corona-owned Win+R/V actions, ready tray selection and native fallback |
 | `contents/ui/main.qml` | Root `ContainmentItem` — GridView of active icons, AppletPopup, ExpanderArrow |
 | `contents/ui/SystemTrayState.qml` | State machine — expanded/collapsed, active applet tracking |
 | `contents/ui/ExpandedRepresentation.qml` | Popup content — heading, PlasmoidPopupsContainer, HiddenItemsView |
@@ -64,19 +66,37 @@ User clicks icon
   → PlasmoidPopupsContainer shows applet.fullRepresentationItem
 ```
 
-The `rootConnections` block in SystemTrayState.qml (matching upstream exactly) keeps the containment's `expanded` property in sync with `systemTrayState.expanded`. This is part of the correct Plasma containment contract — it doesn't fix the dark rectangle (see below for the actual fix).
+The containment host connects its expanded property to
+`SystemTrayState.reconcileHostExpansion(value)`; the state returns
+`hostExpansionRequested(value)` instead of accessing the host's QML ID.
+This preserves the native expansion contract.
 
-```qml
-readonly property Connections rootConnections: Connections {
-    function onExpandedChanged() {
-        if (systemTrayState.acceptExpandedChange) {
-            systemTrayState.expanded = root.expanded  // user-initiated
-        } else {
-            root.expanded = systemTrayState.expanded  // suppress framework
-        }
-    }
-}
-```
+### Shell-session ownership
+
+The tray binary initializes the shared appearance monitor and shortcut
+router on the Corona. All ready tray instances forward color changes to
+one 350 ms debounce timer. The monitor starts only one appearance helper
+at a time, retains the existing exit-75 retry limit and transaction lock,
+and keeps the read-only wallpaper bridge available after tray removal.
+The existing Python color/material algorithms and D-Bus contract are
+unchanged.
+
+The router retains the existing global action component names and IDs.
+Only live, completed tray representations receive themed shortcut
+requests; screen 0 is preferred and a ready secondary tray is eligible
+if the primary disappears. If no tray is ready in the current shell
+session, Win+R/V invoke native KRunner/Klipper fallbacks, subject to their
+availability. The router does not reassign the user's configured keys.
+The installed tray binary must still have been loaded once in that
+session; a tray-free cold start is not yet covered.
+
+Start/clock discover popup coordination separately from split blur.
+Coordination still uses the same-panel tray; on a provider replacement
+they close a mapped popup and use the current provider when reopened.
+Clock's native deactivation and opaque fallback remain available.
+No separate daemon is installed. Compilation and live multi-screen,
+panel rebuild, native fallback, uninstall and shutdown acceptance remain
+pending.
 
 ---
 
