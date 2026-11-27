@@ -293,7 +293,11 @@
     "f8ac": "actions/wm-media-previous-symbolic",
     "f8ad": "actions/wm-media-next-symbolic",
     "f5b0": "actions/wm-media-play-symbolic",
-    "f8ae": "actions/wm-media-pause-symbolic"
+    "f8ae": "actions/wm-media-pause-symbolic",
+    "f0c5": "apps/system-software-update apps/system-software-update-symbolic",
+    "f87b": "actions/tools-check-spelling actions/tools-check-spelling-symbolic",
+    "f6fa": "apps/preferences-web-browser-shortcuts apps/preferences-web-browser-shortcuts-symbolic categories/preferences-web-browser-shortcuts categories/preferences-web-browser-shortcuts-symbolic",
+    "e927": "apps/preferences-desktop-gestures-touch apps/preferences-desktop-gestures-touch-symbolic categories/preferences-desktop-gestures-touch categories/preferences-desktop-gestures-touch-symbolic"
   },
   "wallpapers": [
     [

@@ -702,7 +702,34 @@ manifest metadata independently verifies the original Windows files or
 runtime rendering. The broader importer remains unchanged.
 
 The recorded KDE 6.8.3 metadata has 98 module declarations. Against the
-current source mapping, 66 declarations have a matching declared icon name
-or its symbolic alias and 32 do not. These are source name matches only,
+current source mapping, 70 declarations have a matching declared icon name
+or its symbolic alias and 28 do not. These are source name matches only,
 not installed coverage or exact Windows semantic matches. Do not replace
 KDE-specific functions or application identities just to increase counts.
+
+### Phase A07: original glyph supplement
+
+The complete 472,516-byte SegoeIcons.ttf blob in the existing reference
+and runtime resource branches was read and SHA-256 checked against the
+26300.9974 owner audit:
+`031ada497ddcc9bf3f2536efba2f4bd53f12a0dead44460a4a934b06a952dd2b`.
+The font's cmap contains 2,035 mapped code points; the existing required
+font glyph mappings are present. The following additions have non-empty
+TrueType outline data and matching semantics in Microsoft's
+[Segoe Fluent Icons reference](https://learn.microsoft.com/en-us/windows/apps/design/iconography/segoe-fluent-icons-font)
+and its [updated glyph list](https://learn.microsoft.com/en-gb/windows/apps/design/iconography/segoe-fluent-icons-font).
+
+| Code point | Documented meaning | Glyph index | KDE role |
+| --- | --- | --- | --- |
+| F0C5 | WindowsUpdate | 892 | system-software-update |
+| F87B | Spelling | 1242 | tools-check-spelling |
+| F6FA | WebSearch | 1186 | preferences-web-browser-shortcuts |
+| E927 | Swipe | 337 | preferences-desktop-gestures-touch |
+
+Only the existing theme contexts and corresponding symbolic aliases are
+mapped. These are semantic equivalents for the KDE controls, not claims
+that a particular Windows XBF page uses these glyphs. The shared importer
+and existing icon installation path remain unchanged. No font, original
+artwork, new renderer or new runtime dependency is added to testing.
+Keep ambiguous shared names, platform-specific functions and unverified
+roles unchanged until their semantics and artwork are established.
