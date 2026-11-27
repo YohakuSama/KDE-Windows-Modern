@@ -2,6 +2,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/pages" as Pages
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: fixture
@@ -47,6 +48,11 @@ Item {
             mouseClick(top);
             compare(apps.launches, 2);
             compare(launchSpy.count, 2);
+        }
+        function test_sharedCardSurfaceRadius() {
+            const surface = findChild(page, "wmSearchQuickSearchSurface");
+            verify(surface);
+            compare(surface.radius, ControlMetrics.cardSurfaceRadius);
         }
         function test_quickSearchVisibility() {
             page.showQuickSearches = false;

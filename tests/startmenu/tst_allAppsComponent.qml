@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/controlMetrics.js" as ControlMetrics
 
 TestCase {
     name: "StartAllAppsComponent"
@@ -19,8 +20,13 @@ TestCase {
         const page = component.createObject(null, {width: 620, height: 600, categoryMode: true, flatModel: catalogApps});
         verify(page !== null);
         tryCompare(page.allAppsList, "count", 2);
+        tryVerify(() => !!findChild(page, "wmStartCategoryCardSurface"));
+        compare(findChild(page, "wmStartCategoryCardSurface").radius, ControlMetrics.cardSurfaceRadius);
         page.activateRow(0);
         tryCompare(page, "inCategory", true);
+        const categorySurface = findChild(page, "wmStartCategorySurface");
+        verify(categorySurface);
+        compare(categorySurface.radius, ControlMetrics.cardSurfaceRadius);
         compare(page.categoryChild.length, 3);
         compare(page.categoryKey, "productivity");
         const grid = findChild(page, "wmStartCategoryGrid");
@@ -30,6 +36,29 @@ TestCase {
         page.backToCategories();
         tryCompare(page, "inCategory", false);
         page.destroy();
+    }
+
+    function test_sharedControlRadii() {
+        const buttonComponent = Qt.createComponent("../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/AToolButton.qml");
+        tryVerify(() => buttonComponent.status !== Component.Loading);
+        verify(buttonComponent.status === Component.Ready, buttonComponent.errorString());
+        const button = buttonComponent.createObject(null, {width: 180, height: 32});
+        verify(button !== null);
+        compare(button.radius, ControlMetrics.controlCornerRadius);
+
+        const rowComponent = Qt.createComponent("../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/components/ListItemDelegate.qml");
+        tryVerify(() => rowComponent.status !== Component.Loading);
+        verify(rowComponent.status === Component.Ready, rowComponent.errorString());
+        const row = rowComponent.createObject(null, {width: 180, height: 40});
+        verify(row !== null);
+        const hover = findChild(row, "wmStartListItemHoverBackground");
+        const focus = findChild(row, "wmStartListItemFocusBackground");
+        verify(hover !== null);
+        verify(focus !== null);
+        compare(hover.radius, ControlMetrics.controlCornerRadius);
+        compare(focus.radius, ControlMetrics.controlCornerRadius);
+        button.destroy();
+        row.destroy();
     }
 
     function test_loadAllAppsPage() {

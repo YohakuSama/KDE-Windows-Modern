@@ -19,6 +19,7 @@ import org.kde.kirigami as Kirigami
 
 import "../code/tools.js" as Tools
 import "../code/theme.js" as Theme
+import "../code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: item
@@ -74,8 +75,9 @@ Item {
     // ── Hover background ───────────────────────────────────────────────
     Rectangle {
         id: hoverBackground
+        objectName: "wmStartListItemHoverBackground"
         anchors.fill: parent
-        radius: Kirigami.Units.smallSpacing
+        radius: ControlMetrics.controlCornerRadius
         color: Kirigami.Theme.textColor
         opacity: {
             if (item._dragging) return 0;
@@ -118,9 +120,10 @@ Item {
     }
 
     Rectangle {
+        objectName: "wmStartListItemFocusBackground"
         anchors.fill: parent
         anchors.margins: 2
-        radius: Kirigami.Units.smallSpacing
+        radius: ControlMetrics.controlCornerRadius
         color: "transparent"
         border.color: Kirigami.Theme.highlightColor
         border.width: 2

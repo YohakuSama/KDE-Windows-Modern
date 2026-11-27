@@ -24,6 +24,7 @@ import QtQuick.Effects
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kwin as KWin
+import "controlMetrics.js" as ControlMetrics
 
 FocusScope {
     id: root
@@ -41,8 +42,8 @@ FocusScope {
     readonly property int outerPadding: Math.round(12 * unit)
     readonly property int cardSpacing: Math.round(4 * unit)
     readonly property int cardPadding: Math.round(6 * unit)
-    readonly property int cardRadius: Math.round(8 * unit)
-    readonly property int smallCornerRadius: Math.round(4 * unit)
+    readonly property int cardRadius: Math.round(ControlMetrics.cardSurfaceRadius * unit)
+    readonly property int smallCornerRadius: Math.round(ControlMetrics.controlCornerRadius * unit)
     readonly property int ringWidth: Math.max(2, Math.round(3 * unit))
     readonly property int headerHeight: Math.round(30 * unit)
     readonly property int headerIconSize: Kirigami.Units.iconSizes.small

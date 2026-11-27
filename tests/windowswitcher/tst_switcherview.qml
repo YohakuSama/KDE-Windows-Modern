@@ -4,6 +4,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/ui"
+import "../../plasma/windowswitcher/org.kde.windowsmodern.alttab/contents/ui/controlMetrics.js" as ControlMetrics
 
 Item {
     id: root
@@ -137,6 +138,8 @@ Item {
             const button = closeButtonOf(c);
             verify(button !== null, "card should have a close button");
             compare(button.radius, view.smallCornerRadius);
+            compare(view.cardRadius, Math.round(ControlMetrics.cardSurfaceRadius * view.unit));
+            compare(view.smallCornerRadius, Math.round(ControlMetrics.controlCornerRadius * view.unit));
             tryVerify(() => button.visible, 1000, "hovering the card shows its close button");
             const p = button.mapToItem(c, button.width / 2, button.height / 2);
             let flips = 0;

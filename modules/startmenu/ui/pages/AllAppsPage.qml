@@ -283,12 +283,13 @@ Item {
 
                 Rectangle {
                     id: surface
+                    objectName: "wmStartCategoryCardSurface"
                     anchors.top: parent.top
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.margins: 8
                     height: Math.max(1, width)
-                    radius: 8
+                    radius: ControlMetrics.cardSurfaceRadius
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, cardHover.hovered
                             || (card.GridView.isCurrentItem && allAppsListView.activeFocus) ? 0.09 : 0.04)
@@ -499,7 +500,7 @@ Item {
             readonly property int appCellHeight: 84
             height: Math.max(1, Math.min(parent.height - 24,
                 84 + Math.max(1, Math.ceil(appCount / appColumns)) * appCellHeight))
-            radius: 8
+            radius: ControlMetrics.cardSurfaceRadius
             opacity: allAppsPage.inCategory ? 1 : 0
             scale: allAppsPage.inCategory ? 1 : 0.94
             Behavior on opacity {

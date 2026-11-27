@@ -13,6 +13,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
 import "../code/theme.js" as Theme
+import "../code/controlMetrics.js" as ControlMetrics
 
 Rectangle {
     id: item
@@ -26,7 +27,7 @@ Rectangle {
                            Kirigami.Theme.textColor.g,
                            Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
 
-    radius: Kirigami.Units.smallSpacing
+    radius: ControlMetrics.controlCornerRadius
     color: {
         var hover = Qt.rgba(Kirigami.Theme.textColor.r,
                             Kirigami.Theme.textColor.g,

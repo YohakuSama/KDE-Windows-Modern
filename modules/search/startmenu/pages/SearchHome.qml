@@ -166,7 +166,8 @@ Item {
                     Layout.fillWidth: true
                     visible: home.showQuickSearches
                     implicitHeight: chips.implicitHeight + 24
-                    radius: 8
+                    objectName: "wmSearchQuickSearchSurface"
+                    radius: ControlMetrics.cardSurfaceRadius
                     color: Qt.rgba(home.ink.r, home.ink.g, home.ink.b, 0.045)
                     Flow {
                         id: chips

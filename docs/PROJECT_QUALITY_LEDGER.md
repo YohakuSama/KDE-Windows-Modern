@@ -72,7 +72,7 @@
 | A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何已有共享方案，Qt 负责输出缩放 | 审查其余尺寸、锚点、边距、RTL、多屏和窄屏限制；禁止重复应用 DPI |
 | A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量 | 落实字号、字重、基线、行高、截断、语言回退与辅助文字缩放；尊重系统字体 |
 | A13 | I | 单一主题、深浅色生成架构 | Plasma、Aurorae、Kvantum 和配色采用共享源/生成路径，保留原有安装接口 | 该范围仅为源码统一；色彩语义归 D16/D17，具体控件差距归各自任务 |
-| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 569 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行、面板内容边距、登录/锁屏共用时钟和头像参数、数字时钟飞出面板几何、开始菜单弹出菜单几何、Snap Layouts 两种预览共享参数、Alt+Tab 小圆角参数，以及跨 Digital Clock、开始菜单、快捷设置和锁屏的 WinUI 通用圆角与菜单最小行高已统一；日历紧凑时钟、搜索筛选/分类、托盘隐藏项/快捷设置组、登录用户切换及快捷设置滑块按钮继续接入同一 ControlCornerRadius；Start 上下文菜单/视图菜单与锁屏电源菜单共用 WinUI 菜单最小行高；任务栏窗口预览关闭按钮接入 ControlCornerRadius；登录与锁屏无密码 Sign in 按钮共用 loginButtonRadius；Login 与 LockScreen 电源菜单共用 OverlayCornerRadius；壁纸包 4 个文件经哈希核对无重复；静态核对 source-map 物化、常规/NixOS/组件安装及打包入口；安装包不依赖源码链接 | 继续核对非字节相同的重复语义实现；新 clone/安装/打包未执行验证；参数真实性归 A02/A08 |
+| A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 569 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行、面板内容边距、登录/锁屏共用时钟和头像参数、数字时钟飞出面板几何、开始菜单弹出菜单几何、Snap Layouts 两种预览共享参数、Alt+Tab 小圆角参数，以及跨 Digital Clock、开始菜单、快捷设置和锁屏的 WinUI 通用圆角与菜单最小行高已统一；日历紧凑时钟、搜索筛选/分类、托盘隐藏项/快捷设置组、登录用户切换及快捷设置滑块按钮继续接入同一 ControlCornerRadius；Start 上下文菜单/视图菜单与锁屏电源菜单共用 WinUI 菜单最小行高；任务栏窗口预览关闭按钮接入 ControlCornerRadius；登录与锁屏无密码 Sign in 按钮共用 loginButtonRadius；Login 与 LockScreen 电源菜单共用 OverlayCornerRadius；Start/Search 快捷搜索与 All Apps 分类卡片共用独立 cardSurfaceRadius；Start 列表悬停/焦点背景及平面操作按钮改用 ControlCornerRadius；Alt+Tab 卡片与小圆角共用 cardSurfaceRadius/ControlCornerRadius，并保留原 UI 缩放；壁纸包 4 个文件经哈希核对无重复；静态核对 source-map 物化、常规/NixOS/组件安装及打包入口；安装包不依赖源码链接 | 继续核对非字节相同的重复语义实现；新 clone/安装/打包未执行验证；参数真实性归 A02/A08 |
 
 <a name="block-02"></a>
 
@@ -549,3 +549,9 @@ Clipboard 页签、Start 字母索引磁贴、系统位置快捷按钮和 Search
 - 2026-11-28 登录与锁屏电源菜单半径统一：基于 80acbf25612f，LockScreen 原生电源菜单从独立 6px 圆角改为读取 `LockMetrics.menuRadius`，与 Login 电源菜单共用 26H2 `OverlayCornerRadius=8`。依据 `CommonStyles.xbf` 中 `DefaultMenuFlyoutPresenterStyle` 对该资源的实际引用。菜单内容、尺寸、锚点和交互不变；未运行构建、测试、CI、打包或实机验收。
 
 - 2026-11-28 A14 部署与资源审计：检查 testing 的 5,851 个跟踪文件及精确 SHA 重复组，未发现 icons/Plasma SVG atlas 之外的重复 QML、JS、Python 或 C++ 文件。壁纸包共 4 个文件，哈希无重复。静态核对 `materialize-modules.py`、普通安装、NixOS 安装、独立组件安装及完整 ZIP 生成入口，均有对应的源码准备/映射检查或归档物化步骤。发现 3 组 Plasma SVG atlas 文件跨 solid/translucent 目录字节相同，留在既有 SVG 资源统一工作块，本项不修改。未执行新 clone、安装、打包、构建或测试。
+
+- 2026-11-28 Start/Search 卡片参数统一：基于 dc477f735d9e，SearchHome 快捷搜索容器、All Apps 分类卡片和分类展开面板共用 `ControlMetrics.cardSurfaceRadius`。该 8px 参数保留现有显示，不与数值相同但语义不同的 `OverlayCornerRadius` 混用。为三类消费者增加对象标识与 QML 一致性断言；source-map 已有的 Start package 输出覆盖 SearchHome 子树，无需新增映射或部署副本。未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 Start 控件圆角统一：基于 628c51e70641，Start 列表项悬停背景、焦点边框及 AToolButton 从依赖 `Kirigami.Units.smallSpacing` 改为读取 `ControlMetrics.controlCornerRadius`，避免控件圆角随 KDE 间距设置漂移。保留列表高度、内边距、焦点状态和拖放指示线；增加 QML 断言覆盖三个圆角消费者。未运行测试、构建、CI、打包或实机验收。
+
+- 2026-11-28 Alt+Tab 公共圆角接入：基于 82d9d50aac78，窗口切换器卡片半径改为 `ControlMetrics.cardSurfaceRadius`，关闭按钮与预览遮罩的小圆角改为 `ControlMetrics.controlCornerRadius`，继续乘以原有 `unit`，不改变现有 UI/DPI 缩放关系。将公共指标映射到 Alt+Tab 唯一包路径，并补充对应参数断言。未改变卡片尺寸、排布、焦点环宽度或缩略图行为；未运行测试、构建、CI、打包或实机验收。
