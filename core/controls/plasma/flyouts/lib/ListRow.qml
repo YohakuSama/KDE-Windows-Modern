@@ -41,13 +41,22 @@ Item {
         border.color: row.accent
 
         Rectangle {
-            anchors.left: parent.left
+            anchors.left: row.LayoutMirroring.enabled ? undefined : parent.left
+            anchors.right: row.LayoutMirroring.enabled ? parent.right : undefined
             anchors.verticalCenter: parent.verticalCenter
-            width: 3
-            height: Math.min(18, parent.height - 8)
-            radius: 1.5
+            width: ControlMetrics.listSelectionPillWidth
+            height: rowMouse.containsPress
+                ? Math.min(ControlMetrics.listSelectionPillPressedHeight, parent.height - 8)
+                : Math.min(ControlMetrics.listSelectionPillHeight, parent.height - 8)
+            radius: width / 2
             visible: row.selected
             color: row.accent
+            Behavior on height {
+                NumberAnimation {
+                    duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.controlFastDuration : 0
+                    easing.type: Easing.OutQuad
+                }
+            }
         }
 
         Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }

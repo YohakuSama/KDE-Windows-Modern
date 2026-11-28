@@ -28,12 +28,17 @@ Rectangle {
                            Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
 
     radius: ControlMetrics.controlCornerRadius
+    opacity: item.enabled ? 1.0 : 0.4
     color: {
         var hover = Qt.rgba(Kirigami.Theme.textColor.r,
                             Kirigami.Theme.textColor.g,
                             Kirigami.Theme.textColor.b, Theme.buttonHoverOpacity);
+        var pressedFill = Qt.rgba(Kirigami.Theme.textColor.r,
+                                  Kirigami.Theme.textColor.g,
+                                  Kirigami.Theme.textColor.b, 0.12);
         if (flat) {
-            return (mouseItem.containsMouse || item.activeFocus)
+            return mouseItem.containsPress ? pressedFill
+                   : (mouseItem.containsMouse || item.activeFocus)
                    ? Qt.rgba(Kirigami.Theme.textColor.r,
                               Kirigami.Theme.textColor.g,
                               Kirigami.Theme.textColor.b, Theme.buttonFlatHoverOpacity)
@@ -41,7 +46,8 @@ Rectangle {
                               Kirigami.Theme.textColor.g,
                               Kirigami.Theme.textColor.b, Theme.buttonFlatBackgroundOpacity);
         }
-        return (mouseItem.containsMouse || item.activeFocus) ? hover : Kirigami.Theme.backgroundColor;
+        return mouseItem.containsPress ? pressedFill
+               : (mouseItem.containsMouse || item.activeFocus) ? hover : Kirigami.Theme.backgroundColor;
     }
 
     Behavior on color { ColorAnimation { duration: ControlMetrics.microInteractionDuration } }
@@ -67,16 +73,16 @@ Rectangle {
 
     signal clicked
 
-    activeFocusOnTab: true
-    Keys.onSpacePressed: item.clicked()
-    Keys.onReturnPressed: item.clicked()
-    Keys.onEnterPressed: item.clicked()
+    activeFocusOnTab: item.enabled
+    Keys.onSpacePressed: if (item.enabled) item.clicked()
+    Keys.onReturnPressed: if (item.enabled) item.clicked()
+    Keys.onEnterPressed: if (item.enabled) item.clicked()
 
     // A button for screen readers too ("All apps", "Back"): it was exposed
     // as a plain label, which cannot be pressed.
     Accessible.role: Accessible.Button
     Accessible.name: lb.text
-    Accessible.onPressAction: item.clicked()
+    Accessible.onPressAction: if (item.enabled) item.clicked()
 
     RowLayout {
         id: row
@@ -109,9 +115,10 @@ Rectangle {
 
     MouseArea {
         id: mouseItem
+        enabled: item.enabled
         hoverEnabled: true
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: item.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: item.clicked()
     }
 }

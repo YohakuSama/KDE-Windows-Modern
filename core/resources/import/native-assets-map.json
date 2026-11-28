@@ -303,7 +303,9 @@
     "e964": "apps/hwinfo apps/hwinfo-symbolic devices/hwinfo devices/hwinfo-symbolic",
     "e70a": "apps/preferences-desktop-tablet apps/preferences-desktop-tablet-symbolic categories/preferences-desktop-tablet categories/preferences-desktop-tablet-symbolic devices/tablet devices/tablet-symbolic",
     "e9ca": "status/temperature-normal status/temperature-normal-symbolic",
-    "e968": "apps/preferences-system-network-sharing apps/preferences-system-network-sharing-symbolic categories/preferences-system-network-sharing categories/preferences-system-network-sharing-symbolic"
+    "e968": "apps/preferences-system-network-sharing apps/preferences-system-network-sharing-symbolic categories/preferences-system-network-sharing categories/preferences-system-network-sharing-symbolic",
+    "e8a7": "actions/wm-show-more-options-symbolic",
+    "ecc8": "actions/wm-context-new-symbolic"
   },
   "wallpapers": [
     [
@@ -491,6 +493,7 @@
     "e898",
     "e8a3",
     "e8a5",
+    "e8a7",
     "e8af",
     "e8b1",
     "e8d2",
@@ -519,6 +522,7 @@
     "ec4f",
     "ec50",
     "ecaa",
+    "ecc8",
     "ed1a",
     "eda2",
     "eea0",

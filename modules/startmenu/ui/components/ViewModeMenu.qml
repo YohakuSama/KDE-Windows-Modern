@@ -43,8 +43,9 @@ QQC2.Popup {
         anchorItem = button;
         const gap = Metrics.popupAnchorGap;
         const p = button.mapToItem(parent, 0, 0);
+        const alignedX = button.LayoutMirroring.enabled ? p.x : p.x + button.width - width;
         x = Math.max(Metrics.popupEdgeInset,
-            Math.min(p.x + button.width - width, parent.width - width - Metrics.popupEdgeInset));
+            Math.min(alignedX, parent.width - width - Metrics.popupEdgeInset));
         const below = p.y + button.height + gap;
         const above = p.y - height - gap;
         y = below + height <= parent.height - Metrics.popupEdgeInset
@@ -117,9 +118,9 @@ QQC2.Popup {
             }
             background: Rectangle {
                 radius: Metrics.menuRowRadius
-                color: entry.hovered || (entry.ListView.isCurrentItem && list.activeFocus)
-                    ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
-                    : "transparent"
+                color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                    Kirigami.Theme.textColor.b, entry.down ? 0.12
+                        : entry.hovered || (entry.ListView.isCurrentItem && list.activeFocus) ? 0.08 : 0)
             }
             onClicked: menu.choose(mode)
         }

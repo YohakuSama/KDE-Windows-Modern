@@ -838,7 +838,22 @@ Widgets tooltip margins use a separate uniform-frame API and are not
 claimed to match the asymmetric WinUI padding. The TextBox padding and
 font-role references are recorded; native system font preferences and the
 existing Qt RTL implementation are retained until their consumer mapping
-is confirmed.
+is confirmed. The Plasma `widgets/lineedit.svg` source now corrects its four
+invalid lowercase `ColorScheme-text` classes to `ColorScheme-Text` and aligns
+its base content margins to `DefaultTextBoxStyle`'s `TextControlThemePadding`
+(`10/5/6/6`); `widgets/menubaritem.svg` and `appearance-packages.py` supply the
+previously missing `.ColorScheme-Text` stylesheet rule for both modes. Shared
+scrollbars (`FluentScrollBar.qml` and Kvantum `scroll_min_extent`) use the
+30px `ScrollBarVerticalThumbMinHeight` baseline with `83ms`/`167ms` opacity and
+width transitions (`ScrollBarOpacityChangeDuration` / `ScrollBarExpandDuration`),
+and `ListRow.qml` uses the 3px × `16px → 10px` selection pill with RTL edge
+mirroring. For the desktop background context menu (`C01`), `FileExplorerExtensions.dll`
+and `Microsoft.WindowsTerminal` (`OpenTerminalHere`) establish the verb order,
+conditional `Next desktop background`/`Undo`/`Redo` rows, `KTerminalLauncherJob`-backed
+`Open in Terminal`, preserved `KNewFileMenu` template icons, RTL `QMenu`
+padding/icon mirroring, and optional `shell-assets/context-menu/{dark,light}/*.svg`
+two-tone rendering with live `QPalette::Highlight` accent substitution and
+mapped `SegoeIcons.ttf` (`U+ECC8`, `U+E8A7`, `U+E756`) fallbacks.
 
 The optional system greeter previously installed only the compatibility
 icon theme. Its explicit NativeGlyph and private shell-artwork readers

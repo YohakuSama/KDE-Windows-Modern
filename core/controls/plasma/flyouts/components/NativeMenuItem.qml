@@ -41,7 +41,7 @@ PlasmaComponents3.MenuItem {
             font: control.font
             elide: Text.ElideRight
             visible: control.text.length > 0
-            horizontalAlignment: Text.AlignLeft
+            horizontalAlignment: control.mirrored ? Text.AlignRight : Text.AlignLeft
             verticalAlignment: Text.AlignVCenter
         }
     }

@@ -282,11 +282,13 @@ Lib.DetailPage {
                                 font: Kirigami.Theme.smallFont
                             }
 
-                            TextField {
+                            PlasmaComponents3.TextField {
                                 id: pwField
                                 Layout.fillWidth: true
+                                Layout.minimumHeight: ControlMetrics.menuItemMinimumHeight
                                 echoMode: delegate.showPassword ? TextInput.Normal : TextInput.Password
-                                rightPadding: passwordButton.width + 4
+                                leftPadding: mirrored ? passwordButton.width + 4 : 10
+                                rightPadding: mirrored ? 10 : passwordButton.width + 4
                                 text: delegate.password
                                 onTextEdited: delegate.password = text
                                 font: Kirigami.Theme.defaultFont
@@ -303,7 +305,9 @@ Lib.DetailPage {
                                 NativeToolButton {
                                     id: passwordButton
                                     nativeRole: delegate.showPassword ? "view-visible" : "view-hidden"
-                                    anchors.right: parent.right
+                                    anchors.left: pwField.mirrored ? parent.left : undefined
+                                    anchors.right: pwField.mirrored ? undefined : parent.right
+                                    anchors.leftMargin: 2
                                     anchors.rightMargin: 2
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: nativeIcon.length > 0 ? TrayMetrics.detailActionButtonHeight : implicitWidth

@@ -56,6 +56,7 @@ LIGHT_WIDGET_COLORS = {
     "background": {b"#2C2C2C": b"#F9F9F9", b"#3F3F3F": b"#E5E5E5"},
     "branding": {b"#FFFFFF": b"#eceff4", **LIGHT_ACCENT},
     "menubaritem": {
+        b"#FFFFFF": b"#31363b",
         b"#3D3D3D": b"#eff0f1", b"#2C2C2C": b"#eff0f1",
         b"#4A4A4A": b"#93cee9", b"#60CDFF": b"#3daee9",
     },

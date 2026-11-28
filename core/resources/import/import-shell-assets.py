@@ -26,6 +26,31 @@ SEARCH_DIR = CORE + "/StartMenu/Assets/SearchIcons"
 PRI_PATH = "SystemResources/Windows.UI.SettingsAppThreshold/Windows.UI.SettingsAppThreshold.pri"
 TASKVIEW_NAMES = tuple("Files/SystemSettings/Assets/Taskview_" + theme.title() + ".svg"
                        for theme in ("light", "dark"))
+CONTEXT_MENU_DIR = (
+    "SystemApps/MicrosoftWindows.Client.FileExp_cw5n1h2txyewy/"
+    "FileExplorerExtensions/Assets/images/contrast-standard"
+)
+CONTEXT_MENU_SVGS = (
+    "View.svg",
+    "SortBy.svg",
+    "windows.refresh.svg",
+    "windows.paste.svg",
+    "windows.pasteshortcut.svg",
+    "windows.undo.svg",
+    "windows.redo.svg",
+    "windows.newitem.svg",
+    "newfolder.svg",
+    "DisplaySettings.svg",
+    "Personalize.svg",
+    "expandtoclassic.svg",
+    "windows.nextdesktopimage.svg",
+    "windows.iconsize.large.svg",
+    "windows.iconsize.medium.svg",
+    "windows.iconsize.smallicon.svg",
+    "windows.autoarrange.svg",
+    "windows.aligngrid.svg",
+    "windows.showdesktop.svg",
+)
 BATTERY_CODES = (set(range(0xf8d0, 0xf8ed)) | set(range(0xf849, 0xf852)))
 MAX_FILE_BYTES = 128 * 1024 * 1024
 
@@ -162,6 +187,24 @@ def default_account_artwork(root):
     return None
 
 
+def context_menu_artwork(root):
+    """Export optional FileExplorerExtensions contrast-standard context-menu SVGs."""
+    base = local_file(root, CONTEXT_MENU_DIR)
+    if base is None or not base.is_dir():
+        return
+    for mode, folder_name in (("dark", "theme-dark"), ("light", "theme-light")):
+        theme_dir = local_file(root, f"{CONTEXT_MENU_DIR}/{folder_name}")
+        if theme_dir is None or not theme_dir.is_dir():
+            continue
+        for name in CONTEXT_MENU_SVGS:
+            svg_path = local_file(root, f"{CONTEXT_MENU_DIR}/{folder_name}/{name}")
+            if svg_path is None:
+                continue
+            svg_bytes = read_original(root, svg_path)
+            validate_svg(svg_bytes)
+            yield f"context-menu/{mode}/{name}", svg_bytes, svg_path, f"contrast-standard/{folder_name}"
+
+
 def collect(source):
     root = source.resolve(strict=True)
     windows = local_file(root, "Windows")
@@ -220,6 +263,9 @@ def collect(source):
             path, data, suffix = portrait
             write("account/default" + suffix, data, path, "default-account-picture",
                   data, source_root=volume_root)
+
+    for name, svg, svg_path, resource in context_menu_artwork(root):
+        write(name, svg, svg_path, resource, svg)
 
     return outputs, sources
 

@@ -186,7 +186,7 @@
     <path
        id="use1459-9"
        d="m 24.60625,25.135416 c 0.879474,0 1.5875,-0.708024 1.5875,-1.5875 h -1.5875 z"
-       class="ColorScheme-text"
+       class="ColorScheme-Text"
        fill="currentColor"
        style="opacity:0.01" />
     <use
@@ -242,7 +242,7 @@
     <path
        id="path1499-6"
        d="m 24.60625,25.135416 c 0.879474,0 1.5875,-0.708024 1.5875,-1.5875 h -1.5875 z"
-       class="ColorScheme-text"
+       class="ColorScheme-Text"
        fill="currentColor"
        style="opacity:0.01" />
     <use
@@ -477,7 +477,7 @@
      style="fill:#4e9a06;fill-opacity:1;fill-rule:nonzero;stroke:none"
      id="base-hint-top-margin"
      width="2"
-     height="6"
+     height="5"
      x="34"
      y="8.9999971" />
   <rect
@@ -493,7 +493,7 @@
      y="17.999998"
      x="18"
      height="1.9999999"
-     width="6"
+     width="10"
      id="base-hint-left-margin"
      style="fill:#4e9a06;fill-opacity:1;fill-rule:nonzero;stroke:none" />
   <rect
@@ -628,7 +628,7 @@
     <path
        id="use1459"
        d="m 24.60625,25.135416 c 0.879474,0 1.5875,-0.708024 1.5875,-1.5875 h -1.5875 z"
-       class="ColorScheme-text"
+       class="ColorScheme-Text"
        fill="currentColor"
        style="opacity:0.01" />
     <use
@@ -740,7 +740,7 @@
     <path
        id="path1499"
        d="m 24.60625,25.135416 c 0.879474,0 1.5875,-0.708024 1.5875,-1.5875 h -1.5875 z"
-       class="ColorScheme-text"
+       class="ColorScheme-Text"
        fill="currentColor"
        style="opacity:0.01" />
     <use

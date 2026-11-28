@@ -3,18 +3,25 @@
 #include "panelpopuphost.h"
 #include "shellappearancemonitor.h"
 #include "shellshortcutrouter.h"
-#include <KConfigGroup>
+#include <KAuthorized>
 #include <KConfig>
+#include <KConfigGroup>
 #include <KPluginFactory>
+#include <KService>
+#include <KTerminalLauncherJob>
 #include <Plasma/Containment>
 #include <Plasma/ContainmentActions>
 #include <Plasma/Corona>
 #include <Plasma/PluginLoader>
 #include <QApplication>
 #include <QDebug>
+#include <QDir>
 #include <QEvent>
-#include <QPalette>
+#include <QFileInfo>
 #include <QMetaObject>
+#include <QPalette>
+#include <QStandardPaths>
+#include <QUrl>
 #include <memory>
 
 class NativeDesktopMenu final : public Plasma::ContainmentActions
@@ -23,7 +30,9 @@ class NativeDesktopMenu final : public Plasma::ContainmentActions
 public:
     NativeDesktopMenu(QObject *parent, const QVariantList &args)
         : Plasma::ContainmentActions(parent, args)
+        , m_openTerminal(this)
     {
+        connect(&m_openTerminal, &QAction::triggered, this, [this] { launchDesktopTerminal(); });
         if (qApp) qApp->installEventFilter(this);
     }
     ~NativeDesktopMenu() override
@@ -86,7 +95,8 @@ public:
             }
             if (refresh && undo) break;
         }
-        return m_layout.build(stock, refresh, desktop->internalAction(QStringLiteral("configure")), undo);
+        return m_layout.build(stock, refresh, desktop->internalAction(QStringLiteral("configure")),
+                              undo, terminalAvailable() ? &m_openTerminal : nullptr);
     }
 protected:
     bool eventFilter(QObject *object, QEvent *event) override
@@ -110,8 +120,54 @@ protected:
         return Plasma::ContainmentActions::eventFilter(object, event);
     }
 private:
+    bool terminalAvailable() const
+    {
+        if (!KAuthorized::authorizeAction(QStringLiteral("shell_access"))) return false;
+        const KConfig globalConfig(QStringLiteral("kdeglobals"), KConfig::CascadeConfig);
+        const KConfigGroup general(&globalConfig, QStringLiteral("General"));
+        const QString serviceId = general.readEntry("TerminalService", QString()).trimmed();
+        if (!serviceId.isEmpty() && KService::serviceByStorageId(serviceId)) return true;
+        const QString configured = general.readEntry("TerminalApplication", QStringLiteral("konsole")).trimmed();
+        if (!configured.isEmpty()) {
+            const QString binary = QFileInfo(configured).isExecutable()
+                ? configured
+                : configured.section(QLatin1Char(' '), 0, 0);
+            if (!binary.isEmpty()
+                && (QFileInfo(binary).isExecutable() || !QStandardPaths::findExecutable(binary).isEmpty())) {
+                return true;
+            }
+        }
+        return !QStandardPaths::findExecutable(QStringLiteral("konsole")).isEmpty()
+            || !QStandardPaths::findExecutable(QStringLiteral("xterm")).isEmpty();
+    }
+    QString desktopWorkingDirectory() const
+    {
+        if (auto *desktop = containment()) {
+            const QString rawUrl = desktop->config().group(QStringLiteral("General"))
+                                       .readEntry("url", QStringLiteral("desktop:/")).trimmed();
+            if (!rawUrl.isEmpty() && rawUrl != QLatin1String("desktop:/")) {
+                const QUrl url = QUrl::fromUserInput(rawUrl);
+                if (url.isLocalFile()) {
+                    const QString local = url.toLocalFile();
+                    if (QFileInfo(local).isDir()) return local;
+                }
+            }
+        }
+        const QString desktopDir = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+        if (!desktopDir.isEmpty() && QFileInfo(desktopDir).isDir()) return desktopDir;
+        return QDir::homePath();
+    }
+    void launchDesktopTerminal() const
+    {
+        if (!terminalAvailable()) return;
+        auto *job = new KTerminalLauncherJob(QString());
+        job->setWorkingDirectory(desktopWorkingDirectory());
+        job->start();
+    }
+
     std::unique_ptr<Plasma::ContainmentActions> m_native;
     DesktopMenuLayout m_layout;
+    QAction m_openTerminal;
 };
 
 K_PLUGIN_CLASS_WITH_JSON(NativeDesktopMenu, "metadata.json")

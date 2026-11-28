@@ -643,6 +643,8 @@
   "Refresh": "刷新",
   "Paste": "粘贴",
   "Personalize": "个性化",
+  "Open in Terminal": "在终端中打开",
+  "Next desktop background": "下一个桌面背景",
   "@action:button taskbar search box\u0004Search": "搜索",
   "@info:placeholder taskbar search box\u0004Search": "搜索",
   "@action:button taskbar button\u0004Search": "搜索",

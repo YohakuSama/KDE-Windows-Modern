@@ -42,7 +42,7 @@ QQC2.Switch {
             readonly property bool engaged: control.enabled && control.down
             readonly property bool enlarged: control.enabled && (control.hovered || control.down)
             readonly property int stateDuration: Kirigami.Units.shortDuration <= 0 ? 0
-                : control.enabled ? 83 : 250
+                : control.enabled ? ControlMetrics.controlFasterDuration : ControlMetrics.controlNormalDuration
             property real sidePosition: control.visualPosition
             width: engaged ? 17 : enlarged ? 14 : 12
             height: enlarged ? 14 : 12

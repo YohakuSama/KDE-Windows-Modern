@@ -264,3 +264,10 @@ class SystemIconRolesTests(unittest.TestCase):
                 ("f5b0", "actions/wm-media-play-symbolic"),
                 ("f8ae", "actions/wm-media-pause-symbolic")):
             self.assertIn(path, MAPPING["icons"][glyph].split())
+
+    def test_desktop_context_menu_original_roles(self):
+        for glyph, path in (
+                ("e8a7", "actions/wm-show-more-options-symbolic"),
+                ("ecc8", "actions/wm-context-new-symbolic")):
+            self.assertIn(path, MAPPING["icons"][glyph].split())
+            self.assertIn(glyph, MAPPING["optional_glyphs"])

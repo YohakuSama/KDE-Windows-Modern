@@ -1,5 +1,9 @@
 <svg width="112" height="34" version="1.1" viewBox="0 0 112 34" xmlns="http://www.w3.org/2000/svg">
- <style id="current-color-scheme" type="text/css">.ColorScheme-ButtonBackground {
+ <style id="current-color-scheme" type="text/css">.ColorScheme-Text {
+            color:#FFFFFF;
+            stop-color:#31363b;
+        }
+        .ColorScheme-ButtonBackground {
             color:#3D3D3D;
             stop-color:#2C2C2C;
         }

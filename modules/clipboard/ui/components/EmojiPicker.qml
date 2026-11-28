@@ -7,6 +7,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.emoji as Emoji
 import "../lib" as Lib
+import "../js/controlMetrics.js" as ControlMetrics
 
 ColumnLayout {
     id: picker
@@ -61,6 +62,7 @@ ColumnLayout {
         id: searchField
         objectName: "wmEmojiSearch"
         Layout.fillWidth: true
+        Layout.minimumHeight: ControlMetrics.menuItemMinimumHeight
         Layout.leftMargin: 16
         Layout.rightMargin: 16
         Layout.topMargin: 8
@@ -72,6 +74,7 @@ ColumnLayout {
         id: categoryBox
         visible: picker.mode === "emoji"
         Layout.fillWidth: true
+        Layout.minimumHeight: ControlMetrics.menuItemMinimumHeight
         Layout.leftMargin: 16
         Layout.rightMargin: 16
         model: [i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "All")].concat(emojis.categories.map(category =>
@@ -82,6 +85,7 @@ ColumnLayout {
         id: localCategory
         visible: picker.mode === "kaomoji" || picker.mode === "symbols"
         Layout.fillWidth: true
+        Layout.minimumHeight: ControlMetrics.menuItemMinimumHeight
         Layout.leftMargin: 16
         Layout.rightMargin: 16
         model: [i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "All")].concat((picker.groups || []).map(group => group.name))
@@ -102,15 +106,26 @@ ColumnLayout {
         cellHeight: 48
         reuseItems: true
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: Lib.FluentScrollBar {}
+        HoverHandler { id: emojiHover }
+        QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
+            viewportHovered: emojiHover.hovered
+            scrolling: emojiGrid.moving || emojiGrid.flicking
+        }
         delegate: QQC2.ItemDelegate {
             id: emojiCell
             required property var model
             width: emojiGrid.cellWidth
             height: emojiGrid.cellHeight
             text: model.display
+            background: Rectangle {
+                radius: ControlMetrics.controlCornerRadius
+                color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                    Kirigami.Theme.textColor.b, emojiCell.down ? 0.12
+                        : emojiCell.hovered || emojiCell.activeFocus ? 0.08 : 0)
+            }
             contentItem: Text {
                 text: emojiCell.text
+                color: Kirigami.Theme.textColor
                 font.family: "emoji"
                 font.pixelSize: 26
                 textFormat: Text.PlainText
@@ -126,6 +141,7 @@ ColumnLayout {
             anchors.centerIn: parent
             visible: emojiGrid.count === 0
             text: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "No matching emoji found")
+            textFormat: Text.PlainText
         }
     }
 
@@ -143,13 +159,23 @@ ColumnLayout {
         cellWidth: width / Math.max(1, Math.floor(width / (picker.mode === "kaomoji" ? 132 : 44)))
         cellHeight: picker.mode === "kaomoji" ? 44 : 40
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: Lib.FluentScrollBar {}
+        HoverHandler { id: localHover }
+        QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
+            viewportHovered: localHover.hovered
+            scrolling: localGrid.moving || localGrid.flicking
+        }
         delegate: QQC2.ItemDelegate {
             id: textCell
             required property string modelData
             width: localGrid.cellWidth
             height: localGrid.cellHeight
             text: modelData
+            background: Rectangle {
+                radius: ControlMetrics.controlCornerRadius
+                color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
+                    Kirigami.Theme.textColor.b, textCell.down ? 0.12
+                        : textCell.hovered || textCell.activeFocus ? 0.08 : 0)
+            }
             contentItem: Text {
                 text: textCell.text
                 color: Kirigami.Theme.textColor
@@ -164,6 +190,7 @@ ColumnLayout {
             anchors.centerIn: parent
             visible: localGrid.count === 0
             text: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "No results")
+            textFormat: Text.PlainText
         }
     }
 }

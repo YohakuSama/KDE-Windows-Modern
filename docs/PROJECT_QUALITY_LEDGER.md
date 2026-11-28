@@ -22,7 +22,7 @@
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | [01 全局视觉规范与布局](#block-01) | P0 | 1 | 5 | 0 | 0 | 6 | 16.7% |
 | [02 原始图标与光标](#block-02) | P0 | 1 | 4 | 0 | 0 | 5 | 20.0% |
-| [03 基础控件与菜单](#block-03) | P0 | 0 | 4 | 0 | 0 | 4 | 0.0% |
+| [03 基础控件与菜单](#block-03) | P0 | 1 | 3 | 0 | 0 | 4 | 25.0% |
 | [04 动态配色与材质](#block-04) | P0 | 9 | 11 | 3 | 1 | 24 | 37.5% |
 | [05 任务栏与系统托盘](#block-05) | P1 | 0 | 7 | 0 | 0 | 7 | 0.0% |
 | [06 开始菜单与搜索](#block-06) | P1 | 0 | 7 | 0 | 0 | 7 | 0.0% |
@@ -31,7 +31,7 @@
 | [09 锁屏、登录及启动外观](#block-09) | P1 | 0 | 4 | 0 | 0 | 4 | 0.0% |
 | [10 文件管理器与终端](#block-10) | P2 | 0 | 3 | 1 | 1 | 5 | 0.0% |
 | [11 安装、兼容性与性能](#block-11) | P2（稳定性问题即时处理） | 2 | 5 | 0 | 1 | 8 | 25.0% |
-| 总计 | | 13 | 72 | 5 | 4 | 94 | 13.8% |
+| 总计 | | 14 | 71 | 5 | 4 | 94 | 14.9% |
 
 实机验收：94 项 Pending，0 项有本基线对应的 Pass 记录。新增 4 项架构任务，Q11/V04 从 U 更新为 P；未因文档整理增加 I。任务范围仍可随有证据的遗漏补充，不宣称已列尽全部目标差距。已有功能和源码优势见各行现状，不将 P 项解释为从零开发。
 
@@ -100,10 +100,10 @@
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
 | --- | --- | --- | --- | --- | --- |
-| A10 | P | 基础控件外观与各状态 | Plasma/Kvantum 已共享部分滑块、按钮尺寸；部分控件半径/轨道等有原版证据 | 分控件核对按钮、开关、复选/单选、进度条、滑块、焦点、禁用、选中与按压状态；不能从通用字典推断所有消费者 |
-| A11 | P | 文本输入、列表、滚动、下拉及标签页 | Start 搜索适应字体和 RTL，三套滚动条副本已有同步 | 完成输入框、列表/树、标签、组合框、滚动条的高度、边距、状态、键盘/触控板与动画审查 |
-| A12 | P | 菜单、弹窗、提示框公共样式 | 共享 FrameSVG 模板；按钮和 tooltip padding 已按部分原版资源调整 | 审查菜单项、分隔、复选、子菜单、阴影、圆角、弹窗间距、提示框和原生 Qt 控件限制；材质算法归 M01–M04 |
-| C01 | P | 桌面右键菜单与更多选项 | 已有原生 containment-actions 插件和真实 KDE 动作分组 | 逐项比对一级/二级动作、顺序、禁用、快捷键和多语言；不改变文件操作后端，Dolphin 文件菜单归 E04 |
+| A10 | P | 基础控件外观与各状态 | Plasma/Kvantum 已共享滑块与按钮基础几何；`controlMetrics.js` 接入 `21h1_themeresources.xbf` 的 `83ms/167ms/250ms` 动画常量并统一 `FluentSwitch`；补齐 Start `AToolButton` 按压填充与 `0.4` 禁用态及键盘/无障碍守卫、`ViewModeMenu` 按压态与 RTL 锚点、`FlyoutButton` RTL 文本对齐，全量扫描 165 个 Plasma atlas SVG 修正无效 CSS 类 | 继续分渲染器（Plasma KSVG / Kvantum / 原生 Qt）核对复选/单选、进度条、按钮高程边框渐变及焦点环细节，待实机验收 |
+| A11 | P | 文本输入、列表、滚动、下拉及标签页 | 修正 `widgets/lineedit.svg` 四处无效小写 `ColorScheme-text` 并对齐 `DefaultTextBoxStyle` `TextControlThemePadding = 10/5/6/6`；`NetworkPage` Wi-Fi 密码框改用原生 `PlasmaComponents3.TextField`（32px 最小高度、2px 焦点底边强调色条与 RTL 内边距镜像）；`FluentScrollBar` 与 Kvantum 统一 `ScrollBarVerticalThumbMinHeight = 30` 及 `83ms/167ms` 透明度/展宽动画，补齐 `ShutdownMenu` 与 `EmojiPicker` 悬停/滚动联动；`ListRow` 接入 `3×16→10px` 选中竖条与 RTL 镜像，`ClipboardPage` 标签页补齐按压态与 `18→12px` 指示条收缩 | 核对通用 Kvantum/Qt 树视图、可编辑/不可编辑 `QComboBox` 弹层、多行输入框与触控板惯性滚动实机表现 |
+| A12 | P | 菜单、弹窗、提示框公共样式 | 共享 FrameSVG 模板与 `9/6/9/8` tooltip padding；补齐 `widgets/menubaritem.svg` 与 `appearance-packages.py` 缺失的 `.ColorScheme-Text` 深浅色规则，补齐 `NativeMenuItem` 与桌面右键菜单 `QMenu` 的 RTL 文本/图标边距镜像 | 核对原生 Qt 应用子菜单阴影/圆角、复选菜单项指示器与异步 tooltip 定位限制；材质算法归 M01–M04 |
+| C01 | I | 桌面右键菜单与更多选项 | 基于 26H2 `FileExplorerExtensions.dll` 与 `Microsoft.WindowsTerminal`（`OpenTerminalHere`）对齐完整动词分组与顺序（查看、排序方式、刷新、条件性下一个桌面背景｜粘贴｜条件性撤销/重做、新建｜显示设置、个性化｜经 `KTerminalLauncherJob` 接入在终端中打开｜显示更多选项）；保留真实 `QAction` 实例、快捷键与动态可用性，保留 `KNewFileMenu` 新建子菜单真实文件夹/模板图标；支持可选 `shell-assets/context-menu/{dark,light}/*.svg` 双色图标与实时 `QPalette::Highlight` 强调色替换、`SegoeIcons.ttf`（`ECC8`/`E8A7`/`E756` 等）回退、`1.0–2.0x` 多 DPR 禁用态半透明图标、中英文翻译与 RTL 样式镜像 | 桌面与文件夹模式、终端启动及多语言/RTL 菜单交互待维护者实机验收；Dolphin 文件菜单归 E04 |
 
 <a name="block-04"></a>
 

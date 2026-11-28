@@ -111,6 +111,22 @@ class ShellAssetTests(unittest.TestCase):
             with self.subTest(payload=payload), self.assertRaises(ValueError):
                 assets.validate_svg(payload)
 
+    def test_optional_context_menu_svgs(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertEqual(list(assets.context_menu_artwork(root)), [])
+            base = root / assets.CONTEXT_MENU_DIR
+            (base / "theme-dark").mkdir(parents=True)
+            (base / "theme-light").mkdir(parents=True)
+            sample = b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#4CC2FF" d="M0 0h8v8H0z"/></svg>'
+            (base / "theme-dark/expandtoclassic.svg").write_bytes(sample)
+            (base / "theme-light/expandtoclassic.svg").write_bytes(sample.replace(b"#4CC2FF", b"#0078D4"))
+            found = list(assets.context_menu_artwork(root))
+            self.assertEqual([item[0] for item in found], [
+                "context-menu/dark/expandtoclassic.svg",
+                "context-menu/light/expandtoclassic.svg",
+            ])
+
     def test_output_is_atomic_and_preserves_prior_import_on_failure(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

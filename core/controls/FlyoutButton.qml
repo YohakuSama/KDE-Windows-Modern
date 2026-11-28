@@ -94,7 +94,7 @@ PlasmaComponents.Button {
             font: control.font
             color: control.selected ? colors.accentText : colors.text
             horizontalAlignment: control.display === PlasmaComponents.AbstractButton.TextBesideIcon
-                && content.iconShown ? Text.AlignLeft : Text.AlignHCenter
+                && content.iconShown ? (control.mirrored ? Text.AlignRight : Text.AlignLeft) : Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }

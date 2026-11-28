@@ -106,15 +106,22 @@ ColumnLayout {
                 background: Rectangle {
                     radius: ControlMetrics.controlCornerRadius
                     readonly property color fg: Kirigami.Theme.textColor
-                    color: tab.hovered || tab.activeFocus ? Qt.rgba(fg.r, fg.g, fg.b, 0.08) : "transparent"
+                    color: tab.down ? Qt.rgba(fg.r, fg.g, fg.b, 0.12)
+                        : tab.hovered || tab.activeFocus ? Qt.rgba(fg.r, fg.g, fg.b, 0.08) : "transparent"
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
-                        width: 18
+                        width: tab.down ? 12 : 18
                         height: 3
                         radius: 1.5
                         visible: tab.selected
                         color: page.accent
+                        Behavior on width {
+                            NumberAnimation {
+                                duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.controlFastDuration : 0
+                                easing.type: Easing.OutQuad
+                            }
+                        }
                     }
                 }
                 QQC2.ToolTip.text: text

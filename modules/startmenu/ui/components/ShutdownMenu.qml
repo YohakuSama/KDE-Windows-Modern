@@ -9,6 +9,7 @@
  ***************************************************************************/
 
 import QtQuick
+import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 
 import org.kde.plasma.components as PlasmaComponents3
@@ -94,6 +95,11 @@ Item {
             clip: true
             interactive: contentHeight > height
             boundsBehavior: Flickable.StopAtBounds
+            HoverHandler { id: powerHover }
+            QQC2.ScrollBar.vertical: StartScrollBar {
+                viewportHovered: powerHover.hovered
+                scrolling: powerScroll.moving || powerScroll.flicking
+            }
 
             Column {
                 id: powerColumn

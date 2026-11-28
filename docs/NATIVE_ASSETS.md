@@ -120,6 +120,7 @@ named MUN icon.
 | Search idle, light taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOffLight.scale-100.png` | Preserve the original PNG and its state. |
 | Search activation, dark taskbar | `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/StartMenu/Assets/SearchIcons/SearchIconOnDark.scale-100.png` | Preserve the original PNG and its state. The matching dark idle PNG is optional; use the existing Segoe E721 role when absent. |
 | Task View, light/dark variants | `SystemResources/Windows.UI.SettingsAppThreshold/Windows.UI.SettingsAppThreshold.pri` | Extract `Files/SystemSettings/Assets/Taskview_Light.svg` and `Taskview_Dark.svg` from the PRI. The names indicate the taskbar background variant, not the glyph brightness. |
+| Desktop context-menu two-tone icons (optional) | `SystemApps/MicrosoftWindows.Client.FileExp_cw5n1h2txyewy/FileExplorerExtensions/Assets/images/contrast-standard/theme-{dark,light}/*.svg` | Preserve the 19 `16×16` two-tone SVGs under `shell-assets/context-menu/{dark,light}/` when `Client.FileExp` is present; fall back to mapped `SegoeIcons.ttf` roles (`U+ECC8`, `U+E8A7`, `U+E756`, etc.) when absent. |
 
 The battery font is named `SysBatt Fluent Icons`. The verified state
 codepoints include outline U+F8D0 (discharging), U+F8DB (charging),

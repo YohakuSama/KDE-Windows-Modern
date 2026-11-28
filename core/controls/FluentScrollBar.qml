@@ -13,7 +13,8 @@ QQC2.ScrollBar {
     padding: 0
     hoverEnabled: true
     stepSize: Math.max(0.01, size * 0.9)
-    minimumSize: height > 0 ? Math.min(1, 32 / height) : 0
+    // WinUI 21h1_themeresources.xbf: ScrollBarVerticalThumbMinHeight = 30.
+    minimumSize: height > 0 ? Math.min(1, 30 / height) : 0
     readonly property int thumbWidth: pointer.hovered || pressed ? 6 : 2
     property bool viewportHovered: false
     property bool scrolling: false
@@ -32,7 +33,7 @@ QQC2.ScrollBar {
     background: Item {}
     contentItem: Item {
         implicitWidth: 16
-        implicitHeight: 32
+        implicitHeight: 30
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
@@ -42,11 +43,13 @@ QQC2.ScrollBar {
             objectName: "wmFluentScrollThumb"
             color: bar.thumbBrush
             opacity: bar.indicatorVisible ? 1 : 0
+            // WinUI 21h1_themeresources.xbf: ScrollBarOpacityChangeDuration (83ms)
+            // and ScrollBarExpandDuration (167ms).
             Behavior on opacity {
-                NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 100 : 0 }
+                NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 83 : 0 }
             }
             Behavior on width {
-                NumberAnimation { duration: Kirigami.Units.shortDuration }
+                NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 167 : 0 }
             }
         }
     }
