@@ -1875,11 +1875,23 @@
           "SuggestionsIconSize_Large": {
             "value": 32,
             "xbf_offset": 51642
+          },
+          "AllAppsCategoryManyChildItemSize": {
+            "value": 34,
+            "xbf_offset": 51705
+          },
+          "OpenKeySpline": {
+            "value": "0,0 0,1",
+            "xbf_offset": 79831
+          },
+          "CloseKeySpline": {
+            "value": "1,0 1,1",
+            "xbf_offset": 79871
           }
         }
       },
       "review_notes": [
-        "Keyed root dictionary reference at XBF offset 47483 points to node section 4. StartMenuExperienceHost AppxManifest activates StartDocked.dll native XAML classes (LauncherFrame, AllAppsPane, PowerOptionsView, UserTileView), while MicrosoftWindows.Client.Photon's Windows.Shell.StartMenu wsxpack (4.0.1419.0) supplies only the embedded React Native Recommended feed (Substrate/OneDrive/Edge/Teams/Promoted items). Small (642 = 33 + 6*96 + 33) and Large (834 = 33 + 8*96 + 33) XAML outer frame widths include outer padding/margins; KDE popupPosition.js retains inner content dimensions inside PlasmaCore.Dialog margins until full S01 layout reconciliation."
+        "Keyed root dictionary reference at XBF offset 47483 points to node section 4. StartMenuExperienceHost AppxManifest activates StartDocked.dll native XAML classes (LauncherFrame, AllAppsPane, PowerOptionsView, UserTileView), while MicrosoftWindows.Client.Photon's Windows.Shell.StartMenu wsxpack (4.0.1419.0) supplies only the embedded React Native Recommended feed (Substrate/OneDrive/Edge/Teams/Promoted items). Small (642 = 33 + 6*96 + 33, max height 750) and Large (834 = 33 + 8*96 + 33, max height 890, threshold 1600) XAML outer frame dimensions map to 626x734 and 818x874 inner surfaces inside KDE's 8px PlasmaCore.Dialog frame margins, with a 25px inner margin (8 + 25 = 33px outer inset)."
       ],
       "reviewed_usages": [
         {
@@ -2105,11 +2117,23 @@
           "UserAccountPictureSize": {
             "value": 32,
             "xbf_offset": 39831
+          },
+          "Metrics_AccountBadgeMenuFlyout_MaxWidth": {
+            "value": 278,
+            "xbf_offset": 39611
+          },
+          "Metrics_AllAppsGridItem_Height_Stack": {
+            "value": 40,
+            "xbf_offset": 39051
+          },
+          "Metrics_AllAppsGridHeader_Height_Stack": {
+            "value": 40,
+            "xbf_offset": 39060
           }
         }
       },
       "review_notes": [
-        "StartDocked XAML host metrics confirm the 12px launcher frame margin, 642px minimum frame width, 48x48 navigation items and 32px user account avatar slot."
+        "StartDocked XAML host metrics confirm the 12px launcher frame margin, 642px minimum frame width, 48x48 navigation items, 32px user account avatar slot, 278px account flyout maximum width and 40px All Apps stack row/header heights."
       ]
     },
     {

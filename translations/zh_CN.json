@@ -675,5 +675,9 @@
   "@action:button taskbar button\u0004Task View": "任务视图",
   "@info:tooltip\u0004Task View": "任务视图",
   "@info:tooltip\u0004Show all windows and desktops": "显示所有窗口和桌面",
-  "Search query": "搜索内容"
+  "Search query": "搜索内容",
+  "Clear search": "清除搜索",
+  "No results found for \"%1\"": "未找到“%1”的相关结果",
+  "No items to show": "没有可显示的项目",
+  "There are currently no power options available.": "当前没有可用的电源选项。"
 }

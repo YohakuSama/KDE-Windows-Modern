@@ -61,7 +61,7 @@ RowLayout {
         // Use the system font and keep a 32px minimum logical control.
         readonly property bool layoutMirrored: LayoutMirroring.enabled
         readonly property int leadingInset: 36
-        readonly property int trailingInset: 12
+        readonly property int trailingInset: clearButton.visible ? 36 : 12
         Layout.preferredHeight: Math.max(32, Math.ceil(editorMetrics.height) + topPadding + bottomPadding)
         topPadding: 4
         bottomPadding: 4
@@ -127,6 +127,45 @@ RowLayout {
             height: Math.max(0, Math.min(18, searchFieldInput.height, searchFieldInput.width - 24))
             width: height
             accented: false
+        }
+
+        Rectangle {
+            id: clearButton
+            objectName: "wmStartSearchClearButton"
+            visible: searchFieldInput.text.length > 0 && !searchBox.mirrorInPanel
+            width: 26
+            height: Math.max(20, Math.min(24, searchFieldInput.height - 6))
+            anchors.verticalCenter: searchFieldInput.verticalCenter
+            x: searchFieldInput.layoutMirrored ? 6 : Math.max(0, searchFieldInput.width - width - 6)
+            radius: ControlMetrics.controlCornerRadius
+            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b,
+                clearMouse.containsPress ? 0.12 : clearMouse.containsMouse ? 0.07 : 0)
+            Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.microInteractionDuration : 0 } }
+            Accessible.role: Accessible.Button
+            Accessible.name: i18n("Clear search")
+            Accessible.onPressAction: {
+                searchFieldInput.text = "";
+                searchBox.focusSearch();
+            }
+
+            NativeGlyph {
+                anchors.centerIn: parent
+                width: 12
+                height: 12
+                roleName: "window-close-symbolic"
+                opacity: clearMouse.containsMouse ? 1.0 : 0.72
+            }
+
+            MouseArea {
+                id: clearMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    searchFieldInput.text = "";
+                    searchBox.focusSearch();
+                }
+            }
         }
     }
 

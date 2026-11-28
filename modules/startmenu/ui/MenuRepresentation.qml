@@ -32,6 +32,7 @@ import "components"
 import "pages"
 import "code/tools.js" as Tools
 import "code/theme.js" as Theme
+import "code/startMenuMetrics.js" as StartMetrics
 import "code/popupPosition.js" as PopupPosition
 import "code/popupGeometry.js" as PopupGeometry
 import "code/panelCapabilities.js" as PanelCapabilities
@@ -99,6 +100,12 @@ Item {
 
     function toggleMenu(searchMode, searchAnchor, taskbarBox) {
         if (root.visible) {
+            if (!searchMode && root.taskbarSearchAnchor !== null) {
+                root.reset(false, null, false);
+                updatePopupAnchor();
+                root.requestActivate();
+                return;
+            }
             root.dismissFromUser();
             return;
         }
@@ -140,8 +147,21 @@ Item {
 
     // Both Search entrypoints use the same wider search layout.
     function openSearch(searchAnchor, taskbarBox) {
-        if (!root.visible) toggleMenu(true, searchAnchor, taskbarBox);
-        if (!root.visible) return;
+        if (!root.visible) {
+            toggleMenu(true, searchAnchor, taskbarBox);
+            return;
+        }
+        if (root.searching) {
+            if (taskbarBox && root.taskbarSearchBox) {
+                root.requestActivate();
+                Qt.callLater(startSearch.focusSearch);
+                return;
+            }
+            if (!taskbarBox && (root.taskbarSearchAnchor !== null || !searchAnchor)) {
+                root.dismissFromUser();
+                return;
+            }
+        }
         root.taskbarSearchAnchor = searchAnchor || null;
         root.taskbarSearchBox = !!taskbarBox;
         root.searching = true;
@@ -287,7 +307,7 @@ Item {
             LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
             LayoutMirroring.childrenInherit: true
 
-            readonly property int margin: 28
+            readonly property int margin: StartMetrics.contentSideMargin
             readonly property rect screen: Plasmoid.screenGeometry
             readonly property var surfaceSize: PopupPosition.surfaceSize(
                 Plasmoid.configuration.startMenuSize, screen, main.panelExtent, main.verticalPanel, margin, root.searching)
@@ -553,8 +573,9 @@ Item {
                             GridView {
                                 id: recentGrid
                                 Layout.fillWidth: true
-                                readonly property int recentColumns: 2
+                                readonly property int recentColumns: width >= 8 * StartMetrics.gridCellWidth ? 3 : 2
                                 Layout.preferredHeight: Math.min(2, Math.ceil(count / recentColumns)) * cellHeight
+                                layoutDirection: recentGrid.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
                                 cellWidth: Math.max(1, Math.floor(width / recentColumns))
                                 cellHeight: 48
                                 visible: rootItem.showRecentSection && count > 0
@@ -643,6 +664,15 @@ Item {
                     id: recommendedPage
                     anchors.fill: parent
                     visible: root.leftColumnState === 3
+                    opacity: visible ? 1 : 0
+                    Behavior on opacity {
+                        enabled: recommendedPage.visible
+                        NumberAnimation {
+                            duration: Kirigami.Units.shortDuration
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: StartMetrics.openSpline
+                        }
+                    }
                     sourceModel: rootItem.showRecentSection ? recentUsage : null
                     onBackRequested: root.closeRecommendations()
                     onLaunchRequested: row => {
@@ -655,6 +685,22 @@ Item {
                         const pos = recommendedPage.mapToItem(sharedContextMenu, x, y);
                         sharedContextMenu.open(actions, pos.x, pos.y, {model: recentUsage, index: row});
                     }
+                }
+
+                PlasmaComponents3.Label {
+                    objectName: "wmStartEmptyHomeLabel"
+                    anchors.centerIn: parent
+                    width: Math.max(0, parent.width - 32)
+                    visible: root.leftColumnState < 2
+                        && !rootItem.hasPinnedApps()
+                        && !(rootItem.showRecentSection && recentUsage.count > 0)
+                        && !(Plasmoid.configuration.showAllSection && sortedAppsModel.count > 0)
+                    text: i18n("No items to show")
+                    textFormat: Text.PlainText
+                    wrapMode: Text.Wrap
+                    horizontalAlignment: Text.AlignHCenter
+                    color: Kirigami.Theme.disabledTextColor
+                    font: Kirigami.Theme.defaultFont
                 }
 
                 Loader {
@@ -726,8 +772,8 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: 28
-                    anchors.rightMargin: 28
+                    anchors.leftMargin: rootItem.margin
+                    anchors.rightMargin: rootItem.margin
                     spacing: 8
 
                     PlasmaComponents3.ToolButton {

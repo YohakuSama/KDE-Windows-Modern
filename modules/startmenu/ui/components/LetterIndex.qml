@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../code/controlMetrics.js" as ControlMetrics
+import "../code/startMenuMetrics.js" as Metrics
 
 FocusScope {
     id: root
@@ -24,8 +25,20 @@ FocusScope {
     enabled: opened
     opacity: opened ? 1 : 0
     scale: opened ? 1 : 0.975
-    Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
-    Behavior on scale { NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic } }
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Kirigami.Units.shortDuration
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: root.opened ? Metrics.openSpline : Metrics.closeSpline
+        }
+    }
+    Behavior on scale {
+        NumberAnimation {
+            duration: Kirigami.Units.shortDuration
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: root.opened ? Metrics.openSpline : Metrics.closeSpline
+        }
+    }
     onOpenedChanged: if (opened) focusIndex()
 
     Rectangle {
@@ -47,14 +60,20 @@ FocusScope {
             Layout.fillWidth: true
             PlasmaComponents3.Label {
                 text: i18n("All")
+                textFormat: Text.PlainText
+                elide: Text.ElideRight
                 font.weight: Font.DemiBold
                 Layout.fillWidth: true
             }
-            PlasmaComponents3.Button {
+            AToolButton {
                 objectName: "wmStartLetterIndexBack"
                 text: i18n("Back")
+                iconName: "go-previous-symbolic"
+                mirror: true
                 flat: true
+                linkStyle: true
                 onClicked: root.backRequested()
+                Keys.onDownPressed: root.focusIndex()
             }
         }
         Item {
@@ -66,6 +85,7 @@ FocusScope {
                 anchors.centerIn: parent
                 width: Math.min(parent.width, 4 * 52)
                 height: Math.max(0, Math.min(parent.height, Math.ceil(count / 4) * cellHeight))
+                layoutDirection: grid.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
                 cellWidth: Math.max(1, width / 4)
                 cellHeight: 48
                 clip: true
@@ -88,12 +108,24 @@ FocusScope {
                         positionViewAtIndex(row, GridView.Contain);
                     }
                 }
+                function jumpEdge(last) {
+                    const idx = last
+                        ? root.letters.map(item => !!item.available).lastIndexOf(true)
+                        : root.letters.findIndex(item => !!item.available);
+                    if (idx >= 0) {
+                        currentIndex = idx;
+                        positionViewAtIndex(idx, GridView.Contain);
+                    }
+                }
                 Keys.onPressed: event => {
+                    const hStep = grid.LayoutMirroring.enabled ? -1 : 1;
                     switch (event.key) {
-                    case Qt.Key_Left: move(-1); break;
-                    case Qt.Key_Right: move(1); break;
+                    case Qt.Key_Left: move(-hStep); break;
+                    case Qt.Key_Right: move(hStep); break;
                     case Qt.Key_Up: move(-4); break;
                     case Qt.Key_Down: move(4); break;
+                    case Qt.Key_Home: jumpEdge(false); break;
+                    case Qt.Key_End: jumpEdge(true); break;
                     case Qt.Key_Return:
                     case Qt.Key_Enter:
                     case Qt.Key_Space: if (!event.isAutoRepeat) activateRow(currentIndex); break;

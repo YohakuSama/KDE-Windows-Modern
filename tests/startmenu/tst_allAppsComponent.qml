@@ -87,6 +87,9 @@ TestCase {
         tryCompare(page.allAppsList, "columns", 1);
         page.gridMode = true;
         tryCompare(page.allAppsList, "columns", 6);
+        page.scrollbarEdgeOffset = 21;
+        page.width = 768;
+        tryCompare(page.allAppsList, "columns", 8);
         page.flatModel = 12;
         tryCompare(page.allAppsList, "count", 12);
         page.showAllSection = false;

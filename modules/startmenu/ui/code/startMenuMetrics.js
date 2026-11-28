@@ -37,13 +37,29 @@ const viewModeMenuIconGap = 8;
 const viewModeMenuRightReserve = 24;
 
 const shutdownMenuMinimumWidth = 168;
+const accountMenuMaximumWidth = 278;
 const shutdownMenuTextWidthPadding = 64;
 const shutdownMenuAnchorGap = 8;
 
-// StartResources.xbf: PinnedListItemHeight, AllAppsIconSize_Large and AllAppsIconSize_Medium.
+// Dialog background.svg has 8px outer margins per side; 8 + 25 = 33px matches
+// TaskbarSearchPageThemeResources.xbf StartCP3SearchBoxMargin [33, 17, 33, 10]
+// and leaves exact 576 = 6x96 (Small) / 768 = 8x96 (Large) content columns.
+const frameOuterInset = 8;
+const contentSideMargin = 25;
+
+// StartResources.xbf & TileStyles.xbf verified metrics.
+const gridCellWidth = 96;
 const gridCellHeight = 84;
 const gridAppIconSize = 32;
 const listAppIconSize = 24;
+const listRowHeight = 40;
+const sectionHeadingHeight = 40;
+const categoryCardExtent = 156;
+const categoryClusterSlotSize = 34;
+
+// StartResources.xbf @79831/@79871: OpenKeySpline = "0,0 0,1", CloseKeySpline = "1,0 1,1".
+const openSpline = [0, 0, 0, 1, 1, 1];
+const closeSpline = [1, 0, 1, 1, 1, 1];
 
 // Shared interior scroll-rail reserve when the scrollbar stays inside the content column.
 const contentScrollGutter = 18;

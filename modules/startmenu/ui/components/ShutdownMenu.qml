@@ -12,6 +12,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 
+import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.sessions
 import org.kde.kirigami as Kirigami
@@ -26,8 +27,10 @@ Item {
     property Item visualParent
     property bool accountMode: false
     readonly property bool opened: popup.visible
-    readonly property var options: [settingsOption, lockOption, switchOption, logoutOption,
+    readonly property var options: [settingsOption, lockOption, logoutOption, switchOption,
                                     sleepOption, hibernateOption, shutdownOption, rebootOption]
+    readonly property bool hasAnyPowerOption: sleepOption.visible || hibernateOption.visible
+        || shutdownOption.visible || rebootOption.visible
 
     signal closed
     signal accountSettingsRequested
@@ -79,7 +82,9 @@ Item {
         visible: false
         z: 100
 
-        readonly property real panelWidth: Math.max(0, Math.min(root.width - 2 * Metrics.popupEdgeInset,
+        readonly property real panelWidth: Math.max(0, Math.min(
+            root.width - 2 * Metrics.popupEdgeInset,
+            Metrics.accountMenuMaximumWidth,
             Math.max(Metrics.shutdownMenuMinimumWidth, ...root.options.filter(option => option && option.visible)
                 .map(option => footerMetrics.advanceWidth(option.label) + Metrics.shutdownMenuTextWidthPadding))))
         width: panelWidth
@@ -120,25 +125,12 @@ Item {
 
             PowerOption {
                 id: lockOption
-                visible: !root.accountMode && sessionManager.canLock
+                visible: root.accountMode && sessionManager.canLock
                 iconSource: "system-lock-screen-symbolic"
                 label: i18n("Lock")
                 optionEnabled: sessionManager.canLock
                 onActivated: {
                     sessionManager.lock();
-                    root.finishAction();
-                }
-                onNavigationRequested: direction => root.moveFocus(direction)
-            }
-
-            PowerOption {
-                id: switchOption
-                visible: root.accountMode
-                iconSource: "system-switch-user-symbolic"
-                label: i18n("Switch user")
-                optionEnabled: sessionManager.canSwitchUser && sessionManager.canLock
-                onActivated: {
-                    sessionManager.switchUser();
                     root.finishAction();
                 }
                 onNavigationRequested: direction => root.moveFocus(direction)
@@ -158,8 +150,21 @@ Item {
             }
 
             PowerOption {
+                id: switchOption
+                visible: root.accountMode
+                iconSource: "system-switch-user-symbolic"
+                label: i18n("Switch user")
+                optionEnabled: sessionManager.canSwitchUser && sessionManager.canLock
+                onActivated: {
+                    sessionManager.switchUser();
+                    root.finishAction();
+                }
+                onNavigationRequested: direction => root.moveFocus(direction)
+            }
+
+            PowerOption {
                 id: sleepOption
-                visible: !root.accountMode && sessionManager.canSuspend
+                visible: !root.accountMode && sessionManager.canSuspend && Plasmoid.configuration.showSleepButton
                 iconSource: "system-suspend-symbolic"
                 label: i18n("Sleep")
                 optionEnabled: sessionManager.canSuspend
@@ -187,7 +192,7 @@ Item {
 
             PowerOption {
                 id: shutdownOption
-                visible: !root.accountMode
+                visible: !root.accountMode && sessionManager.canShutdown
                 iconSource: "system-shutdown-symbolic"
                 label: i18n("Shut down")
                 optionEnabled: sessionManager.canShutdown
@@ -200,7 +205,7 @@ Item {
 
             PowerOption {
                 id: rebootOption
-                visible: !root.accountMode
+                visible: !root.accountMode && sessionManager.canReboot && Plasmoid.configuration.showRestartButton
                 iconSource: "system-reboot-symbolic"
                 label: i18n("Restart")
                 optionEnabled: sessionManager.canReboot
@@ -209,6 +214,17 @@ Item {
                     root.finishAction();
                 }
                 onNavigationRequested: direction => root.moveFocus(direction)
+            }
+
+            PlasmaComponents3.Label {
+                visible: !root.accountMode && !root.hasAnyPowerOption
+                width: powerColumn.width
+                padding: Metrics.menuTextInset
+                text: i18n("There are currently no power options available.")
+                textFormat: Text.PlainText
+                wrapMode: Text.Wrap
+                color: Kirigami.Theme.disabledTextColor
+                font: footerMetrics.font
             }
             }
         }

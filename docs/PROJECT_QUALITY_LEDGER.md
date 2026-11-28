@@ -25,13 +25,13 @@
 | [03 基础控件与菜单](#block-03) | P0 | 1 | 3 | 0 | 0 | 4 | 25.0% |
 | [04 动态配色与材质](#block-04) | P0 | 11 | 10 | 3 | 0 | 24 | 45.8% |
 | [05 任务栏与系统托盘](#block-05) | P1 | 1 | 6 | 0 | 0 | 7 | 14.3% |
-| [06 开始菜单与搜索](#block-06) | P1 | 0 | 7 | 0 | 0 | 7 | 0.0% |
+| [06 开始菜单与搜索](#block-06) | P1 | 4 | 3 | 0 | 0 | 7 | 57.1% |
 | [07 快捷中心与通知中心](#block-07) | P1 | 0 | 15 | 0 | 0 | 15 | 0.0% |
 | [08 窗口管理与动画](#block-08) | P1 | 0 | 7 | 1 | 1 | 9 | 0.0% |
 | [09 锁屏、登录及启动外观](#block-09) | P1 | 0 | 4 | 0 | 0 | 4 | 0.0% |
 | [10 文件管理器与终端](#block-10) | P2 | 0 | 3 | 1 | 1 | 5 | 0.0% |
 | [11 安装、兼容性与性能](#block-11) | P2（稳定性问题即时处理） | 2 | 5 | 0 | 1 | 8 | 25.0% |
-| 总计 | | 17 | 69 | 5 | 3 | 94 | 18.1% |
+| 总计 | | 21 | 65 | 5 | 3 | 94 | 22.3% |
 
 实机验收：94 项 Pending，0 项有本基线对应的 Pass 记录。新增 4 项架构任务，Q11/V04 从 U 更新为 P；未因文档整理增加 I。任务范围仍可随有证据的遗漏补充，不宣称已列尽全部目标差距。已有功能和源码优势见各行现状，不将 P 项解释为从零开发。
 
@@ -68,7 +68,7 @@
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
 | --- | --- | --- | --- | --- | --- |
 | A01 | P | PRI/XBF 与 Photon 资源定位 | 19 个原始文件及 1481 个有效 XBF 哈希与本地 26H2 镜像逐字节一致；已解码 22 个核心 XBF 字典并记录偏移（新增 `StartDocked/TileStyles`、`TaskbarSearchPageThemeResources`、`ActionCenter/Styling/Styles.Win11`、`JumpViewUI/RefreshedStyles`、`LockApp/StandardStyles` 及 `21h1_themeresources` 字号/控件/滚动条/菜单/动画常量）；已由 `StartMenuExperienceHost` 与 `Client.Photon` 清单及 `wsxpacks.json` 证实原生 XAML（`StartDocked` + `Client.Core/StartMenu`）承载 Start 外框、固定网格、全部应用、底栏与电源菜单，Photon `Windows.Shell.StartMenu` 仅为嵌入 XAML 的 Recommended 推荐流扩展包 | 按下游具体功能项（S01/S04、Q12、T03、W03/W07、E04）继续解析非字典模板节点流与运行时视觉状态切换；静态资源未覆盖的运行时条件分支标 REF |
-| A02 | P | 原版布局参数 | 登录凭据宽度 296、快捷中心 376/400/48、搜索框圆角 16、托盘内容边距 4、弹窗与任务栏标准间距 12（`TaskbarMargin=12` / `Metrics_LauncherFrame_Margin=12`）、通用圆角 4/8 与菜单最小行高 32 已由原版 XBF 验证并接入；已核明 Start 原版外框 `642 = 33 + 6×96 + 33` / `834 = 33 + 8×96 + 33` 与 KDE 内层内容尺寸边界 | 结合各功能工作块逐消费者核对 Start/Search 外框与内层边距、通知中心宽度、跳转列表与基础控件剩余局部常量，保留并记录宿主适配 |
+| A02 | P | 原版布局参数 | 登录凭据宽度 296、快捷中心 376/400/48、搜索框圆角 16、托盘内容边距 4、弹窗与任务栏标准间距 12（`TaskbarMargin=12` / `Metrics_LauncherFrame_Margin=12`）、通用圆角 4/8、菜单最小行高 32、跳转列表 294，以及 Start 原版外框 `642×750` / `834×890`（`1600` 阈值、`626×734` / `818×874` 内层表面、`8+25=33px` 外边距、`96×84` 网格、`156×156` 分类卡与 `278px` 账户菜单上限）均已由原版 XBF 验证并接入 | 结合剩余功能工作块核对通知中心宽度及窗口/文件管理器局部常量，保留并记录宿主适配 |
 | A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何与屏幕可用区裁剪共用 `popupGeometry.js`；补齐 `TaskbarButton`、`TaskbarGlyph`、`AccountAvatar`、`MediaControls`、Start 头像与任务栏预览封面的非零整数 DPR `sourceSize` 守卫；补齐 Login 电源菜单、剪贴板更多菜单、Start 列表/搜索建议/分类折叠箭头/底栏位置栏/`AToolButton`/视图选择器、RTL 顶边对齐任务栏 Search 锚点、锁屏用户切换、`MoreSettingsLink`、`NativeButtonContent` 及 Alt+Tab 卡片的 RTL 镜像，以及 `RunDialog` 窄高屏与多语言按钮宽度自适应 | 下游具体模块的窄屏/多屏与复杂布局细节随各自任务收口，100%/125%/150%/200%、多显示器与 RTL 实机表现待维护者验收 |
 | A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量；移除锁屏 `MediaControls` 硬编码 `"Segoe UI"` 并补齐 `NoPasswordUnlock`/`SearchHome` 的系统默认字体绑定；为锁屏用户切换、无密码登录按钮、快捷中心标题/亮度/蓝牙状态、Start 菜单/字母索引/分组标题与搜索建议/快捷词补齐 `Text.PlainText` 与省略截断，`RunDialog`、`MoreSettingsLink` 与 `SearchHome` 接入系统字号下限扩展以避免辅助大字号裁切 | 各模块局部字重、行高、基线与原生 Kvantum/Plasma 控件排版细节随 03–10 工作块逐项核对，中英文/CJK IME 与辅助缩放待实机验收 |
 | A13 | I | 单一主题、深浅色生成架构 | Plasma、Aurorae、Kvantum 和配色采用共享源/生成路径，保留原有安装接口 | 该范围仅为源码统一；色彩语义归 D16/D17，具体控件差距归各自任务 |
@@ -168,13 +168,13 @@
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
 | --- | --- | --- | --- | --- | --- |
-| S01 | P | 开始菜单整体布局 | popupPosition.js 仍使用 560×640 / 768×720 的内容尺寸和 1440 的自动阈值；已证实原生 XAML（`StartDocked` + `Client.Core/StartMenu`）承载主外框（`642 = 33 + 6×96 + 33` / `834 = 33 + 8×96 + 33`）及 96×84 固定项，Photon 仅承载推荐流 | 对齐 KDE 弹窗内层内容尺寸与原版外框/内边距/阈值关系，再核对列数、网格、标题、底栏、定位及自适应 |
-| S02 | P | 固定、推荐、全部应用和分类 | 已有实际 Kicker 模型、固定/最近/全部及分类视图 | 核对所有受支持原版视图、固定/拖放、文件夹或分组、最近项、空状态及偏好；不添加假服务 |
-| S03 | P | 字母索引、分类切换和键盘 | 已有字母索引、非拉丁分组与键盘处理 | 对比索引展开/收起、跳转、排序、动画、焦点和无障碍 |
-| S04 | P | 搜索首页、结果及页面几何 | popupPosition.js 中 Search 为 680×640 / 928×720，共用高度及屏幕限制，宽度基于旧比例测量 | 核对原版布局、分类、查询切换、输入和空状态；素材归 A05，入口/状态协议归 V07/V08 |
-| S05 | P | 搜索真实功能和输入 | 本地 Kicker/Milou 模型及原生启动行为存在 | 核对本地应用/文件/设置、筛选、最近项、IME、键盘与清除动作；不实现在线推广 |
-| S06 | P | 账号、电源和上下文菜单 | 有真实账号和电源动作，私有原版头像选择与兼容路径 | 核对所有状态、切换、锁定、注销、休眠、关机及菜单层次；系统认证归 L01/L02 |
-| S07 | P | 开始/搜索动效和自身状态 | 已有打开/关闭和状态切换 | 核对逐状态动画、Win 键、Win+S、搜索进入/退出及焦点恢复；跨弹窗关系归 Q15 |
+| S01 | I | 开始菜单整体布局 | 按 26H2 `StartResources.xbf`（`Metrics_SmallStartWidth/MaxHeight = 642×750`、`Metrics_LargeStartWidth/MaxHeight = 834×890`、`Metrics_LargeStartScreenWidthThreshold = 1600`、`PinnedListItemWidth/Height = 96×84`）与 `StartCP3SearchBoxMargin = 33` 对齐 `popupPosition.js` 与 `MenuRepresentation.qml`（扣除 8px KSVG 外框后内层 `626×734` / `818×874`、`margin = 25` 即 `8+25=33px` 外边距，精确生成 `576 = 6×96` 小号与 `768 = 8×96` 大号内容列、`56+8=64px` 底栏及全空分区提示） | 多显示器、极端窄高屏裁剪与 100%/125%/150%/200% 实机排版待维护者验收 |
+| S02 | P | 固定、推荐、全部应用和分类 | 补齐大号 Start 8 列固定/网格视图（`>= 768px`）与 3 列首页推荐流、小号 6 列固定与 2 列推荐流；按 `StartResources.xbf` 与 `TileStyles.xbf` 对齐 `156×156` 分类卡片（`AllAppsCategoryCardWidth/Height = 156`）与 `40px` 列表行/分组头高度（`Metrics_AllAppsGridItem/Header_Height_Stack = 40`），保留 `>= 3` 应用建类阈值与真实 Kicker 模型，不添加假服务 | KDE Kicker `FavoritesModel` 为扁平收藏列表，不支持原版固定区自定义应用文件夹合并（All Apps Category 视图独立提供分类文件夹）；拖拽重排与各视图切换待实机验收 |
+| S03 | I | 字母索引、分类切换和键盘 | 保留 ICU 拼音/假名/谚文与 `#`/`world` 分组；补齐 `AllAppsPage` 分类卡片网格与分类展开网格的键盘方向键导航（`keyNavigationEnabled`）及顶行回退焦点链，修复 `AlphabeticalAppsView` 与 `LetterIndex` 的 RTL 左右方向键镜像，补齐 `LetterIndex` `Home`/`End` 首尾可用字母跳转、`OpenKeySpline`/`CloseKeySpline` 缩放曲线，以及分类/字母索引统一的 `AToolButton` 返回按钮 | 读屏器播报与多语种输入环境下实机交互待维护者验收 |
+| S04 | P | 搜索首页、结果及页面几何 | `popupPosition.js` 同步将 Search 调整为与 Start 等高且保持约 `1.21×` 外框宽度的 `758×734` / `992×874` 内层尺寸（对应 `774×750` / `1008×890` 外框）；`SearchHome` 统一接入 `StartScrollBar`，`SearchPage` 补齐筛选胶囊 RTL 排布、`24px` 非整数缩放结果图标与 150ms 防闪烁无结果提示（`wmStartSearchNoResults`） | `SearchUx.Core.dll` 宽版 Search 运行时目标宽度尚待同缩放截图实机标定；素材归 A05，入口/状态协议归 V07/V08 |
+| S05 | I | 搜索真实功能和输入 | 复用 Kicker/Milou 本地应用、文件、系统设置、电源动作、计算器与单位换算及 `SearchHome` 本地建议/快捷搜索/常用应用（无在线推广）；为 `StartSearchField` 新增尾随清除按钮（`wmStartSearchClearButton`，动态扩展 `trailingInset` 并支持 RTL 镜像与清除后保焦），保留 CJK IME 预编辑临时显影与完整键盘导航 | 不同输入法框架（Fcitx5/IBus）与本地索引实机响应待维护者验收 |
+| S06 | I | 账号、电源和上下文菜单 | 按 `TileStyles.xbf`（`Metrics_AccountBadgeMenuFlyout_MaxWidth = 278`）、`UserTileView.xbf` 与 `PowerOptionsView.xbf` 对齐底栏弹层宽度上限与菜单职责分离：账户菜单承载账户设置、锁定、注销与切换用户，电源菜单承载睡眠（遵循 `showSleepButton`）、休眠、关机、重启（遵循 `showRestartButton`）及无可用电源项提示（`ShutdownNoChoicesTextBlock`）；`ContextMenu` 补齐多 Activity `subActions` 子菜单展开与勾选项显示 | 真实会话锁定、切换用户、睡眠/休眠与多 Activity 收藏待维护者实机验收；系统认证归 L01/L02 |
+| S07 | P | 开始/搜索动效和自身状态 | 内部子页与弹层（`RecommendedPage`、`AllAppsPage` 分类浮层、`LetterIndex`）接入 `StartResources.xbf` 的 `OpenKeySpline = 0,0 0,1` / `CloseKeySpline = 1,0 1,1` 并遵循系统减弱动画门控；补齐任务栏 Search 打开时点击 Start 原地切换回 Start 首页、点击任务栏 Search 图标/胶囊或 `Win+S` 对称收起、点击任务栏完整搜索框保持焦点等状态机切换 | 外层 `PlasmaCore.Dialog` 打开/收起位移动画受 KWin/Plasma 宿主控制，与原版 `StartSlideDistance` 的实机观感及焦点恢复待维护者验收；跨弹窗关系归 Q15 |
 
 <a name="block-07"></a>
 

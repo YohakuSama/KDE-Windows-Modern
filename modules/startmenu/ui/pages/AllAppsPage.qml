@@ -234,8 +234,10 @@ Item {
         readonly property int scrollGutter: allAppsPage.scrollbarEdgeOffset > 0 ? 0 : Metrics.contentScrollGutter
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
         readonly property int columns: contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2
+        layoutDirection: allAppsListView.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
+        keyNavigationEnabled: true
         cellWidth: Math.max(1, Math.floor(contentColumnWidth / columns))
-        cellHeight: cellWidth + 24
+        cellHeight: Math.min(Metrics.categoryCardExtent, Math.max(1, cellWidth - 16)) + 36
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
         model: allAppsPage.categoryMode && allAppsPage.showAllSection ? categoryCatalog.rows : []
@@ -290,10 +292,10 @@ Item {
                     id: surface
                     objectName: "wmStartCategoryCardSurface"
                     anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.margins: 8
-                    height: Math.max(1, width)
+                    anchors.topMargin: 8
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.max(1, Math.min(Metrics.categoryCardExtent, parent.width - 16))
+                    height: width
                     radius: ControlMetrics.cardSurfaceRadius
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, cardHover.hovered
@@ -510,11 +512,19 @@ Item {
             scale: allAppsPage.inCategory ? 1 : 0.94
             Behavior on opacity {
                 enabled: allAppsPage.inCategory
-                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+                NumberAnimation {
+                    duration: Kirigami.Units.shortDuration
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Metrics.openSpline
+                }
             }
             Behavior on scale {
                 enabled: allAppsPage.inCategory
-                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+                NumberAnimation {
+                    duration: Kirigami.Units.shortDuration
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Metrics.openSpline
+                }
             }
             readonly property bool dark: {
                 const c = Kirigami.Theme.backgroundColor;
@@ -533,16 +543,26 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 40
-                    PlasmaComponents3.Button {
+                    AToolButton {
                         id: categoryBack
                         objectName: "wmStartCategoryBack"
                         text: i18n("Back")
+                        iconName: "go-previous-symbolic"
+                        mirror: true
                         flat: true
+                        linkStyle: true
                         onClicked: allAppsPage.backToCategories()
+                        Keys.onDownPressed: {
+                            if (categoryGrid.count > 0) {
+                                if (categoryGrid.currentIndex < 0) categoryGrid.currentIndex = 0;
+                                categoryGrid.forceActiveFocus();
+                            }
+                        }
                     }
                     PlasmaComponents3.Label {
                         Layout.fillWidth: true
                         text: allAppsPage.categoryTitle
+                        textFormat: Text.PlainText
                         font.pixelSize: 20
                         font.weight: Font.DemiBold
                         horizontalAlignment: Text.AlignHCenter
@@ -559,6 +579,9 @@ Item {
                     clip: true
                     model: allAppsPage.categoryChild || []
                     readonly property int columns: categorySurface.appColumns
+                    layoutDirection: categoryGrid.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
+                    keyNavigationEnabled: true
+                    highlightMoveDuration: 0
                     cellWidth: Math.max(1, Math.floor((width - 12) / columns))
                     cellHeight: categorySurface.appCellHeight
                     boundsBehavior: Flickable.StopAtBounds
@@ -608,6 +631,12 @@ Item {
                     Keys.onReturnPressed: activateRow(currentIndex)
                     Keys.onEnterPressed: activateRow(currentIndex)
                     Keys.onEscapePressed: allAppsPage.backToCategories()
+                    Keys.onUpPressed: event => {
+                        if (currentIndex < columns) {
+                            event.accepted = true;
+                            categoryBack.forceActiveFocus();
+                        }
+                    }
                 }
             }
         }

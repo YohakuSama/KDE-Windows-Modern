@@ -36,9 +36,13 @@ geometry and interaction constraints, not a second progress inventory.
 
 ## Start and Search
 
-- Start keeps its 560x640 or 768x720 logical content size. Search uses a
-  wider 680x640 or 928x720 logical content size, clamped to the same work
-  area. Both use the same frame, height and vertical placement. Search home
+- Start uses a 626x734 (Small) or 818x874 (Large, auto at screen width >= 1600)
+  logical inner content surface inside the 8px KSVG dialog frame, matching
+  Windows 11 26H2 `StartResources.xbf` outer extents (642x750 and 834x890),
+  with a 25px inner margin (8 + 25 = 33px outer inset, leaving exact 576 = 6x96
+  and 768 = 8x96 content columns). Search uses a wider 758x734 or 992x874
+  logical inner content size (774x750 or 1008x890 outer), clamped to the same
+  work area. Both use the same frame, height and vertical placement. Search home
   and results keep one stable Search size; entering or leaving Search may
   change the width. Narrow screens may clamp both to the same width.
 - The full taskbar Search box opens at its own anchor with no duplicate

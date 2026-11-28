@@ -50,6 +50,8 @@ FocusScope {
             PlasmaComponents3.Label {
                 Layout.fillWidth: true
                 text: i18n("Recommended")
+                textFormat: Text.PlainText
+                elide: Text.ElideRight
                 font.weight: Font.DemiBold
             }
             AToolButton {

@@ -10,23 +10,24 @@ TestCase {
 
     function test_distinctSurfaceWidths_data() {
         return [
-            {tag: "small", mode: 1, w: 1920, h: 1080, panel: 48, vertical: false, ew: 560, sw: 680, eh: 640},
-            {tag: "large", mode: 2, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, sw: 928, eh: 720},
-            {tag: "auto 100 percent", mode: 0, w: 1920, h: 1080, panel: 48, vertical: false, ew: 768, sw: 928, eh: 720},
-            {tag: "auto 125 percent", mode: 0, w: 1536, h: 864, panel: 48, vertical: false, ew: 768, sw: 928, eh: 720},
-            {tag: "auto 150 percent", mode: 0, w: 1280, h: 720, panel: 48, vertical: false, ew: 560, sw: 680, eh: 616},
-            {tag: "auto 200 percent", mode: 0, w: 960, h: 540, panel: 48, vertical: false, ew: 560, sw: 680, eh: 436},
-            {tag: "partially clamped", mode: 1, w: 700, h: 720, panel: 48, vertical: false, ew: 560, sw: 644, eh: 616},
-            {tag: "side panel", mode: 2, w: 800, h: 720, panel: 48, vertical: true, ew: 696, sw: 696, eh: 664},
-            {tag: "small display", mode: 1, w: 480, h: 360, panel: 48, vertical: false, ew: 424, sw: 424, eh: 256},
-            {tag: "unmapped output", mode: 0, w: 0, h: 0, panel: 0, vertical: false, ew: 560, sw: 680, eh: 640}
+            {tag: "small", mode: 1, w: 1920, h: 1080, panel: 48, vertical: false, ew: 626, sw: 758, eh: 734},
+            {tag: "large", mode: 2, w: 1920, h: 1080, panel: 48, vertical: false, ew: 818, sw: 992, eh: 874},
+            {tag: "auto 100 percent", mode: 0, w: 1920, h: 1080, panel: 48, vertical: false, ew: 818, sw: 992, eh: 874},
+            {tag: "auto 2560x1600 at 150 percent", mode: 0, w: 1707, h: 1067, panel: 48, vertical: false, ew: 818, sw: 992, eh: 874},
+            {tag: "auto 125 percent", mode: 0, w: 1536, h: 864, panel: 48, vertical: false, ew: 626, sw: 758, eh: 734},
+            {tag: "auto 150 percent", mode: 0, w: 1280, h: 720, panel: 48, vertical: false, ew: 626, sw: 758, eh: 622},
+            {tag: "auto 200 percent", mode: 0, w: 960, h: 540, panel: 48, vertical: false, ew: 626, sw: 758, eh: 442},
+            {tag: "partially clamped", mode: 1, w: 720, h: 720, panel: 48, vertical: false, ew: 626, sw: 670, eh: 622},
+            {tag: "side panel", mode: 2, w: 800, h: 720, panel: 48, vertical: true, ew: 702, sw: 702, eh: 670},
+            {tag: "small display", mode: 1, w: 480, h: 360, panel: 48, vertical: false, ew: 430, sw: 430, eh: 262},
+            {tag: "unmapped output", mode: 0, w: 0, h: 0, panel: 0, vertical: false, ew: 626, sw: 758, eh: 734}
         ];
     }
 
     function test_distinctSurfaceWidths(data) {
         const screen = {x: 0, y: 0, width: data.w, height: data.h};
-        const start = PopupPosition.surfaceSize(data.mode, screen, data.panel, data.vertical, 28, false);
-        const search = PopupPosition.surfaceSize(data.mode, screen, data.panel, data.vertical, 28, true);
+        const start = PopupPosition.surfaceSize(data.mode, screen, data.panel, data.vertical, 25, false);
+        const search = PopupPosition.surfaceSize(data.mode, screen, data.panel, data.vertical, 25, true);
         compare(start.width, data.ew);
         compare(search.width, data.sw);
         compare(start.height, data.eh);
@@ -35,12 +36,12 @@ TestCase {
     }
 
     function test_unsettledSurfaceGeometry() {
-        const missing = PopupPosition.surfaceSize(0, null, 48, false, 28, false);
-        compare(missing.width, 560);
-        compare(missing.height, 640);
+        const missing = PopupPosition.surfaceSize(0, null, 48, false, 25, false);
+        compare(missing.width, 626);
+        compare(missing.height, 734);
         const invalid = PopupPosition.surfaceSize(0, {width: Infinity, height: 720}, Infinity, false, NaN, true);
-        compare(invalid.width, 680);
-        compare(invalid.height, 640);
+        compare(invalid.width, 758);
+        compare(invalid.height, 720);
     }
 
     function test_availableExtent() {

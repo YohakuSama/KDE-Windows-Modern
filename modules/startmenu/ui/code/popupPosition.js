@@ -6,12 +6,15 @@
 function surfaceSize(mode, screen, panelExtent, vertical, margin, searching) {
     const screenWidth = screen && Number.isFinite(screen.width) ? screen.width : 0;
     const screenHeight = screen && Number.isFinite(screen.height) ? screen.height : 0;
-    const large = mode === 2 || (mode === 0 && screenWidth >= 1440);
-    const startWidth = large ? 768 : 560;
-    // Owner reference: Search is about 1.21 times the Start width.
-    const searchWidth = large ? 928 : 680;
+    // StartResources.xbf: Metrics_LargeStartScreenWidthThreshold = 1600,
+    // Metrics_SmallStartWidth/MaxHeight = 642x750, Metrics_LargeStartWidth/MaxHeight = 834x890.
+    // Subtract 16px (2 * 8px KSVG dialog frame margin) for the inner rootItem surface.
+    const large = mode === 2 || (mode === 0 && screenWidth >= 1600);
+    const startWidth = large ? 818 : 626;
+    // Search retains the ~1.21x wider outer flyout (774 / 1008 outer -> 758 / 992 inner) at equal height.
+    const searchWidth = large ? 992 : 758;
     const wantedWidth = searching ? searchWidth : startWidth;
-    const wantedHeight = large ? 720 : 640;
+    const wantedHeight = large ? 874 : 734;
     const panelValue = Number(panelExtent);
     const marginValue = Number(margin);
     const panel = Number.isFinite(panelValue) ? Math.max(0, panelValue) : 0;

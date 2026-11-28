@@ -43,7 +43,26 @@ Item {
     function selectable(index) {
         const action = actions[index];
         return !!action && action.type !== "separator"
-            && action.enabled !== false && typeof action.actionId === "string";
+            && action.enabled !== false
+            && (typeof action.actionId === "string"
+                || (Array.isArray(action.subActions) && action.subActions.length > 0));
+    }
+
+    function measureAndPlace(actionList, localX, localY) {
+        actions = actionList;
+        let widest = 0;
+        let wantedHeight = 2 * Metrics.menuInset;
+        for (const action of actions) {
+            wantedHeight += action.type === "separator" ? separatorHeight : rowHeight;
+            widest = Math.max(widest, metrics.advanceWidth(action.text || "") + (action.shortcut ? metrics.advanceWidth(action.shortcut) + Metrics.contextMenuShortcutGap : 0));
+        }
+        popup.width = Math.min(width - 2 * gap, Math.max(Metrics.contextMenuMinimumWidth, Math.min(Metrics.contextMenuMaximumWidth, widest + Metrics.contextMenuWidthPadding)));
+        popup.height = Math.min(height - 2 * gap, wantedHeight);
+        popup.x = Math.max(gap, Math.min(localX, width - popup.width - gap));
+        const below = localY + Metrics.popupAnchorGap;
+        const above = localY - popup.height - Metrics.popupAnchorGap;
+        popup.y = Math.max(gap, Math.min(below + popup.height <= height - gap ? below : above,
+                                        height - popup.height - gap));
     }
 
     function step(direction) {
@@ -61,29 +80,23 @@ Item {
 
     function activate(index) {
         if (!selectable(index) || pendingAction) return;
-        pendingAction = { action: actions[index], context: context };
+        const chosen = actions[index];
+        if (Array.isArray(chosen.subActions) && chosen.subActions.length > 0) {
+            measureAndPlace(chosen.subActions, popup.x, popup.y - Metrics.popupAnchorGap);
+            list.currentIndex = -1;
+            list.forceActiveFocus();
+            return;
+        }
+        pendingAction = { action: chosen, context: context };
         popup.close();
     }
 
     function open(actionList, localX, localY, details) {
         if (!actionList || !actionList.length || opened || width <= 2 * gap || height <= 2 * gap)
             return;
-        actions = actionList;
         context = details || ({});
         pendingAction = null;
-        let widest = 0;
-        let wantedHeight = 2 * Metrics.menuInset;
-        for (const action of actions) {
-            wantedHeight += action.type === "separator" ? separatorHeight : rowHeight;
-            widest = Math.max(widest, metrics.advanceWidth(action.text || "") + (action.shortcut ? metrics.advanceWidth(action.shortcut) + Metrics.contextMenuShortcutGap : 0));
-        }
-        popup.width = Math.min(width - 2 * gap, Math.max(Metrics.contextMenuMinimumWidth, Math.min(Metrics.contextMenuMaximumWidth, widest + Metrics.contextMenuWidthPadding)));
-        popup.height = Math.min(height - 2 * gap, wantedHeight);
-        popup.x = Math.max(gap, Math.min(localX, width - popup.width - gap));
-        const below = localY + Metrics.popupAnchorGap;
-        const above = localY - popup.height - Metrics.popupAnchorGap;
-        popup.y = Math.max(gap, Math.min(below + popup.height <= height - gap ? below : above,
-                                        height - popup.height - gap));
+        measureAndPlace(actionList, localX, localY);
         popup.open();
     }
 
@@ -182,7 +195,9 @@ Item {
                             anchors.fill: parent
                             // App/runner action names are not application identity icons.
                             // Keep unknown actions text-only rather than using the theme.
-                            roleName: typeof row.modelData.icon === "string" ? row.modelData.icon : ""
+                            roleName: row.modelData.checkable
+                                ? (row.modelData.checked ? "emblem-ok-symbolic" : "")
+                                : (typeof row.modelData.icon === "string" ? row.modelData.icon : "")
                         }
                     }
                     QQC2.Label {
@@ -199,6 +214,17 @@ Item {
                         opacity: 0.65
                         font: metrics.font
                         textFormat: Text.PlainText
+                    }
+                    Item {
+                        visible: Array.isArray(row.modelData.subActions) && row.modelData.subActions.length > 0
+                        Layout.preferredWidth: 12
+                        Layout.preferredHeight: 12
+                        Layout.alignment: Qt.AlignVCenter
+                        NativeGlyph {
+                            anchors.fill: parent
+                            roleName: row.LayoutMirroring.enabled ? "go-previous-symbolic" : "go-next-symbolic"
+                            opacity: 0.7
+                        }
                     }
                 }
                 onClicked: contextMenu.activate(index)

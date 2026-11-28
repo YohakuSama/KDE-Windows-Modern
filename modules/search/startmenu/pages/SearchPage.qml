@@ -67,11 +67,32 @@ Item {
         return pointerMoved;
     }
 
+    property bool emptyStateReady: false
+    Timer {
+        id: emptyStateSettleTimer
+        interval: 150
+        repeat: false
+        onTriggered: searchPage.emptyStateReady = true
+    }
+
     Connections {
         target: resultsView
         function onQueryStringChanged() {
             searchPage.pointerMoved = false;
             searchPage.collapsedCategories = "";
+            searchPage.emptyStateReady = false;
+            if (resultsView.queryString.trim().length > 0 && resultsView.count === 0)
+                emptyStateSettleTimer.restart();
+            else
+                emptyStateSettleTimer.stop();
+        }
+        function onCountChanged() {
+            if (resultsView.count > 0) {
+                emptyStateSettleTimer.stop();
+                searchPage.emptyStateReady = false;
+            } else if (resultsView.queryString.trim().length > 0) {
+                emptyStateSettleTimer.restart();
+            }
         }
     }
 
@@ -162,6 +183,7 @@ Item {
         anchors.topMargin: Kirigami.Units.smallSpacing
         anchors.left: parent.left
         anchors.right: parent.right
+        layoutDirection: searchPage.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
         visible: searchPage.searching
         height: implicitHeight
         spacing: Kirigami.Units.smallSpacing
@@ -293,6 +315,10 @@ Item {
             radius: ControlMetrics.controlCornerRadius
             color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                 Kirigami.Theme.textColor.b, headerMouse.containsPress ? 0.12 : headerMouse.containsMouse ? 0.07 : 0)
+            Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.microInteractionDuration : 0 } }
+            Accessible.role: Accessible.Button
+            Accessible.name: section
+            Accessible.onPressAction: searchPage.toggleCollapsed(section)
 
             readonly property string category: section
 
@@ -383,8 +409,9 @@ Item {
                 spacing: Kirigami.Units.largeSpacing
 
                 Kirigami.Icon {
-                    Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-                    Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+                    Layout.preferredWidth: StartMetrics.listAppIconSize
+                    Layout.preferredHeight: StartMetrics.listAppIconSize
+                    roundToIconSize: false
                     source: resultDelegate.model.decoration || ""
                     animated: false
                 }
@@ -533,5 +560,19 @@ Item {
                 event.accepted = true;
             }
         }
+    }
+
+    PlasmaComponents3.Label {
+        id: emptyResultsLabel
+        objectName: "wmStartSearchNoResults"
+        anchors.centerIn: resultsView
+        width: Math.max(0, resultsView.width - 32)
+        visible: searchPage.emptyStateReady && resultsView.count === 0 && resultsView.queryString.trim().length > 0
+        text: i18n("No results found for \"%1\"", resultsView.queryString.trim())
+        textFormat: Text.PlainText
+        wrapMode: Text.Wrap
+        horizontalAlignment: Text.AlignHCenter
+        color: Kirigami.Theme.disabledTextColor
+        font: Kirigami.Theme.defaultFont
     }
 }

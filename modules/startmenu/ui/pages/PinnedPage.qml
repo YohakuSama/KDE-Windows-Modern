@@ -22,7 +22,7 @@ ColumnLayout {
     spacing: 8
 
     property alias favoritesList: favoritesListView
-    property int columns: width >= 430 ? 6 : (width >= 320 ? 4 : 3)
+    property int columns: width >= 8 * Metrics.gridCellWidth ? 8 : (width >= 430 ? 6 : (width >= 320 ? 4 : 3))
     readonly property bool showAllPinned: Plasmoid.configuration.showAllPinned
     readonly property int previewRows: Math.max(1, Plasmoid.configuration.numberRows)
 
@@ -99,6 +99,7 @@ ColumnLayout {
         visible: count > 0
         clip: true
         interactive: false
+        layoutDirection: favoritesListView.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
         cellWidth: Math.max(1, Math.floor(width / pinnedPage.columns))
         cellHeight: Metrics.gridCellHeight
         boundsBehavior: Flickable.StopAtBounds

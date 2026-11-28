@@ -24,10 +24,12 @@ FocusScope {
     readonly property int scrollGutter: scrollbarEdgeOffset > 0 ? 0 : Metrics.contentScrollGutter
     HoverHandler { id: alphabeticalViewportHover }
     readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
-    readonly property int columns: !gridMode ? 1 : contentColumnWidth >= 430 ? 6 : contentColumnWidth >= 320 ? 4 : 3
+    readonly property int columns: !gridMode ? 1
+        : contentColumnWidth >= 8 * Metrics.gridCellWidth ? 8
+        : contentColumnWidth >= 430 ? 6 : contentColumnWidth >= 320 ? 4 : 3
     readonly property int cellWidth: Math.max(1, Math.floor(contentColumnWidth / columns))
-    readonly property int cellHeight: gridMode ? Metrics.gridCellHeight : Math.max(36, Math.floor(Kirigami.Units.gridUnit * 1.8) + 2)
-    readonly property int headingHeight: 36
+    readonly property int cellHeight: gridMode ? Metrics.gridCellHeight : Math.max(Metrics.listRowHeight, Math.floor(Kirigami.Units.gridUnit * 1.8) + 2)
+    readonly property int headingHeight: Metrics.sectionHeadingHeight
     property int currentIndex: -1
     property var sourceEntries: []
     readonly property var entries: showApps ? sourceEntries : []
@@ -294,8 +296,8 @@ FocusScope {
             } else moveVertical(-1);
             break;
         case Qt.Key_Down: moveVertical(1); break;
-        case Qt.Key_Left: moveHorizontal(-1); break;
-        case Qt.Key_Right: moveHorizontal(1); break;
+        case Qt.Key_Left: moveHorizontal(view.LayoutMirroring.enabled ? 1 : -1); break;
+        case Qt.Key_Right: moveHorizontal(view.LayoutMirroring.enabled ? -1 : 1); break;
         case Qt.Key_Home: currentIndex = visualRows[0].entries[0].index; break;
         case Qt.Key_End: {
             const last = visualRows[visualRows.length - 1].entries;

@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "../components"
 import "../code/controlMetrics.js" as ControlMetrics
 import "../code/startMenuMetrics.js" as StartMetrics
 
@@ -97,7 +98,11 @@ Item {
         contentWidth: width
         contentHeight: contentGrid.implicitHeight
         boundsBehavior: Flickable.StopAtBounds
-        QQC2.ScrollBar.vertical: QQC2.ScrollBar { policy: QQC2.ScrollBar.AsNeeded }
+        HoverHandler { id: homeHover }
+        QQC2.ScrollBar.vertical: StartScrollBar {
+            viewportHovered: homeHover.hovered
+            scrolling: viewport.moving || viewport.flicking
+        }
 
         GridLayout {
             id: contentGrid

@@ -49,9 +49,13 @@ Item {
             compare(Metrics.menuRowHeight, ControlMetrics.menuItemMinimumHeight);
             compare(Metrics.menuRowRadius, ControlMetrics.controlCornerRadius);
             compare(Metrics.menuRadius, ControlMetrics.overlayCornerRadius);
+            compare(Metrics.contentSideMargin, 25);
+            compare(Metrics.gridCellWidth, 96);
             compare(Metrics.gridCellHeight, 84);
             compare(Metrics.gridAppIconSize, 32);
             compare(Metrics.listAppIconSize, 24);
+            compare(Metrics.categoryCardExtent, 156);
+            compare(Metrics.accountMenuMaximumWidth, 278);
             compare(Metrics.contentScrollGutter, 18);
             verify(menu.rowHeight >= Metrics.menuRowHeight);
             compare(row.background.radius, Metrics.menuRowRadius);
