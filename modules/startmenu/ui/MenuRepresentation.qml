@@ -133,7 +133,8 @@ Item {
                 Plasmoid.configuration.displayPosition, Plasmoid.screenGeometry,
                 { x: pos.x, width: startButton.width }, panelGeometry,
                 rootItem.width + root.margins.left + root.margins.right,
-                root.searching ? root.taskbarSearchAnchor : null);
+                root.searching ? root.taskbarSearchAnchor : null,
+                Qt.application.layoutDirection === Qt.RightToLeft || rootItem.LayoutMirroring.enabled);
         }
     }
 
@@ -282,6 +283,9 @@ Item {
 
         FocusScope {
             id: rootItem
+
+            LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
+            LayoutMirroring.childrenInherit: true
 
             readonly property int margin: 28
             readonly property rect screen: Plasmoid.screenGeometry
@@ -609,7 +613,9 @@ Item {
                                         PlasmaComponents3.Label {
                                             Layout.fillWidth: true
                                             text: viewSelector.text
-                                            horizontalAlignment: Text.AlignRight
+                                            textFormat: Text.PlainText
+                                            elide: Text.ElideRight
+                                            horizontalAlignment: viewSelector.LayoutMirroring.enabled ? Text.AlignLeft : Text.AlignRight
                                         }
                                         Item {
                                             Layout.preferredWidth: 12
@@ -753,6 +759,8 @@ Item {
                                         const face = String(kuser.faceIconUrl || "");
                                         return face && !face.endsWith("/faces/.face.icon") ? kuser.faceIconUrl : "";
                                     }
+                                    sourceSize: Qt.size(Math.max(1, Math.ceil(width * Screen.devicePixelRatio)),
+                                                        Math.max(1, Math.ceil(height * Screen.devicePixelRatio)))
                                     cache: false
                                     fillMode: Image.PreserveAspectCrop
                                     visible: status === Image.Ready

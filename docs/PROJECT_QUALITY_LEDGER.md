@@ -61,16 +61,16 @@
 
 ## 01 全局视觉规范与布局
 
-优先级：P0。依赖：基础，无前置工作块。
+优先级：P0。依赖：基础，无前置工作块。规范源码归属：`core/design/`、`core/controls/`、`platform/plasma/appearance/` 及 `modules/` 各宿主公共布局与排版入口。
 
 依据与实现记录：[原始布局来源](windows11-26h2-layout-sources.json)、[参数证据](windows11-26h2-ui-parameters.json)、[视觉规范](WINDOWS11_FIDELITY.md)、[样式说明](STYLE.md)。
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
 | --- | --- | --- | --- | --- | --- |
-| A01 | P | PRI/XBF 与 Photon 资源定位 | 19 个原始文件及 1481 个有效 XBF 的位置和哈希已记录，部分模板已解析 | 按实际使用的模板、限定条件、主题、状态解析剩余涉及本项目的布局与动画资源；确认 Photon 与 XAML 的实际角色。缺原版证据时标 REF |
-| A02 | P | 原版布局参数 | 已有部分源参数及使用位置，登录凭据宽度 296，快捷中心部分尺寸已采用 | 核对各公共参数与实际消费者；禁止直接套用无关资源，记录平台适配 |
-| A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何已有共享方案，Qt 负责输出缩放 | 审查其余尺寸、锚点、边距、RTL、多屏和窄屏限制；禁止重复应用 DPI |
-| A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量 | 落实字号、字重、基线、行高、截断、语言回退与辅助文字缩放；尊重系统字体 |
+| A01 | P | PRI/XBF 与 Photon 资源定位 | 19 个原始文件及 1481 个有效 XBF 哈希与本地 26H2 镜像逐字节一致；已解码 22 个核心 XBF 字典并记录偏移（新增 `StartDocked/TileStyles`、`TaskbarSearchPageThemeResources`、`ActionCenter/Styling/Styles.Win11`、`JumpViewUI/RefreshedStyles`、`LockApp/StandardStyles` 及 `21h1_themeresources` 字号/控件/滚动条/菜单/动画常量）；已由 `StartMenuExperienceHost` 与 `Client.Photon` 清单及 `wsxpacks.json` 证实原生 XAML（`StartDocked` + `Client.Core/StartMenu`）承载 Start 外框、固定网格、全部应用、底栏与电源菜单，Photon `Windows.Shell.StartMenu` 仅为嵌入 XAML 的 Recommended 推荐流扩展包 | 按下游具体功能项（S01/S04、Q12、T03、W03/W07、E04）继续解析非字典模板节点流与运行时视觉状态切换；静态资源未覆盖的运行时条件分支标 REF |
+| A02 | P | 原版布局参数 | 登录凭据宽度 296、快捷中心 376/400/48、搜索框圆角 16、托盘内容边距 4、弹窗与任务栏标准间距 12（`TaskbarMargin=12` / `Metrics_LauncherFrame_Margin=12`）、通用圆角 4/8 与菜单最小行高 32 已由原版 XBF 验证并接入；已核明 Start 原版外框 `642 = 33 + 6×96 + 33` / `834 = 33 + 8×96 + 33` 与 KDE 内层内容尺寸边界 | 结合各功能工作块逐消费者核对 Start/Search 外框与内层边距、通知中心宽度、跳转列表与基础控件剩余局部常量，保留并记录宿主适配 |
+| A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何与屏幕可用区裁剪共用 `popupGeometry.js`；补齐 `TaskbarButton`、`TaskbarGlyph`、`AccountAvatar`、`MediaControls`、Start 头像与任务栏预览封面的非零整数 DPR `sourceSize` 守卫；补齐 Login 电源菜单、剪贴板更多菜单、Start 列表/搜索建议/分类折叠箭头/底栏位置栏/`AToolButton`/视图选择器、RTL 顶边对齐任务栏 Search 锚点、锁屏用户切换、`MoreSettingsLink`、`NativeButtonContent` 及 Alt+Tab 卡片的 RTL 镜像，以及 `RunDialog` 窄高屏与多语言按钮宽度自适应 | 下游具体模块的窄屏/多屏与复杂布局细节随各自任务收口，100%/125%/150%/200%、多显示器与 RTL 实机表现待维护者验收 |
+| A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量；移除锁屏 `MediaControls` 硬编码 `"Segoe UI"` 并补齐 `NoPasswordUnlock`/`SearchHome` 的系统默认字体绑定；为锁屏用户切换、无密码登录按钮、快捷中心标题/亮度/蓝牙状态、Start 菜单/字母索引/分组标题与搜索建议/快捷词补齐 `Text.PlainText` 与省略截断，`RunDialog`、`MoreSettingsLink` 与 `SearchHome` 接入系统字号下限扩展以避免辅助大字号裁切 | 各模块局部字重、行高、基线与原生 Kvantum/Plasma 控件排版细节随 03–10 工作块逐项核对，中英文/CJK IME 与辅助缩放待实机验收 |
 | A13 | I | 单一主题、深浅色生成架构 | Plasma、Aurorae、Kvantum 和配色采用共享源/生成路径，保留原有安装接口 | 该范围仅为源码统一；色彩语义归 D16/D17，具体控件差距归各自任务 |
 | A14 | P | 公共源码及视觉参数的唯一维护来源 | core、modules、platform、packaging 已建立编辑源；七个 applet、窗口、锁屏/登录、应用、配色和安装工具归类；任务栏两入口共用布局正文；原 436 个映射位置已完成唯一编辑源收敛；追加 166 个 Plasma atlas 原生文件与 4 个图标画布助手输出，现有 579 个生成文件、44 个受校验的源码入口、4 个唯一原生 Nix 表达式；开始、搜索、任务视图和任务按钮共用画布规则；SVG 主题别名已建立唯一维护映射；快捷中心普通/分体磁贴、滑块行与 WinUI 滑块槽/手柄状态尺寸、紧凑行与分组边距/间距/图标槽、可折叠设备列表箭头与展开时长、面板内容边距、登录/锁屏共用时钟与头像/凭据字号/焦点底边条/无密码登录按钮宽度圆角边框/底栏状态按钮几何、数字时钟飞出面板卡片与 28/24px 按钮几何、开始菜单弹出菜单与网格行高/大中应用图标/内嵌滚动预留槽、Snap Layouts 两种预览共享参数、Alt+Tab 小圆角参数，以及跨 Digital Clock、开始菜单、快捷设置和锁屏的 WinUI 通用圆角与菜单最小行高已统一；日历紧凑时钟、搜索筛选/分类、托盘隐藏项/快捷设置组、登录用户切换及快捷设置滑块按钮接入同一 ControlCornerRadius；Start 上下文菜单/视图菜单与锁屏电源菜单共用 WinUI 菜单最小行高；任务栏窗口预览关闭按钮与 RunDialog 主操作按钮接入 ControlCornerRadius；Login 与 LockScreen 电源菜单共用 OverlayCornerRadius，150/160px 宿主宽度集中具名管理并保留现值；Start/Search 快捷搜索与 All Apps 分类卡片、Alt+Tab 卡片、Quick Settings MediaCard/Footer 外层表面、任务栏窗口预览悬停卡片及 NotificationHistory 消息卡片共用独立 cardSurfaceRadius（与外层 overlay 圆角分离并保留各自 UI 缩放）；PageHeader、Bluetooth/Network 详情页与 ClipboardPage 操作按钮共用 detailActionButtonHeight，Clipboard 卡片宽度直接读取共享 FluentScrollBar 轨道宽度；Wi-Fi/Bluetooth/设备列表/ListRow/VolumeMixer 共用 detailRowOuterInset，三类详情行、托盘溢出箭头悬停背景及剪贴板历史条目共用 ControlCornerRadius；SearchBoxRoundCornerRadius 按 TaskbarResources.xbf 原始 16px 参数统一进入 controlMetrics；Start/Search 列表、按钮、搜索框、电源菜单选项、分类标题、字母分组标题与字母索引磁贴微交互统一读取 microInteractionDuration；壁纸包 4 个文件经哈希核对无重复；静态核对 source-map 物化、常规/NixOS/组件安装及打包入口；安装包不依赖源码链接 | 冻结架构清单第 5 项已完成；新 clone/安装/打包及后续功能迭代中的非字节重复语义仍待实机验收；参数真实性归 A02/A08 |
 
@@ -78,7 +78,7 @@
 
 ## 02 原始图标与光标
 
-优先级：P0。依赖：A01/A02 提供角色证据；不阻塞其他布局开发。
+优先级：P0。依赖：A01/A02 提供角色证据；不阻塞其他布局开发。规范源码归属：`icons/windows-modern/`、`core/resources/import/`、`core/controls/`、`packaging/`。
 
 依据与实现记录：[资源导入](NATIVE_ASSETS.md)、[资源审查](NATIVE_COVERAGE.md)、[26H2 审计](windows11-26h2-resource-audit.json)、[光标说明](CURSORS.md)。
 
@@ -94,7 +94,7 @@
 
 ## 03 基础控件与菜单
 
-优先级：P0。依赖：A01–A04、A05–A08；与配色工作块独立推进。
+优先级：P0。依赖：A01–A04、A05–A08；与配色工作块独立推进。规范源码归属：`core/controls/`、`platform/plasma/appearance/atlas/`、`platform/qt/kvantum/`、`modules/desktopmenu/`、`platform/plasma/desktopmenu/`。
 
 依据与实现记录：[公共控件证据](NATIVE_COVERAGE.md#shared-native-widget-geometry)、[UI 参数](windows11-26h2-ui-parameters.json)、[样式规范](STYLE.md)、[弹窗约定](PANEL_UI_CONTRACT.md)。
 
@@ -109,7 +109,7 @@
 
 ## 04 动态配色与材质
 
-优先级：P0。依赖：A01/A02 的主题角色；D01–D19 和 M01–M04 可按独立根因并行。
+优先级：P0。依赖：A01/A02 的主题角色；D01–D19 和 M01–M04 可按独立根因并行。规范源码归属：`core/palette/`、`core/materials/`、`core/transactions/`、`platform/plasma/appearance/`、`platform/qt/kvantum/`。
 
 依据与实现记录：[动态配色证据](NATIVE_COVERAGE.md#dynamic-accent-source-completion-ledger)、[ICC 研究](windows11-26h2-icc-investigation.md)、[色彩捕获](windows11-26h2-accent-captures.json)、[材质约定](WINDOWS11_FIDELITY.md#native-material-implementation-boundary)。
 
@@ -144,7 +144,7 @@
 
 ## 05 任务栏与系统托盘
 
-优先级：P1。依赖：A03/A08/A10/A12；配色与材质由 04 统一。
+优先级：P1。依赖：A03/A08/A10/A12；配色与材质由 04 统一。规范源码归属：`modules/taskbar/`、`modules/systemtray/`、`modules/taskview/`、`modules/showdesktop/`、`platform/plasma/taskbar/`、`platform/plasma/systemtray/`。
 
 依据与实现记录：[面板约定](PANEL_UI_CONTRACT.md#taskbar)、[视觉规范](WINDOWS11_FIDELITY.md#tray-geometry-and-current-plasma-compatibility)、[托盘架构](PLASMA_SYSTEMTRAY_ARCHITECTURE.md)。
 
@@ -162,13 +162,13 @@
 
 ## 06 开始菜单与搜索
 
-优先级：P1。依赖：A01/A02/A04/A08、A11/A12；T06 为入口。
+优先级：P1。依赖：A01/A02/A04/A08、A11/A12；T06 为入口。规范源码归属：`modules/startmenu/`、`modules/search/`。
 
 依据与实现记录：[面板约定](PANEL_UI_CONTRACT.md#start-and-search)、[Start 参数证据](NATIVE_COVERAGE.md#shared-control-evidence-and-credential-hosts)、[视觉规范](WINDOWS11_FIDELITY.md#start-and-search-use-distinct-widths-at-the-same-height)。
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
 | --- | --- | --- | --- | --- | --- |
-| S01 | P | 开始菜单整体布局 | popupPosition.js 仍使用 560×640 / 768×720 的内容尺寸和 1440 的自动阈值；原版资源已有 642/834 等 frame 上限及 96×84 固定项 | 确认 XAML/Photon 生效路径、内容与外框区别，再核对列数、网格、标题、底栏、定位及自适应；REF |
+| S01 | P | 开始菜单整体布局 | popupPosition.js 仍使用 560×640 / 768×720 的内容尺寸和 1440 的自动阈值；已证实原生 XAML（`StartDocked` + `Client.Core/StartMenu`）承载主外框（`642 = 33 + 6×96 + 33` / `834 = 33 + 8×96 + 33`）及 96×84 固定项，Photon 仅承载推荐流 | 对齐 KDE 弹窗内层内容尺寸与原版外框/内边距/阈值关系，再核对列数、网格、标题、底栏、定位及自适应 |
 | S02 | P | 固定、推荐、全部应用和分类 | 已有实际 Kicker 模型、固定/最近/全部及分类视图 | 核对所有受支持原版视图、固定/拖放、文件夹或分组、最近项、空状态及偏好；不添加假服务 |
 | S03 | P | 字母索引、分类切换和键盘 | 已有字母索引、非拉丁分组与键盘处理 | 对比索引展开/收起、跳转、排序、动画、焦点和无障碍 |
 | S04 | P | 搜索首页、结果及页面几何 | popupPosition.js 中 Search 为 680×640 / 928×720，共用高度及屏幕限制，宽度基于旧比例测量 | 核对原版布局、分类、查询切换、输入和空状态；素材归 A05，入口/状态协议归 V07/V08 |
@@ -180,7 +180,7 @@
 
 ## 07 快捷中心与通知中心
 
-优先级：P1。依赖：A01–A04/A08/A10–A12、T05；M01 负责材质。
+优先级：P1。依赖：A01–A04/A08/A10–A12、T05；M01 负责材质。规范源码归属：`modules/quicksettings/`、`modules/clipboard/`、`modules/calendar/`、`modules/notifications/`、`platform/plasma/popup/`。
 
 依据与实现记录：[快捷中心约定](PANEL_UI_CONTRACT.md#quick-settings)、[通知日历约定](PANEL_UI_CONTRACT.md#calendar-and-notifications)、[原版参数](windows11-26h2-ui-parameters.json)、[托盘实现](../plasma/applets/org.kde.windowsmodern.systemtray)。
 
@@ -206,7 +206,7 @@
 
 ## 08 窗口管理与动画
 
-优先级：P1。依赖：A03/A08/A10/A12、M02；与 Shell 组件并行。
+优先级：P1。依赖：A03/A08/A10/A12、M02；与 Shell 组件并行。规范源码归属：`modules/windowmanager/`、`modules/run/`、`platform/plasma/shortcuts/`。
 
 依据与实现记录：[窗口视觉规范](WINDOWS11_FIDELITY.md#native-material-implementation-boundary)、[应用标题栏](APP_WINDOW_CHROME.md)、[样式规范](STYLE.md#alt-tab-window-switcher)。
 
@@ -226,7 +226,7 @@
 
 ## 09 锁屏、登录及启动外观
 
-优先级：P1。依赖：A01–A04/A05–A12、M01；不改变认证或电源后端。
+优先级：P1。依赖：A01–A04/A05–A12、M01；不改变认证或电源后端。规范源码归属：`modules/lockscreen/`、`modules/login/`、`modules/boot/`、`core/animations/`、`core/logic/`。
 
 依据与实现记录：[样式规范](STYLE.md)、[登录原版参数与部署](NATIVE_COVERAGE.md#shared-control-evidence-and-credential-hosts)、[项目安装说明](../README.md#optional-boot-and-login-appearance)。
 
@@ -241,7 +241,7 @@
 
 ## 10 文件管理器与终端
 
-优先级：P2。依赖：A03/A08/A10–A12、W01/W02/W05；保留原生应用后端。
+优先级：P2。依赖：A03/A08/A10–A12、W01/W02/W05；保留原生应用后端。规范源码归属：`modules/explorer/`、`modules/terminal/`、`modules/browser/`、`platform/qt/konsole/`、`nix/`。
 
 依据与实现记录：[应用布局实现及边界](APP_WINDOW_CHROME.md)、[样式规范](STYLE.md)、[Dolphin 补丁](../app-decorations/dolphin)、[Konsole 插件适配器](../platform/qt/konsole)。
 
@@ -257,7 +257,7 @@
 
 ## 11 安装、兼容性与性能
 
-优先级：P2（稳定性问题即时处理）。依赖：贯穿所有工作块，不等待视觉完成才处理回归。
+优先级：P2（稳定性问题即时处理）。依赖：贯穿所有工作块，不等待视觉完成才处理回归。规范源码归属：`packaging/`、`platform/nixos/`、`nix/`、`scripts/materialize-modules.py` 及顶层安装/恢复入口。
 
 依据与实现记录：[安装说明](../README.md#nixos)、[开发流程](CONTRIBUTING.md)、[发布和打包](RELEASE.md)、[NixOS 入口](../install-nixos.sh)。
 
@@ -640,3 +640,5 @@ Windows 取色/色阶算术、ICC 查表重放、`WALLPAPER_ANALYSIS_REVISION=11
 - 2026-11-28 全局功能生命周期分离收口与复核：基于 testing 基线 `eefee7ac`，消除全局外观监听、Win+R/V 路由、同面板弹窗协调及分体模糊对系统托盘二进制存活的耦合。`ShellAppearanceMonitor` 与 `ShellShortcutRouter` 改为 `Q_DECL_HIDDEN` 并通过 `QObject` 子对象名 + `QMetaObject` 槽跨插件调用，由 `System Tray`、`Icon Tasks`、`Desktop Context Menu` 任一已加载插件幂等初始化；冷启动无托盘时认领已迁移的 `Win+R`/`Win+V` 绑定走原生 KRunner/Klipper 回退，单独卸载托盘时新增 `clipboard-release` 与既有 `run-release` 同步归还原生绑定。新增 `PanelPopupHost` 将 `PanelPopupController` 与 `PopupEffects` 挂载到每个 `Panel`/`CustomPanel` Containment 的 `windowsModernPanelPopups` 内部动作，`Start`、`Digital Clock` 与 `System Tray` 共享面板级宿主并在组件移除（含 Plasma undo 期）、恢复或跨面板移动时自动收起弹窗、跳过 `destroyed()` 实例。补齐 `systemtray`/`icontasks` 的 `controlMetrics.js` CMake QRC 注册及面板能力/剪贴板释放测试断言，更新 `core`/`modules`/`platform` 文档。未新增常驻进程或轮询，Nix 构建配方不变；冻结架构清单第 7 项「全局功能生命周期分离」完成，V08 保持 P（待实机验收），未运行构建、自动化测试、CI、打包或实机验收。
 
 - 2026-11-28 配色与材质内部解耦收口与复核：基于 testing 基线 `9d33a9b3`，新增 `core/palette/accent-algorithms.py`（纯色阶/对比色/批次比对/壁纸解码与加权取色算法）、`core/palette/accent-renderers.py`（KDE `.colors` 渲染、Kvantum 强调色绑定与 `live-reload.json` 刷新回执）及 `platform/plasma/appearance/appearance-host.py`（KDE 会话配置读取、模式/渲染器判别与实时壁纸 D-Bus 快照校验），`sync-accent.py` 保留原有 CLI 与兼容导出门面，`accent-control.py`、`window-frames.py`、`appearance-packages.py` 全部改为 `importlib` 显式模块加载，消除外观管线内部 `runpy` 字典调用。明确并落实非 Kvantum 边界：非 Kvantum `widgetStyle` 或缺失用户目录 `~/.config/Kvantum/Windows-modern` 时正常同步 KDE `.colors`、`[WindowsModernAccent]`、Plasma 调色板、Aurorae 窗口装饰 tint 与 Plasma 透明选择器，启用 Kvantum 或存在本地 Kvantum 资源时维持严格完整性与回滚保护。保留全部原版取色算术、ICC 重放、锁与缓存版本，同步更新 `source-map.json`（新增 3 个源码相对链接，共 648 个输出）、外观包脚本清单、归档校验器、测试断言与文档。冻结架构清单第 8 项「配色与材质内部解耦」完成（架构改革 8/8 全部收口），D20 保持 P（待功能演进与实机验收），未运行构建、自动化测试、CI、打包或实机验收。
+
+- 2026-11-28 工作块 01（全局视觉规范、PRI/Photon 证据、RTL/DPI 与系统排版）推进与复核：基于 testing 基线 `38c39f1e`，将本地私有 `26H2/` 解包目录加入 `.gitignore` 与 `verify-owner-bundle.py` 开发排除清单，并为总账 11 个工作块补齐规范源码目录归属。只读复核 `26300.9974` 的 19 个原始布局来源与 1,481 个有效 XBF，证实 `StartMenuExperienceHost` + `StartDocked.dll` 原生 XAML 持有 Start 主外框、固定网格、全部应用与电源菜单，而 `MicrosoftWindows.Client.Photon` 的 `Windows.Shell.StartMenu` wsxpack 仅承载嵌入的 Recommended 推荐流；扩充并逐字节核验 `windows11-26h2-ui-parameters.json` 至 22 个 XBF 来源（补齐 `21h1_themeresources` 字号/控件/滚动条/菜单/动画时长、`StartDocked\TileStyles`、`TaskbarSearchPageThemeResources`、`Styles.Win11`、`JumpViewUI\RefreshedStyles` 与 `LockApp\StandardStyles`）。修复 `MediaControls` 硬编码 `"Segoe UI"` 字体及 `NoPasswordUnlock`/`SearchHome` 字体绑定；补齐 `TaskbarButton`、`TaskbarGlyph`、`AccountAvatar`、`MediaControls`、Start 头像与预览封面的非零整数 DPR `sourceSize` 守卫；补齐 Login 电源菜单、剪贴板动作菜单、Start/Search 列表/建议/折叠箭头/底栏位置栏/`AToolButton`/视图选择器、RTL 顶边任务栏 Search 锚点、锁屏用户切换、`MoreSettingsLink`、`NativeButtonContent` 与 Alt+Tab 的 RTL 镜像，以及多处 `Text.PlainText`/省略截断与 `RunDialog`/`MoreSettingsLink`/`SearchHome` 的系统字号扩展。A01–A04 保持 P（待下游消费者细节收口与实机验收），未运行构建、自动化测试、CI、打包或实机验收。

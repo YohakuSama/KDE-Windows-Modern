@@ -124,7 +124,11 @@ FocusScope {
                     }
                     PlasmaComponents3.Label {
                         anchors.centerIn: parent
+                        width: Math.max(0, parent.width - 6)
                         text: tile.modelData.icon ? "" : tile.modelData.label
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignHCenter
                         opacity: tile.available ? 1 : 0.34
                         font.pixelSize: 20
                     }

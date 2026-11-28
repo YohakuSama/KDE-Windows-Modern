@@ -109,6 +109,7 @@ QQC2.Popup {
                 QQC2.Label {
                     Layout.fillWidth: true
                     text: entry.text
+                    textFormat: Text.PlainText
                     font: metrics.font
                     elide: Text.ElideRight
                     verticalAlignment: Text.AlignVCenter

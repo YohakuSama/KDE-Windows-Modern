@@ -65,8 +65,20 @@ Item {
 
         Item {
             id: panel
+            readonly property int rowHeight: Math.max(62, commandField.Layout.preferredHeight + 22)
+            readonly property int wantedHeight: root.errorMessage.length
+                ? Math.max(86, rowHeight + Math.ceil(errorLabel.implicitHeight) + 10)
+                : rowHeight
+            readonly property int maxWorkHeight: root.workArea.height > 0
+                ? Math.max(1, Math.floor(root.workArea.height - dialog.margins.top - dialog.margins.bottom))
+                : wantedHeight
             width: Math.max(1, Math.min(620, root.workArea.width - 24 - dialog.margins.left - dialog.margins.right))
-            height: root.errorMessage.length ? 86 : 62
+            height: Math.max(1, Math.min(wantedHeight, maxWorkHeight))
+
+            FontMetrics {
+                id: commandMetrics
+                font: commandField.font
+            }
 
             Keys.onEscapePressed: event => {
                 if (commandField.inputMethodComposing) { event.accepted = false; return; }
@@ -80,7 +92,7 @@ Item {
                 anchors.top: parent.top
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
-                height: 62
+                height: panel.rowHeight
                 spacing: 12
 
                 Item {
@@ -101,11 +113,11 @@ Item {
                     objectName: "wmRunCommandField"
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
-                    Layout.preferredHeight: 40
+                    Layout.preferredHeight: Math.max(40, Math.ceil(commandMetrics.height) + 14)
                     placeholderText: i18n("Type the name of a command to run")
                     Accessible.name: placeholderText
                     selectByMouse: true
-                    font.pixelSize: 15
+                    font.pixelSize: Math.max(15, Kirigami.Theme.defaultFont.pixelSize)
                     background: Rectangle { color: "transparent" }
                     onAccepted: root.submit()
                 }
@@ -113,9 +125,9 @@ Item {
                 PlasmaComponents3.Button {
                     id: runButton
                     objectName: "wmRunButton"
-                    Layout.preferredWidth: 94
+                    Layout.preferredWidth: Math.max(94, Math.ceil(implicitWidth) + 16)
                     Layout.minimumWidth: 60
-                    Layout.preferredHeight: 38
+                    Layout.preferredHeight: Math.max(38, Math.ceil(implicitHeight) + 8)
                     text: i18n("Run") + "  ↵"
                     Accessible.name: i18n("Run")
                     enabled: root.canRun
@@ -132,6 +144,7 @@ Item {
                 }
             }
             PlasmaComponents3.Label {
+                id: errorLabel
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-2.0-or-later
 import QtQuick
+import QtQuick.Window
 import Qt5Compat.GraphicalEffects
 import "lockMetrics.js" as LockMetrics
 
@@ -15,6 +16,8 @@ Item {
         id: personal
         anchors.fill: parent
         source: String(avatar.source).endsWith("/faces/.face.icon") ? "" : avatar.source
+        sourceSize: Qt.size(Math.max(1, Math.ceil(width * Screen.devicePixelRatio)),
+                            Math.max(1, Math.ceil(height * Screen.devicePixelRatio)))
         asynchronous: true
         fillMode: Image.PreserveAspectCrop
         visible: status === Image.Ready

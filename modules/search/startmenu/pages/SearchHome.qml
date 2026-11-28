@@ -58,26 +58,34 @@ Item {
             Behavior on color { ColorAnimation { duration: ControlMetrics.microInteractionDuration } }
         }
         contentItem: Item {
+            readonly property bool mirroredRow: !entry.tile && entry.LayoutMirroring.enabled
             Kirigami.Icon {
                 id: entryIcon
                 width: entry.tile ? StartMetrics.gridAppIconSize : StartMetrics.listAppIconSize
                 height: width
-                x: entry.tile ? (parent.width - width) / 2 : 10
+                x: entry.tile
+                    ? (parent.width - width) / 2
+                    : parent.mirroredRow ? parent.width - width - 10 : 10
                 y: entry.tile ? 15 : (parent.height - height) / 2
                 source: entry.iconSource || "application-x-executable"
                 roundToIconSize: false
                 animated: false
             }
             Text {
-                x: entry.tile ? 6 : entryIcon.x + entryIcon.width + 10
+                x: entry.tile
+                    ? 6
+                    : parent.mirroredRow ? 6 : entryIcon.x + entryIcon.width + 10
                 y: entry.tile ? entryIcon.y + entryIcon.height + 8 : (parent.height - height) / 2
-                width: Math.max(0, parent.width - x - 6)
+                width: entry.tile
+                    ? Math.max(0, parent.width - 12)
+                    : Math.max(0, parent.width - entryIcon.width - 26)
                 text: entry.text
                 color: home.ink
                 textFormat: Text.PlainText
-                font.pixelSize: 12
+                font.family: Kirigami.Theme.defaultFont.family
+                font.pixelSize: Math.max(12, Kirigami.Theme.smallFont.pixelSize)
                 elide: Text.ElideRight
-                horizontalAlignment: entry.tile ? Text.AlignHCenter : Text.AlignLeft
+                horizontalAlignment: entry.tile ? Text.AlignHCenter : (parent.mirroredRow ? Text.AlignRight : Text.AlignLeft)
             }
         }
     }
@@ -102,9 +110,11 @@ Item {
                 visible: suggestions.count === 0 && topApps.count === 0 && !home.showQuickSearches
                 Layout.fillWidth: true
                 text: i18n("Type here to search")
+                textFormat: Text.PlainText
                 color: home.ink
                 opacity: 0.7
-                font.pixelSize: 13
+                font.family: Kirigami.Theme.defaultFont.family
+                font.pixelSize: Math.max(13, Kirigami.Theme.defaultFont.pixelSize)
                 wrapMode: Text.Wrap
             }
 
@@ -117,17 +127,20 @@ Item {
                 spacing: 8
                 Text {
                     text: i18n("Suggested")
+                    textFormat: Text.PlainText
                     Accessible.role: Accessible.StaticText
                     Accessible.name: text
                     color: home.ink
-                    font.pixelSize: 14
+                    font.family: Kirigami.Theme.defaultFont.family
+                    font.pixelSize: Math.max(14, Kirigami.Theme.defaultFont.pixelSize)
                     font.weight: Font.DemiBold
                 }
                 ListView {
                     id: suggestions
                     objectName: "wmSearchSuggestions"
+                    readonly property int rowExtent: Math.max(46, Math.ceil(Kirigami.Theme.smallFont.pixelSize) + 28)
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Math.min(10, count) * 46
+                    Layout.preferredHeight: Math.min(10, count) * rowExtent
                     model: home.suggestedModel
                     interactive: false
                     clip: true
@@ -137,7 +150,7 @@ Item {
                         required property var model
                         objectName: "wmSuggested_" + index
                         width: ListView.view.width
-                        height: 46
+                        height: suggestions.rowExtent
                         visible: index < 10
                         enabled: visible && !model.disabled
                         text: model.display || ""
@@ -157,10 +170,12 @@ Item {
                 Text {
                     visible: home.showQuickSearches
                     text: i18n("Quick searches")
+                    textFormat: Text.PlainText
                     Accessible.role: Accessible.StaticText
                     Accessible.name: text
                     color: home.ink
-                    font.pixelSize: 14
+                    font.family: Kirigami.Theme.defaultFont.family
+                    font.pixelSize: Math.max(14, Kirigami.Theme.defaultFont.pixelSize)
                     font.weight: Font.DemiBold
                 }
                 Rectangle {
@@ -176,6 +191,7 @@ Item {
                         y: 12
                         width: Math.max(1, parent.width - 24)
                         spacing: 8
+                        layoutDirection: home.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
                         Repeater {
                             id: quickRepeater
                             model: home.showQuickSearches ? home.quickSearches : []
@@ -186,7 +202,7 @@ Item {
                                 objectName: "wmQuickSearch_" + index
                                 width: Math.max(1, Math.min(chips.width, implicitWidth))
                                 implicitWidth: chipLabel.implicitWidth + 24
-                                implicitHeight: 32
+                                implicitHeight: Math.max(32, Math.ceil(chipLabel.implicitHeight) + 12)
                                 height: implicitHeight
                                 padding: 0
                                 text: modelData.label
@@ -204,8 +220,10 @@ Item {
                                 contentItem: Text {
                                     id: chipLabel
                                     text: chip.text
+                                    textFormat: Text.PlainText
                                     color: home.ink
-                                    font.pixelSize: 13
+                                    font.family: Kirigami.Theme.defaultFont.family
+                                    font.pixelSize: Math.max(13, Kirigami.Theme.smallFont.pixelSize)
                                     elide: Text.ElideRight
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
@@ -219,10 +237,12 @@ Item {
                     visible: topApps.count > 0
                     Layout.topMargin: 8
                     text: i18n("Top apps")
+                    textFormat: Text.PlainText
                     Accessible.role: Accessible.StaticText
                     Accessible.name: text
                     color: home.ink
-                    font.pixelSize: 14
+                    font.family: Kirigami.Theme.defaultFont.family
+                    font.pixelSize: Math.max(14, Kirigami.Theme.defaultFont.pixelSize)
                     font.weight: Font.DemiBold
                 }
                 GridView {

@@ -48,7 +48,8 @@ Item {
         clip: true
         Row {
             id: buttons
-            x: Math.max(0, placesRow.width - implicitWidth)
+            x: placesRow.LayoutMirroring.enabled ? 0 : Math.max(0, placesRow.width - implicitWidth)
+            layoutDirection: placesRow.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
             anchors.verticalCenter: parent.verticalCenter
             spacing: 0
             Repeater {

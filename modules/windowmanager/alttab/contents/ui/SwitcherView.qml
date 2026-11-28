@@ -37,6 +37,9 @@ FocusScope {
     property string closeText: "Close"
     property string emptyText: "No open windows"
 
+    LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
+    LayoutMirroring.childrenInherit: true
+
     // ── Metrics (Windows 11 at 100% scale, scaled by Kirigami units) ──
     readonly property real unit: Kirigami.Units.gridUnit / 18
     readonly property int outerPadding: Math.round(12 * unit)

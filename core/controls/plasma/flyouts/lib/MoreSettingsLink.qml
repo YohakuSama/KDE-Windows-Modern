@@ -14,10 +14,11 @@ Item {
 
     signal clicked
 
-    implicitHeight: 42
+    implicitHeight: Math.max(42, Math.ceil(linkLabel.implicitHeight) + 22)
     // Intrinsic width is independent of the host Loader/ColumnLayout.
     implicitWidth: 200
     Layout.fillWidth: true
+    LayoutMirroring.childrenInherit: true
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
     Accessible.name: root.text
@@ -37,6 +38,7 @@ Item {
     }
 
     PlasmaComponents3.Label {
+        id: linkLabel
         anchors.left: parent.left
         anchors.leftMargin: 20
         anchors.right: parent.right
@@ -44,9 +46,10 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         elide: Text.ElideRight
         text: root.text
+        textFormat: Text.PlainText
         color: Kirigami.Theme.textColor
         opacity: 1
-        font.pixelSize: 12
+        font.pixelSize: Math.max(12, Kirigami.Theme.smallFont.pixelSize)
     }
 
     MouseArea {

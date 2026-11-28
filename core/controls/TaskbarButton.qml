@@ -109,7 +109,8 @@ MouseArea {
         width: button.tileSize
         height: button.tileSize
         // Rasterise at device pixels, as KSvg does, not scaled up.
-        sourceSize: Qt.size(Math.ceil(width * Screen.devicePixelRatio), Math.ceil(height * Screen.devicePixelRatio))
+        sourceSize: Qt.size(Math.max(1, Math.ceil(width * Screen.devicePixelRatio)),
+                            Math.max(1, Math.ceil(height * Screen.devicePixelRatio)))
         opacity: button.selected || button.showHovered || button.showPressed ? 1 : 0
         source: "data:image/svg+xml," + encodeURIComponent(
             "<svg xmlns='http://www.w3.org/2000/svg' viewBox='-0.5 -0.5 27 27' preserveAspectRatio='none'>"

@@ -36,8 +36,12 @@ Lib.Page {
                 spacing: 4
 
                 PlasmaComponents3.Label {
+                    Layout.fillWidth: true
                     Layout.leftMargin: 22
+                    Layout.rightMargin: 22
                     text: display.label || i18n("Display %1", display.index + 1)
+                    textFormat: Text.PlainText
+                    elide: Text.ElideRight
                     font: Kirigami.Theme.smallFont
                     opacity: 0.8
                     color: Kirigami.Theme.textColor

@@ -304,7 +304,7 @@ ColumnLayout {
                         onAboutToShow: targetUuid = card.itemUuid
                         parent: moreButton
                         popupType: QQC2.Popup.Item
-                        x: moreButton.width - width
+                        x: moreButton.LayoutMirroring.enabled ? 0 : moreButton.width - width
                         y: moreButton.height + 4
                         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
                         NativeMenuItem {

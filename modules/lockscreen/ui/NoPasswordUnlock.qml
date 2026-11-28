@@ -51,6 +51,7 @@ FocusScope {
             return user.realName || user.name || "";
         }
         color: "white"
+        font.family: Kirigami.Theme.defaultFont.family
         font.pixelSize: 24
         horizontalAlignment: Text.AlignHCenter
     }
@@ -60,7 +61,7 @@ FocusScope {
         focus: true
         text: LockText.tr("Sign in", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in"), Qt.uiLanguage, Qt.locale().name)
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredWidth: Math.min(LockMetrics.loginButtonWidth, screen.width)
+        Layout.preferredWidth: Math.min(Math.max(LockMetrics.loginButtonWidth, Math.ceil(loginLabel.implicitWidth) + 24), screen.width)
         Layout.preferredHeight: LockMetrics.passwordHeight
         background: Rectangle {
             radius: LockMetrics.loginButtonRadius
@@ -69,8 +70,12 @@ FocusScope {
             border.color: loginButton.activeFocus ? "#FFFFFF" : "#88FFFFFF"
         }
         contentItem: Text {
+            id: loginLabel
             text: loginButton.text
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
             color: "white"
+            font.family: Kirigami.Theme.defaultFont.family
             font.pixelSize: LockMetrics.credentialFontSize
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter

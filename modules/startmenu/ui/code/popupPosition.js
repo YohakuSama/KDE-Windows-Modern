@@ -23,7 +23,7 @@ function surfaceSize(mode, screen, panelExtent, vertical, margin, searching) {
 }
 
 // Explicit alignment uses the actual panel span; auto uses the button.
-function horizontalAnchorOffset(mode, screen, button, panel, popupWidth, searchAnchor) {
+function horizontalAnchorOffset(mode, screen, button, panel, popupWidth, searchAnchor, mirrored) {
     if (!screen || !button || !Number.isFinite(screen.x)
             || !Number.isFinite(screen.width) || screen.width <= 0
             || !Number.isFinite(button.x) || !Number.isFinite(button.width)
@@ -47,10 +47,13 @@ function horizontalAnchorOffset(mode, screen, button, panel, popupWidth, searchA
     if (mode === 1 || mode === 2) {
         center = (left + right) / 2;
     } else if (validSearchAnchor) {
-        // A left-aligned taskbar opens Search at its own leading edge.
+        // A leading-aligned taskbar opens Search at its own leading edge.
         // Centered layouts align with the Search button rather than Start.
-        const leftAligned = mode === 3 || button.x - left <= button.width + Geometry.popupGap();
-        center = leftAligned && hasPopupWidth
+        const rtlLeading = !!mirrored && right - (button.x + button.width) <= button.width + Geometry.popupGap();
+        const ltrLeading = !mirrored && (mode === 3 || button.x - left <= button.width + Geometry.popupGap());
+        center = rtlLeading && hasPopupWidth
+            ? searchAnchor.x + searchAnchor.width - popupWidth / 2
+            : ltrLeading && hasPopupWidth
             ? searchAnchor.x + popupWidth / 2
             : searchAnchor.x + searchAnchor.width / 2;
     } else if (mode === 3) {

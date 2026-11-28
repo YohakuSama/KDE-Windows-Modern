@@ -46,6 +46,7 @@ RowLayout {
     PlasmaComponents3.Label {
         objectName: "wmDetailTitle"
         text: header.title
+        textFormat: Text.PlainText
         color: Kirigami.Theme.textColor
         font.weight: Font.DemiBold
         Layout.fillWidth: true

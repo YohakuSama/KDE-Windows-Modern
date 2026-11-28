@@ -24,6 +24,7 @@ plasma/applets/org.kde.windowsmodern.icontasks/build/
 __pycache__/
 
 # Owner-supplied Windows reference files and generated assets
+/26H2/
 /Windows-resources/
 /Windows-resources*.tar.gz
 /Windows-resources*.zip

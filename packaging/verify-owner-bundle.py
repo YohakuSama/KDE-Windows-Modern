@@ -20,7 +20,7 @@ from native_assets_index import mapped_resource_entries, verify_reference_index
 # Keep installation, upgrade, rollback, runtime checks, licence and artwork.
 # Exclude only known development material; upstream build sources stay intact.
 DEV_PATHS = (
-    "tests", ".github", "plans", "AGENTS.md", "CLAUDE.md",
+    "26H2", "tests", ".github", "plans", "AGENTS.md", "CLAUDE.md",
     "core", "modules", "platform", "packaging", "scripts/materialize-modules.py",
     ".editorconfig", ".shellcheckrc", ".gitignore", ".gitattributes", ".gitmodules",
     "CONTRIBUTING.md", "PRODUCT.md", "docs/CONTRIBUTING.md",

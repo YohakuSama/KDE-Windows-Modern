@@ -62,6 +62,10 @@ TestCase {
         const centeredSearch = {x: 752, width: 248};
         compare(PopupPosition.horizontalAnchorOffset(0, screen, centeredStart, panel, 680, centeredSearch),
                 152);
+        const rtlStart = {x: 1860, width: 48};
+        const rtlSearch = {x: 1608, width: 248};
+        compare(PopupPosition.horizontalAnchorOffset(0, screen, rtlStart, panel, 680, rtlSearch, true),
+                -368);
     }
 
     function test_horizontalAnchorOffset_data() {

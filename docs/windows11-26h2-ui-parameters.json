@@ -1282,6 +1282,18 @@
           "ToolTipContentThemeFontSize": {
             "value": 12,
             "xbf_offset": 345626
+          },
+          "InfoBadgeValueFontSize": {
+            "value": 11,
+            "xbf_offset": 345875
+          },
+          "SplitViewPaneAnimationCloseDuration": {
+            "value": "00:00:00.1",
+            "xbf_offset": 349704
+          },
+          "SplitViewPaneAnimationOpenDuration": {
+            "value": "00:00:00.2",
+            "xbf_offset": 349630
           }
         },
         "Light": {
@@ -1331,6 +1343,18 @@
           "ToolTipContentThemeFontSize": {
             "value": 12,
             "xbf_offset": 380764
+          },
+          "InfoBadgeValueFontSize": {
+            "value": 11,
+            "xbf_offset": 381013
+          },
+          "SplitViewPaneAnimationCloseDuration": {
+            "value": "00:00:00.1",
+            "xbf_offset": 384842
+          },
+          "SplitViewPaneAnimationOpenDuration": {
+            "value": "00:00:00.2",
+            "xbf_offset": 384768
           }
         },
         "HighContrast": {
@@ -1526,6 +1550,68 @@
           "TitleTextBlockFontSize": {
             "value": 28,
             "xbf_offset": 435601
+          },
+          "BodyStrongTextBlockFontSize": {
+            "value": 14,
+            "xbf_offset": 435930
+          },
+          "TitleLargeTextBlockFontSize": {
+            "value": 40,
+            "xbf_offset": 435610
+          },
+          "DisplayTextBlockFontSize": {
+            "value": 68,
+            "xbf_offset": 435619
+          },
+          "ControlFasterAnimationDuration": {
+            "value": "00:00:00.083",
+            "xbf_offset": 428266
+          },
+          "ControlFastAnimationDuration": {
+            "value": "00:00:00.167",
+            "xbf_offset": 428200
+          },
+          "ControlNormalAnimationDuration": {
+            "value": "00:00:00.250",
+            "xbf_offset": 428167
+          },
+          "ScrollBarOpacityChangeDuration": {
+            "value": "00:00:00.083",
+            "xbf_offset": 439282
+          },
+          "ScrollBarExpandDuration": {
+            "value": "00:00:00.167",
+            "xbf_offset": 439249
+          },
+          "MenuFlyoutItemMargin": {
+            "value": [
+              4,
+              2,
+              4,
+              2
+            ],
+            "xbf_offset": 428681
+          },
+          "MenuFlyoutSeparatorHeight": {
+            "value": 1,
+            "xbf_offset": 428600
+          },
+          "FlyoutContentPadding": {
+            "value": [
+              16,
+              15,
+              16,
+              17
+            ],
+            "xbf_offset": 435939
+          },
+          "TabViewItemMaxWidth": {
+            "value": 240,
+            "xbf_offset": 444635
+          },
+          "TabViewItemMinWidth": {
+            "value": 100,
+            "xbf_offset": 444644
           }
         }
       },
@@ -1730,11 +1816,40 @@
           "AllAppsIconSize_Large": {
             "value": 32,
             "xbf_offset": 51669
+          },
+          "FrameRootShadowPadding": {
+            "value": [
+              12,
+              12,
+              12,
+              12
+            ],
+            "xbf_offset": 51429
+          },
+          "Metrics_SmallStart_CompanionWidth": {
+            "value": 222,
+            "xbf_offset": 51477
+          },
+          "Metrics_LargeStart_CompanionWidth": {
+            "value": 282,
+            "xbf_offset": 51540
+          },
+          "NavigationPaneGlyphFontSize": {
+            "value": 16,
+            "xbf_offset": 51397
+          },
+          "PinnedIconSize_Large": {
+            "value": 32,
+            "xbf_offset": 51633
+          },
+          "SuggestionsIconSize_Large": {
+            "value": 32,
+            "xbf_offset": 51642
           }
         }
       },
       "review_notes": [
-        "Keyed root dictionary reference at XBF offset 47483 points to node section 4. Both small and large Start resource values exist. Do not substitute them into the KDE layout before establishing their active template and relationship to the Photon Start bundle in this build."
+        "Keyed root dictionary reference at XBF offset 47483 points to node section 4. StartMenuExperienceHost AppxManifest activates StartDocked.dll native XAML classes (LauncherFrame, AllAppsPane, PowerOptionsView, UserTileView), while MicrosoftWindows.Client.Photon's Windows.Shell.StartMenu wsxpack (4.0.1419.0) supplies only the embedded React Native Recommended feed (Substrate/OneDrive/Edge/Teams/Promoted items). Small (642 = 33 + 6*96 + 33) and Large (834 = 33 + 8*96 + 33) XAML outer frame widths include outer padding/margins; KDE popupPosition.js retains inner content dimensions inside PlasmaCore.Dialog margins until full S01 layout reconciliation."
       ],
       "reviewed_usages": [
         {
@@ -1909,6 +2024,259 @@
       ],
       "review_notes": [
         "Both slider orientations directly use the modern 18px thumb dimensions and 4px track. The existing KDE slider control paths remain responsible for keyboard, touch, wheel, tick marks, range and direction. WinUI progress bars separate a 1px track from the 3px minimum indicator; a single Qt style thickness cannot establish exact visual equivalence. Keep native Qt label layout and do not force this height onto capacity meters or unrelated app widgets."
+      ]
+    },
+    {
+      "pri_path": "SystemResources/Windows.UI.ShellCommon/Windows.UI.ShellCommon.pri",
+      "pri_sha256": "98f34192ec2d03d73eeba5123a7ad2e11b86eb93272e8ab2702d5728b18f0b8a",
+      "resource": "Files\\StartDocked\\TileStyles.xbf",
+      "xbf_sha256": "d35e3cace5a09ec41b71030b8cbb74e13da2a330facc717510cc9b8eebd95988",
+      "pri_payload_offset": 186384,
+      "xbf_payload_bytes": 60565,
+      "resource_values": {
+        "Default": {
+          "ScrollBarWidth": {
+            "value": 14,
+            "xbf_offset": 34151
+          }
+        },
+        "Light": {
+          "ScrollBarWidth": {
+            "value": 14,
+            "xbf_offset": 35994
+          }
+        },
+        "unqualified": {
+          "Metrics_LauncherFrame_MinWidth": {
+            "value": 642,
+            "xbf_offset": 39493
+          },
+          "Metrics_LauncherFrame_Margin": {
+            "value": [
+              12,
+              12,
+              12,
+              12
+            ],
+            "xbf_offset": 39520
+          },
+          "Metrics_CompanionWidth": {
+            "value": 212,
+            "xbf_offset": 39502
+          },
+          "NavigationPaneItemWidth": {
+            "value": 48,
+            "xbf_offset": 39813
+          },
+          "NavigationPaneItemHeight": {
+            "value": 48,
+            "xbf_offset": 39804
+          },
+          "UserAccountPictureSize": {
+            "value": 32,
+            "xbf_offset": 39831
+          }
+        }
+      },
+      "review_notes": [
+        "StartDocked XAML host metrics confirm the 12px launcher frame margin, 642px minimum frame width, 48x48 navigation items and 32px user account avatar slot."
+      ]
+    },
+    {
+      "pri_path": "SystemApps/MicrosoftWindows.Client.CBS_cw5n1h2txyewy/resources.pri",
+      "pri_sha256": "68784628ccc5776c6d0da8488fb84167a0fe94882f7dc8ec332cad675a26df83",
+      "resource": "Files\\Cortana.UI\\TaskbarSearch\\TaskbarSearchPageThemeResources.xbf",
+      "xbf_sha256": "2491afbc1c1d378aa8331f431b859c090e839c654ea2bbde342111236887d4f9",
+      "pri_payload_offset": 16804304,
+      "xbf_payload_bytes": 18972,
+      "resource_values": {
+        "unqualified": {
+          "TaskbarMargin": {
+            "value": 12,
+            "xbf_offset": 17146
+          },
+          "FindInStartSearchBoxMargin": {
+            "value": [
+              33,
+              33,
+              33,
+              10
+            ],
+            "xbf_offset": 16507
+          },
+          "StartCP3SearchBoxMargin": {
+            "value": [
+              33,
+              17,
+              33,
+              10
+            ],
+            "xbf_offset": 16486
+          },
+          "SearchBoxMargin": {
+            "value": [
+              24,
+              32,
+              24,
+              10
+            ],
+            "xbf_offset": 16444
+          },
+          "SearchTextBoxPadding": {
+            "value": [
+              40,
+              10,
+              29,
+              10
+            ],
+            "xbf_offset": 16549
+          },
+          "ContentControlFontSize": {
+            "value": 14,
+            "xbf_offset": 17080
+          },
+          "IconFontSize": {
+            "value": 16,
+            "xbf_offset": 17071
+          }
+        }
+      },
+      "review_notes": [
+        "TaskbarSearchPageThemeResources establishes the 12px taskbar popup gap (TaskbarMargin) and the 33px horizontal Start search-box inset (FindInStartSearchBoxMargin / StartCP3SearchBoxMargin) vs 24px in standalone Search (SearchBoxMargin)."
+      ]
+    },
+    {
+      "pri_path": "SystemResources/Windows.UI.ShellCommon/Windows.UI.ShellCommon.pri",
+      "pri_sha256": "98f34192ec2d03d73eeba5123a7ad2e11b86eb93272e8ab2702d5728b18f0b8a",
+      "resource": "Files\\ActionCenter\\Styling\\Styles.Win11.xbf",
+      "xbf_sha256": "48aac9e2a81177d96373fc254b84efc338d44f8c28c4343076969366f42a3e96",
+      "pri_payload_offset": 2454248,
+      "xbf_payload_bytes": 19305,
+      "resource_values": {
+        "unqualified": {
+          "NotificationCenterFlyoutWidth": {
+            "value": 360,
+            "xbf_offset": 11339
+          },
+          "NotificationCenterFlyoutMargin": {
+            "value": [
+              12,
+              8,
+              12,
+              0
+            ],
+            "xbf_offset": 11458
+          },
+          "NotificationCenterFlyoutActualWidth": {
+            "value": 312,
+            "xbf_offset": 11348
+          },
+          "GroupHeaderMinHeight": {
+            "value": 32,
+            "xbf_offset": 11619
+          },
+          "NotificationItemPlatingMargin": {
+            "value": [
+              4,
+              2,
+              4,
+              2
+            ],
+            "xbf_offset": 11374
+          },
+          "NotificationItemPlatingBorderThickness": {
+            "value": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "xbf_offset": 11395
+          }
+        }
+      },
+      "review_notes": [
+        "Styles.Win11 declares NotificationCenterFlyoutWidth=360, NotificationCenterFlyoutMargin=(12,8,12,0), GroupHeaderMinHeight=32 and 1px notification item plating border."
+      ]
+    },
+    {
+      "pri_path": "SystemResources/Windows.UI.ShellCommon/Windows.UI.ShellCommon.pri",
+      "pri_sha256": "98f34192ec2d03d73eeba5123a7ad2e11b86eb93272e8ab2702d5728b18f0b8a",
+      "resource": "Files\\JumpViewUI\\RefreshedStyles.xbf",
+      "xbf_sha256": "dbb96f05bca4075f1133c480caa64ef8866425754b1f0510a1ae07103408fdfb",
+      "pri_payload_offset": 1677644,
+      "xbf_payload_bytes": 8564,
+      "resource_values": {
+        "unqualified": {
+          "TaskbarJumpListFrameWidth": {
+            "value": 294,
+            "xbf_offset": 5862
+          },
+          "JumpListControlWidth": {
+            "value": 294,
+            "xbf_offset": 5871
+          },
+          "JumpListItemFontSize": {
+            "value": 14,
+            "xbf_offset": 6033
+          },
+          "JumpListHeadingItemFontSize": {
+            "value": 12,
+            "xbf_offset": 6042
+          },
+          "JumpListItemPaddingMouse": {
+            "value": [
+              0,
+              4,
+              0,
+              5
+            ],
+            "xbf_offset": 5970
+          },
+          "TaskbarJumpListSectionPadding": {
+            "value": [
+              0,
+              2,
+              0,
+              2
+            ],
+            "xbf_offset": 6012
+          }
+        }
+      },
+      "review_notes": [
+        "RefreshedStyles declares the 294px taskbar jump-list frame/control width, 14px item text and 12px category heading text."
+      ]
+    },
+    {
+      "pri_path": "SystemApps/Microsoft.LockApp_cw5n1h2txyewy/resources.pri",
+      "pri_sha256": "0471a22826195ae79c951f2439b4ab02c2be634c39866c101cd6b5e28ef5d214",
+      "resource": "Files\\StandardStyles.xbf",
+      "xbf_sha256": "36a2b85c5f5ea8a28e4ac16daaab2bbf69e331bdf8febb6cbfb7a81dc3d2d297",
+      "pri_payload_offset": 179032,
+      "xbf_payload_bytes": 29513,
+      "resource_values": {
+        "unqualified": {
+          "BatteryIconFontSizeLarge": {
+            "value": 18,
+            "xbf_offset": 21091
+          },
+          "BatteryIconFontSizeSmall": {
+            "value": 14,
+            "xbf_offset": 21082
+          },
+          "NetworkIconFontSizeLarge": {
+            "value": 18,
+            "xbf_offset": 21073
+          },
+          "NetworkIconFontSizeSmall": {
+            "value": 14,
+            "xbf_offset": 21064
+          }
+        }
+      },
+      "review_notes": [
+        "LockApp StandardStyles defines 18px/14px large and small status glyph font sizes; DesktopMediaControlsOverlay uses LockFontFamily rather than a hardcoded font name."
       ]
     }
   ],

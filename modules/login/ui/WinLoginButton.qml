@@ -38,6 +38,7 @@ QQC2.ToolButton {
             anchors.fill: parent
             visible: arrow.nativeSource.length === 0
             text: root.text
+            textFormat: Text.PlainText
             font: root.font
             color: root.icon.color
             horizontalAlignment: Text.AlignHCenter

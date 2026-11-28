@@ -133,6 +133,7 @@ Lib.DetailPage {
                         : deviceRow.model.ConnectionFailed ? i18n("Connection failed")
                         : deviceRow.model.Connected ? i18n("Connected")
                         : i18n("Not connected")
+                    textFormat: Text.PlainText
                     font: Kirigami.Theme.smallFont
                     opacity: 0.75
                     elide: Text.ElideRight

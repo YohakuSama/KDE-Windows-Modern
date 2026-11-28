@@ -312,7 +312,7 @@ Item {
 
                 WinPowerMenu {
                     id: powerMenu
-                    x: parent.width - width
+                    x: LayoutMirroring.enabled ? 0 : parent.width - width
                     y: -implicitHeight
                 }
             }

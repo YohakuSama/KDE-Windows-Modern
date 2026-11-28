@@ -426,7 +426,8 @@ Item {
 
                 anchors.fill: hoverHandler
                 anchors.margins: 1
-                sourceSize: Qt.size(parent.width, parent.height)
+                sourceSize: Qt.size(Math.max(1, Math.ceil(width * Screen.devicePixelRatio)),
+                                    Math.max(1, Math.ceil(height * Screen.devicePixelRatio)))
 
                 asynchronous: true
                 retainWhileLoading: true

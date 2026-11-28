@@ -57,7 +57,8 @@ RowLayout {
             font: content.button.font
             color: content.usingFocusBackground ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
             horizontalAlignment: content.button.display !== T.Button.TextUnderIcon && content.iconShown
-                ? Text.AlignLeft : Text.AlignHCenter
+                ? (content.LayoutMirroring.enabled ? Text.AlignRight : Text.AlignLeft)
+                : Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }

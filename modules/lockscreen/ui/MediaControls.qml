@@ -39,7 +39,7 @@ Item {
                 asynchronous: true
                 fillMode: Image.PreserveAspectFit
                 source: model.artUrl
-                sourceSize.height: height * Screen.devicePixelRatio
+                sourceSize.height: Math.max(1, Math.ceil(height * Screen.devicePixelRatio))
             }
 
             Item { // spacer
@@ -54,7 +54,7 @@ Item {
                 PlasmaComponents3.Label {
                     Layout.fillWidth: true
                     elide: Text.ElideRight
-                    font.family: "Segoe UI"
+                    font.family: Kirigami.Theme.defaultFont.family
                     font.pointSize: Kirigami.Theme.defaultFont.pointSize + 1
                     maximumLineCount: 1
                     text: model.track.length > 0
@@ -70,7 +70,7 @@ Item {
                     Layout.fillWidth: true
                     wrapMode: Text.NoWrap
                     elide: Text.ElideRight
-                    font.family: "Segoe UI"
+                    font.family: Kirigami.Theme.defaultFont.family
                     // if no artist is given, show player name instead
                     text: model.artist || model.identity
                     textFormat: Text.PlainText

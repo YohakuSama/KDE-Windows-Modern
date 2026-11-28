@@ -407,6 +407,7 @@ Item {
                 Row {
                     anchors.fill: parent
                     spacing: Kirigami.Units.smallSpacing
+                    layoutDirection: LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
 
                     AccountAvatar {
                         width: 32
@@ -416,7 +417,10 @@ Item {
                     }
 
                     Text {
+                        width: Math.max(0, parent.width - 32 - parent.spacing)
                         text: model.realName || model.name
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
                         font.family: Kirigami.Theme.defaultFont.family
                         font.pixelSize: LockMetrics.credentialFontSize
                         color: "#FFFFFF"

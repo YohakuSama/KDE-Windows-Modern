@@ -156,9 +156,19 @@ Item {
 
         Behavior on opacity { NumberAnimation { duration: ControlMetrics.microInteractionDuration } }
 
+        readonly property bool mirroredRow: !item.gridMode && item.LayoutMirroring.enabled
+        readonly property real trailingReserve: trailingLabel.visible ? trailingLabel.width + 16 : 0
+        readonly property real textSpanWidth: item.gridMode
+            ? Math.max(0, contentWrapper.width - 2 * Kirigami.Units.smallSpacing)
+            : Math.max(0, contentWrapper.width - (icon.width + 2 * Kirigami.Units.largeSpacing) - Kirigami.Units.smallSpacing - trailingReserve)
+
         Kirigami.Icon {
             id: icon
-            x: item.gridMode ? (parent.width - width) / 2 : Kirigami.Units.largeSpacing
+            x: item.gridMode
+                ? (parent.width - width) / 2
+                : contentWrapper.mirroredRow
+                ? parent.width - width - Kirigami.Units.largeSpacing
+                : Kirigami.Units.largeSpacing
             y: item.gridMode ? 9 : (parent.height - height) / 2
             width: item.iconSize
             height: width
@@ -169,15 +179,18 @@ Item {
 
         Column {
             id: textBlock
-            x: item.gridMode ? Kirigami.Units.smallSpacing : icon.x + icon.width + Kirigami.Units.largeSpacing
+            x: item.gridMode
+                ? Kirigami.Units.smallSpacing
+                : contentWrapper.mirroredRow
+                ? Kirigami.Units.smallSpacing + contentWrapper.trailingReserve
+                : icon.x + icon.width + Kirigami.Units.largeSpacing
             y: item.gridMode ? icon.y + icon.height + 6 : (parent.height - height) / 2
-            width: Math.max(0, parent.width - x - Kirigami.Units.smallSpacing
-                - (trailingLabel.visible ? trailingLabel.width + 16 : 0))
+            width: contentWrapper.textSpanWidth
             spacing: Kirigami.Units.smallSpacing / 2
 
             PlasmaComponents3.Label {
                 width: parent.width
-                horizontalAlignment: item.gridMode ? Text.AlignHCenter : Text.AlignLeft
+                horizontalAlignment: item.gridMode ? Text.AlignHCenter : (contentWrapper.mirroredRow ? Text.AlignRight : Text.AlignLeft)
                 maximumLineCount: item.gridMode && !item.newApplication ? 2 : 1
                 wrapMode: item.gridMode && !item.newApplication ? Text.Wrap : Text.NoWrap
                 elide: Text.ElideRight
@@ -191,8 +204,9 @@ Item {
                 objectName: "wmNewAppBadge"
                 visible: item.newApplication
                 width: parent.width
-                horizontalAlignment: item.gridMode ? Text.AlignHCenter : Text.AlignLeft
+                horizontalAlignment: item.gridMode ? Text.AlignHCenter : (contentWrapper.mirroredRow ? Text.AlignRight : Text.AlignLeft)
                 maximumLineCount: 1
+                elide: Text.ElideRight
                 color: Kirigami.Theme.highlightColor
                 font.pixelSize: Math.max(11, Kirigami.Theme.smallFont.pixelSize)
                 text: i18n("New")
@@ -202,6 +216,7 @@ Item {
             PlasmaComponents3.Label {
                 visible: item.showDescription && !item.newApplication && text.length > 0
                 width: parent.width
+                horizontalAlignment: item.gridMode ? Text.AlignHCenter : (contentWrapper.mirroredRow ? Text.AlignRight : Text.AlignLeft)
                 maximumLineCount: 1
                 elide: Text.ElideRight
                 color: Kirigami.Theme.disabledTextColor
@@ -213,14 +228,13 @@ Item {
         PlasmaComponents3.Label {
             id: trailingLabel
             visible: !item.gridMode && item.trailingText.length > 0
-            anchors.right: parent.right
-            anchors.rightMargin: 8
+            x: contentWrapper.mirroredRow ? 8 : Math.max(0, parent.width - width - 8)
             anchors.verticalCenter: parent.verticalCenter
             width: visible ? Math.min(implicitWidth, parent.width * 0.35) : 0
             text: item.trailingText
             textFormat: Text.PlainText
             elide: Text.ElideRight
-            horizontalAlignment: Text.AlignRight
+            horizontalAlignment: contentWrapper.mirroredRow ? Text.AlignLeft : Text.AlignRight
             color: Kirigami.Theme.disabledTextColor
             font: Kirigami.Theme.smallFont
         }

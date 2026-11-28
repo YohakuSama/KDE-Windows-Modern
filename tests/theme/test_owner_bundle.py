@@ -71,7 +71,8 @@ class OwnerBundleTests(unittest.TestCase):
                                 verify_resource_index(z, "native/", index, mapping)
 
     def test_development_payload_rejected(self):
-        for name in ("tests/run-qml-tests.sh", "plasma/applets/demo/tests/test.cpp",
+        for name in ("26H2/Windows/explorer.exe", "tests/run-qml-tests.sh",
+                     "plasma/applets/demo/tests/test.cpp",
                      "docs/WINDOWS11_FIDELITY.md", "scripts/ci-build.sh", "View-1.png",
                      ".gitmodules", "plasma/applets/org.kde.windowsmodern.systemtray/dev.sh",
                      "plasma/applets/org.kde.windowsmodern.icontasks/verify.sh"):

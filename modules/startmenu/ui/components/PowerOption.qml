@@ -78,6 +78,7 @@ Item {
 
         PlasmaComponents3.Label {
             text: option.label
+            textFormat: Text.PlainText
             color: option.optionEnabled ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
             font: labelMetrics.font
             Layout.fillWidth: true

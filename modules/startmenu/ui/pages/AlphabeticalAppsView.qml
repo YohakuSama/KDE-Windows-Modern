@@ -187,10 +187,13 @@ FocusScope {
             PlasmaComponents3.Label {
                 id: sectionLabel
                 objectName: "wmStartLetterHeading"
+                x: visualRow.LayoutMirroring.enabled ? parent.width - width : 0
                 width: Math.min(parent.width, Math.max(44, implicitWidth + 10))
                 height: visible ? view.headingHeight : 0
                 visible: visualRow.modelData.heading.length > 0
                 text: visualRow.modelData.heading
+                elide: Text.ElideRight
+                horizontalAlignment: visualRow.LayoutMirroring.enabled ? Text.AlignRight : Text.AlignLeft
                 readonly property bool hovered: sectionHeadingMouse.containsMouse
                 color: Kirigami.Theme.textColor
                 font.pixelSize: Math.max(13, Kirigami.Theme.defaultFont.pixelSize)
@@ -203,7 +206,8 @@ FocusScope {
                     Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.microInteractionDuration : 0 } }
                 }
                 verticalAlignment: Text.AlignVCenter
-                leftPadding: 10
+                leftPadding: visualRow.LayoutMirroring.enabled ? 0 : 10
+                rightPadding: visualRow.LayoutMirroring.enabled ? 10 : 0
                 textFormat: Text.PlainText
                 activeFocusOnTab: visible && view.alphabeticalGrouping
                 Accessible.role: Accessible.Button
@@ -230,6 +234,7 @@ FocusScope {
                 width: parent.width
                 height: view.cellHeight
                 spacing: 0
+                layoutDirection: visualRow.LayoutMirroring.enabled ? Qt.RightToLeft : Qt.LeftToRight
 
                 Repeater {
                     model: visualRow.modelData.entries

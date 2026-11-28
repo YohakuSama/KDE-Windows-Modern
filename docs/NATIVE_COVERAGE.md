@@ -753,10 +753,30 @@ The same restored archive supplies StartResources.xbf, including the
 separate small and large frame maximums (642/834 wide, 750/890 high),
 96 by 84 pinned cells, 96px all-apps grid width and 156px category cards.
 The source ledger records the literal resources and their pinned, grid,
-category and frame references. The existing pinned cell height of 84
-already matches the reference. The frame size and column-count changes
-remain open until the XAML frame and the separate Photon bundle are
-reconciled. No layout branch is selected by file name alone.
+category and frame references. Direct inspection of the local 26300.9974
+`StartMenuExperienceHost` and `MicrosoftWindows.Client.Photon` manifests,
+`Public/wsxpacks.json` (`4.0.1419.0`) and `StartMenu` bundle strings
+establishes that `StartMenuExperienceHost.exe` + `StartDocked.dll` native
+XAML (`LauncherFrame`, `AllAppsPane`, `NavigationPaneView`,
+`PowerOptionsView`, `UserTileView`) and `Client.Core\StartMenu` own the
+Start frame, Pinned grid, All Apps views, search field and account/power
+footer, while Photon's `Windows.Shell.StartMenu` Hermes React Native bundle
+is an embedded WSX extension pack exclusively for the Recommended feed
+(Substrate, OneDrive, Edge browsing history, Teams meetings and promoted
+items) alongside the optional `StartMenuCompanion` side panel
+(`Metrics_SmallStart_CompanionWidth=222`, `Metrics_LargeStart_CompanionWidth=282`,
+`StartDocked` `Metrics_CompanionWidth=212`). Together with
+`TaskbarSearchPageThemeResources.xbf` (`FindInStartSearchBoxMargin=33,33,33,10`,
+`TaskbarMargin=12`), the XAML outer frame widths (`642 = 33 + 6*96 + 33`,
+`834 = 33 + 8*96 + 33`) reconcile with the 6- and 8-column 96px pinned grids;
+KDE's `popupPosition.js` continues to express inner dialog content dimensions
+inside `PlasmaCore.Dialog` frame margins pending full `S01` frame/content
+alignment. Additional verified XBF literals for WinUI typography/control/scroll/menu/animation
+tokens (`ControlFasterAnimationDuration=83ms`, `ControlFastAnimationDuration=167ms`,
+`ControlNormalAnimationDuration=250ms`), `Styles.Win11.xbf`
+(`NotificationCenterFlyoutWidth=360`), `JumpViewUI\RefreshedStyles.xbf`
+(`TaskbarJumpListFrameWidth=294`) and `LockApp\StandardStyles.xbf` are
+recorded in `windows11-26h2-ui-parameters.json`.
 
 ### Shared native widget geometry
 

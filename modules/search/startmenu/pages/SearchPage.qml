@@ -297,13 +297,17 @@ Item {
                     Layout.preferredHeight: Kirigami.Units.iconSizes.small
                     NativeGlyph {
                         anchors.fill: parent
-                        roleName: searchPage.isCollapsed(section) ? "arrow-right-symbolic" : "arrow-down-symbolic"
+                        roleName: searchPage.isCollapsed(section)
+                            ? (headerRow.LayoutMirroring.enabled ? "arrow-left-symbolic" : "arrow-right-symbolic")
+                            : "arrow-down-symbolic"
                         opacity: Theme.dimmedIconOpacity
                     }
                 }
 
                 PlasmaComponents3.Label {
                     text: section
+                    textFormat: Text.PlainText
+                    elide: Text.ElideRight
                     color: Kirigami.Theme.disabledTextColor
                     font.pointSize: Kirigami.Theme.defaultFont.pointSize * 0.85
                     font.weight: Font.DemiBold

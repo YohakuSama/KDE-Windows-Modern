@@ -119,7 +119,7 @@
     },
     {
       "path": "SystemApps/MicrosoftWindows.Client.Photon_cw5n1h2txyewy/Public/wsxpacks/StartMenu/index.windows.bundle",
-      "scope": "Photon Start package implementation candidate",
+      "scope": "Photon WSX Recommended-feed Hermes bundle (hosted inside StartDocked XAML)",
       "kind": "bundle",
       "bytes": 4704052,
       "sha256": "37031ddecf01019b0d7cd800505758233280cc0fc594acee18e41e852d50e1c3"
@@ -141,7 +141,7 @@
   ],
   "limitations": [
     "Primary package PRI files only; localized PRI files, WinSxS copies and compiled DLLs are not collected in this pass.",
-    "The Photon bundle and both logo candidates now have hashes from the private review archive; neither the active Start implementation nor the taskbar logo role is established.",
-    "The scope labels identify packages to inspect, not verified layout resources or exact runtime controls."
+    "StartMenuExperienceHost AppxManifest activates StartDocked.dll native XAML classes for the Start outer frame, Pinned grid, All Apps views, navigation and power options, whereas MicrosoftWindows.Client.Photon's Windows.Shell.StartMenu wsxpack (4.0.1419.0) supplies only the embedded React Native Recommended feed. Both WindowsLogo SVG candidates share identical bytes; their taskbar Start-button role remains unestablished.",
+    "The scope labels identify packages to inspect, not verified runtime state selection for every individual control."
   ]
 }

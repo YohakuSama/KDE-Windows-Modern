@@ -30,7 +30,8 @@ Image {
     readonly property string colorHex: "#" + [color.r, color.g, color.b]
         .map(c => Math.round(c * 255).toString(16).padStart(2, "0")).join("")
 
-    sourceSize: Qt.size(Math.ceil(width * Screen.devicePixelRatio), Math.ceil(height * Screen.devicePixelRatio))
+    sourceSize: Qt.size(Math.max(1, Math.ceil(width * Screen.devicePixelRatio)),
+                        Math.max(1, Math.ceil(height * Screen.devicePixelRatio)))
     opacity: color.a
     source: svg.length === 0 ? "" : "data:image/svg+xml," + encodeURIComponent(
         "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>"

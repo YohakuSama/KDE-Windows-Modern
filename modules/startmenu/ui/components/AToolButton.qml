@@ -52,8 +52,18 @@ Rectangle {
     property alias text: lb.text
     property bool flat: false
     property bool linkStyle: false
-    property alias iconName: icon.roleName
+    property string iconName: ""
     property bool mirror: false
+    readonly property bool rtl: item.LayoutMirroring.enabled
+
+    function directionalRole(role, mirrored) {
+        if (!mirrored) return role;
+        if (role === "go-next-symbolic") return "go-previous-symbolic";
+        if (role === "go-previous-symbolic") return "go-next-symbolic";
+        if (role === "go-next") return "go-previous";
+        if (role === "go-previous") return "go-next";
+        return role;
+    }
 
     signal clicked
 
@@ -75,17 +85,21 @@ Rectangle {
         anchors.topMargin: Kirigami.Units.smallSpacing / 2
         anchors.bottomMargin: Kirigami.Units.smallSpacing / 2
         spacing: Kirigami.Units.smallSpacing
-        LayoutMirroring.enabled: mirror
+        layoutDirection: (item.rtl !== item.mirror) ? Qt.RightToLeft : Qt.LeftToRight
 
         Label {
             id: lb
             color: Kirigami.Theme.textColor
-            Layout.leftMargin: Kirigami.Units.smallSpacing
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
+            Layout.leftMargin: (item.rtl !== item.mirror) ? 0 : Kirigami.Units.smallSpacing
+            Layout.rightMargin: (item.rtl !== item.mirror) ? Kirigami.Units.smallSpacing : 0
             Layout.fillWidth: true
         }
 
         NativeGlyph {
             id: icon
+            roleName: item.directionalRole(item.iconName, item.rtl)
             implicitHeight: 12
             implicitWidth: 12
             Layout.preferredWidth: 12
