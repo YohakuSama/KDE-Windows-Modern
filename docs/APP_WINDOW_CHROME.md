@@ -48,9 +48,18 @@ The plugin uses Konsole's actual IKonsolePlugin and native QTabWidget:
   request can only be consumed by the running KWin service. No terminal
   titles, commands or session contents are exchanged.
 - There is no default global shortcut for this request. A missing,
-  disabled or older snap script leaves maximize/restore usable. Hover
-  snapping does not implement Windows Snap Assist, persistent snap
-  groups, or automatic placement of other applications.
+  disabled or older snap script leaves maximize/restore usable. Both the
+  drag-to-top Snap Bar and the caption-button Snap Layouts picker now
+  follow initial placement with KWin-backed Snap Assist (`SnapAssistPicker.qml`):
+  when open zones remain in the chosen layout (skipping zones already
+  occupied by snapped normal windows on the current desktop and output)
+  and eligible resizeable normal windows exist on the current desktop,
+  a thumbnail/icon/title picker is centered inside the next open zone to
+  fill remaining zones sequentially without stealing Wayland keyboard
+  focus from the newly snapped window. Persistent taskbar snap-group sets
+  and coupled multi-window divider resizing across arbitrary 3/4-zone
+  layouts remain a KWin compositor boundary (KWin custom tile trees are
+  desktop-global rather than per-window-pair Snap Groups).
 
 This remains an opt-in pre-acceptance implementation. It activates only
 with a visible top tab bar and enabled native new-tab button, hidden

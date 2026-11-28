@@ -251,6 +251,7 @@ Item {
 
             opacity: lockScreenRoot.loginUiActive ? 0.0 : 1.0
             visible: opacity > 0
+            onVisibleChanged: if (visible) lockScreenUi.refreshClock()
 
             Behavior on opacity {
                 OpacityAnimator {
@@ -279,6 +280,7 @@ Item {
                 Text {
                     id: timeText
                     text: Qt.formatTime(new Date(), Qt.locale().timeFormat(Locale.ShortFormat))
+                    textFormat: Text.PlainText
                     font.family: Kirigami.Theme.defaultFont.family
                     font.weight: Font.DemiBold
                     font.pixelSize: LockMetrics.clockTimePixelSize
@@ -290,6 +292,7 @@ Item {
                 Text {
                     id: dateText
                     text: lockScreenRoot.dateLine(new Date())
+                    textFormat: Text.PlainText
                     font.family: Kirigami.Theme.defaultFont.family
                     font.weight: Font.Normal
                     font.pixelSize: LockMetrics.clockDatePixelSize
@@ -508,6 +511,14 @@ Item {
                 }
                 FluentPowerMenuItem {
                     width: powerMenu.availableWidth
+                    visible: lockScreenUi.lockScreenHost.suspendToDiskSupported
+                    text: LockText.tr("Hibernate", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Hibernate"), Qt.uiLanguage, Qt.locale().name)
+                    icon.name: "system-suspend-hibernate"
+                    onTriggered: lockScreenUi.lockScreenHost.suspendToDisk()
+                    actionAvailable: lockScreenUi.lockScreenHost.suspendToDiskSupported
+                }
+                FluentPowerMenuItem {
+                    width: powerMenu.availableWidth
                     text: LockText.tr("Shut down", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Shut down"), Qt.uiLanguage, Qt.locale().name)
                     icon.name: "system-shutdown"
                     actionAvailable: sessionManagement.canShutdown
@@ -529,19 +540,26 @@ Item {
                 focusPolicy: Qt.TabFocus
                 icon.name: "system-shutdown-symbolic"
                 text: LockText.tr("Power", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power"), Qt.uiLanguage, Qt.locale().name)
-                enabled: lockScreenUi.lockScreenHost.suspendToRamSupported || sessionManagement.canShutdown || sessionManagement.canReboot
+                enabled: lockScreenUi.lockScreenHost.suspendToRamSupported
+                    || lockScreenUi.lockScreenHost.suspendToDiskSupported
+                    || sessionManagement.canShutdown
+                    || sessionManagement.canReboot
                 onClicked: powerMenu.opened ? powerMenu.close() : powerMenu.open()
             }
         }
     }
 
+    function refreshClock() {
+        const d = new Date();
+        timeText.text = Qt.formatTime(d, Qt.locale().timeFormat(Locale.ShortFormat));
+        dateText.text = lockScreenRoot.dateLine(d);
+    }
+
     // ── Clock update timer ──
     Timer {
-        interval: 1000; running: true; repeat: true
-        onTriggered: {
-            var d = new Date();
-            timeText.text = Qt.formatTime(d, Qt.locale().timeFormat(Locale.ShortFormat));
-            dateText.text = lockScreenRoot.dateLine(d);
-        }
+        interval: 1000
+        running: clockContainer.visible
+        repeat: true
+        onTriggered: lockScreenUi.refreshClock()
     }
 }

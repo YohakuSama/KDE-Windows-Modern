@@ -25,12 +25,19 @@ Item {
     property var target: null // { layout, cell, rect } while a cell is hovered
     property var captionWindow: null
     property rect captionGeometry: Qt.rect(0, 0, 0, 0)
+    property int assistLayoutIndex: -1
+    property rect assistWorkArea: Qt.rect(0, 0, 0, 0)
+    property var assistFilledCells: []
+    property var assistSnappedEntries: []
+    property int assistTargetCell: -1
+    property rect assistTargetRect: Qt.rect(0, 0, 0, 0)
 
     function track(win) {
         if (!win || !win.normalWindow) {
             return;
         }
         win.interactiveMoveResizeStarted.connect(() => {
+            root.hideSnapAssist();
             root.hideCaptionPicker();
             captionRequest.win = null;
             root.clearPendingSnap();
@@ -130,10 +137,13 @@ Item {
             || !fitsWindow(win, chosen.rect)) return;
         // After KWin has handled the release (it may maximize at the top edge).
         // Keep the actual target output's work area, even for a drag.
+        root.hideSnapAssist();
         snapTimer.win = win;
         snapTimer.rect = chosen.rect;
         snapTimer.workArea = area;
         snapTimer.captionFrame = null;
+        snapTimer.layoutIndex = chosen.layout;
+        snapTimer.cellIndex = chosen.cell;
         snapTimer.restart();
     }
 
@@ -167,12 +177,149 @@ Item {
         return Layouts.fitsSize(rect, win.minSize, win.maxSize);
     }
 
+    function presentOnCurrentDesktop(win) {
+        return Boolean(win)
+            && (!win.desktops || !win.desktops.length
+                || win.desktops.indexOf(Workspace.currentDesktop) !== -1);
+    }
+
+    function canSnapAssistCandidate(win, rect) {
+        return Boolean(win && !win.deleted && win.normalWindow && !win.skipSwitcher
+            && win.resizeable && win.moveable && !win.fullScreen
+            && !win.move && !win.resize
+            && presentOnCurrentDesktop(win) && fitsWindow(win, rect));
+    }
+
+    function assistWindows() {
+        return assistSnappedEntries.map(entry => entry.win);
+    }
+
+    function hideSnapAssist() {
+        assistLayoutIndex = -1;
+        assistWorkArea = Qt.rect(0, 0, 0, 0);
+        assistFilledCells = [];
+        assistSnappedEntries = [];
+        assistTargetCell = -1;
+        assistTargetRect = Qt.rect(0, 0, 0, 0);
+        assistPicker.hideAssist();
+    }
+
+    function occupiedLayoutState(area, layoutIndex, excludedWindows) {
+        const layout = Layouts.layouts[layoutIndex];
+        const rects = [];
+        const windows = [];
+        if (!layout) {
+            return { rects: rects, windows: windows };
+        }
+        const cellRects = layout.map(c => Layouts.cellRect(area, c));
+        for (let i = 0; i < Workspace.windows.length; ++i) {
+            const w = Workspace.windows[i];
+            if (!canSnap(w) || !presentOnCurrentDesktop(w) || excludedWindows.indexOf(w) >= 0) {
+                continue;
+            }
+            if (cellRects.some(cr => Layouts.sameCellGeometry(w.frameGeometry, cr, 4))) {
+                rects.push(w.frameGeometry);
+                windows.push(w);
+            }
+        }
+        return { rects: rects, windows: windows };
+    }
+
+    function advanceSnapAssist() {
+        if (assistLayoutIndex < 0 || assistWorkArea.width <= 0 || assistWorkArea.height <= 0) {
+            hideSnapAssist();
+            return;
+        }
+        const output = Workspace.screenAt(Qt.point(
+            assistWorkArea.x + assistWorkArea.width / 2,
+            assistWorkArea.y + assistWorkArea.height / 2));
+        if (!output || !sameRect(assistWorkArea, Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop))) {
+            hideSnapAssist();
+            return;
+        }
+        const used = assistWindows();
+        const occupied = occupiedLayoutState(assistWorkArea, assistLayoutIndex, used);
+        const openCells = Layouts.remainingLayoutCells(
+            assistWorkArea, assistLayoutIndex, assistFilledCells, occupied.rects, 4);
+        for (let i = 0; i < openCells.length; ++i) {
+            const slot = openCells[i];
+            const candidates = [];
+            for (let wIdx = 0; wIdx < Workspace.windows.length; ++wIdx) {
+                const candidate = Workspace.windows[wIdx];
+                if (used.indexOf(candidate) >= 0 || occupied.windows.indexOf(candidate) >= 0) {
+                    continue;
+                }
+                if (canSnapAssistCandidate(candidate, slot.rect)) {
+                    candidates.push(candidate);
+                }
+            }
+            candidates.sort((a, b) => (b.stackingOrder ?? 0) - (a.stackingOrder ?? 0));
+            if (candidates.length > 0 && assistPicker.showForZone(slot.rect, candidates)) {
+                assistTargetCell = slot.cell;
+                assistTargetRect = slot.rect;
+                return;
+            }
+        }
+        hideSnapAssist();
+    }
+
+    function startSnapAssist(window, area, layoutIndex, cellIndex, placedRect) {
+        if (layoutIndex < 0 || cellIndex < 0 || !Layouts.layouts[layoutIndex]) {
+            hideSnapAssist();
+            return;
+        }
+        assistLayoutIndex = layoutIndex;
+        assistWorkArea = Qt.rect(area.x, area.y, area.width, area.height);
+        assistFilledCells = [cellIndex];
+        assistSnappedEntries = [{
+            win: window,
+            rect: Qt.rect(placedRect.x, placedRect.y, placedRect.width, placedRect.height)
+        }];
+        advanceSnapAssist();
+    }
+
+    function chooseAssistWindow(candidate) {
+        if (!assistPicker.visible || assistLayoutIndex < 0 || assistTargetCell < 0
+            || !canSnapAssistCandidate(candidate, assistTargetRect)) {
+            advanceSnapAssist();
+            return;
+        }
+        const output = Workspace.screenAt(Qt.point(
+            assistWorkArea.x + assistWorkArea.width / 2,
+            assistWorkArea.y + assistWorkArea.height / 2));
+        if (!output || !sameRect(assistWorkArea, Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop))) {
+            hideSnapAssist();
+            return;
+        }
+        if (candidate.tile && !candidate.tile.unmanage(candidate)) {
+            advanceSnapAssist();
+            return;
+        }
+        if (candidate.minimized) {
+            candidate.minimized = false;
+        }
+        if (typeof candidate.setMaximize === "function") {
+            candidate.setMaximize(false, false);
+        }
+        const targetCell = assistTargetCell;
+        const targetRect = Qt.rect(
+            assistTargetRect.x, assistTargetRect.y,
+            assistTargetRect.width, assistTargetRect.height);
+        candidate.frameGeometry = targetRect;
+        assistFilledCells = assistFilledCells.concat([targetCell]);
+        assistSnappedEntries = assistSnappedEntries.concat([{ win: candidate, rect: targetRect }]);
+        Workspace.activeWindow = candidate;
+        advanceSnapAssist();
+    }
+
     function clearPendingSnap() {
         snapTimer.stop();
         snapTimer.win = null;
         snapTimer.rect = null;
         snapTimer.workArea = null;
         snapTimer.captionFrame = null;
+        snapTimer.layoutIndex = -1;
+        snapTimer.cellIndex = -1;
     }
 
     function requestCaptionPicker() {
@@ -213,6 +360,7 @@ Item {
         const output = Workspace.screenAt(Qt.point(rect.x + rect.width / 2, rect.y + rect.height / 2));
         if (!output)
             return;
+        hideSnapAssist();
         hideCaptionPicker();
         const screen = Workspace.clientArea(KWin.FullScreenArea, output, Workspace.currentDesktop);
         const area = Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop);
@@ -265,10 +413,13 @@ Item {
             const rect = Layouts.cellRect(area, Layouts.layouts[layout][cell]);
             if (!root.fitsWindow(win, rect))
                 return;
+            root.hideSnapAssist();
             snapTimer.win = win;
             snapTimer.rect = rect;
             snapTimer.workArea = area;
             snapTimer.captionFrame = frame;
+            snapTimer.layoutIndex = layout;
+            snapTimer.cellIndex = cell;
             snapTimer.restart();
         }
     }
@@ -304,12 +455,16 @@ Item {
         property var rect: null
         property var workArea: null
         property var captionFrame: null
+        property int layoutIndex: -1
+        property int cellIndex: -1
         interval: 50
         onTriggered: {
             const window = win;
             const geometry = rect;
             const area = workArea;
             const frame = captionFrame;
+            const chosenLayout = layoutIndex;
+            const chosenCell = cellIndex;
             root.clearPendingSnap();
             if (!root.canSnap(window) || window !== Workspace.activeWindow
                 || window.move || window.resize || !geometry || !area
@@ -328,6 +483,37 @@ Item {
             if (typeof window.setMaximize === "function")
                 window.setMaximize(false, false);
             window.frameGeometry = Qt.rect(geometry.x, geometry.y, geometry.width, geometry.height);
+            root.startSnapAssist(window, area, chosenLayout, chosenCell, geometry);
+        }
+    }
+
+    SnapAssistPicker {
+        id: assistPicker
+        onWindowChosen: win => root.chooseAssistWindow(win)
+        onDismissed: root.hideSnapAssist()
+    }
+
+    Timer {
+        interval: 150
+        repeat: true
+        running: assistPicker.visible
+        onTriggered: {
+            const output = Workspace.screenAt(Qt.point(
+                root.assistWorkArea.x + root.assistWorkArea.width / 2,
+                root.assistWorkArea.y + root.assistWorkArea.height / 2));
+            if (!output || !root.sameRect(root.assistWorkArea,
+                    Workspace.clientArea(KWin.MaximizeArea, output, Workspace.currentDesktop))) {
+                root.hideSnapAssist();
+                return;
+            }
+            for (let i = 0; i < root.assistSnappedEntries.length; ++i) {
+                const entry = root.assistSnappedEntries[i];
+                if (!root.canSnap(entry.win) || !root.presentOnCurrentDesktop(entry.win)
+                    || !Layouts.sameCellGeometry(entry.win.frameGeometry, entry.rect, 8)) {
+                    root.hideSnapAssist();
+                    return;
+                }
+            }
         }
     }
 
@@ -346,6 +532,10 @@ Item {
             root.track(win);
         }
         function onWindowRemoved(win) {
+            if (root.assistWindows().indexOf(win) >= 0)
+                root.hideSnapAssist();
+            else if (assistPicker.visible && assistPicker.candidates.indexOf(win) >= 0)
+                root.advanceSnapAssist();
             if (root.captionWindow === win)
                 root.hideCaptionPicker();
             if (captionRequest.win === win)
@@ -356,6 +546,8 @@ Item {
                 root.clearPendingSnap();
         }
         function onWindowActivated(win) {
+            if (assistPicker.visible && win && root.assistWindows().indexOf(win) < 0)
+                root.hideSnapAssist();
             if (root.movingWindow && root.movingWindow !== win)
                 root.cancelDrag();
             if (snapTimer.win && snapTimer.win !== win)
@@ -366,12 +558,14 @@ Item {
                 captionRequest.win = null;
         }
         function onCurrentDesktopChanged() {
+            root.hideSnapAssist();
             root.clearPendingSnap();
             root.cancelDrag();
             root.hideCaptionPicker();
             captionRequest.win = null;
         }
         function onScreensChanged() {
+            root.hideSnapAssist();
             root.hideCaptionPicker();
             captionRequest.win = null;
             root.cancelDrag();

@@ -8,6 +8,7 @@ const chinese = {
     "Unlocking failed": "解锁失败",
     "Caps Lock is on": "大写锁定已开启",
     "Sleep": "睡眠",
+    "Hibernate": "休眠",
     "Shut down": "关机",
     "Restart": "重启",
     "Power": "电源",

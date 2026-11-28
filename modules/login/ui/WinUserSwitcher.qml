@@ -20,19 +20,36 @@ ListView {
     spacing: 4
     boundsBehavior: Flickable.StopAtBounds
     clip: true
+    keyNavigationEnabled: true
+    activeFocusOnTab: visible
 
     visible: count > 1 && uiVisible && PlasmaLogin.GreeterState.loginState !== PlasmaLogin.GreeterState.LoginState.UserPrompt
+
+    function activateCurrentUser() {
+        if (currentIndex >= 0 && currentIndex < count) {
+            PlasmaLogin.GreeterState.userListIndex = currentIndex;
+        }
+    }
+
+    Keys.onReturnPressed: event => { activateCurrentUser(); event.accepted = true; }
+    Keys.onEnterPressed: event => { activateCurrentUser(); event.accepted = true; }
+    Keys.onSpacePressed: event => { activateCurrentUser(); event.accepted = true; }
 
     delegate: Item {
         id: accountRow
         width: root.width
         height: WinStyle.userSwitcherItemHeight
+        Accessible.role: Accessible.ListItem
+        Accessible.name: model.realName || model.name || ""
+        Accessible.selected: ListView.isCurrentItem
 
         Rectangle {
             anchors.fill: parent
             radius: ControlMetrics.controlCornerRadius
             color: accountRow.ListView.isCurrentItem ? "#20FFFFFF"
                 : pointer.containsMouse ? "#16FFFFFF" : "transparent"
+            border.width: root.activeFocus && accountRow.ListView.isCurrentItem ? 1 : 0
+            border.color: "#88FFFFFF"
         }
 
         Row {

@@ -103,6 +103,10 @@
     <entry name="showKeyboardBrightness" type="Bool">
       <default>true</default>
     </entry>
+    <entry name="runCommandHistory" type="StringList">
+      <label>Recent commands executed from the Windows Modern Run dialog.</label>
+      <default></default>
+    </entry>
   </group>
 
 </kcfg>

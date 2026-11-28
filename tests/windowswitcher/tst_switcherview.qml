@@ -217,5 +217,26 @@ Item {
             compare(view.rows.length, 0);
             verify(view.width > 0 && view.height > 0, "placeholder keeps a visible size");
         }
+
+        function test_rtlRowOrderAndArrowMirroring() {
+            try {
+                view.LayoutMirroring.enabled = true;
+                fill(4);
+                verify(card(0).x > card(1).x, "first card sits to the right in RTL");
+                const first = card(view.rows[0][0]);
+                const last = card(view.rows[0][view.rows[0].length - 1]);
+                const rightMargin = view.contentWidth - (first.x + first.width);
+                const leftMargin = last.x;
+                verify(Math.abs(leftMargin - rightMargin) <= 1, "RTL row stays centered");
+                tabBox.currentIndex = 0;
+                keyClick(Qt.Key_Left);
+                compare(tabBox.currentIndex, 1, "Left advances to next card in RTL");
+                tabBox.currentIndex = 0;
+                keyClick(Qt.Key_Right);
+                compare(tabBox.currentIndex, 3, "Right wraps to last card in RTL");
+            } finally {
+                view.LayoutMirroring.enabled = Qt.binding(() => Qt.application.layoutDirection === Qt.RightToLeft);
+            }
+        }
     }
 }

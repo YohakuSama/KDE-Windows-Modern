@@ -171,6 +171,7 @@ FocusScope {
             selectedTextColor: "#FFFFFF"
             focus: true
             leftPadding: 8
+            rightPadding: 8
             verticalAlignment: TextInput.AlignVCenter
             cursorVisible: visible && focus
             activeFocusOnTab: true
@@ -235,8 +236,8 @@ FocusScope {
 
     SequentialAnimation {
         id: errorPulse
-        NumberAnimation { target: errorLabel; property: "scale"; from: 1; to: 1.06; duration: 100 }
-        NumberAnimation { target: errorLabel; property: "scale"; to: 1; duration: 100 }
+        NumberAnimation { target: errorLabel; property: "scale"; from: 1; to: 1.06; duration: Kirigami.Units.shortDuration > 0 ? 100 : 0 }
+        NumberAnimation { target: errorLabel; property: "scale"; to: 1; duration: Kirigami.Units.shortDuration > 0 ? 100 : 0 }
     }
 
     // Both credential actions retain the native ToolButton input behavior,

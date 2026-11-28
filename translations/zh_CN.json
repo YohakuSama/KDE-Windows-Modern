@@ -685,5 +685,6 @@
   "Accessibility settings": "辅助功能设置",
   "Mute %1": "将 %1 静音",
   "Unmute %1": "取消 %1 静音",
-  "Microphone volume": "麦克风音量"
+  "Microphone volume": "麦克风音量",
+  "Layout %1, position %2": "布局 %1，位置 %2"
 }

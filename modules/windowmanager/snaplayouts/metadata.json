@@ -9,7 +9,7 @@
         ],
         "BugReportUrl": "https://github.com/YohakuSama/KDE-Windows-Modern/issues",
         "Category": "Window Management",
-        "Description": "Windows 11 Snap Layouts for drag-to-top and the optional Konsole caption button.",
+        "Description": "Windows 11 Snap Layouts and Snap Assist for drag-to-top and the optional Konsole caption button.",
         "EnabledByDefault": false,
         "Icon": "view-split-left-right",
         "Id": "org.kde.windowsmodern.snaplayouts",

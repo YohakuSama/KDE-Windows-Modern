@@ -27,11 +27,11 @@
 | [05 任务栏与系统托盘](#block-05) | P1 | 1 | 6 | 0 | 0 | 7 | 14.3% |
 | [06 开始菜单与搜索](#block-06) | P1 | 4 | 3 | 0 | 0 | 7 | 57.1% |
 | [07 快捷中心与通知中心](#block-07) | P1 | 11 | 4 | 0 | 0 | 15 | 73.3% |
-| [08 窗口管理与动画](#block-08) | P1 | 0 | 7 | 1 | 1 | 9 | 0.0% |
+| [08 窗口管理与动画](#block-08) | P1 | 1 | 8 | 0 | 0 | 9 | 11.1% |
 | [09 锁屏、登录及启动外观](#block-09) | P1 | 0 | 4 | 0 | 0 | 4 | 0.0% |
 | [10 文件管理器与终端](#block-10) | P2 | 0 | 3 | 1 | 1 | 5 | 0.0% |
 | [11 安装、兼容性与性能](#block-11) | P2（稳定性问题即时处理） | 2 | 5 | 0 | 1 | 8 | 25.0% |
-| 总计 | | 32 | 54 | 5 | 3 | 94 | 34.0% |
+| 总计 | | 33 | 55 | 4 | 2 | 94 | 35.1% |
 
 实机验收：94 项 Pending，0 项有本基线对应的 Pass 记录。新增 4 项架构任务，Q11/V04 从 U 更新为 P；未因文档整理增加 I。任务范围仍可随有证据的遗漏补充，不宣称已列尽全部目标差距。已有功能和源码优势见各行现状，不将 P 项解释为从零开发。
 
@@ -67,7 +67,7 @@
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
 | --- | --- | --- | --- | --- | --- |
-| A01 | P | PRI/XBF 与 Photon 资源定位 | 19 个原始文件及 1481 个有效 XBF 哈希与本地 26H2 镜像逐字节一致；已解码 22 个核心 XBF 字典并记录偏移（新增 `StartDocked/TileStyles`、`TaskbarSearchPageThemeResources`、`ActionCenter/Styling/Styles.Win11`、`JumpViewUI/RefreshedStyles`、`LockApp/StandardStyles` 及 `21h1_themeresources` 字号/控件/滚动条/菜单/动画常量）；已由 `StartMenuExperienceHost` 与 `Client.Photon` 清单及 `wsxpacks.json` 证实原生 XAML（`StartDocked` + `Client.Core/StartMenu`）承载 Start 外框、固定网格、全部应用、底栏与电源菜单，Photon `Windows.Shell.StartMenu` 仅为嵌入 XAML 的 Recommended 推荐流扩展包 | 按下游具体功能项（S01/S04、Q12、T03、W03/W07、E04）继续解析非字典模板节点流与运行时视觉状态切换；静态资源未覆盖的运行时条件分支标 REF |
+| A01 | P | PRI/XBF 与 Photon 资源定位 | 19 个原始文件及 1481 个有效 XBF 哈希与本地 26H2 镜像逐字节一致；已解码 25 个核心 XBF 字典并记录偏移（新增 `StartDocked/TileStyles`、`TaskbarSearchPageThemeResources`、`ActionCenter/Styling/Styles.Win11`、`JumpViewUI/RefreshedStyles`、`LockApp/StandardStyles`、`LockApp/CreativeOverlay.LockMDL2Font`、`LogonWebHostStyles`、`SnapLayout/CommonStyles` 及 `21h1_themeresources` 字号/控件/滚动条/菜单/动画常量）；已由 `StartMenuExperienceHost` 与 `Client.Photon` 清单及 `wsxpacks.json` 证实原生 XAML（`StartDocked` + `Client.Core/StartMenu`）承载 Start 外框、固定网格、全部应用、底栏与电源菜单，Photon `Windows.Shell.StartMenu` 仅为嵌入 XAML 的 Recommended 推荐流扩展包 | 按下游具体功能项（S04、T03、E04）继续解析非字典模板节点流与运行时视觉状态切换；静态资源未覆盖的运行时条件分支标 REF |
 | A02 | P | 原版布局参数 | 登录凭据宽度 296、快捷中心 376/400/48、搜索框圆角 16、托盘内容边距 4、弹窗与任务栏标准间距 12（`TaskbarMargin=12` / `Metrics_LauncherFrame_Margin=12`）、通用圆角 4/8、菜单最小行高 32、跳转列表 294、通知/日历飞出卡片默认宽度 336（`NotificationCenterFlyoutWidth=360` 扣除 `2×12` 外边距，内层 `312=NotificationCenterFlyoutActualWidth`、分组头 `32`、应用图标 `16`），以及 Start 原版外框 `642×750` / `834×890`（`1600` 阈值、`626×734` / `818×874` 内层表面、`8+25=33px` 外边距、`96×84` 网格、`156×156` 分类卡与 `278px` 账户菜单上限）均已由原版 XBF 验证并接入 | 结合剩余功能工作块核对窗口/文件管理器局部常量，保留并记录宿主适配 |
 | A03 | P | 逻辑像素、DPI、窗口和屏幕约束 | 弹窗几何与屏幕可用区裁剪共用 `popupGeometry.js`；补齐 `TaskbarButton`、`TaskbarGlyph`、`AccountAvatar`、`MediaControls`、`MediaCard` 封面、剪贴板图片预览、Start 头像与任务栏预览封面的非零整数 DPR `sourceSize` 守卫；补齐 Login 电源菜单、剪贴板更多菜单、快捷中心底栏/详情页、通知中心与日历月视图方向键/标题、电池进度条、Start 列表/搜索建议/分类折叠箭头/底栏位置栏/`AToolButton`/视图选择器、RTL 顶边对齐任务栏 Search 锚点、锁屏用户切换、`MoreSettingsLink`、`NativeButtonContent` 及 Alt+Tab 卡片的 RTL 镜像，以及 `RunDialog` 窄高屏与多语言按钮宽度自适应 | 下游具体模块的窄屏/多屏与复杂布局细节随各自任务收口，100%/125%/150%/200%、多显示器与 RTL 实机表现待维护者验收 |
 | A04 | P | 文字及排版 | 开始搜索和菜单已用系统字体度量；移除锁屏 `MediaControls` 硬编码 `"Segoe UI"` 并补齐 `NoPasswordUnlock`/`SearchHome` 的系统默认字体绑定；为锁屏用户切换、无密码登录按钮、快捷中心标题/亮度/蓝牙状态、Start 菜单/字母索引/分组标题与搜索建议/快捷词补齐 `Text.PlainText` 与省略截断，`RunDialog`、`MoreSettingsLink` 与 `SearchHome` 接入系统字号下限扩展以避免辅助大字号裁切 | 各模块局部字重、行高、基线与原生 Kvantum/Plasma 控件排版细节随 03–10 工作块逐项核对，中英文/CJK IME 与辅助缩放待实机验收 |
@@ -211,16 +211,16 @@
 依据与实现记录：[窗口视觉规范](WINDOWS11_FIDELITY.md#native-material-implementation-boundary)、[应用标题栏](APP_WINDOW_CHROME.md)、[样式规范](STYLE.md#alt-tab-window-switcher)。
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
-| --- | --- | --- | --- | --- | --- |
-| W01 | P | 窗口装饰和标题栏 | Aurorae 共享源码、标题栏按钮及状态存在 | 核对活动/非活动、边框、控制按钮、双击、右键、最大化及缩放 |
-| W02 | P | 窗口圆角和阴影 | 顶部圆角和阴影已有；Aurorae 底部客户区半径受限，frameless Konsole 外角未解决 | 确定宿主可用的原生机制并补齐适用窗口、贴靠/最大化/全屏差异；禁止任意裁剪应用 |
-| W03 | P | Alt+Tab 切换器 | 现有 KWin TabBox 布局和键盘导航 | 核对预览尺寸、选中、切换、分组、关闭、取消、多屏和动画 |
-| W04 | P | Win+Tab 任务视图及虚拟桌面 | Task View main.qml 经 KGlobalAccel D-Bus 调用 KWin Overview，Win+Tab 使用同一概览；当前入口没有独立 26H2 概览渲染 | 核对原生 Overview 与原版布局/交互差距，选择最小外观适配；保留原生窗口与虚拟桌面后端 |
-| W05 | P | Snap Layouts 布局选择和贴靠 | 有拖到顶部的 KWin 脚本及 Konsole 最大化悬停桥接 | 核对各显示尺寸布局、悬停/拖动/键盘、目标计算和普通窗口的支持 |
-| W06 | O | Snap Assist、持久贴靠组与后续填充 | Snap Layouts main.qml 校验并设置单个活动窗口 frameGeometry；应用布局文档明确缺少 Snap Assist/持久组 | 按原版行为和 KWin 能力设计最小实现，保留真实窗口生命周期；必要宿主差异由维护者确认 |
-| W07 | U | 窗口生命周期和系统动效 | 有零散 QML/宿主动画，尚未逐状态审查 | 统一盘点打开/关闭、最小化/恢复、最大化、切换、弹窗以及动效关闭时的时长、曲线和过渡 |
-| W08 | P | OSD 与全局快捷键 | 现有 KWin/Plasma 路径及快捷键脚本 | 核对音量、亮度、设备状态、位置、显示时间、键盘和已有 KDE 快捷键冲突 |
-| W09 | P | Win+R 运行窗口 | 已有托盘 RunDialog 与真实启动路径 | 核对输入/历史、确认/取消、焦点、窗口尺寸和原版功能；明确 KRunner 回退行为 |
+| --- | --- | --- | --- | --- |
+| W01 | P | 窗口装饰和标题栏 | Aurorae 深浅色共享源码（`30px` 标题栏高、`46×30px` 最小化/最大化/关闭命中区、`1px` 边框、`12px` 阴影外边距、活动/非活动文字与底色区分及 `#C42B1C` 关闭悬停）已统一由 `window-frames.py` 生成 | 活动/非活动切换、双击最大化、标题栏右键菜单及 150% 分数缩放边缘表现待维护者实机验收 |
+| W02 | P | 窗口圆角和阴影 | 顶部 `8px` 圆角、活动/非活动阴影及最大化/全屏无圆角已接入；明确遵循 KWin 6.8 原生圆角边界，不对任意客户端内容施加硬裁剪遮罩 | Aurorae V2 不暴露底部客户区圆角参数，且无边框 Konsole 外角仍受合成器协议限制（待上游 KDecoration3/CSD 圆角或可选效果评估） |
+| W03 | P | Alt+Tab 切换器 | KWin `TabBoxSwitcher` 居中浮层支持等高按窗口宽高比自适应卡片、自动换行居中、中键/悬停关闭按钮（补齐按压深红反馈）、软件渲染无遮罩降级及多屏当前屏幕定位；补齐 `SwitcherView` 图标 `roundToIconSize: false` 及 RTL 行内卡片排布与左右方向键镜像 | 多显示器焦点屏切换、大量窗口滚动及快速连按 `Alt+Tab` 实机表现待维护者验收 |
+| W04 | P | Win+Tab 任务视图及虚拟桌面 | `Task View` 任务栏按钮（优先加载 26H2 双色调原始素材）与 `windows-shortcuts.py` 统一将 `Win+Tab` 绑定至 KWin 原生 `Overview`（保留真实窗口堆叠、搜索与虚拟桌面增删切换后端） | 原生 KWin Overview 顶部虚拟桌面条与 26H2 底部桌面缩略条存在宿主布局差异，待维护者实机确认是否保持原生呈现 |
+| W05 | P | Snap Layouts 布局选择和贴靠 | 拖至顶边 `SnapBar`（`72×44` 六布局自适应窄屏缩放）与可选 Konsole 最大化按钮悬停 `CaptionSnapPicker` 共用 `layouts.js` 整数像素无隙网格与 `minSize`/`maxSize` 校验，补齐 `90ms` 悬停微交互过渡（受 `shortDuration > 0` 门控） | 通用 Aurorae 窗口最大化按钮悬停未受 KWin 暴露独立脚本钩子，实机拖拽与多屏跨屏释放待维护者验收 |
+| W06 | P | Snap Assist、持久贴靠组与后续填充 | 新增 `SnapAssistPicker.qml` 与 `layouts.js` 剩余槽位/占用检测（`sameCellGeometry`、`remainingLayoutCells`）：在拖顶或标题栏贴靠完成后自动跳过已占用槽位，在下一个空槽中心展示当前桌面候选窗口缩略图选择器（`KWin.WindowThumbnail`、`roundToIconSize: false`、软件渲染降级、不抢占已贴靠窗口 Wayland 焦点），支持 2/3/4 分区顺序连续填充并在激活其他窗口、移动/关闭已贴靠窗口或切屏/切桌面时自动收起 | KWin 脚本层不提供跨任意 3/4 分区的任务栏持久贴靠组集合或联动分割线拖拽（KWin 自定义平铺树为桌面全局而非成对窗口组），已在 `APP_WINDOW_CHROME.md` 记录合成器边界并待实机验收 |
+| W07 | P | 窗口生命周期和系统动效 | 完成 26H2（`21h1_themeresources.xbf` `167/333/500ms`、`SystemTrayResources` `300ms`、`LockApp` `100/200/400/750/0ms`）与全仓 KWin/Plasma/QML 动效盘点并归档至 `WINDOWS11_FIDELITY.md`；补齐锁屏 `MainBlock` `errorPulse`、`SnapBar`/`CaptionSnapPicker`/`SnapAssistPicker` 等全部 QML 微交互对系统减弱动画（`Kirigami.Units.shortDuration <= 0`）的零时长门控 | KWin 原生打开/关闭/最小化/最大化曲线与 26H2 DWM 体感对比待维护者实机验收 |
+| W08 | P | OSD 与全局快捷键 | `osd/contents/code/main.js` 将音量、亮度、麦克风、键盘布局等原生 OSD 统一重定位至当前工作区底部居中（底边上 `12px`，防重入且多屏安全）；`windows-shortcuts.py` 完整覆盖 `Win+Up/Down`（`snapkeys`）、`Win+Tab`、`Win+R`、`Win+M`、`Win+Home`、`Win+A/N`、`Win+V`、`Win+K`（条件绑定）、`Win+PrtSc`/`Alt+PrtSc` 与 `Ctrl+Shift+Esc`，冲突检测与备份恢复齐备 | OSD 内部条目仍复用 Plasma 原生 OSD 内容布局（未重写独立 QML OSD 服务），实机按键无冲突表现待维护者验收 |
+| W09 | I | Win+R 运行窗口 | `RunDialog.qml` 接入真实命令执行、多屏工作区居中、窄高屏与大字号自适应、IME 组合态保护及 RTL 镜像；新增 `Up`/`Down` 历史命令回溯（保存未提交草稿并去重持久化至 `runCommandHistory`）、`Cancel` 按钮（`wmRunCancelButton`）与关闭后 `restoreShellPopupFocus()` 焦点归还，无托盘或卸载托盘时由 `ShellShortcutRouter` / `run-release` 平滑回退原生 KRunner | Wayland 多显示器定位、权限拦截提示与实际应用启动待维护者实机验收 |
 
 <a name="block-09"></a>
 
@@ -231,11 +231,11 @@
 依据与实现记录：[样式规范](STYLE.md)、[登录原版参数与部署](NATIVE_COVERAGE.md#shared-control-evidence-and-credential-hosts)、[项目安装说明](../README.md#optional-boot-and-login-appearance)。
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
-| --- | --- | --- | --- | --- | --- |
-| L01 | P | Win+L 锁屏及凭据页 | 现有 shell overlay；两宿主凭据宽度 296 与部分公共尺寸已落实 | 核对时钟、头像、密码/揭示/提交、键盘/IME、状态按钮、背景裁切、过渡及真实认证 |
-| L02 | P | 系统登录管理器 | 已有独立可选 greeter 与受校验的私有素材部署路径 | 核对用户/会话切换、焦点、错误、密码、原版尺寸及动画；NixOS 常规安装不替换登录管理器，单独确认可选范围 |
-| L03 | P | 启动、注销、休眠恢复和 Splash | 已有五点动画、Plymouth 可选主题及 Plasma splash 路径 | 核对动画位置、速度、状态文字、登录/退出过渡与安全启动/解锁提示的宿主边界，不伪造启动进度 |
-| L04 | P | 壁纸、声音及其模式适配 | 已用校验的 Bloom 包并有声音/主题资源 | 盘点目标壁纸/声音角色、裁切和随模式切换；对比实际事件，不替换第三方应用音效 |
+| --- | --- | --- | --- | --- |
+| L01 | P | Win+L 锁屏及凭据页 | 保持 `kscreenlocker` 真实 PAM 认证、指纹/智能卡提示、`ScreenMonitor` 6.8 多屏指针跟随、`MediaControls`、`NoPasswordUnlock` 及 `296px` 凭据宽度；为锁屏电源菜单补齐条件休眠项（`Hibernate` / `suspendToDiskSupported`）与中文回退，补齐密码框 RTL 对称内边距、时钟 `PlainText` 渲染及唤醒态暂停后台 `1Hz` 时钟计时器 | 默认头像仍为 Fluent 兼容轮廓（见 A05），PAM 解锁、Fcitx5 输入法与多屏唤醒待维护者实机验收 |
+| L02 | P | 系统登录管理器 | 独立可选 Plasma Login Manager greeter 具备受校验的 `greeter-native-assets.py` / `greeter-colors.py` 私有素材与深色方案同步、`SignInWelcome` 欢迎过渡及会话/键盘/网络/电池/电源底栏；为 `Login.qml` 新增按住显示密码按钮（同步 `GreeterState.showPassword`）与空密码框方向键切用户的 RTL 镜像，为 `WinUserSwitcher` 补齐 `Tab`/`Up`/`Down`/`Enter` 键盘切换与无障碍属性，并暂停隐藏态 `WinClock` `1Hz` 计时器 | NixOS 常规安装默认不替换系统登录管理器，可选构建部署与多用户/多会话切换待维护者单独确认并实机验收 |
+| L03 | P | 启动、注销、休眠恢复和 Splash | KSplash（`Splash.qml`）与登录欢迎页共用 `SignInProgress.qml` 五点圆环（`1600ms` 周期，仅在可见时运行且不阻塞会话就绪），Plymouth 可选主题（`windows-modern.script` + `boot-frames.py`）共用相同角间距并在关机态隐藏启动徽标仅展示真实系统状态文本 | Plymouth 不通过 `GetMode` 区分独立重启标识，LUKS 解锁提示与真实冷启动/注销/休眠恢复帧过渡待维护者实机验收 |
+| L04 | P | 壁纸、声音及其模式适配 | 完成本地 26H2 `Web/`（22 套壁纸包）与 `Media/`（70 个 WAV）逐项盘点并记录于 `WINDOWS11_FIDELITY.md`：`Windows-modern` 同时封装浅色 `img0.jpg` 与深色 `img19.jpg`（含校准强调色元数据），由 Plasma `org.kde.image` 随深浅色自动切换且桌面保持 `preserveAspectFit` 不裁切原图，锁屏独立配置 `img100.jpg`；18 个核心系统音效映射为 20 个 Freedesktop 事件并刻意排除 52 个闹钟/铃声/语音及默认静音窗口音效，保留用户静音偏好与第三方应用音效 | `Windows Background.wav`（滑块提示）与 `Windows Unlock.wav` 未纳入当前固定私有 `runtime` 清单，如需增补待维护者更新私有资源索引后实机验收 |
 
 <a name="block-10"></a>
 

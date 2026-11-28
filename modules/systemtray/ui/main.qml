@@ -162,7 +162,15 @@ ContainmentItem {
     Loader {
         id: runLoader
         active: false
-        sourceComponent: Components.RunDialog { commandRunner: Plasmoid }
+        sourceComponent: Components.RunDialog {
+            commandRunner: Plasmoid
+            commandHistory: Plasmoid.configuration.runCommandHistory
+            onHistoryUpdated: next => { Plasmoid.configuration.runCommandHistory = next; }
+            onClosed: {
+                if (typeof Plasmoid.restoreShellPopupFocus === "function")
+                    Plasmoid.restoreShellPopupFocus();
+            }
+        }
         onLoaded: item.open(Plasmoid.runDialogArea(root))
     }
 

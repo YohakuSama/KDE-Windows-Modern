@@ -89,6 +89,12 @@ PlasmaCore.Window {
                         color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.10 : 0.04)
                         border.width: Layouts.cellBorderWidth
                         border.color: isHovered ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.35 : 0.15)
+                        Behavior on color {
+                            ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? 90 : 0 }
+                        }
+                        Behavior on border.color {
+                            ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? 90 : 0 }
+                        }
                     }
                 }
             }

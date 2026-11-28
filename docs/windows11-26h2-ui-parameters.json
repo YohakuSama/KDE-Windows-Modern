@@ -2332,6 +2332,80 @@
       "review_notes": [
         "LockApp StandardStyles defines 18px/14px large and small status glyph font sizes; DesktopMediaControlsOverlay uses LockFontFamily rather than a hardcoded font name."
       ]
+    },
+    {
+      "pri_path": "SystemApps/Microsoft.LockApp_cw5n1h2txyewy/resources.pri",
+      "pri_sha256": "0471a22826195ae79c951f2439b4ab02c2be634c39866c101cd6b5e28ef5d214",
+      "resource": "Files\\View\\CreativeOverlay.LockMDL2Font.xbf",
+      "xbf_sha256": "473968378a740c5ebc7603ccac61d58accd872305d8c1aa3408ef9b7f65eba16",
+      "pri_payload_offset": 133212,
+      "xbf_payload_bytes": 39964,
+      "resource_values": {
+        "unqualified": {
+          "FadeDuration": {
+            "value": "0:0:0.4",
+            "xbf_offset": 14857
+          },
+          "FeedbackHoverDuration": {
+            "value": "0:0:0.1",
+            "xbf_offset": 14911
+          },
+          "FeedbackSwitchDuration": {
+            "value": "0:0:0.2",
+            "xbf_offset": 14884
+          },
+          "MultipleChoiceSwitchDuration": {
+            "value": "0:0:0.3",
+            "xbf_offset": 14938
+          },
+          "CreativeChangeFadeDuration": {
+            "value": "0:0:0.75",
+            "xbf_offset": 15002
+          },
+          "InstantCreativeChangeDuration": {
+            "value": "0:0:0",
+            "xbf_offset": 15031
+          }
+        }
+      },
+      "review_notes": [
+        "LockApp CreativeOverlay defines 100ms hover feedback, 200ms switch feedback, 400ms fade, 750ms full backdrop transition, and an explicit 0ms reduced-motion duration."
+      ]
+    },
+    {
+      "pri_path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/resources.pri",
+      "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
+      "resource": "Files\\LogonWebHost\\LogonWebHostStyles.xbf",
+      "xbf_sha256": "4799fa7603a21c4808e3b5adabcf07dd286a53389e56ef182faa7e081682ca2c",
+      "pri_payload_offset": 8338476,
+      "xbf_payload_bytes": 6198,
+      "resource_values": {
+        "unqualified": {
+          "LogonDefaultFontSize": {
+            "value": 14,
+            "xbf_offset": 5247
+          },
+          "UserAccountPictureSize": {
+            "value": 48,
+            "xbf_offset": 4352
+          }
+        }
+      },
+      "review_notes": [
+        "LogonWebHostStyles confirms the 14px default logon body/credential font size alongside Windows.UI.Logon CredentialControlsWidth = 296."
+      ]
+    },
+    {
+      "pri_path": "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/resources.pri",
+      "pri_sha256": "26cfc6f5c3ab12be96c605f6518ca7a144185135b92d598d0f56abbb6d840461",
+      "resource": "Files\\SnapLayout\\CommonStyles.xbf",
+      "xbf_sha256": "f7d2656ffb8f82ceb67d31ed158ca30d5c9aa6689feb620b672bdcb62a17e6ea",
+      "pri_payload_offset": 8246456,
+      "xbf_payload_bytes": 6946,
+      "resource_values": {},
+      "review_notes": [
+        "SnapLayout CommonStyles, SnapBarControl, SnapLayoutPickerControl and WindowGroupSuggestionControl reference OverlayCornerRadius (8px) for the Snap Bar / Snap Flyout outer container while delegating compositor-coupled snap group persistence to Windows DWM/TwinUI."
+      ]
     }
   ],
   "media_glyph_review": {

@@ -14,6 +14,7 @@ import org.kde.breeze.components
 import org.kde.kirigami 2.20 as Kirigami
 
 import org.kde.plasma.login as PlasmaLogin
+import "lockMetrics.js" as LockMetrics
 
 SessionManagementScreen {
     id: root
@@ -96,6 +97,7 @@ SessionManagementScreen {
     function startLogin() {
         const username = showUsernamePrompt ? userNameInput.text : userList.selectedUser;
         const password = passwordField.text;
+        revealButton.syncRevealState(false);
         if (loginButton.visible) loginButton.forceActiveFocus();
         else noPasswordButton.forceActiveFocus();
         loginRequest(username, password);
@@ -214,13 +216,13 @@ SessionManagementScreen {
         WinTextField {
             id: passwordField
             anchors.left: parent.left
-            anchors.right: loginButton.left
+            anchors.right: revealButton.visible ? revealButton.left : loginButton.left
             anchors.rightMargin: 4
             anchors.verticalCenter: parent.verticalCenter
             height: parent.height
             drawBackground: false
             leftPadding: 10
-            rightPadding: 10
+            rightPadding: 8
 
             text: ""
             placeholderText: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Password")
@@ -238,11 +240,13 @@ SessionManagementScreen {
             }
 
             onKeyPressed: event => {
-                if (event.key === Qt.Key_Left && !text) {
+                const prevKey = root.LayoutMirroring.enabled ? Qt.Key_Right : Qt.Key_Left;
+                const nextKey = root.LayoutMirroring.enabled ? Qt.Key_Left : Qt.Key_Right;
+                if (event.key === prevKey && !text) {
                     userList.decrementCurrentIndex();
                     event.accepted = true;
                 }
-                if (event.key === Qt.Key_Right && !text) {
+                if (event.key === nextKey && !text) {
                     userList.incrementCurrentIndex();
                     event.accepted = true;
                 }
@@ -254,6 +258,60 @@ SessionManagementScreen {
                     passwordField.textField.selectAll();
                     passwordField.forceActiveFocusOnTextField();
                 }
+            }
+        }
+
+        QQC2.ToolButton {
+            id: revealButton
+            anchors.right: loginButton.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.max(WinStyle.loginButtonSize - 4, LockMetrics.submitButtonMinWidth)
+            height: Math.max(WinStyle.loginButtonSize - 4, LockMetrics.submitButtonMinHeight)
+            visible: passwordField.text.length > 0
+            text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Show password")
+            Accessible.name: text
+            display: QQC2.AbstractButton.IconOnly
+            icon.name: "view-visible"
+            icon.color: WinStyle.foregroundColor
+
+            function syncRevealState(active) {
+                const show = Boolean(active && visible);
+                passwordField.echoMode = show ? TextInput.Normal : TextInput.Password;
+                if (PlasmaLogin.GreeterState.showPassword !== show) {
+                    PlasmaLogin.GreeterState.showPassword = show;
+                }
+            }
+
+            onPressedChanged: syncRevealState(pressed)
+            onVisibleChanged: if (!visible) syncRevealState(false)
+            onActiveFocusChanged: if (!activeFocus && !pressed) syncRevealState(false)
+
+            contentItem: Item {
+                NativeGlyph {
+                    id: revealGlyph
+                    anchors.centerIn: parent
+                    width: Math.max(0, Math.min(16, parent.width, parent.height))
+                    height: width
+                    roleName: revealButton.icon.name
+                    foreground: revealButton.icon.color
+                }
+                Text {
+                    anchors.fill: parent
+                    visible: revealGlyph.nativeSource.length === 0
+                    text: revealButton.text
+                    textFormat: Text.PlainText
+                    font.family: WinStyle.fontFamily
+                    font.pixelSize: LockMetrics.submitButtonFontSize
+                    color: revealButton.icon.color
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+            }
+
+            background: Rectangle {
+                radius: LockMetrics.fieldButtonRadius
+                color: revealButton.hovered || revealButton.pressed ? WinStyle.hoverBackground : "transparent"
             }
         }
 
@@ -387,6 +445,12 @@ SessionManagementScreen {
                 }
                 if (passwordField.text != PlasmaLogin.GreeterState.userPromptPassword) {
                     passwordField.text = PlasmaLogin.GreeterState.userPromptPassword;
+                }
+            }
+            function onShowPasswordChanged() {
+                const expected = PlasmaLogin.GreeterState.showPassword ? TextInput.Normal : TextInput.Password;
+                if (passwordField.echoMode !== expected) {
+                    passwordField.echoMode = expected;
                 }
             }
         }

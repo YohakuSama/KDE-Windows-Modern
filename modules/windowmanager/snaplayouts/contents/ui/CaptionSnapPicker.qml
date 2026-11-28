@@ -102,6 +102,12 @@ PlasmaCore.Window {
                         color: enabled && hit.containsMouse ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.10 : 0.04)
                         border.width: Layouts.cellBorderWidth
                         border.color: enabled && hit.containsMouse ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, enabled ? 0.35 : 0.15)
+                        Behavior on color {
+                            ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? 90 : 0 }
+                        }
+                        Behavior on border.color {
+                            ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? 90 : 0 }
+                        }
                         Accessible.role: Accessible.Button
                         Accessible.name: qsTr("Layout %1, position %2").arg(diagram.index + 1).arg(index + 1)
                         Accessible.onPressAction: if (enabled) picker.cellChosen(diagram.index, index)

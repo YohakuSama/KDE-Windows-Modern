@@ -85,4 +85,35 @@ TestCase {
         compare(Layouts.cellAt(10, -1, w, h, gap), null);                        // above
         compare(Layouts.cellAt(6 * (w + gap) + 5, 10, w, h, gap), null);          // past the last diagram
     }
+
+    function test_snapAssistRemainingCellsAndOccupancy() {
+        const area = { x: 0, y: 48, width: 1920, height: 1032 };
+        // 2-zone 50/50: snapping cell 0 leaves cell 1 (right half)
+        const halfOpen = Layouts.remainingLayoutCells(area, 0, [0], []);
+        compare(halfOpen.length, 1);
+        compare(halfOpen[0].cell, 1);
+        compare(halfOpen[0].rect, { x: 960, y: 48, width: 960, height: 1032 });
+
+        // If right half is already occupied (within tolerance), 0 open cells remain
+        const alreadyFull = Layouts.remainingLayoutCells(area, 0, [0], [
+            { x: 962, y: 48, width: 958, height: 1030 }
+        ], 4);
+        compare(alreadyFull.length, 0);
+
+        // 4-zone grid (layout 4): snapping cell 0 with cell 2 occupied leaves [1, 3] in order
+        const q2 = Layouts.cellRect(area, Layouts.layouts[4][2]);
+        const gridOpen = Layouts.remainingLayoutCells(area, 4, [0], [q2], 4);
+        compare(gridOpen.map(s => s.cell), [1, 3]);
+
+        // Sequential fill of cell 1 leaves only cell 3
+        const gridNext = Layouts.remainingLayoutCells(area, 4, [0, 1], [q2], 4);
+        compare(gridNext.map(s => s.cell), [3]);
+
+        // Invalid area or layout returns empty
+        compare(Layouts.remainingLayoutCells({ x: 0, y: 0, width: 0, height: 100 }, 0, []), []);
+        compare(Layouts.remainingLayoutCells(area, 99, []), []);
+        verify(!Layouts.sameCellGeometry(null, q2));
+        verify(Layouts.sameCellGeometry(q2, { x: q2.x + 2, y: q2.y - 2, width: q2.width, height: q2.height }, 4));
+        verify(!Layouts.sameCellGeometry(q2, { x: q2.x + 10, y: q2.y, width: q2.width, height: q2.height }, 4));
+    }
 }

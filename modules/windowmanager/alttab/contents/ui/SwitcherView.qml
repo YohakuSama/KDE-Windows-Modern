@@ -39,6 +39,7 @@ FocusScope {
 
     LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
+    readonly property bool mirrored: LayoutMirroring.enabled
 
     // ── Metrics (Windows 11 at 100% scale, scaled by Kirigami units) ──
     readonly property real unit: Kirigami.Units.gridUnit / 18
@@ -106,13 +107,20 @@ FocusScope {
             widest = Math.max(widest, r.width);
         }
         for (let r = 0; r < newRows.length; ++r) {
-            let x = Math.round((widest - newRows[r].width) / 2);
+            const rowOffset = Math.round((widest - newRows[r].width) / 2);
+            let x = mirrored ? widest - rowOffset : rowOffset;
             const y = r * (cardHeight + cardSpacing);
             for (const i of newRows[r].items) {
                 const card = cards.itemAt(i);
-                card.x = x;
+                if (mirrored) {
+                    x -= card.width;
+                    card.x = x;
+                    x -= cardSpacing;
+                } else {
+                    card.x = x;
+                    x += card.width + cardSpacing;
+                }
                 card.y = y;
-                x += card.width + cardSpacing;
                 newRowOf[i] = r;
             }
         }
@@ -178,16 +186,16 @@ FocusScope {
     onMaxContentWidthChanged: scheduleRelayout()
     onMaxContentHeightChanged: scheduleRelayout()
     onCardHeightChanged: scheduleRelayout()
+    onMirroredChanged: scheduleRelayout()
     onCurrentIndexChanged: ensureCurrentVisible()
 
     Keys.onPressed: event => {
         if (count === 0) {
             return;
         }
-        if (event.key === Qt.Key_Left) {
-            tabBox.currentIndex = (currentIndex - 1 + count) % count;
-        } else if (event.key === Qt.Key_Right) {
-            tabBox.currentIndex = (currentIndex + 1) % count;
+        if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
+            const forward = (event.key === Qt.Key_Right) !== root.mirrored;
+            tabBox.currentIndex = (currentIndex + (forward ? 1 : -1) + count) % count;
         } else if (event.key === Qt.Key_Up) {
             moveVertically(-1);
         } else if (event.key === Qt.Key_Down) {
@@ -304,6 +312,7 @@ FocusScope {
                         anchors.verticalCenter: parent.verticalCenter
                         width: root.headerIconSize
                         height: root.headerIconSize
+                        roundToIconSize: false
                         source: card.model.icon
                     }
 
@@ -328,12 +337,14 @@ FocusScope {
                         height: width
                         radius: root.smallCornerRadius
                         visible: card.showClose
-                        color: closeMouse.containsMouse ? root.closeHoverFill : "transparent"
+                        color: closeMouse.containsPress ? Qt.darker(root.closeHoverFill, 1.15)
+                             : closeMouse.containsMouse ? root.closeHoverFill : "transparent"
 
                         Kirigami.Icon {
                             anchors.centerIn: parent
                             width: Kirigami.Units.iconSizes.small
                             height: width
+                            roundToIconSize: false
                             source: "window-close-symbolic"
                             color: closeMouse.containsMouse ? "white" : root.textColor
                             isMask: true
@@ -366,6 +377,7 @@ FocusScope {
                         anchors.centerIn: parent
                         width: Kirigami.Units.iconSizes.huge
                         height: width
+                        roundToIconSize: false
                         source: card.model.icon
                     }
 

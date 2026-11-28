@@ -35,6 +35,7 @@ TestCase {
     }
     function test_localLanguageFallback() {
         compare(LockText.tr("Password", "Password", "zh-CN", "en_US"), "密码");
+        compare(LockText.tr("Hibernate", "Hibernate", "zh-CN", "en_US"), "休眠");
         compare(LockText.tr("Password", "Password", "", "zh_CN"), "密码");
         compare(LockText.tr("Password", "Password", "en-US", "zh_CN"), "Password");
         compare(LockText.tr("Password", "Kennwort", "de-DE", "de_DE"), "Kennwort");

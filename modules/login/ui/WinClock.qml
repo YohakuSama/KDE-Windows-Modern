@@ -22,6 +22,15 @@ Column {
         return Qt.locale().toString(d, DateFormat.longDateWithoutYear(Qt.locale().dateFormat(Locale.LongFormat)));
     }
 
+    function refresh() {
+        const now = new Date();
+        timeText.text = Qt.formatTime(now, Qt.locale().timeFormat(Locale.ShortFormat));
+        dateText.text = root.dateLine(now);
+    }
+
+    readonly property bool clockActive: visible && opacity > 0
+    onClockActiveChanged: if (clockActive) refresh()
+
     spacing: Kirigami.Units.smallSpacing * WinStyle.clockLineSpacingFactor
     opacity: uiVisible ? opacityWhenActive : opacityWhenInactive
 
@@ -35,6 +44,7 @@ Column {
     Text {
         id: timeText
         text: Qt.formatTime(new Date(), Qt.locale().timeFormat(Locale.ShortFormat))
+        textFormat: Text.PlainText
         font.family: WinStyle.fontFamily
         font.weight: Font.DemiBold
         font.pixelSize: WinStyle.clockTimePixelSize
@@ -46,6 +56,7 @@ Column {
     Text {
         id: dateText
         text: root.dateLine(new Date())
+        textFormat: Text.PlainText
         font.family: WinStyle.fontFamily
         font.pixelSize: WinStyle.clockDatePixelSize
         color: WinStyle.secondaryForegroundColor
@@ -55,12 +66,8 @@ Column {
 
     Timer {
         interval: 1000
-        running: true
+        running: root.clockActive
         repeat: true
-        onTriggered: {
-            const now = new Date();
-            timeText.text = Qt.formatTime(now, Qt.locale().timeFormat(Locale.ShortFormat));
-            dateText.text = root.dateLine(now);
-        }
+        onTriggered: root.refresh()
     }
 }

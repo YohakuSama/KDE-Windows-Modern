@@ -19,6 +19,12 @@ const captionCellRadius = 4;
 const cellBorderWidth = 1;
 const captionDiagramMaxWidth = 96;
 const captionDiagramAspectRatio = 0.6;
+const assistOuterMargin = 16;
+const assistCardRadius = 8;
+const assistPreviewRadius = 4;
+const assistCardPadding = 6;
+const assistCardGap = 8;
+const assistHeaderHeight = 28;
 
 const layouts = [
     [[0, 0, 1 / 2, 1], [1 / 2, 0, 1 / 2, 1]],
@@ -50,6 +56,43 @@ function fitsSize(rect, minimum, maximum) {
 function hasFittingCell(area, minimum, maximum) {
     return layouts.some(layout => layout.some(cell =>
         fitsSize(cellRect(area, cell), minimum, maximum)));
+}
+
+// Fractional scaling and client size hints can adjust KWin frameGeometry by a
+// couple of logical pixels after explicit placement.
+function sameCellGeometry(a, b, tolerance = 4) {
+    return Boolean(a && b)
+        && [a.x, a.y, a.width, a.height, b.x, b.y, b.width, b.height].every(Number.isFinite)
+        && a.width > 0 && a.height > 0 && b.width > 0 && b.height > 0
+        && Math.abs(a.x - b.x) <= tolerance
+        && Math.abs(a.y - b.y) <= tolerance
+        && Math.abs(a.width - b.width) <= tolerance
+        && Math.abs(a.height - b.height) <= tolerance;
+}
+
+// Ordered remaining unfilled and non-occupied cells in a layout for Snap Assist.
+function remainingLayoutCells(area, layoutIndex, filledCells = [], occupiedRects = [], tolerance = 4) {
+    const layout = layouts[layoutIndex];
+    if (!area || area.width <= 0 || area.height <= 0 || !layout) {
+        return [];
+    }
+    const filled = Array.isArray(filledCells) ? filledCells : [];
+    const occupied = Array.isArray(occupiedRects) ? occupiedRects : [];
+    const open = [];
+    for (let i = 0; i < layout.length; ++i) {
+        if (filled.indexOf(i) >= 0) {
+            continue;
+        }
+        const rect = cellRect(area, layout[i]);
+        if (rect.width <= 0 || rect.height <= 0) {
+            continue;
+        }
+        if (occupied.some(existing => sameCellGeometry(rect, existing, tolerance))) {
+            continue;
+        }
+        open.push({ cell: i, rect: rect });
+    }
+    return open;
 }
 
 // Keep the six diagrams within the available output. At the normal size
