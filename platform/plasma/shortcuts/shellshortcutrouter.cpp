@@ -4,6 +4,7 @@
 #include <QAction>
 #include <QDBusConnection>
 #include <QDBusMessage>
+#include <QDBusPendingCall>
 #include <QDebug>
 #include <QKeySequence>
 #include <QMetaObject>

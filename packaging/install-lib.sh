@@ -16,6 +16,7 @@ set -euo pipefail
 # an arbitrary user's directory during a system-wide root install.
 NATIVE_ASSETS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/native-assets"
 CURSOR_ASSETS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/cursor-assets"
+SHELL_ASSETS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/shell-assets"
 
 # Always resolve to this file's own location so SRC_DIR is correct no
 # matter which script sources us (install.sh, uninstall.sh, or a
@@ -189,13 +190,15 @@ install_native_cursor_theme() {
     command -v python3 &>/dev/null || return 0
     [ -f "$SRC_DIR/scripts/import-cursor-assets.py" ] || return 0
     local cursor_source="${WM_CURSOR_SOURCE:-}"
-    if [ -z "$cursor_source" ] && [ ! -f "$CURSOR_ASSETS_DIR/manifest.json" ] &&
-       [ -f "$SRC_DIR/26H2/Windows/Cursors/aero_arrow.cur" ]; then
-        cursor_source="$SRC_DIR/26H2"
+    local candidate_26h2="${WM_26H2_SOURCE:-$SRC_DIR/26H2}"
+    if [ -z "$cursor_source" ] &&
+       ! python3 -I "$SRC_DIR/scripts/import-cursor-assets.py" --verify "$CURSOR_ASSETS_DIR" >/dev/null 2>&1 &&
+       [ -f "$candidate_26h2/Windows/Cursors/aero_arrow.cur" ]; then
+        cursor_source="$candidate_26h2"
     fi
     if [ -n "$cursor_source" ]; then
         python3 -I "$SRC_DIR/scripts/import-cursor-assets.py" "$cursor_source" \
-            --output "$CURSOR_ASSETS_DIR" || {
+            --build "${WM_26H2_BUILD:-26300.9974}" --output "$CURSOR_ASSETS_DIR" || {
             warn "Could not import local Windows 26H2 cursors; keeping fallback cursor theme."
             return 0
         }
@@ -224,6 +227,25 @@ install_native_cursor_theme() {
         fi
     fi
     rm -rf "$stage"
+}
+
+install_native_shell_assets() {
+    [ "$UID" -ne 0 ] || return 0
+    command -v python3 &>/dev/null || return 0
+    [ -f "$SRC_DIR/scripts/import-shell-assets.py" ] || return 0
+    local shell_source="${WM_26H2_SOURCE:-}"
+    if [ -z "$shell_source" ] &&
+       ! python3 -I "$SRC_DIR/scripts/import-shell-assets.py" --verify "$SHELL_ASSETS_DIR" >/dev/null 2>&1 &&
+       [ -f "$SRC_DIR/26H2/Windows/SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/SystemTray/Assets/Sysbatt.ttf" ]; then
+        shell_source="$SRC_DIR/26H2"
+    fi
+    if [ -n "$shell_source" ] &&
+       [ -f "$shell_source/Windows/SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/SystemTray/Assets/Sysbatt.ttf" ]; then
+        step "Shell artwork: importing local Windows 26H2 shell assets"
+        python3 -I "$SRC_DIR/scripts/import-shell-assets.py" "$shell_source" \
+            --build "${WM_26H2_BUILD:-26300.9974}" --output "$SHELL_ASSETS_DIR" ||
+            warn "Could not import local Windows 26H2 shell assets; keeping built-in vector fallbacks."
+    fi
 }
 
 install_cursor_theme() {

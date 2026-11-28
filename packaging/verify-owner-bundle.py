@@ -137,6 +137,8 @@ def verify(revision, filename):
             "scripts/konsole-chrome.sh", "docs/APP_WINDOW_CHROME.md",
             "nix/dolphin-chrome.nix", "app-decorations/dolphin/statusbar-margins.patch",
             "app-decorations/dolphin/tab-controls.patch",
+            "app-decorations/dolphin/explorer-chrome.patch",
+            "app-decorations/dolphin/compact-contextmenu.patch",
             "scripts/fix-dolphin-statusbar.sh",
             "plasma/kwinscripts/org.kde.windowsmodern.snaplayouts/contents/ui/CaptionSnapPicker.qml",
             "scripts/import-windows-assets.py", "scripts/native-assets-map.json",

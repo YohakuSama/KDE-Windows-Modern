@@ -140,7 +140,7 @@ private:
         return !QStandardPaths::findExecutable(QStringLiteral("konsole")).isEmpty()
             || !QStandardPaths::findExecutable(QStringLiteral("xterm")).isEmpty();
     }
-    QString desktopWorkingDirectory() const
+    QString desktopWorkingDirectory()
     {
         if (auto *desktop = containment()) {
             const QString rawUrl = desktop->config().group(QStringLiteral("General"))
@@ -157,7 +157,7 @@ private:
         if (!desktopDir.isEmpty() && QFileInfo(desktopDir).isDir()) return desktopDir;
         return QDir::homePath();
     }
-    void launchDesktopTerminal() const
+    void launchDesktopTerminal()
     {
         if (!terminalAvailable()) return;
         auto *job = new KTerminalLauncherJob(QString());

@@ -12,10 +12,12 @@ from pathlib import Path, PurePosixPath
 import re
 import stat
 import struct
+import sys
 import tarfile
 import tempfile
 import zipfile
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_pe_resources import pe_resources
 
 THEME_NAME = "Windows-Modern-26H2"

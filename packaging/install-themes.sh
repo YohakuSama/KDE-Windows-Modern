@@ -17,7 +17,7 @@ ensure_dir "$AURORAE_DIR"
 rm -rf "$AURORAE_DIR/Windows-modern"* "$AURORAE_DIR/__aurorae__svg__windows-modern"*
 for mode in dark light; do
     package="windows-modern-$mode-aurorae"
-    rm -rf "$AURORAE_DIR/$package"
+    rm -rf "${AURORAE_DIR:?}/$package"
     cp -r "$appearance_stage/aurorae/$package" "$AURORAE_DIR/"
 done
 
@@ -72,6 +72,7 @@ trap - EXIT
 
 # The global themes name this cursor theme.
 install_cursor_theme
+install_native_shell_assets
 
 step "Wallpapers"
 ensure_dir "$WALLPAPER_DIR"

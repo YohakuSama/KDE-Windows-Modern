@@ -215,24 +215,16 @@ command toolbar retain their normal behavior.
 
 The Nix expression is `nix/dolphin-chrome.nix`; it requires the installed
 26.08.x version and matching absolute nixpkgs source path, following the
-version gate used for Konsole. It is not in the normal installer/runtime.
-For a maintainer's separate trial, build it explicitly with
-`nix-build nix/dolphin-chrome.nix --argstr nixpkgsPath /absolute/matching/nixpkgs --argstr dolphinVersion 26.08.x --out-link ./dolphin-trial`
-(replace both placeholders), then run `./dolphin-trial/bin/dolphin --new-window`.
-The latter prevents forwarding the request to an already-running stock
-Dolphin process. The stock application and launcher remain installed;
-the trial still shares the normal Dolphin settings/session files.
-No build or desktop validation has been performed. The corner button is
-an intermediate native control, not a reproduction of the Explorer
-button immediately after the final tab. Moving the tabs above both
-toolbars, that button placement, the Home target for new tabs and the
-persistent Explorer search field remain separate work:
+version gate used for Konsole. It is opt-in via `--with-dolphin` or `--full`
+(`bash install.sh auto --full`), which builds the isolated package, verifies
+required imported glyphs (`tab-new-symbolic`, `wm-show-more-options-symbolic`,
+`wm-context-new-symbolic`), and installs a separate `Windows Modern Explorer`
+launcher (`windows-modern-dolphin`) while keeping stock `dolphin` untouched:
 
-- **Remaining Dolphin 26.08.x presentation patch scope (`E04`, opt-in isolated `nix/dolphin-chrome.nix` only)**:
-  1. `DolphinMainWindow`: reparent `m_tabWidget`'s tab strip container above `mainToolBar` and `wmCommandToolBar` only when `wmCommandToolBar` is active (leaving phone UI and custom KXMLGUI layouts untouched).
-  2. `DolphinNavigatorsWidgetAction` / `DolphinViewContainer`: embed a persistent compact right-aligned search field beside the primary `KUrlNavigator` that drives Dolphin's existing `DolphinSearchBox` / KIO search model without replacing `Ctrl+F`.
-  3. `PlacesPanel`: preserve KIO `PlacesItemModel` categories (`Home`/`Quick Access`, `This PC`/Devices, `Network`) without hiding user bookmarks or removable volumes.
-  4. `DolphinContextMenu`: present a compact Windows 11 primary menu (`Cut`, `Copy`, `Paste`, `Rename`, `Move to Trash`, `New`, `Open`, `Properties`) and place all remaining KIO/plugin `QAction` items under a trailing `Show more options` submenu (`wm-show-more-options-symbolic` / `U+E8A7`), preserving keyboard shortcuts and multi-selection semantics.
+- **Implemented Dolphin 26.08.x presentation patches (`E04`, opt-in isolated `nix/dolphin-chrome.nix`)**:
+  1. `explorer-chrome.patch` (`DolphinMainWindow`, `DolphinTabWidget`, `DolphinNavigatorsWidgetAction`): places a non-movable `wmTabStripToolBar` (`DolphinTabBar` + trailing `+` `wmExplorerNewTabButton` immediately after the last tab) above `mainToolBar` and `wmCommandToolBar` when `wmCommandToolBar` is active, removes the leading Places-indent gap on `DolphinNavigatorsWidgetAction` for full-width Explorer breadcrumb alignment, and adds a persistent right-aligned `wmExplorerSearchField` on `mainToolBar` ("Search <Folder>") driving Dolphin's native `Search::DolphinQuery` (`Ctrl+F` and `Search::Bar` filter chips remain available). Phone UI and custom KXMLGUI layouts without `wmCommandToolBar` retain stock behavior.
+  2. `PlacesPanel`: preserves native `KFilePlacesModel` groups (`Places` / Quick Access, `Recent`, `Remote` / Network, `Devices`) together with user bookmarks and Solid removable volumes.
+  3. `compact-contextmenu.patch` (`DolphinContextMenu`): compacts item and viewport background menus to Windows 11's primary actions (`Open` / `Open With`, `Cut`, `Copy`, `Paste`, `Rename`, `Move to Trash` / `Delete` with live `Shift` state, `View`, `Sort`, `Refresh`, `Create New` with `wm-context-new-symbolic`, `Add to Places`, `Open Terminal`, `Properties`) and moves all remaining KIO/service/VCS/plugin actions into a trailing `Show more options` (`wm-show-more-options-symbolic` / `U+E8A7`) submenu; holding `Shift` while right-clicking opens the full classic menu directly.
 
 ## Generic KDE/Qt application and dialog consistency boundary (`E05`)
 

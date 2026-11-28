@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
@@ -15,6 +16,7 @@ from PIL import Image
 from fontTools.ttLib import TTFont, TTLibError
 from fontTools.pens.svgPathPen import SVGPathPen
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_pri_resources import embedded_resources
 
 CORE = "SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy"
@@ -270,6 +272,38 @@ def collect(source):
     return outputs, sources
 
 
+def importer_fingerprint():
+    h = hashlib.sha256()
+    root = Path(__file__).resolve().parent
+    for name in ("import-shell-assets.py", "native_pri_resources.py"):
+        h.update(name.encode("utf-8") + b"\0")
+        h.update(hashlib.sha256((root / name).read_bytes()).digest())
+    return h.hexdigest()
+
+
+def verify_directory(directory):
+    root = directory.expanduser().resolve(strict=True)
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("format") != "windows-modern-shell-assets-v1":
+        raise ValueError("unrecognized shell-assets manifest format")
+    if manifest.get("importer_sha256") != importer_fingerprint():
+        raise ValueError("shell-assets importer changed")
+    outputs = manifest.get("outputs")
+    if not isinstance(outputs, dict) or not outputs:
+        raise ValueError("incomplete shell-assets outputs")
+    actual = {p.relative_to(root).as_posix() for p in root.rglob("*")
+              if p.is_file() or p.is_symlink()}
+    if actual != set(outputs) | {"manifest.json"}:
+        raise ValueError("shell-assets file set changed")
+    for relative, record in outputs.items():
+        path = root / relative
+        if path.is_symlink() or not path.resolve().is_relative_to(root) or not path.is_file():
+            raise ValueError("invalid shell asset: " + relative)
+        if sha256(path.read_bytes()) != record.get("sha256"):
+            raise ValueError("shell asset hash mismatch: " + relative)
+    return manifest
+
+
 def install(source, destination, build):
     source = source.expanduser().resolve(strict=True)
     destination = destination.expanduser().resolve()
@@ -293,9 +327,12 @@ def install(source, destination, build):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         manifest = {"format": "windows-modern-shell-assets-v1",
-                    "declared_source_build": build, "sources": sources,
+                    "declared_source_build": build,
+                    "importer_sha256": importer_fingerprint(),
+                    "sources": sources,
                     "outputs": {name: record for name, (_, record) in outputs.items()}}
         (stage / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        verify_directory(stage)
         previous = Path(temp) / "previous"
         if destination.exists():
             destination.rename(previous)
@@ -310,12 +347,23 @@ def install(source, destination, build):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source", type=Path, help="extracted Windows directory or its parent")
-    parser.add_argument("--build", required=True, help="actual build number of the source installation")
+    parser.add_argument("source", type=Path, nargs="?", help="extracted Windows directory or its parent")
+    parser.add_argument("--build", default="26300.9974", help="actual build number of the source installation")
     parser.add_argument("--output", type=Path,
                         default=Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
                         / "windows-modern/shell-assets")
+    parser.add_argument("--verify", action="store_true", help="verify an existing shell-assets directory")
     args = parser.parse_args()
+    if args.verify:
+        target = args.source if args.source is not None else args.output
+        try:
+            manifest = verify_directory(target)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            parser.exit(1, f"Shell artwork verification failed: {exc}\n")
+        print(f"Verified {len(manifest['outputs'])} original shell artwork files.")
+        raise SystemExit(0)
+    if args.source is None:
+        parser.error("Provide an extracted Windows source path, or pass --verify.")
     if not re.fullmatch(r"\d+(?:\.\d+){0,3}", args.build):
         parser.error("--build must be a numeric Windows build number")
     try:

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import struct
+import sys
 import tempfile
 import wave
 
@@ -17,6 +18,7 @@ from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.boundsPen import BoundsPen
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets_input import read_assets, source_manifest, importer_fingerprint
 from native_assets_index import IndexedResources, mapped_original_names
 

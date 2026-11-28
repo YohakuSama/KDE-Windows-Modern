@@ -51,19 +51,33 @@ if [ "$action" = transparency ]; then
 fi
 variant=dark
 with_konsole=0
+with_dolphin=0
 for arg in "$@"; do
     case "$arg" in
         --light) variant=light ;;
         --dark) variant=dark ;;
         --with-konsole) with_konsole=1 ;;
+        --with-dolphin) with_dolphin=1 ;;
+        --full) with_konsole=1; with_dolphin=1 ;;
     esac
 done
+if [ "$action" = auto ] || [ "$action" = apply ]; then
+    if [ -f "$STATE/original/manifest.json" ]; then
+        action=upgrade
+    else
+        action=install
+    fi
+fi
 if [ -z "$action" ] || [ "$action" = menu ]; then
     printf 'Windows Modern · NixOS 测试\n1. 初次安装（备份、完整构建、安装）\n2. 增量升级（仅更新变化的组件）\n3. 卸载（恢复原桌面、清理测试文件）\n'
-    if [ "$with_konsole" -eq 1 ]; then
-        echo "完整测试：包含 Windows Modern 终端插件。"
+    if [ "$with_konsole" -eq 1 ] && [ "$with_dolphin" -eq 1 ]; then
+        echo "完整测试：包含 Windows Modern 终端插件与 Explorer 文件管理器补丁。"
+    elif [ "$with_konsole" -eq 1 ]; then
+        echo "可选组件：包含 Windows Modern 终端插件（可加 --with-dolphin 或 --full 同时启用 Explorer 补丁）。"
+    elif [ "$with_dolphin" -eq 1 ]; then
+        echo "可选组件：包含 Windows Modern Explorer 补丁（可加 --with-konsole 或 --full 同时启用终端插件）。"
     else
-        echo "使用 --with-konsole 启用终端插件测试；后续升级自动保留。"
+        echo "使用 --full（或 --with-konsole / --with-dolphin）启用终端与文件管理器增强；后续升级自动保留。"
     fi
     read -r -p '请选择 [1/2/3]：' action
 fi
@@ -302,6 +316,7 @@ if [ "$action" = upgrade ]; then
     echo "当前运行时：$old_profile"
     # Once enabled, keep the launcher and package in every subsequent runtime.
     if [ -f "$old_profile/wm-konsole-package" ]; then with_konsole=1; fi
+    if [ -f "$old_profile/wm-dolphin-package" ]; then with_dolphin=1; fi
 elif [ -f "$STATE/original/manifest.json" ]; then
     echo "已安装测试版，请选择 2 增量升级，或 3 卸载。" >&2
     exit 1
@@ -316,6 +331,7 @@ if [ -f "$ROOT/core/source-map.json" ]; then
     elif [ "$upgrading" -eq 1 ]; then
         "$old_profile/bin/python3" -I "$ROOT/scripts/materialize-modules.py" --prepare
     else
+        # shellcheck disable=SC2016
         WM_MODULE_ROOT="$ROOT" nix-shell -p python3 --run 'python3 -I "$WM_MODULE_ROOT/scripts/materialize-modules.py" --prepare'
     fi
 fi
@@ -352,6 +368,18 @@ if [ "$with_konsole" -eq 1 ]; then
     }
     for required in nix/konsole-chrome.nix app-decorations/konsole/{CMakeLists.txt,windowsmodernchrome.cpp,windowsmodernchrome.in.json,captionsnapbridge.cpp,captionsnapbridge.h,chromeshadow.cpp,chromeshadow.h}; do
         [ -s "$ROOT/$required" ] || { printf '测试包缺少终端源码：%s\n' "$required" >&2; exit 1; }
+    done
+fi
+dolphin_version=""
+if [ "$with_dolphin" -eq 1 ]; then
+    command -v dolphin >/dev/null || { echo "缺少系统 Dolphin，无法匹配文件管理器补丁版本。" >&2; exit 1; }
+    dolphin_version="$(LC_ALL=C dolphin --version | sed -n 's/^dolphin \([0-9][0-9.]*\)$/\1/p')"
+    [[ "$dolphin_version" =~ ^26\.08\.[0-9]+$ ]] || {
+        printf 'Explorer 补丁仅支持 Dolphin 26.08.x，当前版本：%s。未修改桌面。\n' "${dolphin_version:-unknown}" >&2
+        exit 1
+    }
+    for required in nix/dolphin-chrome.nix app-decorations/dolphin/{statusbar-margins.patch,tab-controls.patch,explorer-chrome.patch,compact-contextmenu.patch}; do
+        [ -s "$ROOT/$required" ] || { printf '测试包缺少 Dolphin 补丁源码：%s\n' "$required" >&2; exit 1; }
     done
 fi
 umask 077
@@ -392,7 +420,8 @@ if [ -z "$nixpkgs" ]; then nixpkgs="$(nix-instantiate --find-file nixpkgs 2>/dev
 [ -d "$nixpkgs" ] || { echo "找不到当前系统对应的 nixpkgs。" >&2; exit 1; }
 echo "检查 Plasma $version 构建输入，只构建源码或依赖变化的插件……"
 nix-build "$ROOT/nix/test-runtime.nix" --argstr nixpkgsPath "$nixpkgs" --argstr plasmaVersion "$version" \
-    --argstr buildToken "$BUILD_TOKEN" --argstr konsoleVersion "$konsole_version" --out-link "$BUILD_DIR/runtime"
+    --argstr buildToken "$BUILD_TOKEN" --argstr konsoleVersion "$konsole_version" \
+    --argstr dolphinVersion "$dolphin_version" --out-link "$BUILD_DIR/runtime"
 PROFILE="$(readlink -f "$BUILD_DIR/runtime")"
 [ "$(cat "$PROFILE/wm-build-token")" = "$BUILD_TOKEN" ] || { echo "构建编号错误，拒绝旧运行时。" >&2; exit 1; }
 printf '新运行时：%s\n' "$PROFILE"
@@ -432,6 +461,16 @@ if [ "$with_konsole" -eq 1 ]; then
     fi
     printf '终端测试包：%s\n' "$konsole_package"
 fi
+if [ "$with_dolphin" -eq 1 ]; then
+    dolphin_package="$(cat "$PROFILE/wm-dolphin-package")"
+    if [[ "$dolphin_package" != /nix/store/* ]] ||
+       [ ! -x "$dolphin_package/bin/dolphin" ] ||
+       [ ! -x "$PROFILE/bin/windows-modern-dolphin" ]; then
+        echo "Explorer 文件管理器测试包未完整构建，拒绝切换桌面。" >&2
+        exit 1
+    fi
+    printf '文件管理器测试包：%s\n' "$dolphin_package"
+fi
 tray="$plugin/plasma/applets/org.kde.windowsmodern.systemtray.so"
 tasks="$plugin/plasma/applets/org.kde.windowsmodern.icontasks.so"
 menu="$plugin/plasma/containmentactions/org.kde.windowsmodern.contextmenu.so"
@@ -470,6 +509,8 @@ PY
 if [ -f "$ROOT/native-resources/resource-manifest.json" ]; then
     input="$ROOT/native-resources"
     bash "$ROOT/scripts/stage-native-resources.sh" --verify "$input"
+elif [ -f "${WM_26H2_SOURCE:-$ROOT/26H2}/Windows/Fonts/SegoeIcons.ttf" ]; then
+    input="${WM_26H2_SOURCE:-$ROOT/26H2}"
 else
     # Share the same verified pinned cache with the packager. An earlier
     # resource directory in STATE must not override a newer resource pin.
@@ -489,6 +530,14 @@ if [ "$with_konsole" -eq 1 ]; then
                  go-previous-symbolic go-next-symbolic; do
         [ -s "$STATE/native/icons/actions/$glyph.svg" ] || {
             printf '终端插件缺少原版图标：%s.svg\n' "$glyph" >&2
+            exit 1
+        }
+    done
+fi
+if [ "$with_dolphin" -eq 1 ]; then
+    for glyph in tab-new-symbolic wm-show-more-options-symbolic wm-context-new-symbolic; do
+        [ -s "$STATE/native/icons/actions/$glyph.svg" ] || {
+            printf 'Explorer 补丁缺少原版图标：%s.svg\n' "$glyph" >&2
             exit 1
         }
     done
@@ -515,13 +564,15 @@ elif "$PYTHON" -I "$ROOT/scripts/import-cursor-assets.py" --verify "$DATA/window
     "$PYTHON" -I "$ROOT/scripts/import-cursor-assets.py" --verify "$STATE/cursors" >/dev/null
 fi
 shell_input="${WM_26H2_SOURCE:-$ROOT/26H2}"
-if [ -d "$STATE/shell-assets" ] || [ ! -f "$DATA/windows-modern/shell-assets/manifest.json" ]; then
-    if [ -f "$STATE/shell-assets/manifest.json" ] && [ -z "${WM_26H2_SOURCE:-}" ]; then
-        echo "原版 26H2 Shell 素材未变化，跳过导入。"
-    elif [ -f "$shell_input/Windows/SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/SystemTray/Assets/Sysbatt.ttf" ]; then
-        "$PYTHON" "$ROOT/scripts/import-shell-assets.py" "$shell_input" \
-            --build "${WM_26H2_BUILD:-26300.9974}" --output "$STATE/shell-assets"
-    fi
+if [ -z "${WM_26H2_SOURCE:-}" ] && "$PYTHON" -I "$ROOT/scripts/import-shell-assets.py" --verify "$STATE/shell-assets" >/dev/null 2>&1; then
+    echo "原版 26H2 Shell 素材未变化，跳过导入。"
+elif [ -f "$shell_input/Windows/SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/SystemTray/Assets/Sysbatt.ttf" ]; then
+    "$PYTHON" -I "$ROOT/scripts/import-shell-assets.py" "$shell_input" \
+        --build "${WM_26H2_BUILD:-26300.9974}" --output "$STATE/shell-assets"
+elif "$PYTHON" -I "$ROOT/scripts/import-shell-assets.py" --verify "$DATA/windows-modern/shell-assets" >/dev/null 2>&1; then
+    rm -rf -- "$STATE/shell-assets"
+    cp -a "$DATA/windows-modern/shell-assets" "$STATE/shell-assets"
+    "$PYTHON" -I "$ROOT/scripts/import-shell-assets.py" --verify "$STATE/shell-assets" >/dev/null
 fi
 # A successful build/import is not a configuration change. Back up the
 # running desktop after stopping the shell so its final settings are flushed.
@@ -757,4 +808,8 @@ if [ "$with_konsole" -eq 1 ]; then
     echo "终端插件已安装：在开始菜单搜索 Windows Modern Terminal（Windows Modern 终端）。"
     echo "原版 Konsole 保留；请在重新登录后验收终端及 Snap Layouts。"
 fi
-echo "运行同一脚本：1 初次安装，2 增量升级，3 卸载。"
+if [ "$with_dolphin" -eq 1 ]; then
+    echo "文件管理器补丁已安装：在开始菜单搜索 Windows Modern Explorer（Windows Modern 文件资源管理器）。"
+    echo "原版 Dolphin 保留。"
+fi
+echo "运行同一脚本：auto --full 一键安装或升级，uninstall 卸载恢复。"

@@ -21,8 +21,23 @@ def verify(root, source, mapping):
         raise ValueError("mapping changed")
     if manifest.get("importer_sha256") != importer_fingerprint():
         raise ValueError("native resource importer changed")
-    if manifest["indexed_source"]["manifest_sha256"] != digest(source / "resource-manifest.json"):
-        raise ValueError("Windows resource manifest changed")
+    if (source / "resource-manifest.json").is_file():
+        if manifest.get("indexed_source", {}).get("manifest_sha256") != digest(source / "resource-manifest.json"):
+            raise ValueError("Windows resource manifest changed")
+    else:
+        source_resolved = source.resolve(strict=True)
+        if manifest.get("source_path") != str(source_resolved):
+            raise ValueError("Windows resource source path changed")
+        win_root = (source_resolved / "Windows" if (source_resolved / "Windows").is_dir() else source_resolved).resolve()
+        sources = manifest.get("sources")
+        if not isinstance(sources, dict) or not sources:
+            raise ValueError("missing original source manifest")
+        for rel, meta in sources.items():
+            src_file = win_root / rel
+            if src_file.is_symlink() or not src_file.resolve().is_relative_to(win_root) or not src_file.is_file():
+                raise ValueError("missing original source file: " + rel)
+            if src_file.stat().st_size != meta["bytes"] or digest(src_file) != meta["sha256"]:
+                raise ValueError("original source file changed: " + rel)
     outputs = manifest["outputs"]
     if not outputs or not (root / "wallpapers/Windows-modern/metadata.json").is_file():
         raise ValueError("incomplete generated assets")

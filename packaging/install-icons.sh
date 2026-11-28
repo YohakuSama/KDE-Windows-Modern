@@ -21,8 +21,9 @@ if [ ! -d "$SRC_DIR" ]; then
     exit 1
 fi
 
-# Owner bundles include the original indexed resources, even on a clean machine.
-if [ "$UID" -ne 0 ] && [ -f "$PROJECT_DIR/native-resources/resource-manifest.json" ]; then
+# Owner bundles or local 26H2 checkouts prepare native assets automatically.
+if [ "$UID" -ne 0 ] && { [ -f "$PROJECT_DIR/native-resources/resource-manifest.json" ] ||
+   [ -f "${WM_26H2_SOURCE:-$PROJECT_DIR/26H2}/Windows/Fonts/SegoeIcons.ttf" ]; }; then
     bash "$PROJECT_DIR/scripts/prepare-native-assets.sh" || exit 1
 fi
 

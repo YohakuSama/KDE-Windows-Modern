@@ -1,0 +1,553 @@
+diff --git a/src/dolphinmainwindow.cpp b/src/dolphinmainwindow.cpp
+index c964f30..af8761c 100644
+--- a/src/dolphinmainwindow.cpp
++++ b/src/dolphinmainwindow.cpp
+@@ -18,6 +18,7 @@
+ #include "dolphinnewfilemenu.h"
+ #include "dolphinplacesmodelsingleton.h"
+ #include "dolphinrecenttabsmenu.h"
++#include "dolphintabbar.h"
+ #include "dolphintabpage.h"
+ #include "dolphinurlnavigatorscontroller.h"
+ #include "dolphinviewcontainer.h"
+@@ -83,7 +84,11 @@
+ #include <QDialog>
+ #include <QDomDocument>
+ #include <QFileInfo>
++#include <QDir>
++#include <QHBoxLayout>
+ #include <QLineEdit>
++#include <QSignalBlocker>
++#include <functional>
+ #include <QMenuBar>
+ #include <QPushButton>
+ #include <QSharedPointer>
+@@ -268,6 +273,15 @@ DolphinMainWindow::DolphinMainWindow()
+         addHamburgerMenuToToolbar();
+     }
+ 
++    syncExplorerChromeLayout();
++    connect(this, &DolphinMainWindow::urlChanged, this, [this](const QUrl &) {
++        syncExplorerSearchField();
++    });
++    connect(m_tabWidget, &DolphinTabWidget::activeViewChanged, this, [this](DolphinViewContainer *) {
++        syncExplorerSearchField();
++    });
++    syncExplorerSearchField();
++
+     updateAllowedToolbarAreas();
+     updateNavigatorsBackground();
+ 
+@@ -536,6 +550,7 @@ void DolphinMainWindow::slotTabBarChanged()
+ {
+     m_tabWidget->setTabBarAutoHide(!GeneralSettings::alwaysShowTabBar());
+     m_tabWidget->tabBar()->setTabsClosable(GeneralSettings::showCloseButtonOnTabs());
++    syncExplorerChromeLayout();
+ }
+ 
+ void DolphinMainWindow::openInNewTab()
+@@ -3144,9 +3159,15 @@ void DolphinMainWindow::saveNewToolbarConfig()
+ 
+     m_tabWidget->currentTabPage()->insertNavigatorsWidget(navigators);
+ 
++    syncExplorerChromeLayout();
++    syncExplorerSearchField();
+     updateAllowedToolbarAreas();
+     updateNavigatorsBackground();
+-    (static_cast<KHamburgerMenu *>(actionCollection()->action(KStandardAction::name(KStandardAction::HamburgerMenu))))->hideActionsOf(toolBar());
++    auto *hamburger = static_cast<KHamburgerMenu *>(actionCollection()->action(KStandardAction::name(KStandardAction::HamburgerMenu)));
++    hamburger->hideActionsOf(toolBar());
++    if (auto *commandBar = findChild<KToolBar *>(QStringLiteral("wmCommandToolBar"), Qt::FindDirectChildrenOnly)) {
++        hamburger->hideActionsOf(commandBar);
++    }
+ }
+ 
+ void DolphinMainWindow::toggleTerminalPanelFocus()
+@@ -3252,4 +3273,268 @@ void DolphinMainWindow::slotDoubleClickViewBackground(Qt::MouseButton button)
+     }
+ }
+ 
++
++namespace
++{
++class ExplorerSearchEscapeFilter : public QObject
++{
++public:
++    ExplorerSearchEscapeFilter(QLineEdit *edit, std::function<void()> onResetOrDefocus)
++        : QObject(edit)
++        , m_edit(edit)
++        , m_onResetOrDefocus(std::move(onResetOrDefocus))
++    {
++    }
++
++protected:
++    bool eventFilter(QObject *watched, QEvent *event) override
++    {
++        if (watched == m_edit && event->type() == QEvent::KeyPress) {
++            auto *keyEvent = static_cast<QKeyEvent *>(event);
++            if (keyEvent->key() == Qt::Key_Escape) {
++                m_onResetOrDefocus();
++                return true;
++            }
++        }
++        return QObject::eventFilter(watched, event);
++    }
++
++private:
++    QLineEdit *m_edit;
++    std::function<void()> m_onResetOrDefocus;
++};
++
++QUrl resolveExplorerSearchBaseUrl(DolphinViewContainer *container)
++{
++    if (!container) {
++        return QUrl::fromLocalFile(QDir::homePath());
++    }
++    const DolphinUrlNavigator *nav = container->urlNavigatorInternalWithHistory();
++    for (int i = nav->historyIndex(); i < nav->historySize(); ++i) {
++        const QUrl candidate = nav->locationUrl(i);
++        if (isSearchUrl(candidate)) {
++            const QUrl searchPath = Search::DolphinQuery(candidate, QUrl{}).searchPath();
++            if (searchPath.isValid()) {
++                return searchPath;
++            }
++        } else if (candidate.scheme() != QLatin1String("tags") && candidate.isValid()) {
++            return candidate;
++        }
++    }
++    return QUrl::fromLocalFile(QDir::homePath());
++}
++}
++
++void DolphinMainWindow::syncExplorerChromeLayout()
++{
++    const bool usePhoneUi{KRuntimePlatform::runtimePlatform().contains(QLatin1String("phone"))};
++    auto *commandBar = usePhoneUi ? nullptr : findChild<KToolBar *>(QStringLiteral("wmCommandToolBar"), Qt::FindDirectChildrenOnly);
++    if (!commandBar) {
++        if (m_wmTabStripToolBar) {
++            m_tabWidget->bindExternalTabBar(nullptr);
++            m_wmTabStripToolBar->hide();
++        }
++        if (m_wmSearchWidgetAction) {
++            m_wmSearchWidgetAction->setVisible(false);
++        }
++        if (QAction *toggleSearch = actionCollection()->action(QStringLiteral("toggle_search"))) {
++            if (QWidget *btn = toolBar()->widgetForAction(toggleSearch)) {
++                btn->setVisible(true);
++            }
++        }
++        m_tabWidget->setTabBarAutoHide(!GeneralSettings::alwaysShowTabBar());
++        m_tabWidget->tabBar()->setVisible(GeneralSettings::alwaysShowTabBar() || m_tabWidget->count() > 1);
++        return;
++    }
++
++    if (!m_wmTabStripToolBar) {
++        m_wmTabStripToolBar = new QToolBar(this);
++        m_wmTabStripToolBar->setObjectName(QStringLiteral("wmTabStripToolBar"));
++        m_wmTabStripToolBar->setWindowTitle(i18nc("@title:menu", "Tabs"));
++        m_wmTabStripToolBar->setMovable(false);
++        m_wmTabStripToolBar->setFloatable(false);
++        m_wmTabStripToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
++        m_wmTabStripToolBar->layout()->setContentsMargins(6, 2, 6, 0);
++        m_wmTabStripToolBar->layout()->setSpacing(0);
++        if (QAction *toggleAction = m_wmTabStripToolBar->toggleViewAction()) {
++            toggleAction->setVisible(false);
++        }
++
++        auto *stripContainer = new QWidget(m_wmTabStripToolBar);
++        stripContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
++        auto *stripLayout = new QHBoxLayout(stripContainer);
++        stripLayout->setContentsMargins(0, 0, 0, 0);
++        stripLayout->setSpacing(2);
++
++        m_wmTopTabBar = new DolphinTabBar(stripContainer);
++        m_wmTopTabBar->setObjectName(QStringLiteral("wmExplorerTabBar"));
++        m_wmTopTabBar->setDocumentMode(true);
++        m_wmTopTabBar->setExpanding(false);
++        m_wmTopTabBar->setUsesScrollButtons(true);
++        m_wmTopTabBar->setElideMode(GeneralSettings::showFullPathInTitlebar() ? Qt::ElideLeft : Qt::ElideRight);
++        m_wmTopTabBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
++
++        m_wmTopNewTabButton = new QToolButton(stripContainer);
++        m_wmTopNewTabButton->setObjectName(QStringLiteral("wmExplorerNewTabButton"));
++        m_wmTopNewTabButton->setDefaultAction(actionCollection()->action(QStringLiteral("new_tab")));
++        m_wmTopNewTabButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
++        m_wmTopNewTabButton->setAutoRaise(true);
++        m_wmTopNewTabButton->setFixedSize(28, 28);
++
++        stripLayout->addWidget(m_wmTopTabBar, 0, Qt::AlignBottom);
++        stripLayout->addWidget(m_wmTopNewTabButton, 0, Qt::AlignVCenter);
++        stripLayout->addStretch(1);
++        m_wmTabStripToolBar->addWidget(stripContainer);
++
++        connect(m_tabWidget, &DolphinTabWidget::tabCountChanged, this, [this](int) {
++            if (m_wmTabStripToolBar && findChild<KToolBar *>(QStringLiteral("wmCommandToolBar"), Qt::FindDirectChildrenOnly)) {
++                const bool showStrip = GeneralSettings::alwaysShowTabBar() || m_tabWidget->count() > 1;
++                m_wmTabStripToolBar->setVisible(showStrip);
++            }
++        });
++    }
++
++    // Ensure top-to-bottom order: [wmTabStripToolBar] -> [mainToolBar] -> [wmCommandToolBar]
++    insertToolBar(toolBar(), m_wmTabStripToolBar);
++    insertToolBarBreak(toolBar());
++    insertToolBarBreak(commandBar);
++
++    m_tabWidget->bindExternalTabBar(m_wmTopTabBar);
++    if (QWidget *corner = m_tabWidget->cornerWidget(Qt::TopRightCorner)) {
++        corner->hide();
++    }
++    m_tabWidget->setTabBarAutoHide(false);
++    m_tabWidget->tabBar()->hide();
++
++    const bool showStrip = GeneralSettings::alwaysShowTabBar() || m_tabWidget->count() > 1;
++    m_wmTabStripToolBar->setVisible(showStrip);
++
++    // Persistent Explorer-style search box at the trailing end of mainToolBar
++    if (!m_wmSearchContainer) {
++        m_wmSearchContainer = new QWidget(toolBar());
++        auto *searchLayout = new QHBoxLayout(m_wmSearchContainer);
++        searchLayout->setContentsMargins(6, 0, 2, 0);
++        searchLayout->setSpacing(0);
++
++        m_wmSearchEdit = new QLineEdit(m_wmSearchContainer);
++        m_wmSearchEdit->setObjectName(QStringLiteral("wmExplorerSearchField"));
++        m_wmSearchEdit->setClearButtonEnabled(true);
++        m_wmSearchEdit->setMinimumWidth(140);
++        m_wmSearchEdit->setMaximumWidth(240);
++        m_wmSearchEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
++
++        QAction *searchOptionsAction = m_wmSearchEdit->addAction(
++            QIcon::fromTheme(QStringLiteral("edit-find")), QLineEdit::LeadingPosition);
++        searchOptionsAction->setToolTip(i18nc("@info:tooltip", "Search options (Ctrl+F)"));
++        connect(searchOptionsAction, &QAction::triggered, this, [this]() {
++            if (!m_activeViewContainer) {
++                return;
++            }
++            const bool nextVisible = !m_activeViewContainer->isSearchBarVisible();
++            m_activeViewContainer->setSearchBarVisible(nextVisible);
++            if (nextVisible) {
++                m_activeViewContainer->setFocusToSearchBar();
++            }
++        });
++
++        m_wmSearchTimer = new QTimer(this);
++        m_wmSearchTimer->setSingleShot(true);
++        m_wmSearchTimer->setInterval(400);
++
++        const auto commitExplorerSearch = [this](bool moveFocusToView) {
++            if (!m_activeViewContainer || !m_wmSearchEdit) {
++                return;
++            }
++            m_wmSearchTimer->stop();
++            const QString term = m_wmSearchEdit->text().trimmed();
++            const QUrl baseUrl = resolveExplorerSearchBaseUrl(m_activeViewContainer);
++            if (term.isEmpty()) {
++                if (isSearchUrl(m_activeViewContainer->url()) && baseUrl.isValid()) {
++                    m_activeViewContainer->setGrabFocusOnUrlChange(false);
++                    changeUrl(baseUrl);
++                    m_activeViewContainer->setGrabFocusOnUrlChange(true);
++                }
++            } else {
++                Search::DolphinQuery query(m_activeViewContainer->url(), baseUrl);
++                query.setSearchPath(baseUrl);
++                query.setSearchLocations(Search::SearchLocations::FromHere);
++                query.setSearchTerm(term);
++                const QUrl targetUrl = query.toUrl();
++                if (targetUrl.isValid() && targetUrl != m_activeViewContainer->url()) {
++                    m_activeViewContainer->setGrabFocusOnUrlChange(false);
++                    changeUrl(targetUrl);
++                    m_activeViewContainer->setGrabFocusOnUrlChange(true);
++                }
++            }
++            if (moveFocusToView && m_activeViewContainer) {
++                m_activeViewContainer->view()->setFocus();
++            }
++        };
++
++        connect(m_wmSearchTimer, &QTimer::timeout, this, [commitExplorerSearch]() {
++            commitExplorerSearch(false);
++        });
++        connect(m_wmSearchEdit, &QLineEdit::textEdited, this, [this](const QString &text) {
++            if (text.isEmpty()) {
++                m_wmSearchTimer->start(0);
++            } else {
++                m_wmSearchTimer->start();
++            }
++        });
++        connect(m_wmSearchEdit, &QLineEdit::returnPressed, this, [commitExplorerSearch]() {
++            commitExplorerSearch(true);
++        });
++        m_wmSearchEdit->installEventFilter(new ExplorerSearchEscapeFilter(m_wmSearchEdit, [this, commitExplorerSearch]() {
++            if (!m_wmSearchEdit->text().isEmpty()) {
++                m_wmSearchEdit->clear();
++                commitExplorerSearch(false);
++            } else if (m_activeViewContainer) {
++                m_activeViewContainer->view()->setFocus();
++            }
++        }));
++
++        searchLayout->addWidget(m_wmSearchEdit);
++        m_wmSearchWidgetAction = toolBar()->addWidget(m_wmSearchContainer);
++    } else if (m_wmSearchWidgetAction && !toolBar()->actions().contains(m_wmSearchWidgetAction)) {
++        m_wmSearchWidgetAction = toolBar()->addWidget(m_wmSearchContainer);
++    }
++
++    if (m_wmSearchWidgetAction) {
++        m_wmSearchWidgetAction->setVisible(true);
++    }
++    if (QAction *toggleSearch = actionCollection()->action(QStringLiteral("toggle_search"))) {
++        if (QWidget *btn = toolBar()->widgetForAction(toggleSearch)) {
++            btn->setVisible(false);
++        }
++    }
++}
++
++void DolphinMainWindow::syncExplorerSearchField()
++{
++    if (!m_wmSearchEdit || !m_activeViewContainer) {
++        return;
++    }
++    const QUrl currentUrl = m_activeViewContainer->url();
++    QString folderLabel;
++    if (!isSearchUrl(currentUrl)) {
++        folderLabel = m_activeViewContainer->caption();
++    } else {
++        const QUrl baseUrl = resolveExplorerSearchBaseUrl(m_activeViewContainer);
++        folderLabel = baseUrl.adjusted(QUrl::StripTrailingSlash).fileName();
++        if (folderLabel.isEmpty()) {
++            folderLabel = baseUrl.isLocalFile() ? QStringLiteral("/") : baseUrl.toDisplayString(QUrl::PreferLocalFile);
++        }
++    }
++    m_wmSearchEdit->setPlaceholderText(i18nc("@info:placeholder", "Search %1", folderLabel));
++
++    if (!m_wmSearchEdit->hasFocus()) {
++        const QSignalBlocker blocker(m_wmSearchEdit);
++        if (isSearchUrl(currentUrl)) {
++            m_wmSearchEdit->setText(Search::DolphinQuery(currentUrl, QUrl{}).searchTerm());
++        } else {
++            m_wmSearchEdit->clear();
++        }
++    }
++}
++
+ #include "moc_dolphinmainwindow.cpp"
+diff --git a/src/dolphinmainwindow.h b/src/dolphinmainwindow.h
+index 50e944f..ab540d8 100644
+--- a/src/dolphinmainwindow.h
++++ b/src/dolphinmainwindow.h
+@@ -46,6 +46,9 @@ class KJob;
+ class KNewFileMenu;
+ class KRecentFilesAction;
+ class KToolBarPopupAction;
++class DolphinTabBar;
++class QLineEdit;
++class QToolBar;
+ class QToolButton;
+ class PlacesPanel;
+ class TerminalPanel;
+@@ -745,6 +748,8 @@ private:
+ 
+     /** Adds "What's This?" texts to many widgets and StandardActions. */
+     void setupWhatsThis();
++    void syncExplorerChromeLayout();
++    void syncExplorerSearchField();
+ 
+     /** Returns preferred search tool as configured in "More Search Tools" menu. */
+     QPointer<QAction> preferredSearchTool();
+@@ -778,6 +783,13 @@ private:
+ 
+     KNewFileMenu *m_newFileMenu;
+     DolphinTabWidget *m_tabWidget;
++    QToolBar *m_wmTabStripToolBar = nullptr;
++    DolphinTabBar *m_wmTopTabBar = nullptr;
++    QToolButton *m_wmTopNewTabButton = nullptr;
++    QWidget *m_wmSearchContainer = nullptr;
++    QAction *m_wmSearchWidgetAction = nullptr;
++    QLineEdit *m_wmSearchEdit = nullptr;
++    QTimer *m_wmSearchTimer = nullptr;
+     DolphinViewContainer *m_activeViewContainer;
+ 
+     DolphinViewActionHandler *m_actionHandler;
+diff --git a/src/dolphinnavigatorswidgetaction.cpp b/src/dolphinnavigatorswidgetaction.cpp
+index 184530b..c9114f4 100644
+--- a/src/dolphinnavigatorswidgetaction.cpp
++++ b/src/dolphinnavigatorswidgetaction.cpp
+@@ -50,12 +50,17 @@ void DolphinNavigatorsWidgetAction::adjustSpacing()
+     const QList<int> splitterSizes = {widthOfSplitterPrimary, m_splitter->width() - widthOfSplitterPrimary - m_splitter->handleWidth()};
+     m_splitter->setSizes(splitterSizes);
+ 
++    const QWidget *ownerWindow = qobject_cast<QWidget *>(parent()) ? qobject_cast<QWidget *>(parent())->window() : nullptr;
++    const bool explorerChrome = ownerWindow && ownerWindow->findChild<QToolBar *>(QStringLiteral("wmCommandToolBar"), Qt::FindDirectChildrenOnly);
++
+     // primary side of m_splitter
+-    int leadingSpacing = viewGeometries.globalXOfPrimary - viewGeometries.globalXOfNavigatorsWidget;
++    int leadingSpacing = explorerChrome ? 0 : (viewGeometries.globalXOfPrimary - viewGeometries.globalXOfNavigatorsWidget);
+     if (leadingSpacing < 0) {
+         leadingSpacing = 0;
+     }
+-    int trailingSpacing = (viewGeometries.globalXOfNavigatorsWidget + m_splitter->width()) - (viewGeometries.globalXOfPrimary + viewGeometries.widthOfPrimary);
++    int trailingSpacing = explorerChrome
++        ? 0
++        : ((viewGeometries.globalXOfNavigatorsWidget + m_splitter->width()) - (viewGeometries.globalXOfPrimary + viewGeometries.widthOfPrimary));
+     if (trailingSpacing < 0 || emptyTrashButton(Primary)->isVisible() || networkFolderButton(Primary)->isVisible() || kdeConnectButton(Primary)->isVisible()) {
+         trailingSpacing = 0;
+     }
+diff --git a/src/dolphintabwidget.cpp b/src/dolphintabwidget.cpp
+index 7fbf10b..7ef127c 100644
+--- a/src/dolphintabwidget.cpp
++++ b/src/dolphintabwidget.cpp
+@@ -21,6 +21,7 @@
+ 
+ #include <QApplication>
+ #include <QDropEvent>
++#include <QSignalBlocker>
+ #include <QStackedWidget>
+ 
+ DolphinTabWidget::DolphinTabWidget(DolphinNavigatorsWidgetAction *navigatorsWidget, QWidget *parent)
+@@ -129,10 +130,12 @@ void DolphinTabWidget::updateTabName(int index)
+     if (!tabPageAt(index)->customLabel().isEmpty()) {
+         QString name = tabPageAt(index)->customLabel();
+         tabBar()->setTabText(index, name);
++        syncExternalTabBar();
+         return;
+     }
+ 
+     tabBar()->setTabText(index, tabName(tabPageAt(index)));
++    syncExternalTabBar();
+ }
+ 
+ bool DolphinTabWidget::isUrlOpen(const QUrl &url) const
+@@ -145,6 +148,66 @@ bool DolphinTabWidget::isItemVisibleInAnyView(const QUrl &urlOfItem) const
+     return viewShowingItem(urlOfItem).has_value();
+ }
+ 
++void DolphinTabWidget::bindExternalTabBar(DolphinTabBar *externalTabBar)
++{
++    if (m_externalTabBar == externalTabBar) {
++        syncExternalTabBar();
++        return;
++    }
++    if (m_externalTabBar) {
++        m_externalTabBar->disconnect(this);
++    }
++    m_externalTabBar = externalTabBar;
++    if (!m_externalTabBar) {
++        return;
++    }
++    connect(m_externalTabBar, &QTabBar::currentChanged, this, [this](int index) {
++        if (index >= 0 && index < count() && index != currentIndex()) {
++            setCurrentIndex(index);
++        }
++    });
++    connect(m_externalTabBar, &QTabBar::tabCloseRequested, this, QOverload<int>::of(&DolphinTabWidget::closeTab));
++    connect(m_externalTabBar, &QTabBar::tabMoved, this, [this](int from, int to) {
++        if (from >= 0 && to >= 0 && from < count() && to < count() && from != to) {
++            tabBar()->moveTab(from, to);
++        }
++    });
++    connect(m_externalTabBar, &DolphinTabBar::openNewActivatedTab, this, QOverload<int>::of(&DolphinTabWidget::openNewActivatedTab));
++    connect(m_externalTabBar, &DolphinTabBar::tabDragMoveEvent, this, &DolphinTabWidget::tabDragMoveEvent);
++    connect(m_externalTabBar, &DolphinTabBar::tabDropEvent, this, &DolphinTabWidget::tabDropEvent);
++    connect(m_externalTabBar, &DolphinTabBar::tabDetachRequested, this, &DolphinTabWidget::detachTab);
++    connect(m_externalTabBar, &DolphinTabBar::tabRenamed, this, &DolphinTabWidget::renameTab);
++    syncExternalTabBar();
++}
++
++void DolphinTabWidget::syncExternalTabBar()
++{
++    if (!m_externalTabBar) {
++        return;
++    }
++    const QSignalBlocker blocker(m_externalTabBar);
++    m_externalTabBar->setTabsClosable(GeneralSettings::showCloseButtonOnTabs());
++    const int tabCount = count();
++    while (m_externalTabBar->count() < tabCount) {
++        m_externalTabBar->addTab(QString());
++    }
++    while (m_externalTabBar->count() > tabCount) {
++        m_externalTabBar->removeTab(m_externalTabBar->count() - 1);
++    }
++    for (int i = 0; i < tabCount; ++i) {
++        DolphinTabPage *page = tabPageAt(i);
++        const QString label = !page->customLabel().isEmpty() ? page->customLabel() : tabName(page);
++        m_externalTabBar->setTabText(i, label);
++        const QUrl url = page->activeViewContainer()->url();
++        m_externalTabBar->setTabToolTip(i, url.toDisplayString(QUrl::PreferLocalFile));
++        const QUrl pathUrl = QUrl(url.adjusted(QUrl::StripTrailingSlash).toString(QUrl::FullyEncoded).append(QLatin1Char('/')));
++        m_externalTabBar->setTabIcon(i, QIcon::fromTheme(KIO::iconNameForUrl(pathUrl)));
++    }
++    if (currentIndex() >= 0 && currentIndex() < m_externalTabBar->count()) {
++        m_externalTabBar->setCurrentIndex(currentIndex());
++    }
++}
++
+ void DolphinTabWidget::openNewActivatedTab()
+ {
+     std::unique_ptr<DolphinUrlNavigator::VisualState> oldNavigatorState;
+@@ -468,6 +531,7 @@ void DolphinTabWidget::tabUrlChanged(const QUrl &url)
+             Q_EMIT currentUrlChanged(url);
+         }
+ 
++        syncExternalTabBar();
+         Q_EMIT urlChanged(url);
+     }
+ }
+@@ -492,6 +556,7 @@ void DolphinTabWidget::currentTabChanged(int index)
+     tabPage->connectNavigators(m_navigatorsWidget);
+     m_navigatorsWidget->setSecondaryNavigatorVisible(tabPage->splitViewEnabled());
+     m_lastViewedTab = tabPage;
++    syncExternalTabBar();
+ }
+ 
+ void DolphinTabWidget::renameTab(int index, const QString &name)
+@@ -519,6 +584,7 @@ void DolphinTabWidget::tabInserted(int index)
+         }
+     }
+ 
++    syncExternalTabBar();
+     Q_EMIT tabCountChanged(count());
+ }
+ 
+@@ -526,6 +592,7 @@ void DolphinTabWidget::tabRemoved(int index)
+ {
+     QTabWidget::tabRemoved(index);
+ 
++    syncExternalTabBar();
+     Q_EMIT tabCountChanged(count());
+     m_lastViewedTab->setActive(true);
+ }
+diff --git a/src/dolphintabwidget.h b/src/dolphintabwidget.h
+index 5d3e84c..2f81607 100644
+--- a/src/dolphintabwidget.h
++++ b/src/dolphintabwidget.h
+@@ -15,6 +15,7 @@
+ 
+ #include <optional>
+ 
++class DolphinTabBar;
+ class DolphinViewContainer;
+ class KConfigGroup;
+ 
+@@ -86,6 +87,13 @@ public:
+      */
+     bool isItemVisibleInAnyView(const QUrl &urlOfItem) const;
+ 
++    /**
++     * Synchronizes an external top-of-window DolphinTabBar (used by the
++     * Windows Modern Explorer layout) with this tab widget's pages and actions.
++     */
++    void bindExternalTabBar(DolphinTabBar *externalTabBar);
++    void syncExternalTabBar();
++
+ Q_SIGNALS:
+     /**
+      * Is emitted when the active view has been changed, by changing the current
+@@ -290,6 +298,7 @@ private:
+ private:
+     QPointer<DolphinTabPage> m_lastViewedTab;
+     QPointer<DolphinNavigatorsWidgetAction> m_navigatorsWidget;
++    QPointer<DolphinTabBar> m_externalTabBar;
+ };
+ 
+ #endif

@@ -61,13 +61,14 @@ The default variant is dark. Use `bash install.sh --light` to open the menu
 with the light variant selected. Non-interactive actions:
 
 ```bash
-bash install.sh install --dark
+# One-command automatic install or incremental upgrade (auto-imports ./26H2 if present,
+# and includes both isolated Konsole and Dolphin 26.08.x Explorer builds):
+bash install.sh auto --full
+
+# Explicit non-interactive actions:
+bash install.sh install --dark --full
 bash install.sh upgrade
 bash install.sh uninstall
-# Complete testing installation, including the isolated Konsole plugin:
-bash install.sh install --dark --with-konsole
-# Or add the plugin to an existing test installation:
-bash install.sh upgrade --with-konsole
 ```
 
 The terminal test requires installed Konsole 26.08.x and the exact matching

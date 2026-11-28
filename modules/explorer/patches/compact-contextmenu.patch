@@ -1,0 +1,269 @@
+diff --git a/src/dolphincontextmenu.cpp b/src/dolphincontextmenu.cpp
+index b9b6edd..5b0eca7 100644
+--- a/src/dolphincontextmenu.cpp
++++ b/src/dolphincontextmenu.cpp
+@@ -34,6 +34,10 @@
+ #include <QClipboard>
+ #include <QKeyEvent>
+ #include <QAction>
++#include <QGuiApplication>
++#include <QLocale>
++#include <QSet>
++#include <KToolBar>
+ 
+ DolphinContextMenu::DolphinContextMenu(DolphinMainWindow *parent,
+                                        const KFileItem &fileInfo,
+@@ -98,6 +102,8 @@ void DolphinContextMenu::addAllActions()
+     } else {
+         addViewportContextMenu();
+     }
++
++    compactForExplorerMenu();
+ }
+ 
+ bool DolphinContextMenu::eventFilter(QObject *object, QEvent *event)
+@@ -129,6 +135,11 @@ void DolphinContextMenu::addTrashContextMenu()
+         addAction(m_mainWindow->actionCollection()->action(QStringLiteral("view_mode")));
+     }
+ 
++    if (m_mainWindow->findChild<KToolBar *>(QStringLiteral("wmCommandToolBar"), Qt::FindDirectChildrenOnly)) {
++        if (QAction *refreshAction = m_mainWindow->actionCollection()->action(QStringLiteral("redisplay"))) {
++            addAction(refreshAction);
++        }
++    }
+     if (ContextMenuSettings::showSortBy() || ContextMenuSettings::showViewMode()) {
+         addSeparator();
+     }
+@@ -547,4 +558,220 @@ void DolphinContextMenu::addAdditionalActions(const KFileItemListProperties &pro
+     }
+ }
+ 
++
++namespace
++{
++void appendDeduplicatedActions(QMenu *menu, const QList<QAction *> &items)
++{
++    bool lastWasSeparator = true;
++    for (QAction *act : items) {
++        if (!act) {
++            continue;
++        }
++        if (act->isSeparator()) {
++            if (!lastWasSeparator) {
++                menu->addSeparator();
++                lastWasSeparator = true;
++            }
++            continue;
++        }
++        if (!act->isVisible()) {
++            menu->addAction(act);
++            continue;
++        }
++        menu->addAction(act);
++        lastWasSeparator = false;
++    }
++    const QList<QAction *> finalActions = menu->actions();
++    for (int i = finalActions.size() - 1; i >= 0; --i) {
++        if (!finalActions[i]->isVisible()) {
++            continue;
++        }
++        if (finalActions[i]->isSeparator()) {
++            menu->removeAction(finalActions[i]);
++        }
++        break;
++    }
++}
++}
++
++void DolphinContextMenu::compactForExplorerMenu()
++{
++    if (m_context & TrashContext) {
++        return;
++    }
++    if (!m_mainWindow || !m_mainWindow->findChild<KToolBar *>(QStringLiteral("wmCommandToolBar"), Qt::FindDirectChildrenOnly)) {
++        return;
++    }
++    // Match Windows 11 Shift + Right-Click: open the full classic menu directly.
++    if (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) {
++        return;
++    }
++
++    const QList<QAction *> originalActions = actions();
++    if (originalActions.isEmpty()) {
++        return;
++    }
++
++    const KActionCollection *ac = m_mainWindow->actionCollection();
++    QSet<QAction *> primarySet;
++    auto keepByName = [&](const QString &name) {
++        if (QAction *a = ac->action(name)) {
++            primarySet.insert(a);
++        }
++    };
++
++    if (m_context & ItemContext) {
++        keepByName(QStringLiteral("open_in_new_tab"));
++        keepByName(QStringLiteral("open_in_new_tabs"));
++        keepByName(QStringLiteral("open_in_new_window"));
++        keepByName(KStandardAction::name(KStandardAction::Cut));
++        keepByName(KStandardAction::name(KStandardAction::Copy));
++        keepByName(KStandardAction::name(KStandardAction::Paste));
++        keepByName(KStandardAction::name(KStandardAction::RenameFile));
++        keepByName(KStandardAction::name(KStandardAction::MoveToTrash));
++        keepByName(KStandardAction::name(KStandardAction::DeleteFile));
++        keepByName(QStringLiteral("copy_location"));
++        keepByName(QStringLiteral("add_to_places"));
++        keepByName(QStringLiteral("open_terminal_here"));
++        keepByName(QStringLiteral("properties"));
++        if (m_removeAction) {
++            primarySet.insert(m_removeAction);
++        }
++        if (QAction *openWithSub = findChild<QAction *>(QStringLiteral("openWith_submenu"))) {
++            primarySet.insert(openWithSub);
++        }
++        // Keep primary Open / Open With actions inserted before Cut, plus folder Paste.
++        QAction *cutAction = ac->action(KStandardAction::name(KStandardAction::Cut));
++        bool beforeCut = true;
++        for (QAction *act : originalActions) {
++            if (act == cutAction) {
++                beforeCut = false;
++            }
++            if (act->isSeparator()) {
++                continue;
++            }
++            if (!act->isVisible()) {
++                primarySet.insert(act);
++                continue;
++            }
++            if (beforeCut && !act->menu()) {
++                // Keep primary app-launch ("Open with <Default App>" / "Open Path") actions.
++                if (act != ac->action(QStringLiteral("open_in_split_view")) && act != ac->action(QStringLiteral("show_target"))) {
++                    primarySet.insert(act);
++                }
++            }
++            if (act->parent() == this && act->icon().name() == QLatin1String("edit-paste")) {
++                primarySet.insert(act);
++            }
++        }
++    } else {
++        // Viewport background menu: View, Sort by, Refresh, Paste, New, Add to Places, Open in Terminal, Properties.
++        keepByName(QStringLiteral("view_mode"));
++        keepByName(QStringLiteral("sort"));
++        keepByName(QStringLiteral("redisplay"));
++        keepByName(KStandardAction::name(KStandardAction::Paste));
++        keepByName(QStringLiteral("add_to_places"));
++        keepByName(QStringLiteral("open_terminal_here"));
++        keepByName(QStringLiteral("open_terminal"));
++        keepByName(QStringLiteral("properties"));
++        if (KNewFileMenu *newMenu = m_mainWindow->newFileMenu()) {
++            if (newMenu->menu()) {
++                primarySet.insert(newMenu->menu()->menuAction());
++                const QIcon winNewIcon = QIcon::fromTheme(QStringLiteral("wm-context-new-symbolic"));
++                if (!winNewIcon.isNull()) {
++                    newMenu->menu()->setIcon(winNewIcon);
++                }
++            }
++        }
++        for (QAction *act : originalActions) {
++            if (!act->isSeparator() && !act->isVisible()) {
++                primarySet.insert(act);
++            }
++        }
++    }
++
++    QList<QAction *> primaryList;
++    QList<QAction *> overflowList;
++    int visibleOverflowCount = 0;
++    for (QAction *act : originalActions) {
++        if (act->isSeparator()) {
++            primaryList.append(act);
++            overflowList.append(act);
++        } else if (primarySet.contains(act)) {
++            primaryList.append(act);
++        } else {
++            overflowList.append(act);
++            if (act->isVisible()) {
++                ++visibleOverflowCount;
++            }
++        }
++    }
++
++    if (visibleOverflowCount == 0) {
++        return;
++    }
++
++    for (QAction *act : originalActions) {
++        removeAction(act);
++    }
++
++    if (!(m_context & ItemContext)) {
++        // Order viewport menu cleanly like Windows 11 Explorer:
++        // View / Sort / Refresh | Paste | New | Add to Places / Terminal | Properties
++        auto makeSep = [this]() {
++            auto *sep = new QAction(this);
++            sep->setSeparator(true);
++            return sep;
++        };
++        QList<QAction *> orderedViewport;
++        auto takeIfPresent = [&](QAction *target) {
++            if (target && primaryList.contains(target)) {
++                primaryList.removeAll(target);
++                orderedViewport.append(target);
++            }
++        };
++        takeIfPresent(ac->action(QStringLiteral("view_mode")));
++        takeIfPresent(ac->action(QStringLiteral("sort")));
++        takeIfPresent(ac->action(QStringLiteral("redisplay")));
++        orderedViewport.append(makeSep());
++        takeIfPresent(ac->action(KStandardAction::name(KStandardAction::Paste)));
++        if (KNewFileMenu *newMenu = m_mainWindow->newFileMenu(); newMenu && newMenu->menu()) {
++            orderedViewport.append(makeSep());
++            takeIfPresent(newMenu->menu()->menuAction());
++        }
++        orderedViewport.append(makeSep());
++        takeIfPresent(ac->action(QStringLiteral("add_to_places")));
++        takeIfPresent(ac->action(QStringLiteral("open_terminal_here")));
++        takeIfPresent(ac->action(QStringLiteral("open_terminal")));
++        orderedViewport.append(makeSep());
++        takeIfPresent(ac->action(QStringLiteral("properties")));
++        for (QAction *rem : std::as_const(primaryList)) {
++            if (!rem->isSeparator()) {
++                orderedViewport.append(rem);
++            }
++        }
++        appendDeduplicatedActions(this, orderedViewport);
++    } else {
++        appendDeduplicatedActions(this, primaryList);
++    }
++
++    QIcon moreIcon = QIcon::fromTheme(QStringLiteral("wm-show-more-options-symbolic"));
++    if (moreIcon.isNull()) {
++        moreIcon = QIcon::fromTheme(QStringLiteral("overflow-menu"));
++    }
++    const bool zhLocale = QLocale().name().startsWith(QLatin1String("zh"));
++    const QString moreTitle = zhLocale ? QStringLiteral("显示更多选项") : i18nc("@title:menu", "Show more options");
++    auto *moreMenu = new QMenu(moreTitle, this);
++    moreMenu->setObjectName(QStringLiteral("wmShowMoreOptionsMenu"));
++    moreMenu->setIcon(moreIcon);
++    appendDeduplicatedActions(moreMenu, overflowList);
++    if (!moreMenu->isEmpty()) {
++        addSeparator();
++        addMenu(moreMenu);
++    } else {
++        delete moreMenu;
++    }
++}
++
+ #include "moc_dolphincontextmenu.cpp"
+diff --git a/src/dolphincontextmenu.h b/src/dolphincontextmenu.h
+index b357fdd..4a5f648 100644
+--- a/src/dolphincontextmenu.h
++++ b/src/dolphincontextmenu.h
+@@ -65,6 +65,7 @@ private:
+      * based on the context given in the constructor.
+      */
+     void addAllActions();
++    void compactForExplorerMenu();
+ 
+     void addTrashContextMenu();
+     void addTrashItemContextMenu();

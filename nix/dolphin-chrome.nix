@@ -18,6 +18,8 @@ dolphin.overrideAttrs (old: {
   patches = (old.patches or [ ]) ++ [
     (patchDirectory + "/statusbar-margins.patch")
     (patchDirectory + "/tab-controls.patch")
+    (patchDirectory + "/explorer-chrome.patch")
+    (patchDirectory + "/compact-contextmenu.patch")
   ];
   cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DBUILD_TESTING=OFF" ];
   doCheck = false;

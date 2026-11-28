@@ -9,6 +9,8 @@ source="${WM_NATIVE_RESOURCE_SOURCE:-}"
 if [ -z "$source" ] && [ -f "$root/native-resources/resource-manifest.json" ]; then
     source="$root/native-resources"
     bash "$root/scripts/stage-native-resources.sh" --verify "$source"
+elif [ -z "$source" ] && [ -f "${WM_26H2_SOURCE:-$root/26H2}/Windows/Fonts/SegoeIcons.ttf" ]; then
+    source="${WM_26H2_SOURCE:-$root/26H2}"
 fi
 verify_output() {
     python3 "$root/scripts/check-native-icon-import.py" "$output" "$root/scripts/native-assets-map.json" &&
