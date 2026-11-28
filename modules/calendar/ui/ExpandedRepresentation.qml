@@ -256,8 +256,8 @@ FocusScope {
                     }
 
                     FlyoutButton {
-                        Layout.preferredWidth: textFallback ? Math.min(88, implicitWidth) : 24
-                        Layout.preferredHeight: 24
+                        Layout.preferredWidth: textFallback ? Math.min(88, implicitWidth) : ClockMetrics.compactActionButtonExtent
+                        Layout.preferredHeight: ClockMetrics.compactActionButtonExtent
                         missingIconText: expandedRoot.calendarBodyShown ? i18n("Hide") : i18n("Show")
                         enabled: expandedRoot.calendarCanExpand
                         text: expandedRoot.calendarBodyShown ? i18n("Collapse calendar") : i18n("Expand calendar")

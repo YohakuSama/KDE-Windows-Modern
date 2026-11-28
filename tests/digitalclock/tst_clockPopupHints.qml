@@ -83,6 +83,7 @@ Item {
             compare(ClockMetrics.flyoutCardRadius, 8);
             compare(ClockMetrics.flyoutCardBorderWidth, 1);
             compare(ClockMetrics.flyoutButtonExtent, 28);
+            compare(ClockMetrics.compactActionButtonExtent, 24);
             compare(ClockMetrics.flyoutButtonRadius, ControlMetrics.controlCornerRadius);
             compare(ClockMetrics.flyoutCardRadius, ControlMetrics.overlayCornerRadius);
             const panel = findChild(popup, "wmNotificationPanel");

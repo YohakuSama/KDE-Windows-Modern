@@ -400,7 +400,7 @@ Item {
                     Text {
                         text: model.realName || model.name
                         font.family: Kirigami.Theme.defaultFont.family
-                        font.pixelSize: 14
+                        font.pixelSize: LockMetrics.credentialFontSize
                         color: "#FFFFFF"
                         verticalAlignment: Text.AlignVCenter
                         height: 32
@@ -421,8 +421,8 @@ Item {
         // ── Footer: network, accessibility and power only ──
         RowLayout {
             id: footer
-            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 16 }
-            spacing: 8
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: LockMetrics.footerMargin }
+            spacing: LockMetrics.footerSpacing
             visible: lockScreenRoot.loginUiActive
             onVisibleChanged: if (!visible) powerMenu.close()
 
@@ -430,15 +430,15 @@ Item {
             Loader {
                 id: footerNetwork
                 visible: status !== Loader.Error
-                Layout.preferredWidth: 32
-                Layout.preferredHeight: 32
+                Layout.preferredWidth: LockMetrics.statusButtonExtent
+                Layout.preferredHeight: LockMetrics.statusButtonExtent
                 Layout.alignment: Qt.AlignVCenter
                 source: "NetworkStatusIcon.qml"
             }
             StatusIconButton {
                 visible: footerNetwork.status === Loader.Error
-                Layout.preferredWidth: 32
-                Layout.preferredHeight: 32
+                Layout.preferredWidth: LockMetrics.statusButtonExtent
+                Layout.preferredHeight: LockMetrics.statusButtonExtent
                 icon.name: "network-unavailable-symbolic"
                 text: LockText.tr("Network", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Network"), Qt.uiLanguage, Qt.locale().name)
                 enabled: false
@@ -446,16 +446,16 @@ Item {
             Loader {
                 id: footerAccessibility
                 visible: status !== Loader.Error
-                Layout.preferredWidth: 32
-                Layout.preferredHeight: 32
+                Layout.preferredWidth: LockMetrics.statusButtonExtent
+                Layout.preferredHeight: LockMetrics.statusButtonExtent
                 Layout.alignment: Qt.AlignVCenter
                 source: "VirtualKeyboardButton.qml"
                 onLoaded: item.lockScreenPresentation = true
             }
             StatusIconButton {
                 visible: footerAccessibility.status === Loader.Error
-                Layout.preferredWidth: 32
-                Layout.preferredHeight: 32
+                Layout.preferredWidth: LockMetrics.statusButtonExtent
+                Layout.preferredHeight: LockMetrics.statusButtonExtent
                 icon.name: "preferences-desktop-accessibility-symbolic"
                 text: LockText.tr("Accessibility", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Accessibility"), Qt.uiLanguage, Qt.locale().name)
                 enabled: false
@@ -501,8 +501,8 @@ Item {
             }
             StatusIconButton {
                 id: powerButton
-                Layout.preferredWidth: 32
-                Layout.preferredHeight: 32
+                Layout.preferredWidth: LockMetrics.statusButtonExtent
+                Layout.preferredHeight: LockMetrics.statusButtonExtent
                 Layout.alignment: Qt.AlignVCenter
                 focusPolicy: Qt.TabFocus
                 icon.name: "system-shutdown-symbolic"

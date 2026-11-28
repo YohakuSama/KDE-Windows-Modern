@@ -186,10 +186,10 @@ def source_plan(root=ROOT, *, validate_links=True):
                 for item in directory.iterdir():
                     relative = item.relative_to(root).as_posix()
                     if item.is_symlink():
-                        if relative not in expected:
+                        if item not in expected:
                             raise ValueError(f"Unmapped native symlink: {relative}")
                         continue
-                    if item.is_file() and relative not in expected and relative not in tracked:
+                    if item.is_file() and item not in expected and relative not in tracked:
                         raise ValueError(
                             f"Unmapped native output: {relative}; "
                             "remove it deliberately or add it to the source map"

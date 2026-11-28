@@ -39,3 +39,11 @@ const viewModeMenuRightReserve = 24;
 const shutdownMenuMinimumWidth = 168;
 const shutdownMenuTextWidthPadding = 64;
 const shutdownMenuAnchorGap = 8;
+
+// StartResources.xbf: PinnedListItemHeight, AllAppsIconSize_Large and AllAppsIconSize_Medium.
+const gridCellHeight = 84;
+const gridAppIconSize = 32;
+const listAppIconSize = 24;
+
+// Shared interior scroll-rail reserve when the scrollbar stays inside the content column.
+const contentScrollGutter = 18;

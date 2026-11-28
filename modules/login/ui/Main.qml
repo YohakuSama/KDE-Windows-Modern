@@ -242,7 +242,7 @@ Item {
         Loader {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.margins: 16
+            anchors.margins: LockMetrics.footerMargin
             active: !loginScreenRoot.uiVisible && !root.loginSucceeded
             visible: active && status === Loader.Ready
             source: "NetworkStatusIcon.qml"
@@ -254,8 +254,8 @@ Item {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.margins: 16
-            spacing: 8
+            anchors.margins: LockMetrics.footerMargin
+            spacing: LockMetrics.footerSpacing
             enabled: loginScreenRoot.uiVisible && !root.loginSucceeded
             visible: opacity > 0
             opacity: loginScreenRoot.uiVisible && !root.loginSucceeded ? 1 : 0

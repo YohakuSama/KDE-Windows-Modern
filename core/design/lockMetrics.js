@@ -9,8 +9,15 @@ const passwordWidth = 296;
 // CommonStyles.xbf: LogonDefaultFontSize and TextFieldCornerRadius.
 const credentialFontSize = 14;
 const fieldCornerRadius = 4;
+// Shared credential field active-focus bottom indicator geometry.
+const fieldFocusBarInset = 2;
+const fieldFocusBarHeight = 2;
+const fieldFocusBarRadius = 1;
 // Shared Sign in button surface used by the Login and LockScreen hosts.
+const loginButtonWidth = 144;
 const loginButtonRadius = 6;
+const loginButtonBorderWidth = 1;
+const loginButtonFocusBorderWidth = 2;
 // CommonStyles.xbf: SubmitButtonStyle and ButtonLayoutGrid.
 const fieldButtonRadius = 3;
 const submitButtonMinWidth = 28;
@@ -36,6 +43,11 @@ const clockTimePixelSize = 96;
 const clockDatePixelSize = 24;
 const clockTopRatio = 0.15;
 const credentialDimOpacity = 0.30;
+// Shared status-row button and footer inset geometry across Login and LockScreen.
+const statusButtonExtent = 32;
+const statusGlyphExtent = 16;
+const footerMargin = 16;
+const footerSpacing = 8;
 
 function avatarSize(width, height) {
     return Math.max(1, Math.floor(Math.min(accountAvatarMaximum, width * 0.55, height * 0.24)));

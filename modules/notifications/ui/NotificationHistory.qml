@@ -124,7 +124,7 @@ ColumnLayout {
 
         FlyoutButton {
             id: dndToggle
-            Layout.preferredWidth: textFallback ? Math.min(84, implicitWidth) : 28
+            Layout.preferredWidth: textFallback ? Math.min(84, implicitWidth) : ClockMetrics.flyoutButtonExtent
             missingIconText: i18n("DND")
             text: history.effectiveDnd && !history.manualDnd
                 ? i18n("Do not disturb is active due to a rule or application")
@@ -336,8 +336,8 @@ ColumnLayout {
                         Layout.maximumWidth: 96
                     }
                     FlyoutButton {
-                        Layout.preferredWidth: textFallback ? Math.min(72, implicitWidth) : 24
-                        Layout.preferredHeight: 24
+                        Layout.preferredWidth: textFallback ? Math.min(72, implicitWidth) : ClockMetrics.compactActionButtonExtent
+                        Layout.preferredHeight: ClockMetrics.compactActionButtonExtent
                         missingIconText: card.model.isGroupExpanded ? i18n("Less") : i18n("More")
                         quiet: true
                         visible: card.isGroup
@@ -349,8 +349,8 @@ ColumnLayout {
                         PlasmaComponents.ToolTip { text: parent.text }
                     }
                     FlyoutButton {
-                        Layout.preferredWidth: textFallback ? Math.min(72, implicitWidth) : 24
-                        Layout.preferredHeight: 24
+                        Layout.preferredWidth: textFallback ? Math.min(72, implicitWidth) : ClockMetrics.compactActionButtonExtent
+                        Layout.preferredHeight: ClockMetrics.compactActionButtonExtent
                         missingIconText: i18n("Close")
                         quiet: true
                         text: card.isGroup ? i18n("Dismiss group") : i18n("Dismiss notification")

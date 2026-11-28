@@ -13,7 +13,18 @@ TestCase {
         compare(LockMetrics.formTop(400, 270), 66);
         compare(LockMetrics.passwordWidth, 296);
         compare(LockMetrics.passwordHeight, 30);
+        compare(LockMetrics.credentialFontSize, 14);
+        compare(LockMetrics.fieldFocusBarInset, 2);
+        compare(LockMetrics.fieldFocusBarHeight, 2);
+        compare(LockMetrics.fieldFocusBarRadius, 1);
+        compare(LockMetrics.loginButtonWidth, 144);
         compare(LockMetrics.loginButtonRadius, 6);
+        compare(LockMetrics.loginButtonBorderWidth, 1);
+        compare(LockMetrics.loginButtonFocusBorderWidth, 2);
+        compare(LockMetrics.statusButtonExtent, 32);
+        compare(LockMetrics.statusGlyphExtent, 16);
+        compare(LockMetrics.footerMargin, 16);
+        compare(LockMetrics.footerSpacing, 8);
         compare(LockMetrics.clockLineSpacingFactor, 0.5);
         compare(LockMetrics.powerMenuPadding, 4);
         compare(LockMetrics.loginPowerMenuWidth, 150);

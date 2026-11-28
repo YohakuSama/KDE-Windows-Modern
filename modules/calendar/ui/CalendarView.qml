@@ -16,6 +16,7 @@ import org.kde.kirigami as Kirigami
 
 import "Calendar.js" as Calendar
 import "code/dateformat.js" as DateFormat
+import "code/clockMetrics.js" as ClockMetrics
 import "code/controlMetrics.js" as ControlMetrics
 
 ColumnLayout {
@@ -38,7 +39,7 @@ ColumnLayout {
         Math.floor(todayKey / 100) % 100 - 1, todayKey % 100)
     // Use the same row pitch in the month and zoomed-out views.
     property real dayHeightLimit: 36
-    readonly property real chromeHeight: Math.ceil(Math.max(28, monthNavigation.implicitHeight)
+    readonly property real chromeHeight: Math.ceil(Math.max(ClockMetrics.flyoutButtonExtent, monthNavigation.implicitHeight)
         + weekdayMetrics.height + 2 * spacing + 5 * calendarGrid.spacing)
     readonly property int naturalHeight: Math.ceil(chromeHeight + 6 * zoomHost.dayCellHeight)
 

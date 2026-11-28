@@ -5,6 +5,7 @@ import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/lib" as Lib
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js" as ControlMetrics
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/trayMetrics.js" as TrayMetrics
 
 Item {
     id: fixture
@@ -175,6 +176,7 @@ Item {
             header.actionText = "Clear all";
             const button = findChild(header, "wmDetailAction");
             tryCompare(button, "visible", true);
+            compare(button.Layout.preferredHeight, TrayMetrics.detailActionButtonHeight);
             action.clear();
             mouseClick(button, button.width / 2, button.height / 2);
             compare(action.count, 1);

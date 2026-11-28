@@ -15,6 +15,7 @@ import org.kde.kirigami as Kirigami
 import "../components"
 import "../code/tools.js" as Tools
 import "../code/controlMetrics.js" as ControlMetrics
+import "../code/startMenuMetrics.js" as Metrics
 
 Item {
     id: allAppsPage
@@ -226,7 +227,7 @@ Item {
         visible: allAppsPage.categoryMode
         interactive: !allAppsPage.inCategory
         enabled: !allAppsPage.inCategory
-        readonly property int scrollGutter: allAppsPage.scrollbarEdgeOffset > 0 ? 0 : 18
+        readonly property int scrollGutter: allAppsPage.scrollbarEdgeOffset > 0 ? 0 : Metrics.contentScrollGutter
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
         readonly property int columns: contentColumnWidth >= 690 ? 4 : contentColumnWidth >= 360 ? 3 : 2
         cellWidth: Math.max(1, Math.floor(contentColumnWidth / columns))
@@ -346,7 +347,7 @@ Item {
 
                                 Kirigami.Icon {
                                     anchors.centerIn: parent
-                                    width: Math.min(32, parent.width * 0.7)
+                                    width: Math.min(Metrics.gridAppIconSize, parent.width * 0.7)
                                     height: width
                                     roundToIconSize: false
                                     visible: slot.hasApp && !slot.cluster
@@ -419,7 +420,7 @@ Item {
                         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                             Kirigami.Theme.textColor.b, categoryLabelMouse.containsPress ? 0.12
                                 : categoryLabel.hovered ? 0.07 : 0)
-                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.microInteractionDuration : 0 } }
                     }
                     MouseArea {
                         id: categoryLabelMouse
@@ -497,7 +498,7 @@ Item {
             // whose height feeds back into the surface's implicit height.
             readonly property int appColumns: width - 32 >= 340 ? 4 : width - 32 >= 240 ? 3 : 2
             readonly property int appCount: allAppsPage.categoryChild ? allAppsPage.categoryChild.length : 0
-            readonly property int appCellHeight: 84
+            readonly property int appCellHeight: Metrics.gridCellHeight
             height: Math.max(1, Math.min(parent.height - 24,
                 84 + Math.max(1, Math.ceil(appCount / appColumns)) * appCellHeight))
             radius: ControlMetrics.cardSurfaceRadius
@@ -587,7 +588,7 @@ Item {
                         width: categoryGrid.cellWidth
                         height: categoryGrid.cellHeight
                         gridMode: true
-                        iconSize: 32
+                        iconSize: Metrics.gridAppIconSize
                         showInstallBadge: true
                     }
                     PlasmaComponents3.ScrollBar.vertical: StartScrollBar { scrolling: categoryGrid.moving }

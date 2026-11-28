@@ -10,6 +10,7 @@ import org.kde.plasma.plasmoid
 import "../lib" as Lib
 import "../js/colorType.js" as ColorType
 import "../js/funcs.js" as Funcs
+import "../js/trayMetrics.js" as TrayMetrics
 
 Lib.Page {
     id: page
@@ -239,11 +240,11 @@ Lib.Page {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: TrayMetrics.compactRowSpacing
 
             Item {
-                Layout.preferredWidth: 20
-                Layout.preferredHeight: 20
+                Layout.preferredWidth: TrayMetrics.compactRowIconExtent
+                Layout.preferredHeight: TrayMetrics.compactRowIconExtent
                 visible: sleepGlyph.nativeSource.length > 0
                 NativeGlyph {
                     id: sleepGlyph

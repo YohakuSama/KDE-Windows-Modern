@@ -8,4 +8,5 @@
 const flyoutCardRadius = ControlMetrics.overlayCornerRadius;
 const flyoutCardBorderWidth = 1;
 const flyoutButtonExtent = 28;
+const compactActionButtonExtent = 24;
 const flyoutButtonRadius = ControlMetrics.controlCornerRadius;

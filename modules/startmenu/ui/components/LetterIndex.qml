@@ -120,7 +120,7 @@ FocusScope {
                         color: Qt.rgba(tile.foreground.r, tile.foreground.g, tile.foreground.b,
                             tile.available ? (tileMouse.containsPress ? 0.12
                                 : tile.hovered || tile.selected ? 0.07 : 0) : 0)
-                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+                        Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.microInteractionDuration : 0 } }
                     }
                     PlasmaComponents3.Label {
                         anchors.centerIn: parent

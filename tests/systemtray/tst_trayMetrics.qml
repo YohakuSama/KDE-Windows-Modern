@@ -125,6 +125,18 @@ TestCase {
         compare(Metrics.detailContentInset, 12);
         compare(Metrics.detailRowSpacing, 12);
         compare(Metrics.detailRowIconExtent, 24);
+        compare(Metrics.compactRowContentInset, 10);
+        compare(Metrics.compactRowSpacing, 8);
+        compare(Metrics.compactRowIconExtent, 20);
+        compare(Metrics.sectionChevronExtent, 16);
+        compare(Metrics.sectionChevronRotateDuration, 120);
+        compare(Metrics.sectionExpandDuration, 150);
+        compare(Metrics.sliderSlotHeight, 32);
+        compare(Metrics.sliderThumbExtent, 18);
+        compare(Metrics.sliderInnerThumbRest, 12);
+        compare(Metrics.sliderInnerThumbHover, 14);
+        compare(Metrics.sliderInnerThumbPressed, 10);
+        compare(Metrics.scrollRailWidth, 16);
     }
     function test_quickTileRadiusUsesControlCornerRadius() {
         for (const scale of [0.75, 1, 1.25, 1.5, 2])

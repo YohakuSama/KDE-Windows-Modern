@@ -203,9 +203,9 @@ SessionManagementScreen {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                anchors.margins: 2
-                height: 2
-                radius: 1
+                anchors.margins: WinStyle.fieldFocusBarInset
+                height: WinStyle.fieldFocusBarHeight
+                radius: WinStyle.fieldFocusBarRadius
                 color: WinStyle.accentColor
                 visible: passwordField.textField.activeFocus
             }
@@ -276,7 +276,7 @@ SessionManagementScreen {
     QQC2.Button {
         id: noPasswordButton
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredWidth: 144
+        Layout.preferredWidth: WinStyle.loginButtonWidth
         Layout.preferredHeight: WinStyle.textFieldHeight
         text: i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in")
         visible: !root.showUsernamePrompt && userList.currentItem && !userList.currentItem.needsPassword
@@ -285,7 +285,7 @@ SessionManagementScreen {
             radius: WinStyle.loginButtonRadius
             color: parent.down ? "#26FFFFFF" : parent.hovered ? "#33FFFFFF" : "#20FFFFFF"
             border.color: parent.activeFocus ? "#FFFFFF" : "#88FFFFFF"
-            border.width: parent.activeFocus ? 2 : 1
+            border.width: parent.activeFocus ? WinStyle.loginButtonFocusBorderWidth : WinStyle.loginButtonBorderWidth
         }
         contentItem: Text {
             text: noPasswordButton.text

@@ -4,24 +4,25 @@ import QtQuick.Controls
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 import "controlMetrics.js" as ControlMetrics
+import "lockMetrics.js" as LockMetrics
 
 PlasmaComponents3.ToolButton {
     id: button
     contentItem: Item {
         NativeGlyph {
             anchors.centerIn: parent
-            width: Math.min(16, parent.width, parent.height)
+            width: Math.min(LockMetrics.statusGlyphExtent, parent.width, parent.height)
             height: width
             roleName: button.icon.name
             foreground: "#FFFFFF"
         }
     }
-    implicitWidth: 32
-    implicitHeight: 32
-    width: 32
-    height: 32
-    icon.width: 16
-    icon.height: 16
+    implicitWidth: LockMetrics.statusButtonExtent
+    implicitHeight: LockMetrics.statusButtonExtent
+    width: LockMetrics.statusButtonExtent
+    height: LockMetrics.statusButtonExtent
+    icon.width: LockMetrics.statusGlyphExtent
+    icon.height: LockMetrics.statusGlyphExtent
     icon.color: "#FFFFFF"
     display: AbstractButton.IconOnly
     flat: true

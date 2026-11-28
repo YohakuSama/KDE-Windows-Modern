@@ -4,6 +4,7 @@ import QtTest
 import org.kde.kitemmodels as KItemModels
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/pages"
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/alphabeticalApps.js" as Alphabetical
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/startMenuMetrics.js" as Metrics
 
 Item {
     width: 640
@@ -39,6 +40,8 @@ Item {
             compare(Alphabetical.sectionForEntry({display:"浏览器", group:"L"}), "L");
             compare(Alphabetical.sectionForEntry({display:"Éditeur", group:"É"}), "E");
             tryCompare(view, "count", 5);
+            compare(view.scrollGutter, Metrics.contentScrollGutter);
+            compare(view.cellHeight, Metrics.gridCellHeight);
             compare(view.columns, 6);
             compare(view.visualRows.length, 3);
             compare(view.visualRows.map(row => row.heading).join(","), "A,C,F");

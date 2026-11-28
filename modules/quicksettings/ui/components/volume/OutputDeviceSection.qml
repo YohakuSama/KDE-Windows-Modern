@@ -5,6 +5,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import "../../lib" as Lib
 import ".." as Components
 import "../../js/funcs.js" as Funcs
+import "../../js/trayMetrics.js" as TrayMetrics
 
 ColumnLayout {
     id: section
@@ -39,12 +40,12 @@ ColumnLayout {
     Component {
         id: arrowComponent
         Components.NativeGlyph {
-            width: 16
-            height: 16
+            width: TrayMetrics.sectionChevronExtent
+            height: TrayMetrics.sectionChevronExtent
             roleName: "go-down-symbolic"
             rotation: section.expanded ? 180 : 0
             Behavior on rotation {
-                NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 120 : 0 }
+                NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? TrayMetrics.sectionChevronRotateDuration : 0 }
             }
         }
     }
@@ -57,7 +58,7 @@ ColumnLayout {
         enabled: section.expanded
 
         Behavior on Layout.preferredHeight {
-            NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? 150 : 0; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: Kirigami.Units.shortDuration > 0 ? TrayMetrics.sectionExpandDuration : 0; easing.type: Easing.OutQuad }
         }
 
         ColumnLayout {

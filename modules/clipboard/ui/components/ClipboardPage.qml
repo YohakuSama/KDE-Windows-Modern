@@ -9,6 +9,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import "../lib" as Lib
 import "../js/colorType.js" as ColorType
 import "../js/controlMetrics.js" as ControlMetrics
+import "../js/trayMetrics.js" as TrayMetrics
 
 ColumnLayout {
     id: page
@@ -142,7 +143,7 @@ ColumnLayout {
             visible: page.historyCount > 0
                 && (page.historyModel.starredCount === undefined || page.historyCount > page.historyModel.starredCount)
             text: i18n("Clear all")
-            Layout.preferredHeight: 30
+            Layout.preferredHeight: TrayMetrics.detailActionButtonHeight
             enabled: !!page.historyController
             onClicked: if (page.historyController) page.historyController.clearHistory()
         }
@@ -180,6 +181,7 @@ ColumnLayout {
         boundsBehavior: Flickable.StopAtBounds
         HoverHandler { id: historyHover }
         QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
+            id: clipboardScrollBar
             objectName: "wmClipboardScrollBar"
             dark: page.dark
             viewportHovered: historyHover.hovered
@@ -195,7 +197,7 @@ ColumnLayout {
             readonly property bool supportsPin: model.starred !== undefined
             readonly property bool pinned: supportsPin && model.starred
             readonly property color fg: Kirigami.Theme.textColor
-            width: Math.max(1, history.width - (history.contentHeight > history.height ? 16 : 0))
+            width: Math.max(1, history.width - (history.contentHeight > history.height ? clipboardScrollBar.width : 0))
             height: isImage ? 108 : 76
             radius: ControlMetrics.controlCornerRadius
             color: ColorType.rowFill(page.dark, true, selectArea.containsMouse, selectArea.containsPress)

@@ -169,8 +169,25 @@ const detailRowOuterInset = 8;
 const detailContentInset = 12;
 const detailRowSpacing = 12;
 const detailRowIconExtent = 24;
+// Shared compact section/row geometry across Volume, Battery and ListRow.
+const compactRowContentInset = 10;
+const compactRowSpacing = 8;
+const compactRowIconExtent = 20;
+// Collapsible device-section chevron and expand transitions.
+const sectionChevronExtent = 16;
+const sectionChevronRotateDuration = 120;
+const sectionExpandDuration = 150;
 const splitSecondaryExtent = 48;
+// WinUI 21h1_themeresources.xbf / 21h1_generic.xbf: SliderTrackThemeHeight,
+// SliderHorizontalHeight, SliderHorizontalThumbWidth/Height and inner thumb states.
 const sliderTrackHeight = 4;
+const sliderSlotHeight = 32;
+const sliderThumbExtent = 18;
+const sliderInnerThumbRest = 12;
+const sliderInnerThumbHover = 14;
+const sliderInnerThumbPressed = 10;
+// Matches FluentScrollBar's 16px WinUI scroll input rail.
+const scrollRailWidth = 16;
 const mediaCardHeight = 178;
 const mediaCardGap = 12;
 const mediaButtonExtent = 40;
@@ -228,7 +245,7 @@ function overflowGeometry(width, availableHeight, scale, count) {
     const nominalPitch = Math.max(1, Math.round(innerWidth / columns));
     const maximumRows = Math.max(1, Math.min(3, Math.floor(innerBudget / nominalPitch)));
     const scrolls = rows > maximumRows || rows * nominalPitch > innerBudget;
-    const railWidth = scrolls ? Math.min(16, Math.max(0, innerWidth - columns)) : 0;
+    const railWidth = scrolls ? Math.min(scrollRailWidth, Math.max(0, innerWidth - columns)) : 0;
     const cellWidth = (innerWidth - railWidth) / columns;
     const cellHeight = Math.max(1, Math.round(cellWidth));
     const contentHeight = Math.min(innerBudget, Math.max(1, Math.min(Math.max(1, rows), maximumRows) * cellHeight));

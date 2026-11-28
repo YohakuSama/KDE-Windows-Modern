@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import "../components" as Components
+import "../js/trayMetrics.js" as TrayMetrics
 
 RowLayout {
     id: header
@@ -57,7 +58,7 @@ RowLayout {
         objectName: "wmDetailAction"
         visible: header.showAction
         text: header.actionText
-        Layout.preferredHeight: 30
+        Layout.preferredHeight: TrayMetrics.detailActionButtonHeight
         Layout.alignment: Qt.AlignVCenter
         onClicked: header.actionTriggered()
     }

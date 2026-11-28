@@ -2,6 +2,7 @@
 import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/controlMetrics.js" as ControlMetrics
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/startMenuMetrics.js" as Metrics
 
 TestCase {
     name: "StartAllAppsComponent"
@@ -31,6 +32,7 @@ TestCase {
         compare(page.categoryKey, "productivity");
         const grid = findChild(page, "wmStartCategoryGrid");
         verify(grid !== null);
+        compare(grid.cellHeight, Metrics.gridCellHeight);
         tryCompare(grid, "count", 3);
         tryCompare(grid, "columns", 4);
         page.backToCategories();

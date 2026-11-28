@@ -6,6 +6,7 @@ import "../../lib" as Lib
 import ".." as Components
 import "../../js/colorType.js" as ColorType
 import "../../js/controlMetrics.js" as ControlMetrics
+import "../../js/trayMetrics.js" as TrayMetrics
 
 ColumnLayout {
     id: section
@@ -25,25 +26,25 @@ ColumnLayout {
 
         delegate: Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: 36
+            Layout.preferredHeight: TrayMetrics.quickSliderRowHeight
 
             Rectangle {
                 anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
+                anchors.leftMargin: TrayMetrics.detailRowOuterInset
+                anchors.rightMargin: TrayMetrics.detailRowOuterInset
                 radius: ControlMetrics.controlCornerRadius
                 color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
                     false, rowHover.hovered, false)
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 10
-                    anchors.rightMargin: 10
-                    spacing: 8
+                    anchors.leftMargin: TrayMetrics.compactRowContentInset
+                    anchors.rightMargin: TrayMetrics.compactRowContentInset
+                    spacing: TrayMetrics.compactRowSpacing
 
                     Item {
-                        Layout.preferredWidth: 20
-                        Layout.preferredHeight: 20
+                        Layout.preferredWidth: TrayMetrics.compactRowIconExtent
+                        Layout.preferredHeight: TrayMetrics.compactRowIconExtent
                         // Preserve genuine application branding. Only the
                         // generic system fallback comes from Windows.
                         Kirigami.Icon {

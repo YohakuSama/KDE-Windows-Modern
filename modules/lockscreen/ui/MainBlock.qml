@@ -103,7 +103,7 @@ FocusScope {
             visible: sessionManager.customErrorMessage !== ""
             text: sessionManager.customErrorMessage
             font.family: Kirigami.Theme.defaultFont.family
-            font.pixelSize: 14
+            font.pixelSize: LockMetrics.credentialFontSize
             font.italic: true
             color: "#A0A0A0"
             horizontalAlignment: Text.AlignHCenter
@@ -134,9 +134,9 @@ FocusScope {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                anchors.margins: 2
-                height: 2
-                radius: 1
+                anchors.margins: LockMetrics.fieldFocusBarInset
+                height: LockMetrics.fieldFocusBarHeight
+                radius: LockMetrics.fieldFocusBarRadius
                 color: "#4CC2FF"
                 visible: passwordBox.activeFocus
             }

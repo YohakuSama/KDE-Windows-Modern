@@ -6,6 +6,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import "../code/controlMetrics.js" as ControlMetrics
+import "../code/startMenuMetrics.js" as StartMetrics
 
 Item {
     id: home
@@ -59,7 +60,7 @@ Item {
         contentItem: Item {
             Kirigami.Icon {
                 id: entryIcon
-                width: entry.tile ? 32 : 24
+                width: entry.tile ? StartMetrics.gridAppIconSize : StartMetrics.listAppIconSize
                 height: width
                 x: entry.tile ? (parent.width - width) / 2 : 10
                 y: entry.tile ? 15 : (parent.height - height) / 2

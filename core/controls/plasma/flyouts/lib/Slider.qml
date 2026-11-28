@@ -26,12 +26,12 @@ Item {
     // controlScale is only the user's optional Quick Settings UI scale.
     property real controlScale: 1
     readonly property int trackGap: reserveDetailsSpace ? 0 : Math.round(8 * controlScale)
-    readonly property int thumbExtent: Math.max(12, Math.round(18 * controlScale))
+    readonly property int thumbExtent: Math.max(12, Math.round(TrayMetrics.sliderThumbExtent * controlScale))
     readonly property int trackThickness: Math.max(2, Math.round(TrayMetrics.sliderTrackHeight * controlScale))
     readonly property int alignedSideWidth: Math.max(iconSize, Math.round(27 * controlScale))
     readonly property int leadingWidth: reserveDetailsSpace ? alignedSideWidth : iconSize
     readonly property int detailsWidth: reserveDetailsSpace ? alignedSideWidth
-        : Math.round((soundOutputDetails || detailsIconSource.length > 0 ? 32 : 24) * controlScale)
+        : Math.round((soundOutputDetails || detailsIconSource.length > 0 ? TrayMetrics.sliderSlotHeight : 24) * controlScale)
     property bool showArrow: false
     // Home rows reserve the same output slot so both tracks end at
     // the same x coordinate. Other detail-page sliders stay full-width.
@@ -151,7 +151,7 @@ Item {
             Layout.minimumWidth: root.leadingWidth
             Layout.preferredWidth: root.leadingWidth
             Layout.maximumWidth: root.leadingWidth
-            Layout.preferredHeight: Math.max(root.iconSize, Math.round(32 * root.controlScale))
+            Layout.preferredHeight: Math.max(root.iconSize, Math.round(TrayMetrics.sliderSlotHeight * root.controlScale))
             Layout.alignment: Qt.AlignVCenter
             Components.NativeGlyph {
                 objectName: "wmFluentSliderLeadingGlyph"
@@ -251,8 +251,10 @@ Item {
                     // WinUI SliderInnerThumb state design: 12 normal,
                     // 14 hovered/disabled, 10 pressed logical pixels.
                     // Clamp to the existing outer handle on narrow scales.
-                    readonly property int stateExtent: !slider.enabled ? 14
-                        : slider.pressed ? 10 : thumbHover.hovered ? 14 : 12
+                    readonly property int stateExtent: !slider.enabled ? TrayMetrics.sliderInnerThumbHover
+                        : slider.pressed ? TrayMetrics.sliderInnerThumbPressed
+                        : thumbHover.hovered ? TrayMetrics.sliderInnerThumbHover
+                        : TrayMetrics.sliderInnerThumbRest
                     width: Math.max(0, Math.min(thumb.width - 2,
                         Math.max(6, Math.round(stateExtent * root.controlScale))))
                     height: width
@@ -279,7 +281,7 @@ Item {
             Layout.minimumWidth: root.detailsWidth
             Layout.preferredWidth: root.detailsWidth
             Layout.maximumWidth: root.detailsWidth
-            Layout.preferredHeight: Math.round(32 * root.controlScale)
+            Layout.preferredHeight: Math.round(TrayMetrics.sliderSlotHeight * root.controlScale)
             Layout.alignment: Qt.AlignVCenter
             activeFocusOnTab: root.showArrow
             Accessible.ignored: !root.showArrow

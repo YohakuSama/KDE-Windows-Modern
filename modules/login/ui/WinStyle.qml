@@ -26,10 +26,16 @@ QtObject {
     readonly property int avatarSize: LockMetrics.accountAvatarMaximum
     readonly property int textFieldHeight: 42
     readonly property int textFieldRadius: LockMetrics.fieldCornerRadius
+    readonly property int fieldFocusBarInset: LockMetrics.fieldFocusBarInset
+    readonly property int fieldFocusBarHeight: LockMetrics.fieldFocusBarHeight
+    readonly property int fieldFocusBarRadius: LockMetrics.fieldFocusBarRadius
     readonly property color textFieldBorderColor: "#66FFFFFF"
     readonly property int textFieldMaxWidth: LockMetrics.passwordWidth
     readonly property int loginButtonSize: 38
+    readonly property int loginButtonWidth: LockMetrics.loginButtonWidth
     readonly property int loginButtonRadius: LockMetrics.loginButtonRadius
+    readonly property int loginButtonBorderWidth: LockMetrics.loginButtonBorderWidth
+    readonly property int loginButtonFocusBorderWidth: LockMetrics.loginButtonFocusBorderWidth
     readonly property int userSwitcherAvatarSize: 40
     readonly property int userSwitcherItemHeight: 52
     readonly property int powerMenuWidth: LockMetrics.loginPowerMenuWidth
@@ -39,5 +45,5 @@ QtObject {
     readonly property int clockDatePixelSize: LockMetrics.clockDatePixelSize
     readonly property int usernamePixelSize: 28
     readonly property int bodyPixelSize: LockMetrics.credentialFontSize
-    readonly property int userSwitcherNamePixelSize: 14
+    readonly property int userSwitcherNamePixelSize: LockMetrics.credentialFontSize
 }

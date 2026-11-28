@@ -11,6 +11,7 @@ import org.kde.kcmutils
 import "../lib" as Lib
 import "." as Components
 import "../js/colorType.js" as ColorType
+import "../js/controlMetrics.js" as ControlMetrics
 import "../js/trayMetrics.js" as TrayMetrics
 
 Rectangle {
@@ -20,7 +21,7 @@ Rectangle {
     property bool showBattery: true
     property real frameInset: 0
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
-    readonly property real outerRadius: frameInset > 0 ? frameInset : Math.round(8 * uiScale)
+    readonly property real outerRadius: frameInset > 0 ? frameInset : Math.round(ControlMetrics.cardSurfaceRadius * uiScale)
     readonly property real sideInset: Math.max(8, Math.round(TrayMetrics.quickContentInset * uiScale) - frameInset)
 
     signal batteryClicked

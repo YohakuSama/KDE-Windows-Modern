@@ -19,6 +19,7 @@ import "../components"
 import "../code/tools.js" as Tools
 import "../code/theme.js" as Theme
 import "../code/controlMetrics.js" as ControlMetrics
+import "../code/startMenuMetrics.js" as StartMetrics
 
 Item {
     id: searchPage
@@ -252,7 +253,7 @@ Item {
 
         onActivated: searchPage.applicationActivated()
 
-        readonly property int scrollGutter: searchPage.scrollbarEdgeOffset > 0 ? 0 : 18
+        readonly property int scrollGutter: searchPage.scrollbarEdgeOffset > 0 ? 0 : StartMetrics.contentScrollGutter
         readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
         PlasmaComponents3.ScrollBar.vertical: StartScrollBar {
             objectName: "wmStartSearchScrollBar"

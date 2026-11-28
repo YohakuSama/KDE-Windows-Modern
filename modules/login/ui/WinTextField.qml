@@ -45,9 +45,9 @@ FocusScope {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.margins: 2
-            height: 2
-            radius: 1
+            anchors.margins: WinStyle.fieldFocusBarInset
+            height: WinStyle.fieldFocusBarHeight
+            radius: WinStyle.fieldFocusBarRadius
             color: WinStyle.accentColor
             visible: textField.activeFocus
         }

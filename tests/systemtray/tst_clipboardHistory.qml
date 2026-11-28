@@ -3,6 +3,7 @@ import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/components" as Components
 import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/controlMetrics.js" as ControlMetrics
+import "../../plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/js/trayMetrics.js" as TrayMetrics
 
 Item {
     width: 360
@@ -64,8 +65,11 @@ Item {
         function test_clipboardItemsUseSharedControlRadius() {
             const list = findChild(page, "wmClipboardHistory");
             const card = list.itemAtIndex(0);
+            const clearAll = findChild(page, "wmClipboardClearAll");
             verify(card);
+            verify(clearAll);
             compare(card.radius, ControlMetrics.controlCornerRadius);
+            compare(clearAll.Layout.preferredHeight, TrayMetrics.detailActionButtonHeight);
         }
 
         function test_realRolesAndSelection() {

@@ -60,18 +60,18 @@ FocusScope {
         focus: true
         text: LockText.tr("Sign in", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sign in"), Qt.uiLanguage, Qt.locale().name)
         Layout.alignment: Qt.AlignHCenter
-        Layout.preferredWidth: Math.min(144, screen.width)
+        Layout.preferredWidth: Math.min(LockMetrics.loginButtonWidth, screen.width)
         Layout.preferredHeight: LockMetrics.passwordHeight
         background: Rectangle {
             radius: LockMetrics.loginButtonRadius
             color: loginButton.down ? "#26FFFFFF" : loginButton.hovered ? "#33FFFFFF" : "#20FFFFFF"
-            border.width: loginButton.activeFocus ? 2 : 1
+            border.width: loginButton.activeFocus ? LockMetrics.loginButtonFocusBorderWidth : LockMetrics.loginButtonBorderWidth
             border.color: loginButton.activeFocus ? "#FFFFFF" : "#88FFFFFF"
         }
         contentItem: Text {
             text: loginButton.text
             color: "white"
-            font.pixelSize: 14
+            font.pixelSize: LockMetrics.credentialFontSize
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }

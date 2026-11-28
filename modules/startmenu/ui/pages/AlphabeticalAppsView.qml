@@ -7,6 +7,7 @@ import org.kde.kitemmodels as KItemModels
 import "../components"
 import "../code/alphabeticalApps.js" as Alphabetical
 import "../code/controlMetrics.js" as ControlMetrics
+import "../code/startMenuMetrics.js" as Metrics
 
 FocusScope {
     id: view
@@ -20,12 +21,12 @@ FocusScope {
     readonly property var headerItem: rowsView.headerItem
     readonly property alias scrollView: rowsView
     property int scrollbarEdgeOffset: 0
-    readonly property int scrollGutter: scrollbarEdgeOffset > 0 ? 0 : 18
+    readonly property int scrollGutter: scrollbarEdgeOffset > 0 ? 0 : Metrics.contentScrollGutter
     HoverHandler { id: alphabeticalViewportHover }
     readonly property real contentColumnWidth: Math.max(1, width - scrollGutter)
     readonly property int columns: !gridMode ? 1 : contentColumnWidth >= 430 ? 6 : contentColumnWidth >= 320 ? 4 : 3
     readonly property int cellWidth: Math.max(1, Math.floor(contentColumnWidth / columns))
-    readonly property int cellHeight: gridMode ? 84 : Math.max(36, Math.floor(Kirigami.Units.gridUnit * 1.8) + 2)
+    readonly property int cellHeight: gridMode ? Metrics.gridCellHeight : Math.max(36, Math.floor(Kirigami.Units.gridUnit * 1.8) + 2)
     readonly property int headingHeight: 36
     property int currentIndex: -1
     property var sourceEntries: []
@@ -198,7 +199,7 @@ FocusScope {
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, sectionHeadingMouse.containsPress ? 0.12
                             : sectionLabel.hovered || sectionLabel.activeFocus ? 0.07 : 0)
-                    Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
+                    Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.microInteractionDuration : 0 } }
                 }
                 verticalAlignment: Text.AlignVCenter
                 leftPadding: 10
@@ -239,7 +240,7 @@ FocusScope {
                         width: view.cellWidth
                         height: view.cellHeight
                         gridMode: view.gridMode
-                        iconSize: gridMode ? 32 : 24
+                        iconSize: gridMode ? Metrics.gridAppIconSize : Metrics.listAppIconSize
                         showInstallBadge: true
                     }
                 }

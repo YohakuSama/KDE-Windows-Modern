@@ -5,6 +5,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kcmutils
 import "../lib" as Lib
 import "../js/colorType.js" as ColorType
+import "../js/trayMetrics.js" as TrayMetrics
 import "volume" as Volume
 
 Lib.Page {
@@ -29,8 +30,8 @@ Lib.Page {
 
     Rectangle {
         Layout.fillWidth: true
-        Layout.leftMargin: 10
-        Layout.rightMargin: 10
+        Layout.leftMargin: TrayMetrics.compactRowContentInset
+        Layout.rightMargin: TrayMetrics.compactRowContentInset
         Layout.topMargin: 8
         Layout.bottomMargin: 8
         height: 1
@@ -45,8 +46,8 @@ Lib.Page {
 
     Rectangle {
         Layout.fillWidth: true
-        Layout.leftMargin: 10
-        Layout.rightMargin: 10
+        Layout.leftMargin: TrayMetrics.compactRowContentInset
+        Layout.rightMargin: TrayMetrics.compactRowContentInset
         Layout.topMargin: 8
         Layout.bottomMargin: 8
         height: 1

@@ -14,6 +14,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
 import "../components"
+import "../code/startMenuMetrics.js" as Metrics
 
 ColumnLayout {
     id: pinnedPage
@@ -98,7 +99,7 @@ ColumnLayout {
         clip: true
         interactive: false
         cellWidth: Math.max(1, Math.floor(width / pinnedPage.columns))
-        cellHeight: 84
+        cellHeight: Metrics.gridCellHeight
         boundsBehavior: Flickable.StopAtBounds
         currentIndex: -1
 
@@ -111,7 +112,7 @@ ColumnLayout {
 
         delegate: ListItemDelegate {
             gridMode: true
-            iconSize: 32
+            iconSize: Metrics.gridAppIconSize
             dragEnabled: true
         }
 

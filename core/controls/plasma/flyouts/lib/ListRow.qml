@@ -5,6 +5,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import "../js/colorType.js" as ColorType
 import "../components" as Components
 import "../js/controlMetrics.js" as ControlMetrics
+import "../js/trayMetrics.js" as TrayMetrics
 
 Item {
     id: row
@@ -12,7 +13,7 @@ Item {
     property string iconSource
     property string text
     property bool selected: false
-    property int inset: 8
+    property int inset: TrayMetrics.detailRowOuterInset
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
     readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor,
         Qt.color(ColorType.cardFill(dark, false)), 4.5)
@@ -53,13 +54,13 @@ Item {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-            spacing: 8
+            anchors.leftMargin: TrayMetrics.compactRowContentInset
+            anchors.rightMargin: TrayMetrics.compactRowContentInset
+            spacing: TrayMetrics.compactRowSpacing
 
             Item {
-                Layout.preferredWidth: 20
-                Layout.preferredHeight: 20
+                Layout.preferredWidth: TrayMetrics.compactRowIconExtent
+                Layout.preferredHeight: TrayMetrics.compactRowIconExtent
                 visible: row.iconSource.length > 0
                 Components.NativeGlyph {
                     anchors.fill: parent
