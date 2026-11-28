@@ -231,6 +231,9 @@
       "plasma/look-and-feel/org.kde.windowsmodern.dark/contents/lockscreen/default-avatar.svg",
       "plasma/shells/org.kde.windowsmodern.lockscreen/contents/lockscreen/default-avatar.svg"
     ],
+    "core/resources/import/import-cursor-assets.py": [
+      "scripts/import-cursor-assets.py"
+    ],
     "core/resources/import/import-shell-assets.py": [
       "scripts/import-shell-assets.py"
     ],
@@ -860,6 +863,7 @@
     "scripts/fix-dolphin-statusbar.sh",
     "scripts/greeter-colors.py",
     "scripts/greeter-native-assets.py",
+    "scripts/import-cursor-assets.py",
     "scripts/import-shell-assets.py",
     "scripts/import-windows-assets.py",
     "scripts/install-deps.sh",

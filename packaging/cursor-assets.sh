@@ -4,6 +4,7 @@
 # no upstream installer or executable is run.
 # shellcheck disable=SC2034
 CURSOR_THEME="Bibata-Modern-Ice"
+NATIVE_CURSOR_THEME="Windows-Modern-26H2"
 CURSOR_URL="https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.7/Bibata.tar.xz"
 # FreeBSD ports: x11-themes/bibata-cursor-theme/distinfo (2.0.7).
 CURSOR_SHA256="172e33c4ae415278384dcecc7d1a9b7a024266bc944bc751fd86532be1cc6251"

@@ -16,6 +16,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import "js/controlMetrics.js" as ControlMetrics
+import "js/trayMetrics.js" as TrayMetrics
 
 PlasmaCore.ToolTipArea {
     id: abstractItem
@@ -142,16 +143,27 @@ PlasmaCore.ToolTipArea {
 
     // Icon-only overflow; retain native tooltips and accessible names.
     readonly property int overflowInset: Math.max(2, Math.round(4 * Plasmoid.configuration.scale / 100))
+    readonly property bool activePanelApplet: abstractItem.trayState.expanded
+        && !!abstractItem.trayState.activeApplet
+        && abstractItem.trayState.activeApplet.parent?.container === abstractItem
+    readonly property bool showItemHoverTile: abstractItem.inHiddenLayout
+        || (abstractItem.inVisibleLayout && !abstractItem.groupedQuickSettings && !abstractItem.activePanelApplet
+            && (mouseArea.containsMouse || mouseArea.containsPress || iconContainer.activeFocus))
     Rectangle {
-        visible: abstractItem.inHiddenLayout
-        anchors.fill: parent
+        readonly property var panelRect: TrayMetrics.itemHoverRect(
+            abstractItem.width, abstractItem.height, abstractItem.trayRoot.panelExtent, abstractItem.trayRoot.vertical)
+        visible: abstractItem.showItemHoverTile
+        x: abstractItem.inHiddenLayout ? 0 : panelRect.x
+        y: abstractItem.inHiddenLayout ? 0 : panelRect.y
+        width: abstractItem.inHiddenLayout ? abstractItem.width : panelRect.width
+        height: abstractItem.inHiddenLayout ? abstractItem.height : panelRect.height
         radius: ControlMetrics.controlCornerRadius
-        border.width: mouseArea.containsMouse ? 1 : 0
+        border.width: abstractItem.inHiddenLayout && mouseArea.containsMouse ? 1 : 0
         border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
         color: {
-            if (mouseArea.containsPress)
+            if (mouseArea.containsPress || abstractItem.effectivePressed)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10);
-            if (mouseArea.containsMouse)
+            if (mouseArea.containsMouse || iconContainer.activeFocus)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06);
             return "transparent";
         }

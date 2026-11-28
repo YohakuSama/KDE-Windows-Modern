@@ -323,6 +323,7 @@ fi
 # Validate the extracted source before creating a build or touching the desktop.
 # No legacy nix-hash invocation on a directory or locale-sensitive path.
 for required in nix/test-runtime.nix scripts/nixos-test-state.py scripts/verify-nixos-runtime.py \
+    scripts/import-cursor-assets.py \
     app-decorations/kvantum/live-reload-1.1.9.patch \
     plasma/applets/org.kde.windowsmodern.systemtray/CMakeLists.txt \
     plasma/applets/org.kde.windowsmodern.systemtray/contents/ui/main.qml \
@@ -497,6 +498,31 @@ for name in Windows-modern Windows-modern-lock; do
     "$PYTHON" "$ROOT/scripts/check-native-wallpaper.py" "$STATE/native" "$STATE/native/wallpapers/$name" "$name"
 done
 "$PYTHON" "$ROOT/scripts/store-artwork.py" prepare "$STATE/store-artwork" --bundled "$ROOT/bundled-store-artwork"
+# Stage optional private 26H2 cursors and shell artwork when an authorized
+# local extraction or prior user import is present; otherwise retain fallback.
+cursor_input="${WM_CURSOR_SOURCE:-}"
+if [ -z "$cursor_input" ] && [ -f "${WM_26H2_SOURCE:-$ROOT/26H2}/Windows/Cursors/aero_arrow.cur" ]; then
+    cursor_input="${WM_26H2_SOURCE:-$ROOT/26H2}"
+fi
+if [ -z "${WM_CURSOR_SOURCE:-}" ] && "$PYTHON" -I "$ROOT/scripts/import-cursor-assets.py" --verify "$STATE/cursors" >/dev/null 2>&1; then
+    echo "原版 26H2 光标未变化，跳过导入。"
+elif [ -n "$cursor_input" ]; then
+    "$PYTHON" -I "$ROOT/scripts/import-cursor-assets.py" "$cursor_input" \
+        --build "${WM_26H2_BUILD:-26300.9974}" --output "$STATE/cursors"
+elif "$PYTHON" -I "$ROOT/scripts/import-cursor-assets.py" --verify "$DATA/windows-modern/cursor-assets" >/dev/null 2>&1; then
+    rm -rf -- "$STATE/cursors"
+    cp -a "$DATA/windows-modern/cursor-assets" "$STATE/cursors"
+    "$PYTHON" -I "$ROOT/scripts/import-cursor-assets.py" --verify "$STATE/cursors" >/dev/null
+fi
+shell_input="${WM_26H2_SOURCE:-$ROOT/26H2}"
+if [ -d "$STATE/shell-assets" ] || [ ! -f "$DATA/windows-modern/shell-assets/manifest.json" ]; then
+    if [ -f "$STATE/shell-assets/manifest.json" ] && [ -z "${WM_26H2_SOURCE:-}" ]; then
+        echo "原版 26H2 Shell 素材未变化，跳过导入。"
+    elif [ -f "$shell_input/Windows/SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/SystemTray/Assets/Sysbatt.ttf" ]; then
+        "$PYTHON" "$ROOT/scripts/import-shell-assets.py" "$shell_input" \
+            --build "${WM_26H2_BUILD:-26300.9974}" --output "$STATE/shell-assets"
+    fi
+fi
 # A successful build/import is not a configuration change. Back up the
 # running desktop after stopping the shell so its final settings are flushed.
 remember_env
@@ -566,6 +592,9 @@ if [ -z "$(kreadconfig6 --file kwinrc --group Plugins --key slidingpopupsEnabled
 fi
 if [ "$upgrading" -eq 0 ]; then
     plasma-apply-lookandfeel -a org.kde.windowsmodern.dark --resetLayout
+    if [ -f "$DATA/icons/Windows-Modern-26H2/index.theme" ]; then
+        kwriteconfig6 --notify --file kcminputrc --group Mouse --key cursorTheme Windows-Modern-26H2
+    fi
     bash "$ROOT/scripts/theme/switch-mode.sh" "$variant"
 kwriteconfig6 --file kdeglobals --group Sounds --key Theme windows-modern
 kwriteconfig6 --file kscreenlockerrc --group Greeter --key Theme --delete
@@ -596,6 +625,10 @@ else
        [ "$(kreadconfig6 --file kdeglobals --group General --key ColorScheme)" = WindowsModernLight ]; then
         kwriteconfig6 --notify --file kdeglobals --group Icons --key Theme windows-modern-light
         kwriteconfig6 --file kcmicons --group Icons --key Theme windows-modern-light
+    fi
+    if [ -f "$DATA/icons/Windows-Modern-26H2/index.theme" ] &&
+       [ "$(kreadconfig6 --file kcminputrc --group Mouse --key cursorTheme)" = Bibata-Modern-Ice ]; then
+        kwriteconfig6 --notify --file kcminputrc --group Mouse --key cursorTheme Windows-Modern-26H2
     fi
     # Repair the old Fit default only for the theme-owned lock wallpaper.
     # Keep the user's custom lock image and other wallpaper choices intact.

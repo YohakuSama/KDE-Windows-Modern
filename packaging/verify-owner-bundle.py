@@ -144,6 +144,7 @@ def verify(revision, filename):
             "scripts/stage-native-resources.sh",
             "scripts/native_pe_resources.py",
             "scripts/native_pri_resources.py", "scripts/import-shell-assets.py",
+            "scripts/import-cursor-assets.py",
             "scripts/nixos-test-state.py",
             "scripts/check-nixos-assets.py",
             "scripts/check-native-icon-import.py",

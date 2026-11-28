@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "theme": "windows-modern",
-  "svg_count": 4991,
+  "svg_count": 4993,
   "canonical_count": 2207,
-  "alias_group_count": 740,
-  "alias_path_count": 2784,
+  "alias_group_count": 741,
+  "alias_path_count": 2786,
   "groups": [
     {
       "canonical": "actions/align-horizontal-center.svg",
@@ -6346,7 +6346,8 @@
       "canonical": "devices/media-memory.svg",
       "aliases": [
         "apps/kcmmemory.svg",
-        "apps/org.kde.plasma.systemmonitor.memory.svg"
+        "apps/org.kde.plasma.systemmonitor.memory.svg",
+        "devices/memory.svg"
       ],
       "blob_sha1": "fc52e9173e49863ce39a3d068fe1c77e42f26466",
       "reason": "canonical-name"
@@ -6366,6 +6367,14 @@
       ],
       "blob_sha1": "846ac3d454df581fe83d7afdfd40f8df5f8c484d",
       "reason": "windows-resource-map"
+    },
+    {
+      "canonical": "devices/network-wired.svg",
+      "aliases": [
+        "devices/network-card.svg"
+      ],
+      "blob_sha1": "d15c41ab1fe3e40b40f9344d04aa7e7c7b86c87d",
+      "reason": "canonical-name"
     },
     {
       "canonical": "devices/phone.svg",

@@ -8,11 +8,13 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtCore
 
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import "js/controlMetrics.js" as ControlMetrics
+import "js/trayMetrics.js" as TrayMetrics
 
 PlasmaCore.ToolTipArea {
     id: tooltip
@@ -20,8 +22,10 @@ PlasmaCore.ToolTipArea {
     required property SystemTrayState trayState
     signal resetHiddenSelectionRequested()
 
-    readonly property int arrowAnimationDuration: Kirigami.Units.shortDuration
+    readonly property int arrowAnimationDuration: Kirigami.Units.shortDuration > 0
+        ? TrayMetrics.systemTrayChevronRotateDuration : 0
     property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+    property real panelExtent: 48
     property int iconSize: 16
     property int cellLength: 32
     implicitWidth: vertical ? iconSize : cellLength
@@ -49,6 +53,7 @@ PlasmaCore.ToolTipArea {
     property bool wasExpanded
 
     TapHandler {
+        id: arrowTap
         onPressedChanged: {
             if (pressed) {
                 tooltip.wasExpanded = tooltip.trayState.overflowOpen;
@@ -61,11 +66,16 @@ PlasmaCore.ToolTipArea {
     }
 
     Rectangle {
-        anchors.fill: parent
+        readonly property var hoverRect: TrayMetrics.itemHoverRect(
+            tooltip.width, tooltip.height, tooltip.panelExtent, tooltip.vertical)
+        x: hoverRect.x
+        y: hoverRect.y
+        width: hoverRect.width
+        height: hoverRect.height
         radius: ControlMetrics.controlCornerRadius
         color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                       Kirigami.Theme.textColor.b, 0.08)
-        visible: arrowHover.hovered || tooltip.trayState.overflowOpen
+                       Kirigami.Theme.textColor.b, arrowTap.pressed ? 0.10 : 0.06)
+        visible: arrowHover.hovered || arrowTap.pressed || tooltip.trayState.overflowOpen || tooltip.activeFocus
     }
 
     HoverHandler { id: arrowHover }
@@ -75,18 +85,7 @@ PlasmaCore.ToolTipArea {
         width: tooltip.iconSize
         height: width
 
-        isMask: true
-        color: Kirigami.Theme.textColor
-        roundToIconSize: false
-        rotation: tooltip.trayState.overflowOpen ? 180 : 0
-        Behavior on rotation {
-            RotationAnimation {
-                duration: tooltip.arrowAnimationDuration
-                direction: RotationAnimation.Shortest
-            }
-        }
-
-        source: {
+        readonly property string arrowRole: {
             if (Plasmoid.location === PlasmaCore.Types.TopEdge) {
                 return "arrow-down-symbolic";
             } else if (Plasmoid.location === PlasmaCore.Types.LeftEdge) {
@@ -96,6 +95,33 @@ PlasmaCore.ToolTipArea {
             } else {
                 return "arrow-up-symbolic";
             }
+        }
+
+        isMask: true
+        color: Kirigami.Theme.textColor
+        roundToIconSize: false
+        active: false
+        fallback: ""
+        scale: arrowTap.pressed ? 0.9 : 1
+        Behavior on scale {
+            NumberAnimation {
+                duration: Kirigami.Units.shortDuration
+                easing.type: Easing.OutCubic
+            }
+        }
+        rotation: tooltip.trayState.overflowOpen ? 180 : 0
+        Behavior on rotation {
+            RotationAnimation {
+                duration: tooltip.arrowAnimationDuration
+                direction: RotationAnimation.Shortest
+            }
+        }
+
+        source: {
+            const nativeFile = StandardPaths.locate(StandardPaths.GenericDataLocation,
+                "windows-modern/native-assets/icons/actions/" + arrowRole + ".svg",
+                StandardPaths.LocateFile);
+            return String(nativeFile).length > 0 ? nativeFile : arrowRole;
         }
     }
 }

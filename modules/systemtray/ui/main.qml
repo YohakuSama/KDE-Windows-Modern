@@ -443,6 +443,7 @@ ContainmentItem {
                 Layout.fillWidth: vertical
                 Layout.fillHeight: !vertical
                 Layout.alignment: vertical ? Qt.AlignVCenter : Qt.AlignHCenter
+                panelExtent: root.panelExtent
                 iconSize: Math.min(16, root.itemSize)
                 cellLength: root.trayCellLength
                 visible: root.hiddenLayout.itemCount > 0

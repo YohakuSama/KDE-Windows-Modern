@@ -150,6 +150,10 @@ def plan(root, state, profile):
     result[DATA / "icons/windows-modern"] = state / "staged-icons"
     result[DATA / "icons/windows-modern-light"] = state / "staged-icons-light"
     result[DATA / "icons/Bibata-Modern-Ice"] = (profile / "share/icons/Bibata-Modern-Ice").resolve()
+    if (state / "cursors/Windows-Modern-26H2/index.theme").is_file():
+        result[DATA / "icons/Windows-Modern-26H2"] = state / "cursors/Windows-Modern-26H2"
+    if (state / "shell-assets/manifest.json").is_file():
+        result[DATA / "windows-modern/shell-assets"] = state / "shell-assets"
     result[DATA / "plasma/shells/org.kde.plasma.desktop"] = state / "staged-shell"
     result[DATA / "applications/windowsmodern-screenshot.desktop"] = root / "config/applications/windowsmodern-screenshot.desktop"
     for name in ("org.kde.haruna.desktop", "org.kde.kwrite.desktop", "io.missioncenter.MissionCenter.desktop"):
@@ -329,6 +333,8 @@ def all_targets(mapping):
         APP_STATE / "dolphinstaterc",
         DATA / "konsole/WindowsModern.profile",
         DATA / "konsole/WindowsModern-tabs.css",
+        DATA / "icons/Windows-Modern-26H2",
+        DATA / "windows-modern/shell-assets",
         DATA / "windows-modern/backup/app-appearance.json",
         DATA / "windows-modern/transparency-off",
     ] + [DATA / "locale" / lang / "LC_MESSAGES" / (domain + ".mo")

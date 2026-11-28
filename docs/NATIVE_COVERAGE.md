@@ -177,6 +177,25 @@ where established; it is not an outline-level identity test.
 | `E8EA` | CellPhone | `smartphone` | E8EA |
 | `EC50` | FileExplorer | `system-file-manager` | EC50 |
 | `EDA3` | NetworkAdapter | `network-card` | EDA3 |
+| `E8AF` | Remote (`SystemRemoteDesktopPageViewModel2.xbf`) | `preferences-system-network-remote` | E8AF |
+| `EEA0` | Memory DIMM | `memory` | Reviewed in `SegoeIcons.ttf` v1.56 |
+| `E964` | Hardware IC | `hwinfo` | Reviewed in `SegoeIcons.ttf` v1.56 |
+| `E70A` | Tablet | `preferences-desktop-tablet`, `tablet` | E70A |
+| `E9CA` | Frigid / Thermometer | `temperature-normal` | Reviewed in `SegoeIcons.ttf` v1.56 |
+| `E968` | NetworkSharing | `preferences-system-network-sharing` | Reviewed in `SegoeIcons.ttf` v1.56 |
+| `E8E5` | OpenFile / OpenWith | `preferences-desktop-filetype-association` | E8E5 |
+| `EDA2` | HardDrive (`PCSystemAboutPageControlPanelSystemViewModel2.xbf`) | `drive-multidisk` | EDA2 |
+| `E7F5` | Speakers | `audio-card` | E7F5 |
+| `F08C` | QuietHours / Night Light (`PCSystemDisplayPageViewModel2.xbf`) | `redshift-status-on` (`apps`/`categories`) | F08C |
+| `E771` | Personalize | `preferences-desktop-plasma-theme`, `preferences-desktop-theme-applications`, `preferences-desktop-theme-windowdecorations` | E771 |
+| `E839` | Ethernet (`View\Network\Ethernet.xbf`) | `preferences-system-network-connection` | E839 |
+| `E774` | Globe | `preferences-system-network-proxy` | E774 |
+
+All 7 source SHA-256 digests in `windows11-26h2-resource-audit.json` were
+independently re-verified byte-for-byte against the local 26300.9974 image.
+Platform/third-party identities without a Windows equivalent (`fcitx`,
+`kwalletmanager`, `kwin`, `wayland`, `xorg`) are intentionally preserved
+unmapped rather than overwritten with generic glyphs.
 
 All observed same-name theme contexts for these roles are overlaid, with
 symbolic aliases where appropriate. The two power KCMs share the same

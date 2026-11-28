@@ -1,0 +1,1 @@
+../core/resources/import/import-cursor-assets.py

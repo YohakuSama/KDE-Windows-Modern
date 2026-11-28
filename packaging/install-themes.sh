@@ -128,6 +128,12 @@ if ! is_batch && [ "$UID" -ne 0 ]; then
     fi
     apply_kvantum_engine "$mode"
     if command -v plasma-apply-desktoptheme &>/dev/null; then plasma-apply-desktoptheme "Windows-modern-$mode" 2>/dev/null || true; fi
+    if cursor_assets_valid "$ICONS_DIR/$NATIVE_CURSOR_THEME" && command -v kwriteconfig6 &>/dev/null; then
+        current_cursor="$(kreadconfig6 --file kcminputrc --group Mouse --key cursorTheme 2>/dev/null || true)"
+        if [ -z "$current_cursor" ] || [ "$current_cursor" = "$CURSOR_THEME" ] || [ "$current_cursor" = "$NATIVE_CURSOR_THEME" ]; then
+            kwriteconfig6 --notify --file kcminputrc --group Mouse --key cursorTheme "$NATIVE_CURSOR_THEME"
+        fi
+    fi
     bash "$SRC_DIR/scripts/set-wallpaper.sh" || exit 1
     bash "$SRC_DIR/scripts/theme/switch-mode.sh" --sync-accent || warn "Kvantum accent synchronization incomplete."
 fi

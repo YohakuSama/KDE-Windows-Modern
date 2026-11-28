@@ -54,7 +54,7 @@ AbstractItem {
             }
             return taskIcon.model?.Icon || taskIcon.model?.IconName || ""
         }
-        active: taskIcon.containsMouse
+        active: false
     }
 
     onActivated: pos => {

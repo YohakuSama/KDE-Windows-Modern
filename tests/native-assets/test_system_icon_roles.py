@@ -221,7 +221,24 @@ class SystemIconRolesTests(unittest.TestCase):
             "e8ea": ["devices/smartphone", "devices/smartphone-symbolic"],
             "ec50": ["apps/system-file-manager", "apps/system-file-manager-symbolic"],
             "eda3": ["devices/network-card", "devices/network-card-symbolic"],
+            "e8af": ["apps/preferences-system-network-remote", "apps/preferences-system-network-remote-symbolic", "categories/preferences-system-network-remote", "categories/preferences-system-network-remote-symbolic"],
+            "eea0": ["devices/memory", "devices/memory-symbolic", "apps/memory", "apps/memory-symbolic"],
+            "e964": ["apps/hwinfo", "apps/hwinfo-symbolic", "devices/hwinfo", "devices/hwinfo-symbolic"],
+            "e70a": ["apps/preferences-desktop-tablet", "apps/preferences-desktop-tablet-symbolic", "categories/preferences-desktop-tablet", "categories/preferences-desktop-tablet-symbolic", "devices/tablet", "devices/tablet-symbolic"],
+            "e9ca": ["status/temperature-normal", "status/temperature-normal-symbolic"],
+            "e968": ["apps/preferences-system-network-sharing", "apps/preferences-system-network-sharing-symbolic", "categories/preferences-system-network-sharing", "categories/preferences-system-network-sharing-symbolic"],
+            "e8e5": ["apps/preferences-desktop-filetype-association", "apps/preferences-desktop-filetype-association-symbolic", "categories/preferences-desktop-filetype-association", "categories/preferences-desktop-filetype-association-symbolic"],
+            "eda2": ["devices/drive-multidisk", "devices/drive-multidisk-symbolic"],
+            "e7f5": ["devices/audio-card", "devices/audio-card-symbolic"],
+            "f08c": ["apps/redshift-status-on", "apps/redshift-status-on-symbolic", "categories/redshift-status-on", "categories/redshift-status-on-symbolic"],
+            "e771": ["apps/preferences-desktop-plasma-theme", "apps/preferences-desktop-plasma-theme-symbolic", "apps/preferences-desktop-theme-applications", "apps/preferences-desktop-theme-applications-symbolic", "apps/preferences-desktop-theme-windowdecorations", "apps/preferences-desktop-theme-windowdecorations-symbolic"],
+            "e839": ["apps/preferences-system-network-connection", "apps/preferences-system-network-connection-symbolic"],
+            "e774": ["apps/preferences-system-network-proxy", "apps/preferences-system-network-proxy-symbolic"],
         }
+        for preserved_brand in ("fcitx", "kwalletmanager", "kwin", "wayland", "xorg"):
+            self.assertFalse(any(path.split("/")[-1] in (preserved_brand, preserved_brand + "-symbolic")
+                                 for names in MAPPING["icons"].values()
+                                 for path in names.split()))
         for glyph, paths in expected.items():
             for path in paths:
                 with self.subTest(glyph=glyph, path=path):

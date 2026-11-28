@@ -21,7 +21,7 @@
 | 工作块 | 优先级 | I | P | O | U | 合计 | I/N |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | [01 全局视觉规范与布局](#block-01) | P0 | 1 | 5 | 0 | 0 | 6 | 16.7% |
-| [02 原始图标与光标](#block-02) | P0 | 0 | 4 | 1 | 0 | 5 | 0.0% |
+| [02 原始图标与光标](#block-02) | P0 | 1 | 4 | 0 | 0 | 5 | 20.0% |
 | [03 基础控件与菜单](#block-03) | P0 | 0 | 4 | 0 | 0 | 4 | 0.0% |
 | [04 动态配色与材质](#block-04) | P0 | 9 | 11 | 3 | 1 | 24 | 37.5% |
 | [05 任务栏与系统托盘](#block-05) | P1 | 0 | 7 | 0 | 0 | 7 | 0.0% |
@@ -31,7 +31,7 @@
 | [09 锁屏、登录及启动外观](#block-09) | P1 | 0 | 4 | 0 | 0 | 4 | 0.0% |
 | [10 文件管理器与终端](#block-10) | P2 | 0 | 3 | 1 | 1 | 5 | 0.0% |
 | [11 安装、兼容性与性能](#block-11) | P2（稳定性问题即时处理） | 2 | 5 | 0 | 1 | 8 | 25.0% |
-| 总计 | | 12 | 72 | 6 | 4 | 94 | 12.8% |
+| 总计 | | 13 | 72 | 5 | 4 | 94 | 13.8% |
 
 实机验收：94 项 Pending，0 项有本基线对应的 Pass 记录。新增 4 项架构任务，Q11/V04 从 U 更新为 P；未因文档整理增加 I。任务范围仍可随有证据的遗漏补充，不宣称已列尽全部目标差距。已有功能和源码优势见各行现状，不将 P 项解释为从零开发。
 
@@ -84,11 +84,11 @@
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
 | --- | --- | --- | --- | --- | --- |
-| A05 | P | 26H2 原始素材、角色及状态 | 已取得业主本地 45 个 shell 输出的清单证据：38 电池、4 搜索、2 任务视图、1 头像；代码具备私有导入与直接选择路径 | 确认实际本地部署、原始角色及状态映射；核实休眠、Start 标志与新版动画等未确定素材。不得把兼容图标算成原版 |
-| A06 | P | 系统控件回退消除 | 部分 Start、托盘与登录控件已使用直接角色查找；缺失时存在旧 Windows 或文字等回退 | 审查动态/隐式 Qt、hicolor、同名角色和绝对路径；保留真实第三方品牌，不用无关 KDE 或 Win10 图标填充 |
-| A07 | P | 系统及应用图标清单 | 98 项 KCM 声明中 70 项有源码名称/别名映射，28 项未匹配；已有导入及覆盖率审查工具 | 补齐有 Windows 语义对应的设置、系统应用、插件、对话框、菜单图标；冲突按消费者处理，区分映射与安装/渲染证据 |
-| A08 | P | 光学尺寸、状态与命中区 | 托盘已有图标光学补偿、共享信号家族尺寸及状态渲染 | 核对原始可见边界、对齐、色彩状态、按压/悬停、点击范围和分数缩放；图标素材缺口归 A05–A07 |
-| A09 | O | 原版光标 | 当前 Bibata Modern Ice 为开源近似方案 | 获取目标 26H2 的原始光标角色、尺寸、热点与动画帧/时间并接入现有 XCursor 路径；REF |
+| A05 | P | 26H2 原始素材、角色及状态 | 已独立复核本地 26300.9974 镜像 7 项输入哈希与 45 项 shell 输出完全一致（38 电池、4 搜索、2 任务视图、1 头像），并在 NixOS 测试事务中接入可逆 `shell-assets` 准备路径；已核实 `Taskbar.View.dll` 的 Start/TaskView 动态图标为编译态 Win2D/Lottie 类（`AnimatedVisuals.StartLight.cpp`/`StartDark.cpp`），`Client.Core/Icons/WindowsLogo.svg` 为 `12×12` 内联徽章，`StartDocked/PowerOptionsView.xbf` 经 `ShutdownUXViewModel`（`U+EC83`/`U+E708`/`U+E7E8`）分派电源选项，保持 `start-logo.svg` 兼容标注与 `U+E823` 休眠映射不冒充原始静态文件 | 实机核对本地私有部署加载与各状态切换；编译态 Lottie 动态资源不在静态文件导入范围内 |
+| A06 | P | 系统控件回退消除 | Start、托盘、时钟铃铛与托盘溢出箭头（`ExpanderArrow`）均已优先解析 `native-assets` 私有角色并在缺失时安全回退；全仓规范源扫描确认 0 处未映射私有图标角色引用；保留 `fcitx`/`kwalletmanager`/`kwin`/`wayland`/`xorg` 等真实平台及第三方身份 | 实机核对动态桌面项、`QIcon::fromTheme` 应用列表与同名多尺寸回退优先级 |
+| A07 | P | 系统及应用图标清单 | 基于 26H2 `SegoeIcons.ttf` v1.56 与 `SettingsAppThreshold.pri` 新增远程桌面（`E8AF`）、内存（`EEA0`）、硬件芯片（`E964`）、平板（`E70A`）、传感器温度（`E9CA`）、网络共享（`E968`）、文件关联（`E8E5`）、多磁盘（`EDA2`）、声卡（`E7F5`）、夜间模式（`F08C`）、个性化子项（`E771`）及网络代理/连接（`E774`/`E839`）原版映射，并经 `verify-svg-aliases.py` 补齐 `devices/memory.svg` 与 `devices/network-card.svg` 兼容别名（98 项 KCM 声明覆盖升至 86 项，刻意保留非 Windows 平台专有图标） | 核对系统设置页面内部控件、Sycoca 实际解析路径及共享图标角色消费者 |
+| A08 | P | 光学尺寸、状态与命中区 | 托盘已有光学边界补偿与信号组共享画布；移除 `StatusNotifierItem` 与 `BackgroundAppItem` 悬停时的 Breeze 图标增亮（`active: false`），补齐 `BackgroundAppItem` 分数缩放 `roundToIconSize: false`；新增 `TrayMetrics.itemHoverRect` 统一 `ExpanderArrow` 与独立可见托盘项的 40px 悬停/按压圆角背景，对齐溢出箭头 `0.9` 按压缩放与 `SystemTray_IconRotateDuration=300ms` | 100%/125%/150%/200% 分数缩放下的可见墨迹边界、点击命中与视觉居中待实机验收 |
+| A09 | I | 原版光标 | 新增 `core/resources/import/import-cursor-assets.py` 私有导入器，校验 `aero.theme` 并将 26H2 全部 17 项 `Cursors/*.cur/*.ani`（含 `beam_r`/`cross_r`/`aero_pin`/`aero_person` 及 18 帧×50ms 动画）与可选 `ole32.dll` 32 位多 DPI 拖放光标组（`dnd-move`/`copy`/`alias`）由直通 Alpha 预乘转换为 `Windows-Modern-26H2` XCursor 主题（`32/48/64/96/128` 像素对映 KDE `24/36/48/72/96` 名义尺寸，150% 缩放 1:1 命中 `48×48` 原始帧，含 79 项 Wayland/Qt/GTK/X11 别名）；接入 `install.sh`、`install-nixos.sh`、`nixos-test-state.py` 与 `uninstall.sh` 可逆安装并保留 `Bibata-Modern-Ice` 公开回退 | Wayland/XWayland/GTK 跨应用光标切换与 150% 缩放热点表现待实机验收 |
 
 <a name="block-03"></a>
 

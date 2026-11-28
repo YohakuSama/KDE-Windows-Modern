@@ -28,9 +28,10 @@ AbstractItem {
         id: iconItem
         parent: taskIcon.iconContainer
         anchors.fill: iconItem.parent
+        roundToIconSize: false
 
         source: taskIcon.model.icon
-        active: taskIcon.containsMouse
+        active: false
     }
 
     onContextMenu: mouse => {

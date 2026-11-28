@@ -131,6 +131,17 @@ TestCase {
         compare(Metrics.sectionChevronExtent, 16);
         compare(Metrics.sectionChevronRotateDuration, 120);
         compare(Metrics.sectionExpandDuration, 150);
+        compare(Metrics.systemTrayChevronRotateDuration, 300);
+        const itemHoriz = Metrics.itemHoverRect(32, 48, 48, false);
+        compare(itemHoriz.x, 2);
+        compare(itemHoriz.y, 4);
+        compare(itemHoriz.width, 28);
+        compare(itemHoriz.height, 40);
+        const itemVert = Metrics.itemHoverRect(48, 32, 48, true);
+        compare(itemVert.x, 4);
+        compare(itemVert.y, 2);
+        compare(itemVert.width, 40);
+        compare(itemVert.height, 28);
         compare(Metrics.sliderSlotHeight, 32);
         compare(Metrics.sliderThumbExtent, 18);
         compare(Metrics.sliderInnerThumbRest, 12);

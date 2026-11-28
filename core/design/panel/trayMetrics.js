@@ -105,6 +105,13 @@ function groupHoverRect(run, panelExtent, vertical) {
            width: Math.max(0, run.width - 4), height: cross};
 }
 
+function itemHoverRect(width, height, panelExtent, vertical) {
+    const cross = Math.max(0, Math.min(vertical ? width : height, panelExtent - 8));
+    return vertical
+        ? {x: (width - cross) / 2, y: 2, width: cross, height: Math.max(0, height - 4)}
+        : {x: 2, y: (height - cross) / 2, width: Math.max(0, width - 4), height: cross};
+}
+
 function visualIndex(index, count, vertical, reversed) {
     return vertical && reversed ? Math.max(0, count - index - 1) : index;
 }
@@ -177,6 +184,8 @@ const compactRowIconExtent = 20;
 const sectionChevronExtent = 16;
 const sectionChevronRotateDuration = 120;
 const sectionExpandDuration = 150;
+// SystemTrayResources.xbf: SystemTray_IconRotateDuration ("0:0:0.3", offset 21594).
+const systemTrayChevronRotateDuration = 300;
 const splitSecondaryExtent = 48;
 // WinUI 21h1_themeresources.xbf / 21h1_generic.xbf: SliderTrackThemeHeight,
 // SliderHorizontalHeight, SliderHorizontalThumbWidth/Height and inner thumb states.

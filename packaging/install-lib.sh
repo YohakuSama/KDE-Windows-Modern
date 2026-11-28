@@ -15,6 +15,7 @@ set -euo pipefail
 # Only import the owner's local resources in their own session, never from
 # an arbitrary user's directory during a system-wide root install.
 NATIVE_ASSETS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/native-assets"
+CURSOR_ASSETS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/cursor-assets"
 
 # Always resolve to this file's own location so SRC_DIR is correct no
 # matter which script sources us (install.sh, uninstall.sh, or a
@@ -183,29 +184,73 @@ cursor_theme_installed() {
     return 1
 }
 
-install_cursor_theme() {
-    cursor_theme_installed && return 0
+install_native_cursor_theme() {
     [ "$UID" -ne 0 ] || return 0
-    local dst="$ICONS_DIR/$CURSOR_THEME"
-    # Do not overwrite an unrelated or incomplete user-owned theme.
-    if [ -e "$dst" ] || [ -L "$dst" ]; then
-        warn "Existing $CURSOR_THEME directory is incomplete; keeping it untouched."
+    command -v python3 &>/dev/null || return 0
+    [ -f "$SRC_DIR/scripts/import-cursor-assets.py" ] || return 0
+    local cursor_source="${WM_CURSOR_SOURCE:-}"
+    if [ -z "$cursor_source" ] && [ ! -f "$CURSOR_ASSETS_DIR/manifest.json" ] &&
+       [ -f "$SRC_DIR/26H2/Windows/Cursors/aero_arrow.cur" ]; then
+        cursor_source="$SRC_DIR/26H2"
+    fi
+    if [ -n "$cursor_source" ]; then
+        python3 -I "$SRC_DIR/scripts/import-cursor-assets.py" "$cursor_source" \
+            --output "$CURSOR_ASSETS_DIR" || {
+            warn "Could not import local Windows 26H2 cursors; keeping fallback cursor theme."
+            return 0
+        }
+    fi
+    python3 -I "$SRC_DIR/scripts/import-cursor-assets.py" --verify "$CURSOR_ASSETS_DIR" >/dev/null 2>&1 || return 0
+    local dst="$ICONS_DIR/$NATIVE_CURSOR_THEME"
+    local marker="$HOME/.local/share/windows-modern/backup/cursor-26h2.ours"
+    if { [ -e "$dst" ] || [ -L "$dst" ]; } && [ ! -f "$marker" ]; then
+        warn "Existing $NATIVE_CURSOR_THEME directory is user-managed; keeping it untouched."
         return 0
     fi
-    step "Cursor theme: $CURSOR_THEME (GPL-3.0)"
-    local tmp bundled="$SRC_DIR/bundled-cursors/$CURSOR_THEME"
-    tmp="$(mktemp -d)"
-    if { cursor_assets_valid "$bundled" && cp -a "$bundled" "$tmp/$CURSOR_THEME"; } ||
-        fetch_cursor_assets "$tmp/$CURSOR_THEME"; then
-        ensure_dir "$ICONS_DIR"
-        if mv "$tmp/$CURSOR_THEME" "$dst"; then
-            ensure_dir "$HOME/.local/share/windows-modern/backup"
-            touch "$HOME/.local/share/windows-modern/backup/cursor-bibata.ours"
+    step "Cursor theme: $NATIVE_CURSOR_THEME (local 26H2 XCursor import)"
+    ensure_dir "$ICONS_DIR"
+    local stage
+    stage="$(mktemp -d "$ICONS_DIR/.windows-modern-cursor.XXXXXX")"
+    if cp -a "$CURSOR_ASSETS_DIR/$NATIVE_CURSOR_THEME" "$stage/new" &&
+       cursor_assets_valid "$stage/new"; then
+        if [ -e "$dst" ] || [ -L "$dst" ]; then
+            mv "$dst" "$stage/previous" || { rm -rf "$stage"; return 0; }
         fi
-    else
-        warn "Could not install $CURSOR_THEME; Plasma retains its native fallback."
+        if mv "$stage/new" "$dst"; then
+            ensure_dir "$HOME/.local/share/windows-modern/backup"
+            touch "$marker"
+        elif [ -e "$stage/previous" ]; then
+            mv "$stage/previous" "$dst" || true
+        fi
     fi
-    rm -rf "$tmp"
+    rm -rf "$stage"
+}
+
+install_cursor_theme() {
+    [ "$UID" -ne 0 ] || return 0
+    if ! cursor_theme_installed; then
+        local dst="$ICONS_DIR/$CURSOR_THEME"
+        # Do not overwrite an unrelated or incomplete user-owned theme.
+        if [ -e "$dst" ] || [ -L "$dst" ]; then
+            warn "Existing $CURSOR_THEME directory is incomplete; keeping it untouched."
+        else
+            step "Cursor theme: $CURSOR_THEME (GPL-3.0)"
+            local tmp bundled="$SRC_DIR/bundled-cursors/$CURSOR_THEME"
+            tmp="$(mktemp -d)"
+            if { cursor_assets_valid "$bundled" && cp -a "$bundled" "$tmp/$CURSOR_THEME"; } ||
+                fetch_cursor_assets "$tmp/$CURSOR_THEME"; then
+                ensure_dir "$ICONS_DIR"
+                if mv "$tmp/$CURSOR_THEME" "$dst"; then
+                    ensure_dir "$HOME/.local/share/windows-modern/backup"
+                    touch "$HOME/.local/share/windows-modern/backup/cursor-bibata.ours"
+                fi
+            else
+                warn "Could not install $CURSOR_THEME; Plasma retains its native fallback."
+            fi
+            rm -rf "$tmp"
+        fi
+    fi
+    install_native_cursor_theme
 }
 
 # ── Prebuilt C++ plugins ───────────────────────────────────────────
@@ -354,6 +399,9 @@ apply_lookandfeel() {
     fi
     info "Applying $id ${reset_flag:+with layout reset}..."
     plasma-apply-lookandfeel -a "$id" $reset_flag
+    if cursor_assets_valid "$ICONS_DIR/$NATIVE_CURSOR_THEME" && command -v kwriteconfig6 >/dev/null; then
+        kwriteconfig6 --notify --file kcminputrc --group Mouse --key cursorTheme "$NATIVE_CURSOR_THEME"
+    fi
     # Preview and standalone look-and-feel installation may lack the
     # wallpaper bridge. Retain their native default without overriding
     # an explicit accent selection. Full install initializes Windows mode.

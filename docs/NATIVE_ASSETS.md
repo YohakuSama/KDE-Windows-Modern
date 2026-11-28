@@ -206,11 +206,26 @@ coverage tasks.
 - The existing login battery control and desktop tray share the original
   SysBatt renderer, level selection, 5:4 canvas and private lookup.
   The existing lock-screen control visibility policy is unchanged.
-- Hibernate uses the optional original Segoe Fluent E823 glyph (Recent)
-  from the local Windows font, selected by comparison with the clock-shaped
-  Hibernate artwork in Windows 11 screenshots. Direct 26H2 source-role
-  confirmation remains pending; never substitute the Sleep crescent or KDE
-  artwork.
+- Taskbar Start and Task View buttons in `SystemApps/MicrosoftWindows.Client.Core_cw5n1h2txyewy/Taskbar.View.dll`
+  use compiled Win2D/Lottie C++ visual classes (`AnimatedVisuals.StartLight.cpp`,
+  `AnimatedVisuals.StartDark.cpp`, `AnimatedVisuals.TaskViewLight.cpp`,
+  `AnimatedVisuals.TaskViewDark.cpp`) rather than standalone taskbar SVG files;
+  `Client.Core/Icons/WindowsLogo.svg` (`12×12`, `#4DD2FF` → `#0078D4`) is an
+  inline consent badge asset, so `modules/startmenu/ui/start-logo.svg` remains
+  explicitly classified as compatibility artwork and is never recorded as an
+  extracted 26H2 binary asset.
+- Start's power menu (`Files\StartDocked\PowerOptionsView.xbf` + `StartDocked.dll`)
+  binds its dynamic choices from `Windows.Internal.UI.Shutdown.ShutdownUXViewModel`
+  (`Windows.UI.Logon.dll` / `windowsudk.shellcommon.dll`), with `U+EC83`
+  (`PowerOptionUpdateMenuFlyoutItem`) in XBF and `U+E708` (`Sleep`) / `U+E7E8`
+  (`PowerButton`) in shell code. Hibernate continues to use the optional original
+  Segoe Fluent `E823` glyph from `SegoeIcons.ttf` v1.56; never substitute the
+  Sleep crescent or KDE artwork.
+- Original Windows 11 26H2 cursors (`Cursors/aero_*.cur`, `aero_*.ani`,
+  `beam_r.cur`, `cross_r.cur`, and optional `System32/ole32.dll` drag-and-drop
+  groups `2`–`4`) are imported separately into
+  `${XDG_DATA_HOME:-$HOME/.local/share}/windows-modern/cursor-assets` by
+  `scripts/import-cursor-assets.py` (see [CURSORS.md](CURSORS.md)).
 - Native Plasma desktop selection, notification toast behavior and
   application menus need live validation independently of icon imports.
 
