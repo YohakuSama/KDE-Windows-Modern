@@ -1,6 +1,6 @@
 # Firefox Window Controls
 
-Replaces Firefox's native CSD window buttons with Windows10Modern-styled SVGs using the background-paint method.
+Replaces Firefox's native CSD window buttons with Windows 11 26H2-styled rounded caption SVGs (`46×30` hit targets, `#c42b1c` / `#b12618` close hover/press) using the background-paint method.
 
 ## Install
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-2.0-or-later
 import QtQuick
+import QtQuick.Window
 import QtCore
 import Qt5Compat.GraphicalEffects
 
@@ -11,6 +12,7 @@ Rectangle {
     property bool compact: false
     property bool showImported: true
     property url fallbackSource: Qt.resolvedUrl(compact ? "default-avatar-small.svg" : "default-avatar.svg")
+    readonly property real dpr: Math.max(1, Window.window ? Window.window.devicePixelRatio : 1)
     readonly property string importedSource: {
         if (!showImported) return "";
         for (const suffix of [".png", ".jpg", ".bmp"]) {
@@ -29,6 +31,8 @@ Rectangle {
         objectName: "wmImportedDefaultAccount"
         anchors.fill: parent
         source: portrait.importedSource
+        sourceSize: Qt.size(Math.max(1, Math.ceil(width * portrait.dpr)),
+                            Math.max(1, Math.ceil(height * portrait.dpr)))
         asynchronous: true
         fillMode: Image.PreserveAspectCrop
         visible: portrait.showImported && status === Image.Ready
@@ -51,7 +55,7 @@ Rectangle {
         visible: !portrait.showImported || original.status !== Image.Ready
         fillMode: Image.PreserveAspectFit
         smooth: true
-        sourceSize.width: Math.max(1, width)
-        sourceSize.height: Math.max(1, height)
+        sourceSize.width: Math.max(1, Math.ceil(width * portrait.dpr))
+        sourceSize.height: Math.max(1, Math.ceil(height * portrait.dpr))
     }
 }

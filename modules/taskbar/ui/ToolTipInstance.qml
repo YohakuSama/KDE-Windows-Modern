@@ -407,7 +407,7 @@ Item {
                     readonly property real scaleFactor: Math.max(hoverHandler.width / source.paintedWidth, hoverHandler.height / source.paintedHeight)
                     width: Math.round(source.paintedWidth * scaleFactor)
                     height: Math.round(source.paintedHeight * scaleFactor)
-                    layer.enabled: true
+                    layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
                     opacity: 0.25
                     layer.effect: GE.FastBlur {
                         source: albumArtBackground
@@ -441,6 +441,7 @@ Item {
                 anchors.centerIn: parent
                 width: Math.min(Kirigami.Units.iconSizes.large, parent.width, parent.height)
                 height: width
+                roundToIconSize: false
                 source: toolTipDelegate.icon
                 visible: root.thumbnailMode && !albumArtImage.visible && !(pipeWireLoader.item?.hasThumbnail ?? false)
             }

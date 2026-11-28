@@ -19,7 +19,7 @@ def _load_adjacent(module_name, filename, fallback_relative=None):
     here = Path(__file__).absolute().parent
     path = here / filename
     if not path.exists() and fallback_relative is not None:
-        path = (here.parents[1] / fallback_relative).absolute()
+        path = (here.parent / fallback_relative).absolute()
     key = f"{module_name}:{path.as_posix()}"
     cached = sys.modules.get(key)
     if cached is not None:

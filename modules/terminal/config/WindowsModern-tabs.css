@@ -61,7 +61,7 @@ QToolButton:pressed {
 QMenu {
     padding: 4px;
     border: 1px solid #454545;
-    border-radius: 6px;
+    border-radius: 8px;
     background: #2D2D2D;
     color: #F2F2F2;
 }

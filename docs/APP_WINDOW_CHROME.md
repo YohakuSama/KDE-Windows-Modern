@@ -226,4 +226,21 @@ No build or desktop validation has been performed. The corner button is
 an intermediate native control, not a reproduction of the Explorer
 button immediately after the final tab. Moving the tabs above both
 toolbars, that button placement, the Home target for new tabs and the
-persistent Explorer search field remain separate work.
+persistent Explorer search field remain separate work:
+
+- **Remaining Dolphin 26.08.x presentation patch scope (`E04`, opt-in isolated `nix/dolphin-chrome.nix` only)**:
+  1. `DolphinMainWindow`: reparent `m_tabWidget`'s tab strip container above `mainToolBar` and `wmCommandToolBar` only when `wmCommandToolBar` is active (leaving phone UI and custom KXMLGUI layouts untouched).
+  2. `DolphinNavigatorsWidgetAction` / `DolphinViewContainer`: embed a persistent compact right-aligned search field beside the primary `KUrlNavigator` that drives Dolphin's existing `DolphinSearchBox` / KIO search model without replacing `Ctrl+F`.
+  3. `PlacesPanel`: preserve KIO `PlacesItemModel` categories (`Home`/`Quick Access`, `This PC`/Devices, `Network`) without hiding user bookmarks or removable volumes.
+  4. `DolphinContextMenu`: present a compact Windows 11 primary menu (`Cut`, `Copy`, `Paste`, `Rename`, `Move to Trash`, `New`, `Open`, `Properties`) and place all remaining KIO/plugin `QAction` items under a trailing `Show more options` submenu (`wm-show-more-options-symbolic` / `U+E8A7`), preserving keyboard shortcuts and multi-selection semantics.
+
+## Generic KDE/Qt application and dialog consistency boundary (`E05`)
+
+| Consumer Category | Covered Surfaces & Mechanism | Explicit Scope Boundary |
+| --- | --- | --- |
+| Shared `QWidget` & KIO dialogs | `Windows-modern` / `Windows-modernDark` Kvantum (`live-reload-1.1.9.patch` on NixOS) + `WindowsModern{Light,Dark}.colors` + `windows-modern` icon theme cover `QMainWindow`, `QDialog`, `KFileWidget` open/save dialogs, `KIO::RenameDialog` / `SkipDialog`, `KPropertiesDialog`, `QMenu` (`8px` corner slice, `98%` opacity, `1px` stroke), `QPushButton`/`QLineEdit`/`QComboBox`/`QSpinBox` (`4px` radius + accent focus), `QCheckBox`/`QRadioButton`/`QSlider`/`QProgressBar`, `QTabWidget`, `QScrollBar`, `QTreeView`/`QListView` and `QStatusBar` | Does not inject custom C++ widget subclasses into arbitrary third-party Qt applications |
+| File Manager (`Dolphin`) | Reversible `dolphinui.rc` (`Navigation` + `Commands` toolbars, `20px` icons) and `app-appearance.py` settings (`AlwaysShowTabBar`, breadcrumb `EditableUrl=false`, `FullWidth` status bar); optional isolated `nix/dolphin-chrome.nix` (`statusbar-margins.patch`, `tab-controls.patch`) | Stock system Dolphin binary is never overwritten on NixOS; full Explorer tab-above-toolbar & compact file context menu remain opt-in (`E04`) |
+| Terminal (`Konsole`) | Reversible `WindowsModern.profile` (Campbell palette, Cascadia Mono 12pt, 8px margin, beam cursor), `WindowsModern-tabs.css` (`8px` top tab & menu radius), hidden toolbars/menubar `konsoleui.rc`/`sessionui.rc`, and optional 26.08.x `WindowsModernChrome` integrated titlebar + Snap Layouts bridge (`E01`/`E02`) | Activated only via explicit `--with-konsole` / `konsole-chrome.sh`; terminal shell/PTY session behavior is untouched |
+| Everyday Qt/KDE utilities (`KWrite`/`Kate`, `Haruna`, `Spectacle`) | `KWrite`/`Kate` inherit Kvantum + `.colors` + `windows-modern` icons; `Haruna` inherits `.colors` + icons + MPRIS (`MediaCard`/`MediaControls`); `Spectacle` is configured via `spectaclerc` for Snipping Tool release-capture + clipboard + save (`Win+Shift+S`, `Alt+PrtSc`, `Win+PrtSc`) | Application-internal QML/dock layouts remain upstream KDE |
+| `System Settings`, `System Monitor` & `Discover` | Navigation/category/KCM icons (`86/98` declared KCM roles from 26H2 `SegoeIcons.ttf`) and 5 Light/Dark Microsoft Store icon aliases (`discover` family) + `WindowsModern{Light,Dark}.colors` | Internal Kirigami page structures are intentionally kept native KDE (not rebuilt into Windows Settings or Microsoft Store clones) |
+| GTK4 / Libadwaita & Browser (`Mission Center`, `Network Displays`, `Firefox`) | Integrated via desktop launchers, global shortcuts (`Ctrl+Shift+Esc`, conditional `Win+K`), and `Windows-Modern-26H2` XCursor; `modules/browser/firefox/userChrome.css` provides an opt-in manual profile stylesheet for `46×30px` Windows 11 CSD caption buttons | Never auto-modifies GTK/Libadwaita themes or user Firefox profiles during installation |

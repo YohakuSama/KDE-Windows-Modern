@@ -402,7 +402,7 @@ FocusScope {
                         anchors.fill: parent
                         radius: root.smallCornerRadius
                         visible: false
-                        layer.enabled: true
+                        layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
                     }
                 }
             }

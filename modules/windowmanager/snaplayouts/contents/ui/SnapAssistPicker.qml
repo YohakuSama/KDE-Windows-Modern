@@ -263,7 +263,7 @@ PlasmaCore.Window {
                                 anchors.fill: parent
                                 radius: Layouts.assistPreviewRadius
                                 visible: false
-                                layer.enabled: true
+                                layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
                             }
                         }
 

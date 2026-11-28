@@ -1,9 +1,11 @@
-/* Minimal Windows Modern Window Controls for Firefox CSD - Background Method */
+/* Minimal Windows 11 Modern Window Controls for Firefox CSD - Background Method */
 
 /* Dark Theme Variables */
 :root {
   --wm-hover: rgba(255, 255, 255, 0.1);
+  --wm-active: rgba(255, 255, 255, 0.06);
   --wm-close-hover: #c42b1c;
+  --wm-close-active: #b12618;
   --wm-btn-w: 46px;
   --wm-btn-h: 30px;
 }
@@ -11,7 +13,8 @@
 /* Light Theme Variables */
 @media (prefers-color-scheme: light) {
   :root {
-    --wm-hover: rgba(0, 0, 0, 0.1);
+    --wm-hover: rgba(0, 0, 0, 0.06);
+    --wm-active: rgba(0, 0, 0, 0.04);
   }
 }
 
@@ -49,15 +52,14 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='1'%3E%3Crect fill='%23ffffff' width='10' height='1'/%3E%3C/svg%3E") !important;
 }
 
-/* Maximize button */
+/* Maximize button (Windows 11 rounded E922 geometry) */
 .titlebar-button.titlebar-max {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Crect fill='none' stroke='%23ffffff' stroke-width='1' x='0.5' y='0.5' width='9' height='9'/%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Crect fill='none' stroke='%23ffffff' stroke-width='1' rx='1.5' ry='1.5' x='0.5' y='0.5' width='9' height='9'/%3E%3C/svg%3E") !important;
 }
 
-/* Restore button: the front window and the back window's visible edges
-   (no filler square, which showed as a box) */
+/* Restore button (Windows 11 rounded E923 geometry) */
 .titlebar-button.titlebar-restore {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='1' d='M3.5 2.5 V0.5 H10.5 V7.5 H8.5'/%3E%3Crect fill='none' stroke='%23ffffff' stroke-width='1' x='0.5' y='2.5' width='8' height='8'/%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='1' stroke-linejoin='round' d='M3.5 2.5 V2 A1.5 1.5 0 0 1 5 0.5 H9 A1.5 1.5 0 0 1 10.5 2 V6 A1.5 1.5 0 0 1 9 7.5 H8.5'/%3E%3Crect fill='none' stroke='%23ffffff' stroke-width='1' rx='1.5' ry='1.5' x='0.5' y='2.5' width='8' height='8'/%3E%3C/svg%3E") !important;
 }
 
 /* Close button */
@@ -65,15 +67,25 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cpath fill='%23ffffff' d='M 0.5 0 L 5 4.5 L 9.5 0 L 10 0.5 L 5.5 5 L 10 9.5 L 9.5 10 L 5 5.5 L 0.5 10 L 0 9.5 L 4.5 5 L 0 0.5 Z'/%3E%3C/svg%3E") !important;
 }
 
-/* Hover effects */
+/* Hover and pressed states */
 .titlebar-button.titlebar-min:hover,
 .titlebar-button.titlebar-max:hover,
 .titlebar-button.titlebar-restore:hover {
   background-color: var(--wm-hover) !important;
 }
 
+.titlebar-button.titlebar-min:hover:active,
+.titlebar-button.titlebar-max:hover:active,
+.titlebar-button.titlebar-restore:hover:active {
+  background-color: var(--wm-active) !important;
+}
+
 .titlebar-button.titlebar-close:hover {
   background-color: var(--wm-close-hover) !important;
+}
+
+.titlebar-button.titlebar-close:hover:active {
+  background-color: var(--wm-close-active) !important;
 }
 
 /* Light Theme Icons */
@@ -83,15 +95,14 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='1'%3E%3Crect fill='%23000000' width='10' height='1'/%3E%3C/svg%3E") !important;
   }
 
-  /* Maximize button */
+  /* Maximize button (Windows 11 rounded E922 geometry) */
   .titlebar-button.titlebar-max {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Crect fill='none' stroke='%23000000' stroke-width='1' x='0.5' y='0.5' width='9' height='9'/%3E%3C/svg%3E") !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Crect fill='none' stroke='%23000000' stroke-width='1' rx='1.5' ry='1.5' x='0.5' y='0.5' width='9' height='9'/%3E%3C/svg%3E") !important;
   }
 
-  /* Restore button: the front window and the back window's visible edges
-   (no filler square, which showed as a box) */
+  /* Restore button (Windows 11 rounded E923 geometry) */
   .titlebar-button.titlebar-restore {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cpath fill='none' stroke='%23000000' stroke-width='1' d='M3.5 2.5 V0.5 H10.5 V7.5 H8.5'/%3E%3Crect fill='none' stroke='%23000000' stroke-width='1' x='0.5' y='2.5' width='8' height='8'/%3E%3C/svg%3E") !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cpath fill='none' stroke='%23000000' stroke-width='1' stroke-linejoin='round' d='M3.5 2.5 V2 A1.5 1.5 0 0 1 5 0.5 H9 A1.5 1.5 0 0 1 10.5 2 V6 A1.5 1.5 0 0 1 9 7.5 H8.5'/%3E%3Crect fill='none' stroke='%23000000' stroke-width='1' rx='1.5' ry='1.5' x='0.5' y='2.5' width='8' height='8'/%3E%3C/svg%3E") !important;
   }
 
   /* Close button */

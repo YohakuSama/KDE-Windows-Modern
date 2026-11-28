@@ -29,9 +29,9 @@
 | [07 快捷中心与通知中心](#block-07) | P1 | 11 | 4 | 0 | 0 | 15 | 73.3% |
 | [08 窗口管理与动画](#block-08) | P1 | 1 | 8 | 0 | 0 | 9 | 11.1% |
 | [09 锁屏、登录及启动外观](#block-09) | P1 | 0 | 4 | 0 | 0 | 4 | 0.0% |
-| [10 文件管理器与终端](#block-10) | P2 | 0 | 3 | 1 | 1 | 5 | 0.0% |
-| [11 安装、兼容性与性能](#block-11) | P2（稳定性问题即时处理） | 2 | 5 | 0 | 1 | 8 | 25.0% |
-| 总计 | | 33 | 55 | 4 | 2 | 94 | 35.1% |
+| [10 文件管理器与终端](#block-10) | P2 | 0 | 4 | 1 | 0 | 5 | 0.0% |
+| [11 安装、兼容性与性能](#block-11) | P2（稳定性问题即时处理） | 2 | 6 | 0 | 0 | 8 | 25.0% |
+| 总计 | | 33 | 57 | 4 | 0 | 94 | 35.1% |
 
 实机验收：94 项 Pending，0 项有本基线对应的 Pass 记录。新增 4 项架构任务，Q11/V04 从 U 更新为 P；未因文档整理增加 I。任务范围仍可随有证据的遗漏补充，不宣称已列尽全部目标差距。已有功能和源码优势见各行现状，不将 P 项解释为从零开发。
 
@@ -246,12 +246,12 @@
 依据与实现记录：[应用布局实现及边界](APP_WINDOW_CHROME.md)、[样式规范](STYLE.md)、[Dolphin 补丁](../app-decorations/dolphin)、[Konsole 插件适配器](../platform/qt/konsole)。
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
-| --- | --- | --- | --- | --- | --- |
-| E01 | P | Konsole 集成标题栏 | 26.08.x 可选插件，真实标签、窗口按钮、下拉、拖放、原版关闭和滚动图标路径 | 对比 Windows Terminal 标题栏、标签、命中区、菜单与窄屏；核对启停和原生功能，外角归 W02 |
-| E02 | P | 终端内容、配色及交互外观 | 现有 Campbell 配置及标签样式 | 核对终端选项、右键/菜单、字体与滚动、选中状态及深浅模式；不改变命令或会话 |
-| E03 | P | Dolphin 基础外观和局部布局 | 可逆 toolbar 配置、隔离版状态栏和新标签角按钮补丁 | 核对真实导航、标签、列表、状态栏、容量、图标和工具栏的现有实现 |
-| E04 | O | Dolphin Explorer 结构和菜单缺口 | 文档明确标签位于两个工具栏上方、地址旁搜索框、导航分组、紧凑文件菜单等仍待实现 | 使用版本匹配的最小呈现补丁；保留 KIO、真实动作、标签/分屏和键盘，明确当前未接入默认安装 |
-| E05 | U | 其他 KDE/Qt 应用窗口的一致性 | 共享 Kvantum 与图标存在，尚无完整应用/对话框消费者清单 | 核对本项目覆盖的通用 Qt 控件和系统应用（不重建系统设置、Discover 或 GTK 应用）；专有 UI 明确列出边界 |
+| --- | --- | --- | --- | --- |
+| E01 | P | Konsole 集成标题栏 | `platform/qt/konsole`（26.08.x 隔离可选插件）复用真实 `IKonsolePlugin` 与原生 `QTabWidget`，提供标签同行 `46×34` 窗口控制按钮（原版 `E921`/`E922`/`E923`/`E8BB`）、新建标签与配置文件下拉（`E710`/`E70D`）、8 向边缘缩放、`KWindowShadow` 阴影及最大化按钮悬停 `CaptionSnapPicker` 桥接，并在缺失素材或全屏/窄窗时安全回退原生布局 | 与 Windows Terminal 实机对比标题栏命中区、多标签溢出与分屏交互待维护者验收（无边框外角归 W02） |
+| E02 | P | 终端内容、配色及交互外观 | `WindowsModern.profile`（Campbell 配色、`Cascadia Mono 12pt`、`8px` 内边距、竖线光标）、`konsoleui.rc`/`sessionui.rc`（默认收起双工具栏并保留完整菜单/右键/分屏动作）与 `WindowsModern-tabs.css`（对齐 `QMenu` `8px` 圆角）均由 `app-appearance.py` 可逆管理，不改动用户自定义 profile 或 shell 会话 | 中英等宽字体回退、深浅模式切换下非激活标签对比度与终端滚动待维护者实机验收 |
+| E03 | P | Dolphin 基础外观和局部布局 | `dolphinui.rc`（`Navigation` + `Commands` 双工具栏、`20px` 图标）与 `app-appearance.py`（常显标签栏、面包屑地址栏、全宽状态栏、备份回滚）已就绪；`nix/dolphin-chrome.nix` 隔离包含 `statusbar-margins.patch`（修复非 Breeze 样式下状态栏容量条挤压）与 `tab-controls.patch`（`wmNewTabButton` 新标签角按钮及汉堡菜单防重复） | 真实 KIO 导航、标签拖拽分离、容量菜单与列表/图标视图在 150% 缩放下的表现待维护者实机验收 |
+| E04 | O | Dolphin Explorer 结构和菜单缺口 | 已在 `APP_WINDOW_CHROME.md` 明确 Dolphin 26.08.x 隔离补丁的四个类级改造点（`DolphinMainWindow` 标签栏置顶于双工具栏上方、`DolphinNavigatorsWidgetAction` 常驻地址旁搜索框、`PlacesPanel` 分组呈现、`DolphinContextMenu` 主菜单精简与 `wm-show-more-options-symbolic` 扩展子菜单）及原版图标映射（`E8A7`/`ECC8`） | 因当前开发阶段禁止构建编译验证 C++ 应用补丁，保持 `O` 不伪造未编译补丁；待维护者授权构建试验分支时按既有 `nix/dolphin-chrome.nix` 隔离验证 |
+| E05 | P | 其他 KDE/Qt 应用窗口的一致性 | 完成全仓通用 Qt/KIO 控件与日常应用消费者清单盘点并记录于 `APP_WINDOW_CHROME.md`：覆盖 Kvantum + `WindowsModern{Light,Dark}.colors` + `windows-modern` 图标下的通用对话框（`KFileWidget`/`KIO::RenameDialog`/`KPropertiesDialog`/`QMenu`）、`Dolphin`、`Konsole`、`KWrite`/`Kate`、`Haruna`、`Spectacle`；同步将可选 `Firefox` `userChrome.css` 最大化/还原图标升级为 Windows 11 `rx=1.5` 圆角几何并补齐按压态；明确列出 `System Settings`/`System Monitor`/`Discover`（仅覆盖图标与配色，不重建内部 Kirigami 页面）及 GTK4 应用边界 | 各日常 Qt 应用在深浅色切换、手动/自动强调色刷新及 150% 分数缩放下的实机表现待维护者验收 |
 
 <a name="block-11"></a>
 
@@ -262,13 +262,13 @@
 依据与实现记录：[安装说明](../README.md#nixos)、[开发流程](CONTRIBUTING.md)、[发布和打包](RELEASE.md)、[NixOS 入口](../install-nixos.sh)。
 
 | ID | 状态 | 任务范围 | 现有实现 / 已知能力 | 剩余工作 / 验收边界 |
-| --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- |
 | V01 | I | NixOS 安装、增量更新及回滚源码路径 | 可逆安装器、ABI 匹配、身份核对与备份流程已有 | 仅指已实现路径；真实构建、升级失败及卸载恢复由维护者验收 |
-| V02 | P | 其他 Plasma 6 环境及 ABI 兼容 | 常规安装入口及版本门控已存在 | 审查受支持发行版、Qt/Plasma/应用 ABI、Wayland/X11、依赖与失败路径；不以 Fedora 结果代替 NixOS |
+| V02 | P | 其他 Plasma 6 环境及 ABI 兼容 | `install.sh` / `uninstall.sh` 分阶段批处理（失败组件拒绝重置面板布局并提示 `--restore`）、`qt-plugin-dir.sh` 插件目录探测、Fedora `fix-dolphin-statusbar.sh` 补丁预检及 Konsole/Dolphin/Kvantum 显式上游版本门控均已核查 | 不同发行版 Qt/Plasma 次版本升级、X11 会话与缺省可选依赖的真实安装恢复待维护者验收 |
 | V03 | I | 完整私有包与公开包边界 | 已有资源 pin、成员/哈希检查、私有包与公开包区分、失败不发布的源码路径 | 维护者实际打包及安装验收另记；体积不是完整性依据 |
-| V04 | P | 全局源码与静态检查覆盖 | 独立静态工作流覆盖格式、QML parser、部分 qmllint、图标和 Konsole C++；verify-all.sh 含副本比较但也运行测试 | 补齐其他原生 applet 的类型/接口与共享源码静态覆盖，复用已有机制；本次只做人工源码/文件身份审查，不擅自执行或改变 CI |
-| V05 | P | 无障碍、语言与输入兼容 | 主要组件已有原生键盘、模型、RTL 等路径 | 全局核对焦点、读屏、翻译、中英文、IME、触摸及触控板；单组件修复归对应任务 |
-| V06 | U | 运行性能、资源开销与长时稳定性 | 已有事件驱动、缓存、节流等局部策略；尚无完整性能基线 | 静态审查重复解码、无界缓存/轮询、QML 绑定环和生命周期；由维护者记录目标机器内存/CPU/GPU、启动和交互数据 |
+| V04 | P | 全局源码与静态检查覆盖 | 独立静态审查已完成全仓 `source_plan`（651 项输出无漂移）、`verify-svg-aliases.py --check`（5,172 个 SVG 零未登记重复）、`popup-frames.py --check`、`window-frames.py --check`、全部跟踪 Shell 脚本 `bash -n`/`shellcheck`、全部 JSON/XML/SVG/KCFG/RC 解析、全部 `.nix` 语法解析及全部 QML `qmlformat` AST 解析 | 其余 C++ applet 的编译器类型检查与 CI 执行留待维护者批准后在实机/CI 运行（本次未修改或触发任何工作流） |
+| V05 | P | 无障碍、语言与输入兼容 | 全仓主要组件已补齐 `Accessible.role`/`name`/`onPressAction`、键盘方向键/菜单键/`Alt+Left` 导航、`Text.PlainText` 防注入、IME `inputMethodComposing` 提交/取消保护、RTL `LayoutMirroring` 镜像，以及 `translations/zh_CN.json`（688 项唯一键）与 `lockText.js` 中文回退 | 屏幕阅读器（Orca）、Fcitx5 候选窗跟随、阿拉伯/希伯来 RTL 会话及触控板/触摸屏手势待维护者实机验收 |
+| V06 | P | 运行性能、资源开销与长时稳定性 | 完成全仓静态性能、解码尺寸、缓存上限、计时器与离屏纹理审计并记录于 `WINDOWS11_FIDELITY.md`：补齐 `DefaultAccountPortrait` 导入/回退头像的非零整数 DPR `sourceSize`（全仓 `10/10` 个 `Image` 均受 DPR `sourceSize` 约束）；为 `ToolTipInstance`、`SwitcherView` 与 `SnapAssistPicker` 遮罩补齐软件渲染 `layer.enabled` 门控；确认 C++ `QIcon` 缓存具 `128` 项上限、Corona 外观同步采用 `350ms` 单次防抖，且全仓 `10` 个重复 `Timer` 100% 受可见/激活态门控（零后台常驻轮询） | 目标机器（NixOS `2560×1600@150%`）冷启动耗时、内存/CPU/GPU 占用与长时睡眠唤醒稳定性由维护者实机记录验收 |
 | V07 | P | 模块间显式数据和动作接口 | 原生模型、路由及信号已有；PinnedPage/AllAppsPage/AlphabeticalAppsView/RecommendedPage/SearchPage 与 ListItemDelegate 全部通过显式属性、回调与激活/右键信号与宿主通信，CompactRepresentation/MenuRepresentation 显式传递按钮锚点与 Kicker 模型，SearchPage 显式接收 searching、appLookup、favoritesModel 与 appsModel；SystemTrayState 通过 reconcileHostExpansion 输入及 hostExpansionRequested 信号同步宿主，ExpandedRepresentation、HiddenItemsView、PlasmoidPopupsContainer、ExpanderArrow、CurrentItemHighLight、ItemLoader、AbstractItem、PlasmoidItem、BackgroundAppItem 均显式接收 trayRoot/trayState/popupDialog/preloadHost；Icon Tasks 的 LayoutMetrics.js、TaskList、Task、GroupDialog、ContextMenu、ToolTipDelegate、ToolTipInstance、ToolTipWindowMouseArea、MouseHandler、AudioStream、PulseAudio、PlayerController 及懒加载角标/进度/缩略图覆盖层全部使用显式宿主输入；LockScreen/MainBlock/MediaControls 与 Login 移除跨文件隐式外层 ID 访问 | 冻结架构清单第 6 项已完成；Start/clock 同面板可选能力宿主生命周期归 V08，跨模块完整交互链路与编译期 QML 绑定行为待维护者实机验收 |
 | V08 | P | 全局能力与可选组件生命周期 | Corona 所有的 ShellAppearanceMonitor 与 ShellShortcutRouter 由任一已加载原生壳插件（System Tray、Icon Tasks、Desktop Context Menu）通过跨插件安全的 QObject/QMetaObject 接口初始化，无托盘冷启动仍可启动壁纸/配色监听并接管已迁移的 Win+R/V 原生回退，独立卸载托盘同步释放 Win+R/V；每个面板 Containment 通过 PanelPopupHost（`windowsModernPanelPopups`）独立持有 PanelPopupController 与 PopupEffects，Start/clock/tray 共用同面板焦点组与 split blur 且不依赖托盘存活；Start/clock/tray/taskbar 在移除（含 undo 期）或跨面板迁移时自动收起弹窗并跳过已标记销毁的实例 | 冻结架构清单第 7 项已完成；多屏、动态重建、会话退出、混合包与 ABI 实机生命周期待维护者验收，不增加常驻服务 |
 
