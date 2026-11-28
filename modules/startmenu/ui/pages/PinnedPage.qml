@@ -28,6 +28,8 @@ ColumnLayout {
 
     signal showAllAppsRequested
     signal keyNavUpFromList
+    signal applicationActivated
+    signal appContextMenuRequested(var entry, int row, real x, real y)
 
     function tryActivate(row) {
         if (favoritesListView.count > 0) {
@@ -50,9 +52,8 @@ ColumnLayout {
     }
 
     function activateCurrent() {
-        if (favoritesListView.currentIndex >= 0 && favoritesListView.model) {
-            favoritesListView.model.trigger(favoritesListView.currentIndex, "", null);
-            root.closeMenu();
+        if (favoritesListView.currentIndex >= 0) {
+            favoritesListView.activateRow(favoritesListView.currentIndex);
         }
     }
 
@@ -110,10 +111,23 @@ ColumnLayout {
         property int draggingIndex: -1
         property int dropTargetIndex: -1
 
+        function activateRow(row) {
+            if (row < 0 || row >= count || !model || typeof model.trigger !== "function")
+                return;
+            currentIndex = row;
+            if (model.trigger(row, "", null))
+                pinnedPage.applicationActivated();
+        }
+
         delegate: ListItemDelegate {
+            id: pinnedEntry
             gridMode: true
             iconSize: Metrics.gridAppIconSize
             dragEnabled: true
+            contextHandler: (data, row, x, y) => {
+                const pos = pinnedEntry.mapToItem(pinnedPage, x, y);
+                pinnedPage.appContextMenuRequested(data, row, pos.x, pos.y);
+            }
         }
 
         highlightMoveDuration: 0

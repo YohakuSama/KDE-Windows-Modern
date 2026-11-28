@@ -17,12 +17,13 @@ import QtQuick
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
-import "../code/tools.js" as Tools
 import "../code/theme.js" as Theme
 import "../code/controlMetrics.js" as ControlMetrics
 
 Item {
     id: item
+
+    signal activated
 
     readonly property bool inGrid: !!item.GridView.view
     // Grouped rows provide the original source-model context explicitly.
@@ -396,7 +397,7 @@ Item {
         }
         if (view && view.model && typeof view.model.trigger === "function") {
             if (view.model.trigger(item.itemIndex, "", null))
-                root.closeMenu();
+                item.activated();
         }
     }
 
@@ -405,22 +406,7 @@ Item {
         if (item.appData.isParent) return;
         if (item.contextHandler) {
             item.contextHandler(item.appData, item.itemIndex, localX, localY);
-            return;
         }
-        var favModel = (typeof kicker !== "undefined" && kicker.globalFavorites)
-                       ? kicker.globalFavorites : null
-        var favId = item.appData.favoriteId ?? ""
-        var url = item.appData.url ?? ""
-        var actionList = item.appData.actionList ?? null
-        var acts = Tools.buildAppActions(i18n, favModel, favId, url, actionList)
-        if (acts.length === 0) return
-
-        var pos = item.mapToItem(sharedContextMenu, localX, localY)
-        var view = item.hostView
-        sharedContextMenu.open(acts, pos.x, pos.y, {
-            model: view ? view.model : null,
-            index: item.itemIndex
-        })
     }
 
     Keys.onPressed: event => {

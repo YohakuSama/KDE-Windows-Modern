@@ -37,6 +37,7 @@ FocusScope {
     property real letterIndexScrollY: 0
     readonly property var letterIndexEntries: Alphabetical.letterIndex(visualRows)
     signal applicationActivated(int sourceRow)
+    signal appContextMenuRequested(var entry, real x, real y)
     signal navigateToHeader()
 
     // A snapshot is rebuilt only when the actual application model changes.
@@ -233,6 +234,7 @@ FocusScope {
                 Repeater {
                     model: visualRow.modelData.entries
                     delegate: ListItemDelegate {
+                        id: alphabeticalEntry
                         required property var modelData
                         suppliedView: view
                         appData: modelData
@@ -242,6 +244,10 @@ FocusScope {
                         gridMode: view.gridMode
                         iconSize: gridMode ? Metrics.gridAppIconSize : Metrics.listAppIconSize
                         showInstallBadge: true
+                        contextHandler: (data, row, x, y) => {
+                            const pos = alphabeticalEntry.mapToItem(view, x, y);
+                            view.appContextMenuRequested(data, pos.x, pos.y);
+                        }
                     }
                 }
             }

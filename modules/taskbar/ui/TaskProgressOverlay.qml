@@ -4,6 +4,8 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Templates as T
 
@@ -15,6 +17,8 @@ import plasma.applet.org.kde.plasma.icontasks as TaskManagerApplet
 T.ProgressBar {
     id: control
 
+    required property QtObject smartLauncherItem
+
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
@@ -25,7 +29,7 @@ T.ProgressBar {
 
     from: 0
     to: 100
-    value: task.smartLauncherItem.progress
+    value: control.smartLauncherItem ? control.smartLauncherItem.progress : 0
 
     contentItem: Item {
         LayoutMirroring.enabled: Application.layoutDirection === Qt.RightToLeft

@@ -26,6 +26,14 @@ import "controlMetrics.js" as ControlMetrics
 Item {
     id: root
 
+    required property ToolTipDelegate hostDelegate
+    readonly property ToolTipDelegate toolTipDelegate: hostDelegate
+    readonly property Item tasksRoot: hostDelegate.tasksRoot
+    readonly property var tasksModel: hostDelegate.tasksModel
+    readonly property var backend: hostDelegate.backend
+    readonly property var virtualDesktopInfo: hostDelegate.virtualDesktopInfo
+    readonly property var activityInfo: hostDelegate.activityInfo
+
     required property var model
     required property int index
     required property /*QModelIndex*/ var submodelIndex
@@ -290,8 +298,8 @@ Item {
 
                     function closeWindow() {
                         if (!enabled || thumbnailSourceItem.winId === undefined) return;
-                        tasks.cancelHighlightWindows();
-                        tasksModel.requestClose(root.submodelIndex);
+                        root.tasksRoot.cancelHighlightWindows();
+                        root.tasksModel.requestClose(root.submodelIndex);
                     }
 
                     Accessible.role: Accessible.Button
@@ -365,11 +373,21 @@ Item {
                 anchors.margins: 0
 
                 active: Plasmoid.configuration.showToolTips
-                    && !toolTipDelegate.isLauncher
+                    && !root.toolTipDelegate.isLauncher
                     && !albumArtImage.visible
                     && root.index !== -1
                 asynchronous: true
-                source: "PipeWireThumbnail.qml"
+
+                function syncSource(): void {
+                    if (active && item === null && status !== Loader.Loading) {
+                        setSource("PipeWireThumbnail.qml", {
+                            winId: Qt.binding(() => thumbnailSourceItem.winId),
+                        });
+                    }
+                }
+
+                onActiveChanged: syncSource()
+                Component.onCompleted: syncSource()
             }
 
             Loader {

@@ -25,38 +25,43 @@ import "js/popupGeometry.js" as PopupGeometry
 Item {
     id: popup
 
+    required property Item trayRoot
+    required property SystemTrayState trayState
+    required property PlasmaCore.Dialog popupDialog
+    property Item preloadHost: null
+
     // Use the same native accent palette as every other shell surface.
     readonly property color shellAccent: Kirigami.Theme.highlightColor
 
     // Never derive the window's initial size from an effectively hidden
     // QQuickLayout. The native popup is sized before the window is mapped.
-    readonly property bool overflowHome: systemTrayState.overflowMode && !systemTrayState.activeApplet
+    readonly property bool overflowHome: trayState.overflowMode && !trayState.activeApplet
     readonly property rect screenRect: Plasmoid.screenGeometry
     readonly property int availableWidth: PopupGeometry.availableExtent(screenRect.width,
-        root.vertical ? root.panelExtent : 0, 24, 720)
+        trayRoot.vertical ? trayRoot.panelExtent : 0, 24, 720)
     readonly property int availableHeight: PopupGeometry.availableExtent(screenRect.height,
-        root.vertical ? 0 : root.panelExtent, 24, 720)
+        trayRoot.vertical ? 0 : trayRoot.panelExtent, 24, 720)
     // The configured scale is a ceiling. Small work areas shrink the grid
     // before mapping, without using physical DPI or depending on panel length.
     readonly property real uiScale: Math.max(0.35, Math.min(Plasmoid.configuration.scale / 100,
         availableWidth / (quickHome || quickDetail ? TrayMetrics.quickPanelWidth : TrayMetrics.standardFlyoutWidth),
         availableHeight / TrayMetrics.quickDetailMinimumHeight))
-    readonly property bool quickHome: !systemTrayState.activeApplet && !systemTrayState.overflowMode
+    readonly property bool quickHome: !trayState.activeApplet && !trayState.overflowMode
     // One rounded settings card for home and all themed detail pages. Never
     // switch between KSVG frame insets and our card when navigating.
     readonly property bool customCard: quickHome || themedActive
-    readonly property bool quickDetail: themedActive && systemTrayState.quickSettingsRoute
-    readonly property int frameWidth: customCard ? 0 : Math.round(dialog.margins.left + dialog.margins.right)
-    readonly property int frameHeight: customCard ? 0 : Math.round(dialog.margins.top + dialog.margins.bottom)
+    readonly property bool quickDetail: themedActive && trayState.quickSettingsRoute
+    readonly property int frameWidth: customCard ? 0 : Math.round(popupDialog.margins.left + popupDialog.margins.right)
+    readonly property int frameHeight: customCard ? 0 : Math.round(popupDialog.margins.top + popupDialog.margins.bottom)
     readonly property int popupWidth: TrayMetrics.flyoutWidth(availableWidth, uiScale,
         overflowHome, frameWidth, quickHome || quickDetail)
     readonly property var overflowMetrics: TrayMetrics.overflowGeometry(popupWidth,
-        availableHeight - frameHeight, uiScale, root.hiddenModel ? root.hiddenModel.count : 0)
+        availableHeight - frameHeight, uiScale, trayRoot.hiddenModel ? trayRoot.hiddenModel.count : 0)
     readonly property int overflowHeight: overflowMetrics.height
     Mpris.Mpris2Model { id: mediaModel }
     readonly property int mediaGap: Math.round(TrayMetrics.mediaCardGap * uiScale)
     readonly property int mediaHeight: Math.round(TrayMetrics.mediaCardHeight * uiScale)
-    readonly property bool separatedMedia: !systemTrayState.activeApplet && !systemTrayState.overflowMode
+    readonly property bool separatedMedia: !trayState.activeApplet && !trayState.overflowMode
         && mediaCard.hasSession && TrayMetrics.mediaFits(availableHeight,
             actionPanel.minimumHomeHeight, mediaGap, mediaHeight)
     readonly property int settingsBudget: Math.max(1, availableHeight - (separatedMedia ? mediaGap + mediaHeight : 0))
@@ -84,7 +89,7 @@ Item {
         & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) === 0
 
     function scheduleSplitBlur() {
-        if (customCard && dialog.visible) splitBlurTimer.restart();
+        if (customCard && popupDialog.visible) splitBlurTimer.restart();
         else {
             splitBlurTimer.stop();
             splitAcrylic = false;
@@ -94,7 +99,7 @@ Item {
         id: splitBlurTimer
         interval: 16
         onTriggered: {
-            if (!popup.customCard || !dialog.visible) {
+            if (!popup.customCard || !popup.popupDialog.visible) {
                 popup.splitAcrylic = false;
                 return;
             }
@@ -127,7 +132,7 @@ Item {
     function resetQuickSettings() { actionPanel.resetScroll(); }
 
     function focusCurrentPage() {
-        if (systemTrayState.activeApplet) {
+        if (trayState.activeApplet) {
             container.forceActiveFocus();
         } else if (overflowHome) {
             hiddenItemsView.layout.forceActiveFocus();
@@ -137,7 +142,7 @@ Item {
     }
 
     readonly property bool themedActive: container.themedActive
-    readonly property bool unknownActive: systemTrayState.activeApplet && !popup.themedActive
+    readonly property bool unknownActive: trayState.activeApplet && !popup.themedActive
 
     readonly property var flyoutToPlugin: ({
         "network":    "org.kde.plasma.networkmanagement",
@@ -152,7 +157,7 @@ Item {
         if (!pluginId) return
         const applet = Plasmoid.appletForPluginId(pluginId)
         if (applet) {
-            systemTrayState.setActiveApplet(applet, undefined, "quick")
+            trayState.setActiveApplet(applet, undefined, "quick")
             return
         }
         const settings = {
@@ -214,14 +219,14 @@ Item {
 
             Components.NativeToolButton {
                 id: backButton
-                visible: systemTrayState.activeApplet && systemTrayState.activeApplet.expanded
+                visible: popup.trayState.activeApplet && popup.trayState.activeApplet.expanded
                 nativeRole: mirrored ? "go-next-symbolic" : "go-previous-symbolic"
                 text: i18nc("@action:button", "Go Back")
                 KeyNavigation.down: container
-                onClicked: if (typeof systemTrayState.activeApplet?.backAction !== "undefined" && systemTrayState.activeApplet.backAction.enabled) {
-                    systemTrayState.activeApplet?.backAction.trigger()
+                onClicked: if (typeof popup.trayState.activeApplet?.backAction !== "undefined" && popup.trayState.activeApplet.backAction.enabled) {
+                    popup.trayState.activeApplet?.backAction.trigger()
                 } else {
-                    systemTrayState.setActiveApplet(null)
+                    popup.trayState.setActiveApplet(null)
                 }
             }
 
@@ -229,7 +234,7 @@ Item {
                 Layout.fillWidth: true
                 leftPadding: 0
                 level: 1
-                text: systemTrayState.activeApplet ? systemTrayState.activeApplet.plasmoid.title : i18n("Status and Notifications")
+                text: popup.trayState.activeApplet ? popup.trayState.activeApplet.plasmoid.title : i18n("Status and Notifications")
                 maximumLineCount: 1
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
@@ -269,7 +274,7 @@ Item {
                 visible: visibleActions > 0
                 enabled: visibleActions > 1 || (singleAction && singleAction.enabled)
                 checked: visibleActions > 1 ? configMenu.status !== PlasmaExtras.Menu.Closed : singleAction && singleAction.checked
-                property QtObject applet: systemTrayState.activeApplet || root
+                property QtObject applet: popup.trayState.activeApplet || popup.trayRoot
                 property int visibleActions: actions.length
                 property PlasmaCore.Action singleAction: visibleActions === 1 && menuItemFactory.object ? menuItemFactory.object.action : null
                 readonly property var actions: applet ? applet.plasmoid.contextualActions.filter(action => {
@@ -342,11 +347,16 @@ Item {
             id: actionPanelMode
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: !systemTrayState.activeApplet
+            visible: !popup.trayState.activeApplet
             spacing: 0
 
             HiddenItemsView {
                 id: hiddenItemsView
+                trayRoot: popup.trayRoot
+                trayState: popup.trayState
+                overflowModel: popup.trayRoot.hiddenModel
+                preloadHost: popup.preloadHost
+                popupContentItem: popup
                 metrics: popup.overflowMetrics
                 Layout.fillWidth: true
                 Layout.minimumHeight: 0
@@ -355,12 +365,12 @@ Item {
                 Layout.rightMargin: popup.overflowMetrics.inset
                 Layout.topMargin: popup.overflowMetrics.inset
                 Layout.bottomMargin: popup.overflowMetrics.inset
-                visible: popup.overflowHome && root.hiddenLayout.itemCount > 0
+                visible: popup.overflowHome && hiddenItemsView.layout.itemCount > 0
                 KeyNavigation.up: pinButton
                 onVisibleChanged: {
                     if (visible) {
                         layout.forceActiveFocus()
-                        systemTrayState.oldVisualIndex = systemTrayState.newVisualIndex = -1
+                        popup.trayState.oldVisualIndex = popup.trayState.newVisualIndex = -1
                     }
                 }
             }
@@ -389,7 +399,7 @@ Item {
                 Layout.preferredHeight: popup.quickCardHeight
                 Layout.minimumHeight: popup.quickCardHeight
                 Layout.maximumHeight: popup.quickCardHeight
-                visible: !systemTrayState.overflowMode
+                visible: !popup.trayState.overflowMode
                 ActionPanel {
                     id: actionPanel
                     anchors.fill: parent
@@ -398,7 +408,7 @@ Item {
                     frameInset: 0
                     shellAccent: popup.shellAccent
                     onVisibleChanged: {
-                        if (visible && dialog.visible && !systemTrayState.activeApplet)
+                        if (visible && popup.popupDialog.visible && !popup.trayState.activeApplet)
                             forceActiveFocus();
                     }
                     onRequestPage: name => popup.activateFlyout(name)
@@ -409,11 +419,13 @@ Item {
         // Container for the active applet (themed or unknown)
         PlasmoidPopupsContainer {
             id: container
+            trayRoot: popup.trayRoot
+            trayState: popup.trayState
             shellAccent: popup.shellAccent
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: systemTrayState.activeApplet
-            Layout.topMargin: popup.themedActive || mergeHeadings ? 0 : dialog.margins.top
+            visible: popup.trayState.activeApplet
+            Layout.topMargin: popup.themedActive || mergeHeadings ? 0 : popup.popupDialog.margins.top
             Layout.minimumWidth: popup.themedActive ? 0 : Kirigami.Units.gridUnit * 12
             Layout.minimumHeight: popup.themedActive ? 0 : Kirigami.Units.gridUnit * 12
             KeyNavigation.up: pinButton

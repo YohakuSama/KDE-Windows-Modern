@@ -42,7 +42,11 @@ Item {
 
     // The compact representation is the actual Start button in the panel.
     // Keep this item visible: a hidden toggle item is not a reliable anchor.
-    readonly property Item startButton: parent
+    property Item anchorButton: parent
+    property var launcherApplet: null
+    property var launcherRootModel: null
+    property var launcherFavorites: null
+    readonly property Item startButton: anchorButton
     readonly property var popupCoordinator: PanelCapabilities.findTray(
         Plasmoid.containment ? Plasmoid.containment.applets : [],
         ["prepareShellPopup", "restoreShellPopupFocus"])
@@ -343,7 +347,7 @@ Item {
                 sorted: true
                 showTopLevelItems: true
                 showSeparators: false
-                appletInterface: kicker
+                appletInterface: main.launcherApplet
             }
 
             Connections {
@@ -458,7 +462,7 @@ Item {
                         || Plasmoid.configuration.allAppsSortMode === 1
                     onApplicationActivated: root.closeMenu()
                     onAppContextMenuRequested: function(entry, x, y) {
-                        const actions = Tools.buildAppActions(i18n, globalFavorites,
+                        const actions = Tools.buildAppActions(i18n, main.launcherFavorites,
                             entry.favoriteId || "", entry.url || "", entry.actionList || null);
                         if (!actions.length) return;
                         const pos = allAppsPage.mapToItem(sharedContextMenu, x, y);
@@ -485,7 +489,17 @@ Item {
                                 id: pinnedSection
                                 Layout.fillWidth: true
                                 visible: Plasmoid.configuration.showPinnedSection && favoritesList.count > 0
-                                favoritesList.model: globalFavorites
+                                favoritesList.model: main.launcherFavorites
+                                onApplicationActivated: root.closeMenu()
+                                onAppContextMenuRequested: function(entry, row, x, y) {
+                                    const actions = Tools.buildAppActions(i18n, main.launcherFavorites,
+                                        entry.favoriteId || "", entry.url || "", entry.actionList || null);
+                                    if (!actions.length) return;
+                                    const pos = pinnedSection.mapToItem(sharedContextMenu, x, y);
+                                    sharedContextMenu.open(actions, pos.x, pos.y, {
+                                        model: main.launcherFavorites, index: row
+                                    });
+                                }
                                 onShowAllAppsRequested: {
                                     root.leftColumnState = 1;
                                     allAppsPage.scrollToAll();
@@ -529,13 +543,27 @@ Item {
                                 interactive: false
                                 boundsBehavior: Flickable.StopAtBounds
                                 currentIndex: -1
+                                function activateRow(row) {
+                                    if (row >= 0 && row < count && recentUsage.trigger(row, "", null))
+                                        root.closeMenu();
+                                }
                                 delegate: ListItemDelegate {
+                                    id: recentEntry
                                     required property int index
                                     required property var model
                                     appData: model
                                     itemIndex: index
                                     iconSize: 28
                                     showDescription: true
+                                    contextHandler: (data, row, x, y) => {
+                                        const actions = Tools.buildAppActions(i18n, main.launcherFavorites,
+                                            data.favoriteId || "", data.url || "", data.actionList || null);
+                                        if (!actions.length) return;
+                                        const pos = recentEntry.mapToItem(sharedContextMenu, x, y);
+                                        sharedContextMenu.open(actions, pos.x, pos.y, {
+                                            model: recentUsage, index: row
+                                        });
+                                    }
                                 }
                             }
 
@@ -598,7 +626,7 @@ Item {
                         if (recentUsage.trigger(row, "", null)) root.closeMenu();
                     }
                     onContextRequested: function(entry, row, x, y) {
-                        const actions = Tools.buildAppActions(i18n, globalFavorites,
+                        const actions = Tools.buildAppActions(i18n, main.launcherFavorites,
                             entry.favoriteId || "", entry.url || "", entry.actionList || null);
                         if (!actions.length) return;
                         const pos = recommendedPage.mapToItem(sharedContextMenu, x, y);
@@ -632,6 +660,9 @@ Item {
                     visible: root.searching && startSearch.searchText.length > 0
                     scrollbarEdgeOffset: Math.max(0, rootItem.margin - 4)
                     searching: root.searching
+                    appLookup: urls => rootItem.lookupAppByUrls(urls)
+                    favoritesModel: main.launcherFavorites
+                    appsModel: sortedAppsModel
                     onApplicationActivated: root.closeMenu()
                     onFocusSearchRequested: startSearch.focusSearch()
                     onContextMenuRequested: function(actions, x, y, context) {
@@ -934,11 +965,12 @@ Item {
                 if (event.modifiers === Qt.ControlModifier) {
                     var digit = event.key - Qt.Key_1;
                     if (digit >= 0 && digit <= 8) {
-                        var count = globalFavorites.count;
+                        var favs = main.launcherFavorites;
+                        var count = favs ? favs.count : 0;
                         if (digit < count) {
                             event.accepted = true;
-                            globalFavorites.trigger(digit, "", null);
-                            root.closeMenu();
+                            if (favs.trigger(digit, "", null))
+                                root.closeMenu();
                         }
                         return;
                     }
@@ -1014,7 +1046,7 @@ Item {
         }
 
         function setModels() {
-            sortedAppsModel.sourceModel = findRowModel(rootModel, "KICKER_ALL_MODEL");
+            sortedAppsModel.sourceModel = findRowModel(main.launcherRootModel, "KICKER_ALL_MODEL");
             allAppsPage.resetCategory();
         }
 
@@ -1033,9 +1065,13 @@ Item {
         }
 
         Component.onCompleted: {
-            rootModel.refreshed.connect(setModels);
-            reset();
-            rootModel.refresh();
+            if (main.launcherRootModel) {
+                main.launcherRootModel.refreshed.connect(setModels);
+                reset();
+                main.launcherRootModel.refresh();
+            } else {
+                reset();
+            }
         }
     }
 }

@@ -25,6 +25,9 @@ Item {
     readonly property bool vertical: (Plasmoid.formFactor == PlasmaCore.Types.Vertical)
     readonly property bool useCustomButtonImage: (Plasmoid.configuration.useCustomButtonImage
                                                   && Plasmoid.configuration.customButtonImage.length != 0)
+    property var launcherApplet: null
+    property var launcherRootModel: null
+    property var launcherFavorites: null
     property MenuRepresentation dashWindow: null
     property real logoScale: 1
     // Pointer release already owns its rebound. Keyboard and accessibility
@@ -164,7 +167,12 @@ Item {
     }
 
     Component.onCompleted: {
-        dashWindow = menuRepComponent.createObject(root);
+        dashWindow = menuRepComponent.createObject(root, {
+            anchorButton: root,
+            launcherApplet: Qt.binding(() => root.launcherApplet),
+            launcherRootModel: Qt.binding(() => root.launcherRootModel),
+            launcherFavorites: Qt.binding(() => root.launcherFavorites),
+        });
     }
 
     Component {

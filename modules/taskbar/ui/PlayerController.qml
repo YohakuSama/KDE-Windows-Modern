@@ -21,10 +21,12 @@ import org.kde.plasma.private.mpris as Mpris
 RowLayout {
     id: root
 
-    enabled: toolTipDelegate.playerData?.canControl ?? false
+    property Mpris.PlayerContainer playerData: null
+
+    enabled: root.playerData?.canControl ?? false
     spacing: Kirigami.Units.smallSpacing
 
-    readonly property bool isPlaying: toolTipDelegate.playerData?.playbackStatus === Mpris.PlaybackStatus.Playing
+    readonly property bool isPlaying: root.playerData?.playbackStatus === Mpris.PlaybackStatus.Playing
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -41,8 +43,8 @@ RowLayout {
                 id: songText
                 maximumLineCount: artistText.visible ? 1 : 2
                 wrapMode: Text.NoWrap
-                elide: parent.state ? Text.ElideNone : Text.ElideRight
-                text: toolTipDelegate.playerData?.track ?? ""
+                elide: songTextWrapper.state ? Text.ElideNone : Text.ElideRight
+                text: root.playerData?.track ?? ""
                 textFormat: Text.PlainText
             }
         }
@@ -58,8 +60,8 @@ RowLayout {
             textItem: PlasmaExtras.DescriptiveLabel {
                 id: artistText
                 wrapMode: Text.NoWrap
-                elide: parent.state ? Text.ElideNone : Text.ElideRight
-                text: toolTipDelegate.playerData?.artist ?? ""
+                elide: artistTextWrapper.state ? Text.ElideNone : Text.ElideRight
+                text: root.playerData?.artist ?? ""
                 font: Kirigami.Theme.smallFont
                 textFormat: Text.PlainText
             }
@@ -67,26 +69,26 @@ RowLayout {
     }
 
     PlasmaComponents3.ToolButton {
-        enabled: toolTipDelegate.playerData?.canGoPrevious ?? false
+        enabled: root.playerData?.canGoPrevious ?? false
         icon.name: mirrored ? "media-skip-forward" : "media-skip-backward"
-        onClicked: toolTipDelegate.playerData.Previous()
+        onClicked: root.playerData?.Previous()
     }
 
     PlasmaComponents3.ToolButton {
-        enabled: (root.isPlaying ? toolTipDelegate.playerData?.canPause : toolTipDelegate.playerData?.canPlay) ?? false
+        enabled: (root.isPlaying ? root.playerData?.canPause : root.playerData?.canPlay) ?? false
         icon.name: root.isPlaying ? "media-playback-pause" : "media-playback-start"
         onClicked: {
             if (!root.isPlaying) {
-                toolTipDelegate.playerData.Play();
+                root.playerData?.Play();
             } else {
-                toolTipDelegate.playerData.Pause();
+                root.playerData?.Pause();
             }
         }
     }
 
     PlasmaComponents3.ToolButton {
-        enabled: toolTipDelegate.playerData?.canGoNext ?? false
+        enabled: root.playerData?.canGoNext ?? false
         icon.name: mirrored ? "media-skip-backward" : "media-skip-forward"
-        onClicked: toolTipDelegate.playerData.Next()
+        onClicked: root.playerData?.Next()
     }
 }

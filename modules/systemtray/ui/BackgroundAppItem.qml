@@ -54,7 +54,8 @@ AbstractItem {
     }
 
     function baseModelIndex() {
-        let index = parent.GridView.view.model.index(taskIcon.index, 0);
+        const gridView = taskIcon.overflowGridView ?? taskIcon.trayRoot.hiddenLayout;
+        let index = gridView.model.index(taskIcon.index, 0);
         while (index.model.hasOwnProperty("mapToSource") && index.valid) {
             index = index.model.mapToSource(index)
         }

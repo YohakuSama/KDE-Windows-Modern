@@ -151,10 +151,13 @@ DropArea {
         repeat: false
 
         onTriggered: {
-            if (parent.hoveredItem.model.IsGroupParent) {
-                TaskManagerApplet.TaskTools.createGroupDialog(parent.hoveredItem, dropArea.tasksRoot);
-            } else if (!parent.hoveredItem.model.IsLauncher) {
-                tasksModel.requestActivate(parent.hoveredItem.modelIndex());
+            if (!dropArea.hoveredItem) {
+                return;
+            }
+            if (dropArea.hoveredItem.model.IsGroupParent) {
+                TaskManagerApplet.TaskTools.createGroupDialog(dropArea.hoveredItem, dropArea.tasksRoot);
+            } else if (!dropArea.hoveredItem.model.IsLauncher) {
+                tasksModel.requestActivate(dropArea.hoveredItem.modelIndex());
             }
         }
     }

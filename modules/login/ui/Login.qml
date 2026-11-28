@@ -234,9 +234,7 @@ SessionManagementScreen {
             }
 
             onEscapePressed: {
-                if (mainStack.currentItem) {
-                    mainStack.currentItem.forceActiveFocus();
-                }
+                root.forceActiveFocus();
             }
 
             onKeyPressed: event => {

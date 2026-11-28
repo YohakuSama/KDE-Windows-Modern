@@ -22,6 +22,12 @@ PlasmaComponents3.ScrollView {
 
     property alias layout: hiddenTasks
 
+    required property Item trayRoot
+    required property SystemTrayState trayState
+    required property var overflowModel
+    property Item preloadHost: null
+    property Item popupContentItem: null
+
     // One geometry plan from ExpandedRepresentation, including work-area
     // limits and the optional scroll rail. Do not recompute from the
     // ScrollView's effective width after its scrollbar becomes visible.
@@ -63,8 +69,13 @@ PlasmaComponents3.ScrollView {
 
         readonly property int itemCount: model.count
 
-        model: root.hiddenModel
+        model: hiddenTasksView.overflowModel
         delegate: ItemLoader {
+            trayRoot: hiddenTasksView.trayRoot
+            trayState: hiddenTasksView.trayState
+            preloadHost: hiddenTasksView.preloadHost
+            popupContentItem: hiddenTasksView.popupContentItem
+            overflowGridView: hiddenTasks
             // Use full cells so the icon and hover target share the same center.
             width: hiddenTasks.cellWidth
             height: hiddenTasks.cellHeight

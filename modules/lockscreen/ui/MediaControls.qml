@@ -13,6 +13,9 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.mpris as Mpris
 
 Item {
+    id: controlsRoot
+    signal interactionStarted()
+
     visible: instantiator.count > 0
     implicitHeight: Kirigami.Units.gridUnit * 3
     implicitWidth: Kirigami.Units.gridUnit * 16
@@ -84,7 +87,7 @@ Item {
                 focusPolicy: Qt.TabFocus
                 icon.name: LayoutMirroring.enabled ? "media-skip-forward" : "media-skip-backward"
                 onClicked: {
-                    fadeoutTimer.running = false
+                    controlsRoot.interactionStarted()
                     model.container.Previous()
                 }
                 Accessible.name: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button Accessible only", "Previous track")
@@ -96,7 +99,7 @@ Item {
                 focusPolicy: Qt.TabFocus
                 icon.name: model.playbackStatus === Mpris.PlaybackStatus.Playing ? "media-playback-pause" : "media-playback-start"
                 onClicked: {
-                    fadeoutTimer.running = false
+                    controlsRoot.interactionStarted()
                     model.container.PlayPause()
                 }
                 Accessible.name: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button Accessible only", "Play or Pause media")
@@ -111,7 +114,7 @@ Item {
                 icon.name: LayoutMirroring.enabled ? "media-skip-backward" : "media-skip-forward"
                 Accessible.name: i18ndc("plasma_shell_org.kde.plasma.desktop", "@action:button Accessible only", "Next track")
                 onClicked: {
-                    fadeoutTimer.running = false
+                    controlsRoot.interactionStarted()
                     model.container.Next()
                 }
             }

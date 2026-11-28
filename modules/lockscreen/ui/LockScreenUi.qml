@@ -18,18 +18,19 @@ import "lockMetrics.js" as LockMetrics
 Item {
     id: lockScreenUi
 
+    required property Item lockScreenHost
     readonly property bool softwareRendering: GraphicsInfo.api === GraphicsInfo.Software
 
     function handleMessage(msg) {
         if (!msg) {
             return;
         }
-        if (!root.notification) {
-            root.notification += msg;
-        } else if (root.notification.includes(msg)) {
-            root.notificationRepeated();
+        if (!lockScreenHost.notification) {
+            lockScreenHost.notification += msg;
+        } else if (lockScreenHost.notification.includes(msg)) {
+            lockScreenHost.notificationRepeated();
         } else {
-            root.notification += "\n" + msg
+            lockScreenHost.notification += "\n" + msg
         }
         lockScreenRoot.uiVisible = true;
     }
@@ -44,7 +45,7 @@ Item {
             if (kind != 0) return;
             const msg = LockText.tr("Unlocking failed", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Unlocking failed"), Qt.uiLanguage, Qt.locale().name);
             lockScreenUi.handleMessage(msg);
-            root.clearPassword();
+            lockScreenUi.lockScreenHost.clearPassword();
             authenticator.startAuthenticating();
             notificationRemoveTimer.restart();
             rejectPasswordAnimation.start();
@@ -82,7 +83,17 @@ Item {
 
     Connections {
         target: sessionManagement
-        function onAboutToSuspend() { root.clearPassword(); }
+        function onAboutToSuspend() { lockScreenUi.lockScreenHost.clearPassword(); }
+    }
+
+    Connections {
+        target: lockScreenUi.lockScreenHost
+        function onClearPassword() {
+            if (mainBlock) mainBlock.clearPassword();
+        }
+        function onNotificationRepeated() {
+            if (mainBlock) mainBlock.pulseError();
+        }
     }
 
     RejectPasswordAnimation {
@@ -186,7 +197,7 @@ Item {
             }
         }
         Keys.onEscapePressed: {
-            if (loginUiActive) { uiVisible = false; root.clearPassword() }
+            if (loginUiActive) { uiVisible = false; lockScreenUi.lockScreenHost.clearPassword() }
         }
         Keys.onPressed: event => { uiVisible = true; event.accepted = false }
 
@@ -200,7 +211,7 @@ Item {
                 }
             }
         }
-        Timer { id: notificationRemoveTimer; interval: 3000; onTriggered: root.notification = "" }
+        Timer { id: notificationRemoveTimer; interval: 3000; onTriggered: lockScreenUi.lockScreenHost.notification = "" }
 
         // ── Wallpaper layer ──
         WallpaperFader {
@@ -300,6 +311,13 @@ Item {
             active: config.showMediaControls
             visible: !lockScreenRoot.loginUiActive
         }
+        Connections {
+            target: mediaControlsLoader.item
+            ignoreUnknownSignals: true
+            function onInteractionStarted() {
+                fadeoutTimer.running = false;
+            }
+        }
 
         // ── Status icons (bottom-right, icon-only, idle only) ──
         Row {
@@ -338,14 +356,14 @@ Item {
                 lockScreenUiVisible: lockScreenRoot.loginUiActive
                 StackView.onStatusChanged: {
                     if (StackView.status === StackView.Activating) {
-                        mainPasswordBox.clear(); mainPasswordBox.focus = true; root.notification = "";
+                        mainPasswordBox.clear(); mainPasswordBox.focus = true; lockScreenUi.lockScreenHost.notification = "";
                     }
                 }
                 userListModel: users
                 customErrorMessage: {
                     const parts = [];
                     if (capsLockState.locked) parts.push(LockText.tr("Caps Lock is on", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Caps Lock is on"), Qt.uiLanguage, Qt.locale().name));
-                    if (root.notification) parts.push(root.notification);
+                    if (lockScreenUi.lockScreenHost.notification) parts.push(lockScreenUi.lockScreenHost.notification);
                     return parts.join(" \u2022 ");
                 }
                 onPasswordResult: password => { authenticator.respond(password) }
@@ -481,8 +499,8 @@ Item {
                     width: powerMenu.availableWidth
                     text: LockText.tr("Sleep", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Sleep"), Qt.uiLanguage, Qt.locale().name)
                     icon.name: "system-suspend"
-                    onTriggered: root.suspendToRam()
-                    actionAvailable: root.suspendToRamSupported
+                    onTriggered: lockScreenUi.lockScreenHost.suspendToRam()
+                    actionAvailable: lockScreenUi.lockScreenHost.suspendToRamSupported
                 }
                 FluentPowerMenuItem {
                     width: powerMenu.availableWidth
@@ -507,7 +525,7 @@ Item {
                 focusPolicy: Qt.TabFocus
                 icon.name: "system-shutdown-symbolic"
                 text: LockText.tr("Power", i18nd("plasma_shell_org.kde.windowsmodern.lockscreen", "Power"), Qt.uiLanguage, Qt.locale().name)
-                enabled: root.suspendToRamSupported || sessionManagement.canShutdown || sessionManagement.canReboot
+                enabled: lockScreenUi.lockScreenHost.suspendToRamSupported || sessionManagement.canShutdown || sessionManagement.canReboot
                 onClicked: powerMenu.opened ? powerMenu.close() : powerMenu.open()
             }
         }

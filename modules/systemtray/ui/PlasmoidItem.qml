@@ -28,7 +28,7 @@ AbstractItem {
     text: applet?.Plasmoid.title ?? ""
 
     itemId: applet?.Plasmoid.pluginName ?? ""
-    readonly property var tooltipSink: root.panelAudioSink
+    readonly property var tooltipSink: plasmoidContainer.trayRoot.panelAudioSink
     readonly property string groupTooltip: {
         switch (itemId) {
         case "org.kde.plasma.volume":
@@ -37,8 +37,8 @@ AbstractItem {
             if (tooltipSink.muted) return i18n("Volume: muted");
             return i18n("Volume: %1%", Math.round(tooltipSink.volume / 65536 * 100));
         case "org.kde.plasma.battery":
-            return root.panelBatteryPercentKnown
-                ? i18n("Battery status: %1% remaining", Math.round(root.panelBatteryPercent))
+            return plasmoidContainer.trayRoot.panelBatteryPercentKnown
+                ? i18n("Battery status: %1% remaining", Math.round(plasmoidContainer.trayRoot.panelBatteryPercent))
                 : i18n("Battery level unknown");
         default:
             // Preserve the native network name/status without the stock
@@ -50,8 +50,8 @@ AbstractItem {
     subText: groupedQuickSettings ? groupTooltip : applet?.toolTipSubText ?? ""
     mainItem: groupedQuickSettings ? null : applet?.toolTipItem ?? null
     textFormat: groupedQuickSettings ? Text.PlainText : (applet?.toolTipTextFormat ?? Text.AutoText)
-    active: groupedQuickSettings ? !systemTrayState.quickSettingsOpen && subText.length > 0
-        : inVisibleLayout || (!!applet && systemTrayState.activeApplet !== applet
+    active: groupedQuickSettings ? !plasmoidContainer.trayState.quickSettingsOpen && subText.length > 0
+        : inVisibleLayout || (!!applet && plasmoidContainer.trayState.activeApplet !== applet
             && (mainText.length > 0 || subText.length > 0))
 
     // FIXME: Use an input type agnostic way to activate whatever the primary
@@ -60,8 +60,8 @@ AbstractItem {
     // do anything with onActivated.
     onActivated: pos => {
         if (groupedQuickSettings) {
-            root.quickSettingsOrigin = plasmoidContainer;
-            systemTrayState.toggleHome(false);
+            plasmoidContainer.trayRoot.quickSettingsOrigin = plasmoidContainer;
+            plasmoidContainer.trayState.toggleHome(false);
             return;
         }
         if (applet) {
@@ -74,8 +74,8 @@ AbstractItem {
             return
         }
         if (groupedQuickSettings && mouse.button === Qt.LeftButton) {
-            root.quickSettingsOrigin = plasmoidContainer;
-            systemTrayState.toggleHome(false, groupWasOpen);
+            plasmoidContainer.trayRoot.quickSettingsOrigin = plasmoidContainer;
+            plasmoidContainer.trayState.toggleHome(false, groupWasOpen);
             return;
         }
         //forward click event to the applet
@@ -91,7 +91,7 @@ AbstractItem {
     onPressed: mouse => {
         if (!applet) return;
         if (groupedQuickSettings && mouse.button === Qt.LeftButton) {
-            groupWasOpen = systemTrayState.quickSettingsOpen;
+            groupWasOpen = plasmoidContainer.trayState.quickSettingsOpen;
             return;
         }
         // Only Plasmoids can show context menu on the mouse pressed event.
@@ -155,10 +155,11 @@ AbstractItem {
 
     //This is to make preloading effective, minimizes the scene changes
     function preloadFullRepresentationItem(fullRepresentationItem) {
-        if (fullRepresentationItem && fullRepresentationItem.parent === null) {
-            fullRepresentationItem.width = expandedRepresentation.width
-            fullRepresentationItem.height = expandedRepresentation.height
-            fullRepresentationItem.parent = preloadedStorage;
+        if (fullRepresentationItem && fullRepresentationItem.parent === null
+                && plasmoidContainer.popupContentItem && plasmoidContainer.preloadHost) {
+            fullRepresentationItem.width = plasmoidContainer.popupContentItem.width
+            fullRepresentationItem.height = plasmoidContainer.popupContentItem.height
+            fullRepresentationItem.parent = plasmoidContainer.preloadHost;
         }
     }
 
@@ -172,7 +173,7 @@ AbstractItem {
         width: parent.width
         height: parent.height
         active: (plasmoidContainer.groupedQuickSettings
-                && (plasmoidContainer.itemId !== "org.kde.plasma.battery" || root.panelHasBattery))
+                && (plasmoidContainer.itemId !== "org.kde.plasma.battery" || plasmoidContainer.trayRoot.panelHasBattery))
             || plasmoidContainer.itemId === "org.kde.plasma.clipboard"
             || plasmoidContainer.itemId === "org.kde.plasma.devicenotifier"
             || (plasmoidContainer.itemId === "org.kde.plasma.bluetooth"
@@ -247,7 +248,7 @@ AbstractItem {
     Component {
         id: volumeGlyph
         PanelStatusGlyph {
-            readonly property var sink: root.panelAudioSink
+            readonly property var sink: plasmoidContainer.trayRoot.panelAudioSink
             readonly property bool available: !!sink && sink.name !== "auto_null"
             readonly property bool muted: !available || sink.muted || sink.volume <= 0
             source: plasmoidContainer.panelGlyph(Funcs.volIconName(available ? sink.volume : 0, muted))
@@ -258,9 +259,9 @@ AbstractItem {
     Component {
         id: batteryGlyph
         Components.Battery {
-            glyphSize: root.batteryGlyphSize
-            showPercentage: root.showPanelBatteryPercentage
-            percentageWidth: root.batteryPercentageWidth
+            glyphSize: plasmoidContainer.trayRoot.batteryGlyphSize
+            showPercentage: plasmoidContainer.trayRoot.showPanelBatteryPercentage
+            percentageWidth: plasmoidContainer.trayRoot.batteryPercentageWidth
             labelPixelSize: 12
         }
     }

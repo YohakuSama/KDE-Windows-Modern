@@ -66,16 +66,28 @@ Both hosts retain their loaders so a missing optional keyboard module cannot
 break the rest of the shell.
 
 Source modules are ownership boundaries, not new installed applet IDs.
-No service or system backend is duplicated. All Apps and Search pages
-publish activation signals rather than closing their host directly;
-Search receives its mode explicitly. Tray expansion reconciliation uses
-an explicit state input and host-expansion signal. Both native
+No service or system backend is duplicated. Pinned, All Apps, Recommended
+and Search pages publish activation and context-menu signals rather than
+closing their host or reaching into outer shell IDs directly; Search
+receives its mode, app lookup callback, favorites model and sorted app
+model explicitly, and MenuRepresentation receives its anchor button and
+Kicker models from CompactRepresentation/main.qml. Tray expansion
+reconciliation uses an explicit state input and host-expansion signal,
+and tray subviews/delegates (`ExpandedRepresentation`, `HiddenItemsView`,
+`PlasmoidPopupsContainer`, `ExpanderArrow`, `CurrentItemHighLight`,
+`ItemLoader`, `AbstractItem`, `PlasmoidItem`, `BackgroundAppItem`) receive
+`trayRoot`, `trayState`, dialog and preload hosts explicitly. Both native
 panel scripts use the same taskbar/layout/panel-body.js; the wrappers
 preserve their distinct single-panel/all-screen behaviors.
-Icon Tasks supplies live per-instance geometry and configuration inputs to
-LayoutMetrics.js; the grid, task delegates and group dialog read those
-inputs without resolving foreign IDs. The drag and audio components
-receive their task manager or task items explicitly. Start, Search, Task
+Icon Tasks supplies live per-instance geometry, desktop/activity, MPRIS,
+drag, WindowView and tooltip delegate inputs through `tasksRoot` and
+`hostDelegate`; `TaskList`, `Task`, `GroupDialog`, `ContextMenu`,
+`ToolTipDelegate`, `ToolTipInstance`, `ToolTipWindowMouseArea`,
+`MouseHandler`, `AudioStream`, `PulseAudio`, `PlayerController` and lazy
+task/thumbnail overlays (`GroupExpanderOverlay`, `TaskBadgeOverlay`,
+`TaskProgressOverlay`, `PipeWireThumbnail`) read those explicit inputs
+without resolving foreign IDs. Lock screen and greeter subviews likewise
+communicate through explicit host properties, methods and signals. Start, Search, Task
 View and Icon Tasks use core/design/taskbarGeometry.js for their shared
 logical icon canvas. The source map materializes it into each independent
 applet; Icon Tasks also registers it in its native QML resources.

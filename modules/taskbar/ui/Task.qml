@@ -52,6 +52,7 @@ FloatingToolTipArea {
     required property var model
     required property int index
     required property /*main.qml*/ Item tasksRoot
+    property TaskList hostTaskList: null
     readonly property QtObject layoutInputs: tasksRoot.layoutInputs
     readonly property var tasksModel: tasksRoot.tasksModel
     property int groupParentIndex: -1
@@ -93,7 +94,7 @@ FloatingToolTipArea {
     location: Plasmoid.location
     // Keep an independent gap above the task hit target, in logical px.
     margin: 12
-    mainItem: !Plasmoid.configuration.showToolTips || !hasWindowPreview ? pinnedAppToolTipDelegate : openWindowToolTipDelegate
+    mainItem: !Plasmoid.configuration.showToolTips || !hasWindowPreview ? tasksRoot.pinnedAppToolTipDelegate : tasksRoot.openWindowToolTipDelegate
     onAboutToShow: updateMainItemBindings()
 
     onXChanged: {
@@ -130,10 +131,13 @@ FloatingToolTipArea {
         property real x
         property real y
         onRunningChanged: {
+            if (!task.hostTaskList) {
+                return;
+            }
             if (running) {
-                ++task.parent.animationsRunning;
+                ++task.hostTaskList.animationsRunning;
             } else {
-                --task.parent.animationsRunning;
+                --task.hostTaskList.animationsRunning;
             }
         }
         ParallelAnimation {
@@ -182,7 +186,7 @@ FloatingToolTipArea {
                 return `${i18nc("@info:usagetip %1 task name", "Show Task tooltip for %1", model.display)}; ${smartLauncherDescription}`;
             }
             case 2: {
-                if (effectWatcher.registered) {
+                if (task.tasksRoot.windowViewAvailable) {
                     return `${i18nc("@info:usagetip %1 task name", "Show windows side by side for %1", model.display)}; ${smartLauncherDescription}`;
                 }
                 // fallthrough
@@ -235,7 +239,7 @@ FloatingToolTipArea {
 
     onIsWindowChanged: {
         if (model.IsWindow) {
-            taskInitComponent.createObject(task);
+            task.tasksRoot.scheduleGeometryPublish(task);
             updateAudioStreams({delay: false});
         }
     }
@@ -289,7 +293,7 @@ FloatingToolTipArea {
     onAudioIndicatorsEnabledChanged: task.hasAudioStreamChanged()
 
     Keys.onMenuPressed: event => task.scheduleContextMenu(event.modifiers)
-    Keys.onReturnPressed: event => TaskManagerApplet.TaskTools.activateTask(modelIndex(), model, event.modifiers, task, Plasmoid, tasksRoot, effectWatcher.registered)
+    Keys.onReturnPressed: event => TaskManagerApplet.TaskTools.activateTask(modelIndex(), model, event.modifiers, task, Plasmoid, tasksRoot, tasksRoot.windowViewAvailable)
     Keys.onEnterPressed: event => Keys.returnPressed(event);
     Keys.onSpacePressed: event => Keys.returnPressed(event);
     Keys.onUpPressed: event => Keys.leftPressed(event)
@@ -458,7 +462,7 @@ FloatingToolTipArea {
             if (task.active) {
                 task.hideToolTip();
             }
-            TaskManagerApplet.TaskTools.activateTask(modelIndex(), model, point.modifiers, task, Plasmoid, tasksRoot, effectWatcher.registered);
+            TaskManagerApplet.TaskTools.activateTask(modelIndex(), model, point.modifiers, task, Plasmoid, tasksRoot, tasksRoot.windowViewAvailable);
         }
     }
 
@@ -476,11 +480,11 @@ FloatingToolTipArea {
                     tasksModel.requestToggleGrouping(modelIndex());
                 } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.Backend.BringToCurrentDesktop) {
                     TaskManagerApplet.TaskTools.foreachChildTask((childIndex) => {
-                        tasksModel.requestVirtualDesktops(childIndex, [virtualDesktopInfo.currentDesktopByScreenGeometry(tasksModel.data(childIndex, TaskManager.AbstractTasksModel.ScreenGeometry))]);
+                        tasksModel.requestVirtualDesktops(childIndex, [task.tasksRoot.virtualDesktopInfo.currentDesktopByScreenGeometry(tasksModel.data(childIndex, TaskManager.AbstractTasksModel.ScreenGeometry))]);
                     }, modelIndex(), tasksModel);
                 }
             } else if (button === Qt.BackButton || button === Qt.ForwardButton) {
-                const playerData = mpris2Source.playerForLauncherUrl(task.model.LauncherUrlWithoutIcon, task.model.AppPid);
+                const playerData = task.tasksRoot.mpris2Source.playerForLauncherUrl(task.model.LauncherUrlWithoutIcon, task.model.AppPid);
                 if (playerData) {
                     if (button === Qt.BackButton) {
                         playerData.Previous();
@@ -539,19 +543,15 @@ FloatingToolTipArea {
                             return;
                         }
                         setRequestedInhibitDnd(true);
-                        tasksRoot.dragSource = task;
-                        dragHelper.Drag.imageSource = result.url;
-                        dragHelper.Drag.mimeData = {
+                        task.tasksRoot.startTaskDrag(task, result.url, {
                             "text/x-orgkdeplasmataskmanager_taskurl": task.tasksRoot.backend.tryDecodeApplicationsUrl(model.LauncherUrlWithoutIcon).toString(),
                             [model.MimeType]: model.MimeData,
                             "application/x-orgkdeplasmataskmanager_taskbuttonitem": model.MimeData,
-                        };
-                        dragHelper.Drag.active = dragHandler.active;
+                        });
                     });
                 } else {
                     setRequestedInhibitDnd(false);
-                    dragHelper.Drag.active = false;
-                    dragHelper.Drag.imageSource = "";
+                    task.tasksRoot.stopTaskDrag();
                 }
             }
         }
@@ -562,9 +562,18 @@ FloatingToolTipArea {
 
         anchors.fill: frame
         asynchronous: true
-        active: task.smartLauncherItem && task.smartLauncherItem.progressVisible
+        active: Boolean(task.smartLauncherItem && task.smartLauncherItem.progressVisible)
 
-        source: "TaskProgressOverlay.qml"
+        function syncSource(): void {
+            if (active && item === null && status !== Loader.Loading) {
+                setSource("TaskProgressOverlay.qml", {
+                    smartLauncherItem: Qt.binding(() => task.smartLauncherItem),
+                });
+            }
+        }
+
+        onActiveChanged: syncSource()
+        Component.onCompleted: syncSource()
     }
 
     Loader {
@@ -583,15 +592,26 @@ FloatingToolTipArea {
 
         width: panelIconOnly ? panelIconSize
             : task.inPopup ? Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium)
-            : Math.min(task.parent?.minimumWidth ?? 0, task.height)
+            : Math.min(task.hostTaskList?.minimumWidth ?? 0, task.height)
         height: panelIconOnly || task.inPopup ? width
             : Math.max(0, parent.height - adjustMargin(false, parent.height, task.layoutInputs.frameTop)
                  - adjustMargin(false, parent.height, task.layoutInputs.frameBottom))
 
         asynchronous: true
         active: height >= Kirigami.Units.iconSizes.small
-                && task.smartLauncherItem && task.smartLauncherItem.countVisible
-        source: "TaskBadgeOverlay.qml"
+                && Boolean(task.smartLauncherItem && task.smartLauncherItem.countVisible)
+
+        function syncSource(): void {
+            if (active && item === null && status !== Loader.Loading) {
+                setSource("TaskBadgeOverlay.qml", {
+                    taskItem: task,
+                    iconItem: icon,
+                });
+            }
+        }
+
+        onActiveChanged: syncSource()
+        Component.onCompleted: syncSource()
 
         function adjustMargin(isVertical: bool, size: real, margin: real): real {
             if (size <= 0) {
@@ -628,7 +648,7 @@ FloatingToolTipArea {
             // the text label margin, which derives from the icon width.
             State {
                 name: "standalone"
-                when: !label.visible && task.parent
+                when: !label.visible && task.hostTaskList !== null
 
                 AnchorChanges {
                     target: iconBox
@@ -639,7 +659,7 @@ FloatingToolTipArea {
                 PropertyChanges {
                     iconBox.anchors.leftMargin: 0
                     iconBox.width: iconBox.panelIconOnly ? iconBox.panelIconSize
-                        : Math.max(0, Math.min(task.parent.minimumWidth ?? 0, tasksRoot.height)
+                        : Math.max(0, Math.min(task.hostTaskList?.minimumWidth ?? 0, tasksRoot.height)
                         - iconBox.adjustMargin(true, task.width, task.layoutInputs.frameLeft)
                         - iconBox.adjustMargin(true, task.width, task.layoutInputs.frameRight))
                 }
@@ -651,7 +671,7 @@ FloatingToolTipArea {
             width: Math.min(parent.width, parent.height)
             height: width
             active: task.model.IsStartup
-            sourceComponent: busyIndicator
+            sourceComponent: task.tasksRoot.busyIndicatorComponent
         }
     }
 
@@ -730,19 +750,22 @@ FloatingToolTipArea {
     Component.onCompleted: {
         if (!inPopup && model.IsWindow) {
             const component = Qt.createComponent("GroupExpanderOverlay.qml");
-            component.createObject(task);
+            component.createObject(task, {
+                taskItem: task,
+                taskIconBox: iconBox,
+            });
             component.destroy();
             updateAudioStreams({delay: false});
         }
 
         if (!inPopup && !model.IsWindow) {
-            taskInitComponent.createObject(task);
+            task.tasksRoot.scheduleGeometryPublish(task);
         }
         completed = true;
     }
     Component.onDestruction: {
-        if (moveAnim.running) {
-            (task.parent as TaskList).animationsRunning -= 1;
+        if (moveAnim.running && task.hostTaskList) {
+            task.hostTaskList.animationsRunning -= 1;
         }
     }
 }

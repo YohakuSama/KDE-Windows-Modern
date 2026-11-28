@@ -5,6 +5,8 @@
     SPDX-License-Identifier: LGPL-2.0-or-later
 */
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
@@ -18,12 +20,14 @@ import "components" as Components
 QQC2.StackView {
     id: mainStack
     focus: true
+    required property Item trayRoot
+    required property SystemTrayState trayState
     property color shellAccent: Kirigami.Theme.highlightColor
 
     Layout.minimumWidth: Kirigami.Units.gridUnit * 12
     Layout.minimumHeight: Kirigami.Units.gridUnit * 12
 
-    readonly property Item activeApplet: systemTrayState.activeApplet
+    readonly property Item activeApplet: trayState.activeApplet
 
     // Whether the active applet is one we render a themed flyout for.
     readonly property bool themedActive: !!(themedPages && themedPages[flyoutRouter.flyoutNameForApplet(activeApplet)])
@@ -124,7 +128,7 @@ QQC2.StackView {
     }
 
     onCurrentItemChanged: {
-        if (currentItem !== null && root.expanded) {
+        if (currentItem !== null && mainStack.trayRoot.expanded) {
             currentItem.forceActiveFocus()
         }
     }
@@ -132,8 +136,8 @@ QQC2.StackView {
     Connections {
         target: Plasmoid
         function onAppletRemoved(applet) {
-            if (applet === systemTrayState.activeApplet) {
-                systemTrayState.setActiveApplet(null)
+            if (applet === mainStack.trayState.activeApplet) {
+                mainStack.trayState.setActiveApplet(null)
                 mainStack.clear(QQC2.StackView.Immediate)
             }
         }
@@ -154,7 +158,7 @@ QQC2.StackView {
         id: bluetoothPageComp
         Components.BluetoothPage {
             shellAccent: mainStack.shellAccent
-            onBack: systemTrayState.setActiveApplet(null)
+            onBack: mainStack.trayState.setActiveApplet(null)
         }
     }
 
@@ -162,43 +166,43 @@ QQC2.StackView {
         id: networkPageComp
         Components.NetworkPage {
             shellAccent: mainStack.shellAccent
-            onBack: systemTrayState.setActiveApplet(null)
+            onBack: mainStack.trayState.setActiveApplet(null)
         }
     }
     Component {
         id: volumePageComp
         Components.VolumePage {
             shellAccent: mainStack.shellAccent
-            onBack: systemTrayState.setActiveApplet(null)
+            onBack: mainStack.trayState.setActiveApplet(null)
         }
     }
     Component {
         id: batteryPageComp
         Components.BatteryPage {
             shellAccent: mainStack.shellAccent
-            onBack: systemTrayState.setActiveApplet(null)
+            onBack: mainStack.trayState.setActiveApplet(null)
         }
     }
     Component {
         id: brightnessPageComp
         Components.BrightnessPage {
             shellAccent: mainStack.shellAccent
-            onBack: systemTrayState.setActiveApplet(null)
+            onBack: mainStack.trayState.setActiveApplet(null)
         }
     }
     Component {
         id: clipboardPageComp
         Components.ClipboardPage {
-            onBack: systemTrayState.setActiveApplet(null)
-            onItemSelected: systemTrayState.expanded = false
-            onCloseRequested: systemTrayState.expanded = false
+            onBack: mainStack.trayState.setActiveApplet(null)
+            onItemSelected: mainStack.trayState.expanded = false
+            onCloseRequested: mainStack.trayState.expanded = false
         }
     }
     Component {
         id: devicesPageComp
         Components.DevicesPage {
             nativeApplet: mainStack.activeApplet
-            onBack: systemTrayState.setActiveApplet(null)
+            onBack: mainStack.trayState.setActiveApplet(null)
         }
     }
 
@@ -206,7 +210,7 @@ QQC2.StackView {
         id: mediaControllerPageComp
         Components.MediaControllerPage {
             shellAccent: mainStack.shellAccent
-            onBack: systemTrayState.setActiveApplet(null)
+            onBack: mainStack.trayState.setActiveApplet(null)
         }
     }
 }

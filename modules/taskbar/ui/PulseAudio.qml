@@ -15,6 +15,7 @@ QtObject {
 
     signal streamsChanged()
 
+    property var backend: null
     readonly property /*PlasmaPa.GlobalConfig*/ QtObject globalConfig: PlasmaPa.GlobalConfig { }
 
     // It's a JS object so we can do key lookup and don't need to take care of filtering duplicates.
@@ -70,7 +71,7 @@ QtObject {
                 const stream = instantiator.objectAt(i) as StreamDelegate;
 
                 if (stream.parentPid === -1) {
-                    stream.parentPid = backend.parentPid(stream.pid);
+                    stream.parentPid = pulseAudio.backend ? pulseAudio.backend.parentPid(stream.pid) : 0;
                 }
 
                 if (stream.parentPid === pid) {

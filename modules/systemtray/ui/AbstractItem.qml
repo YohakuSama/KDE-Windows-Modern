@@ -24,6 +24,13 @@ PlasmaCore.ToolTipArea {
     required property var model
     required property int status
     required property int effectiveStatus
+    required property Item trayRoot
+    required property SystemTrayState trayState
+    property Item preloadHost: null
+    property Item popupContentItem: null
+    property GridView overflowGridView: null
+    property int leadingSystemInset: 0
+    property int trailingSystemInset: 0
 
     required property string itemId
     /*required*/ property alias text: label.text
@@ -34,7 +41,7 @@ PlasmaCore.ToolTipArea {
     required textFormat
 
     readonly property alias iconContainer: iconContainer
-    readonly property int coreNativeRenderSize: root.coreNativeRenderSize
+    readonly property int coreNativeRenderSize: trayRoot.coreNativeRenderSize
     readonly property bool inHiddenLayout: effectiveStatus === PlasmaCore.Types.PassiveStatus
     readonly property bool inVisibleLayout: effectiveStatus === PlasmaCore.Types.ActiveStatus
 
@@ -48,8 +55,8 @@ PlasmaCore.ToolTipArea {
     HoverHandler {
         enabled: abstractItem.groupedQuickSettings
         onHoveredChanged: {
-            if (hovered) root.hoveredQuickSetting = abstractItem;
-            else if (root.hoveredQuickSetting === abstractItem) root.hoveredQuickSetting = null;
+            if (hovered) abstractItem.trayRoot.hoveredQuickSetting = abstractItem;
+            else if (abstractItem.trayRoot.hoveredQuickSetting === abstractItem) abstractItem.trayRoot.hoveredQuickSetting = null;
         }
     }
 
@@ -92,12 +99,14 @@ PlasmaCore.ToolTipArea {
         // onEntered will change the index while the items are scrolling,
         // making it harder to scroll.
         onPositionChanged: if (abstractItem.inHiddenLayout) {
-            root.hiddenLayout.currentIndex = abstractItem.index
+            const view = abstractItem.overflowGridView ?? abstractItem.trayRoot.hiddenLayout;
+            if (view) view.currentIndex = abstractItem.index
         }
         onClicked: mouse => { abstractItem.clicked(mouse) }
         onPressed: mouse => {
             if (abstractItem.inHiddenLayout) {
-                root.hiddenLayout.currentIndex = abstractItem.index
+                const view = abstractItem.overflowGridView ?? abstractItem.trayRoot.hiddenLayout;
+                if (view) view.currentIndex = abstractItem.index
             }
             abstractItem.hideImmediately()
             abstractItem.pressed(mouse)
@@ -115,7 +124,8 @@ PlasmaCore.ToolTipArea {
             // the applet's own icon underneath (which does), so it is taken
             // here and scrolls the grid instead.
             if (abstractItem.inHiddenLayout) {
-                const view = root.hiddenLayout;
+                const view = abstractItem.overflowGridView ?? abstractItem.trayRoot.hiddenLayout;
+                if (!view) return;
                 const dy = wheel.pixelDelta.y !== 0 ? wheel.pixelDelta.y
                                                     : wheel.angleDelta.y / 120 * view.cellHeight / 2;
                 const bottom = view.originY + view.contentHeight - view.height;
@@ -153,17 +163,17 @@ PlasmaCore.ToolTipArea {
         anchors.fill: abstractItem
         // Overflow is icon-only; names remain in tooltips and accessibility.
         readonly property int leadingInset: abstractItem.groupedQuickSettings
-            ? (abstractItem.parent?.leadingSystemInset ?? 0) : 0
+            ? abstractItem.leadingSystemInset : 0
         readonly property int trailingInset: abstractItem.groupedQuickSettings
-            ? (abstractItem.parent?.trailingSystemInset ?? 0) : 0
+            ? abstractItem.trailingSystemInset : 0
         anchors.leftMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset
-            : !root.vertical ? leadingInset : 0
+            : !abstractItem.trayRoot.vertical ? leadingInset : 0
         anchors.rightMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset
-            : !root.vertical ? trailingInset : 0
+            : !abstractItem.trayRoot.vertical ? trailingInset : 0
         anchors.topMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset
-            : root.vertical ? (root.reverseLayout ? trailingInset : leadingInset) : 0
+            : abstractItem.trayRoot.vertical ? (abstractItem.trayRoot.reverseLayout ? trailingInset : leadingInset) : 0
         anchors.bottomMargin: abstractItem.inHiddenLayout ? abstractItem.overflowInset
-            : root.vertical ? (root.reverseLayout ? leadingInset : trailingInset) : 0
+            : abstractItem.trayRoot.vertical ? (abstractItem.trayRoot.reverseLayout ? leadingInset : trailingInset) : 0
         spacing: 0
 
         Item {
@@ -210,7 +220,7 @@ PlasmaCore.ToolTipArea {
             property alias container: abstractItem
             property alias inVisibleLayout: abstractItem.inVisibleLayout
             readonly property int size: abstractItem.inVisibleLayout
-                ? (abstractItem.groupedQuickSettings ? root.coreItemSize : root.itemSize)
+                ? (abstractItem.groupedQuickSettings ? abstractItem.trayRoot.coreItemSize : abstractItem.trayRoot.itemSize)
                 : Math.max(1, Math.min(
                 Math.round(24 * Plasmoid.configuration.scale / 100),
                 Math.floor(Math.min(abstractItem.width, abstractItem.height) - 2 * abstractItem.overflowInset)))
@@ -221,10 +231,10 @@ PlasmaCore.ToolTipArea {
             // Text-based keyboard indicators retain the cell width.
             readonly property bool languageIndicator: abstractItem.inVisibleLayout
                 && abstractItem.itemId === "org.kde.plasma.keyboardlayout"
-            implicitWidth: languageIndicator && !root.vertical ? abstractItem.width
+            implicitWidth: languageIndicator && !abstractItem.trayRoot.vertical ? abstractItem.width
                 : abstractItem.groupedQuickSettings && abstractItem.itemId === "org.kde.plasma.battery"
-                    ? root.batteryContentWidth : size
-            implicitHeight: languageIndicator && root.vertical ? abstractItem.height : size
+                    ? abstractItem.trayRoot.batteryContentWidth : size
+            implicitHeight: languageIndicator && abstractItem.trayRoot.vertical ? abstractItem.height : size
             Layout.preferredWidth: implicitWidth
             Layout.preferredHeight: implicitHeight
             Layout.maximumWidth: implicitWidth

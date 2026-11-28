@@ -28,7 +28,11 @@ PlasmoidItem {
 
     Component {
         id: compactRep
-        CompactRepresentation {}
+        CompactRepresentation {
+            launcherApplet: kicker
+            launcherRootModel: rootModel
+            launcherFavorites: kicker.globalFavorites
+        }
     }
 
     // The native applet owns the actions for its entire lifetime. The

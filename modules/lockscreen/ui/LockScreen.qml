@@ -31,5 +31,6 @@ Item {
 
     LockScreenUi {
         anchors.fill: parent
+        lockScreenHost: root
     }
 }

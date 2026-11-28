@@ -30,6 +30,9 @@ Item {
     property alias resultsView: resultsView
     property int scrollbarEdgeOffset: 0
     property bool searching: false
+    property var appLookup: null
+    property var favoritesModel: null
+    property var appsModel: null
     HoverHandler { id: searchViewportHover }
 
     // Emitted by result delegates when the user right-clicks.  The shell
@@ -441,9 +444,9 @@ Item {
 
                 // Only a stable desktop-file URL may resolve an app's actions.
                 // Localized names can refer to several unrelated results.
-                var entry = rootItem.lookupAppByUrls(resultDelegate.model.urls)
-                var favModel = (typeof kicker !== "undefined" && kicker.globalFavorites)
-                               ? kicker.globalFavorites : null
+                var entry = typeof searchPage.appLookup === "function"
+                    ? searchPage.appLookup(resultDelegate.model.urls) : null
+                var favModel = searchPage.favoritesModel
 
                 var ctx = {
                     model: resultsView.model,
@@ -456,7 +459,7 @@ Item {
                     // Resolved: route favorite/model actions through the
                     // all-apps model, on the app's real row, so
                     // triggerAction() works for every action type.
-                    ctx.resolvedModel = sortedAppsModel
+                    ctx.resolvedModel = searchPage.appsModel
                     ctx.resolvedIndex = entry.row
 
                     var appActs = Tools.buildAppActions(i18n, favModel,

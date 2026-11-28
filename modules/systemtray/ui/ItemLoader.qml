@@ -9,9 +9,16 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 Loader {
+    id: itemLoader
+
     required property int index
     required property int effectiveStatus
     required property var model
+    required property Item trayRoot
+    required property SystemTrayState trayState
+    property Item preloadHost: null
+    property Item popupContentItem: null
+    property GridView overflowGridView: null
     // Logical leading padding belongs to the hit target, not an icon's ink.
     property int leadingSystemInset: 0
     property int trailingSystemInset: 0
@@ -35,10 +42,17 @@ Loader {
     // See https://bugreports.qt.io/browse/QTBUG-125070
     on__UrlChanged: {
         setSource(__url, {
-            index: Qt.binding(() => index),
-            status: Qt.binding(() => model.status),
-            effectiveStatus: Qt.binding(() => effectiveStatus),
-            model: Qt.binding(() => model),
+            index: Qt.binding(() => itemLoader.index),
+            status: Qt.binding(() => itemLoader.model.status),
+            effectiveStatus: Qt.binding(() => itemLoader.effectiveStatus),
+            model: Qt.binding(() => itemLoader.model),
+            trayRoot: Qt.binding(() => itemLoader.trayRoot),
+            trayState: Qt.binding(() => itemLoader.trayState),
+            preloadHost: Qt.binding(() => itemLoader.preloadHost),
+            popupContentItem: Qt.binding(() => itemLoader.popupContentItem),
+            overflowGridView: Qt.binding(() => itemLoader.overflowGridView),
+            leadingSystemInset: Qt.binding(() => itemLoader.leadingSystemInset),
+            trailingSystemInset: Qt.binding(() => itemLoader.trailingSystemInset),
         });
     }
 }

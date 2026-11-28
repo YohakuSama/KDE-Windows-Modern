@@ -195,6 +195,10 @@ Item {
         scrollbarEdgeOffset: allAppsPage.scrollbarEdgeOffset
         header: !allAppsPage.categoryMode ? allAppsPage.homeHeader : null
         onApplicationActivated: row => allAppsPage.activateFlatRow(row)
+        onAppContextMenuRequested: (entry, x, y) => {
+            const pos = alphabeticalView.mapToItem(allAppsPage, x, y);
+            allAppsPage.appContextMenuRequested(entry, pos.x, pos.y);
+        }
         onNavigateToHeader: allAppsPage.keyNavUpFromList()
     }
 
@@ -581,6 +585,7 @@ Item {
                         }
                     }
                     delegate: ListItemDelegate {
+                        id: categoryEntry
                         required property var modelData
                         suppliedView: categoryActions
                         appData: modelData
@@ -590,6 +595,10 @@ Item {
                         gridMode: true
                         iconSize: Metrics.gridAppIconSize
                         showInstallBadge: true
+                        contextHandler: (data, row, x, y) => {
+                            const pos = categoryEntry.mapToItem(allAppsPage, x, y);
+                            allAppsPage.appContextMenuRequested(data, pos.x, pos.y);
+                        }
                     }
                     PlasmaComponents3.ScrollBar.vertical: StartScrollBar { scrolling: categoryGrid.moving }
                     StartWheelHandler {

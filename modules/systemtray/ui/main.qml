@@ -224,6 +224,8 @@ ContainmentItem {
         CurrentItemHighLight {
             location: Plasmoid.location
             parent: root
+            trayRoot: root
+            trayState: systemTrayState
         }
 
         DnD.DropArea {
@@ -366,6 +368,11 @@ ContainmentItem {
                     delegate: ItemLoader {
                         id: delegate
 
+                        trayRoot: root
+                        trayState: systemTrayState
+                        preloadHost: preloadedStorage
+                        popupContentItem: expandedRepresentation
+
                         readonly property string loadedItemId: item?.itemId || model.itemId || ""
                         readonly property bool systemGroup: TrayMetrics.isQuickSettings(loadedItemId)
                         readonly property bool batteryCell: loadedItemId === "org.kde.plasma.battery"
@@ -418,6 +425,9 @@ ContainmentItem {
 
             ExpanderArrow {
                 id: expander
+
+                trayState: systemTrayState
+                onResetHiddenSelectionRequested: root.hiddenLayout.currentIndex = -1
 
                 Layout.row: root.vertical && root.reverseLayout ? 1 : 0
                 Layout.column: 0
@@ -556,6 +566,10 @@ ContainmentItem {
             }
             mainItem: ExpandedRepresentation {
                 id: expandedRepresentation
+                trayRoot: root
+                trayState: systemTrayState
+                popupDialog: dialog
+                preloadHost: preloadedStorage
                 width: implicitWidth
                 height: implicitHeight
 

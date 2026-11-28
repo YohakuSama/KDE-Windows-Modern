@@ -4,6 +4,8 @@
     SPDX-License-Identifier: LGPL-2.0-or-later
 */
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import org.kde.pipewire as PipeWire
 import org.kde.taskmanager as TaskManager
@@ -11,6 +13,7 @@ import org.kde.taskmanager as TaskManager
 PipeWire.PipeWireSourceItem {
     id: pipeWireSourceItem
 
+    required property var winId
     readonly property alias hasThumbnail: pipeWireSourceItem.ready
 
     anchors.fill: parent
@@ -18,6 +21,6 @@ PipeWire.PipeWireSourceItem {
 
     TaskManager.ScreencastingRequest {
         id: waylandItem
-        uuid: thumbnailSourceItem.winId
+        uuid: pipeWireSourceItem.winId
     }
 }

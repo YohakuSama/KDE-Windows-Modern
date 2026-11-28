@@ -4,6 +4,8 @@
     SPDX-License-Identifier: LGPL-2.0-or-later
 */
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 
 import org.kde.kirigami as Kirigami
@@ -13,6 +15,8 @@ import org.kde.plasma.core as PlasmaCore
 KSvg.FrameSvgItem {
     id: currentItemHighLight
 
+    required property Item trayRoot
+    required property SystemTrayState trayState
     property int location
 
     property bool animationEnabled: true
@@ -55,7 +59,7 @@ KSvg.FrameSvgItem {
 
     // update when System Tray is expanded - applet activated or hidden icons shown
     Connections {
-        target: systemTrayState
+        target: currentItemHighLight.trayState
 
         function onActiveAppletChanged() {
             Qt.callLater(currentItemHighLight.updateHighlightedItem);
@@ -68,23 +72,23 @@ KSvg.FrameSvgItem {
 
     // update when applet changes parent (e.g. moves from active to hidden icons)
     Connections {
-        target: systemTrayState.activeApplet
+        target: currentItemHighLight.trayState.activeApplet
 
         function onParentChanged() {
-            Qt.callLater(updateHighlightedItem);
+            Qt.callLater(currentItemHighLight.updateHighlightedItem);
         }
     }
 
     // update when System Tray size changes
     Connections {
-        target: parent
+        target: currentItemHighLight.trayRoot
 
         function onWidthChanged() {
-            Qt.callLater(updateHighlightedItem);
+            Qt.callLater(currentItemHighLight.updateHighlightedItem);
         }
 
         function onHeightChanged() {
-            Qt.callLater(updateHighlightedItem);
+            Qt.callLater(currentItemHighLight.updateHighlightedItem);
         }
     }
 
@@ -98,10 +102,10 @@ KSvg.FrameSvgItem {
     }
 
     function updateHighlightedItem() {
-        const applet = systemTrayState.activeApplet;
+        const applet = currentItemHighLight.trayState.activeApplet;
         // Home surfaces have their own button highlights; never highlight
         // the entire tray when Quick Settings or overflow is open.
-        if (systemTrayState.expanded && applet && applet.parent && applet.parent.inVisibleLayout) {
+        if (currentItemHighLight.trayState.expanded && applet && applet.parent && applet.parent.inVisibleLayout) {
             changeHighlightedItem(applet.parent.container, /*forceEdgeHighlight*/false);
             currentItemHighLight.opacity = 1;
         } else {
@@ -117,8 +121,8 @@ KSvg.FrameSvgItem {
             animationEnabled = false;
         }
 
-        const p = parent.mapFromItem(nextItem, 0, 0);
-        if (containerMargins && (parent.oneRowOrColumn || forceEdgeHighlight)) {
+        const p = currentItemHighLight.trayRoot.mapFromItem(nextItem, 0, 0);
+        if (containerMargins && (currentItemHighLight.trayRoot.oneRowOrColumn || forceEdgeHighlight)) {
             x = p.x - containerMargins('left', /*returnAllMargins*/true);
             y = p.y - containerMargins('top', /*returnAllMargins*/true);
             width = nextItem.width + containerMargins('left', /*returnAllMargins*/true) + containerMargins('right', /*returnAllMargins*/true);
@@ -137,7 +141,7 @@ KSvg.FrameSvgItem {
     Behavior on opacity {
         NumberAnimation {
             duration: Kirigami.Units.shortDuration
-            easing.type: systemTrayState.expanded ? Easing.OutCubic : Easing.InCubic
+            easing.type: currentItemHighLight.trayState.expanded ? Easing.OutCubic : Easing.InCubic
         }
     }
     Behavior on x {

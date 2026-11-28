@@ -4,6 +4,8 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.graphicaleffects as KGraphicalEffects
@@ -12,10 +14,13 @@ import org.kde.plasma.plasmoid
 Item {
     id: root
 
+    required property Item taskItem
+    required property Item iconItem
+
     readonly property bool verySmallIcon:
-        icon.width < Kirigami.Units.iconSizes.smallMedium ||
-        icon.height < Kirigami.Units.iconSizes.smallMedium
-    readonly property bool shiftBadgeDown: task.audioStreamIcon !== null
+        root.iconItem.width < Kirigami.Units.iconSizes.smallMedium ||
+        root.iconItem.height < Kirigami.Units.iconSizes.smallMedium
+    readonly property bool shiftBadgeDown: root.taskItem.audioStreamIcon !== null
     readonly property int badgeMaskY: shiftBadgeDown ? root.height - badgeRect.height : 0
     readonly property int offset: Math.round(Math.max(Kirigami.Units.smallSpacing / 2, badgeMask.width / 32))
     readonly property int extraHorizontalOffset: verySmallIcon && badgeRect.text.length > 2 ? -2 : 0
@@ -26,7 +31,7 @@ Item {
     readonly property real smallestFractionOfSmallFontSize: 0.75
     // If the actual height is less, scale the font down. If it's greater, scale it up.
     readonly property int iconSizeForDefaultFontSize: Kirigami.Units.iconSizes.large
-    readonly property real badgeScaleFactor: Math.max(smallestFractionOfSmallFontSize, icon.height / iconSizeForDefaultFontSize)
+    readonly property real badgeScaleFactor: Math.max(smallestFractionOfSmallFontSize, root.iconItem.height / iconSizeForDefaultFontSize)
 
     Item {
         id: badgeMask
@@ -42,7 +47,7 @@ Item {
                 NumberAnimation { duration: Kirigami.Units.longDuration }
             }
 
-            visible: task.smartLauncherItem.countVisible
+            visible: Boolean(root.taskItem.smartLauncherItem?.countVisible)
             width: badgeRect.width + root.offset * 2
             height: badgeRect.height + root.offset * 2
             radius: height
@@ -56,7 +61,7 @@ Item {
 
     ShaderEffectSource {
         id: iconShaderSource
-        sourceItem: icon
+        sourceItem: root.iconItem
         hideSource: GraphicsInfo.api !== GraphicsInfo.Software
     }
 
@@ -89,7 +94,7 @@ Item {
             NumberAnimation { duration: Kirigami.Units.longDuration }
         }
 
-        visible: task.smartLauncherItem.countVisible
+        visible: Boolean(root.taskItem.smartLauncherItem?.countVisible)
 
         padding: Math.floor(root.badgeScaleFactor * 2)
 
@@ -97,7 +102,7 @@ Item {
         font.weight: Font.DemiBold
 
         text: {
-            let unreadCount = task.smartLauncherItem.count;
+            let unreadCount = root.taskItem.smartLauncherItem?.count ?? 0;
             return unreadCount > 99 ? "99+" : unreadCount.toLocaleString(Qt.locale(), 'f', 0);
         }
     }

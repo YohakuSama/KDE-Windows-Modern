@@ -24,6 +24,13 @@ import org.kde.plasma.plasmoid
 Loader {
     id: toolTipDelegate
 
+    required property Item tasksRoot
+    readonly property var tasksModel: tasksRoot.tasksModel
+    readonly property var backend: tasksRoot.backend
+    readonly property var virtualDesktopInfo: tasksRoot.virtualDesktopInfo
+    readonly property var activityInfo: tasksRoot.activityInfo
+    readonly property var mpris2Source: tasksRoot.mpris2Source
+
     property Task parentTask
     property /*QModelIndex*/var rootIndex
 
@@ -122,6 +129,7 @@ Loader {
         id: singleTooltip
 
         ToolTipInstance {
+            hostDelegate: toolTipDelegate
             index: 0 // TODO: maybe set to -1, because that's what the component checks against?
             submodelIndex: toolTipDelegate.rootIndex
             appPid: toolTipDelegate.pidParent
@@ -207,8 +215,8 @@ Loader {
                     return found
                 }
 
-                Component.onCompleted: if (parentTask.model.IsActive) {
-                    groupToolTipListView.positionViewAtIndex(tasksModel.activeTask.row, ListView.Center)
+                Component.onCompleted: if (toolTipDelegate.parentTask?.model.IsActive) {
+                    groupToolTipListView.positionViewAtIndex(toolTipDelegate.tasksModel.activeTask.row, ListView.Center)
                 }
             }
 
@@ -219,19 +227,20 @@ Loader {
                 readonly property real estimatedWidth: (toolTipDelegate.isVerticalPanel || !Plasmoid.configuration.showToolTips ? 1 : count) * (toolTipDelegate.tooltipInstanceMaximumWidth + toolTipDelegate.tileSpacing) - toolTipDelegate.tileSpacing
                 readonly property real estimatedHeight: (toolTipDelegate.isVerticalPanel || !Plasmoid.configuration.showToolTips ? count : 1) * (Plasmoid.configuration.showToolTips ? (toolTipDelegate.tooltipInstanceMaximumWidth / 2 + toolTipDelegate.tileSpacing) : Kirigami.Units.gridUnit * 2) - toolTipDelegate.tileSpacing
 
-                model: tasksModel
+                model: toolTipDelegate.tasksModel
 
                 rootIndex: toolTipDelegate.rootIndex
                 onRootIndexChanged: {
-                    if (parentTask.model.IsActive) {
-                            groupToolTipListView.positionViewAtIndex(tasksModel.activeTask.row, ListView.Center)
+                    if (toolTipDelegate.parentTask?.model.IsActive) {
+                            groupToolTipListView.positionViewAtIndex(toolTipDelegate.tasksModel.activeTask.row, ListView.Center)
                     } else {
                         groupToolTipListView.positionViewAtBeginning() // Fix a visual glitch (when the mouse moves from a tooltip with a moved scrollbar to another tooltip without a scrollbar)
                     }
                 }
 
                 delegate: ToolTipInstance {
-                    submodelIndex: tasksModel.makeModelIndex(toolTipDelegate.rootIndex.row, index)
+                    hostDelegate: toolTipDelegate
+                    submodelIndex: toolTipDelegate.tasksModel.makeModelIndex(toolTipDelegate.rootIndex.row, index)
                     appPid: model.AppPid
                     // 'display' is required already
                     isMinimized: model.IsMinimized

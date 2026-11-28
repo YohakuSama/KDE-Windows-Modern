@@ -20,10 +20,14 @@ import "code/JumpListPolicy.js" as JumpListPolicy
 PlasmaExtras.Menu {
     id: menu
 
+    required property Item tasksRoot
     required property TaskManagerApplet.Backend backend
     required property Mpris.Mpris2Model mpris2Source
     required property /*QModelIndex*/var modelIndex
 
+    readonly property var tasksModel: tasksRoot.tasksModel
+    readonly property var virtualDesktopInfo: tasksRoot.virtualDesktopInfo
+    readonly property var activityInfo: tasksRoot.activityInfo
     readonly property var atm: TaskManager.AbstractTasksModel
 
     property bool showAllPlaces: false
@@ -782,11 +786,11 @@ PlasmaExtras.Menu {
         icon: menu.backend.nativeMenuIcon("actions/window-close-symbolic")
 
         onClicked: {
-            if (tasks.groupDialog !== null && tasks.groupDialog.visualParent === menu.visualParent) {
-                tasks.groupDialog.visible = false;
+            if (menu.tasksRoot.groupDialog !== null && menu.tasksRoot.groupDialog.visualParent === menu.visualParent) {
+                menu.tasksRoot.groupDialog.visible = false;
             }
 
-            tasksModel.requestClose(menu.modelIndex);
+            menu.tasksModel.requestClose(menu.modelIndex);
         }
     }
 }

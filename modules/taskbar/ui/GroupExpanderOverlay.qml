@@ -4,6 +4,8 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 
 import org.kde.plasma.core as PlasmaCore
@@ -13,12 +15,15 @@ import org.kde.plasma.plasmoid
 KSvg.SvgItem {
     id: arrow
 
+    required property Item taskItem
+    required property Item taskIconBox
+
     anchors {
-        bottom: arrow.parent.bottom
-        horizontalCenter: iconBox.horizontalCenter
+        bottom: arrow.taskItem.bottom
+        horizontalCenter: arrow.taskIconBox.horizontalCenter
     }
 
-    visible: parent.model.IsGroupParent
+    visible: Boolean(arrow.taskItem.model?.IsGroupParent)
 
     states: [
         State {
@@ -26,11 +31,11 @@ KSvg.SvgItem {
             when: Plasmoid.location === PlasmaCore.Types.TopEdge
             AnchorChanges {
                 target: arrow
-                anchors.top: arrow.parent.top
+                anchors.top: arrow.taskItem.top
                 anchors.left: undefined
                 anchors.right: undefined
                 anchors.bottom: undefined
-                anchors.horizontalCenter: iconBox.horizontalCenter
+                anchors.horizontalCenter: arrow.taskIconBox.horizontalCenter
                 anchors.verticalCenter: undefined
             }
         },
@@ -40,11 +45,11 @@ KSvg.SvgItem {
             AnchorChanges {
                 target: arrow
                 anchors.top: undefined
-                anchors.left: arrow.parent.left
+                anchors.left: arrow.taskItem.left
                 anchors.right: undefined
                 anchors.bottom: undefined
                 anchors.horizontalCenter: undefined
-                anchors.verticalCenter: iconBox.verticalCenter
+                anchors.verticalCenter: arrow.taskIconBox.verticalCenter
             }
         },
         State {
@@ -54,16 +59,16 @@ KSvg.SvgItem {
                 target: arrow
                 anchors.top: undefined
                 anchors.left: undefined
-                anchors.right: arrow.parent.right
+                anchors.right: arrow.taskItem.right
                 anchors.bottom: undefined
                 anchors.horizontalCenter: undefined
-                anchors.verticalCenter: iconBox.verticalCenter
+                anchors.verticalCenter: arrow.taskIconBox.verticalCenter
             }
         }
     ]
 
-    implicitWidth: Math.min(naturalSize.width, iconBox.width)
-    implicitHeight: Math.min(naturalSize.height, iconBox.width)
+    implicitWidth: Math.min(naturalSize.width, arrow.taskIconBox.width)
+    implicitHeight: Math.min(naturalSize.height, arrow.taskIconBox.width)
 
     imagePath: "widgets/tasks"
     elementId: elementForLocation()

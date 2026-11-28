@@ -8,6 +8,11 @@ TestCase {
     name: "StartAllAppsComponent"
     ListModel {
         id: catalogApps
+        property int triggeredRow: -1
+        function trigger(row, actionId, argument) {
+            triggeredRow = row;
+            return true;
+        }
         ListElement { display: "Dolphin"; favoriteId: "applications:org.kde.dolphin.desktop" }
         ListElement { display: "Kate"; favoriteId: "applications:org.kde.kate.desktop" }
         ListElement { display: "Firefox"; favoriteId: "applications:firefox.desktop" }
@@ -87,5 +92,29 @@ TestCase {
         page.showAllSection = false;
         tryCompare(page.allAppsList, "count", 0);
         page.destroy();
+    }
+
+    function test_explicitSignalsWithoutOuterShellScope() {
+        const pinnedComponent = Qt.createComponent("../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/pages/PinnedPage.qml");
+        tryVerify(() => pinnedComponent.status !== Component.Loading);
+        verify(pinnedComponent.status === Component.Ready, pinnedComponent.errorString());
+        const pinned = pinnedComponent.createObject(null, {width: 480, height: 240});
+        verify(pinned !== null);
+        pinned.favoritesList.model = catalogApps;
+        let activatedCount = 0;
+        let contextRow = -1;
+        pinned.applicationActivated.connect(() => { activatedCount++; });
+        pinned.appContextMenuRequested.connect((entry, row) => { contextRow = row; });
+        catalogApps.triggeredRow = -1;
+        pinned.favoritesList.activateRow(1);
+        compare(catalogApps.triggeredRow, 1);
+        compare(activatedCount, 1);
+        pinned.favoritesList.forceLayout();
+        tryVerify(() => pinned.favoritesList.itemAtIndex(0) !== null);
+        const firstTile = pinned.favoritesList.itemAtIndex(0);
+        verify(firstTile !== null);
+        firstTile.openContextMenu(4, 4);
+        compare(contextRow, 0);
+        pinned.destroy();
     }
 }

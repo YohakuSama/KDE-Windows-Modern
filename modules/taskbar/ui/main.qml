@@ -60,6 +60,29 @@ PlasmoidItem {
     readonly property Component pulseAudioComponent: Qt.createComponent("PulseAudio.qml")
 
     property alias taskList: taskList
+    readonly property bool windowViewAvailable: effectWatcher.registered
+    readonly property alias mpris2Source: mpris2Source
+    readonly property alias virtualDesktopInfo: virtualDesktopInfo
+    readonly property alias activityInfo: activityInfo
+    readonly property alias busyIndicatorComponent: busyIndicator
+    readonly property alias openWindowToolTipDelegate: openWindowToolTipDelegate
+    readonly property alias pinnedAppToolTipDelegate: pinnedAppToolTipDelegate
+
+    function scheduleGeometryPublish(taskItem: Task): void {
+        taskInitComponent.createObject(taskItem);
+    }
+
+    function startTaskDrag(taskItem: Task, imageUrl: url, mimeData: var): void {
+        dragSource = taskItem;
+        dragHelper.Drag.imageSource = imageUrl;
+        dragHelper.Drag.mimeData = mimeData;
+        dragHelper.Drag.active = true;
+    }
+
+    function stopTaskDrag(): void {
+        dragHelper.Drag.active = false;
+        dragHelper.Drag.imageSource = "";
+    }
 
     preferredRepresentation: fullRepresentation
 
@@ -344,6 +367,11 @@ PlasmoidItem {
             id: pulseAudio
             sourceComponent: tasks.pulseAudioComponent
             active: tasks.pulseAudioComponent.status === Component.Ready
+            onLoaded: {
+                if (item) {
+                    item.backend = tasks.backend;
+                }
+            }
         }
 
         Timer {
@@ -433,11 +461,13 @@ PlasmoidItem {
 
         ToolTipDelegate {
             id: openWindowToolTipDelegate
+            tasksRoot: tasks
             visible: false
         }
 
         ToolTipDelegate {
             id: pinnedAppToolTipDelegate
+            tasksRoot: tasks
             visible: false
         }
 
@@ -553,6 +583,7 @@ PlasmoidItem {
 
                     delegate: Task {
                         tasksRoot: tasks
+                        hostTaskList: taskList
                     }
                 }
             }
@@ -584,7 +615,7 @@ PlasmoidItem {
     function activateTaskAtIndex(index: int): void {
         const task = taskRepeater.itemAt(index) as Task;
         if (task) {
-            TaskManagerApplet.TaskTools.activateTask(task.modelIndex(), task.model, null, task, Plasmoid, this, effectWatcher.registered);
+            TaskManagerApplet.TaskTools.activateTask(task.modelIndex(), task.model, null, task, Plasmoid, this, tasks.windowViewAvailable);
         }
     }
 
@@ -676,6 +707,7 @@ PlasmoidItem {
     function createContextMenu(rootTask, modelIndex, args = {}) {
         const initialArgs = Object.assign(args, {
             visualParent: rootTask,
+            tasksRoot: tasks,
             modelIndex,
             mpris2Source,
             backend,

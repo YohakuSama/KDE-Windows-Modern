@@ -33,6 +33,16 @@ FocusScope {
 
     signal passwordResult(string password)
 
+    function clearPassword() {
+        passwordBox.showPassword = false;
+        passwordBox.forceActiveFocus();
+        passwordBox.text = "";
+    }
+
+    function pulseError() {
+        errorPulse.restart();
+    }
+
     function startLogin() {
         const password = passwordBox.text;
         passwordBox.showPassword = false;
@@ -168,18 +178,6 @@ FocusScope {
             onAccepted: {
                 if (sessionManager.lockScreenUiVisible) {
                     sessionManager.startLogin();
-                }
-            }
-
-            Connections {
-                target: root
-                function onClearPassword() {
-                    passwordBox.showPassword = false;
-                    passwordBox.forceActiveFocus();
-                    passwordBox.text = "";
-                }
-                function onNotificationRepeated() {
-                    errorPulse.restart();
                 }
             }
         }
