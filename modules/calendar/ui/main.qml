@@ -33,11 +33,27 @@ PlasmoidItem {
     readonly property bool flyoutOpen: !!panelPopup && panelPopup.visible
     // Independent optional capabilities: a panel may coordinate popups
     // without offering the rounded split-window blur renderer.
-    readonly property var panelApplets: Plasmoid.containment ? Plasmoid.containment.applets : []
-    readonly property var popupCoordinator: PanelCapabilities.findTray(panelApplets,
-        ["prepareShellPopup", "restoreShellPopupFocus"])
-    readonly property var splitBlurProvider: PanelCapabilities.findTray(panelApplets,
-        ["setSplitPopupBlur"])
+    property int panelCapabilityRevision: 0
+    readonly property var panelContainment: Plasmoid.containment
+    readonly property var panelApplets: panelContainment ? panelContainment.applets : []
+    readonly property var popupCoordinator: {
+        const revision = root.panelCapabilityRevision;
+        void revision;
+        return PanelCapabilities.findPanelCapability(root.panelContainment, root.panelApplets,
+            ["prepareShellPopup", "restoreShellPopupFocus"]);
+    }
+    readonly property var splitBlurProvider: {
+        const revision = root.panelCapabilityRevision;
+        void revision;
+        return PanelCapabilities.findPanelCapability(root.panelContainment, root.panelApplets,
+            ["setSplitPopupBlur"]);
+    }
+    Connections {
+        target: root.panelContainment
+        ignoreUnknownSignals: true
+        function onInternalActionsChanged() { ++root.panelCapabilityRevision; }
+        function onAppletsChanged() { ++root.panelCapabilityRevision; }
+    }
     readonly property bool allowSplitAcrylic: (Plasmoid.containmentDisplayHints
         & PlasmaCore.Types.ContainmentPrefersOpaqueBackground) === 0
     readonly property var popupScreenGeometry: Plasmoid.screenGeometry
@@ -228,7 +244,16 @@ PlasmoidItem {
     activationTogglesExpanded: false
     Connections {
         target: Plasmoid
+        ignoreUnknownSignals: true
         function onActivated() { root.toggleFlyout(); }
+        function onContainmentChanged() {
+            root.closeFlyout();
+            ++root.panelCapabilityRevision;
+        }
+        function onDestroyedChanged() {
+            if (Plasmoid.destroyed)
+                root.closeFlyout();
+        }
     }
 
     Connections {

@@ -94,6 +94,21 @@ PlasmoidItem {
         }
     }
 
+    Connections {
+        target: Plasmoid
+        ignoreUnknownSignals: true
+        function onDestroyedChanged(): void {
+            if (Plasmoid.destroyed && tasks.groupDialog !== null) {
+                tasks.groupDialog.visible = false;
+            }
+        }
+    }
+
+    readonly property color nativeAccent: Kirigami.Theme.highlightColor
+    readonly property color nativeBackground: Kirigami.Theme.backgroundColor
+    onNativeAccentChanged: backend.requestAppearanceSync()
+    onNativeBackgroundChanged: backend.requestAppearanceSync()
+
     Layout.fillWidth: vertical ? true : Plasmoid.configuration.fill
     Layout.fillHeight: !vertical ? true : Plasmoid.configuration.fill
     Layout.minimumWidth: {
@@ -275,6 +290,7 @@ PlasmoidItem {
     readonly property TaskManagerApplet.Backend backend: TaskManagerApplet.Backend {
         id: backend
 
+        applet: Plasmoid
         screen: Plasmoid.screen ?? -1
         hasActiveTask: tasksModel.count > 0 && tasksModel.activeTask.valid
         showsOnlyCurrentScreen: Plasmoid.configuration.showOnlyCurrentScreen

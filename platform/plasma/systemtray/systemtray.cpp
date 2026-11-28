@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "systemtray.h"
 #include "panelglyph.h"
+#include "panelpopuphost.h"
 #include "shellappearancemonitor.h"
 #include "shellshortcutrouter.h"
 
@@ -64,17 +65,21 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
 
 void SystemTray::prepareShellPopup(const QString &role, QWindow *window)
 {
-    m_popupController.prepareShellPopup(role, window);
+    if (auto *host = ensurePopupHost()) {
+        QMetaObject::invokeMethod(host, "prepareShellPopup", Qt::DirectConnection,
+                                  Q_ARG(QString, role), Q_ARG(QWindow *, window));
+    }
 }
 
 void SystemTray::restoreShellPopupFocus()
 {
-    m_popupController.restoreShellPopupFocus();
+    if (auto *host = ensurePopupHost())
+        QMetaObject::invokeMethod(host, "restoreShellPopupFocus", Qt::DirectConnection);
 }
 
 void SystemTray::registerShellShortcuts(QQuickItem *representation)
 {
-    m_shortcutRouter = ShellShortcutRouter::attach(corona(), this, representation);
+    ShellShortcutRouter::attach(corona(), this, representation);
 }
 
 QRect SystemTray::runDialogArea(QQuickItem *anchor) const
@@ -152,19 +157,31 @@ QRectF SystemTray::panelGlyphBounds(const QString &source)
 
 void SystemTray::setNotificationPopupSlide(QQuickItem *content)
 {
-    m_popupEffects.setNotificationPopupSlide(content);
+    if (auto *host = ensurePopupHost()) {
+        QMetaObject::invokeMethod(host, "setNotificationPopupSlide", Qt::DirectConnection,
+                                  Q_ARG(QQuickItem *, content));
+    }
 }
 
 bool SystemTray::setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
                                    qreal radius, bool enabled)
 {
-    return m_popupEffects.setSplitPopupBlur(content, first, second, radius, enabled);
+    bool applied = false;
+    if (auto *host = ensurePopupHost()) {
+        QMetaObject::invokeMethod(host, "setSplitPopupBlur", Qt::DirectConnection,
+                                  Q_RETURN_ARG(bool, applied),
+                                  Q_ARG(QQuickItem *, content),
+                                  Q_ARG(QQuickItem *, first),
+                                  Q_ARG(QQuickItem *, second),
+                                  Q_ARG(qreal, radius),
+                                  Q_ARG(bool, enabled));
+    }
+    return applied;
 }
 
 SystemTray::~SystemTray()
 {
-    if (m_shortcutRouter)
-        m_shortcutRouter->detach(this);
+    ShellShortcutRouter::detach(corona(), this);
     delete m_settings;
 }
 
@@ -193,24 +210,49 @@ void SystemTray::init()
         }
     });
 
-    connect(&m_popupEffects, &PopupEffects::preferencesChanged,
-            this, &SystemTray::popupBlurPreferencesChanged, Qt::UniqueConnection);
-    m_popupEffects.startMonitoring();
+    connect(this, &Plasma::Applet::containmentChanged, this, &SystemTray::bindShellCapabilities);
+    connect(this, &Plasma::Applet::destroyedChanged, this, [this](bool) {
+        ShellShortcutRouter::refresh(corona());
+    });
+    bindShellCapabilities();
+}
 
-    if (!m_appearanceMonitor)
-        m_appearanceMonitor = ShellAppearanceMonitor::forShell(corona());
+void SystemTray::bindShellCapabilities()
+{
+    if (auto *shell = corona()) {
+        PanelPopupHost::installForShell(shell);
+        ShellAppearanceMonitor::ensureForShell(shell);
+        ShellShortcutRouter::ensureForShell(shell);
+    }
+    ensurePopupHost();
+}
+
+QAction *SystemTray::ensurePopupHost()
+{
+    QAction *host = PanelPopupHost::ensureForPanel(PanelPopupHost::panelForApplet(this));
+    if (!host) {
+        if (!m_localPopupHost)
+            m_localPopupHost = new PanelPopupHost(this);
+        host = m_localPopupHost.data();
+    }
+    if (m_popupHost.data() != host) {
+        if (m_popupHost)
+            disconnect(m_popupHost.data(), nullptr, this, nullptr);
+        m_popupHost = host;
+        connect(host, SIGNAL(popupBlurPreferencesChanged()),
+                this, SIGNAL(popupBlurPreferencesChanged()), Qt::UniqueConnection);
+    }
+    return host;
 }
 
 void SystemTray::startAppearanceMonitoring()
 {
-    if (m_appearanceMonitor)
-        m_appearanceMonitor->start();
+    ShellAppearanceMonitor::startForShell(corona());
 }
 
 void SystemTray::requestAppearanceSync()
 {
-    if (m_appearanceMonitor)
-        m_appearanceMonitor->requestSync();
+    ShellAppearanceMonitor::requestSyncForShell(corona());
 }
 
 void SystemTray::initSettingsAndRegistry()

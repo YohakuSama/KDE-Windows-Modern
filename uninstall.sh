@@ -172,6 +172,8 @@ uninstall_component() {
             ;;
         systray|systemtray)
             if busctl --user status org.kde.kglobalaccel &>/dev/null; then
+                python3 "$SRC_DIR/scripts/windows-shortcuts.py" clipboard-release \
+                    || warn "Could not return Win+V to Klipper."
                 python3 "$SRC_DIR/scripts/windows-shortcuts.py" run-release \
                     || warn "Could not return Win+R to KRunner."
             fi

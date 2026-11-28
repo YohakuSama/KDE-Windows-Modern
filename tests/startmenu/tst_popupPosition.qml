@@ -3,6 +3,7 @@ import QtQuick
 import QtTest
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupPosition.js" as PopupPosition
 import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/popupGeometry.js" as Geometry
+import "../../plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/panelCapabilities.js" as PanelCapabilities
 
 TestCase {
     name: "StartMenuPopupPosition"
@@ -114,5 +115,43 @@ TestCase {
     function test_horizontalAnchorOffset(data) {
         compare(PopupPosition.horizontalAnchorOffset(data.mode, data.screen, data.button, data.panel, data.popupWidth),
                 data.expected);
+    }
+
+    function test_panelCapabilitiesHostAndFallback() {
+        const panelHost = {
+            prepareShellPopup: function() {},
+            restoreShellPopupFocus: function() {},
+            setSplitPopupBlur: function() { return true; }
+        };
+        const containment = {
+            destroyed: false,
+            applets: [],
+            internalAction: function(name) {
+                return name === "windowsModernPanelPopups" ? panelHost : null;
+            }
+        };
+        compare(PanelCapabilities.findPanelCapability(containment, [],
+            ["prepareShellPopup", "restoreShellPopupFocus"]), panelHost);
+        compare(PanelCapabilities.findPanelCapability(containment, [],
+            ["setSplitPopupBlur"]), panelHost);
+
+        const trayFallback = {
+            pluginName: "org.kde.windowsmodern.systemtray",
+            destroyed: false,
+            prepareShellPopup: function() {},
+            restoreShellPopupFocus: function() {}
+        };
+        compare(PanelCapabilities.findPanelCapability(containment, [trayFallback],
+            ["prepareShellPopup", "restoreShellPopupFocus"]), panelHost);
+        compare(PanelCapabilities.findPanelCapability({destroyed: true, internalAction: containment.internalAction},
+            [trayFallback], ["prepareShellPopup", "restoreShellPopupFocus"]), trayFallback);
+        compare(PanelCapabilities.findTray([trayFallback],
+            ["prepareShellPopup", "restoreShellPopupFocus"]), trayFallback);
+        compare(PanelCapabilities.findTray([{
+            pluginName: "org.kde.windowsmodern.systemtray",
+            destroyed: true,
+            prepareShellPopup: function() {},
+            restoreShellPopupFocus: function() {}
+        }], ["prepareShellPopup", "restoreShellPopupFocus"]), null);
     }
 }

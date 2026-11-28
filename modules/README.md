@@ -93,13 +93,20 @@ logical icon canvas. The source map materializes it into each independent
 applet; Icon Tasks also registers it in its native QML resources.
 The window-group delegates receive the parent model index explicitly,
 including while the group dialog is being constructed. Start and the
-clock resolve independent optional panel capabilities through
-core/logic/panelCapabilities.js. Replacing their coordinator closes an
-already mapped popup; reopening uses the current provider or the native
-fallback. The tray forwards palette events and registers its ready UI
-with the Corona-owned controllers in platform/plasma.
-Start now owns the Search actions at the applet root, independently of
-its compact UI. Search watches the same-panel provider's native action
+clock resolve optional panel capabilities through
+core/logic/panelCapabilities.js from the panel containment's
+`windowsModernPanelPopups` host action (falling back to same-panel native
+applets for mixed-package compatibility), refreshing reactively when panel
+actions or applets change. Replacing their coordinator, moving containments
+or entering Plasma's undo-destruction state closes any mapped popup; reopening
+uses the current panel host or native fallback. Icon Tasks and System Tray
+both forward live palette events to the Corona-owned appearance monitor, and
+System Tray delegates its popup coordination and split-blur calls to the
+same panel host while registering its ready UI with the Corona-owned shortcut
+router in platform/plasma.
+Start owns the Search actions at the applet root, independently of its
+compact UI, and disables them immediately during undo-destruction while
+closing any open popup. Search watches the same-panel provider's native action
 registration and readiness, keeps open/state actions paired and resolves
 again on activation. The original Start model and editor remain the
 single search implementation; no unrelated launcher or second model

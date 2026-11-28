@@ -10,12 +10,13 @@
 
 // Panel-local policy only. This controller has no dependency on the tray
 // model, applet registry or the QML implementation of a specific flyout.
-class PanelPopupController final : public QObject
+class Q_DECL_HIDDEN PanelPopupController final : public QObject
 {
 public:
     PanelPopupController();
     void prepareShellPopup(const QString &role, QWindow *window);
     void restoreShellPopupFocus();
+    void dismissAllPopups();
 
 private:
     bool shellPopupHasFocus() const;

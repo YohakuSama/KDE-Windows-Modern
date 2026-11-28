@@ -9,6 +9,7 @@
 #include <KConfigWatcher>
 
 #include <QObject>
+#include <QPointer>
 #include <QRect>
 #include <QVariant>
 
@@ -52,9 +53,13 @@ public:
 
     // Meta+1..9 and the other task shortcuts (ported from Plasma 6.8,
     // where plasmashell no longer handles them itself).
+    Q_PROPERTY(QObject *applet READ applet WRITE setApplet NOTIFY appletChanged)
     Q_PROPERTY(int screen READ screen WRITE setScreen NOTIFY screenChanged)
     Q_PROPERTY(bool hasActiveTask READ hasActiveTask WRITE setHasActiveTask NOTIFY hasActiveTaskChanged)
     Q_PROPERTY(bool showsOnlyCurrentScreen READ showsOnlyCurrentScreen WRITE setShowsOnlyCurrentScreen NOTIFY showsOnlyCurrentScreenChanged)
+
+    QObject *applet() const;
+    void setApplet(QObject *applet);
 
     int screen() const;
     void setScreen(int screen);
@@ -64,6 +69,8 @@ public:
 
     bool showsOnlyCurrentScreen() const;
     void setShowsOnlyCurrentScreen(bool shows);
+
+    Q_INVOKABLE void requestAppearanceSync();
 
     Q_INVOKABLE QVariantList jumpListActions(const QUrl &launcherUrl, QObject *parent);
     Q_INVOKABLE QVariantList placesActions(const QUrl &launcherUrl, bool showAllPlaces, QObject *parent);
@@ -82,6 +89,7 @@ public:
     Q_INVOKABLE static QStringList applicationCategories(const QUrl &launcherUrl);
 
 Q_SIGNALS:
+    void appletChanged();
     void screenChanged();
     void hasActiveTaskChanged();
     void showsOnlyCurrentScreenChanged();
@@ -100,6 +108,8 @@ private Q_SLOTS:
     void handleRecentDocumentAction() const;
 
 private:
+    void attachShellCapabilities();
+    bool isDestroyedApplet() const;
     static void setupShortcuts();
     static Backend *findTargetBackend();
     static void dispatchActivateTaskAtIndex(int index);
@@ -110,6 +120,7 @@ private:
 
     static QVector<Backend *> s_instances;
 
+    QPointer<QObject> m_applet;
     int m_screen = -1;
     bool m_hasActiveTask = false;
     bool m_showsOnlyCurrentScreen = false;

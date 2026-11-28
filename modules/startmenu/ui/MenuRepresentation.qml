@@ -47,11 +47,28 @@ Item {
     property var launcherRootModel: null
     property var launcherFavorites: null
     readonly property Item startButton: anchorButton
-    readonly property var popupCoordinator: PanelCapabilities.findTray(
-        Plasmoid.containment ? Plasmoid.containment.applets : [],
-        ["prepareShellPopup", "restoreShellPopupFocus"])
-    // A mapped popup must not retain the focus group of a replaced tray.
+    property int panelCapabilityRevision: 0
+    readonly property var panelContainment: Plasmoid.containment
+    readonly property var popupCoordinator: {
+        const revision = main.panelCapabilityRevision;
+        void revision;
+        return PanelCapabilities.findPanelCapability(
+            main.panelContainment,
+            main.panelContainment ? main.panelContainment.applets : [],
+            ["prepareShellPopup", "restoreShellPopupFocus"]);
+    }
+    // A mapped popup must not retain the focus group of a replaced host.
     onPopupCoordinatorChanged: if (root && root.visible) root.closeMenu()
+    Connections {
+        target: main.panelContainment
+        ignoreUnknownSignals: true
+        function onInternalActionsChanged() { ++main.panelCapabilityRevision; }
+        function onAppletsChanged() { ++main.panelCapabilityRevision; }
+    }
+    function closePopup() {
+        if (root && root.visible)
+            root.closeMenu();
+    }
     readonly property bool menuShown: root.visible
     readonly property bool searchShown: root.visible && root.searching
     readonly property bool taskbarSearchActive: searchShown && root.taskbarSearchAnchor !== null

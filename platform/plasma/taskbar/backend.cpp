@@ -7,6 +7,13 @@
 #include "backend.h"
 
 #include "log_settings.h"
+#include "panelpopuphost.h"
+#include "shellappearancemonitor.h"
+#include "shellshortcutrouter.h"
+
+#include <Plasma/Applet>
+#include <Plasma/Containment>
+#include <Plasma/Corona>
 #include <KActionCollection>
 #include <KConfigGroup>
 #include <KGlobalAccel>
@@ -162,6 +169,68 @@ QVariant Backend::nativeMenuIcon(const QString &role) const
 Backend::~Backend()
 {
     s_instances.removeAll(this);
+}
+
+QObject *Backend::applet() const
+{
+    return m_applet.data();
+}
+
+void Backend::setApplet(QObject *appletObject)
+{
+    if (m_applet.data() == appletObject) {
+        return;
+    }
+    if (auto *previous = qobject_cast<Plasma::Applet *>(m_applet.data())) {
+        disconnect(previous, &Plasma::Applet::containmentChanged, this, &Backend::attachShellCapabilities);
+        disconnect(previous, &Plasma::Applet::destroyedChanged, this, &Backend::attachShellCapabilities);
+    }
+    m_applet = appletObject;
+    if (auto *current = qobject_cast<Plasma::Applet *>(appletObject)) {
+        connect(current, &Plasma::Applet::containmentChanged, this, &Backend::attachShellCapabilities);
+        connect(current, &Plasma::Applet::destroyedChanged, this, &Backend::attachShellCapabilities);
+    }
+    attachShellCapabilities();
+    Q_EMIT appletChanged();
+}
+
+void Backend::attachShellCapabilities()
+{
+    auto *applet = qobject_cast<Plasma::Applet *>(m_applet.data());
+    if (!applet || applet->destroyed()) {
+        return;
+    }
+    auto *panel = PanelPopupHost::panelForApplet(applet);
+    if (panel) {
+        PanelPopupHost::ensureForPanel(panel);
+    }
+    auto *shell = panel ? panel->corona()
+                        : (applet->containment() ? applet->containment()->corona() : nullptr);
+    if (shell) {
+        PanelPopupHost::installForShell(shell);
+        ShellAppearanceMonitor::startForShell(shell);
+        ShellShortcutRouter::ensureForShell(shell);
+    }
+}
+
+void Backend::requestAppearanceSync()
+{
+    auto *applet = qobject_cast<Plasma::Applet *>(m_applet.data());
+    if (!applet || applet->destroyed()) {
+        return;
+    }
+    auto *panel = PanelPopupHost::panelForApplet(applet);
+    auto *shell = panel ? panel->corona()
+                        : (applet->containment() ? applet->containment()->corona() : nullptr);
+    if (shell) {
+        ShellAppearanceMonitor::requestSyncForShell(shell);
+    }
+}
+
+bool Backend::isDestroyedApplet() const
+{
+    const auto *applet = qobject_cast<const Plasma::Applet *>(m_applet.data());
+    return applet && applet->destroyed();
 }
 
 int Backend::screen() const
@@ -716,7 +785,7 @@ Backend *Backend::findTargetBackend()
     Backend *fallback = nullptr;
 
     for (auto *instance : std::as_const(s_instances)) {
-        if (!instance->m_hasActiveTask) {
+        if (instance->isDestroyedApplet() || !instance->m_hasActiveTask) {
             continue;
         }
         if (!instance->m_showsOnlyCurrentScreen) {
@@ -745,6 +814,9 @@ void Backend::dispatchActivateTaskAtIndex(int index)
     // instance, then the first available instance.
     Backend *fallback = nullptr;
     for (auto *instance : std::as_const(s_instances)) {
+        if (instance->isDestroyedApplet()) {
+            continue;
+        }
         if (!instance->m_showsOnlyCurrentScreen) {
             Q_EMIT instance->activateTaskAtIndexRequested(index);
             return;

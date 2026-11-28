@@ -9,7 +9,7 @@ and version-specific adapters; do not replace the system backends.
 | plasma/taskbar/ | Native tasks backend, launcher/tooltip and CMake |
 | plasma/desktopmenu/ | Native containment action and CMake |
 | plasma/appearance/ | Appearance generation, shell-session wallpaper monitoring, popup compositor effects, host accent control and mode switching |
-| plasma/popup/ | Panel-local popup focus, mutual exclusion and dismissal policy |
+| plasma/popup/ | Panel-local popup focus, mutual exclusion, dismissal policy and containment-owned capability host |
 | plasma/appearance/atlas/ | Single editable Plasma desktop theme SVG atlas and metadata |
 | plasma/globaltheme/ | Global-theme metadata/defaults |
 | plasma/login/ | Greeter host patch and private asset/color adapter |
@@ -40,16 +40,22 @@ recipe identity. Independent scripts retain native entry paths through
 validated relative source aliases; installation archives carry real files.
 Source ownership does not itself remove runtime coupling.
 
-The system tray binary initializes the shell-session appearance monitor and
-shortcut router as children of the existing Corona. The monitor owns one
-wallpaper D-Bus bridge, one watch set and one debounced asynchronous helper;
-the router owns the unchanged Win+R/V action identities and targets the
-ready primary tray (or a ready secondary tray). Destroying a representation
-does not destroy these shell-session objects. With no ready tray, the
-router uses the native KRunner/Klipper actions. No new process remains
-resident outside plasmashell. A fresh shell session that never loads the
-tray binary still cannot initialize these capabilities. Popup coordination
-and split blur are optional panel-local capabilities. The tray delegates
-these to PanelPopupController and PopupEffects, which own their state and
-watchers independently of the tray model. The tray remains their host;
-full lifecycle acceptance and a stable tray-independent host are still open.
+Any loaded native shell plugin (System Tray, Icon Tasks or Desktop Context
+Menu) initializes the shell-session appearance monitor, shortcut router and
+panel-popup manager as direct children of the existing Corona through
+`QObject` lookup and `QMetaObject` slot invocation, avoiding cross-plugin
+`staticMetaObject` identity mismatches. The monitor owns one wallpaper D-Bus
+bridge, one watch set and one debounced asynchronous helper; the router owns
+the unchanged Win+R/V action identities, claims any pre-existing user/migrated
+bindings on tray-less cold starts for native KRunner/Klipper fallback, and
+targets the ready primary tray (or a ready secondary tray) while skipping
+containments in Plasma's undo-destruction state. Destroying or removing a
+tray representation does not destroy these shell-session objects, and
+standalone tray uninstallation releases both Win+R and Win+V back to their
+native actions. No new process remains resident outside plasmashell. Popup
+coordination and split blur are owned per panel containment by
+`PanelPopupHost` (`windowsModernPanelPopups` internal action), which wraps
+`PanelPopupController` and `PopupEffects` independently of the tray model so
+Start, Digital Clock and System Tray share one panel-local focus group and
+split-blur watcher even when no tray is present; full multi-screen, session
+and ABI acceptance remains with the maintainer.

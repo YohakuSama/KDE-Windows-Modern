@@ -16,14 +16,19 @@ class Corona;
 class WallpaperAccentSource;
 
 // One event-driven appearance pipeline per shell, regardless of panel count.
-class ShellAppearanceMonitor final : public QObject
+// Lookup and invocation cross independent Plasma plugin binaries via QObject
+// child names and QMetaObject slots, avoiding per-plugin staticMetaObject casts.
+class Q_DECL_HIDDEN ShellAppearanceMonitor final : public QObject
 {
     Q_OBJECT
 
 public:
-    static ShellAppearanceMonitor *forShell(Plasma::Corona *shell);
+    static QObject *ensureForShell(Plasma::Corona *shell);
+    static QObject *startForShell(Plasma::Corona *shell);
+    static void requestSyncForShell(Plasma::Corona *shell);
     ~ShellAppearanceMonitor() override;
 
+public Q_SLOTS:
     void start();
     void requestSync();
 

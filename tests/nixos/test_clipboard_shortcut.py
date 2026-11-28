@@ -127,6 +127,18 @@ class ThemedClipboardShortcutTests(TestCase):
             self.assertEqual(shortcuts.bind_themed_clipboard(ga, ga.themed, ga.native), 1)
             self.assertEqual(ga.writes, [])
 
+    def test_clipboard_release_preserves_other_keys_and_noop_when_unbound(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(shortcuts, "BACKUP", Path(d) / "shortcuts.json"):
+            key = shortcuts.parse("Meta+V")
+            other = shortcuts.parse("Ctrl+Alt+V")
+            ga = MultiAccel([other, key])
+            self.assertEqual(shortcuts.bind_themed_clipboard(ga, ga.themed, ga.native), 0)
+            with patch.object(shortcuts, "GlobalAccel", return_value=ga):
+                self.assertEqual(shortcuts.clipboard_release(), 0)
+                self.assertEqual(ga.keys(ga.native), [other, key])
+                self.assertEqual(ga.keys(ga.themed), [])
+                self.assertEqual(shortcuts.clipboard_release(), 0)
+
 
 class RunAccel(MultiAccel):
     native = [shortcuts.NATIVE_RUN_COMPONENT, shortcuts.NATIVE_RUN_ACTION, "KRunner", "Run"]

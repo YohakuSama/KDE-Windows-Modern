@@ -47,7 +47,7 @@ using namespace Qt::StringLiterals;
 // Its QML property contract is checked at runtime. An unknown plugin,
 // incomplete load or preview must fail closed. Scheduled wallpapers
 // contribute their settled native endpoint, never a guessed blend.
-class WallpaperAccentSource final : public QObject
+class Q_DECL_HIDDEN WallpaperAccentSource final : public QObject
 {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.kde.WindowsModern.Wallpaper")
@@ -485,15 +485,29 @@ private:
     Plasma::Corona *const m_shell;
 };
 
-ShellAppearanceMonitor *ShellAppearanceMonitor::forShell(Plasma::Corona *shell)
+QObject *ShellAppearanceMonitor::ensureForShell(Plasma::Corona *shell)
 {
     if (!shell)
         return nullptr;
-    if (auto *existing = shell->findChild<ShellAppearanceMonitor *>(
+    if (auto *existing = shell->findChild<QObject *>(
             u"windowsModernShellAppearance"_s, Qt::FindDirectChildrenOnly)) {
         return existing;
     }
     return new ShellAppearanceMonitor(shell);
+}
+
+QObject *ShellAppearanceMonitor::startForShell(Plasma::Corona *shell)
+{
+    auto *monitor = ensureForShell(shell);
+    if (monitor)
+        QMetaObject::invokeMethod(monitor, "start", Qt::DirectConnection);
+    return monitor;
+}
+
+void ShellAppearanceMonitor::requestSyncForShell(Plasma::Corona *shell)
+{
+    if (auto *monitor = ensureForShell(shell))
+        QMetaObject::invokeMethod(monitor, "requestSync", Qt::DirectConnection);
 }
 
 ShellAppearanceMonitor::ShellAppearanceMonitor(Plasma::Corona *shell)
@@ -582,6 +596,8 @@ ShellAppearanceMonitor::~ShellAppearanceMonitor()
 
 void ShellAppearanceMonitor::start()
 {
+    if (m_started)
+        return;
     m_started = true;
     requestSync();
 }

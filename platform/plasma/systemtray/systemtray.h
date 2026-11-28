@@ -17,12 +17,9 @@
 
 #include <Plasma/Containment>
 
-#include "panelpopupcontroller.h"
-#include "popupeffects.h"
-
+class QAction;
 class QQuickItem;
-class ShellAppearanceMonitor;
-class ShellShortcutRouter;
+class PanelPopupHost;
 
 namespace Plasma
 {
@@ -97,10 +94,12 @@ private:
     void migrateFromSystrayContainer();
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
+    void bindShellCapabilities();
+    QAction *ensurePopupHost();
 
     KConfigWatcher::Ptr m_configWatcher;
-    QPointer<ShellAppearanceMonitor> m_appearanceMonitor;
-    QPointer<ShellShortcutRouter> m_shortcutRouter;
+    QPointer<QAction> m_popupHost;
+    QPointer<PanelPopupHost> m_localPopupHost;
     bool m_xwaylandClientsScale = true;
 
     QPointer<SystemTraySettings> m_settings;
@@ -114,6 +113,4 @@ private:
 
     QHash<QString /*plugin id*/, int /*config group*/> m_configGroupIds;
     QHash<QString, QRectF> m_panelGlyphBounds;
-    PanelPopupController m_popupController;
-    PopupEffects m_popupEffects;
 };

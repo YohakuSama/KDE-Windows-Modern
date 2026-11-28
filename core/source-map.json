@@ -429,16 +429,24 @@
       "scripts/theme/light-store-dependencies.json"
     ],
     "platform/plasma/appearance/popupeffects.cpp": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.cpp"
+      "plasma/applets/org.kde.windowsmodern.icontasks/popupeffects.cpp",
+      "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.cpp",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/popupeffects.cpp"
     ],
     "platform/plasma/appearance/popupeffects.h": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.h"
+      "plasma/applets/org.kde.windowsmodern.icontasks/popupeffects.h",
+      "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.h",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/popupeffects.h"
     ],
     "platform/plasma/appearance/shellappearancemonitor.cpp": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.cpp"
+      "plasma/applets/org.kde.windowsmodern.icontasks/shellappearancemonitor.cpp",
+      "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.cpp",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/shellappearancemonitor.cpp"
     ],
     "platform/plasma/appearance/shellappearancemonitor.h": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.h"
+      "plasma/applets/org.kde.windowsmodern.icontasks/shellappearancemonitor.h",
+      "plasma/applets/org.kde.windowsmodern.systemtray/shellappearancemonitor.h",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/shellappearancemonitor.h"
     ],
     "platform/plasma/appearance/switch-mode.sh": [
       "scripts/theme/switch-mode.sh"
@@ -468,10 +476,24 @@
       "scripts/greeter-native-assets.py"
     ],
     "platform/plasma/popup/panelpopupcontroller.cpp": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.cpp"
+      "plasma/applets/org.kde.windowsmodern.icontasks/panelpopupcontroller.cpp",
+      "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.cpp",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/panelpopupcontroller.cpp"
     ],
     "platform/plasma/popup/panelpopupcontroller.h": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.h"
+      "plasma/applets/org.kde.windowsmodern.icontasks/panelpopupcontroller.h",
+      "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.h",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/panelpopupcontroller.h"
+    ],
+    "platform/plasma/popup/panelpopuphost.cpp": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/panelpopuphost.cpp",
+      "plasma/applets/org.kde.windowsmodern.systemtray/panelpopuphost.cpp",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/panelpopuphost.cpp"
+    ],
+    "platform/plasma/popup/panelpopuphost.h": [
+      "plasma/applets/org.kde.windowsmodern.icontasks/panelpopuphost.h",
+      "plasma/applets/org.kde.windowsmodern.systemtray/panelpopuphost.h",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/panelpopuphost.h"
     ],
     "platform/plasma/shortcuts/desktop-contextmenu.py": [
       "scripts/desktop-contextmenu.py"
@@ -480,10 +502,14 @@
       "scripts/keyboard-labels.py"
     ],
     "platform/plasma/shortcuts/shellshortcutrouter.cpp": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.cpp"
+      "plasma/applets/org.kde.windowsmodern.icontasks/shellshortcutrouter.cpp",
+      "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.cpp",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/shellshortcutrouter.cpp"
     ],
     "platform/plasma/shortcuts/shellshortcutrouter.h": [
-      "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.h"
+      "plasma/applets/org.kde.windowsmodern.icontasks/shellshortcutrouter.h",
+      "plasma/applets/org.kde.windowsmodern.systemtray/shellshortcutrouter.h",
+      "plasma/containmentactions/org.kde.windowsmodern.contextmenu/shellshortcutrouter.h"
     ],
     "platform/plasma/shortcuts/windows-shortcuts.py": [
       "scripts/windows-shortcuts.py"
@@ -688,7 +714,17 @@
     "plasma/applets/org.kde.windowsmodern.icontasks/kactivitymanagerd_plugins_settings.kcfgc",
     "plasma/applets/org.kde.windowsmodern.icontasks/metadata.json",
     "plasma/applets/org.kde.windowsmodern.icontasks/panelicon.h",
+    "plasma/applets/org.kde.windowsmodern.icontasks/panelpopupcontroller.cpp",
+    "plasma/applets/org.kde.windowsmodern.icontasks/panelpopupcontroller.h",
+    "plasma/applets/org.kde.windowsmodern.icontasks/panelpopuphost.cpp",
+    "plasma/applets/org.kde.windowsmodern.icontasks/panelpopuphost.h",
+    "plasma/applets/org.kde.windowsmodern.icontasks/popupeffects.cpp",
+    "plasma/applets/org.kde.windowsmodern.icontasks/popupeffects.h",
     "plasma/applets/org.kde.windowsmodern.icontasks/qwayland-plasma-shell.h",
+    "plasma/applets/org.kde.windowsmodern.icontasks/shellappearancemonitor.cpp",
+    "plasma/applets/org.kde.windowsmodern.icontasks/shellappearancemonitor.h",
+    "plasma/applets/org.kde.windowsmodern.icontasks/shellshortcutrouter.cpp",
+    "plasma/applets/org.kde.windowsmodern.icontasks/shellshortcutrouter.h",
     "plasma/applets/org.kde.windowsmodern.icontasks/smartlauncherbackend.cpp",
     "plasma/applets/org.kde.windowsmodern.icontasks/smartlauncherbackend.h",
     "plasma/applets/org.kde.windowsmodern.icontasks/smartlauncheritem.cpp",
@@ -721,6 +757,8 @@
     "plasma/applets/org.kde.windowsmodern.systemtray/panelglyph.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.cpp",
     "plasma/applets/org.kde.windowsmodern.systemtray/panelpopupcontroller.h",
+    "plasma/applets/org.kde.windowsmodern.systemtray/panelpopuphost.cpp",
+    "plasma/applets/org.kde.windowsmodern.systemtray/panelpopuphost.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.cpp",
     "plasma/applets/org.kde.windowsmodern.systemtray/plasmoidregistry.h",
     "plasma/applets/org.kde.windowsmodern.systemtray/popupeffects.cpp",
@@ -754,6 +792,16 @@
     "plasma/containmentactions/org.kde.windowsmodern.contextmenu/menulayout.h",
     "plasma/containmentactions/org.kde.windowsmodern.contextmenu/metadata.json",
     "plasma/containmentactions/org.kde.windowsmodern.contextmenu/nativecontextmenu.cpp",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/panelpopupcontroller.cpp",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/panelpopupcontroller.h",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/panelpopuphost.cpp",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/panelpopuphost.h",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/popupeffects.cpp",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/popupeffects.h",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/shellappearancemonitor.cpp",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/shellappearancemonitor.h",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/shellshortcutrouter.cpp",
+    "plasma/containmentactions/org.kde.windowsmodern.contextmenu/shellshortcutrouter.h",
     "plasma/desktoptheme/Windows-modern-dark",
     "plasma/kwinscripts/org.kde.windowsmodern.osd",
     "plasma/kwinscripts/org.kde.windowsmodern.snapkeys",

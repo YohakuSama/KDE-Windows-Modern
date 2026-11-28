@@ -20,7 +20,7 @@ The previous keys of every touched action are saved once to
 Usage: windows-shortcuts.py apply   [--group shortcuts|apps] [--dry-run]
        windows-shortcuts.py restore [--group shortcuts|apps]
        windows-shortcuts.py tray-apply | tray-restore   (Plasma Shell must be stopped)
-       windows-shortcuts.py clipboard-apply | run-apply | run-release [--dry-run]
+       windows-shortcuts.py clipboard-apply | clipboard-release | run-apply | run-release [--dry-run]
        windows-shortcuts.py show
 """
 import argparse
@@ -273,6 +273,19 @@ def run_release(dry_run=False):
     return transfer_shortcut(ga, native, themed, "Meta+R", "Win+R", dry_run)
 
 
+def clipboard_release(dry_run=False):
+    # Removing the tray alone must not strand Win+V when no shell router
+    # binary remains installed. A full uninstall restores backups first.
+    ga = GlobalAccel()
+    themed = themed_clipboard_target(ga)
+    if not themed or parse("Meta+V") not in ga.keys(themed):
+        return 0
+    native = clipboard_target(ga)
+    if not native:
+        return 1
+    return transfer_shortcut(ga, native, themed, "Meta+V", "Win+V", dry_run)
+
+
 def clipboard_apply(dry_run=False):
     ga = GlobalAccel()
     # Plasma starts Klipper asynchronously when loading the native clipboard
@@ -476,7 +489,7 @@ def show():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("command", choices=["apply", "restore", "tray-apply", "tray-restore", "clipboard-apply", "run-apply", "run-release", "show"])
+    ap.add_argument("command", choices=["apply", "restore", "tray-apply", "tray-restore", "clipboard-apply", "clipboard-release", "run-apply", "run-release", "show"])
     ap.add_argument("--group", choices=["shortcuts", "apps"], default="shortcuts")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
@@ -487,6 +500,8 @@ def main():
     try:
         if args.command == "clipboard-apply":
             return clipboard_apply(args.dry_run)
+        if args.command == "clipboard-release":
+            return clipboard_release(args.dry_run)
         if args.command == "run-apply":
             return run_apply(args.dry_run)
         if args.command == "run-release":

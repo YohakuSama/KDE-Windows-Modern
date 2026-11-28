@@ -100,3 +100,16 @@ void PanelPopupController::restoreShellPopupFocus()
     }
     m_shellPopupDismissTimer.stop();
 }
+
+void PanelPopupController::dismissAllPopups()
+{
+    m_shellPopupDismissTimer.stop();
+    const auto popups = m_shellPopups;
+    for (auto it = popups.cbegin(); it != popups.cend(); ++it) {
+        auto *window = it.value().data();
+        if (m_shellPopups.value(it.key()).data() != window)
+            continue;
+        if (window && window->isVisible())
+            dismissShellPopup(window);
+    }
+}

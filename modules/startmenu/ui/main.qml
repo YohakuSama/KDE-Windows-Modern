@@ -45,9 +45,22 @@ PlasmoidItem {
             kicker.startButton.activateStart();
     }
 
+    Connections {
+        target: Plasmoid
+        ignoreUnknownSignals: true
+        function onDestroyedChanged() {
+            if (Plasmoid.destroyed && kicker.searchWindow)
+                kicker.searchWindow.closePopup();
+        }
+        function onContainmentChanged() {
+            if (kicker.searchWindow)
+                kicker.searchWindow.closePopup();
+        }
+    }
+
     PlasmaCore.Action {
         id: openSearchAction
-        enabled: kicker.searchWindow !== null
+        enabled: !Plasmoid.destroyed && kicker.searchWindow !== null
         property var searchAnchor: null
         property bool taskbarBox: false
         text: i18n("Search")
@@ -64,7 +77,7 @@ PlasmoidItem {
 
     PlasmaCore.Action {
         id: searchStateAction
-        enabled: kicker.searchWindow?.taskbarSearchActive ?? false
+        enabled: !Plasmoid.destroyed && (kicker.searchWindow?.taskbarSearchActive ?? false)
         readonly property string queryText: kicker.searchWindow?.taskbarQuery ?? ""
         readonly property int queryCursor: kicker.searchWindow?.taskbarCursor ?? 0
         readonly property bool queryFocused: kicker.searchWindow?.taskbarEditorFocused ?? false

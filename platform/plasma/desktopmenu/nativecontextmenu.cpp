@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "menulayout.h"
+#include "panelpopuphost.h"
+#include "shellappearancemonitor.h"
+#include "shellshortcutrouter.h"
 #include <KConfigGroup>
 #include <KConfig>
 #include <KPluginFactory>
 #include <Plasma/Containment>
 #include <Plasma/ContainmentActions>
+#include <Plasma/Corona>
 #include <Plasma/PluginLoader>
 #include <QApplication>
 #include <QDebug>
@@ -28,6 +32,12 @@ public:
     }
     void restore(const KConfigGroup &config) override
     {
+        if (auto *desktop = containment(); desktop && desktop->corona()) {
+            auto *shell = desktop->corona();
+            PanelPopupHost::installForShell(shell);
+            ShellAppearanceMonitor::startForShell(shell);
+            ShellShortcutRouter::ensureForShell(shell);
+        }
         if (!m_native)
             m_native.reset(Plasma::PluginLoader::self()->loadContainmentActions(
                 containment(), QStringLiteral("org.kde.contextmenu")));

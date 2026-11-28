@@ -85,6 +85,7 @@ set(SRCS
     shellappearancemonitor.cpp shellappearancemonitor.h
     shellshortcutrouter.cpp shellshortcutrouter.h
     panelpopupcontroller.cpp panelpopupcontroller.h
+    panelpopuphost.cpp panelpopuphost.h
     popupeffects.cpp popupeffects.h
     systemtraymodel.cpp systemtraymodel.h
     systemtraysettings.cpp systemtraysettings.h
@@ -188,6 +189,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/funcs.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/colorType.js
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/controlMetrics.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/mediaSource.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/quickSettingsOrder.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/js/trayMetrics.js

@@ -8,7 +8,7 @@ class QQuickItem;
 
 // Native KWin effects and settings observation, independent of popup
 // focus policy and the tray's child-applet model.
-class PopupEffects final : public QObject
+class Q_DECL_HIDDEN PopupEffects final : public QObject
 {
     Q_OBJECT
 

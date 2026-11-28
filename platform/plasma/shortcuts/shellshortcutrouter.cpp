@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "shellshortcutrouter.h"
-#include "systemtray.h"
 
 #include <QAction>
 #include <QDBusConnection>
 #include <QDBusMessage>
-#include <QKeySequence>
-#include <QQuickItem>
 #include <QDebug>
+#include <QKeySequence>
+#include <QMetaObject>
+#include <QQuickItem>
 
 #include <KGlobalAccel>
 #include <KIO/ApplicationLauncherJob>
@@ -15,59 +15,122 @@
 #include <KNotificationJobUiDelegate>
 #include <KService>
 
+#include <Plasma/Applet>
+#include <Plasma/Containment>
 #include <Plasma/Corona>
 
 using namespace Qt::StringLiterals;
 
+namespace
+{
+constexpr auto kRouterObjectName = "windowsModernShellShortcuts";
+constexpr auto kClipboardComponent = "org.kde.windowsmodern.clipboard";
+constexpr auto kClipboardAction = "show-history";
+constexpr auto kRunComponent = "org.kde.windowsmodern.run";
+constexpr auto kRunAction = "show-run";
+}
+
 ShellShortcutRouter::ShellShortcutRouter(Plasma::Corona *shell)
     : QObject(shell)
 {
-    setObjectName(u"windowsModernShellShortcuts"_s);
+    setObjectName(QString::fromLatin1(kRouterObjectName));
 }
 
-ShellShortcutRouter *ShellShortcutRouter::attach(Plasma::Corona *shell, SystemTray *client, QQuickItem *representation)
+QObject *ShellShortcutRouter::ensureForShell(Plasma::Corona *shell)
 {
-    if (!shell || !client || !representation)
+    if (!shell)
         return nullptr;
-    auto *router = shell->findChild<ShellShortcutRouter *>(
-        u"windowsModernShellShortcuts"_s, Qt::FindDirectChildrenOnly);
-    if (!router)
-        router = new ShellShortcutRouter(shell);
-
-    for (auto &entry : router->m_clients) {
-        if (entry.tray.data() == client) {
-            // A new representation can become ready before the old one is
-            // destroyed. Only the current representation controls routing.
-            entry.representation = representation;
-            router->ensureActions();
-            return router;
-        }
+    if (auto *existing = shell->findChild<QObject *>(
+            QString::fromLatin1(kRouterObjectName), Qt::FindDirectChildrenOnly)) {
+        QMetaObject::invokeMethod(existing, "ensureActions", Qt::DirectConnection);
+        return existing;
     }
-    router->m_clients.append(Client{QPointer<SystemTray>(client), QPointer<QQuickItem>(representation)});
-    connect(client, &Plasma::Containment::screenChanged,
-            router, &ShellShortcutRouter::ensureActions);
+    auto *router = new ShellShortcutRouter(shell);
     router->ensureActions();
     return router;
 }
 
-void ShellShortcutRouter::detach(SystemTray *client)
+QObject *ShellShortcutRouter::attach(Plasma::Corona *shell, Plasma::Containment *client, QQuickItem *representation)
 {
-    disconnect(client, &Plasma::Containment::screenChanged,
-               this, &ShellShortcutRouter::ensureActions);
-    m_clients.removeIf([client](const Client &entry) {
-        return !entry.tray || entry.tray.data() == client;
+    if (!shell || !client || !representation)
+        return nullptr;
+    auto *router = ensureForShell(shell);
+    if (!router)
+        return nullptr;
+    QMetaObject::invokeMethod(router, "attachClient", Qt::DirectConnection,
+                              Q_ARG(QObject *, client),
+                              Q_ARG(QObject *, representation));
+    return router;
+}
+
+void ShellShortcutRouter::detach(Plasma::Corona *shell, Plasma::Containment *client)
+{
+    if (!shell || !client)
+        return;
+    if (auto *router = shell->findChild<QObject *>(
+            QString::fromLatin1(kRouterObjectName), Qt::FindDirectChildrenOnly)) {
+        QMetaObject::invokeMethod(router, "detachClient", Qt::DirectConnection,
+                                  Q_ARG(QObject *, client));
+    }
+}
+
+void ShellShortcutRouter::refresh(Plasma::Corona *shell)
+{
+    if (!shell)
+        return;
+    if (auto *router = shell->findChild<QObject *>(
+            QString::fromLatin1(kRouterObjectName), Qt::FindDirectChildrenOnly)) {
+        QMetaObject::invokeMethod(router, "ensureActions", Qt::DirectConnection);
+    }
+}
+
+void ShellShortcutRouter::attachClient(QObject *clientObject, QObject *representationObject)
+{
+    auto *client = qobject_cast<Plasma::Containment *>(clientObject);
+    auto *representation = qobject_cast<QQuickItem *>(representationObject);
+    if (!client || !representation)
+        return;
+
+    for (auto &entry : m_clients) {
+        if (entry.tray.data() == client) {
+            // A new representation can become ready before the old one is
+            // destroyed. Only the current representation controls routing.
+            entry.representation = representation;
+            ensureActions();
+            return;
+        }
+    }
+    m_clients.append(Client{QPointer<Plasma::Containment>(client), QPointer<QQuickItem>(representation)});
+    connect(client, &Plasma::Containment::screenChanged,
+            this, &ShellShortcutRouter::ensureActions, Qt::UniqueConnection);
+    connect(client, &Plasma::Applet::destroyedChanged,
+            this, &ShellShortcutRouter::ensureActions, Qt::UniqueConnection);
+    ensureActions();
+}
+
+void ShellShortcutRouter::detachClient(QObject *clientObject)
+{
+    auto *client = qobject_cast<Plasma::Containment *>(clientObject);
+    if (client) {
+        disconnect(client, &Plasma::Containment::screenChanged,
+                   this, &ShellShortcutRouter::ensureActions);
+        disconnect(client, &Plasma::Applet::destroyedChanged,
+                   this, &ShellShortcutRouter::ensureActions);
+    }
+    m_clients.removeIf([clientObject](const Client &entry) {
+        return !entry.tray || static_cast<QObject *>(entry.tray.data()) == clientObject;
     });
     // Keep the existing action identities and user bindings even if all
     // tray representations disappear. Native fallbacks remain available
     // until another representation attaches or the Corona is destroyed.
 }
 
-SystemTray *ShellShortcutRouter::target() const
+Plasma::Containment *ShellShortcutRouter::target() const
 {
-    SystemTray *secondary = nullptr;
+    Plasma::Containment *secondary = nullptr;
     for (const auto &entry : m_clients) {
         auto *client = entry.tray.data();
-        if (!client || !entry.representation)
+        if (!client || client->destroyed() || !entry.representation)
             continue;
         const int screen = static_cast<int>(client->screen());
         if (screen == 0)
@@ -80,35 +143,46 @@ SystemTray *ShellShortcutRouter::target() const
 
 void ShellShortcutRouter::ensureActions()
 {
-    // Don't offer an action for initial installer migration until at
-    // least one eligible panel has completed its representation.
-    if (!target())
-        return;
+    // On a fresh session without a tray, do not advertise an unbound action
+    // for initial installer migration until a tray representation is ready.
+    // However, if Win+R or Win+V was already bound to our component in a
+    // previous session and the user removed the tray, claim that existing
+    // binding immediately on cold start so its native fallback still fires.
+    const bool readyTray = target() != nullptr;
+    auto *accel = KGlobalAccel::self();
 
-    if (!m_clipboard) {
+    if (!m_clipboard && (readyTray || !accel->globalShortcut(
+            QString::fromLatin1(kClipboardComponent), QString::fromLatin1(kClipboardAction)).isEmpty())) {
         m_clipboard = new QAction(i18n("Open clipboard history"), this);
-        m_clipboard->setObjectName(u"show-history"_s);
-        m_clipboard->setProperty("componentName", u"org.kde.windowsmodern.clipboard"_s);
+        m_clipboard->setObjectName(QString::fromLatin1(kClipboardAction));
+        m_clipboard->setProperty("componentName", QString::fromLatin1(kClipboardComponent));
         m_clipboard->setProperty("componentDisplayName", u"Windows Modern"_s);
         connect(m_clipboard, &QAction::triggered, this, &ShellShortcutRouter::showClipboard);
-        KGlobalAccel::self()->setShortcut(m_clipboard, QList<QKeySequence>{});
+        accel->setShortcut(m_clipboard, QList<QKeySequence>{});
     }
-    if (!m_run) {
+    if (!m_run && (readyTray || !accel->globalShortcut(
+            QString::fromLatin1(kRunComponent), QString::fromLatin1(kRunAction)).isEmpty())) {
         m_run = new QAction(i18n("Open Run dialog"), this);
-        m_run->setObjectName(u"show-run"_s);
-        m_run->setProperty("componentName", u"org.kde.windowsmodern.run"_s);
+        m_run->setObjectName(QString::fromLatin1(kRunAction));
+        m_run->setProperty("componentName", QString::fromLatin1(kRunComponent));
         m_run->setProperty("componentDisplayName", u"Windows Modern"_s);
         connect(m_run, &QAction::triggered, this, &ShellShortcutRouter::showRun);
-        KGlobalAccel::self()->setShortcut(m_run, QList<QKeySequence>{});
+        accel->setShortcut(m_run, QList<QKeySequence>{});
     }
 }
 
 void ShellShortcutRouter::showClipboard()
 {
-    if (auto *client = target(); client &&
-        client->appletForPluginId(u"org.kde.plasma.clipboard"_s)) {
-        Q_EMIT client->clipboardHistoryRequested();
-        return;
+    if (auto *client = target()) {
+        QQuickItem *clipboardApplet = nullptr;
+        const bool resolved = QMetaObject::invokeMethod(
+            client, "appletForPluginId", Qt::DirectConnection,
+            Q_RETURN_ARG(QQuickItem *, clipboardApplet),
+            Q_ARG(QString, u"org.kde.plasma.clipboard"_s));
+        if (resolved && clipboardApplet) {
+            QMetaObject::invokeMethod(client, "clipboardHistoryRequested", Qt::DirectConnection);
+            return;
+        }
     }
     // The native clipboard backend is also the fallback used when its
     // child applet is disabled. Never invent a separate clipboard store.
@@ -120,8 +194,8 @@ void ShellShortcutRouter::showClipboard()
 void ShellShortcutRouter::showRun()
 {
     if (auto *client = target()) {
-        Q_EMIT client->runDialogRequested();
-        return;
+        if (QMetaObject::invokeMethod(client, "runDialogRequested", Qt::DirectConnection))
+            return;
     }
     // Same native application used by the installer's fallback binding.
     const auto service = KService::serviceByDesktopName(u"org.kde.krunner"_s);

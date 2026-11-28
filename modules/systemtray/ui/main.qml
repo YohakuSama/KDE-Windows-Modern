@@ -112,9 +112,17 @@ ContainmentItem {
 
     Connections {
         target: Plasmoid
+        ignoreUnknownSignals: true
         function onActivated() {
             root.quickSettingsOrigin = null;
             systemTrayState.toggleHome(false);
+        }
+        function onDestroyedChanged() {
+            if (Plasmoid.destroyed) {
+                systemTrayState.expanded = false;
+                if (runLoader.item)
+                    runLoader.item.close();
+            }
         }
         function onRunDialogRequested() {
             systemTrayState.expanded = false;

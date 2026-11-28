@@ -11,10 +11,11 @@ find_package(ECM REQUIRED 5.240.0)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 include(ECMQtDeclareLoggingCategory)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2)
 find_package(KF6 REQUIRED COMPONENTS
     Config
     I18n
+    JobWidgets
     KIO
     Service
     WindowSystem
@@ -57,6 +58,16 @@ set(CPP_SRCS
     ${SRC_LOGGING}
     backend.cpp
     backend.h
+    panelpopupcontroller.cpp
+    panelpopupcontroller.h
+    panelpopuphost.cpp
+    panelpopuphost.h
+    popupeffects.cpp
+    popupeffects.h
+    shellappearancemonitor.cpp
+    shellappearancemonitor.h
+    shellshortcutrouter.cpp
+    shellshortcutrouter.h
     smartlauncherbackend.cpp
     smartlauncherbackend.h
     smartlauncheritem.cpp
@@ -76,6 +87,16 @@ plasma_add_applet(org.kde.plasma.icontasks
         floatingtooltiparea.h
         floatingtooltipdialog.cpp
         floatingtooltipdialog.h
+        panelpopupcontroller.cpp
+        panelpopupcontroller.h
+        panelpopuphost.cpp
+        panelpopuphost.h
+        popupeffects.cpp
+        popupeffects.h
+        shellappearancemonitor.cpp
+        shellappearancemonitor.h
+        shellshortcutrouter.cpp
+        shellshortcutrouter.h
         smartlauncherbackend.cpp
         smartlauncherbackend.h
         smartlauncheritem.cpp
@@ -90,17 +111,22 @@ target_sources(org.kde.plasma.icontasks PRIVATE ${KCFG_SRCS} ${SRC_LOGGING})
 
 target_link_libraries(org.kde.plasma.icontasks PRIVATE
     Qt6::Core
+    Qt6::DBus
+    Qt6::Gui
     Qt6::Qml
     Qt6::Quick
     Plasma::Activities
     Plasma::ActivitiesStats
+    KF6::ConfigCore
     KF6::ConfigGui
     KF6::GlobalAccel
     KF6::I18n
+    KF6::JobWidgets
     KF6::KIOCore
     KF6::KIOGui
     KF6::KIOFileWidgets
     KF6::Notifications
+    KF6::Package
     Plasma::Plasma
     Plasma::PlasmaQuick
     KSysGuard::ProcessCore
@@ -123,6 +149,7 @@ ecm_target_qml_sources(org.kde.plasma.icontasks
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/ConfigBehavior.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/config.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/ContextMenu.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/controlMetrics.js
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/GroupDialog.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/GroupExpanderOverlay.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/main.qml
