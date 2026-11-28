@@ -149,6 +149,7 @@ ecm_target_qml_sources(org.kde.windowsmodern.systemtray
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/AbstractItem.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/BackgroundAppItem.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/CompactApplet.qml
+        ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/ConfigColors.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/ConfigGeneral.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/config.qml
         ${CMAKE_CURRENT_SOURCE_DIR}/contents/ui/CurrentItemHighLight.qml

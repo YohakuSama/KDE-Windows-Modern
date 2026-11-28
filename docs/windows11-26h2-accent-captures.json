@@ -330,5 +330,45 @@
       ],
       "provenance": "The resource branch verification.json lists these two files with identical SHA-256 equal to the captured registered wallpaper hash. The script's original source hash remains null. This establishes a reference byte-identity from the archived index, not the operator-selected path or the extraction algorithm."
     }
+  },
+  "preset_table_binary_audit": {
+    "windows_build": "26300.9974",
+    "entry_count": 48,
+    "entry_size_bytes": 32,
+    "table_bytes": 1536,
+    "slot_order": [
+      "AccentLight3",
+      "AccentLight2",
+      "AccentLight1",
+      "Accent",
+      "AccentDark1",
+      "AccentDark2",
+      "AccentDark3",
+      "CompanionPresetRgb"
+    ],
+    "sources": [
+      {
+        "path": "Windows/System32/uxtheme.dll",
+        "sha256": "e2e972e21a16c62e7c678334dc50f33c2f327c1b6854a2fb096ca244ae650f27",
+        "bytes": 688128,
+        "table_offset": 474752
+      },
+      {
+        "path": "Windows/System32/windowsudk.shellcommon.dll",
+        "sha256": "9e84c8cedb33956f3ad3865328099f1598e347fb09a3af961b9056a128d36232",
+        "bytes": 7290880,
+        "table_offset": 6153856
+      }
+    ],
+    "verified_rgb_values": 336,
+    "mismatches_against_preset_shades": 0,
+    "settings_swatch_grid_6x8": [
+      ["#FFB900", "#FF8C00", "#F7630C", "#CA5010", "#DA3B01", "#EF6950", "#D13438", "#FF4343"],
+      ["#E74856", "#E81123", "#EA005E", "#C30052", "#E3008C", "#BF0077", "#C239B3", "#9A0089"],
+      ["#0078D4", "#0063B1", "#8E8CD8", "#6B69D6", "#8764B8", "#744DA9", "#B146C2", "#881798"],
+      ["#0099BC", "#2D7D9A", "#00B7C3", "#038387", "#00B294", "#018574", "#00CC6A", "#10893E"],
+      ["#7A7574", "#5D5A58", "#68768A", "#515C6B", "#567C73", "#486860", "#498205", "#107C10"],
+      ["#767676", "#4C4A48", "#69797E", "#4A5459", "#647C64", "#525E54", "#847545", "#7E735F"]
+    ]
   }
 }

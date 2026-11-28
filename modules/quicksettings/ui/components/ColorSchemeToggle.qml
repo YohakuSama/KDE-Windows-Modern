@@ -35,6 +35,10 @@ Lib.Tile {
     // Reflect the actual palette. Do not reapply the whole global theme.
     onClicked: switchTheme()
     onMiddleClicked: switchTheme()
+    onRightClicked: {
+        const configure = Plasmoid.internalAction("configure");
+        if (configure) configure.trigger();
+    }
     tooltipText: darkMode ? i18n("Switch to light mode") : i18n("Switch to dark mode")
 
     Plasma5Support.DataSource {

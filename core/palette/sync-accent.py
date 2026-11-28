@@ -52,6 +52,8 @@ write_pending = _theme_files.write_pending
 # Color and wallpaper analysis interfaces (core/palette/accent-algorithms.py)
 COLOR = _algorithms.COLOR
 PRESET_SHADE_ROLES = _algorithms.PRESET_SHADE_ROLES
+PRESET_SWATCH_GRID = _algorithms.PRESET_SWATCH_GRID
+PRESET_SWATCH_ORDER = _algorithms.PRESET_SWATCH_ORDER
 PRESET_SHADES = _algorithms.PRESET_SHADES
 rgb = _algorithms.rgb
 custom_hsl_coordinates = _algorithms.custom_hsl_coordinates

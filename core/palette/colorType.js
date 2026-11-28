@@ -58,6 +58,10 @@ function cardBorder(dark) { return dark ? "#383838" : "#DCDCDC"; }
 function divider(dark) { return dark ? "#18FFFFFF" : "#12000000"; }
 function footerTint(dark) { return dark ? "#39000000" : "#05000000"; }
 function trackFill(dark) { return dark ? "#9B9B9B" : "#767676"; }
+// WinUI 21h1_themeresources.xbf: SmokeFillColorDefault (#4D000000 in Dark @326424 and Light @361545).
+function smokeFill() { return "#4D000000"; }
+// WinUI 21h1_themeresources.xbf: TextOnAccentFillColorDisabled (#87FFFFFF Dark @325865, #FFFFFFFF Light @360986).
+function onAccentDisabledText(dark) { return dark ? "#87FFFFFF" : "#FFFFFFFF"; }
 function rowFill(dark, selected, hovered, pressed) {
     const alpha = pressed ? 0.10 : selected || hovered ? 0.065 : 0;
     const ink = dark ? 1 : 0;
@@ -84,6 +88,10 @@ function accentBrushOpacity(hovered, pressed) {
 function accentStateBrush(dark, accent, enabled, hovered, pressed) {
     if (!enabled) return Qt.color(dark ? "#28FFFFFF" : "#37000000");
     return Qt.rgba(accent.r, accent.g, accent.b, accentBrushOpacity(hovered, pressed));
+}
+function accentFillBrush(dark, accent, surface, enabled, hovered, pressed) {
+    if (!enabled) return Qt.color(dark ? "#28FFFFFF" : "#37000000");
+    return blendOver(accent, surface, accentBrushOpacity(hovered, pressed));
 }
 function switchOffFill(dark, enabled, hovered, pressed) {
     if (!enabled) return Qt.color("#00FFFFFF");

@@ -41,13 +41,25 @@ def _load_adjacent(module_name, filename):
     return module
 
 
-# Windows preset RGB measurements reported in the public analysis below.
-# Blue and orange were independently matched against build 26300.9974.
-# Other rows remain third-party reference values pending target validation.
-# https://gist.github.com/cnbluefire/7ffa04c493c57b8a67f6a8baa2c726f7
-# Order: Light3, Light2, Light1, Dark1, Dark2, Dark3. The key is Accent.
+# Authentic Windows 11 26H2 (Build 26300.9974) 48-preset AccentPalette table.
+# Verified byte-for-byte (336/336 RGB values, 0 differences) against both
+# System32/uxtheme.dll (@0x73E80, 1536 bytes) and System32/windowsudk.shellcommon.dll
+# (@0x5DE680, 1536 bytes), where each row stores eight COLORREF slots:
+# Light3, Light2, Light1, Accent, Dark1, Dark2, Dark3, and a companion swatch.
+# Order below: Light3, Light2, Light1, Dark1, Dark2, Dark3. The key is Accent.
 PRESET_SHADE_ROLES = ("AccentLight3", "AccentLight2", "AccentLight1",
                       "AccentDark1", "AccentDark2", "AccentDark3")
+# Windows Settings -> Personalization -> Colors 6x8 "Windows colors" grid,
+# transposed directly from uxtheme.dll's 8x6 column-major table (@0x73E80).
+PRESET_SWATCH_GRID = (
+    ("#FFB900", "#FF8C00", "#F7630C", "#CA5010", "#DA3B01", "#EF6950", "#D13438", "#FF4343"),
+    ("#E74856", "#E81123", "#EA005E", "#C30052", "#E3008C", "#BF0077", "#C239B3", "#9A0089"),
+    ("#0078D4", "#0063B1", "#8E8CD8", "#6B69D6", "#8764B8", "#744DA9", "#B146C2", "#881798"),
+    ("#0099BC", "#2D7D9A", "#00B7C3", "#038387", "#00B294", "#018574", "#00CC6A", "#10893E"),
+    ("#7A7574", "#5D5A58", "#68768A", "#515C6B", "#567C73", "#486860", "#498205", "#107C10"),
+    ("#767676", "#4C4A48", "#69797E", "#4A5459", "#647C64", "#525E54", "#847545", "#7E735F"),
+)
+PRESET_SWATCH_ORDER = tuple(color for row in PRESET_SWATCH_GRID for color in row)
 PRESET_SHADES = {
     "#0063B1": ("#9CEBFF", "#40BDFF", "#007FDC", "#0055A1", "#00337C", "#00145A"),
     "#0078D4": ("#99EBFF", "#4CC2FF", "#0091F8", "#0067C0", "#003E92", "#001A68"),

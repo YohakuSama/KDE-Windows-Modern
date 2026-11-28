@@ -73,7 +73,9 @@ Item {
                     radius: width / 2       // a circle in every state, like the day cells
                     color: {
                         if (tile.modelData.isCurrent) {
-                            return palette.accent;
+                            return tile.containsPress ? palette.accentPressed
+                                : tile.containsMouse || tile.activeFocus ? palette.accentHovered
+                                : palette.accent;
                         } else if (tile.containsPress) {
                             return palette.pressed;
                         } else if (tile.containsMouse || tile.activeFocus) {

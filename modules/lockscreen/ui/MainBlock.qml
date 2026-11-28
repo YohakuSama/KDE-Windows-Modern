@@ -167,6 +167,8 @@ FocusScope {
             font.family: Kirigami.Theme.defaultFont.family
             font.pixelSize: LockMetrics.credentialFontSize
             color: "#FFFFFF"
+            selectionColor: "#0078D4"
+            selectedTextColor: "#FFFFFF"
             focus: true
             leftPadding: 8
             verticalAlignment: TextInput.AlignVCenter

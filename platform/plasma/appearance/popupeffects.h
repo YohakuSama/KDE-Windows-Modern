@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include <QFileSystemWatcher>
 #include <QObject>
 #include <KConfigWatcher>
 
@@ -17,10 +18,14 @@ public:
     void setNotificationPopupSlide(QQuickItem *content);
     bool setSplitPopupBlur(QQuickItem *content, QQuickItem *first, QQuickItem *second,
                           qreal radius, bool enabled);
+    static bool transparencyEffectsEnabled();
 
 Q_SIGNALS:
     void preferencesChanged();
 
 private:
+    void refreshTransparencyWatch();
+
     KConfigWatcher::Ptr m_blurConfigWatcher;
+    QFileSystemWatcher m_transparencyWatcher;
 };

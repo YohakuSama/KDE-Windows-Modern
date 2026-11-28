@@ -16,12 +16,12 @@ QtObject {
     readonly property color background:       isDark ? "#202020" : "#F9F9F9"
     readonly property color surface:          isDark ? "#2C2C2C" : "#FFFFFF"
     readonly property color surfaceBorder:    ColorType.cardBorder(isDark)
-    // Keep the same neutral tint as Quick Settings. Alpha is used only
-    // after the native rounded-region blur is enabled.
+    readonly property color smoke:            ColorType.smokeFill()
+    // Dark detached flyout base matches WinUI SolidBackgroundFillColorSecondary (#FF1C1C1C @326554);
+    // alpha is used only after the native rounded-region blur is enabled.
     readonly property color detachedPanel: isDark ? "#1C1C1C" : ColorType.cardFill(false, false)
     readonly property color acrylicPanel: isDark ? "#F21C1C1C" : ColorType.cardFill(false, true)
-    // The calendar header is darker than its body in the Windows dark
-    // reference. A translucent inner tint preserves the split blur.
+    // WinUI LayerOnAcrylicFillColorDefault (#09FFFFFF Dark @326463); keeps calendar header darker than body.
     readonly property color calendarBodyTint: isDark ? "#09FFFFFF" : "#80FFFFFF"
     readonly property color panelTint: isDark ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.30)
     readonly property color progressTrack: ColorType.trackFill(isDark)
@@ -36,7 +36,11 @@ QtObject {
     function contrast(a, b) { return ColorType.contrastRatio(a, b); }
     function accentForSurface(source, surface, minimum) { return ColorType.accentForSurface(source, surface, minimum); }
     readonly property color accent: accentForSurface(Kirigami.Theme.highlightColor, detachedPanel, isDark ? 4.5 : 3)
+    readonly property color accentHovered: ColorType.blendOver(accent, detachedPanel, 0.9)
+    readonly property color accentPressed: ColorType.blendOver(accent, detachedPanel, 0.8)
+    readonly property color accentDisabled: ColorType.accentStateBrush(isDark, accent, false, false, false)
     readonly property color accentText: ColorType.contrastingForeground(accent)
+    readonly property color accentTextDisabled: ColorType.onAccentDisabledText(isDark)
     readonly property color accentLink: accentForSurface(Kirigami.Theme.linkColor, detachedPanel, 4.5)
     readonly property color hover:            isDark ? "#3F3F3F" : "#E9E9E9"
     readonly property color pressed:          isDark ? "#4A4A4A" : "#DADADA"

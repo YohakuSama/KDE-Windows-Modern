@@ -55,7 +55,9 @@ MouseArea {
         radius: width / 2
         color: {
             if (dayData.isToday) {
-                return dayDelegate.colors.accent;
+                return dayDelegate.containsPress ? dayDelegate.colors.accentPressed
+                    : dayDelegate.containsMouse ? dayDelegate.colors.accentHovered
+                    : dayDelegate.colors.accent;
             } else if (dayDelegate.containsPress) {
                 return dayDelegate.colors.pressed;
             } else if (dayDelegate.containsMouse) {

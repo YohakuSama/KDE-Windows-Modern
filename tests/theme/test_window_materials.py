@@ -563,7 +563,14 @@ class WindowMaterialTests(unittest.TestCase):
         derive = sync["derive_manual_palette"]
         presets = sync["PRESET_SHADES"]
         roles = sync["PRESET_SHADE_ROLES"]
+        grid = sync["PRESET_SWATCH_GRID"]
+        order = sync["PRESET_SWATCH_ORDER"]
         self.assertEqual(len(presets), 48)
+        self.assertEqual(len(grid), 6)
+        self.assertTrue(all(len(row) == 8 for row in grid))
+        self.assertEqual(len(order), 48)
+        self.assertEqual(set(order), set(presets))
+        self.assertEqual((grid[0][0], grid[2][0]), ("#FFB900", "#0078D4"))
         self.assertEqual(len(roles), 6)
         self.assertEqual(set(roles), {
             "AccentLight3", "AccentLight2", "AccentLight1",
@@ -2040,7 +2047,7 @@ class WindowMaterialTests(unittest.TestCase):
                                 config.split('[' + name + ']\n', 1)[1].split('\n[', 1)[0].splitlines()
                                 if '=' in line and not line.startswith('#'))
                 general = section('%General')
-                self.assertEqual(general['scroll_min_extent'], '32')
+                self.assertEqual(general['scroll_min_extent'], '30')
                 self.assertEqual(general['transient_groove'], 'false')
                 self.assertEqual(general['tree_branch_line'], 'false')
                 self.assertEqual(section('Hacks')['force_size_grip'], 'false')

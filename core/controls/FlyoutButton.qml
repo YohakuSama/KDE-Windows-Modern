@@ -44,8 +44,11 @@ PlasmaComponents.Button {
     readonly property bool selected: checked || attentionActive
     // Pointer activation must not leave the keyboard focus outline behind.
     readonly property bool keyboardFocus: activeFocus && visualFocus
-    icon.color: selected ? colors.accentText : colors.text
-    palette.buttonText: selected ? colors.accentText : colors.text
+    readonly property color foregroundColor: selected
+        ? (enabled ? colors.accentText : colors.accentTextDisabled)
+        : (enabled ? colors.text : colors.textDisabled)
+    icon.color: foregroundColor
+    palette.buttonText: foregroundColor
     // The stock ButtonContent uses a theme-aware Kirigami.Icon but does not
     // force a mask for file URLs. Explicitly tint the private SVG; if an
     // icon-only action lacks its import, show its text instead of a blank slot.
@@ -92,7 +95,7 @@ PlasmaComponents.Button {
             text: control.textFallback ? control.missingIconText : control.Kirigami.MnemonicData.richTextLabel
             textFormat: control.textFallback ? Text.PlainText : Text.AutoText
             font: control.font
-            color: control.selected ? colors.accentText : colors.text
+            color: control.foregroundColor
             horizontalAlignment: control.display === PlasmaComponents.AbstractButton.TextBesideIcon
                 && content.iconShown ? (control.mirrored ? Text.AlignRight : Text.AlignLeft) : Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -102,12 +105,15 @@ PlasmaComponents.Button {
 
     background: Rectangle {
         radius: ClockMetrics.flyoutButtonRadius
-        color: control.selected ? colors.accent
+        color: control.selected
+            ? (!control.enabled ? colors.accentDisabled
+                : control.down ? colors.accentPressed
+                : control.hovered || control.keyboardFocus ? colors.accentHovered : colors.accent)
             : control.down ? colors.pressed
             : control.hovered || control.keyboardFocus ? colors.hover
             : control.quiet ? "transparent" : colors.surface
         border.width: control.quiet && !control.selected && !control.keyboardFocus ? 0 : 1
-        border.color: control.keyboardFocus || control.selected ? colors.accent : colors.surfaceBorder
+        border.color: control.keyboardFocus || (control.selected && control.enabled) ? colors.accent : colors.surfaceBorder
         opacity: control.enabled ? 1 : 0.55
     }
 }

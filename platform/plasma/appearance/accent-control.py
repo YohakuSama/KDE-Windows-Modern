@@ -54,6 +54,8 @@ SYNC = {
     "restore_pending": _theme_files.restore_pending,
     "write_pending": _theme_files.write_pending,
     "PRESET_SHADE_ROLES": _algorithms.PRESET_SHADE_ROLES,
+    "PRESET_SWATCH_GRID": _algorithms.PRESET_SWATCH_GRID,
+    "PRESET_SWATCH_ORDER": _algorithms.PRESET_SWATCH_ORDER,
     "PRESET_SHADES": _algorithms.PRESET_SHADES,
     "WALLPAPER_ANALYSIS_REVISION": _algorithms.WALLPAPER_ANALYSIS_REVISION,
     "WallpaperFileChangedError": _algorithms.WallpaperFileChangedError,
@@ -466,7 +468,66 @@ def synchronize(mode, action, inputs):
     return bool(pending or native_pending or refresh or desired_raw != raw)
 
 
+def status_snapshot():
+    lookfeel = read("KDE", "LookAndFeelPackage")
+    if lookfeel is None and (CONFIG / "kdedefaults/package").is_file():
+        try:
+            lookfeel = (CONFIG / "kdedefaults/package").read_text(encoding="utf-8").strip()
+        except OSError:
+            lookfeel = None
+    scheme = read("General", "ColorScheme")
+    mode = "dark" if scheme == "WindowsModernDark" else "light" if scheme == "WindowsModernLight" else "custom"
+    try:
+        native_wp, native_rgb = native_accent()
+    except ValueError:
+        native_wp, native_rgb = False, None
+    raw = read(GROUP, KEY)
+    accent_source = "native"
+    pending = False
+    manual_color = None
+    palette = None
+    if raw is not None and not (native_wp or native_rgb):
+        try:
+            parsed = json.loads(raw)
+            palette = decode_state(raw)
+            accent_source = parsed.get("source", "native")
+            pending = parsed.get("pending") is True
+            manual_color = (SYNC["rgb"](parsed["manual_color"])
+                            if "manual_color" in parsed else palette.get("Accent"))
+        except (ValueError, KeyError, TypeError):
+            palette = None
+    selection_raw = read("Colors:Selection", "BackgroundNormal")
+    try:
+        effective_selection = SYNC["rgb"](selection_raw) if selection_raw else None
+    except ValueError:
+        effective_selection = None
+    active_accent = palette["Accent"] if palette else (native_rgb or effective_selection or "#0078D4")
+    home_off = Path.home() / ".local/share/windows-modern/transparency-off"
+    data_off = DATA / "windows-modern/transparency-off"
+    transparency_off = (data_off.exists() or data_off.is_symlink()
+                        or home_off.exists() or home_off.is_symlink())
+    return {
+        "active_package": lookfeel == THEME_ID,
+        "mode": mode,
+        "accent_source": accent_source,
+        "pending": pending,
+        "manual_color": manual_color,
+        "active_accent": active_accent,
+        "palette": palette,
+        "native_override": bool(native_wp or native_rgb),
+        "native_wallpaper_accent": bool(native_wp),
+        "native_accent_color": native_rgb,
+        "transparency_enabled": not transparency_off,
+        "swatch_grid": [list(row) for row in SYNC["PRESET_SWATCH_GRID"]],
+    }
+
+
 def main():
+    if sys.argv[1:] == ["--status-json"]:
+        if os.geteuid() == 0:
+            sys.exit("Run accent control as the desktop user")
+        print(json.dumps(status_snapshot(), separators=(",", ":"), sort_keys=True))
+        return
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=MODES)
     parser.add_argument("action", choices=("sync", "reapply", "manual", "wallpaper", "automatic", "native", "initialize"))

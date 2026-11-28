@@ -63,6 +63,9 @@ FocusScope {
 
         color: WinStyle.foregroundColor
         placeholderTextColor: WinStyle.mutedForegroundColor
+        // WinUI TextSelectionHighlightColor (Accent) + TextOnAccentFillColorSelectedText (#FFFFFFFF).
+        selectionColor: "#0078D4"
+        selectedTextColor: "#FFFFFF"
         font.family: WinStyle.fontFamily
         font.pixelSize: WinStyle.bodyPixelSize
         background: Item {}

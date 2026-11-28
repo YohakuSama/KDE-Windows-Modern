@@ -10,11 +10,18 @@ missing="__windows_modern_missing_appearance_key__"
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 [ "$EUID" -ne 0 ] || fail "Switch appearance as the desktop user, not root."
 [ "$#" -ge 1 ] || fail "Specify an appearance operation."
-usage="Usage: switch-mode.sh light|dark|--migrate|--sync-accent|--manual-accent RGB|--wallpaper-accent IMAGE...|--automatic-accent|--native-accent|--initialize-accent"
+usage="Usage: switch-mode.sh light|dark|--status-json|--migrate|--sync-accent|--manual-accent RGB|--wallpaper-accent IMAGE...|--automatic-accent|--native-accent|--reset-native-accent [--automatic-accent|--manual-accent RGB]|--initialize-accent"
 case "$1" in
-    light|dark|--migrate|--sync-accent|--automatic-accent|--native-accent|--initialize-accent) [ "$#" -eq 1 ] || fail "$usage" ;;
+    light|dark|--status-json|--migrate|--sync-accent|--automatic-accent|--native-accent|--initialize-accent) [ "$#" -eq 1 ] || fail "$usage" ;;
     --manual-accent) [ "$#" -eq 2 ] || fail "$usage" ;;
     --wallpaper-accent) [ "$#" -ge 2 ] || fail "$usage" ;;
+    --reset-native-accent)
+        case "$#" in
+            1) ;;
+            2) [ "$2" = "--automatic-accent" ] || fail "$usage" ;;
+            3) [ "$2" = "--manual-accent" ] || fail "$usage" ;;
+            *) fail "$usage" ;;
+        esac ;;
     *) fail "Unknown appearance mode: $1" ;;
 esac
 for cmd in kreadconfig6 kwriteconfig6; do
@@ -61,6 +68,12 @@ fi
 # A no-op migration must also work during a non-interactive installation.
 if [ "$1" = --migrate ] && [ "$active" != "$legacy_light" ]; then
     exit 0
+fi
+if [ "$1" = --status-json ]; then
+    python="${XDG_STATE_HOME:-$HOME/.local/state}/windows-modern-nixos-test/runtime/bin/python3"
+    [ -x "$python" ] || python="$(command -v python3 || true)"
+    [ -x "$python" ] || fail "Python 3 is unavailable for appearance status."
+    exec "$python" -I "$(dirname -- "${BASH_SOURCE[0]}")/accent-control.py" --status-json
 fi
 if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
     command -v flock >/dev/null || fail "Missing command: flock"
@@ -257,6 +270,22 @@ case "$1" in
     --sync-accent)
         [ "$active" = "$theme_id" ] || exit 0
         sync_appearance
+        exit $? ;;
+    --reset-native-accent)
+        [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."
+        guard_config kdeglobals
+        write_key kdeglobals General AccentColor "$missing"
+        write_key kdeglobals General accentColorFromWallpaper "$missing"
+        shift
+        if [ "$#" -eq 0 ]; then
+            sync_appearance
+            exit $?
+        fi
+        action="${1#--}"
+        action="${action%-accent}"
+        shift
+        sync_accent "$action" "$@" || exit $?
+        publish_kvantum_reload
         exit $? ;;
     --manual-accent|--wallpaper-accent|--automatic-accent|--native-accent|--initialize-accent)
         [ "$active" = "$theme_id" ] || fail "Apply the shared Windows Modern global theme first."

@@ -18,6 +18,7 @@ import org.kde.milou as Milou
 import "../components"
 import "../code/tools.js" as Tools
 import "../code/theme.js" as Theme
+import "../code/colorType.js" as ColorType
 import "../code/controlMetrics.js" as ControlMetrics
 import "../code/startMenuMetrics.js" as StartMetrics
 
@@ -180,6 +181,9 @@ Item {
                 required property var modelData
 
                 readonly property bool active: resultsView.singleRunner === modelData.runner
+                readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+                readonly property color pillAccent: ColorType.accentForSurface(
+                    Kirigami.Theme.highlightColor, Kirigami.Theme.backgroundColor, dark ? 4.5 : 3)
 
                 radius: ControlMetrics.controlCornerRadius
                 implicitHeight: Math.max(28, pillLabel.implicitHeight + 8)
@@ -194,8 +198,13 @@ Item {
                 Keys.onEnterPressed: searchPage.activateFilter(modelData.runner)
                 Keys.onSpacePressed: searchPage.activateFilter(modelData.runner)
                 color: active
-                       ? Kirigami.Theme.highlightColor
-                       : (pillHover.containsMouse
+                       ? ColorType.accentFillBrush(dark, pillAccent, Kirigami.Theme.backgroundColor,
+                             true, pillHover.containsMouse, pillHover.containsPress)
+                       : (pillHover.containsPress
+                          ? Qt.rgba(Kirigami.Theme.textColor.r,
+                                    Kirigami.Theme.textColor.g,
+                                    Kirigami.Theme.textColor.b, 0.12)
+                          : pillHover.containsMouse
                           ? Qt.rgba(Kirigami.Theme.textColor.r,
                                     Kirigami.Theme.textColor.g,
                                     Kirigami.Theme.textColor.b, Theme.buttonFlatHoverOpacity)
@@ -203,7 +212,7 @@ Item {
                                     Kirigami.Theme.textColor.g,
                                     Kirigami.Theme.textColor.b, Theme.buttonFlatBackgroundOpacity))
                 border.width: active && !activeFocus ? 0 : 1
-                border.color: activeFocus ? Kirigami.Theme.highlightColor
+                border.color: activeFocus ? pillAccent
                     : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
                         Kirigami.Theme.textColor.b, Theme.buttonBorderOpacity)
                 Behavior on color { ColorAnimation { duration: ControlMetrics.microInteractionDuration } }
@@ -218,7 +227,9 @@ Item {
                     elide: Text.ElideRight
                     textFormat: Text.PlainText
                     text: filterPill.modelData.label
-                    color: filterPill.active ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
+                    color: filterPill.active
+                        ? ColorType.contrastingForeground(filterPill.pillAccent)
+                        : Kirigami.Theme.textColor
                     font.pixelSize: 12
                     font.weight: filterPill.active ? Font.DemiBold : Font.Normal
                 }
