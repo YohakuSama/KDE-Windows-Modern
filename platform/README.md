@@ -8,7 +8,7 @@ and version-specific adapters; do not replace the system backends.
 | plasma/systemtray/ | Native containment, D-Bus models, CMake and host |
 | plasma/taskbar/ | Native tasks backend, launcher/tooltip and CMake |
 | plasma/desktopmenu/ | Native containment action and CMake |
-| plasma/appearance/ | Appearance generation, shell-session wallpaper monitoring, popup compositor effects, host accent control and mode switching |
+| plasma/appearance/ | Appearance generation, shell-session wallpaper monitoring, popup compositor effects, shared KDE/wallpaper host queries (`appearance-host.py`), host accent control (`accent-control.py`) and mode switching (`switch-mode.sh`) |
 | plasma/popup/ | Panel-local popup focus, mutual exclusion, dismissal policy and containment-owned capability host |
 | plasma/appearance/atlas/ | Single editable Plasma desktop theme SVG atlas and metadata |
 | plasma/globaltheme/ | Global-theme metadata/defaults |
@@ -59,3 +59,16 @@ coordination and split blur are owned per panel containment by
 Start, Digital Clock and System Tray share one panel-local focus group and
 split-blur watcher even when no tray is present; full multi-screen, session
 and ABI acceptance remains with the maintainer.
+
+Host appearance synchronization loads its sibling algorithm, renderer, file
+transaction and session-host modules explicitly through `importlib` rather than
+`runpy` execution. `appearance-host.py` owns KDE configuration reads, active
+mode/renderer checks and live wallpaper D-Bus bridge discovery for both
+`accent-control.py` and `window-frames.py`. Non-Kvantum Qt styles (and
+system-only Kvantum installations without `~/.config/Kvantum/Windows-modern`)
+synchronize KDE `.colors` schemes, `[WindowsModernAccent]` state, Plasma
+palette notifications, Aurorae window-frame tinting and Plasma popup/panel
+transparency selectors cleanly; user-local Kvantum bindings, `StyleChanged`
+notifications and `live-reload.json` receipts run whenever user-local Kvantum
+assets / Kvantum style are active and fail closed on incomplete or externally
+linked user Kvantum directories.

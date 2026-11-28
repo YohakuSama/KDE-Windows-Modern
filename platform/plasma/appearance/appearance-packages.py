@@ -7,10 +7,10 @@ editable theme. Both Plasma renderer packages are materialized from it.
 Installed KPackages and Store archives receive real files, never source symlinks.
 """
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 import re
-import runpy
 import shutil
 import subprocess
 import sys
@@ -20,6 +20,25 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).absolute().parents[2]
 PACKAGE = "org.kde.windowsmodern.dark"
 LIGHT_PACKAGE = "org.kde.windowsmodern.light"
+
+
+def _load_module(module_name, path):
+    target = Path(path).absolute()
+    key = f"{module_name}:{target.as_posix()}"
+    cached = sys.modules.get(key)
+    if cached is not None:
+        return cached
+    spec = importlib.util.spec_from_file_location(key, target)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load module: {target}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[key] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(key, None)
+        raise
+    return module
 
 
 # These existing light variants share their SVG geometry. Keep their
@@ -375,7 +394,7 @@ def desktoptheme(root, destination, mode):
         # Use the existing material generators, including their validation
         # of the frame IDs and masks. Do not duplicate their geometry.
         for name in ("popup-frames.py", "panel-frames.py"):
-            write_frames = runpy.run_path(str(generators / name))["write_frames"]
+            write_frames = _load_module(f"windows_modern_{name[:-3]}", generators / name).write_frames
             write_frames(target, mode)
     apply_native_accent_roles(root, target, mode)
     return target
@@ -407,7 +426,7 @@ def aurorae(root, destination, mode):
 
     # Reuse the window material generator rather than substituting the
     # border, shadow or active/inactive frame colors heuristically.
-    render = runpy.run_path(str(root / "scripts/theme/window-frames.py"))["render"]
+    render = _load_module("windows_modern_window_frames", root / "scripts/theme/window-frames.py").render
     (target / "decoration.svg").write_text(render(mode), encoding="utf-8")
     for name in ("metadata.desktop", "metadata.json"):
         path = target / name
@@ -502,8 +521,9 @@ def lookfeel(root, destination, mode):
                            encoding="utf-8")
         scripts = target / "contents/scripts"
         scripts.mkdir()
-        for name in ("switch-mode.sh", "sync-accent.py", "accent-control.py", "wallpaper-icc.py",
-                     "window-frames.py", "theme-files.py", "palette.json"):
+        for name in ("switch-mode.sh", "sync-accent.py", "accent-algorithms.py",
+                     "accent-renderers.py", "appearance-host.py", "accent-control.py",
+                     "wallpaper-icc.py", "window-frames.py", "theme-files.py", "palette.json"):
             shutil.copy2(root / "scripts/theme" / name, scripts / name)
         shutil.copy2(root / "color-schemes/WindowsModern.colors.in", scripts)
     return target
@@ -520,7 +540,7 @@ def load_palette(root, mode):
 
 def render_color_scheme(root, mode):
     source = root / "color-schemes/WindowsModern.colors.in"
-    render = runpy.run_path(str(root / "scripts/theme/sync-accent.py"))["render_scheme"]
+    render = _load_module("windows_modern_accent_renderers", root / "scripts/theme/accent-renderers.py").render_scheme
     return render(source.read_text(encoding="utf-8"), load_palette(root, mode), mode)
 
 
@@ -608,7 +628,8 @@ def render_kvantum_svg(root, mode):
 def kvantum(root, destination):
     target = destination / "Windows-modern"
     target.mkdir(parents=True)
-    binding_builder = runpy.run_path(str(root / "scripts/theme/sync-accent.py"))["make_bindings"]
+    binding_builder = _load_module(
+        "windows_modern_accent_renderers", root / "scripts/theme/accent-renderers.py").make_bindings
     source = root / "Kvantum/Windows-modern"
     manifest = {}
     for mode, name in (("light", "Windows-modern"), ("dark", "Windows-modernDark")):

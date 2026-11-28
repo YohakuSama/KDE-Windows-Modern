@@ -46,6 +46,8 @@ def verify(revision, filename):
             "scripts/theme/window-frames.py", "scripts/theme/palette.json",
             "color-schemes/WindowsModern.colors.in",
             "scripts/theme/appearance-packages.py", "scripts/theme/sync-accent.py",
+            "scripts/theme/accent-algorithms.py", "scripts/theme/accent-renderers.py",
+            "scripts/theme/appearance-host.py",
             "scripts/theme/accent-control.py", "scripts/theme/wallpaper-icc.py",
             "scripts/theme/theme-files.py",
             "app-decorations/kvantum/live-reload-1.1.9.patch",

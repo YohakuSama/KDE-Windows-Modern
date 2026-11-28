@@ -6,9 +6,9 @@ declares the generated native outputs, not a second implementation.
 | Directory | Ownership |
 | --- | --- |
 | design/ | Shared popup, taskbar icon canvas, panel, clock flyout, lock-screen and generic WinUI control geometry/metrics |
-| palette/ | Color classification, fixed roles, ICC/automatic accent and scheme template |
-| materials/ | Window material and popup frame generation |
-| transactions/ | Shared user-owned file validation, atomic replacement and rollback |
+| palette/ | Color classification, fixed roles, pure Windows ramp/wallpaper algorithms (`accent-algorithms.py`), KDE scheme/Kvantum renderer bindings & reload receipts (`accent-renderers.py`), ICC replay (`wallpaper-icc.py`), CLI facade (`sync-accent.py`) and scheme template |
+| materials/ | Window material/transparency planning (`window-frames.py`) and popup frame generation (`popup-frames.py`) |
+| transactions/ | Shared user-owned file validation, atomic replacement and rollback (`theme-files.py`) |
 | controls/ | Shared glyphs, buttons, avatars, sliders, scrollbars, flyout controls and palette tokens |
 | resources/ | Shared portrait/license and original resource import/validation |
 | animations/ | Shared sign-in progress |
@@ -17,9 +17,20 @@ declares the generated native outputs, not a second implementation.
 Common QML/JS files retain their native filenames and relative imports.
 Python tools are edited here and executed via their existing native
 script paths. Source-only aliases preserve those paths without duplicate
-implementations. The file transaction module is copied into the installed
-appearance package and does not own the caller's writer lock or renderer
-plan. Do not create separate light/dark functionality.
+implementations. `palette/accent-algorithms.py` owns pure preset/custom
+shade calculation, contrast ink, manual report comparison, and bounded
+wallpaper decoding/ICC pre-conversion/weighted-RGB extraction with no KDE
+or Kvantum dependency; `palette/accent-renderers.py` owns KDE `.colors`
+rendering, optional user-local Kvantum `.kvconfig`/`.svg` accent bindings
+and `live-reload.json` receipt publication; `palette/sync-accent.py`
+provides the CLI coordinator and compatibility re-exports. `materials/window-frames.py`
+consumes `transactions/theme-files.py`, `palette/accent-algorithms.py`
+and `platform/plasma/appearance/appearance-host.py` via `importlib`
+without `runpy` dict execution or requiring user-local Kvantum assets
+when updating Aurorae decorations or Plasma popup/panel transparency
+selectors. All shared Python helpers are copied into the installed
+appearance package and leave the outer writer lock to the caller. Do not
+create separate light/dark functionality.
 The Digital Clock package consumes shared `FlyoutButton.qml` and `Win11Palette.qml` from this directory; Calendar and Notifications do not maintain separate copies. Their native package paths remain unchanged through `source-map.json`. Its card, standard header button (`28px`) and compact action button (`24px`) geometry is centralized in `design/clockMetrics.js`; colors remain in `Win11Palette.qml`.
 The greeter and lock-screen packages also consume shared `AccountAvatar.qml` and `VirtualKeyboardButton.qml`; host-specific presentation is configured without maintaining feature-local implementations.
 Quick Settings uses `design/panel/trayMetrics.js` for the shared normal/split tile geometry, caption line budget, slider row/slot/thumb and glyph dimensions, detail-page action button height (also shared by `PageHeader` and `ClipboardPage`), row outer inset, standard and compact row content insets/spacing/icon extents, collapsible device-section chevron and expand metrics, scroll-rail width, and the panel/footer/media horizontal inset. Login and LockScreen share the avatar maximum, clock metrics (including line spacing), credential font size, field active-focus indicator strip, no-password Sign-in button width/radius/border widths, status-row button/glyph extents, footer inset/spacing and credential dim opacity through `design/lockMetrics.js`, while retaining the host-specific viewport clamps and field heights. Their power menus share padding and overlay radius there; login and lock-screen widths remain separately named until native 26H2 layout evidence confirms a common value. Generic `ControlCornerRadius`, `OverlayCornerRadius`, taskbar Search box radius and Start/Search micro-interaction duration are owned by `design/controlMetrics.js` and consumed by Digital Clock, Start/Search list, grid/heading/index and action controls (including power-menu options), Quick Settings detail rows, Clipboard history items, System Tray hover controls, RunDialog, taskbar preview controls, standalone Search and Login/LockScreen controls. Taskbar window-preview hover surfaces use the separate `cardSurfaceRadius` token. Start/Search/Alt+Tab, Quick Settings media/footer card surfaces and notification message cards share a separate `cardSurfaceRadius` token; it remains distinct from the overlay radius. `MenuFlyoutThemeMinHeight` is shared by Start context/view menus and the lock-screen menu item. Host-specific layout (such as Start grid/icon/gutter metrics in `modules/startmenu/ui/code/startMenuMetrics.js`) remains in the owning modules.

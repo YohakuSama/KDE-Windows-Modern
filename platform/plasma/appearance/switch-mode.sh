@@ -159,37 +159,59 @@ sync_renderer_accent() {
 }
 
 sync_accent() {
-    local action="$1" current_scheme current_style current_theme current_mode result
+    local action="$1" current_scheme current_style current_theme current_mode result kvantum_style=false
     shift
     current_scheme="$(read_key kdeglobals General ColorScheme)"
     current_style="$(read_key kdeglobals KDE widgetStyle)"
-    current_theme="$(read_key Kvantum/kvantum.kvconfig General theme)"
-    if [ "$current_theme" != Windows-modern ]; then
-        [ "$action" = sync ] && return 0
-        fail "Select the Windows Modern Kvantum theme first."
-    fi
-    case "$current_scheme:$current_style" in
-        WindowsModernDark:kvantum-dark) current_mode=dark ;;
-        WindowsModernLight:kvantum) current_mode=light ;;
+    case "$current_scheme" in
+        WindowsModernDark) current_mode=dark ;;
+        WindowsModernLight) current_mode=light ;;
         *)
             [ "$action" = sync ] && return 0
             fail "Select a Windows Modern appearance mode first." ;;
     esac
+    case "${current_style,,}" in
+        kvantum|kvantum-dark)
+            kvantum_style=true
+            current_theme="$(read_key Kvantum/kvantum.kvconfig General theme)"
+            if [ "$current_theme" != Windows-modern ]; then
+                [ "$action" = sync ] && return 0
+                fail "Select the Windows Modern Kvantum theme first."
+            fi
+            case "$current_mode:${current_style,,}" in
+                dark:kvantum-dark|light:kvantum) ;;
+                *)
+                    [ "$action" = sync ] && return 0
+                    fail "Select a Windows Modern appearance mode first." ;;
+            esac ;;
+    esac
     result="$(sync_renderer_accent "$current_mode" "$action" "$@")" || return $?
     if [ "$result" = changed ]; then
-        # Stock plasma-integration skips same-name QStyle recreation.
-        # The version-matched Kvantum build consumes the committed receipt.
-        busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
+        if [ "$kvantum_style" = true ]; then
+            # Stock plasma-integration skips same-name QStyle recreation.
+            # The version-matched Kvantum build consumes the committed receipt.
+            busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
+        fi
         printf '%s\n' "Accent assets updated."
     fi
 }
 
 sync_material() {
-    local current_mode python result
-    case "$(read_key kdeglobals General ColorScheme):$(read_key kdeglobals KDE widgetStyle)" in
-        WindowsModernDark:kvantum-dark) current_mode=dark ;;
-        WindowsModernLight:kvantum) current_mode=light ;;
+    local current_scheme current_style current_mode python result kvantum_style=false
+    current_scheme="$(read_key kdeglobals General ColorScheme)"
+    current_style="$(read_key kdeglobals KDE widgetStyle)"
+    case "$current_scheme" in
+        WindowsModernDark) current_mode=dark ;;
+        WindowsModernLight) current_mode=light ;;
         *) return 0 ;;
+    esac
+    case "${current_style,,}" in
+        kvantum|kvantum-dark)
+            kvantum_style=true
+            case "$current_mode:${current_style,,}" in
+                dark:kvantum-dark|light:kvantum) ;;
+                *) return 0 ;;
+            esac ;;
     esac
     # Off is independent of the accent mode; avoid launching the decoder.
     [ ! -e "$data/windows-modern/transparency-off" ] &&
@@ -202,7 +224,9 @@ sync_material() {
         changed)
             # Do not restart KWin or applications. Same-mode reload is best effort.
             busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null || true
-            busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
+            if [ "$kvantum_style" = true ]; then
+                busctl --user emit /KGlobalSettings org.kde.KGlobalSettings notifyChange ii 2 0 || true
+            fi
             printf '%s\n' "Window material assets updated; open applications may need reopening." ;;
         unchanged|retained|skipped) ;;
         *) echo "Unexpected window material synchronization result." >&2; return 1 ;;
@@ -321,10 +345,15 @@ if ! apply_mode; then
     fi
     # Restore the previous renderer's accent before restoring widgetStyle,
     # for the same reason that the normal switch stages its destination.
-    case "$old_scheme:${old_values[0]}:${old_values[3]}" in
+    case "$old_scheme:${old_values[0],,}:${old_values[3]}" in
         WindowsModernDark:kvantum-dark:Windows-modern)
             sync_renderer_accent dark reapply >/dev/null || restored=false ;;
         WindowsModernLight:kvantum:Windows-modern)
+            sync_renderer_accent light reapply >/dev/null || restored=false ;;
+        WindowsModernDark:kvantum:*|WindowsModernDark:kvantum-dark:*|WindowsModernLight:kvantum:*|WindowsModernLight:kvantum-dark:*) ;;
+        WindowsModernDark:*)
+            sync_renderer_accent dark reapply >/dev/null || restored=false ;;
+        WindowsModernLight:*)
             sync_renderer_accent light reapply >/dev/null || restored=false ;;
     esac
     for i in "${!keys[@]}"; do

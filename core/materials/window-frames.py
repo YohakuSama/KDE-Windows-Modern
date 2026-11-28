@@ -3,10 +3,10 @@
 """Generate Aurorae decorations with native shadow padding and rounded tops."""
 import argparse
 import configparser
+import importlib.util
 import json
 import os
 import re
-import runpy
 import subprocess
 import sys
 import tempfile
@@ -14,9 +14,88 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 from urllib.parse import unquote, urlsplit
 
+
+def _load_adjacent(module_name, filename, fallback_relative=None):
+    here = Path(__file__).absolute().parent
+    path = here / filename
+    if not path.exists() and fallback_relative is not None:
+        path = (here.parents[1] / fallback_relative).absolute()
+    key = f"{module_name}:{path.as_posix()}"
+    cached = sys.modules.get(key)
+    if cached is not None:
+        return cached
+    spec = importlib.util.spec_from_file_location(key, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load adjacent module: {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[key] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(key, None)
+        raise
+    return module
+
+
+def _palette_path():
+    adjacent = Path(__file__).absolute().with_name("palette.json")
+    if adjacent.is_file():
+        return adjacent
+    return Path(__file__).absolute().parents[1] / "palette/palette.json"
+
+
 ROOT = Path(__file__).absolute().parents[2]
+_theme_files = _load_adjacent(
+    "windows_modern_theme_files", "theme-files.py", "transactions/theme-files.py")
+_algorithms = _load_adjacent(
+    "windows_modern_accent_algorithms", "accent-algorithms.py", "palette/accent-algorithms.py")
+_ALGORITHMS_API = {
+    "WALLPAPER_ANALYSIS_REVISION": _algorithms.WALLPAPER_ANALYSIS_REVISION,
+    "wallpaper_file_identity": _algorithms.wallpaper_file_identity,
+    "icc_reference_identity": _algorithms.icc_reference_identity,
+    "decode_wallpaper_bitmap": _algorithms.decode_wallpaper_bitmap,
+}
+_TRANSACTIONS_API = {
+    "owned_file": _theme_files.owned_file,
+    "atomic_write": _theme_files.atomic_write,
+    "restore_pending": _theme_files.restore_pending,
+    "write_pending": _theme_files.write_pending,
+}
+
+
+def _host_control():
+    here = Path(__file__).absolute().parent
+    candidate = here / "appearance-host.py"
+    if not candidate.exists():
+        candidate = (ROOT / "platform/plasma/appearance/appearance-host.py").absolute()
+    key = f"windows_modern_appearance_host:{candidate.as_posix()}"
+    host_module = sys.modules.get(key)
+    if host_module is None:
+        spec = importlib.util.spec_from_file_location(key, candidate)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Unable to load appearance host: {candidate}")
+        host_module = importlib.util.module_from_spec(spec)
+        sys.modules[key] = host_module
+        try:
+            spec.loader.exec_module(host_module)
+        except Exception:
+            sys.modules.pop(key, None)
+            raise
+    return {
+        "CONFIG": host_module.CONFIG,
+        "DATA": host_module.DATA,
+        "SYNC": {**_TRANSACTIONS_API, **_ALGORITHMS_API},
+        "WallpaperChangedError": host_module.WallpaperChangedError,
+        "read": host_module.read,
+        "read_config": host_module.read_config,
+        "active_mode": host_module.active_mode,
+        "discover_wallpapers": host_module.discover_wallpapers,
+        "require_wallpaper_snapshot": host_module.require_wallpaper_snapshot,
+    }
+
+
 BASE_COLORS = {mode: values['window'] for mode, values in
-               json.loads(Path(__file__).with_name('palette.json').read_text(encoding='utf-8')).items()}
+               json.loads(_palette_path().read_text(encoding='utf-8')).items()}
 PADDING = 12
 RADIUS = 8
 SIZE = PADDING + RADIUS
@@ -191,20 +270,19 @@ def sample_wallpaper(path, decode):
 
 
 def wallpaper_tints(package, sync=None):
-    if sync is None:
-        sync = runpy.run_path(str(Path(__file__).with_name("sync-accent.py")))
+    algorithms = _ALGORITHMS_API if sync is None else sync
     sources = wallpaper_sources(package)
-    identity = sync["wallpaper_file_identity"]
+    identity = algorithms["wallpaper_file_identity"]
     # Capture all identities before any decode and reuse one sample for
     # both variants when they select the same file.
     fingerprints = {path: identity(path) for path in set(sources.values()) if path is not None}
-    reference = sync["icc_reference_identity"]() if fingerprints else None
-    samples = {path: sample_wallpaper(path, sync["decode_wallpaper_bitmap"])
+    reference = algorithms["icc_reference_identity"]() if fingerprints else None
+    samples = {path: sample_wallpaper(path, algorithms["decode_wallpaper_bitmap"])
                for path in fingerprints}
 
     def validate():
         if (wallpaper_sources(package) != sources
-                or (fingerprints and sync["icc_reference_identity"]() != reference)
+                or (fingerprints and algorithms["icc_reference_identity"]() != reference)
                 or any(identity(path) != fingerprint for path, fingerprint in fingerprints.items())):
             raise ValueError("Wallpaper changed while preparing window materials")
 
@@ -253,56 +331,66 @@ def patch_window_svg(svg, active, inactive):
     return svg
 
 
-def plan_local(aurorae_dir, kvantum_dir, colors, owned_file):
+def plan_local(aurorae_dir, kvantum_dir, colors, owned_file=None):
     # The same Kvantum SVG carries the accent and material bindings.
     # Reject externally managed paths and stage all outputs before writing.
+    check_owned = _theme_files.owned_file if owned_file is None else owned_file
     pending = {}
     for directory in (aurorae_dir, kvantum_dir):
+        if directory is None:
+            continue
         if directory.is_symlink() or directory.parent.is_symlink():
             raise ValueError(f"Refusing externally managed theme directory: {directory}")
     for mode, base in BASE_COLORS.items():
         active = colors[mode]
-        decoration = aurorae_dir / f"windows-modern-{mode}-aurorae" / "decoration.svg"
-        kvantum = kvantum_dir / ("Windows-modernDark.svg" if mode == "dark" else "Windows-modern.svg")
-        if decoration.parent.is_symlink():
-            raise ValueError(f"Refusing externally managed decoration: {decoration.parent}")
-        if decoration.exists() or decoration.is_symlink():
-            old = owned_file(decoration).read_bytes()
-            # Only replace our generated frame. Recognize either the
-            # pristine neutral frame or an exact prior static-tint output.
-            if old != render(mode).encode("utf-8"):
-                node = ET.fromstring(old).find(".//*[@id='decoration-center']")
-                fill = node[0].get("fill") if node is not None and len(node) else None
-                if not fill or not re.fullmatch(r"#[0-9A-Fa-f]{6}", fill) or old != render(mode, fill).encode("utf-8"):
-                    raise ValueError(f"Decoration differs from the generated window frame: {decoration}")
-            new = render(mode, active).encode("utf-8")
-            if old != new:
-                pending[decoration] = (old, new)
-        if kvantum.exists() or kvantum.is_symlink():
-            old = owned_file(kvantum).read_bytes()
-            new = patch_window_svg(old.decode("utf-8"), active or base, base).encode("utf-8")
-            if old != new:
-                pending[kvantum] = (old, new)
+        if aurorae_dir is not None:
+            decoration = aurorae_dir / f"windows-modern-{mode}-aurorae" / "decoration.svg"
+            if decoration.parent.is_symlink():
+                raise ValueError(f"Refusing externally managed decoration: {decoration.parent}")
+            if decoration.exists() or decoration.is_symlink():
+                old = check_owned(decoration).read_bytes()
+                # Only replace our generated frame. Recognize either the
+                # pristine neutral frame or an exact prior static-tint output.
+                if old != render(mode).encode("utf-8"):
+                    node = ET.fromstring(old).find(".//*[@id='decoration-center']")
+                    fill = node[0].get("fill") if node is not None and len(node) else None
+                    if not fill or not re.fullmatch(r"#[0-9A-Fa-f]{6}", fill) or old != render(mode, fill).encode("utf-8"):
+                        raise ValueError(f"Decoration differs from the generated window frame: {decoration}")
+                new = render(mode, active).encode("utf-8")
+                if old != new:
+                    pending[decoration] = (old, new)
+        if kvantum_dir is not None:
+            kvantum = kvantum_dir / ("Windows-modernDark.svg" if mode == "dark" else "Windows-modern.svg")
+            if kvantum.exists() or kvantum.is_symlink():
+                old = check_owned(kvantum).read_bytes()
+                new = patch_window_svg(old.decode("utf-8"), active or base, base).encode("utf-8")
+                if old != new:
+                    pending[kvantum] = (old, new)
     return pending
 
 
-def plan_transparency(kvantum_dir, plasma_dir, popup_source, enabled, owned_file):
+def plan_transparency(kvantum_dir, plasma_dir, popup_source, enabled, owned_file=None):
     """Stage only the owned transparency keys and native frame selectors."""
+    check_owned = _theme_files.owned_file if owned_file is None else owned_file
     pending = {}
     opaque = ("translucent_windows", "transparent_dolphin_view",
               "transparent_pcmanfm_sidepane", "transparent_pcmanfm_view")
     blur = ("blurring", "popup_blurring", "blur_translucent")
+    if kvantum_dir is not None and (kvantum_dir.is_symlink() or kvantum_dir.parent.is_symlink()):
+        raise ValueError(f"Refusing externally managed Kvantum directory: {kvantum_dir}")
+    include_kvantum = kvantum_dir is not None and kvantum_dir.exists()
     for mode, name in (("dark", "Windows-modernDark"), ("light", "Windows-modern")):
-        config = owned_file(kvantum_dir / (name + ".kvconfig"))
-        old = config.read_bytes()
-        new = old.decode("utf-8")
-        for key in opaque + blur:
-            value = "true" if enabled and key in blur else "false"
-            new, count = re.subn(r"(?m)^" + key + r"=(?:true|false)(?=\r?$)", key + "=" + value, new)
-            if count != 1:
-                raise ValueError(f"Missing or duplicate Kvantum transparency key {key}: {config}")
-        if old != new.encode("utf-8"):
-            pending[config] = (old, new.encode("utf-8"))
+        if include_kvantum:
+            config = check_owned(kvantum_dir / (name + ".kvconfig"))
+            old = config.read_bytes()
+            new = old.decode("utf-8")
+            for key in opaque + blur:
+                value = "true" if enabled and key in blur else "false"
+                new, count = re.subn(r"(?m)^" + key + r"=(?:true|false)(?=\r?$)", key + "=" + value, new)
+                if count != 1:
+                    raise ValueError(f"Missing or duplicate Kvantum transparency key {key}: {config}")
+            if old != new.encode("utf-8"):
+                pending[config] = (old, new.encode("utf-8"))
         theme = plasma_dir / ("Windows-modern-" + mode)
         source = popup_source / theme.name
         for variant in ("", "translucent"):
@@ -313,7 +401,7 @@ def plan_transparency(kvantum_dir, plasma_dir, popup_source, enabled, owned_file
                 for parent in (target.parent, target.parent.parent, theme, plasma_dir, plasma_dir.parent):
                     if parent.is_symlink():
                         raise ValueError(f"Refusing externally managed popup directory: {parent}")
-                old = owned_file(target).read_bytes()
+                old = check_owned(target).read_bytes()
                 normal = (source / variant / role).read_bytes()
                 solid = (source / "solid" / role).read_bytes()
                 if old not in (normal, solid):
@@ -446,34 +534,43 @@ MATERIAL_GROUP = "WindowsModernMaterial"
 MATERIAL_KEY = "Sample"
 
 
-def live_material_enabled(mode, control):
-    """Only synchronize the selected, user-installed Windows Modern renderers."""
-    config, data = control["CONFIG"], control["DATA"]
+def live_material_enabled(mode, control=None):
+    """Synchronize when Aurorae and/or Kvantum uses the active Windows Modern mode."""
+    host = _host_control() if control is None else control
+    data = host["DATA"]
     markers = (data / "windows-modern/transparency-off",
                Path.home() / ".local/share/windows-modern/transparency-off")
     if any(path.exists() or path.is_symlink() for path in markers):
         return False
-    if not control["active_mode"](mode):
+    if not host["active_mode"](mode):
         return False
+
+    setting = host.get("read_config")
+    if setting is None:
+        def setting(file, group, key):
+            return subprocess.check_output(
+                ["kreadconfig6", "--file", file, "--group", group, "--key", key],
+                text=True).rstrip("\n")
+
     style = "kvantum-dark" if mode == "dark" else "kvantum"
-    if control["read"]("KDE", "widgetStyle") != style:
-        return False
-
-    def setting(file, group, key):
-        return subprocess.check_output(
-            ["kreadconfig6", "--file", file, "--group", group, "--key", key],
-            text=True).rstrip("\n")
-
-    return (setting("Kvantum/kvantum.kvconfig", "General", "theme") == "Windows-modern"
-            and setting("kwinrc", "org.kde.kdecoration2", "library") == "org.kde.kwin.aurorae"
+    widget_style = host["read"]("KDE", "widgetStyle")
+    if widget_style is not None and widget_style.lower() in ("kvantum", "kvantum-dark"):
+        # If the user selected Kvantum, require the matching mode and theme.
+        if (widget_style.lower() != style
+                or setting("Kvantum/kvantum.kvconfig", "General", "theme") != "Windows-modern"):
+            return False
+        return True
+    # Non-Kvantum Qt styles still use Aurorae window-frame tinting when active.
+    return (setting("kwinrc", "org.kde.kdecoration2", "library") == "org.kde.kwin.aurorae"
             and setting("kwinrc", "org.kde.kdecoration2", "theme")
             == f"__aurorae__svg__windows-modern-{mode}-aurorae")
 
 
-def live_material_state(snapshot, raw, sync):
+def live_material_state(snapshot, raw, sync=None):
     """Cache only the global renderer's primary-screen sample, not its SVGs."""
+    algorithms = _ALGORITHMS_API if sync is None else sync
     primary = dict(snapshot["wallpapers"][0])
-    source = {"schema_version": 1, "analysis_revision": sync["WALLPAPER_ANALYSIS_REVISION"],
+    source = {"schema_version": 1, "analysis_revision": algorithms["WALLPAPER_ANALYSIS_REVISION"],
               "material_revision": MATERIAL_SAMPLE_REVISION, "base_colors": dict(BASE_COLORS),
               "icc_reference": snapshot.get("icc_reference"), "wallpapers": [primary]}
     try:
@@ -486,7 +583,7 @@ def live_material_state(snapshot, raw, sync):
                 and all(isinstance(color, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", color)
                         for color in colors.values())):
             return {**source, "colors": colors}
-    mean = sample_wallpaper(Path(primary["path"]), sync["decode_wallpaper_bitmap"])
+    mean = sample_wallpaper(Path(primary["path"]), algorithms["decode_wallpaper_bitmap"])
     if mean is None:
         return None
     return {**source, "colors": {mode: tint_color(mode, mean) for mode in BASE_COLORS}}
@@ -498,24 +595,34 @@ def write_material_state(value):
     subprocess.run(args + (["--delete"] if value is None else [value]), check=True)
 
 
-def sync_live_material(mode, control):
+def sync_live_material(mode, control=None):
     # The caller holds the same lock as accent synchronization and explicit
     # transparency operations. Do not sample previews or change KWin settings.
-    if not live_material_enabled(mode, control):
+    host = _host_control() if control is None else control
+    if not live_material_enabled(mode, host):
         return "skipped"
-    config, data, sync = control["CONFIG"], control["DATA"], control["SYNC"]
+    config, data = host["CONFIG"], host["DATA"]
+    sync = host.get("SYNC") or {**_TRANSACTIONS_API, **_ALGORITHMS_API}
     aurorae = data / "aurorae/themes"
     kvantum = config / "Kvantum/Windows-modern"
-    required = [aurorae / f"windows-modern-{name}-aurorae" / "decoration.svg" for name in BASE_COLORS]
-    required += [kvantum / name for name in ("Windows-modern.svg", "Windows-modernDark.svg")]
-    if not all(path.is_file() for path in required):
+    aurorae_files = [aurorae / f"windows-modern-{name}-aurorae" / "decoration.svg" for name in BASE_COLORS]
+    kvantum_files = [kvantum / name for name in ("Windows-modern.svg", "Windows-modernDark.svg")]
+    aurorae_present = [path.exists() or path.is_symlink() for path in aurorae_files]
+    kvantum_present = [path.exists() or path.is_symlink() for path in kvantum_files]
+    if any(aurorae_present) and not all(path.is_file() and not path.is_symlink() for path in aurorae_files):
+        raise ValueError("Incomplete or externally linked user Aurorae window-frame assets")
+    if any(kvantum_present) and not all(path.is_file() and not path.is_symlink() for path in kvantum_files):
+        raise ValueError("Incomplete or externally linked user Kvantum window-frame assets")
+    aurorae_target = aurorae if all(aurorae_present) else None
+    kvantum_target = kvantum if all(kvantum_present) else None
+    if aurorae_target is None and kvantum_target is None:
         return "skipped"
     if config.is_symlink():
         raise ValueError("Refusing externally managed KDE configuration")
     sync["owned_file"](config / "kdeglobals")
-    changed_error = control["WallpaperChangedError"]
+    changed_error = host["WallpaperChangedError"]
     try:
-        snapshot = control["discover_wallpapers"](primary_only=True)
+        snapshot = host["discover_wallpapers"](primary_only=True)
         snapshot["icc_reference"] = sync["icc_reference_identity"]()
     except changed_error:
         raise
@@ -524,20 +631,20 @@ def sync_live_material(mode, control):
         # Keep the last material and wait for the next native event.
         return "retained"
 
-    read = control["read"]
+    read = host["read"]
     raw = read(MATERIAL_GROUP, MATERIAL_KEY)
     state = live_material_state(snapshot, raw, sync)
     if state is None:
         # A decode failure after accepting a snapshot must not hide a
         # replacement race. Stable unsupported images retain the old tint.
-        control["require_wallpaper_snapshot"](snapshot, primary_only=True)
+        host["require_wallpaper_snapshot"](snapshot, primary_only=True)
         return "retained"
     desired = json.dumps(state, separators=(",", ":"), sort_keys=True)
-    pending = plan_local(aurorae, kvantum, state["colors"], sync["owned_file"])
+    pending = plan_local(aurorae_target, kvantum_target, state["colors"], sync["owned_file"])
 
     def validate():
-        control["require_wallpaper_snapshot"](snapshot, primary_only=True)
-        if not live_material_enabled(mode, control) or read(MATERIAL_GROUP, MATERIAL_KEY) != raw:
+        host["require_wallpaper_snapshot"](snapshot, primary_only=True)
+        if not live_material_enabled(mode, host) or read(MATERIAL_GROUP, MATERIAL_KEY) != raw:
             raise ValueError("Appearance changed during material synchronization")
 
     # Re-plan on cache hits: upgrades and accent changes can replace SVGs
@@ -569,28 +676,35 @@ def sync_live_material(mode, control):
     return "changed" if pending else "unchanged"
 
 
-def apply_local(aurorae_dir, kvantum_dir, package=None, validate_selection=None,
+def apply_local(aurorae_dir, kvantum_dir=None, package=None, validate_selection=None,
                 transparency=None, transparency_state=None):
-    # Reuse the accent writer's optimistic ownership/byte checks, atomic
-    # replacement and conditional rollback. The shell caller holds the
+    # Reuse the shared file transaction's optimistic ownership/byte checks,
+    # atomic replacement and conditional rollback. The shell caller holds the
     # existing appearance lock. No independently edited lines are lost.
-    sync = runpy.run_path(str(Path(__file__).with_name("sync-accent.py")))
+    owned_file = _theme_files.owned_file
+    write_pending = _theme_files.write_pending
+    restore_pending = _theme_files.restore_pending
     if (transparency is None) != (transparency_state is None):
         raise ValueError("Explicit transparency requires its saved preference path")
     preference = (TransparencyPreference(transparency_state, transparency[2])
                   if transparency is not None else None)
-    colors, validate_files = wallpaper_tints(package, sync)
+    colors, validate_files = wallpaper_tints(package, _ALGORITHMS_API)
     if transparency is not None:
         # Explicit toggles must not silently update only a subset of an
-        # incomplete installation. Partial installs retain the old helper.
+        # incomplete installation. Non-Kvantum setups omit ~/.config/Kvantum/Windows-modern
+        # completely; if Kvantum assets exist, both mode SVGs must be owned.
+        if kvantum_dir is not None and (kvantum_dir.is_symlink() or kvantum_dir.parent.is_symlink()):
+            raise ValueError(f"Refusing externally managed Kvantum directory: {kvantum_dir}")
+        check_kvantum = kvantum_dir is not None and kvantum_dir.exists()
         for mode, name in (("dark", "Windows-modernDark"), ("light", "Windows-modern")):
-            sync["owned_file"](aurorae_dir / f"windows-modern-{mode}-aurorae" / "decoration.svg")
-            sync["owned_file"](kvantum_dir / (name + ".svg"))
-    pending = plan_local(aurorae_dir, kvantum_dir, colors, sync["owned_file"])
+            owned_file(aurorae_dir / f"windows-modern-{mode}-aurorae" / "decoration.svg")
+            if check_kvantum:
+                owned_file(kvantum_dir / (name + ".svg"))
+    pending = plan_local(aurorae_dir, kvantum_dir, colors, owned_file)
     if transparency is not None:
         plasma_dir, popup_source, enabled = transparency
         pending.update(plan_transparency(kvantum_dir, plasma_dir, popup_source,
-                                         enabled, sync["owned_file"]))
+                                         enabled, owned_file))
 
     def validate():
         validate_files()
@@ -600,7 +714,7 @@ def apply_local(aurorae_dir, kvantum_dir, package=None, validate_selection=None,
     validate()
     if preference is not None:
         preference.validate()
-    written = sync["write_pending"](pending)
+    written = write_pending(pending)
     try:
         validate()
         if preference is not None:
@@ -613,7 +727,7 @@ def apply_local(aurorae_dir, kvantum_dir, package=None, validate_selection=None,
             except (OSError, ValueError, subprocess.SubprocessError) as error:
                 print(f"Transparency preference rollback incomplete: {error}", file=sys.stderr)
         try:
-            sync["restore_pending"](pending, written)
+            restore_pending(pending, written)
         except (OSError, ValueError) as error:
             print(f"Window material rollback incomplete: {error}", file=sys.stderr)
         raise
@@ -638,14 +752,14 @@ def main():
     wallpaper.add_argument('--wallpaper-package', type=Path)
     wallpaper.add_argument('--wallpaper-config', type=Path)
     wallpaper.add_argument('--wallpaper-live', action='store_true',
-                           help='Use the settled screen 0 image from the native tray bridge')
+                           help='Use the settled screen 0 image from the native shell bridge')
     args = parser.parse_args()
     if args.sync_live:
         if os.geteuid() == 0 or any((args.directory, args.aurorae_dir, args.kvantum_dir,
                                     args.plasma_dir, args.popup_source, args.transparency,
                                     args.transparency_state, args.wallpaper_package, args.wallpaper_config, args.wallpaper_live)):
             parser.error("--sync-live requires a normal desktop user and no other asset arguments")
-        control = runpy.run_path(str(Path(__file__).with_name("accent-control.py")))
+        control = _host_control()
         try:
             print(sync_live_material(args.sync_live, control))
         except control["WallpaperChangedError"] as error:
@@ -678,7 +792,7 @@ def main():
                 # Do not fall back to stale saved settings during a preview,
                 # crossfade or activity change. A global SVG cannot be
                 # different on each screen; use the existing screen-0 policy.
-                control = runpy.run_path(str(Path(__file__).with_name("accent-control.py")))
+                control = _host_control()
                 snapshot = control["discover_wallpapers"](primary_only=True)
                 selected = Path(snapshot["wallpapers"][0]["path"])
                 validate_selection = lambda: control["require_wallpaper_snapshot"](snapshot, primary_only=True)

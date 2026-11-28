@@ -1,0 +1,1 @@
+../../core/palette/accent-renderers.py

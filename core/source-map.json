@@ -202,6 +202,12 @@
     "core/palette/WindowsModern.colors.in": [
       "color-schemes/WindowsModern.colors.in"
     ],
+    "core/palette/accent-algorithms.py": [
+      "scripts/theme/accent-algorithms.py"
+    ],
+    "core/palette/accent-renderers.py": [
+      "scripts/theme/accent-renderers.py"
+    ],
     "core/palette/colorType.js": [
       "plasma/applets/org.kde.windowsmodern.digitalclock/contents/ui/code/colorType.js",
       "plasma/applets/org.kde.windowsmodern.startmenu/contents/ui/code/colorType.js",
@@ -421,6 +427,9 @@
     ],
     "platform/plasma/appearance/accent-control.py": [
       "scripts/theme/accent-control.py"
+    ],
+    "platform/plasma/appearance/appearance-host.py": [
+      "scripts/theme/appearance-host.py"
     ],
     "platform/plasma/appearance/appearance-packages.py": [
       "scripts/theme/appearance-packages.py"
@@ -873,7 +882,10 @@
     "scripts/set-wallpaper.sh",
     "scripts/stage-native-resources.sh",
     "scripts/store-artwork.py",
+    "scripts/theme/accent-algorithms.py",
     "scripts/theme/accent-control.py",
+    "scripts/theme/accent-renderers.py",
+    "scripts/theme/appearance-host.py",
     "scripts/theme/appearance-packages.py",
     "scripts/theme/boot-frames.py",
     "scripts/theme/palette.json",

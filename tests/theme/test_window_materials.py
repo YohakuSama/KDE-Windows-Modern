@@ -2420,6 +2420,167 @@ class WindowMaterialTests(unittest.TestCase):
             self.assertEqual(colors['dark'], frames.tint_color('dark', (0, 0, 255)))
             self.assertEqual(colors['light'], frames.tint_color('light', (0, 0, 255)))
 
+    def test_decoupled_appearance_module_interfaces(self):
+        import ast
+
+        scripts_dir = ROOT / "scripts/theme"
+        names = (
+            "theme-files.py",
+            "accent-algorithms.py",
+            "accent-renderers.py",
+            "appearance-host.py",
+            "sync-accent.py",
+            "accent-control.py",
+            "window-frames.py",
+            "appearance-packages.py",
+        )
+        loaded = {}
+        for name in names:
+            path = scripts_dir / name
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            imported = {
+                alias.name
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Import)
+                for alias in node.names
+            } | {
+                node.module
+                for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom) and node.module
+            }
+            self.assertNotIn("runpy", imported, name)
+            mod_spec = importlib.util.spec_from_file_location(f"wm_test_{name}", path)
+            module = importlib.util.module_from_spec(mod_spec)
+            mod_spec.loader.exec_module(module)
+            loaded[name] = module
+
+        algorithms = loaded["accent-algorithms.py"]
+        renderers = loaded["accent-renderers.py"]
+        host = loaded["appearance-host.py"]
+        sync_mod = loaded["sync-accent.py"]
+        control_mod = loaded["accent-control.py"]
+        self.assertIs(sync_mod.WallpaperFileChangedError, algorithms.WallpaperFileChangedError)
+        self.assertIs(control_mod.SYNC["WallpaperFileChangedError"], algorithms.WallpaperFileChangedError)
+        self.assertIs(control_mod.WallpaperChangedError, host.WallpaperChangedError)
+        self.assertIs(sync_mod.render_scheme, renderers.render_scheme)
+        self.assertIs(sync_mod.plan_kvantum, renderers.plan_kvantum)
+        self.assertIs(sync_mod.publish_kvantum_reload, renderers.publish_kvantum_reload)
+
+    def test_accent_control_without_local_kvantum_and_partial_rejection(self):
+        control = runpy.run_path(str(ROOT / "scripts/theme/accent-control.py"))
+        sync = control["SYNC"]
+        template, fixed = control["scheme_inputs"]()
+        selection = "#FF8C00"
+        expected_palette = sync["derive_manual_palette"](selection)
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            config, data = base / "config", base / "data"
+            config.mkdir()
+            (config / "kdeglobals").write_text("", encoding="utf-8")
+            schemes = data / "color-schemes"
+            appearance["color_schemes"](ROOT, schemes)
+            stored = [None]
+
+            def read(group, key):
+                return stored[0] if (group, key) == (control["GROUP"], control["KEY"]) else None
+
+            # Absent ~/.config/Kvantum/Windows-modern still updates KDE schemes.
+            with patch.dict(control["synchronize"].__globals__, {
+                    "CONFIG": config, "DATA": data,
+                    "active_mode": lambda mode: True,
+                    "native_accent": lambda: (False, None),
+                    "read": read,
+                    "write_state": lambda value: stored.__setitem__(0, value),
+                    "apply_current": Mock(),
+                    "live_matches": lambda *args: True,
+                    "notify_palette": Mock()}):
+                self.assertTrue(control["synchronize"]("dark", "manual", [selection]))
+                self.assertEqual(control["decode_state"](stored[0]), expected_palette)
+                self.assertEqual(
+                    (schemes / "WindowsModernDark.colors").read_bytes(),
+                    control["render"](template, fixed, "dark", expected_palette))
+
+                # An incomplete local Kvantum directory still fails closed before writing.
+                (config / "Kvantum/Windows-modern").mkdir(parents=True)
+                before_dark = (schemes / "WindowsModernDark.colors").read_bytes()
+                with self.assertRaises(ValueError):
+                    control["synchronize"]("dark", "manual", ["#0078D4"])
+                self.assertEqual((schemes / "WindowsModernDark.colors").read_bytes(), before_dark)
+
+    def test_window_material_aurorae_without_kvantum_and_incomplete_pair_rejection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config, data = root / "config", root / "data"
+            config.mkdir()
+            (config / "kdeglobals").write_text("", encoding="utf-8")
+            aurorae = data / "aurorae/themes"
+            plasma = data / "plasma/desktoptheme"
+            stage = root / "stage"
+            for mode in ("dark", "light"):
+                deco = aurorae / f"windows-modern-{mode}-aurorae" / "decoration.svg"
+                deco.parent.mkdir(parents=True)
+                deco.write_text(frames.render(mode), encoding="utf-8")
+                for variant in ("", "translucent", "solid"):
+                    for role in ("dialogs/background.svg", "widgets/panel-background.svg"):
+                        src = stage / f"Windows-modern-{mode}" / variant / role
+                        src.parent.mkdir(parents=True, exist_ok=True)
+                        src.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" id="{variant or "normal"}"/>',
+                                       encoding="utf-8")
+                        if variant != "solid":
+                            dst = plasma / f"Windows-modern-{mode}" / variant / role
+                            dst.parent.mkdir(parents=True, exist_ok=True)
+                            dst.write_bytes(src.read_bytes())
+
+            def read_cfg(file, group, key):
+                if (file, group, key) == ("kwinrc", "org.kde.kdecoration2", "library"):
+                    return "org.kde.kwin.aurorae"
+                if (file, group, key) == ("kwinrc", "org.kde.kdecoration2", "theme"):
+                    return "__aurorae__svg__windows-modern-dark-aurorae"
+                return ""
+
+            image = root / "wallpaper.png"
+            image.write_bytes(b"image")
+            snapshot = {"activity": "one", "wallpapers": [{"path": str(image), "size": 5}]}
+            stored = [None]
+            decode = Mock(return_value=(1, 1, bytes((0, 0, 255, 255))))
+            sync = {
+                "owned_file": frames._theme_files.owned_file,
+                "write_pending": frames._theme_files.write_pending,
+                "restore_pending": frames._theme_files.restore_pending,
+                "WALLPAPER_ANALYSIS_REVISION": 1,
+                "icc_reference_identity": lambda: None,
+                "decode_wallpaper_bitmap": decode,
+            }
+            control = {
+                "CONFIG": config,
+                "DATA": data,
+                "SYNC": sync,
+                "WallpaperChangedError": ValueError,
+                "active_mode": lambda mode: mode == "dark",
+                "read": lambda group, key: "Breeze" if (group, key) == ("KDE", "widgetStyle") else stored[0],
+                "read_config": read_cfg,
+                "discover_wallpapers": lambda primary_only=False: dict(snapshot),
+                "require_wallpaper_snapshot": lambda state, primary_only=False: None,
+            }
+            self.assertTrue(frames.live_material_enabled("dark", control))
+            with patch.object(frames, "write_material_state", side_effect=lambda value: stored.__setitem__(0, value)):
+                self.assertEqual(frames.sync_live_material("dark", control), "changed")
+            expected_tint = frames.tint_color("dark", (255, 0, 0))
+            self.assertEqual(
+                elements((aurorae / "windows-modern-dark-aurorae/decoration.svg").read_text())["decoration-center"][0].get("fill"),
+                expected_tint)
+
+            # Transparency staging without user-local Kvantum updates all 8 Plasma selectors.
+            absent_kvantum = config / "Kvantum/Windows-modern"
+            pending = frames.plan_transparency(absent_kvantum, plasma, stage, False)
+            self.assertEqual(len(pending), 8)
+
+            # A half-installed local Kvantum SVG pair must be rejected rather than ignored.
+            absent_kvantum.mkdir(parents=True)
+            (absent_kvantum / "Windows-modernDark.svg").write_text(SVG, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Incomplete"):
+                frames.sync_live_material("dark", control)
+
 
 if __name__ == '__main__':
     unittest.main()
