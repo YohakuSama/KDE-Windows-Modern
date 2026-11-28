@@ -174,6 +174,7 @@ Item {
             Kirigami.Icon {
                 id: appIcon
                 source: toolTipDelegate.icon
+                roundToIconSize: false
                 Layout.preferredWidth: Kirigami.Units.iconSizes.small
                 Layout.preferredHeight: Kirigami.Units.iconSizes.small
                 Layout.alignment: Qt.AlignVCenter
@@ -237,7 +238,7 @@ Item {
                         text: (!root.thumbnailMode && root.title === appNameHeading.text && somethingVisible)
                               ? "" : root.title
                         color: Kirigami.Theme.textColor
-                        font.weight: toolTipDelegate.isGroup && toolTipDelegate.parentTask.model.IsActive && root.index == tasksModel.activeTask.row
+                        font.weight: toolTipDelegate.isGroup && Boolean(toolTipDelegate.parentTask?.model?.IsActive) && root.index == tasksModel.activeTask.row
                             ? Font.DemiBold : Kirigami.Theme.defaultFont.weight
                         visible: root.orientation === ListView.Horizontal || text.length !== 0
                         textFormat: Text.PlainText

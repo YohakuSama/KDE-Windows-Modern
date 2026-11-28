@@ -16,6 +16,7 @@ import org.kde.taskmanager as TaskManager
 import org.kde.plasma.private.mpris as Mpris
 import plasma.applet.org.kde.plasma.icontasks as TaskManagerApplet
 import "code/JumpListPolicy.js" as JumpListPolicy
+import "taskbarGeometry.js" as TaskbarGeometry
 
 PlasmaExtras.Menu {
     id: menu
@@ -54,7 +55,8 @@ PlasmaExtras.Menu {
         }
     }
 
-    minimumWidth: Math.max(220, (visualParent as Item)?.width || 0)
+    // Windows 11 26H2 JumpViewUI/RefreshedStyles.xbf: TaskbarJumpListFrameWidth = 294 (@5862).
+    minimumWidth: Math.max(TaskbarGeometry.taskbarJumpListWidth, (visualParent as Item)?.width || 0)
 
     onStatusChanged: {
         if (visualParent && launcherId.length > 0 && status === PlasmaExtras.Menu.Open) {
@@ -172,7 +174,6 @@ PlasmaExtras.Menu {
         const playerData = mpris2Source.playerForLauncherUrl(launcherUrl, get(TaskManager.AbstractTasksModel.AppPid));
 
         if ((menu.showAdvanced || !menu.hasWindow) && playerData && playerData.canControl && !(get(TaskManager.AbstractTasksModel.WinIdList) !== undefined && get(TaskManager.AbstractTasksModel.WinIdList).length > 1)) {
-            const playing = playerData.playbackStatus === Mpris.PlaybackStatus.Playing;
             let menuItem = menu.newMenuItem(menu);
             menuItem.text = i18nc("Play previous track", "Previous Track");
             menuItem.icon = menu.backend.nativeMenuIcon("actions/media-skip-backward-symbolic");
@@ -187,18 +188,21 @@ PlasmaExtras.Menu {
             menuItem = menu.newMenuItem(menu);
             // PlasmaCore Menu doesn't actually handle icons or labels changing at runtime...
             menuItem.text = Qt.binding(() => {
+                const isPlaying = playerData.playbackStatus === Mpris.PlaybackStatus.Playing;
                 // if CanPause, toggle the menu entry between Play & Pause, otherwise always use Play
-                return playing && playerData.canPause ? i18nc("Pause playback", "Pause") : i18nc("Start playback", "Play");
+                return isPlaying && playerData.canPause ? i18nc("Pause playback", "Pause") : i18nc("Start playback", "Play");
             });
             menuItem.icon = Qt.binding(() => {
-                return menu.backend.nativeMenuIcon(playing && playerData.canPause
+                const isPlaying = playerData.playbackStatus === Mpris.PlaybackStatus.Playing;
+                return menu.backend.nativeMenuIcon(isPlaying && playerData.canPause
                     ? "actions/media-playback-pause-symbolic" : "actions/media-playback-start-symbolic");
             });
             menuItem.enabled = Qt.binding(() => {
-                return playing ? playerData.canPause : playerData.canPlay;
+                const isPlaying = playerData.playbackStatus === Mpris.PlaybackStatus.Playing;
+                return isPlaying ? playerData.canPause : playerData.canPlay;
             });
             menuItem.clicked.connect(() => {
-                if (playing) {
+                if (playerData.playbackStatus === Mpris.PlaybackStatus.Playing && playerData.canPause) {
                     playerData.Pause();
                 } else {
                     playerData.Play();
@@ -738,7 +742,19 @@ PlasmaExtras.Menu {
 
     PlasmaExtras.MenuItem {
         separator: true
-        visible: configureTaskbarItem.visible || editPanelItem.visible
+        visible: taskManagerItem.visible || configureTaskbarItem.visible || editPanelItem.visible
+    }
+
+    PlasmaExtras.MenuItem {
+        id: taskManagerItem
+
+        visible: menu.showAdvanced && menu.backend.systemMonitorAvailable()
+        enabled: visible
+
+        text: i18n("Task Manager")
+        icon: menu.backend.nativeMenuIcon("actions/speedometer-symbolic")
+
+        onClicked: menu.backend.openSystemMonitor()
     }
 
     PlasmaExtras.MenuItem {
@@ -768,7 +784,7 @@ PlasmaExtras.Menu {
 
         onClicked: editModeAction.trigger()
 
-        Component.onCompleted: editModeAction = Plasmoid.containment.internalAction("configure")
+        Component.onCompleted: editModeAction = Plasmoid.containment ? Plasmoid.containment.internalAction("configure") : null
     }
 
     PlasmaExtras.MenuItem {

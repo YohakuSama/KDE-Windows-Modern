@@ -105,12 +105,25 @@ PlasmaCore.ToolTipArea {
         }
         onClicked: mouse => { abstractItem.clicked(mouse) }
         onPressed: mouse => {
+            if (abstractItem.groupedQuickSettings) {
+                abstractItem.trayRoot.pressedQuickSetting = abstractItem;
+            }
             if (abstractItem.inHiddenLayout) {
                 const view = abstractItem.overflowGridView ?? abstractItem.trayRoot.hiddenLayout;
                 if (view) view.currentIndex = abstractItem.index
             }
             abstractItem.hideImmediately()
             abstractItem.pressed(mouse)
+        }
+        onReleased: mouse => {
+            if (abstractItem.trayRoot.pressedQuickSetting === abstractItem) {
+                abstractItem.trayRoot.pressedQuickSetting = null;
+            }
+        }
+        onCanceled: {
+            if (abstractItem.trayRoot.pressedQuickSetting === abstractItem) {
+                abstractItem.trayRoot.pressedQuickSetting = null;
+            }
         }
         onPressAndHold: mouse => {
             if (mouse.button === Qt.LeftButton) {
@@ -152,18 +165,21 @@ PlasmaCore.ToolTipArea {
     Rectangle {
         readonly property var panelRect: TrayMetrics.itemHoverRect(
             abstractItem.width, abstractItem.height, abstractItem.trayRoot.panelExtent, abstractItem.trayRoot.vertical)
+        readonly property bool overflowKeyboardSelected: abstractItem.inHiddenLayout
+            && !!abstractItem.overflowGridView && abstractItem.overflowGridView.activeFocus
+            && abstractItem.overflowGridView.currentIndex === abstractItem.index
         visible: abstractItem.showItemHoverTile
         x: abstractItem.inHiddenLayout ? 0 : panelRect.x
         y: abstractItem.inHiddenLayout ? 0 : panelRect.y
         width: abstractItem.inHiddenLayout ? abstractItem.width : panelRect.width
         height: abstractItem.inHiddenLayout ? abstractItem.height : panelRect.height
         radius: ControlMetrics.controlCornerRadius
-        border.width: abstractItem.inHiddenLayout && mouseArea.containsMouse ? 1 : 0
+        border.width: abstractItem.inHiddenLayout && (mouseArea.containsMouse || overflowKeyboardSelected) ? 1 : 0
         border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.08)
         color: {
             if (mouseArea.containsPress || abstractItem.effectivePressed)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10);
-            if (mouseArea.containsMouse || iconContainer.activeFocus)
+            if (mouseArea.containsMouse || iconContainer.activeFocus || overflowKeyboardSelected)
                 return Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06);
             return "transparent";
         }

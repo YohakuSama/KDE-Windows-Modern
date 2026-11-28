@@ -17,6 +17,7 @@ import org.kde.kitemmodels as KItemModels
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.battery as BatteryBackend
+import org.kde.plasma.private.batterymonitor as BatteryMonitor
 import "js/trayMetrics.js" as TrayMetrics
 import "js/controlMetrics.js" as ControlMetrics
 import "js/funcs.js" as Funcs
@@ -30,6 +31,7 @@ ContainmentItem {
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool reverseLayout: Plasmoid.configuration.reverseIconOrder
     property Item hoveredQuickSetting: null
+    property Item pressedQuickSetting: null
     property Item quickSettingsOrigin: null
     readonly property var panelWindow: root.Window.window
     readonly property rect panelGeometry: panelWindow
@@ -72,6 +74,7 @@ ContainmentItem {
     readonly property int coreNativeRenderSize: TrayMetrics.coreRenderSize(coreItemSize)
     readonly property int systemCellLength: TrayMetrics.coreCellLength(itemSize, coreItemSize, Plasmoid.configuration.iconSpacing)
     BatteryBackend.BatteryControlModel { id: panelBattery }
+    BatteryMonitor.PowerProfilesControl { id: panelPowerProfiles }
     Volume.OutputSink { id: panelAudio }
     readonly property var panelAudioSink: panelAudio.sink
     TextMetrics {
@@ -84,6 +87,13 @@ ContainmentItem {
     readonly property bool panelHasBattery: panelBattery.hasCumulative
     readonly property real panelBatteryPercent: Funcs.boundedBatteryPercent(panelBattery.percent)
     readonly property bool panelBatteryPercentKnown: panelHasBattery && panelBatteryPercent >= 0
+    readonly property bool panelBatteryPluggedIn: panelBattery.pluggedIn
+    readonly property bool panelBatteryCharging: panelBatteryPluggedIn
+        && panelBattery.state === BatteryBackend.BatteryControlModel.Charging
+    readonly property bool panelBatteryFull: panelBatteryPluggedIn
+        && (panelBattery.state === BatteryBackend.BatteryControlModel.FullyCharged
+            || (panelBatteryPercent >= 99.5 && !panelBatteryCharging))
+    readonly property bool panelPowerSaver: panelPowerProfiles.activeProfile === "power-saver"
     readonly property bool showPanelBatteryPercentage: !vertical
         && Plasmoid.configuration.showBatteryPercentage && panelBatteryPercentKnown
     readonly property int batteryGlyphSize: vertical
@@ -313,7 +323,9 @@ ContainmentItem {
                     height: hoverRect.height
                     radius: ControlMetrics.controlCornerRadius
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                   Kirigami.Theme.textColor.b, 0.08)
+                                   Kirigami.Theme.textColor.b,
+                                   root.pressedQuickSetting !== null || systemTrayState.quickSettingsOpen ? 0.10 : 0.06)
+                    Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }
                 }
             }
         }

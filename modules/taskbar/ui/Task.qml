@@ -17,6 +17,7 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 import plasma.applet.org.kde.plasma.icontasks as TaskManagerApplet
 import "code/JumpListPolicy.js" as JumpListPolicy
+import "controlMetrics.js" as ControlMetrics
 import "taskbarGeometry.js" as TaskbarGeometry
 import org.kde.plasma.plasmoid
 
@@ -93,7 +94,7 @@ FloatingToolTipArea {
     interactive: hasWindowPreview
     location: Plasmoid.location
     // Keep an independent gap above the task hit target, in logical px.
-    margin: 12
+    margin: TaskbarGeometry.taskbarToolTipMargin
     mainItem: !Plasmoid.configuration.showToolTips || !hasWindowPreview ? tasksRoot.pinnedAppToolTipDelegate : tasksRoot.openWindowToolTipDelegate
     onAboutToShow: updateMainItemBindings()
 
@@ -204,6 +205,7 @@ FloatingToolTipArea {
     onToolTipVisibleChanged: toolTipVisible => {
         task.toolTipOpen = toolTipVisible;
         if (!toolTipVisible) {
+            tasksRoot.cancelHighlightWindows();
             if (tasksRoot.toolTipOpenedByClick === task)
                 tasksRoot.toolTipOpenedByClick = null;
             if (tasksRoot.toolTipAreaItem === task)
@@ -300,14 +302,22 @@ FloatingToolTipArea {
     Keys.onDownPressed: event => Keys.rightPressed(event)
     Keys.onLeftPressed: event => {
         if (!inPopup && (event.modifiers & Qt.ControlModifier) && (event.modifiers & Qt.ShiftModifier)) {
-            tasksModel.move(task.index, task.index - 1);
+            const delta = (!task.tasksRoot.vertical && task.hostTaskList?.LayoutMirroring.enabled) ? 1 : -1;
+            const targetIndex = task.index + delta;
+            if (targetIndex >= 0 && targetIndex < tasksModel.count) {
+                tasksModel.move(task.index, targetIndex);
+            }
         } else {
             event.accepted = false;
         }
     }
     Keys.onRightPressed: event => {
         if (!inPopup && (event.modifiers & Qt.ControlModifier) && (event.modifiers & Qt.ShiftModifier)) {
-            tasksModel.move(task.index, task.index + 1);
+            const delta = (!task.tasksRoot.vertical && task.hostTaskList?.LayoutMirroring.enabled) ? -1 : 1;
+            const targetIndex = task.index + delta;
+            if (targetIndex >= 0 && targetIndex < tasksModel.count) {
+                tasksModel.move(task.index, targetIndex);
+            }
         } else {
             event.accepted = false;
         }
@@ -500,6 +510,31 @@ FloatingToolTipArea {
         }
     }
 
+    readonly property bool taskPressed: leftTapHandler.pressed || rightMenuTap.pressed || menuTapHandler.pressed
+    readonly property bool darkTaskbar: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.textColor)
+        === Kirigami.ColorUtils.Light
+    readonly property bool multiWindowStacked: !task.inPopup && task.tasksRoot.iconsOnly
+        && Boolean(task.model?.IsGroupParent) && task.childCount > 1
+        && (Boolean(task.model?.IsActive) || frame.isHovered)
+
+    // Windows 11 26H2 TaskListButtonResources.xbf MultiWindowElement:
+    // stacked secondary backplate peeking on the trailing side of grouped apps.
+    Rectangle {
+        id: multiWindowBackplate
+        objectName: "wmTaskMultiWindowBackplate"
+        visible: task.multiWindowStacked && width > 4 && height > 4
+        readonly property real tileInset: TaskbarGeometry.panelTileInset()
+        readonly property bool mirroredRow: !task.tasksRoot.vertical && Boolean(task.hostTaskList?.LayoutMirroring.enabled)
+        x: frame.x + (task.tasksRoot.vertical ? tileInset + 2 : (mirroredRow ? Math.max(0, tileInset - 2) : tileInset + 2))
+        y: frame.y + tileInset + 2
+        width: Math.max(0, frame.width - 2 * tileInset - (task.tasksRoot.vertical ? 4 : 0))
+        height: Math.max(0, frame.height - 2 * tileInset - (task.tasksRoot.vertical ? 0 : 4))
+        radius: ControlMetrics.controlCornerRadius
+        color: task.darkTaskbar ? "#0AFFFFFF" : "#4CFFFFFF"
+        border.width: 1
+        border.color: task.darkTaskbar ? "#1AFFFFFF" : "#0F000000"
+    }
+
     KSvg.FrameSvgItem {
         id: frame
 
@@ -637,6 +672,14 @@ FloatingToolTipArea {
             // alone shows it. (Upstream lightens it: active: task.highlighted.)
             active: false
             enabled: true
+            scale: task.taskPressed ? 0.88 : 1
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: Kirigami.Units.shortDuration > 0 ? ControlMetrics.controlFasterDuration : 0
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             source: iconBox.panelIconOnly
                 ? task.tasksRoot.backend.normalizedPanelIcon(task.model.decoration)

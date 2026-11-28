@@ -46,6 +46,12 @@ PlasmoidItem {
     Layout.fillHeight: !vertical
 
     Plasmoid.constraintHints: Plasmoid.CanFillArea
+    LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
+    LayoutMirroring.childrenInherit: true
+
+    readonly property bool darkPanel: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.textColor)
+        === Kirigami.ColorUtils.Light
+    readonly property bool editMode: Plasmoid.containment?.corona?.editMode ?? false
 
     readonly property bool inPanel: [PlasmaCore.Types.TopEdge, PlasmaCore.Types.RightEdge, PlasmaCore.Types.BottomEdge, PlasmaCore.Types.LeftEdge]
             .includes(Plasmoid.location)
@@ -75,7 +81,7 @@ PlasmoidItem {
 
         onClicked: Plasmoid.activated();
 
-        Keys.onPressed: {
+        Keys.onPressed: event => {
             switch (event.key) {
             case Qt.Key_Space:
             case Qt.Key_Enter:
@@ -90,6 +96,8 @@ PlasmoidItem {
         Accessible.name: Plasmoid.title
         Accessible.description: toolTipSubText
         Accessible.role: Accessible.Button
+        Accessible.checkable: true
+        Accessible.checked: root.activeController.active
         Accessible.onPressAction: Plasmoid.activated()
 
         DropArea {
@@ -115,19 +123,22 @@ PlasmoidItem {
             }
         }
 
-        // Win11 show-desktop: invisible by default. On hover, a short
-        // line across half the panel thickness fades in. No
-        // background fill, no separator line.
+        // Windows 11 26H2 SystemTrayResources.DinnerTime.xbf ShowDesktopPipe:
+        // 1px pipe across half the panel thickness (2* in 1*:2*:1*), 0.5px radius,
+        // ControlStrongStrokeColorDefaultBrush on hover (#8BFFFFFF / #72000000)
+        // and ControlStrongStrokeColorDisabledBrush when pressed (#28FFFFFF / #37000000).
         Rectangle {
             id: hoverLine
+            radius: 0.5
             color: Plasmoid.configuration.edgeColor
-                  || Qt.rgba(Kirigami.Theme.textColor.r,
-                             Kirigami.Theme.textColor.g,
-                             Kirigami.Theme.textColor.b, 0.5)
+                  || (mouseArea.state === "pressed"
+                      ? (root.darkPanel ? "#28FFFFFF" : "#37000000")
+                      : (root.darkPanel ? "#8BFFFFFF" : "#72000000"))
             width: root.vertical ? parent.width * 0.5 : 1
             height: root.vertical ? 1 : parent.height * 0.5
             anchors.centerIn: parent
-            opacity: Plasmoid.containment.corona.editMode || mouseArea.state === "hover" || mouseArea.state === "pressed" ? 1 : 0
+            opacity: root.editMode || mouseArea.state === "hover" || mouseArea.state === "pressed"
+                ? 1 : (root.activeController.active ? 0.35 : 0)
             Behavior on opacity { OpacityAnimator { duration: Kirigami.Units.shortDuration; easing.type: Easing.InOutQuad } }
         }
 

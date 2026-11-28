@@ -41,4 +41,10 @@ MouseArea {
     onContainsMouseChanged: {
         tasksRoot.windowsHovered([String(winId)], containsMouse);
     }
+
+    Component.onDestruction: {
+        if (containsMouse) {
+            tasksRoot.cancelHighlightWindows();
+        }
+    }
 }

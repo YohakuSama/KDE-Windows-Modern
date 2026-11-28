@@ -57,9 +57,9 @@ inline bool inputMethodIndicator(const QString &itemId)
 }
 
 // -1: ordinary visible applications/devices; 0: privacy; 1+: fixed core.
-inline int systemOrder(const QString &itemId)
+inline int systemOrder(const QString &itemId, bool nativeCapture = false)
 {
-    if (privacyIndicator(itemId)) return 0;
+    if (privacyIndicator(itemId) || nativeCapture) return 0;
     if (inputMethodIndicator(itemId)) return 1;
     const int index = tail().indexOf(itemId);
     return index < 0 ? -1 : index + 1;

@@ -149,7 +149,7 @@ Loader {
         PlasmaComponents3.ScrollView {
             // Constrain a group to the panel's own monitor rather than the
             // combined virtual desktop. Keep the native available-size fallback.
-            readonly property rect panelScreen: Plasmoid.containment.screenGeometry
+            readonly property rect panelScreen: Plasmoid.containment ? Plasmoid.containment.screenGeometry : Qt.rect(0, 0, 0, 0)
             readonly property real maximumWidth: Math.max(1,
                 (panelScreen.width > 0 ? panelScreen.width : Screen.desktopAvailableWidth)
                 - (toolTipDelegate.isVerticalPanel ? toolTipDelegate.panelExtent : 0)

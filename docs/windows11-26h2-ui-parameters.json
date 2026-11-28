@@ -39,6 +39,18 @@
             "value": 16,
             "xbf_offset": 5218
           },
+          "ThumbnailViewMinWidth": {
+            "value": 100,
+            "xbf_offset": 5125
+          },
+          "ThumbnailViewMaxWidth": {
+            "value": 216,
+            "xbf_offset": 5134
+          },
+          "ToolTipMargin": {
+            "value": 12,
+            "xbf_offset": 5188
+          },
           "TaskbarContextMenuMargin": {
             "value": [
               12,
@@ -171,6 +183,15 @@
           "IconPressedOpacity": {
             "value": 0.699999988079071,
             "xbf_offset": 25471
+          },
+          "BackgroundElementMultiWindowMargin": {
+            "value": [
+              0,
+              0,
+              4,
+              0
+            ],
+            "xbf_offset": 25491
           }
         }
       },
@@ -231,6 +252,15 @@
           "IconPressedOpacity": {
             "value": 0.800000011920929,
             "xbf_offset": 24751
+          },
+          "BackgroundElementMultiWindowMargin": {
+            "value": [
+              0,
+              0,
+              5,
+              0
+            ],
+            "xbf_offset": 24771
           }
         }
       },

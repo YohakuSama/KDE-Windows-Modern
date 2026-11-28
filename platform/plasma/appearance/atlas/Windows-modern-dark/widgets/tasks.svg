@@ -94,7 +94,7 @@
   <rect id="normal-bottomright" width="2" height="2" x="-28.999996" y="62" rx="0" ry="0" style="fill:none" />
   <g id="normal-center" transform="translate(-156,-64)">
     <rect id="rect1929-1" width="26" height="26" x="100" y="99" rx="3" ry="3" style="fill:none" />
-    <rect id="rect2616-7" width="8" height="2" x="109" y="121.5" rx="1" ry="1" class="ColorScheme-Text" fill="#858585" style="opacity:1" />
+    <rect id="rect2616-7" width="4" height="2" x="111" y="121.5" rx="1" ry="1" class="ColorScheme-Text" fill="#858585" style="opacity:1" />
   </g>
   <rect id="progress-topleft" width="2" height="2" x="-61.000011" y="176" rx="0" ry="0" style="fill:none" />
   <rect id="progress-top" width="26" height="2" x="-58.000011" y="176" rx="0" ry="0" style="fill:none;stroke-width:3.60555" />

@@ -87,6 +87,17 @@ PlasmoidItem {
     preferredRepresentation: fullRepresentation
 
     Plasmoid.constraintHints: Plasmoid.CanFillArea
+    Plasmoid.contextualActions: [
+        PlasmaCore.Action {
+            id: taskManagerAction
+            text: i18n("Task Manager")
+            icon.name: "utilities-system-monitor"
+            visible: backend.systemMonitorAvailable()
+            enabled: visible
+            priority: PlasmaCore.Action.HighPriority
+            onTriggered: backend.openSystemMonitor()
+        }
+    ]
 
     Plasmoid.onUserConfiguringChanged: {
         if (Plasmoid.userConfiguring && groupDialog !== null) {
@@ -181,7 +192,7 @@ PlasmoidItem {
         for (let i = 0; i < taskItems.length - 1; ++i) {
             const task = taskItems[i];
 
-            if (!task.model.IsLauncher && !task.model.IsStartup) {
+            if (task?.model && !task.model.IsLauncher && !task.model.IsStartup) {
                 tasksModel.requestPublishDelegateGeometry(tasksModel.makeModelIndex(task.index),
                     backend.globalRect(task), task);
             }
@@ -211,7 +222,7 @@ PlasmoidItem {
             return launcherCount + startupsWithLaunchers;
         }
 
-        screenGeometry: Plasmoid.containment.screenGeometry
+        screenGeometry: Plasmoid.containment ? Plasmoid.containment.screenGeometry : Qt.rect(0, 0, 0, 0)
         activity: activityInfo.currentActivity
 
         filterByCurrentVirtualDesktop: Plasmoid.configuration.showOnlyCurrentDesktop

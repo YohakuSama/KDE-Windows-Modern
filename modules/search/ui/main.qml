@@ -158,6 +158,13 @@ PlasmoidItem {
         placeholder: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@info:placeholder taskbar search box", "Search")
         description: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@info:tooltip", "Open Start and search")
         onTriggered: root.openSearch()
+
+        PlasmaCore.ToolTipArea {
+            anchors.fill: parent
+            active: !root.searchSelected
+            mainText: i18ndc("plasma_applet_org.kde.windowsmodern.search", "@info:tooltip", "Search")
+            textFormat: Text.PlainText
+        }
     }
 
     TaskbarButton {

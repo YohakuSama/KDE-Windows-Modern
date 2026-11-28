@@ -62,7 +62,8 @@ PlasmaComponents3.ScrollView {
         boundsBehavior: Flickable.StopAtBounds
 
         currentIndex: -1
-        highlight: PlasmaExtras.Highlight {}
+        // Individual AbstractItem delegates draw their own 4px Windows 11 hover/focus tile.
+        highlight: null
         highlightMoveDuration: 0
 
         pixelAligned: true

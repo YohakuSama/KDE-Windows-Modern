@@ -124,6 +124,7 @@ int main(int argc, char **argv)
     check(camera, Status::PassiveStatus, true, true, false, Status::HiddenStatus);
     check(camera, Status::ActiveStatus, false, false, false, Status::HiddenStatus);
     Q_ASSERT(WindowsTray::systemOrder(QStringLiteral("example.sni")) < WindowsTray::systemOrder(camera));
+    Q_ASSERT(WindowsTray::systemOrder(mic, true) == WindowsTray::systemOrder(camera));
     Q_ASSERT(WindowsTray::systemOrder(camera) < WindowsTray::systemOrder(QStringLiteral("org.kde.plasma.keyboardlayout")));
     check(QStringLiteral("example.sni"), Status::ActiveStatus, true, false, false, Status::PassiveStatus);
     check(QStringLiteral("example.sni"), Status::NeedsAttentionStatus, true, false, false, Status::ActiveStatus);

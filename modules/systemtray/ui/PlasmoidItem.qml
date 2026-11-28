@@ -36,14 +36,38 @@ AbstractItem {
                 return i18n("No output device");
             if (tooltipSink.muted) return i18n("Volume: muted");
             return i18n("Volume: %1%", Math.round(tooltipSink.volume / 65536 * 100));
-        case "org.kde.plasma.battery":
-            return plasmoidContainer.trayRoot.panelBatteryPercentKnown
-                ? i18n("Battery status: %1% remaining", Math.round(plasmoidContainer.trayRoot.panelBatteryPercent))
-                : i18n("Battery level unknown");
-        default:
-            // Preserve the native network name/status without the stock
-            // multiline instructions or applet-provided tooltip view.
-            return String(applet?.toolTipMainText || text).split(/\r?\n/)[0];
+        case "org.kde.plasma.battery": {
+            if (!plasmoidContainer.trayRoot.panelBatteryPercentKnown)
+                return i18n("Battery level unknown");
+            const pct = Math.round(plasmoidContainer.trayRoot.panelBatteryPercent);
+            if (plasmoidContainer.trayRoot.panelBatteryFull)
+                return i18n("Battery status: Fully charged (%1%)", pct);
+            if (plasmoidContainer.trayRoot.panelBatteryCharging)
+                return i18n("Battery status: %1% available (plugged in, charging)", pct);
+            if (plasmoidContainer.trayRoot.panelBatteryPluggedIn)
+                return i18n("Battery status: %1% available (plugged in)", pct);
+            if (plasmoidContainer.trayRoot.panelPowerSaver)
+                return i18n("Battery status: %1% remaining (energy saver on)", pct);
+            return i18n("Battery status: %1% remaining", pct);
+        }
+        default: {
+            // Preserve the native network name/status without stock multiline
+            // instructions or applet-provided tooltip views. When disconnected
+            // or in airplane mode, plasma-nm puts the generic applet title in
+            // toolTipMainText and the actual state in toolTipSubText.
+            const rawMain = String(applet?.toolTipMainText || "").split(/\r?\n/)[0].trim();
+            const rawSub = String(applet?.toolTipSubText || "")
+                .replace(/<br\s*\/?>/gi, "\n")
+                .replace(/<[^>]*>/g, "")
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .find(line => line.length > 0) || "";
+            if (rawMain.length > 0 && rawMain !== text)
+                return rawMain;
+            if (rawSub.length > 0)
+                return rawSub;
+            return rawMain || text;
+        }
         }
     }
     mainText: groupedQuickSettings ? "" : applet ? (applet.toolTipMainText || text) : ""

@@ -44,6 +44,7 @@ QHash<int, QByteArray> BaseModel::roleNames() const {
         {static_cast<int>(BaseRole::Category), QByteArrayLiteral("category")},
         {static_cast<int>(BaseRole::Status), QByteArrayLiteral("status")},
         {static_cast<int>(BaseRole::EffectiveStatus), QByteArrayLiteral("effectiveStatus")},
+        {static_cast<int>(BaseRole::NativeCapture), QByteArrayLiteral("nativeCapture")},
     };
 }
 
@@ -98,6 +99,7 @@ QVariant PlasmoidModel::data(const QModelIndex &index, int role) const {
         case BaseRole::Category: return plasmoidCategoryForMetadata(meta);
         case BaseRole::Status: return status;
         case BaseRole::EffectiveStatus: return calculateEffectiveStatus(applet != nullptr, status, meta.pluginId());
+        case BaseRole::NativeCapture: return false;
         default: return {};
         }
     }
@@ -207,6 +209,7 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const {
         case BaseRole::Category: { QVariant cat = sniData->category(); return cat.isNull() ? QStringLiteral("UnknownCategory") : cat; }
         case BaseRole::Status: return extractStatus(sniData);
         case BaseRole::EffectiveStatus: return calculateEffectiveStatus(true, extractStatus(sniData), itemId, sniData->isNativeCapture());
+        case BaseRole::NativeCapture: return sniData->isNativeCapture();
         default: return {};
         }
     }
@@ -450,6 +453,8 @@ QVariant BackgroundAppsModel::data(const QModelIndex &index, int role) const
             return Plasma::Types::ItemStatus::ActiveStatus;
         case BaseRole::EffectiveStatus:
             return calculateEffectiveStatus(true, Plasma::Types::ItemStatus::ActiveStatus, app.appId);
+        case BaseRole::NativeCapture:
+            return false;
         default:
             return QVariant();
         }

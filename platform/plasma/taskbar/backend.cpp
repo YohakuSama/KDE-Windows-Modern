@@ -166,6 +166,37 @@ QVariant Backend::nativeMenuIcon(const QString &role) const
     return QVariant::fromValue(icon);
 }
 
+static KService::Ptr resolveSystemMonitorService()
+{
+    for (const auto &desktopName : {
+             QStringLiteral("org.kde.plasma-systemmonitor"),
+             QStringLiteral("plasma-systemmonitor"),
+             QStringLiteral("org.kde.ksysguard"),
+         }) {
+        if (const KService::Ptr service = KService::serviceByDesktopName(desktopName)) {
+            return service;
+        }
+    }
+    return {};
+}
+
+bool Backend::systemMonitorAvailable() const
+{
+    return static_cast<bool>(resolveSystemMonitorService());
+}
+
+void Backend::openSystemMonitor() const
+{
+    const KService::Ptr service = resolveSystemMonitorService();
+    if (!service) {
+        return;
+    }
+    auto *job = new KIO::ApplicationLauncherJob(service);
+    auto *delegate = new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled);
+    job->setUiDelegate(delegate);
+    job->start();
+}
+
 Backend::~Backend()
 {
     s_instances.removeAll(this);

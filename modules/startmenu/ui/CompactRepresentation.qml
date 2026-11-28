@@ -91,10 +91,23 @@ Item {
 
     // Expose the button to screen readers and accessibility tools: without
     // these the Start button is absent from the accessibility tree.
+    activeFocusOnTab: true
     Accessible.role: Accessible.Button
     Accessible.name: i18nc("@action:button the Start menu button", "Start")
     Accessible.description: i18nc("@info:tooltip", "Open the Start menu")
     Accessible.onPressAction: root.activateStart()
+
+    Keys.onPressed: event => {
+        switch (event.key) {
+        case Qt.Key_Space:
+        case Qt.Key_Enter:
+        case Qt.Key_Return:
+        case Qt.Key_Select:
+            if (!event.isAutoRepeat) root.activateStart();
+            event.accepted = true;
+            break;
+        }
+    }
 
     // Use the same 30px icon canvas as task icons. The default logo keeps
     // its original 4px optical inset on the 64px artwork canvas.
@@ -122,7 +135,7 @@ Item {
         anchors.fill: parent
         imagePath: "widgets/tasks"
         prefix: [root.edgePrefix + "launcher-hover", "launcher-hover", root.edgePrefix + "hover", "hover"]
-        visible: root.inPanel && (mouseArea.containsMouse || (root.dashWindow?.menuShown ?? false))
+        visible: root.inPanel && (mouseArea.containsMouse || root.activeFocus || (root.dashWindow?.menuShown ?? false))
     }
 
     Kirigami.Icon {
@@ -164,6 +177,13 @@ Item {
             else settleMotion.restart();
         }
         onClicked: root.activateStart(true)
+
+        PlasmaCore.ToolTipArea {
+            anchors.fill: parent
+            active: !(root.dashWindow?.visible ?? false)
+            mainText: i18nc("@action:button the Start menu button", "Start")
+            textFormat: Text.PlainText
+        }
     }
 
     Component.onCompleted: {

@@ -21,7 +21,7 @@ class StatusNotifierItemHost;
 class BaseModel : public QAbstractListModel {
     Q_OBJECT
 public:
-    enum class BaseRole { ItemType = Qt::UserRole + 1, ItemId, CanRender, Category, Status, EffectiveStatus, LastBaseRole };
+    enum class BaseRole { ItemType = Qt::UserRole + 1, ItemId, CanRender, Category, Status, EffectiveStatus, NativeCapture, LastBaseRole };
     explicit BaseModel(QPointer<SystemTraySettings> settings, QObject *parent = nullptr);
     QHash<int, QByteArray> roleNames() const override;
 private Q_SLOTS: void onConfigurationChanged();

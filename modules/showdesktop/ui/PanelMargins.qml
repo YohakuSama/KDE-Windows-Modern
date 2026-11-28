@@ -36,10 +36,9 @@ KSvg.FrameSvgItem {
             return rowSpacing + panelSvg.fixedMargins.bottom
         } else if (Plasmoid.location === PlasmaCore.Types.RightEdge) {
             return rowSpacing + panelSvg.fixedMargins.bottom
-        } else if (Plasmoid.location === PlasmaCore.Types.TopEdge) {
-            return rowSpacing + panelSvg.fixedMargins.right
-        } else if (Plasmoid.location === PlasmaCore.Types.BottomEdge) {
-            return rowSpacing + panelSvg.fixedMargins.right
+        } else if (Plasmoid.location === PlasmaCore.Types.TopEdge || Plasmoid.location === PlasmaCore.Types.BottomEdge) {
+            return rowSpacing + (Qt.application.layoutDirection === Qt.RightToLeft
+                ? panelSvg.fixedMargins.left : panelSvg.fixedMargins.right)
         } else {
             return 0
         }

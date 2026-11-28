@@ -5,6 +5,10 @@
 // output scaling; the icon keeps its original optical padding.
 const iconCanvas = 30;
 const tileInset = 2;
+// Windows 11 26H2 JumpViewUI/RefreshedStyles.xbf: TaskbarJumpListFrameWidth = 294 (@5862),
+// JumpListControlWidth = 294 (@5871), ToolTipMargin = 12 (TaskbarConstants.xbf @5188).
+const taskbarJumpListWidth = 294;
+const taskbarToolTipMargin = 12;
 
 function panelTileInset() { return tileInset; }
 
