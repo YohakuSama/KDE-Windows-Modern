@@ -11,6 +11,7 @@ rest to where Windows has them:
   Win+M, Win+Home     minimize all / all others
   Win+A / Win+N       Quick Settings / notifications (tray, see "tray" below)
   Win+V               themed Klipper history, native fallback
+  Win+K               Cast (GNOME Network Displays, only when installed)
   Win+PrtSc           full screenshot saved silently; Alt+PrtSc active window
   Ctrl+Shift+Esc      Mission Center (group "apps")
 
@@ -145,6 +146,17 @@ THEMED_RUN_COMPONENT = "org.kde.windowsmodern.run"
 THEMED_RUN_ACTION = "show-run"
 NATIVE_RUN_COMPONENT = "org.kde.krunner.desktop"
 NATIVE_RUN_ACTION = "_launch"
+CAST_DESKTOP_COMPONENT = "org.gnome.NetworkDisplays.desktop"
+CAST_DESKTOP_ACTION = "_launch"
+
+
+def desktop_entry_exists(desktop_id):
+    data_home = pathlib.Path(os.environ.get("XDG_DATA_HOME", pathlib.Path.home() / ".local/share"))
+    data_dirs = [pathlib.Path(p) for p in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":") if p]
+    for base in (data_home, *data_dirs):
+        if (base / "applications" / desktop_id).is_file():
+            return True
+    return False
 
 
 def registered_action(ga, component, action):
@@ -325,6 +337,13 @@ def apply(group, dry_run):
     ga = GlobalAccel()
     backup = load_backup()
     changes = [c for c in CHANGES if c[0] == group]
+    if group == "shortcuts" and desktop_entry_exists(CAST_DESKTOP_COMPONENT):
+        owner = ga.key_owner(parse("Meta+K"))
+        if not owner or owner[:2] == [CAST_DESKTOP_COMPONENT, CAST_DESKTOP_ACTION]:
+            changes = [*changes, (
+                "shortcuts", CAST_DESKTOP_COMPONENT, CAST_DESKTOP_ACTION,
+                "GNOME Network Displays", "GNOME Network Displays", ("add", ["Meta+K"]),
+            )]
     failed = 0
     for _, comp, action, fcomp, faction, change in changes:
         aid = action_id(comp, action, fcomp, faction)
@@ -367,6 +386,12 @@ def restore(group):
                 print("  Could not restore the themed Run shortcut", file=sys.stderr)
                 return 1
             backup.pop(name)
+        cast_name = f"{CAST_DESKTOP_COMPONENT}|{CAST_DESKTOP_ACTION}"
+        if cast_name in backup:
+            cast_aid = [CAST_DESKTOP_COMPONENT, CAST_DESKTOP_ACTION,
+                        "GNOME Network Displays", "GNOME Network Displays"]
+            ga.set_keys(cast_aid, backup.pop(cast_name))
+            print(f"  restored {CAST_DESKTOP_COMPONENT} :: {CAST_DESKTOP_ACTION}")
     # Reverse order: our actions give their keys up before the original
     # owners take them back.
     for _, comp, action, fcomp, faction, _change in reversed([c for c in CHANGES if c[0] == group]):

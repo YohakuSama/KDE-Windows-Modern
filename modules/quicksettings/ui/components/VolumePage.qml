@@ -42,6 +42,7 @@ Lib.Page {
     Volume.VolumeMixerSection {
         Layout.fillWidth: true
         models: models
+        shellAccent: page.shellAccent
     }
 
     Rectangle {
@@ -58,6 +59,7 @@ Lib.Page {
     Volume.InputDeviceSection {
         Layout.fillWidth: true
         models: models
+        shellAccent: page.shellAccent
     }
 
     PlasmaComponents3.Label {

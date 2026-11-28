@@ -85,10 +85,16 @@ Item {
             compare(preview.visible, true);
             tryCompare(preview, "status", Image.Ready);
             const target = findChild(textCard, "wmClipboardSelect");
+            target.forceActiveFocus();
+            tryCompare(target, "activeFocus", true);
+            keyClick(Qt.Key_Down);
+            const imageTarget = findChild(imageCard, "wmClipboardSelect");
+            tryCompare(imageTarget, "activeFocus", true);
+            keyClick(Qt.Key_Up);
+            tryCompare(target, "activeFocus", true);
             mouseClick(target, 20, target.height / 2);
             compare(page.historyController.selectedUuid, "text-1");
             compare(selection.count, 1);
-            const imageTarget = findChild(imageCard, "wmClipboardSelect");
             mouseClick(imageTarget, 20, imageTarget.height / 2);
             compare(page.historyController.selectedUuid, "image-1");
             compare(selection.count, 2);

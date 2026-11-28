@@ -265,14 +265,15 @@ ColumnLayout {
         const selected = calendarView.selectedDate;
         const d = new Date(calendarView.displayedYear, calendarView.displayedMonth,
             Math.min(selected.getDate(), Calendar.daysInMonth(calendarView.displayedYear, calendarView.displayedMonth)));
+        const horizontalStep = calendarView.LayoutMirroring.enabled ? -1 : 1;
         switch (event.key) {
         case Qt.Key_Left:
-            d.setDate(d.getDate() - 1);
+            d.setDate(d.getDate() - horizontalStep);
             calendarView.selectDate(d);
             event.accepted = true;
             break;
         case Qt.Key_Right:
-            d.setDate(d.getDate() + 1);
+            d.setDate(d.getDate() + horizontalStep);
             calendarView.selectDate(d);
             event.accepted = true;
             break;
@@ -328,7 +329,7 @@ ColumnLayout {
             id: headerTitle
             objectName: "wmCalendarMonthHeading"
             Layout.fillWidth: true
-            horizontalAlignment: Text.AlignLeft
+            horizontalAlignment: calendarView.LayoutMirroring.enabled ? Text.AlignRight : Text.AlignLeft
             verticalAlignment: Text.AlignVCenter
             textFormat: Text.PlainText
             elide: Text.ElideRight
@@ -361,7 +362,9 @@ ColumnLayout {
             MouseArea {
                 id: headerButton
                 z: -1
-                x: -Kirigami.Units.smallSpacing
+                x: calendarView.LayoutMirroring.enabled
+                    ? headerTitle.width - width + Kirigami.Units.smallSpacing
+                    : -Kirigami.Units.smallSpacing
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(headerTitle.width, headerTitle.contentWidth) + 2 * Kirigami.Units.smallSpacing
                 height: Kirigami.Units.gridUnit * 1.5

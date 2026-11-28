@@ -26,6 +26,7 @@ Rectangle {
 
     signal batteryClicked
 
+    LayoutMirroring.childrenInherit: true
     color: "transparent"
     implicitHeight: Math.round(TrayMetrics.quickFooterHeight * uiScale)
 

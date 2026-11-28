@@ -679,5 +679,11 @@
   "Clear search": "清除搜索",
   "No results found for \"%1\"": "未找到“%1”的相关结果",
   "No items to show": "没有可显示的项目",
-  "There are currently no power options available.": "当前没有可用的电源选项。"
+  "There are currently no power options available.": "当前没有可用的电源选项。",
+  "Can't connect to this network": "无法连接到此网络",
+  "Connect to wireless display": "连接到无线显示器",
+  "Accessibility settings": "辅助功能设置",
+  "Mute %1": "将 %1 静音",
+  "Unmute %1": "取消 %1 静音",
+  "Microphone volume": "麦克风音量"
 }

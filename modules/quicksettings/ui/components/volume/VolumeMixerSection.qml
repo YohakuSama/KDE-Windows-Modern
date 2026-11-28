@@ -12,7 +12,11 @@ ColumnLayout {
     id: section
 
     property var models
+    property color shellAccent: Kirigami.Theme.highlightColor
     property bool hasApps: models.sinkInputFilterModel.count > 0
+    readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
+    readonly property color accent: ColorType.accentForSurface(shellAccent,
+        Qt.color(ColorType.cardFill(dark, false)))
 
     spacing: 0
     visible: hasApps
@@ -25,6 +29,9 @@ ColumnLayout {
         model: models.sinkInputFilterModel
 
         delegate: Item {
+            id: appRow
+            required property var model
+            readonly property string appName: (model.Client && model.Client.name) || model.Name || i18n("Unknown application")
             Layout.fillWidth: true
             Layout.preferredHeight: TrayMetrics.quickSliderRowHeight
 
@@ -33,8 +40,7 @@ ColumnLayout {
                 anchors.leftMargin: TrayMetrics.detailRowOuterInset
                 anchors.rightMargin: TrayMetrics.detailRowOuterInset
                 radius: ControlMetrics.controlCornerRadius
-                color: ColorType.rowFill(ColorType.isDark(Kirigami.Theme.backgroundColor),
-                    false, rowHover.hovered, false)
+                color: ColorType.rowFill(section.dark, false, rowHover.hovered, false)
 
                 RowLayout {
                     anchors.fill: parent
@@ -43,47 +49,85 @@ ColumnLayout {
                     spacing: TrayMetrics.compactRowSpacing
 
                     Item {
+                        id: appMuteSlot
+                        objectName: "wmVolumeMixerAppMuteButton"
                         Layout.preferredWidth: TrayMetrics.compactRowIconExtent
                         Layout.preferredHeight: TrayMetrics.compactRowIconExtent
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: appRow.model.Muted
+                            ? i18n("Unmute %1", appRow.appName) : i18n("Mute %1", appRow.appName)
+                        Accessible.onPressAction: appRow.model.Muted = !appRow.model.Muted
+                        Keys.onReturnPressed: event => {
+                            if (!event.isAutoRepeat) appRow.model.Muted = !appRow.model.Muted;
+                        }
+                        Keys.onEnterPressed: event => {
+                            if (!event.isAutoRepeat) appRow.model.Muted = !appRow.model.Muted;
+                        }
+                        Keys.onSpacePressed: event => {
+                            if (!event.isAutoRepeat) appRow.model.Muted = !appRow.model.Muted;
+                        }
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: -2
+                            radius: ControlMetrics.controlCornerRadius
+                            color: "transparent"
+                            border.width: appMuteSlot.activeFocus ? 1 : 0
+                            border.color: section.accent
+                        }
                         // Preserve genuine application branding. Only the
                         // generic system fallback comes from Windows.
                         Kirigami.Icon {
                             anchors.fill: parent
-                            source: model.IconName || ""
+                            source: appRow.model.IconName || ""
                             fallback: ""
-                            visible: !!model.IconName && valid
+                            visible: !!appRow.model.IconName && valid
+                            opacity: appRow.model.Muted ? 0.45 : 1
                             isMask: false
                             roundToIconSize: false
                             id: applicationIcon
                         }
                         Components.NativeGlyph {
                             anchors.fill: parent
-                            roleName: "audio-volume-high-symbolic"
+                            roleName: appRow.model.Muted ? "audio-volume-muted-symbolic" : "audio-volume-high-symbolic"
+                            opacity: appRow.model.Muted ? 0.65 : 1
                             visible: !applicationIcon.visible && nativeSource.length > 0
                         }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: appRow.model.Muted = !appRow.model.Muted
+                        }
+                        PlasmaComponents3.ToolTip {
+                            visible: appMuteHover.hovered
+                            text: appMuteSlot.Accessible.name
+                        }
+                        HoverHandler { id: appMuteHover }
                     }
 
                     PlasmaComponents3.Label {
                         Layout.fillWidth: true
-                        text: (model.Client && model.Client.name) || model.Name || i18n("Unknown application")
+                        text: appRow.appName
                         textFormat: Text.PlainText
                         color: Kirigami.Theme.textColor
+                        opacity: appRow.model.Muted ? 0.65 : 1
                         font.pixelSize: 12
                         elide: Text.ElideRight
                     }
 
                     Lib.Slider {
                         Layout.preferredWidth: 110
-                        sliderAccessibleName: (model.Client && model.Client.name) || model.Name || i18n("Unknown application")
+                        shellAccent: section.shellAccent
+                        sliderAccessibleName: appRow.appName
                         from: 0
                         to: 65536
-                        value: model.Volume
+                        value: appRow.model.Muted ? 0 : appRow.model.Volume
                         stepSize: Math.round(65536 / 100)
                         onMoved: v => {
-                            model.Volume = v;
-                            model.Muted = v === 0;
+                            appRow.model.Volume = v;
+                            appRow.model.Muted = v === 0;
                         }
-                        onReleased: section.models.playFeedback(model.DeviceIndex)
+                        onReleased: section.models.playFeedback(appRow.model.DeviceIndex)
                     }
                 }
 

@@ -71,8 +71,12 @@ Lib.DetailPage {
         PlasmaComponents3.Label {
             anchors.left: parent.left
             anchors.leftMargin: 20
+            anchors.right: parent.right
+            anchors.rightMargin: 20
             anchors.verticalCenter: parent.verticalCenter
             text: parent.section
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
             font.weight: Font.DemiBold
             opacity: 0.8
         }

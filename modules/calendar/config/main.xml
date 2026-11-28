@@ -128,7 +128,7 @@
     </entry>
     <entry name="expandedWidth" type="Int">
       <label>Width of the expanded clock popup in pixels.</label>
-      <default>320</default>
+      <default>336</default>
     </entry>
   </group>
 </kcfg>

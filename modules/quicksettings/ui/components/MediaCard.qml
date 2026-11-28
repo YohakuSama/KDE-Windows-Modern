@@ -2,8 +2,10 @@
 // One live MPRIS session, shared by the Quick Settings card and media page.
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.mpris as Mpris
 import "../js/colorType.js" as ColorType
@@ -161,12 +163,25 @@ Rectangle {
                 }
                 Image {
                     id: albumImage
+                    objectName: "wmMediaAlbumArt"
                     anchors.fill: parent
                     anchors.margins: 1
+                    readonly property real dpr: Math.max(1, Number(card.Window.window?.devicePixelRatio) || 1)
+                    readonly property int targetExtent: Math.max(1,
+                        Math.ceil(Math.max(width, height, Math.round(58 * card.uiScale)) * dpr))
                     source: card.player ? card.player.artUrl || "" : ""
+                    sourceSize: Qt.size(targetExtent, targetExtent)
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop
                     visible: status === Image.Ready
+                    layer.enabled: visible
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: albumImage.width
+                            height: albumImage.height
+                            radius: Math.max(0, artwork.radius - 1)
+                        }
+                    }
                 }
             }
         }

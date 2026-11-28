@@ -18,7 +18,16 @@ ColumnLayout {
     signal back
     signal switchToggled
 
+    LayoutMirroring.childrenInherit: true
     spacing: 0
+    Keys.onPressed: event => {
+        const backKey = page.LayoutMirroring.enabled ? Qt.Key_Right : Qt.Key_Left;
+        if (!event.isAutoRepeat && (event.key === Qt.Key_Back
+                || ((event.modifiers & Qt.AltModifier) && event.key === backKey))) {
+            page.back();
+            event.accepted = true;
+        }
+    }
 
     default property alias content: contentLayout.data
 

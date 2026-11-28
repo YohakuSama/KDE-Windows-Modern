@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Use the real Klipper history; moveToTop preserves the complete MIME payload.
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.plasma.private.clipboard as Clipboard
@@ -198,6 +199,7 @@ ColumnLayout {
         delegate: Rectangle {
             id: card
             objectName: "wmClipboardCard"
+            required property int index
             required property var model
             readonly property string itemUuid: String(model?.uuid || "")
             readonly property bool isImage: model.type === 4
@@ -211,6 +213,10 @@ ColumnLayout {
             border.width: 1
             border.color: selectArea.activeFocus ? page.accent
                 : ColorType.divider(page.dark)
+
+            function focusSelectArea() {
+                selectArea.forceActiveFocus(Qt.TabFocusReason);
+            }
 
             function selectItem() {
                 if (!itemUuid || !page.historyController) return;
@@ -235,6 +241,28 @@ ColumnLayout {
                 Keys.onReturnPressed: event => { if (!event.isAutoRepeat) card.selectItem(); }
                 Keys.onEnterPressed: event => { if (!event.isAutoRepeat) card.selectItem(); }
                 Keys.onSpacePressed: event => { if (!event.isAutoRepeat) card.selectItem(); }
+                Keys.onUpPressed: event => {
+                    if (card.index > 0) {
+                        history.positionViewAtIndex(card.index - 1, ListView.Contain);
+                        const prev = history.itemAtIndex(card.index - 1);
+                        if (prev) prev.focusSelectArea();
+                        event.accepted = true;
+                    }
+                }
+                Keys.onDownPressed: event => {
+                    if (card.index + 1 < history.count) {
+                        history.positionViewAtIndex(card.index + 1, ListView.Contain);
+                        const next = history.itemAtIndex(card.index + 1);
+                        if (next) next.focusSelectArea();
+                        event.accepted = true;
+                    }
+                }
+                Keys.onDeletePressed: event => {
+                    if (!event.isAutoRepeat && page.historyController && card.itemUuid.length > 0) {
+                        page.historyController.remove(card.itemUuid);
+                        event.accepted = true;
+                    }
+                }
                 onClicked: card.selectItem()
             }
 
@@ -249,12 +277,12 @@ ColumnLayout {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 8
                 width: Math.max(1, Math.min(card.width - actionsColumn.width - 30, 220))
+                readonly property real dpr: Math.max(1, Number(page.Window.window?.devicePixelRatio) || 1)
                 source: card.isImage ? card.model.decoration : ""
-                sourceSize.width: 300
-                sourceSize.height: 200
+                sourceSize: Qt.size(Math.max(1, Math.ceil(220 * dpr)), Math.max(1, Math.ceil(92 * dpr)))
                 asynchronous: true
                 fillMode: Image.PreserveAspectFit
-                horizontalAlignment: Image.AlignLeft
+                horizontalAlignment: card.LayoutMirroring.enabled ? Image.AlignRight : Image.AlignLeft
                 cache: false
             }
 

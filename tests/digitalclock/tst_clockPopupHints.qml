@@ -80,10 +80,13 @@ Item {
         name: "ClockExpandedRepresentation"
         when: windowShown
         function test_sharedClockFlyoutMetrics() {
+            compare(ClockMetrics.flyoutDefaultWidth, 336);
             compare(ClockMetrics.flyoutCardRadius, 8);
             compare(ClockMetrics.flyoutCardBorderWidth, 1);
             compare(ClockMetrics.flyoutButtonExtent, 28);
             compare(ClockMetrics.compactActionButtonExtent, 24);
+            compare(ClockMetrics.groupHeaderMinHeight, 32);
+            compare(ClockMetrics.appLogoIconSize, 16);
             compare(ClockMetrics.flyoutButtonRadius, ControlMetrics.controlCornerRadius);
             compare(ClockMetrics.flyoutCardRadius, ControlMetrics.overlayCornerRadius);
             const panel = findChild(popup, "wmNotificationPanel");
@@ -143,7 +146,8 @@ Item {
             clock.popupVerticalPanel = false;
         }
         function test_fullCalendarHasUsableGeometry() {
-            compare(popup.implicitWidth, 320);
+            compare(popup.implicitWidth, ClockMetrics.flyoutDefaultWidth);
+            compare(popup.implicitWidth - 2 * popup.sectionInset, 312);
             verify(popup.implicitHeight >= 400);
             compare(popup.Layout.minimumWidth, popup.implicitWidth);
             compare(popup.Layout.minimumHeight, popup.implicitHeight);

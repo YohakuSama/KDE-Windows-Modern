@@ -105,6 +105,9 @@ Item {
         }
 
         function test_sharedCardRadiusTracksUiScale() {
+            const art = findChild(card, "wmMediaAlbumArt");
+            verify(art !== null);
+            verify(art.sourceSize.width >= 58 && art.sourceSize.height >= 58);
             compare(card.radius, Math.round(ControlMetrics.cardSurfaceRadius * card.uiScale));
             card.uiScale = 1.25;
             compare(card.radius, Math.round(ControlMetrics.cardSurfaceRadius * card.uiScale));

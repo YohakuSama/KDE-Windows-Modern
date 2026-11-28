@@ -25,6 +25,9 @@ FocusScope {
     required property var clockApplet
     property bool calendarExpanded: true
 
+    LayoutMirroring.enabled: Application.layoutDirection === Qt.RightToLeft
+    LayoutMirroring.childrenInherit: true
+
     readonly property var clockTimeLocale: Plasmoid.configuration.use24hFormat === 1
         ? Qt.locale("en_US") : Qt.locale()
     // Match the translated UI language without changing LC_TIME.
@@ -105,7 +108,7 @@ FocusScope {
     readonly property real panelExtent: Math.max(0, Number(clockApplet.popupPanelExtent) || 48)
     readonly property int availableScreenHeight: PopupGeometry.availableExtent(screenHeight,
         verticalPanel ? 0 : panelExtent, 32, 720)
-    readonly property int configuredWidth: Math.max(240, Number(Plasmoid.configuration.expandedWidth) || 320)
+    readonly property int configuredWidth: Math.max(240, Number(Plasmoid.configuration.expandedWidth) || ClockMetrics.flyoutDefaultWidth)
     readonly property int popupWidth: Math.min(configuredWidth, PopupGeometry.availableExtent(screenWidth,
         verticalPanel ? panelExtent : 0, 24, configuredWidth))
     readonly property int notificationMinimum: history.minimumSectionHeight + 2 * sectionInset

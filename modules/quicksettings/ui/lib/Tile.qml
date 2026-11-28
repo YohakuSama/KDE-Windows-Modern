@@ -67,6 +67,7 @@ ColumnLayout {
     Keys.onReturnPressed: event => { if (!event.isAutoRepeat) tile.clicked(); }
     Keys.onEnterPressed: event => { if (!event.isAutoRepeat) tile.clicked(); }
     Keys.onSpacePressed: event => { if (!event.isAutoRepeat) tile.clicked(); }
+    Keys.onMenuPressed: event => { if (!event.isAutoRepeat) tile.rightClicked(); }
 
     property color shellAccent: orderView && orderView.shellAccent !== undefined
         ? orderView.shellAccent : Kirigami.Theme.highlightColor

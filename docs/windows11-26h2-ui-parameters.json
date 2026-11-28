@@ -2250,7 +2250,7 @@
         }
       },
       "review_notes": [
-        "Styles.Win11 declares NotificationCenterFlyoutWidth=360, NotificationCenterFlyoutMargin=(12,8,12,0), GroupHeaderMinHeight=32 and 1px notification item plating border."
+        "Styles.Win11 declares NotificationCenterFlyoutWidth=360, NotificationCenterFlyoutMargin=(12,8,12,0), NotificationCenterFlyoutActualWidth=312, GroupHeaderMinHeight=32 and 1px notification item plating border. Deducting the two 12px horizontal flyout margins yields the 336px default card width (ClockMetrics.flyoutDefaultWidth), and deducting the two 12px card section insets yields the exact 312px inner content width."
       ]
     },
     {

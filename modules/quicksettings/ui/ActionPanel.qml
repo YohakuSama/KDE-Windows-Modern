@@ -382,6 +382,7 @@ ColumnLayout {
                     checkable: false
                     label: i18n("Cast")
                     iconSource: "video-display"
+                    tooltipText: i18n("Connect to wireless display")
                     onClicked: Plasmoid.openCast()
                 }
                 Lib.Tile {
@@ -393,6 +394,7 @@ ColumnLayout {
                     included: Plasmoid.accessibilityAvailable
                     label: i18n("Accessibility")
                     iconSource: "preferences-desktop-accessibility"
+                    tooltipText: i18n("Accessibility settings")
                     onClicked: KCMUtils.KCMLauncher.openSystemSettings("kcm_access")
                 }
                 Components.HotspotToggle {
@@ -511,7 +513,7 @@ ColumnLayout {
             Layout.preferredHeight: actionPanel.sliderHeight
             implicitHeight: actionPanel.sliderHeight
             panelScreenGeometry: Plasmoid.screenGeometry
-            panelScreenIndex: Plasmoid.containment.screen
+            panelScreenIndex: Plasmoid.containment ? Plasmoid.containment.screen : -1
             onArrowClicked: actionPanel.requestPage("brightness")
             onRightClicked: actionPanel.requestPage("brightness")
         }

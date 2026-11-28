@@ -189,8 +189,10 @@ ColumnLayout {
             id: dndMessage
             anchors.top: dndTitle.bottom
             anchors.topMargin: 6
-            width: Math.max(1, history.width)
+            anchors.left: parent.left
+            anchors.right: parent.right
             text: i18n("Only notifications allowed by your priority settings appear as banners.")
+            textFormat: Text.PlainText
             color: palette.textSecondary
             font.pixelSize: 13
             wrapMode: Text.WordWrap
@@ -200,7 +202,9 @@ ColumnLayout {
             objectName: "wmNotificationSettingsLink"
             anchors.top: dndMessage.bottom
             anchors.topMargin: 8
+            anchors.left: parent.left
             text: i18n("Notification settings")
+            textFormat: Text.PlainText
             color: palette.accentLink
             font.pixelSize: 13
             font.underline: true
@@ -209,6 +213,7 @@ ColumnLayout {
             Accessible.name: text
             Accessible.onPressAction: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications")
             Keys.onReturnPressed: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications")
+            Keys.onEnterPressed: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications")
             Keys.onSpacePressed: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications")
             TapHandler { onTapped: KCMUtils.KCMLauncher.openSystemSettings("kcm_notifications") }
             HoverHandler { cursorShape: Qt.PointingHandCursor }
@@ -305,18 +310,22 @@ ColumnLayout {
                 spacing: 4
 
                 RowLayout {
+                    objectName: "wmNotificationGroupHeader"
                     Layout.fillWidth: true
+                    Layout.minimumHeight: ClockMetrics.groupHeaderMinHeight
                     visible: !card.inGroup
                     Layout.leftMargin: 4
                     Layout.rightMargin: 4
                     spacing: 6
 
                     Kirigami.Icon {
-                        Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                        objectName: "wmNotificationAppIcon"
+                        Layout.preferredWidth: ClockMetrics.appLogoIconSize
                         Layout.preferredHeight: Layout.preferredWidth
                         source: card.model.applicationIconName || dndToggle.resolveNativeIcon("notifications-symbolic")
                         fallback: ""
                         visible: !card.inGroup && String(source).length > 0
+                        roundToIconSize: false
                         isMask: !card.model.applicationIconName
                     }
                     PlasmaComponents.Label {
@@ -545,6 +554,7 @@ ColumnLayout {
                                 id: replyInput
                                 Layout.fillWidth: true
                                 Layout.minimumWidth: 0
+                                Layout.minimumHeight: ControlMetrics.menuItemMinimumHeight
                                 placeholderText: card.model.replyPlaceholderText || i18n("Reply")
                                 Accessible.name: card.model.replyActionLabel || i18n("Reply to notification")
                                 onAccepted: card.submitReply()

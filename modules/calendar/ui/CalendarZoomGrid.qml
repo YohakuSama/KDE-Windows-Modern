@@ -30,6 +30,10 @@ Item {
     readonly property real cellHeight: (height - (columns - 1) * spacing) / columns
 
     function crossfade() {
+        if (Kirigami.Units.shortDuration <= 0) {
+            grid.opacity = 1;
+            return;
+        }
         grid.opacity = 0;
         fadeIn.restart();
     }

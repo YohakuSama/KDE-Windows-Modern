@@ -105,8 +105,14 @@ geometry and interaction constraints, not a second progress inventory.
 ## Calendar and notifications
 
 - One native Plasma popup with bounded positive layout hints and separate
-  history/calendar cards. Keep conditional empty states/actions and a
-  stable footer. No second popup or whole-flyout Flickable.
+  history/calendar cards. Default flyout card width is 336 logical pixels
+  (matching Windows 11 26H2 `NotificationCenterFlyoutWidth = 360` minus the
+  `12px` horizontal `NotificationCenterFlyoutMargin`, yielding the exact
+  `312px` `NotificationCenterFlyoutActualWidth` inside the `12px` card
+  section insets). Keep conditional empty states/actions, 32px minimum
+  notification group headers (`GroupHeaderMinHeight`), 16px app icons
+  (`AppLogoIconSize`) and a stable footer. No second popup or whole-flyout
+  Flickable.
 - Regional time/date defaults, explicit 12/24-hour preferences, uppercase
   English AM/PM in explicit mode, seconds off by default.
 - Preserve translated calendar labels, actual history, events, optional

@@ -22,6 +22,16 @@ ColumnLayout {
     property alias listView: list
     property alias emptyText: emptyLabel.text
 
+    LayoutMirroring.childrenInherit: true
+    Keys.onPressed: event => {
+        const backKey = page.LayoutMirroring.enabled ? Qt.Key_Right : Qt.Key_Left;
+        if (!event.isAutoRepeat && (event.key === Qt.Key_Back
+                || ((event.modifiers & Qt.AltModifier) && event.key === backKey))) {
+            page.back();
+            event.accepted = true;
+        }
+    }
+
     PageHeader {
         title: page.title
         shellAccent: page.shellAccent

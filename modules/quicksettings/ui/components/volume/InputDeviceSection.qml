@@ -11,6 +11,7 @@ ColumnLayout {
     id: section
 
     property var models
+    property color shellAccent: Kirigami.Theme.highlightColor
     property bool expanded: false
     // A single available device must remain selectable if the preferred
     // backend device is temporarily absent or unusable.
@@ -84,6 +85,37 @@ ColumnLayout {
                     }
                 }
             }
+        }
+    }
+
+    Lib.Slider {
+        objectName: "wmInputVolumeSlider"
+        Layout.fillWidth: true
+        Layout.leftMargin: TrayMetrics.detailRowOuterInset + TrayMetrics.compactRowContentInset
+        Layout.rightMargin: TrayMetrics.detailRowOuterInset + TrayMetrics.compactRowContentInset
+        Layout.topMargin: 4
+        visible: section.models.sourceAvailable
+        shellAccent: section.shellAccent
+        readonly property int maxVol: section.models.sourceAvailable && section.models.source.canRaiseVolume ? 98304 : 65536
+        iconSource: section.models.sourceAvailable && !section.models.source.muted
+            ? "microphone-sensitivity-high-symbolic" : "microphone-sensitivity-muted-symbolic"
+        iconClickable: section.models.sourceAvailable
+        iconAccessibleName: section.models.sourceAvailable && section.models.source.muted
+            ? i18n("Unmute") : i18n("Mute")
+        sliderAccessibleName: i18n("Microphone volume")
+        trackEnabled: section.models.sourceAvailable
+        from: 0
+        to: maxVol
+        value: section.models.sourceAvailable ? section.models.source.volume : 0
+        stepSize: Math.round(maxVol / 100)
+        onIconClicked: {
+            if (section.models.sourceAvailable)
+                section.models.source.muted = !section.models.source.muted;
+        }
+        onMoved: v => {
+            if (!section.models.sourceAvailable) return;
+            section.models.source.volume = v;
+            section.models.source.muted = v === 0;
         }
     }
 }

@@ -76,11 +76,17 @@ Lib.DetailPage {
 
         readonly property string networkKey: String(DevicePath || "") + "|" + String(ItemUniqueName || "")
         property int connectionState: ConnectionState
+        property int previousConnectionState: ConnectionState
+        property bool userDisconnecting: false
+        property bool connectionFailed: false
         readonly property bool expanded: selection.expandedKey === networkKey
         Component.onCompleted: if (connectionState === PlasmaNM.Enums.Activated)
             selection.offerConnected(networkKey)
         Component.onDestruction: selection.forget(networkKey)
-        onExpandedChanged: if (!expanded) clearPassword()
+        onExpandedChanged: if (!expanded) {
+            clearPassword();
+            connectionFailed = false;
+        }
         property string phase: "idle"
         property string password: ""
         property bool showPassword: false
@@ -100,6 +106,9 @@ Lib.DetailPage {
             if (phase === "password") {
                 return i18n("Enter the network security key");
             }
+            if (connectionFailed) {
+                return i18n("Can't connect to this network");
+            }
             return "";
         }
 
@@ -114,6 +123,8 @@ Lib.DetailPage {
         }
 
         function doConnect() {
+            userDisconnecting = false;
+            connectionFailed = false;
             if (predictableWirelessPassword) {
                 phase = "password";
                 Qt.callLater(() => {
@@ -130,20 +141,35 @@ Lib.DetailPage {
         function doNext() {
             if (!expanded || phase !== "password" || !pwField.acceptableInput)
                 return;
+            userDisconnecting = false;
+            connectionFailed = false;
             handler.addAndActivateConnection(DevicePath, SpecificPath, password);
             clearPassword();
         }
 
         function doDisconnect() {
+            userDisconnecting = true;
+            connectionFailed = false;
             handler.deactivateConnection(ConnectionPath, DevicePath);
             if (expanded) selection.toggle(networkKey);
         }
 
         onConnectionStateChanged: {
             if (connectionState === PlasmaNM.Enums.Activated) {
+                userDisconnecting = false;
+                connectionFailed = false;
                 clearPassword();
                 selection.offerConnected(networkKey);
+            } else if (connectionState === PlasmaNM.Enums.Activating) {
+                connectionFailed = false;
+            } else if (previousConnectionState === PlasmaNM.Enums.Activating
+                    && connectionState === PlasmaNM.Enums.Deactivated
+                    && !userDisconnecting) {
+                connectionFailed = true;
+            } else if (connectionState === PlasmaNM.Enums.Deactivated) {
+                userDisconnecting = false;
             }
+            previousConnectionState = connectionState;
         }
 
         Rectangle {

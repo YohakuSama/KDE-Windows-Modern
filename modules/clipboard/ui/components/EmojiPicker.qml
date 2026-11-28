@@ -66,8 +66,40 @@ ColumnLayout {
         Layout.leftMargin: 16
         Layout.rightMargin: 16
         Layout.topMargin: 8
+        leftPadding: mirrored && clearSearchButton.visible ? clearSearchButton.width + 6 : 10
+        rightPadding: !mirrored && clearSearchButton.visible ? clearSearchButton.width + 6 : 10
         placeholderText: picker.mode === "emoji" ? i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Search emoji") : i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Search")
         selectByMouse: true
+        Keys.onDownPressed: event => {
+            const targetGrid = picker.mode === "emoji" ? emojiGrid : localGrid;
+            if (targetGrid.visible && targetGrid.count > 0) {
+                targetGrid.forceActiveFocus(Qt.TabFocusReason);
+                event.accepted = true;
+            }
+        }
+
+        NativeToolButton {
+            id: clearSearchButton
+            objectName: "wmEmojiSearchClear"
+            visible: searchField.text.length > 0
+            nativeRole: "edit-clear"
+            anchors.left: searchField.mirrored ? parent.left : undefined
+            anchors.right: searchField.mirrored ? undefined : parent.right
+            anchors.leftMargin: 2
+            anchors.rightMargin: 2
+            anchors.verticalCenter: parent.verticalCenter
+            width: 28
+            height: 28
+            text: i18nd("plasma_applet_org.kde.windowsmodern.systemtray", "Clear search")
+            icon.width: 14
+            icon.height: 14
+            onClicked: {
+                searchField.clear();
+                searchField.forceActiveFocus();
+            }
+            QQC2.ToolTip.text: text
+            QQC2.ToolTip.visible: hovered
+        }
     }
 
     QQC2.ComboBox {
@@ -105,6 +137,8 @@ ColumnLayout {
         cellWidth: width / Math.max(1, Math.floor(width / 48))
         cellHeight: 48
         reuseItems: true
+        keyNavigationEnabled: true
+        activeFocusOnTab: count > 0
         boundsBehavior: Flickable.StopAtBounds
         HoverHandler { id: emojiHover }
         QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
@@ -135,6 +169,9 @@ ColumnLayout {
             Accessible.name: model.toolTip
             QQC2.ToolTip.text: model.toolTip
             QQC2.ToolTip.visible: hovered
+            Keys.onReturnPressed: event => { if (!event.isAutoRepeat) picker.copy(text); }
+            Keys.onEnterPressed: event => { if (!event.isAutoRepeat) picker.copy(text); }
+            Keys.onSpacePressed: event => { if (!event.isAutoRepeat) picker.copy(text); }
             onClicked: picker.copy(text)
         }
         QQC2.Label {
@@ -158,6 +195,8 @@ ColumnLayout {
         clip: true
         cellWidth: width / Math.max(1, Math.floor(width / (picker.mode === "kaomoji" ? 132 : 44)))
         cellHeight: picker.mode === "kaomoji" ? 44 : 40
+        keyNavigationEnabled: true
+        activeFocusOnTab: count > 0
         boundsBehavior: Flickable.StopAtBounds
         HoverHandler { id: localHover }
         QQC2.ScrollBar.vertical: Lib.FluentScrollBar {
@@ -184,6 +223,9 @@ ColumnLayout {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
+            Keys.onReturnPressed: event => { if (!event.isAutoRepeat) picker.copy(text); }
+            Keys.onEnterPressed: event => { if (!event.isAutoRepeat) picker.copy(text); }
+            Keys.onSpacePressed: event => { if (!event.isAutoRepeat) picker.copy(text); }
             onClicked: picker.copy(text)
         }
         QQC2.Label {

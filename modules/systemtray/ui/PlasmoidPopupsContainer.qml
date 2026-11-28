@@ -194,8 +194,16 @@ QQC2.StackView {
         id: clipboardPageComp
         Components.ClipboardPage {
             onBack: mainStack.trayState.setActiveApplet(null)
-            onItemSelected: mainStack.trayState.expanded = false
-            onCloseRequested: mainStack.trayState.expanded = false
+            onItemSelected: {
+                mainStack.trayState.expanded = false;
+                if (typeof Plasmoid.restoreShellPopupFocus === "function")
+                    Plasmoid.restoreShellPopupFocus();
+            }
+            onCloseRequested: {
+                mainStack.trayState.expanded = false;
+                if (typeof Plasmoid.restoreShellPopupFocus === "function")
+                    Plasmoid.restoreShellPopupFocus();
+            }
         }
     }
     Component {

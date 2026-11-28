@@ -18,6 +18,14 @@ Item {
             const local = findChild(picker, "wmSymbolGrid");
             tryVerify(() => local.visible && local.count > 0);
             const search = findChild(picker, "wmEmojiSearch");
+            const clear = findChild(picker, "wmEmojiSearchClear");
+            verify(clear !== null);
+            compare(clear.visible, false);
+            search.text = "€";
+            tryCompare(clear, "visible", true);
+            tryCompare(local, "count", 1);
+            mouseClick(clear, clear.width / 2, clear.height / 2);
+            tryCompare(search, "text", "");
             search.text = "€";
             tryCompare(local, "count", 1);
             picker.mode = "kaomoji";

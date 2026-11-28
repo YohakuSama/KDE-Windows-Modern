@@ -150,6 +150,8 @@ ContainmentItem {
             if (!applet) return;
             if (systemTrayState.expanded && systemTrayState.activeApplet === applet) {
                 systemTrayState.expanded = false;
+                if (typeof Plasmoid.restoreShellPopupFocus === "function")
+                    Plasmoid.restoreShellPopupFocus();
                 return;
             }
             systemTrayState.setActiveApplet(applet, undefined, "panel");

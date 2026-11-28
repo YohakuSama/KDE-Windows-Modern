@@ -7,7 +7,7 @@ QtObject {
         property int firstDayOfWeek: 1
         property bool showWeekNumbers: false
         property var enabledCalendarPlugins: []
-        property int expandedWidth: 320
+        property int expandedWidth: 336
         property var selectedTimeZones: ["Local"]
         property bool showLocalTimezone: false
         property int displayTimezoneFormat: 0

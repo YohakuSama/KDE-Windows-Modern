@@ -15,7 +15,7 @@ import "../js/trayMetrics.js" as TrayMetrics
 Lib.Page {
     id: page
 
-    title: i18n("Battery")
+    title: hasBattery ? i18n("Battery") : i18n("Power Mode")
     contentFillsHeight: false
     readonly property bool dark: ColorType.isDark(Kirigami.Theme.backgroundColor)
     readonly property color accent: ColorType.accentForSurface(Kirigami.Theme.highlightColor,
@@ -73,7 +73,9 @@ Lib.Page {
         spacing: 10
 
         PlasmaComponents3.Label {
+            visible: page.hasBattery || powerProfiles.profiles.length === 0
             text: page.batteryStatus
+            textFormat: Text.PlainText
             font.pixelSize: 12
             opacity: 0.75
             color: Kirigami.Theme.textColor
@@ -81,6 +83,7 @@ Lib.Page {
 
         RowLayout {
             Layout.fillWidth: true
+            visible: page.hasBattery
             spacing: 8
 
             BatteryGlyph {
@@ -95,6 +98,7 @@ Lib.Page {
 
             PlasmaComponents3.Label {
                 text: page.percent
+                textFormat: Text.PlainText
                 font.pixelSize: 22
                 font.weight: Font.DemiBold
                 color: Kirigami.Theme.textColor
@@ -108,6 +112,7 @@ Lib.Page {
                 visible: page.timeLeft.length > 0 && !page.isFull
                 Layout.maximumWidth: Math.max(0, parent.width * 0.5)
                 text: page.timeLeft
+                textFormat: Text.PlainText
                 wrapMode: Text.WordWrap
                 font.pixelSize: 12
                 opacity: 0.75
@@ -124,6 +129,8 @@ Lib.Page {
             Accessible.role: Accessible.ProgressBar
             Accessible.name: page.percent
             Rectangle {
+                anchors.left: page.LayoutMirroring.enabled ? undefined : parent.left
+                anchors.right: page.LayoutMirroring.enabled ? parent.right : undefined
                 width: parent.width * (page.percentKnown ? Funcs.batteryFillFraction(page.displayPercent) : 0)
                 height: parent.height
                 radius: 2
